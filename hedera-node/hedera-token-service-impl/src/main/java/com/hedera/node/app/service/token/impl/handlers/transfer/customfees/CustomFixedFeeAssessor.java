@@ -30,7 +30,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Assesses fixed fees
+ * Assesses fixed fees in a custom fee.
+ * All the custom fees assessed from fixed fee will be added to the {@link AssessmentResult}
+ * which will be used to create next level of transaction body to assess the next level of custom fees.
+ * @see CustomFeeAssessor
  */
 @Singleton
 public class CustomFixedFeeAssessor {
@@ -39,6 +42,12 @@ public class CustomFixedFeeAssessor {
         // For Dagger injection
     }
 
+    /**
+     * Assesses fixed fees in a custom fee.
+     * @param feeMeta the custom fee metadata for the token
+     * @param sender the sender of the transaction, which will be payer for custom fees
+     * @param result the assessment result which will be used to create next level of transaction body
+     */
     public void assessFixedFees(
             @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {
         for (final var fee : feeMeta.customFees()) {
@@ -56,6 +65,14 @@ public class CustomFixedFeeAssessor {
         }
     }
 
+    /**
+     * Fixed fee can be either a hbar or hts fee. This method assesses the fixed fee and adds the assessed fee to the
+     * {@link AssessmentResult}.
+     * @param feeMeta the custom fee metadata for the token
+     * @param sender the sender of the transaction, which will be payer for custom fees
+     * @param fee the custom fee to be assessed
+     * @param result the assessment result which will be used to create next level of transaction body
+     */
     public void assessFixedFee(
             final CustomFeeMeta feeMeta, final AccountID sender, final CustomFee fee, final AssessmentResult result) {
         if (isPayerExempt(feeMeta, fee, sender)) {
@@ -69,6 +86,13 @@ public class CustomFixedFeeAssessor {
         }
     }
 
+    /**
+     * Assesses if the fixed fee is a hbar fee and adds the assessed fee debit and credit
+     * to the {@link AssessmentResult}.
+     * @param sender the sender of the transaction, which will be payer for custom fees
+     * @param hbarFee the hbar fee to be assessed
+     * @param result the assessment result which will be used to create next level of transaction body
+     */
     private void assessHbarFees(
             @NonNull final AccountID sender, @NonNull final CustomFee hbarFee, @NonNull final AssessmentResult result) {
         final var collector = hbarFee.feeCollectorAccountId();
@@ -76,7 +100,7 @@ public class CustomFixedFeeAssessor {
         final var amount = fixedSpec.amount();
 
         adjustHbarFees(result, sender, hbarFee);
-
+        // add all assessed fees for transaction record
         result.addAssessedCustomFee(AssessedCustomFee.newBuilder()
                 .effectivePayerAccountId(sender)
                 .amount(amount)
@@ -84,6 +108,14 @@ public class CustomFixedFeeAssessor {
                 .build());
     }
 
+    /**
+     * Assesses if the fixed fee is a hts fee and adds the assessed fee debit and credit
+     * to the {@link AssessmentResult}.
+     * @param sender the sender of the transaction, which will be payer for custom fees
+     * @param chargingTokenMeta the custom fee metadata for the token
+     * @param htsFee the hts fee to be assessed
+     * @param result the assessment result which will be used to create next level of transaction body
+     */
     private void assessHtsFees(
             @NonNull final AccountID sender,
             @NonNull final CustomFeeMeta chargingTokenMeta,
@@ -98,6 +130,7 @@ public class CustomFixedFeeAssessor {
         final var denominatingToken = fixedFeeSpec.denominatingTokenIdOrThrow();
         adjustHtsFees(htsAdjustments, sender, collector, chargingTokenMeta, amount, denominatingToken, exemptDenoms);
 
+        // add all assessed fees for transaction record
         result.addAssessedCustomFee(AssessedCustomFee.newBuilder()
                 .effectivePayerAccountId(sender)
                 .amount(amount)

@@ -37,6 +37,14 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Assesses fractional custom fees for given token transfer.
+ * All fractional fees without netOfTransfers flag set to true, will manipulate the given transaction body.
+ * If netOfTransfers flag is set to false, the custom fee si reclaimed from the credits in
+ * given transaction body.
+ * If netOfTransfers flag is set to true the sender will pay the custom fees.Else the receivers will pay custom fees This means that the fee will be charged from the sender account. This is done to avoid
+ * manipulate the given transaction
+ */
 @Singleton
 public class CustomFractionalFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;

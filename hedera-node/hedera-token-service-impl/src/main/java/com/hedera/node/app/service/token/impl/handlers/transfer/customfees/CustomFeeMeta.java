@@ -27,6 +27,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Provides a record for custom fee meta data for given token
+ * @param tokenId the token id of the token for which this is the custom fee metadata
+ * @param treasuryId the treasury account id of the token
+ * @param customFees the list of custom fees for the token
+ * @param tokenType the type of the token
+ */
 public record CustomFeeMeta(
         @NonNull TokenID tokenId,
         @NonNull AccountID treasuryId,

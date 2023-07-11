@@ -72,10 +72,12 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
+                                .expectedDecimals(1000)
                                 .transfers(List.of(aaWith(ownerId, -1_000), aaWith(asAccount(tokenReceiver), +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
+                                .expectedDecimals(1000)
                                 .nftTransfers(nftTransferWith(ownerId, asAccount(tokenReceiver), 1))
                                 .build())
                 .build();
