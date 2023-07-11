@@ -309,7 +309,7 @@ class TipsetEventCreationRulesTests {
         assertTrue(rule.isEventCreationPermitted());
 
         // State saved, no reconnects
-        lastSavedRound.set(NO_ROUND);
+        lastReconnectRound.set(NO_ROUND);
         lastSavedRound.set(1);
         assertTrue(rule.isEventCreationPermitted());
 

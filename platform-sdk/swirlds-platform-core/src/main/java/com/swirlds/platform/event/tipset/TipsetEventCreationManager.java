@@ -143,6 +143,8 @@ public class TipsetEventCreationManager implements Lifecycle {
         Objects.requireNonNull(eventIntakeQueueSize);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(startUpEventFrozenManager);
+        Objects.requireNonNull(latestReconnectRound);
+        Objects.requireNonNull(latestSavedStateRound);
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final EventCreationConfig eventCreationConfig =

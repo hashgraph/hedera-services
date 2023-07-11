@@ -96,6 +96,8 @@ public final class TipsetEventCreationManagerFactory {
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(startUpEventFrozenManager);
+        Objects.requireNonNull(latestReconnectRound);
+        Objects.requireNonNull(latestSavedStateRound);
 
         final boolean useTipsetAlgorithm = platformContext
                 .getConfiguration()
