@@ -207,15 +207,15 @@ public final class IngestChecker {
             if (!verificationResult.passed()) {
                 throw new PreCheckException(INVALID_SIGNATURE);
             }
-        } catch (final TimeoutException e) {
+        } catch (TimeoutException e) {
             // FUTURE: Have an alert and metric in our monitoring tools to make sure we are aware if this happens
             logger.warn("Signature verification timed out during ingest");
             throw new RuntimeException(e);
-        } catch (final ExecutionException e) {
+        } catch (ExecutionException e) {
             // FUTURE: Have an alert and metric in our monitoring tools to make sure we are aware if this happens
             logger.warn("Signature verification failed during ingest", e);
             throw new RuntimeException(e);
-        } catch (final InterruptedException e) {
+        } catch (InterruptedException e) {
             // This might not be a warn / error situation, if we were interrupted, it means that someone
             // is trying to shut down the server. So we can just throw and get out of here.
             Thread.currentThread().interrupt();
