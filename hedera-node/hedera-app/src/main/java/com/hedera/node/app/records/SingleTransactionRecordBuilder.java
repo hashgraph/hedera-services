@@ -75,8 +75,7 @@ public class SingleTransactionRecordBuilder
                 CryptoTransferRecordBuilder,
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
-                TokenCreateRecordBuilder,
-                CryptoTransferRecordBuilder {
+                TokenCreateRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
