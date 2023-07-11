@@ -29,9 +29,11 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -78,7 +80,7 @@ class FileAppendTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileAppendHandler();
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
@@ -190,7 +192,35 @@ class FileAppendTest extends FileTestBase {
                 .build();
     }
 
+    @Test
+    void appliesUpgradeFileNewContent() {
+        final var additionalContent = "STUFF".getBytes();
+        var bytesNewContent = Bytes.wrap(additionalContent);
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        var bytesNewContentExpected = Bytes.wrap(additionalContent);
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
+                .build();
+        given(handleContext.body()).willReturn(txBody);
+        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+
+        subject.handle(handleContext);
+        final var iterator = writableUpgradeStates.iterator();
+        File file = null;
+
+        while (iterator.hasNext()) {
+            file = iterator.next();
+        }
+        assertEquals(bytesNewContentExpected, file.contents());
+    }
+
     private FileID wellKnownId() {
         return FileID.newBuilder().fileNum(fileId.fileNum()).build();
+    }
+
+    private FileID wellKnowUpgradeId() {
+        return FileID.newBuilder().fileNum(fileSystemfileId.fileNum()).build();
     }
 }

@@ -44,6 +44,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -108,7 +109,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryWhenValidFile() throws Throwable {
+    void validatesQueryWhenValidFile() {
         givenValidFile();
 
         final var query = createGetFileInfoQuery(fileId.fileNum());
@@ -184,10 +185,41 @@ class FileGetInfoTest extends FileTestBase {
         assertEquals(expectedInfo, fileInfoResponse.fileInfo());
     }
 
+    @Test
+    void getsResponseIfOkResponseUpgradeFile() {
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        final var expectedInfo = getExpectedSystemInfo();
+
+        final var query = createGetFileInfoQuery(fileSystemfileId.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableUpgradeStoreImpl.class)).thenReturn(readableUpgradeStore);
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileInfoResponse = response.fileGetInfoOrThrow();
+        assertEquals(ResponseCodeEnum.OK, fileInfoResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, fileInfoResponse.fileInfo());
+    }
+
     private FileInfo getExpectedInfo() {
         return FileInfo.newBuilder()
                 .memo(file.memo())
                 .fileID(fileId)
+                .keys(keys)
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .ledgerId(ledgerId)
+                .deleted(false)
+                .size(8)
+                .build();
+    }
+
+    private FileInfo getExpectedSystemInfo() {
+        return FileInfo.newBuilder()
+                .memo(file.memo())
+                .fileID(fileSystemfileId)
                 .keys(keys)
                 .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
                 .ledgerId(ledgerId)

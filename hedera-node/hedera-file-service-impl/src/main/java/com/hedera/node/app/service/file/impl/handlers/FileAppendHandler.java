@@ -25,9 +25,11 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -76,13 +78,13 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        requireNonNull(context);
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+        requireNonNull(handleContext);
 
-        final var op = context.body().fileAppendOrThrow();
-        final var target = op.fileID();
-        final var data = op.contents();
-        final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
+        final var fileAppend = handleContext.body().fileAppendOrThrow();
+        final var target = fileAppend.fileID();
+        final var data = fileAppend.contents();
+        final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
         if (data == null || data.length() <= 0) {
             logger.debug("FileAppend: No data to append");
         }
@@ -90,7 +92,13 @@ public class FileAppendHandler implements TransactionHandler {
         if (target == null) {
             throw new HandleException(INVALID_FILE_ID);
         }
-        final var fileStore = context.writableStore(WritableFileStoreImpl.class);
+
+        if (target.fileNum() == fileServiceConfig.upgradeFileNumber()) {
+            handleAppendUpgradeFile(fileAppend, handleContext);
+            return;
+        }
+
+        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
         final var optionalFile = fileStore.get(target);
 
         if (optionalFile.isEmpty()) {
@@ -121,5 +129,21 @@ public class FileAppendHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
+    }
+
+    private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
+        final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
+        File file = fileStore.peek();
+        if (file == null) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        final var appendedFile = new File.Builder()
+                .fileId(fileAppend.fileIDOrThrow())
+                .contents(fileAppend.contents())
+                .deleted(false)
+                .expirationTime(file.expirationTime())
+                .memo(file.memo())
+                .build();
+        fileStore.add(appendedFile);
     }
 }

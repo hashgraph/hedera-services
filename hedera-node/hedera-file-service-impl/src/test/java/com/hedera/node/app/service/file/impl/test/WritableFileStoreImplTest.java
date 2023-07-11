@@ -36,7 +36,7 @@ class WritableFileStoreImplTest extends FileTestBase {
     }
 
     @Test
-    void constructorCreatesTopicState() {
+    void constructorCreatesFileState() {
         final var store = new WritableFileStoreImpl(writableStates);
         assertNotNull(store);
     }
@@ -49,8 +49,8 @@ class WritableFileStoreImplTest extends FileTestBase {
         writableStore.put(file);
 
         assertTrue(writableFileState.contains(fileId));
-        final var writtenTopic = writableFileState.get(fileId);
-        assertEquals(file, writtenTopic);
+        final var writtenFile = writableFileState.get(fileId);
+        assertEquals(file, writtenFile);
     }
 
     @Test

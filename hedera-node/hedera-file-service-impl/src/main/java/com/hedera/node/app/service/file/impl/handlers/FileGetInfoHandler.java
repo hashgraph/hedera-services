@@ -24,15 +24,19 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileGetInfoQuery;
 import com.hedera.hapi.node.file.FileGetInfoResponse;
 import com.hedera.hapi.node.file.FileInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,7 +80,9 @@ public class FileGetInfoHandler extends FileQueryBase {
         requireNonNull(header);
         final var query = context.query();
         final var fileStore = context.createStore(ReadableFileStore.class);
+        final var upgradeStore = context.createStore(ReadableUpgradeStoreImpl.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
         final var op = query.fileGetInfoOrThrow();
         final var responseBuilder = FileGetInfoResponse.newBuilder();
         final var file = op.fileIDOrElse(FileID.DEFAULT);
@@ -84,7 +90,7 @@ public class FileGetInfoHandler extends FileQueryBase {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForFile(file, fileStore, ledgerConfig);
+            final var optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeStore, fileServiceConfig);
             optionalInfo.ifPresent(responseBuilder::fileInfo);
         }
 
@@ -101,8 +107,26 @@ public class FileGetInfoHandler extends FileQueryBase {
     private @Nullable Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
-            @NonNull final LedgerConfig ledgerConfig) {
-        final var meta = fileStore.getFileMetadata(fileID);
+            @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final ReadableUpgradeStoreImpl upgradeStore,
+            @NonNull final FilesConfig fileServiceConfig) {
+
+        FileMetadata meta = null;
+        if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
+            final var file = upgradeStore.peek();
+            if (file != null) {
+                meta = new FileMetadata(
+                        file.fileId(),
+                        Timestamp.newBuilder().seconds(file.expirationTime()).build(),
+                        file.keys(),
+                        file.contents(),
+                        file.memo(),
+                        file.deleted());
+            }
+        } else {
+            meta = fileStore.getFileMetadata(fileID);
+        }
+
         if (meta == null) {
             return Optional.empty();
         } else {

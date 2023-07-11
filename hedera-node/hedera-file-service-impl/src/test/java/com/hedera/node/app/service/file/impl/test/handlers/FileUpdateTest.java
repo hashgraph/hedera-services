@@ -36,6 +36,7 @@ import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -85,7 +86,7 @@ class FileUpdateTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileUpdateHandler();
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
@@ -234,6 +235,23 @@ class FileUpdateTest extends FileTestBase {
     }
 
     @Test
+    void appliesNewContentUpgradeFile() {
+        final var newContent = Bytes.wrap("STUFF".getBytes());
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var op =
+                OP_BUILDER.fileID(wellKnowUpgradeId()).contents(newContent).build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+        when(handleContext.body()).thenReturn(txBody);
+        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+        subject.handle(handleContext);
+
+        final var newFile = writableUpgradeStates.poll();
+        assertEquals(newContent, newFile.contents());
+    }
+
+    @Test
     void appliesNewExpiryViaMeta() {
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
@@ -311,5 +329,9 @@ class FileUpdateTest extends FileTestBase {
 
     private FileID wellKnownId() {
         return fileId;
+    }
+
+    private FileID wellKnowUpgradeId() {
+        return FileID.newBuilder().fileNum(fileUpgradefileId.fileNum()).build();
     }
 }

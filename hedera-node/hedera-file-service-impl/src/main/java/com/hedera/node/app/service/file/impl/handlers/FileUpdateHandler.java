@@ -27,10 +27,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -47,6 +49,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileUpdateHandler implements TransactionHandler {
+    private static final Timestamp EXPIRE_NEVER =
+            Timestamp.newBuilder().seconds(Long.MAX_VALUE - 1).build();
+
     @Inject
     public FileUpdateHandler() {
         // Exists for injection
@@ -81,6 +86,15 @@ public class FileUpdateHandler implements TransactionHandler {
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
+        if (fileUpdate.fileID() == null) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+
+        if (fileUpdate.fileIDOrThrow().fileNum() == fileServiceConfig.upgradeFileNumber()) {
+            handleUpdateUpgradeFile(fileUpdate, handleContext);
+            return;
+        }
+
         if (maybeFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
         }
@@ -102,6 +116,21 @@ public class FileUpdateHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
         fileStore.put(builder.build());
+    }
+
+    private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
+        final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
+        // empty old upgrade file
+        while (fileStore.poll() != null)
+            ;
+        final var file = new File.Builder()
+                .fileId(fileUpdate.fileIDOrThrow())
+                .contents(fileUpdate.contents())
+                .deleted(false)
+                .expirationTime(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
+                .memo(fileUpdate.memo())
+                .build();
+        fileStore.add(file);
     }
 
     private void resolveMutableBuilderAttributes(
