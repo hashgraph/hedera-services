@@ -33,6 +33,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -355,6 +356,13 @@ public class FakePreHandleContext implements PreHandleContext {
 
         requiredHollowAccounts.add(hollowAccount);
         return this;
+    }
+
+    @NonNull
+    @Override
+    public TransactionKeys allKeysForTransaction(
+            @NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

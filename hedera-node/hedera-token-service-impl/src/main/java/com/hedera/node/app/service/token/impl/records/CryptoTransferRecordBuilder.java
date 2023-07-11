@@ -16,9 +16,38 @@
 
 package com.hedera.node.app.service.token.impl.records;
 
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
+/**
+ * A {@code RecordBuilder} specialization for tracking the effects of a {@code CryptoTransfer}
+ * transaction.
+ */
 public interface CryptoTransferRecordBuilder {
+    /**
+     * Tracks the <b>net</b> hbar transfers that need to be applied to the associated accounts
+     * (accounts are specified in the {@code TransferList} input param)
+     *
+     * @param hbarTransfers the net list of adjustments to make to account balances
+     * @return this builder
+     */
+    @NonNull
+    CryptoTransferRecordBuilder transferList(@NonNull TransferList hbarTransfers);
+
+    /**
+     * Tracks the <b>net</b> token transfers that need to be applied to the associated accounts,
+     * including both fungible and non-fungible types
+     *
+     * @param tokenTransferLists the net list of balance or ownership changes for the given
+     *                           fungible and non-fungible tokens
+     * @return this builder
+     */
+    @NonNull
+    CryptoTransferRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
+
+    @NonNull
     CryptoTransferRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees);
 }

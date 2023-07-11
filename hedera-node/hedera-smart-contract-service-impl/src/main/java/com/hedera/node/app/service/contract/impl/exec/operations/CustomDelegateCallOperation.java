@@ -16,26 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
-import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.DelegateCallOperation;
-import org.hyperledger.besu.evm.operation.Operation;
 
 /**
- * A customization of the Besu {@link DelegateCallOperation} that checks for missing addresses before delegating the call.
+ * Hedera customization of {@link DelegateCallOperation} that immediately halts on calls to missing addresses,
+ * <i>unless</i> the call is to an address in the system account range, in which case the fate of the call
+ * is determined by the {@link CustomMessageCallProcessor}.
  */
-public class CustomDelegateCallOperation extends DelegateCallOperation {
-    private static final Operation.OperationResult UNDERFLOW_RESPONSE =
-            new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
+public class CustomDelegateCallOperation extends DelegateCallOperation implements BasicCustomCallOperation {
     private final AddressChecks addressChecks;
 
     public CustomDelegateCallOperation(
@@ -45,15 +41,22 @@ public class CustomDelegateCallOperation extends DelegateCallOperation {
     }
 
     @Override
+    public AddressChecks addressChecks() {
+        return addressChecks;
+    }
+
+    @Override
+    public Address to(@NonNull MessageFrame frame) {
+        return super.to(frame);
+    }
+
+    @Override
+    public OperationResult executeUnchecked(@NonNull MessageFrame frame, @NonNull EVM evm) {
+        return super.execute(frame, evm);
+    }
+
+    @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
-        try {
-            final var address = Words.toAddress(frame.getStackItem(0));
-            if (addressChecks.isNeitherSystemNorPresent(address, frame)) {
-                return new OperationResult(cost(frame), MISSING_ADDRESS);
-            }
-            return super.execute(frame, evm);
-        } catch (FixedStack.UnderflowException ignore) {
-            return UNDERFLOW_RESPONSE;
-        }
+        return BasicCustomCallOperation.super.executeChecked(frame, evm);
     }
 }
