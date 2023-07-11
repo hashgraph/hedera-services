@@ -61,7 +61,6 @@ import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -722,7 +721,7 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
-                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // IMPORTANT: this swirlds app thread must be non-daemon,
                 // so that the JVM will not exit when the main thread exits
                 appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
@@ -739,7 +738,7 @@ public class Browser {
 
     /**
      * Create a copy of the initial signed state. There are currently data structures that become immutable after
-     * construction, and we need to make a copy to force it to be mutable again.
+     * being hashed, and we need to make a copy to force it to become mutable again.
      *
      * @param platformContext    the platform's context
      * @param initialSignedState the initial signed state
@@ -776,9 +775,6 @@ public class Browser {
         // Invalidate a path down to the new address book
         new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
                 .forEachRemaining(MerkleNode::invalidateHash);
-
-        // We should only have to rehash a few nodes, so simpler to use the synchronous algorithm.
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
 
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();
