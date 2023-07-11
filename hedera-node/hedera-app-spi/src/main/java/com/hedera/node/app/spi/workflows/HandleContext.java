@@ -42,6 +42,7 @@ import java.time.Instant;
  *     <li>Functionality to dispatch preceding and child transactions</li>
  * </ul>
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface HandleContext {
 
     /**
@@ -135,10 +136,8 @@ public interface HandleContext {
      * @throws PreCheckException If there is a problem with the nested transaction
      */
     @NonNull
-    default TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
-            throws PreCheckException {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+    TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException;
 
     /**
      * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then

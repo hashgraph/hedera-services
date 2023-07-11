@@ -77,7 +77,8 @@ public class NodeToSend {
         }
 
         final ReconnectConfig reconnectConfig = ConfigurationHolder.getConfigData(ReconnectConfig.class);
-        unconditionalSendTimeMilliseconds = System.currentTimeMillis() + reconnectConfig.maxAckDelayMilliseconds();
+        unconditionalSendTimeMilliseconds =
+                System.currentTimeMillis() + reconnectConfig.maxAckDelay().toMillis();
     }
 
     /**

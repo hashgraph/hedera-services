@@ -68,7 +68,7 @@ class ConfigExportTest {
         assertContains(regexForLine("state.madeUpSetting", "1", false), lines);
 
         // Verify properties not in file are listed (spot check only)
-        assertContains(regexForLine("state.signedStateDisk", "3", true), lines);
+        assertContains(regexForLine("state.signedStateDisk", "5", true), lines);
         assertContains(regexForLine("numConnections", "40", true), lines);
         assertContains(regexForLine("verboseStatistics", "false", true), lines);
     }

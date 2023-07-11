@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.RandomUtils.initRandom;
+import static com.swirlds.common.test.fixtures.RandomUtils.initRandom;
 import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.applyEventsToConsensus;
@@ -43,9 +43,9 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.WeightGenerator;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.threading.utility.AtomicDouble;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
@@ -472,11 +472,10 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * Get a set of node ids such that their weight is at least a strong minority but not a super majority. Each group of
-     * nodes (the partitioned node and non-partitions nodes) has a strong minority.
+     * Get a set of node ids such that their weight is at least a strong minority but not a super majority. Each group
+     * of nodes (the partitioned node and non-partitions nodes) has a strong minority.
      *
-     * @param nodeWeights
-     * 		the weights of each node in the network
+     * @param nodeWeights the weights of each node in the network
      * @return the list of node ids
      */
     private static Set<Integer> getStrongMinorityNodes(final List<Long> nodeWeights) {
@@ -507,8 +506,7 @@ public final class ConsensusTestDefinitions {
      * Get a set of node ids such that their weight is less than a strong minority. Nodes not in the returned set will
      * have a super majority and can continue to reach consensus.
      *
-     * @param nodeWeights
-     * 		the weights of each node in the network
+     * @param nodeWeights the weights of each node in the network
      * @return the list of node ids
      */
     private static Set<Integer> getSubStrongMinorityNodes(final List<Long> nodeWeights) {
@@ -792,10 +790,8 @@ public final class ConsensusTestDefinitions {
     /**
      * Verifies that the created round of new events does not advance when a quorum of nodes is down.
      *
-     * @param consensusEvents
-     * 		events that reached consensus in the test sequence
-     * @param allEvents
-     * 		all events created in the test sequence
+     * @param consensusEvents events that reached consensus in the test sequence
+     * @param allEvents       all events created in the test sequence
      */
     private static void createdRoundDoesNotAdvance(
             final List<IndexedEvent> consensusEvents, final List<IndexedEvent> allEvents) {
@@ -914,18 +910,12 @@ public final class ConsensusTestDefinitions {
      * Simulates a consensus restart. The number of nodes and number of events is chosen randomly between the supplied
      * bounds
      *
-     * @param seed
-     * 		a seed to use for a random generator
-     * @param stateDir
-     * 		the directory where saved states can be written (this method uses merkle serialization)
-     * @param minNodes
-     * 		minimum number of nodes
-     * @param maxNodes
-     * 		maximum number of nodes
-     * @param minPerSeq
-     * 		minimum number of events to generate
-     * @param maxPerSeq
-     * 		maximum number of events to generate
+     * @param seed      a seed to use for a random generator
+     * @param stateDir  the directory where saved states can be written (this method uses merkle serialization)
+     * @param minNodes  minimum number of nodes
+     * @param maxNodes  maximum number of nodes
+     * @param minPerSeq minimum number of events to generate
+     * @param maxPerSeq maximum number of events to generate
      */
     public static void restart(
             final Long seed,

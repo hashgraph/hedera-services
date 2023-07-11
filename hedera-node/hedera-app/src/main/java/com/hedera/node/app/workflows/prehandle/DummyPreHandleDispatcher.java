@@ -26,7 +26,7 @@ import javax.inject.Singleton;
 /**
  * @deprecated This class is only needed to have a PreHandleDispatcher implementation that can be provided by dagger.
  */
-@Deprecated
+@Deprecated(forRemoval = true)
 @Singleton
 public class DummyPreHandleDispatcher implements PreHandleDispatcher {
 
