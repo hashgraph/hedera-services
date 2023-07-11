@@ -93,7 +93,7 @@ public record VirtualMapConfig(
         @Min(1) @ConfigProperty(defaultValue = "20") int flushInterval,
         @ConfigProperty(defaultValue = "200000000") long copyFlushThreshold,
         @ConfigProperty(defaultValue = "2000000000") long familyThrottleThreshold,
-        @ConfigProperty(defaultValue = "2") int preferredFlushQueueSize,
+        @ConfigProperty(defaultValue = "10000") int preferredFlushQueueSize,
         @ConfigProperty(defaultValue = "200ms") Duration flushThrottleStepSize,
         @ConfigProperty(defaultValue = "5s") Duration maximumFlushThrottlePeriod) {
     private static final double UNIT_FRACTION_PERCENT = 100.0;
