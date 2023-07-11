@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Testing PrometheusConfig")
 class PrometheusConfigTest {
 
-    static final String DEFAULT_PROMETHEUS_ENDPOINT_ENABLED = "false";
+    static final String DEFAULT_PROMETHEUS_ENDPOINT_ENABLED = "true";
     static final String DEFAULT_PROMETHEUS_ENDPOINT_PORT_NUMBER = "9999";
     static final String DEFAULT_PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED = "1";
 

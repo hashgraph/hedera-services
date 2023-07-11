@@ -34,6 +34,6 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("prometheus")
 public record PrometheusConfig(
-        @ConfigProperty(defaultValue = "false") boolean endpointEnabled,
+        @ConfigProperty(defaultValue = "true") boolean endpointEnabled,
         @Min(0) @Max(65535) @ConfigProperty(defaultValue = "9999") int endpointPortNumber,
         @Min(0) @ConfigProperty(defaultValue = "1") int endpointMaxBacklogAllowed) {}
