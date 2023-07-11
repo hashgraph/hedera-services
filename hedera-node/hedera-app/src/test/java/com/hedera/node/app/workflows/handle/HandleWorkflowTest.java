@@ -25,11 +25,15 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.node.transaction.TransactionRecord.BodyOneOfType;
+import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
@@ -55,6 +59,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -324,6 +329,19 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         hederaRecordCache))
                 .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        recordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -509,6 +527,30 @@ class HandleWorkflowTest extends AppTestBase {
         // then
         assertThat(aliasesState.isModified()).isFalse();
         // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
+    }
+
+    @Test
+    @DisplayName("Test when there is the same transaction in the cache")
+    void testExistingTransactionInCache() {
+        // given
+        when(hederaRecordCache.getRecord(any())).thenReturn(generateDummyTransactionRecord());
+
+        // when
+        workflow.handleRound(state, round);
+
+        // then
+        assertThat(accountsState.isModified()).isFalse();
+        assertThat(aliasesState.isModified()).isFalse();
+        verify(recordManager, times(1)).startUserTransaction(any());
+        verify(recordManager, times(1)).endUserTransaction(any());
+    }
+
+    private TransactionRecord generateDummyTransactionRecord() {
+        final var body = new OneOf<>(BodyOneOfType.UNSET, 1);
+        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, 1);
+        return new TransactionRecord(
+                null, null, null, null, null, 1L, body, null, null, null, null, null, null, null, null, null, entropy,
+                null);
     }
 
     @Nested
