@@ -195,6 +195,7 @@ class HandleWorkflowTest extends AppTestBase {
         hederaRecordCache);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testContructorWithInvalidArguments() {
         final var instantSource = InstantSource.system();
