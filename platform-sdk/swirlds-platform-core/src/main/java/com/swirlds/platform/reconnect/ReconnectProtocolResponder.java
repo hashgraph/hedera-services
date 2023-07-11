@@ -119,7 +119,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
                 new ReconnectTeacher(
                                 threadManager,
                                 connection,
-                                config.asyncStreamTimeoutMilliseconds(),
+                                config.asyncStreamTimeout(),
                                 connection.getSelfId(),
                                 connection.getOtherId(),
                                 state.get().getRound(),

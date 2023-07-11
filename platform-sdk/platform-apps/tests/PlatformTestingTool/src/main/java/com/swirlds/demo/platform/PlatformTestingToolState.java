@@ -18,9 +18,9 @@ package com.swirlds.demo.platform;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_0;
+import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.common.utility.Units.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -304,18 +304,14 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.progressCfg = sourceState.progressCfg;
         this.roundCounter = sourceState.roundCounter;
 
-        if (platform != null && sourceState.getTransactionCounter() != null) {
+        if (sourceState.getTransactionCounter() != null) {
             setTransactionCounter(
                     new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
-                if (id < sourceState.getTransactionCounter().size()) {
-                    getTransactionCounter()
-                            .add(id, sourceState.getTransactionCounter().get(id).copy());
-                } else {
-                    // when loading signed state from a smaller network, sourceState has a smaller address book size
-                    // and fewer number of transaction counters
-                    getTransactionCounter().add(id, new TransactionCounter());
-                }
+            for (int index = 0; index < sourceState.getTransactionCounter().size(); index++) {
+                getTransactionCounter()
+                        .add(
+                                index,
+                                sourceState.getTransactionCounter().get(index).copy());
             }
         }
 
@@ -1097,6 +1093,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (getTransactionCounter() == null
                 || getTransactionCounter().size() != platform.getAddressBook().getSize()) {
             setNextSeqCons(new NextSeqConsList(platform.getAddressBook().getSize()));
+
+            logger.info(DEMO_INFO.getMarker(), "resetting transaction counters");
 
             setTransactionCounter(
                     new TransactionCounterList(platform.getAddressBook().getSize()));

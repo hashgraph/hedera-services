@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.Utilities.isMajority;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
@@ -38,13 +38,13 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;

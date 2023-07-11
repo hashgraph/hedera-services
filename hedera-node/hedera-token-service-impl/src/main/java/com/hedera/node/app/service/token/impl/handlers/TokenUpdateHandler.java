@@ -325,7 +325,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             builder.autoRenewSecs(resolvedExpiry.autoRenewPeriod());
         }
         if (op.hasAutoRenewAccount()) {
-            builder.autoRenewAccountId(AccountID.newBuilder().accountNum(resolvedExpiry.autoRenewNum()));
+            builder.autoRenewAccountId(resolvedExpiry.autoRenewAccountId());
         }
     }
 

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -44,10 +44,11 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -70,7 +71,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;

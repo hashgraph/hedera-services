@@ -25,7 +25,6 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -227,7 +226,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             @NonNull final Bytes meta,
             final long currentSerialNumber) {
         return Nft.newBuilder()
-                .id(UniqueTokenId.newBuilder()
+                .id(NftID.newBuilder()
                         .tokenId(tokenId)
                         .serialNumber(currentSerialNumber)
                         .build())

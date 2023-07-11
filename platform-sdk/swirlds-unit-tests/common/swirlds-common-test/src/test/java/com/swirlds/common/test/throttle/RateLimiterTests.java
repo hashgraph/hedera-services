@@ -16,12 +16,12 @@
 
 package com.swirlds.common.test.throttle;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import java.time.Duration;
 import java.util.Random;

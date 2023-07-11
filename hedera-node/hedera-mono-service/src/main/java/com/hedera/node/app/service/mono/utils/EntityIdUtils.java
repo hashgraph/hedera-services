@@ -75,7 +75,7 @@ public final class EntityIdUtils {
             return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
         }
         if (o instanceof NftID id) {
-            final var tokenID = id.getTokenID();
+            final var tokenID = id.getTokenId();
             return String.format(
                     ENTITY_ID_FORMAT + ".%d",
                     tokenID.getShardNum(),

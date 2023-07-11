@@ -113,7 +113,8 @@ module com.swirlds.common {
     exports com.swirlds.common.system.transaction.internal to
             com.swirlds.platform,
             com.swirlds.platform.test,
-            com.swirlds.common.test;
+            com.swirlds.common.test,
+            com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.merkle.impl to
             com.fasterxml.jackson.databind;
@@ -137,6 +138,11 @@ module com.swirlds.common {
             com.fasterxml.jackson.databind;
 
     exports com.swirlds.common.metrics.extensions;
+    exports com.swirlds.common.units.internal;
+
+    opens com.swirlds.common.units.internal to
+            com.fasterxml.jackson.databind;
+
     exports com.swirlds.common.system.status;
     exports com.swirlds.common.system.status.actions;
     exports com.swirlds.common.metrics.statistics;
