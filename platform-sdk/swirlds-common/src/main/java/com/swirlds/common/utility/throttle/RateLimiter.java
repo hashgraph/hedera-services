@@ -16,8 +16,8 @@
 
 package com.swirlds.common.utility.throttle;
 
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 
 import com.swirlds.base.time.Time;
 import java.time.Duration;
@@ -79,7 +79,8 @@ public class RateLimiter {
 
     /**
      * Request permission to trigger an operation, and immediately trigger if permitted. Returns true if it is ok to
-     * perform the operation, returns false if the operation has been performed too recently in the past. Once this
+     * perform the operation, returns false if
+     * the operation has been performed too recently in the past. Once this
      * method returns true, it will return false for the remainder of the time span specified by the minimum period.
      *
      * @return true if the operation can be triggered without violating rate limits, otherwise false

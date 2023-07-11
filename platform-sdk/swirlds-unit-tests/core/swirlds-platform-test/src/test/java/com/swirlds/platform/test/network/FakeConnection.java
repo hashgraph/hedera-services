@@ -77,7 +77,7 @@ public class FakeConnection implements Connection {
     }
 
     @Override
-    public void setTimeout(final int timeoutMillis) {
+    public void setTimeout(final long timeoutMillis) {
         throw new UnsupportedOperationException("N/A");
     }
 

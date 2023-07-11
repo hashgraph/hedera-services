@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -78,6 +80,10 @@ public class FrameBuilder {
         final var value = transaction.weiValue();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
+        // TODO - contract.sidecars does not seem to be available yet; we do not
+        // need create the tracker here if STATE_CHANGES sidecar is disabled
+        final var contextVariables =
+                Map.of(CONFIG_CONTEXT_VARIABLE, config, TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
         final var builder = MessageFrame.builder()
                 .messageFrameStack(new ArrayDeque<>())
                 .maxStackSize(MAX_STACK_SIZE)
@@ -94,7 +100,7 @@ public class FrameBuilder {
                 .isStatic(context.staticCall())
                 .miningBeneficiary(nominalCoinbase)
                 .blockHashLookup(context.blocks()::blockHashOf)
-                .contextVariables(Map.of(CONFIG_CONTEXT_VARIABLE, config));
+                .contextVariables(contextVariables);
         if (transaction.isCreate()) {
             return finishedAsCreate(to, builder, transaction);
         } else {

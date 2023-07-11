@@ -38,6 +38,9 @@ import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -50,7 +53,11 @@ import org.apache.logging.log4j.Logger;
 public class ConfigCallbacks {
 
     private static final Logger log = LogManager.getLogger(ConfigCallbacks.class);
+    // The exact choice of precision will not have a large effect on the min or max stake calculations
+    private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
     private static final long DEFAULT_MAX_TO_MIN_STAKE_RATIO = 4L;
+    private static final BigDecimal MAX_STAKE_SCALE_FACTOR =
+            BigDecimal.TEN.add(BigDecimal.ONE).divide(BigDecimal.TEN, MATH_CONTEXT);
     private final PropertySource properties;
     private final PropertySources propertySources;
     private final HapiOpPermissions hapiOpPermissions;
@@ -115,14 +122,20 @@ public class ConfigCallbacks {
     }
 
     private void updateMinAndMaxStakesWith(
-            final long hbarFloat, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
-        final var maxStake = hbarFloat / numNodes;
+            final long totalHbarSupply, final int numNodes, final Map<Long, Long> maxToMinStakeRatios) {
+        final var maxStake = MAX_STAKE_SCALE_FACTOR
+                .multiply(BigDecimal.valueOf(totalHbarSupply / numNodes))
+                .longValue();
         final var curStakingInfos = stakingInfos.get();
         curStakingInfos.keySet().forEach(num -> {
             final var mutableInfo = curStakingInfos.getForModify(num);
             mutableInfo.setMaxStake(maxStake);
             final var maxToMinRatio = maxToMinStakeRatios.getOrDefault(num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
-            final var minStake = maxStake / maxToMinRatio;
+            // We want to leave min stake's default value at 50B hbar / (# of nodes) * 4, so we ALSO scale up
+            // the max-to-min-stake ratio by the same factor that we used to scale up max stake
+            final var minStake = BigDecimal.valueOf(maxStake)
+                    .divide(BigDecimal.valueOf(maxToMinRatio).multiply(MAX_STAKE_SCALE_FACTOR), MATH_CONTEXT)
+                    .longValue();
             mutableInfo.setMinStake(minStake);
             log.info(
                     "Set node{} max/min stake to {}/{} ~ {}:1 ratio",

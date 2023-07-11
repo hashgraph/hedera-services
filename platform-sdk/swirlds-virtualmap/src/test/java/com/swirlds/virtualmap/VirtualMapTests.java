@@ -52,8 +52,8 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.datasource.InMemoryDataSource;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapStatistics;
@@ -985,10 +985,10 @@ class VirtualMapTests extends VirtualTestBase {
         map1.release();
 
         // createMap() creates a map labelled "Test"
-        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vMapFlushes_Test");
+        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vmap_lifecycle_flushCount_Test");
         assertNotNull(metric);
         if (!(metric instanceof Counter counterMetric)) {
-            throw new AssertionError("vMapFlushes metric is not a counter");
+            throw new AssertionError("flushCount metric is not a counter");
         }
         assertEquals(flushCount, counterMetric.get());
     }

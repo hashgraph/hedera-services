@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -41,6 +42,7 @@ import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -169,6 +171,17 @@ public class HandleContextImpl implements HandleContext {
         return expiryValidator;
     }
 
+    @NonNull
+    @Override
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException {
+        dispatcher.dispatchPureChecks(nestedTxn);
+        final var nestedContext = new PreHandleContextImpl(
+                readableStoreFactory(), nestedTxn, payerForNested, configuration(), dispatcher);
+        dispatcher.dispatchPreHandle(nestedContext);
+        return nestedContext;
+    }
+
     @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull final Key key) {
@@ -183,14 +196,18 @@ public class HandleContextImpl implements HandleContext {
         return verifier.verificationFor(evmAlias);
     }
 
+    private ReadableStoreFactory readableStoreFactory() {
+        if (readableStoreFactory == null) {
+            readableStoreFactory = new ReadableStoreFactory(stack);
+        }
+        return readableStoreFactory;
+    }
+
     @Override
     @NonNull
     public <C> C readableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        if (readableStoreFactory == null) {
-            readableStoreFactory = new ReadableStoreFactory(stack);
-        }
-        return readableStoreFactory.getStore(storeInterface);
+        return readableStoreFactory().getStore(storeInterface);
     }
 
     @Override

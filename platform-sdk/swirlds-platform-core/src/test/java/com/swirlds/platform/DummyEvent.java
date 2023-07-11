@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;

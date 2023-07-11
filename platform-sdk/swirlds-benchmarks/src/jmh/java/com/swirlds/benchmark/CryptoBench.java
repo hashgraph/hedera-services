@@ -18,7 +18,7 @@ package com.swirlds.benchmark;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
-import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayDeque;
@@ -97,7 +97,7 @@ public abstract class CryptoBench extends VirtualMapBench {
     /* Exponential moving average */
     private long ema;
     /* Platform metric for TPS */
-    private RunningAverageMetric tps;
+    private LongGauge tps;
 
     private long average(long time) {
         return (long) numRecords * MILLISECONDS / Math.max(time, 1);
@@ -112,7 +112,7 @@ public abstract class CryptoBench extends VirtualMapBench {
                 (long) numRecords * iteration,
                 average(ema),
                 average(delta));
-        tps.update(average(delta));
+        tps.set(average(delta));
     }
 
     /**

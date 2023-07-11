@@ -70,7 +70,7 @@ public class HapiGetTokenNftInfos extends HapiQueryOp<HapiGetTokenNftInfos> {
                 var expectedNftElement = TokenNftInfo.newBuilder();
 
                 nftInfo.getExpectedTokenID().ifPresent(e -> {
-                    expectedNftId.setTokenID(TxnUtils.asTokenId(e, spec));
+                    expectedNftId.setTokenId(TxnUtils.asTokenId(e, spec));
                     expectedNftElement.setCreationTime(spec.registry().getCreationTime(e));
                 });
                 nftInfo.getExpectedSerialNum().ifPresent(expectedNftId::setSerialNumber);

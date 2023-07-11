@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
@@ -31,6 +32,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
@@ -64,15 +66,15 @@ public class FrameRunner {
             @NonNull final HederaTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
-        requireAllNonNull(frame, tracer, messageCall, contractCreation);
+        requireNonNull(frame);
+        requireNonNull(tracer);
+        requireNonNull(messageCall);
+        requireNonNull(contractCreation);
 
-        // We compute the Hedera id up front because the called contract could
-        // selfdestruct, preventing us from looking up its contract id later on
         final var recipientAddress = frame.getRecipientAddress();
-        final var recipientEvmAddress = asEvmContractId(recipientAddress);
-        final var recipientId = isLongZero(recipientAddress)
-                ? asNumberedContractId(recipientAddress)
-                : ((ProxyWorldUpdater) frame.getWorldUpdater()).getHederaContractId(recipientAddress);
+        // We compute the called contract's Hedera id up front because it could
+        // selfdestruct, preventing us from looking up its id after the fact
+        final var recipientId = resolvedHederaId(frame, recipientAddress);
 
         // Now run the transaction implied by the frame
         tracer.initProcess(frame);
@@ -86,21 +88,16 @@ public class FrameRunner {
         // And package up its result
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         if (frame.getState() == COMPLETED_SUCCESS) {
-            return successFrom(gasUsed, recipientId, recipientEvmAddress, frame);
+            return successFrom(gasUsed, recipientId, asEvmContractId(recipientAddress), frame);
         } else {
             return failureFrom(gasUsed, frame);
         }
     }
 
-    private void requireAllNonNull(
-            @NonNull final MessageFrame frame,
-            @NonNull final HederaTracer tracer,
-            @NonNull final CustomMessageCallProcessor messageCall,
-            @NonNull final ContractCreationProcessor contractCreation) {
-        requireNonNull(frame);
-        requireNonNull(tracer);
-        requireNonNull(messageCall);
-        requireNonNull(contractCreation);
+    private ContractID resolvedHederaId(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        return isLongZero(address)
+                ? asNumberedContractId(address)
+                : ((ProxyWorldUpdater) frame.getWorldUpdater()).getHederaContractId(address);
     }
 
     private void runToCompletion(
