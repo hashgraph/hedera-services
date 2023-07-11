@@ -153,6 +153,15 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .tokenId(nonFungibleTokenId)
             .build();
 
+    protected final EntityIDPair feeCollectorFTPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenId)
+            .build();
+    protected final EntityIDPair feeCollectorNFTPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(nonFungibleTokenId)
+            .build();
+
     protected final EntityIDPair treasuryFTPair = EntityIDPair.newBuilder()
             .accountId(treasuryId)
             .tokenId(fungibleTokenId)
@@ -259,6 +268,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected TokenRelation ownerNFTRelation;
     protected TokenRelation treasuryFTRelation;
     protected TokenRelation treasuryNFTRelation;
+    protected TokenRelation feeCollectorFTRelation;
+    protected TokenRelation feeCollectorNFTRelation;
 
     /* ---------- Accounts ---------- */
     protected Account account;
@@ -319,6 +330,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokenRelsMap.put(ownerNFTPair, ownerNFTRelation);
         tokenRelsMap.put(treasuryFTPair, treasuryFTRelation);
         tokenRelsMap.put(treasuryNFTPair, treasuryNFTRelation);
+        tokenRelsMap.put(feeCollectorFTPair, feeCollectorFTRelation);
+        tokenRelsMap.put(feeCollectorNFTPair, feeCollectorNFTRelation);
     }
 
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
@@ -493,6 +506,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         treasuryNFTRelation = givenNonFungibleTokenRelation()
                 .copyBuilder()
                 .accountId(treasuryId)
+                .build();
+        feeCollectorFTRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .build();
+        feeCollectorNFTRelation = givenNonFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
                 .build();
     }
 

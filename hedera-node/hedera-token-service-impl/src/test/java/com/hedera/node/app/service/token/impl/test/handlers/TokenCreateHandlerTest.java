@@ -194,7 +194,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(writableTokenStore.get(newTokenId)).isNull();
         assertThat(writableTokenRelStore.get(treasuryId, newTokenId)).isNull();
-        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNull();
+        assertThat(writableTokenRelStore.get(feeCollectorId, newTokenId)).isNull();
 
         subject.handle(handleContext);
 
@@ -234,13 +234,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(tokenRel.nextToken()).isNull();
         assertThat(tokenRel.previousToken()).isNull();
 
-        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
-        final var feeCollectorRel = writableTokenRelStore.get(payerId, newTokenId);
+        assertThat(writableTokenRelStore.get(feeCollectorId, newTokenId)).isNotNull();
+        final var feeCollectorRel = writableTokenRelStore.get(feeCollectorId, newTokenId);
 
         assertThat(feeCollectorRel.balance()).isZero();
         assertThat(feeCollectorRel.deleted()).isFalse();
         assertThat(feeCollectorRel.tokenId()).isEqualTo(newTokenId);
-        assertThat(feeCollectorRel.accountId()).isEqualTo(payerId);
+        assertThat(feeCollectorRel.accountId()).isEqualTo(feeCollectorId);
         assertThat(feeCollectorRel.kycGranted()).isFalse();
         assertThat(feeCollectorRel.automaticAssociation()).isFalse();
         assertThat(feeCollectorRel.frozen()).isFalse();
@@ -341,10 +341,10 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         // Just to simulate existing token association , add to store. Only for testing
         writableTokenRelStore.put(TokenRelation.newBuilder()
                 .tokenId(newTokenId)
-                .accountId(payerId)
+                .accountId(feeCollectorId)
                 .balance(1000L)
                 .build());
-        assertThat(writableTokenRelStore.get(payerId, newTokenId)).isNotNull();
+        assertThat(writableTokenRelStore.get(feeCollectorId, newTokenId)).isNotNull();
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)

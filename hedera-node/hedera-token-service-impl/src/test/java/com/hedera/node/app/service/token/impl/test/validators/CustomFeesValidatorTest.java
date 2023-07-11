@@ -143,7 +143,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         writableTokenStore = new WritableTokenStore(writableStates);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
-        feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
+        feeWithRoyalty.add(
+                withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build()));
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         nonFungibleToken,
                         readableAccountStore,
@@ -190,7 +191,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withRoyaltyFee(royaltyFee))))
+                        List.of(withRoyaltyFee(royaltyFee
+                                .copyBuilder()
+                                .fallbackFee(htsFixedFee)
+                                .build()))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -238,7 +242,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withFixedFee(hbarFixedFee))))
+                        List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -424,7 +428,8 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         writableTokenStore = new WritableTokenStore(writableStates);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
-        feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
+        feeWithRoyalty.add(
+                withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build()));
         assertThatThrownBy(() -> subject.validateForCreation(
                         nonFungibleToken,
                         readableAccountStore,
@@ -470,7 +475,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withRoyaltyFee(royaltyFee))))
+                        List.of(withRoyaltyFee(royaltyFee
+                                .copyBuilder()
+                                .fallbackFee(htsFixedFee)
+                                .build()))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -517,7 +525,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withFixedFee(hbarFixedFee))))
+                        List.of(withFixedFee(htsFixedFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
