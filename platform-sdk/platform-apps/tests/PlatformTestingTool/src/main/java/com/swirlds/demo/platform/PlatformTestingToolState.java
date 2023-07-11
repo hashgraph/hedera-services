@@ -252,7 +252,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
 
-        setConfig(sourceState.getConfig().copy());
+        if (sourceState.getConfig() != null) {
+            setConfig(sourceState.getConfig().copy());
+        }
 
         setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
         if (platform != null) {
