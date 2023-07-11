@@ -18,6 +18,7 @@ package com.swirlds.demo.consistency;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.time.Duration;
 
 /**
  * Config for consistency testing tool
@@ -27,4 +28,5 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("consistencyTestingTool")
 public record ConsistencyTestingToolConfig(
-        @ConfigProperty(defaultValue = "consistency-test") String logfileDirectory) {}
+        @ConfigProperty(defaultValue = "consistency-test") String logfileDirectory,
+        @ConfigProperty(defaultValue = "") Duration freezeAfterGenesis) {}
