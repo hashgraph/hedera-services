@@ -26,19 +26,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.SLoadOperation;
+import org.hyperledger.besu.evm.operation.SStoreOperation;
 
 /**
- * A wrapper around {@link SLoadOperation} that takes the extra step of tracking the read storage value if
- * {@link FeatureFlags#isSidecarEnabled(MessageFrame, SidecarType)} returns true for the
+ * A wrapper around {@link SStoreOperation} that takes the extra step of tracking the overwritten storage
+ * value if {@link FeatureFlags#isSidecarEnabled(MessageFrame, SidecarType)} returns true for the
  * {@link SidecarType#CONTRACT_STATE_CHANGE} type.
  */
-public class CustomSLoadOperation extends DelegatingOperation {
+public class CustomSStoreOperation extends DelegatingOperation {
     private final FeatureFlags featureFlags;
 
-    public CustomSLoadOperation(@NonNull final FeatureFlags featureFlags, @NonNull final SLoadOperation delegate) {
+    public CustomSStoreOperation(@NonNull final FeatureFlags featureFlags, @NonNull final SStoreOperation delegate) {
         super(delegate);
-        this.featureFlags = requireNonNull(featureFlags);
+        this.featureFlags = featureFlags;
     }
 
     /**
@@ -52,9 +52,11 @@ public class CustomSLoadOperation extends DelegatingOperation {
         final var key = frame.getStackItem(0);
         final var result = super.execute(frame, evm);
         if (result.getHaltReason() == null && featureFlags.isSidecarEnabled(frame, CONTRACT_STATE_CHANGE)) {
-            // The base SLOAD operation returns its read value on the stack
-            final var value = frame.getStackItem(0);
-            maybeTrackReadIn(frame, UInt256.fromBytes(key), UInt256.fromBytes(value));
+            // We have to explicitly get the original value before this store operation
+            final var account = frame.getWorldUpdater().get(frame.getRecipientAddress());
+            final var slotKey = UInt256.fromBytes(key);
+            final var slotValue = account.getOriginalStorageValue(slotKey);
+            maybeTrackReadIn(frame, slotKey, slotValue);
         }
         return result;
     }
