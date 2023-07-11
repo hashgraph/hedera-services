@@ -25,11 +25,15 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.node.transaction.TransactionRecord.BodyOneOfType;
+import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
@@ -56,6 +60,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -505,54 +510,78 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     @DisplayName("Create penalty payment, if  previous preHandle resulted in a due diligence error")
     void testPreHandleWithDueDiligenceFailure() {
-        // given
-        when(platformTxn.getMetadata()).thenReturn(DUE_DILIGENCE_RESULT);
-        // when
-        workflow.handleRound(state, round);
+      // given
+      when(platformTxn.getMetadata()).thenReturn(DUE_DILIGENCE_RESULT);
+      // when
+      workflow.handleRound(state, round);
 
-        // then
-        assertThat(aliasesState.isModified()).isFalse();
-        // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
+      // then
+      assertThat(aliasesState.isModified()).isFalse();
+      // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
     }
 
-    @Nested
-    @DisplayName("Tests for cases when preHandle ran successfully")
-    final class AddMissingSignaturesTest {
+  @Test
+  @DisplayName("Test when there is the same transaction in the cache")
+  void testExistingTransactionInCache() {
+    // given
+    when(hederaRecordCache.getRecord(any())).thenReturn(generateDummyTransactionRecord());
 
-        @Test
-        @DisplayName("Add passing verification result, if a key was handled in preHandle")
-        void testRequiredExistingKeyWithPassingSignature() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
-                    bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
-            final var preHandleResult = new PreHandleResult(
-                    ALICE.accountID(),
-                    alicesKey,
-                    Status.SO_FAR_SO_GOOD,
-                    ResponseCodeEnum.OK,
-                    new TransactionScenarioBuilder().txInfo(),
-                    Set.of(bobsKey),
-                    verificationResults,
-                    null,
-                    CONFIG_VERSION);
-            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
+    // when
+    workflow.handleRound(state, round);
+
+    // then
+    assertThat(accountsState.isModified()).isFalse();
+    assertThat(aliasesState.isModified()).isFalse();
+    verify(recordManager, times(1)).startUserTransaction(any());
+    verify(recordManager, times(1)).endUserTransaction(any());
+  }
+
+  private TransactionRecord generateDummyTransactionRecord() {
+    final var body = new OneOf<>(BodyOneOfType.UNSET, 1);
+    final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, 1);
+    return new TransactionRecord(
+        null, null, null, null, null, 1L, body, null, null, null, null, null, null, null, null, null, entropy,
+        null);
+  }
+
+  @Nested
+  @DisplayName("Tests for cases when preHandle ran successfully")
+  final class AddMissingSignaturesTest {
+
+    @Test
+    @DisplayName("Add passing verification result, if a key was handled in preHandle")
+    void testRequiredExistingKeyWithPassingSignature() throws PreCheckException, TimeoutException {
+      // given
+      final var alicesKey = ALICE.account().keyOrThrow();
+      final var bobsKey = BOB.account().keyOrThrow();
+      final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+          alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
+          bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
+      final var preHandleResult = new PreHandleResult(
+          ALICE.accountID(),
+          alicesKey,
+          Status.SO_FAR_SO_GOOD,
+          ResponseCodeEnum.OK,
+          new TransactionScenarioBuilder().txInfo(),
+          Set.of(bobsKey),
+          verificationResults,
+          null,
+          CONFIG_VERSION);
+      when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+      doAnswer(invocation -> {
+        final var context = invocation.getArgument(0, PreHandleContext.class);
+        context.requireKey(bobsKey);
+        return null;
+      })
+          .when(dispatcher)
+          .dispatchPreHandle(any());
+      doAnswer(invocation -> {
+        final var expanded = invocation.getArgument(2, Set.class);
+        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+        return null;
+      })
+          .when(signatureExpander)
+          .expand(eq(Set.of(bobsKey)), any(), any());
 
             // when
             workflow.handleRound(state, round);

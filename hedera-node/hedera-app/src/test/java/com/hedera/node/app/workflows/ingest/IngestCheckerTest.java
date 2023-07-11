@@ -16,8 +16,49 @@
 
 package com.hedera.node.app.workflows.ingest;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.SignedTransaction;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
+import com.hedera.node.app.AppTestBase;
+import com.hedera.node.app.info.CurrentPlatformStatus;
+import com.hedera.node.app.signature.SignatureExpander;
+import com.hedera.node.app.signature.SignatureVerificationFuture;
+import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.pbj.runtime.OneOf;
+import com.swirlds.common.system.status.PlatformStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Map;
+import java.util.stream.Stream;
+
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -38,43 +79,6 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
-import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
-import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.info.CurrentPlatformStatus;
-import com.hedera.node.app.signature.SignatureExpander;
-import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.solvency.SolvencyPreCheck;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.TransactionInfo;
-import com.swirlds.common.system.status.PlatformStatus;
-import java.util.Map;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class IngestCheckerTest extends AppTestBase {
@@ -224,7 +228,62 @@ class IngestCheckerTest extends AppTestBase {
         }
     }
 
-    // TODO: #2 Test deduplication
+    @Nested
+    @DisplayName("3. Check transaction duplication")
+    class TransactionDuplicationTest {
+
+        @DisplayName("When we have duplicated transaction the transaction is rejected")
+        @Test
+        void transactionDuplicationFails() throws PreCheckException {
+            when(hederaRecordCache.getRecord(any())).thenReturn(generateDummyTransactionRecord());
+            mockTransactionCheckerWithTransactionIdAndNodeAccountIdEquals();
+
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(DUPLICATE_TRANSACTION));
+        }
+
+        private TransactionRecord generateDummyTransactionRecord() {
+            final var body = new OneOf<>(TransactionRecord.BodyOneOfType.UNSET, 1);
+            final var entropy = new OneOf<>(TransactionRecord.EntropyOneOfType.PRNG_BYTES, 1);
+            return new TransactionRecord(
+                    null, null, null, null, null, 1L, body, null, null, null, null, null, null, null, null, null,
+                    entropy, null);
+        }
+
+        private void mockTransactionCheckerWithTransactionIdAndNodeAccountIdEquals() throws PreCheckException {
+            // set the transactionId account to be the same as node account id
+            txBody = TransactionBody.newBuilder()
+                    .uncheckedSubmit(UncheckedSubmitBody.newBuilder().build())
+                    .transactionID(TransactionID.newBuilder()
+                            .accountID(ALICE.accountID())
+                            .build())
+                    .nodeAccountID(ALICE.accountID())
+                    .build();
+            final var signedTx = SignedTransaction.newBuilder()
+                    .bodyBytes(asBytes(TransactionBody.PROTOBUF, txBody))
+                    .build();
+            tx = Transaction.newBuilder()
+                    .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                    .build();
+
+            final var transactionInfo = new TransactionInfo(
+                    tx, txBody, MOCK_SIGNATURE_MAP, tx.signedTransactionBytes(), HederaFunctionality.UNCHECKED_SUBMIT);
+            when(transactionChecker.check(tx)).thenReturn(transactionInfo);
+        }
+
+        @Test
+        @DisplayName("If some random exception is thrown from HederaRecordCache, the exception is bubbled up")
+        void randomException() {
+            when(hederaRecordCache.getRecord(any()))
+                    .thenThrow(new RuntimeException("HederaRecordCache exception"));
+
+            // When the transaction is submitted, then the exception is bubbled up
+            assertThatThrownBy(() -> subject.runAllChecks(state, tx))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessageContaining("HederaRecordCache exception");
+        }
+    }
 
     @Nested
     @DisplayName("3. Check throttles")
