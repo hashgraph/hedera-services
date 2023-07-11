@@ -317,14 +317,18 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         }
 
-        setIssLeaf(sourceState.getIssLeaf().copy());
+        if (sourceState.getIssLeaf() != null) {
+            setIssLeaf(sourceState.getIssLeaf().copy());
+        }
 
         if (sourceState.getNftLedger() != null) {
             setNftLedger(sourceState.getNftLedger().copy());
         }
 
         // set the current value of QuorumResult from source state
-        setQuorumResult(sourceState.getQuorumResult().copy());
+        if (sourceState.getQuorumResult() != null) {
+            setQuorumResult(sourceState.getQuorumResult().copy());
+        }
         if (controlQuorum != null) {
             controlQuorum.setQuorumResult(getQuorumResult().copy());
         }
