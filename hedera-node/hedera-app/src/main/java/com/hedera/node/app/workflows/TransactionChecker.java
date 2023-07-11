@@ -133,10 +133,10 @@ public class TransactionChecker {
 
         this.nodeAccount = requireNonNull(nodeAccount);
         this.maxSignedTxnSize = maxSignedTxnSize;
-        props = requireNonNull(configProvider);
-        deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
+        this.props = requireNonNull(configProvider);
+        this.deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
-        superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
+        this.superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_SUPER_DEPRECATED_DESC));
     }
 
@@ -252,7 +252,7 @@ public class TransactionChecker {
         try {
             final var functionality = HapiUtils.functionOf(txBody);
             return new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality);
-        } catch (final UnknownHederaFunctionality e) {
+        } catch (UnknownHederaFunctionality e) {
             throw new PreCheckException(INVALID_TRANSACTION_BODY);
         }
     }
@@ -471,17 +471,17 @@ public class TransactionChecker {
      */
     @NonNull
     private <T extends Record> T parseStrict(
-            @NonNull final ReadableSequentialData data, final Codec<T> codec, final ResponseCodeEnum parseErrorCode)
+            @NonNull ReadableSequentialData data, Codec<T> codec, ResponseCodeEnum parseErrorCode)
             throws PreCheckException {
         try {
             return codec.parseStrict(data);
-        } catch (final MalformedProtobufException e) {
+        } catch (MalformedProtobufException e) {
             // We could not parseStrict the protobuf because it was not valid protobuf
             throw new PreCheckException(parseErrorCode);
-        } catch (final UnknownFieldException e) {
+        } catch (UnknownFieldException e) {
             // We do not allow newer clients to send transactions to older networks.
             throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        } catch (final IOException e) {
+        } catch (IOException e) {
             // This should technically not be possible. The data buffer supplied
             // is either based on a byte[] or a byte buffer, in both cases all data
             // is available and a generic IO exception shouldn't happen. If it does,
@@ -506,7 +506,7 @@ public class TransactionChecker {
         final var sortedList = sort(sigPairs);
         if (sortedList.size() > 1) {
             var prev = sortedList.get(0);
-            final var size = sortedList.size();
+            var size = sortedList.size();
             for (int i = 1; i < size; i++) {
                 final var curr = sortedList.get(i);
                 final var p1 = prev.pubKeyPrefix();
