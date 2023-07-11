@@ -48,15 +48,15 @@ class UptimeMetrics {
      */
     private final Map<NodeId, RunningAverageMetric> roundsSinceLastConsensusEvent = new HashMap<>();
 
-    /**
-     * A map from node to the time since the last judge was observed from that node.
-     */
-    private final Map<NodeId, RunningAverageMetric> timeSinceLastJudge = new HashMap<>();
-
-    /**
-     * A map from node to the number of rounds since the last judge was observed from that node.
-     */
-    private final Map<NodeId, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
+    //    /**
+    //     * A map from node to the time since the last judge was observed from that node.
+    //     */
+    //    private final Map<NodeId, RunningAverageMetric> timeSinceLastJudge = new HashMap<>();
+    //
+    //    /**
+    //     * A map from node to the number of rounds since the last judge was observed from that node.
+    //     */
+    //    private final Map<NodeId, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
 
     private static final RunningAverageMetric.Config HEALTHY_NETWORK_FRACTION_CONFIG = new RunningAverageMetric.Config(
                     CATEGORY, "healthyNetworkFraction")
@@ -128,18 +128,20 @@ class UptimeMetrics {
                         "The number of rounds since the last consensus event created by this node was observed");
         roundsSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(roundsSinceLastConensusEventConfig));
 
-        final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId)
-                .withUnit("seconds")
-                .withDescription(
-                        "The consensus time in seconds since the last judge created by this node was observed");
-        timeSinceLastJudge.put(nodeId, metrics.getOrCreate(timeSinceLastJudgeConfig));
-
-        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
-                .withUnit("rounds")
-                .withDescription("The number of rounds since the last judge created by this node was observed");
-        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
+        //        final RunningAverageMetric.Config timeSinceLastJudgeConfig = new RunningAverageMetric.Config(
+        //                        CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId)
+        //                .withUnit("seconds")
+        //                .withDescription(
+        //                        "The consensus time in seconds since the last judge created by this node was
+        // observed");
+        //        timeSinceLastJudge.put(nodeId, metrics.getOrCreate(timeSinceLastJudgeConfig));
+        //
+        //        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
+        //                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
+        //                .withUnit("rounds")
+        //                .withDescription("The number of rounds since the last judge created by this node was
+        // observed");
+        //        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
     }
 
     /**
@@ -155,11 +157,11 @@ class UptimeMetrics {
         roundsSinceLastConsensusEvent.remove(nodeId);
         metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
-        timeSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId));
-
-        roundsSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
+        //        timeSinceLastJudge.remove(nodeId);
+        //        metrics.remove(new RunningAverageMetric.Config(CATEGORY, TIME_SINCE_LAST_JUDGE + nodeId));
+        //
+        //        roundsSinceLastJudge.remove(nodeId);
+        //        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
     }
 
     /**
@@ -194,37 +196,37 @@ class UptimeMetrics {
         return metric;
     }
 
-    /**
-     * Get the metric that tracks the time since the last judge was observed from a node.
-     *
-     * @param id the id of the node
-     * @return the metric
-     * @throws NoSuchElementException if no metric for the node is found
-     */
-    public @NonNull RunningAverageMetric getTimeSinceLastJudgeMetric(@NonNull final NodeId id) {
-        Objects.requireNonNull(id, "id must not be null");
-        final RunningAverageMetric metric = timeSinceLastJudge.get(id);
-        if (metric == null) {
-            throw new NoSuchElementException("No metric for node " + id + " found.");
-        }
-        return metric;
-    }
-
-    /**
-     * Get the metric that tracks the number of rounds since the last judge was observed from a node.
-     *
-     * @param id the id of the node
-     * @return the metric
-     * @throws NoSuchElementException if no metric for the node is found
-     */
-    public @NonNull RunningAverageMetric getRoundsSinceLastJudgeMetric(@NonNull final NodeId id) {
-        Objects.requireNonNull(id, "id must not be null");
-        final RunningAverageMetric metric = roundsSinceLastJudge.get(id);
-        if (metric == null) {
-            throw new NoSuchElementException("No metric for node " + id + " found.");
-        }
-        return metric;
-    }
+    //    /**
+    //     * Get the metric that tracks the time since the last judge was observed from a node.
+    //     *
+    //     * @param id the id of the node
+    //     * @return the metric
+    //     * @throws NoSuchElementException if no metric for the node is found
+    //     */
+    //    public @NonNull RunningAverageMetric getTimeSinceLastJudgeMetric(@NonNull final NodeId id) {
+    //        Objects.requireNonNull(id, "id must not be null");
+    //        final RunningAverageMetric metric = timeSinceLastJudge.get(id);
+    //        if (metric == null) {
+    //            throw new NoSuchElementException("No metric for node " + id + " found.");
+    //        }
+    //        return metric;
+    //    }
+    //
+    //    /**
+    //     * Get the metric that tracks the number of rounds since the last judge was observed from a node.
+    //     *
+    //     * @param id the id of the node
+    //     * @return the metric
+    //     * @throws NoSuchElementException if no metric for the node is found
+    //     */
+    //    public @NonNull RunningAverageMetric getRoundsSinceLastJudgeMetric(@NonNull final NodeId id) {
+    //        Objects.requireNonNull(id, "id must not be null");
+    //        final RunningAverageMetric metric = roundsSinceLastJudge.get(id);
+    //        if (metric == null) {
+    //            throw new NoSuchElementException("No metric for node " + id + " found.");
+    //        }
+    //        return metric;
+    //    }
 
     /**
      * Get the metric that tracks the fraction of the network that is alive.
