@@ -26,7 +26,7 @@ import static com.swirlds.jasperdb.files.DataFileCommon.printDataLinkValidation;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.CASable;
@@ -200,7 +200,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
 
         logMergeStats(
                 storeName,
-                (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS,
+                (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS,
                 filesToMergeSize,
                 getSizeOfFilesByPath(newFilesCreated),
                 fileCollection,
