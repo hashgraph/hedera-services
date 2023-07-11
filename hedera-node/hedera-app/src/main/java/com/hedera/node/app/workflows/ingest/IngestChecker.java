@@ -160,8 +160,7 @@ public final class IngestChecker {
         final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
         if (foundTransactionRecord != null) {
             if (txBody.nodeAccountID() != null
-                    && txBody.nodeAccountID()
-                            .equals(txBody.transactionIDOrThrow().accountID())) {
+                    && txBody.nodeAccountID().equals(txBody.transactionIDOrThrow().accountID())) {
                 throw new PreCheckException(DUPLICATE_TRANSACTION);
             }
         }
