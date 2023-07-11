@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Testing PrometheusConfig")
 class PrometheusConfigTest {
 
-    static final String DEFAULT_PROMETHEUS_ENDPOINT_ENABLED = "false";
+    static final String DEFAULT_PROMETHEUS_ENDPOINT_ENABLED = "true";
     static final String DEFAULT_PROMETHEUS_ENDPOINT_PORT_NUMBER = "9999";
     static final String DEFAULT_PROMETHEUS_ENDPOINT_MAX_BACKLOG_ALLOWED = "1";
 

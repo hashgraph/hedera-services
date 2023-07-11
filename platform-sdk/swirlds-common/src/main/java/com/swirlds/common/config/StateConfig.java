@@ -105,9 +105,9 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
-        @ConfigProperty(defaultValue = "0") int saveStatePeriod,
+        @ConfigProperty(defaultValue = "900") int saveStatePeriod,
         @ConfigProperty(defaultValue = "false") boolean saveReconnectStateToDisk,
-        @ConfigProperty(defaultValue = "3") int signedStateDisk,
+        @ConfigProperty(defaultValue = "5") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
         @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
         @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
@@ -125,7 +125,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
         @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
         @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
-        @ConfigProperty(defaultValue = "false") boolean checkSignedStateFromDisk,
+        @ConfigProperty(defaultValue = "true") boolean checkSignedStateFromDisk,
         @ConfigProperty(defaultValue = "1") int signedStateFreq) {
 
     /**
