@@ -44,13 +44,13 @@ import java.util.Objects;
  *     <li>memo field (optional)</li>
  * </ul>
  * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
- *
+ * <p>
  * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextnodeid, 23`
  */
 public class AddressBookUtils {
 
-    public static String ADDRESS_KEYWORD = "address";
-    public static String NEXT_NODE_ID_KEYWORD = "nextnodeid";
+    public static final String ADDRESS_KEYWORD = "address";
+    public static final String NEXT_NODE_ID_KEYWORD = "nextnodeid";
 
     private AddressBookUtils() {}
 
@@ -82,9 +82,7 @@ public class AddressBookUtils {
                     memo);
         }
         final String addresses = table.render();
-        final String addressBookConfigText =
-                addresses + "\n" + NEXT_NODE_ID_KEYWORD + ", " + addressBook.getNextNodeId();
-        return addressBookConfigText;
+        return addresses + "\n" + NEXT_NODE_ID_KEYWORD + ", " + addressBook.getNextNodeId();
     }
 
     /**
@@ -264,11 +262,7 @@ public class AddressBookUtils {
             @NonNull final AddressBook addressBook, @Nullable final NodeId oldNextNodeId) {
         final int addressBookSize = addressBook.getSize();
         if (addressBookSize <= 0) {
-            if (oldNextNodeId == null) {
-                return NodeId.FIRST_NODE_ID;
-            } else {
-                return oldNextNodeId;
-            }
+            return Objects.requireNonNullElse(oldNextNodeId, NodeId.FIRST_NODE_ID);
         }
         final NodeId lastNodeId = addressBook.getNodeId(addressBookSize - 1);
         if (oldNextNodeId != null && lastNodeId.compareTo(oldNextNodeId) < 0) {

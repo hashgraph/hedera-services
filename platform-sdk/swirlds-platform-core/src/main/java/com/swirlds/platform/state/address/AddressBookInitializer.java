@@ -143,10 +143,7 @@ public class AddressBookInitializer {
         // Determine the next node id value, validate it and the new address book against the state address book.
         final NodeId oldNextNodeId = stateAddressBook.getNextNodeId();
         final NodeId newNextNodeId = AddressBookUtils.determineNewNextNodeId(initialAddressBook, oldNextNodeId);
-        if (oldNextNodeId != null) {
-            AddressBookValidator.validateNewAddressBook(
-                    newNextNodeId, oldNextNodeId, stateAddressBook, initialAddressBook);
-        }
+        AddressBookValidator.validateNewAddressBook(newNextNodeId, oldNextNodeId, stateAddressBook, initialAddressBook);
         initialAddressBook.setNextNodeId(newNextNodeId);
     }
 
