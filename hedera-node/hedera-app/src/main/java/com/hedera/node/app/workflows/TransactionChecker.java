@@ -134,11 +134,9 @@ public class TransactionChecker {
         this.nodeAccount = requireNonNull(nodeAccount);
         this.maxSignedTxnSize = maxSignedTxnSize;
         props = requireNonNull(configProvider);
-        deprecatedCounter = metrics.getOrCreate(
-            new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
+        deprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_DEPRECATED_DESC));
-        superDeprecatedCounter = metrics.getOrCreate(
-            new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
+        superDeprecatedCounter = metrics.getOrCreate(new Counter.Config("app", COUNTER_SUPER_DEPRECATED_TXNS_NAME)
                 .withDescription(COUNTER_RECEIVED_SUPER_DEPRECATED_DESC));
     }
 
