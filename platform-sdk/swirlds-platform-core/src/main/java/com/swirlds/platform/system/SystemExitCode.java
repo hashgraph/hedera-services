@@ -19,6 +19,10 @@ package com.swirlds.platform.system;
 public enum SystemExitCode {
     NO_ERROR(0),
     /**
+     * Configuration error.
+     */
+    CONFIGURATION_ERROR(1),
+    /**
      * This node encountered an ISS.
      */
     ISS(199),

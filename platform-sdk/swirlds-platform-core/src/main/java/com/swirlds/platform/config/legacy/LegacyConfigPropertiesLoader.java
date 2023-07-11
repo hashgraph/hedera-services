@@ -17,6 +17,7 @@
 package com.swirlds.platform.config.legacy;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.common.internal.ConfigurationException;
 import com.swirlds.common.system.NodeId;
@@ -24,6 +25,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -140,6 +142,8 @@ public final class LegacyConfigPropertiesLoader {
             }
             if (!nextNodeIdParsed) {
                 onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
+                logger.error("config.txt did not have a `nextnodeid` property.");
+                exitSystem(SystemExitCode.CONFIGURATION_ERROR);
             }
             if (addressBook.getSize() > 0) {
                 configurationProperties.setAddressBook(addressBook);
