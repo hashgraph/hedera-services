@@ -16,4 +16,5 @@ open module com.swirlds.merkle.test {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.core;
     requires java.sql;
+    requires com.swirlds.common.test.fixtures;
 }

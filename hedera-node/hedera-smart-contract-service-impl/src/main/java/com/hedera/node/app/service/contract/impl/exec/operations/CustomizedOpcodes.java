@@ -25,9 +25,19 @@ package com.hedera.node.app.service.contract.impl.exec.operations;
  * for a review of the EVM opcodes.
  */
 public enum CustomizedOpcodes {
+    LOG0(0xA0),
+    LOG1(0xA1),
+    LOG2(0xA2),
+    LOG3(0xA3),
+    LOG4(0xA4),
     CHAINID(0x46),
     CREATE(0xf0),
     CREATE2(0xf5),
+    /**
+     * Please see <a href="https://eips.ethereum.org/EIPS/eip-4399">EIP-4399</a> for details on this
+     * opcode's Ethereum semantics and implementation.
+     */
+    PREVRANDAO(0x44),
     SELFDESTRUCT(0xff);
 
     CustomizedOpcodes(int opcode) {

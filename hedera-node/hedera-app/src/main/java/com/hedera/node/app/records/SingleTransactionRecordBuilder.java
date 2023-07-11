@@ -47,6 +47,7 @@ import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRe
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
@@ -71,6 +72,7 @@ public class SingleTransactionRecordBuilder
                 ConsensusSubmitMessageRecordBuilder,
                 CreateFileRecordBuilder,
                 CryptoCreateRecordBuilder,
+                CryptoTransferRecordBuilder,
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
                 TokenCreateRecordBuilder {
@@ -220,12 +222,14 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
-    public SingleTransactionRecordBuilder transferList(TransferList transferList) {
+    @NonNull
+    public SingleTransactionRecordBuilder transferList(@NonNull TransferList transferList) {
         this.transferList = transferList;
         return this;
     }
 
-    public SingleTransactionRecordBuilder tokenTransferLists(List<TokenTransferList> tokenTransferLists) {
+    @NonNull
+    public SingleTransactionRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
         this.tokenTransferLists = tokenTransferLists;
         return this;
     }

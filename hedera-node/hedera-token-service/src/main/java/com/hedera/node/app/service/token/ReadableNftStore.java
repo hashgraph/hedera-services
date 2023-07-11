@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.token;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Nft;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,18 +38,17 @@ public interface ReadableNftStore {
      */
     @Nullable
     default Nft get(@NonNull final TokenID id, final long serialNumber) {
-        final var uniqueTokenId = UniqueTokenId.newBuilder()
-                .tokenId(id)
-                .serialNumber(serialNumber)
-                .build();
-        return get(uniqueTokenId);
+        requireNonNull(id);
+        final var nftID =
+                NftID.newBuilder().tokenId(id).serialNumber(serialNumber).build();
+        return get(nftID);
     }
 
     /**
-     * Gets {@link Nft} data for a given {@link UniqueTokenId}.
+     * Gets {@link Nft} data for a given {@link NftID}.
      * @param id the unique token id to look up
      * @return the {@link Nft} data for the given unique token id, {@code null} if the id doesn't exist
      */
     @Nullable
-    Nft get(@NonNull UniqueTokenId id);
+    Nft get(@NonNull NftID id);
 }

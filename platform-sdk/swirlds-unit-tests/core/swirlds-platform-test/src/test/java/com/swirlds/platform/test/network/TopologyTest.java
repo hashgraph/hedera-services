@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;

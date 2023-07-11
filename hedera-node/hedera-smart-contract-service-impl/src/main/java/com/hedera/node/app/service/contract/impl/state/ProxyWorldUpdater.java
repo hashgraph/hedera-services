@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -133,6 +134,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return account.hederaContractId();
     }
 
+    @Override
+    public @NonNull Bytes entropy() {
+        return pbjToTuweniBytes(scope.dispatch().entropy());
+    }
+
     @Nullable
     @Override
     public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
@@ -211,6 +217,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public void finalizeHollowAccount(@NonNull final Address alias) {
         evmFrameState.finalizeHollowAccount(alias);
+    }
+
+    @Override
+    public @NonNull List<StorageAccesses> pendingStorageUpdates() {
+        return evmFrameState.getStorageChanges();
     }
 
     /**
@@ -300,7 +311,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull WorldUpdater updater() {
-        return new ProxyWorldUpdater(scope, evmFrameStateFactory, this);
+        return new ProxyWorldUpdater(scope.begin(), evmFrameStateFactory, this);
     }
 
     /**

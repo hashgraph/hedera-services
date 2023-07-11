@@ -31,6 +31,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAccounts;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithNfts;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_FOR_TOKEN_WITHOUT_SUPPLY;
@@ -47,10 +51,10 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -604,10 +608,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             // this owner number isn't the treasury
             AccountID ownerId = AccountID.newBuilder().accountNum(999).build();
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
-                    .id(UniqueTokenId.newBuilder()
-                            .tokenId(TOKEN_123)
-                            .serialNumber(1L)
-                            .build())
+                    .id(NftID.newBuilder().tokenId(TOKEN_123).serialNumber(1L).build())
                     .ownerId(ownerId)
                     .build());
 
@@ -637,10 +638,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .balance(10)
                     .build());
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
-                    .id(UniqueTokenId.newBuilder()
-                            .tokenId(TOKEN_123)
-                            .serialNumber(1L)
-                            .build())
+                    .id(NftID.newBuilder().tokenId(TOKEN_123).serialNumber(1L).build())
                     // do not set ownerId - default to null
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L);
@@ -673,14 +671,14 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
@@ -717,21 +715,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
@@ -777,21 +775,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())
@@ -838,21 +836,21 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(1L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(2L)
                                     .build())
                             // do not set ownerId - default to null
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_123)
                                     .serialNumber(3L)
                                     .build())

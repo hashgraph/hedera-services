@@ -21,9 +21,12 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -65,6 +68,14 @@ public interface HederaWorldUpdater extends WorldUpdater {
     ContractID getHederaContractId(@NonNull Address address);
 
     /**
+     * Returns the all the bytes of entropy available in this world.
+     *
+     * @return the available entropy
+     */
+    @NonNull
+    Bytes entropy();
+
+    /**
      * Collects the given fee from the given account. The caller should have already
      * verified that the account exists and has sufficient balance to pay the fee, so
      * this method surfaces any problem by throwing an exception.
@@ -92,13 +103,14 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * still be checked for authorization based on the Hedera concept of receiver signature
      * requirements.
      *
-     * <p>Returns true if the receiver authorization and transfer succeeded, false otherwise.
+     * <p>Returns {@code Optional.empty()} immediately if {@code amount} is zero; or if the receiver
+     * authorization and transfer succeeded. Returns an optional of the halt reason otherwise.
      *
      * @param sendingContract the sender of the transfer, already authorized
      * @param recipient       the recipient of the transfer, not yet authorized
      * @param amount          the amount to transfer
      * @param delegateCall    whether this transfer is done via code executed by a delegate call
-     * @return a optional with the reason to halt if the transfer failed, or empty if it succeeded
+     * @return an optional with the reason to halt if the transfer failed, empty otherwise
      */
     Optional<ExceptionalHaltReason> tryTransferFromContract(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
@@ -166,4 +178,13 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param alias the hollow account to be finalized as a contract
      */
     void finalizeHollowAccount(@NonNull Address alias);
+
+    /**
+     * Returns all storage updates that would be committed by this updater, necessary for constructing
+     * a {@link com.hedera.hapi.streams.SidecarType#CONTRACT_STATE_CHANGE} sidecar.
+     *
+     * @return the full list of account-scoped storage changes
+     */
+    @NonNull
+    List<StorageAccesses> pendingStorageUpdates();
 }
