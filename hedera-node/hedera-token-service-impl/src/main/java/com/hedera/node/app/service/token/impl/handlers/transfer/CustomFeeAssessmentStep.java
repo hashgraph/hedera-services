@@ -94,13 +94,13 @@ public class CustomFeeAssessmentStep {
         // change can trigger custom fees again
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
         assessCustomFeesFrom(result, tokenTransfers, tokenStore, maxTransfersDepth);
-        final var level0Builder = changedInputTxn(op, result);
+        final var inputTxnModified = changedInputTxn(op, result);
 
-        validateTotalBalanceChanges(level0Builder, maxTransfersDepth);
+        validateTotalBalanceChanges(inputTxnModified, maxTransfersDepth);
         customFeesAssessed.addAll(result.getAssessedCustomFees());
         if (!result.haveAssessedChanges()) {
             recordBuilder.assessedCustomFees(customFeesAssessed);
-            return List.of(level0Builder.build());
+            return List.of(inputTxnModified.build());
         }
 
         // increment the level to create transaction body from all custom fees assessed from original
@@ -122,7 +122,7 @@ public class CustomFeeAssessmentStep {
 
         if (!result2.haveAssessedChanges()) {
             recordBuilder.assessedCustomFees(customFeesAssessed);
-            return List.of(level0Builder.build(), level1Builder.build());
+            return List.of(inputTxnModified.build(), level1Builder.build());
         }
 
         // increment the level to create transaction body from all custom fees assessed from original
@@ -132,7 +132,7 @@ public class CustomFeeAssessmentStep {
         validateTotalBalanceChanges(level2Builder, maxTransfersDepth);
 
         recordBuilder.assessedCustomFees(customFeesAssessed);
-        return List.of(level0Builder.build(), level1Builder.build(), level2Builder.build());
+        return List.of(inputTxnModified.build(), level1Builder.build(), level2Builder.build());
     }
 
     private void validateTotalBalanceChanges(

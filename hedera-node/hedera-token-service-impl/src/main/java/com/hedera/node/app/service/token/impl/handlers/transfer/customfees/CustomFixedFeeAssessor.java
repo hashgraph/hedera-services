@@ -29,6 +29,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Assesses fixed fees
+ */
 @Singleton
 public class CustomFixedFeeAssessor {
     @Inject

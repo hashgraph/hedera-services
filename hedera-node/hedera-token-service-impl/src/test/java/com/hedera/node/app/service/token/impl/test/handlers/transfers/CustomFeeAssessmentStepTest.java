@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
@@ -74,6 +75,9 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
     @Test
     void hbarFixedFeeAndRoyaltyFeeWithFallback() {
+        // fungible token transfer with custom hbar fixed fee
+        // and a fractional fee with netOfTransfers false
+        // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hbar fee
         final var hbarsReceiver = asAccount(hbarReceiver);
         final var tokensReceiver = asAccount(tokenReceiver);
 
@@ -107,10 +111,205 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void htsFixedFeeAndRoyaltyFeeWithFallback() {
+    void htsFixedFeeAndRoyaltyFeeWithFallbackSelfDenomination() {
+        // fungible token transfer with custom hts fixed fee
+        // and a fractional fee with netOfTransfers false
+        // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hts fee
         final var hbarsReceiver = asAccount(hbarReceiver);
         final var tokensReceiver = asAccount(tokenReceiver);
         final var customfees = List.of(withFixedFee(htsFixedFee));
+        writableTokenStore.put(
+                fungibleToken.copyBuilder().customFees(customfees).build());
+        writableTokenStore.put(nonFungibleToken
+                .copyBuilder()
+                .customFees(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())))
+                .build());
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        givenTxn();
+
+        final var listOfOps = subject.assessCustomFees(transferContext);
+        assertThat(listOfOps).hasSize(2);
+
+        final var givenOp = listOfOps.get(0);
+        final var level1Op = listOfOps.get(1);
+
+        final var expectedLevel1TokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        feeCollectorId,
+                        20L,
+                        tokensReceiver,
+                        -10L, // fallback royalty fee
+                        ownerId,
+                        -10L)); // fixed fee with fungible token
+        final var expectedGivenOpTokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        tokensReceiver, 1000L,
+                        ownerId, -1000L));
+        final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
+
+        assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
+        assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
+        assertThatTransfersContains(
+                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+
+        verify(recordBuilder).assessedCustomFees(anyList());
+    }
+
+    @Test
+    void hbarFixedFeeAndRoyaltyFeeNoFallback() {
+        // fungible token transfer with custom hbar fixed fee
+        // and a fractional fee with netOfTransfers false
+        // NFT transfer with royalty fee (fraction 1/2), no fallbackFee
+        writableTokenStore.put(nonFungibleToken
+                .copyBuilder()
+                .customFees(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee((FixedFee) null).build())))
+                .build());
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        final var hbarsReceiver = asAccount(hbarReceiver);
+        final var tokensReceiver = asAccount(tokenReceiver);
+
+        givenTxn();
+
+        final var listOfOps = subject.assessCustomFees(transferContext);
+        assertThat(listOfOps).hasSize(2);
+
+        final var givenOp = listOfOps.get(0);
+        final var level1Op = listOfOps.get(1);
+        // since no fallback fee, there is no fallback fee deduction
+        final var expectedLevel1Trasfers = Map.of(feeCollectorId, 1000L, ownerId, -1000L); // fixed fee
+        final var expectedGivenOpTokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        feeCollectorId, 10L, // fractional fee
+                        tokensReceiver, 990L,
+                        ownerId, -1000L));
+        final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
+
+        assertThatTransfersContains(level1Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel1Trasfers);
+        assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
+        assertThatTransfersContains(
+                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+    }
+
+    @Test
+    void htsFixedFeeAndRoyaltyFeeNoFallbackSelfDenomination() {
+        // fungible token transfer with custom hts fixed fee
+        // and a fractional fee with netOfTransfers false
+        // NFT transfer with royalty fee (fraction 1/2), no fallbackFee
+        final var hbarsReceiver = asAccount(hbarReceiver);
+        final var tokensReceiver = asAccount(tokenReceiver);
+        final var customfees = List.of(withFixedFee(htsFixedFee));
+        writableTokenStore.put(
+                fungibleToken.copyBuilder().customFees(customfees).build());
+        writableTokenStore.put(nonFungibleToken
+                .copyBuilder()
+                .customFees(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee((FixedFee) null).build())))
+                .build());
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        givenTxn();
+
+        final var listOfOps = subject.assessCustomFees(transferContext);
+        assertThat(listOfOps).hasSize(2);
+
+        final var givenOp = listOfOps.get(0);
+        final var level1Op = listOfOps.get(1);
+
+        final var expectedLevel1TokenTransfers =
+                Map.of(fungibleTokenId, Map.of(feeCollectorId, 10L, ownerId, -10L)); // fixed fee with fungible token
+        final var expectedGivenOpTokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        tokensReceiver, 1000L,
+                        ownerId, -1000L));
+        final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
+
+        assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
+        assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
+        assertThatTransfersContains(
+                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+
+        verify(recordBuilder).assessedCustomFees(anyList());
+    }
+
+    @Test
+    void hbarFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfers() {
+        // fungible token transfer with custom hbar fixed fee
+        // and a fractional fee with netOfTransfers true
+        // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hbar fee
+
+        final var customfees = List.of(
+                withFixedFee(hbarFixedFee),
+                withFractionalFee(
+                        fractionalFee.copyBuilder().netOfTransfers(true).build()));
+        writableTokenStore.put(
+                fungibleToken.copyBuilder().customFees(customfees).build());
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        final var hbarsReceiver = asAccount(hbarReceiver);
+        final var tokensReceiver = asAccount(tokenReceiver);
+
+        givenTxn();
+
+        final var listOfOps = subject.assessCustomFees(transferContext);
+        assertThat(listOfOps).hasSize(3);
+
+        final var givenOp = listOfOps.get(0);
+        final var level1Op = listOfOps.get(1);
+        final var level2Op = listOfOps.get(2);
+
+        final var expectedLevel1Trasfers = Map.of(
+                feeCollectorId,
+                2000L,
+                tokensReceiver,
+                -1000L, // royalty fee
+                ownerId,
+                -1000L); // fixed fee
+        final var expectedLevel1TokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        feeCollectorId,
+                                10L, // since netOfTransfers is true fractional fee is charged to payer in next level
+                        ownerId, -10L));
+        final var expectedLevel2Transfers = Map.of(
+                feeCollectorId, 1000L, ownerId, -1000L); // fixed fee for fractional token custom fee from level 1
+        final var expectedGivenOpTokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        tokensReceiver, 1000L,
+                        ownerId, -1000L));
+        final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
+
+        assertThatTransfersContains(level1Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel1Trasfers);
+        assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
+        assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
+        assertThatTransfersContains(
+                givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
+        assertThatTransfersContains(level2Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel2Transfers);
+    }
+
+    @Test
+    void htsFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfers() {
+        // fungible token transfer with custom hts fixed fee
+        // and a fractional fee with netOfTransfers true
+        // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hts fee
+        final var hbarsReceiver = asAccount(hbarReceiver);
+        final var tokensReceiver = asAccount(tokenReceiver);
+        final var customfees = List.of(
+                withFixedFee(htsFixedFee),
+                withFractionalFee(
+                        fractionalFee.copyBuilder().netOfTransfers(true).build()));
         writableTokenStore.put(
                 fungibleToken.copyBuilder().customFees(customfees).build());
         writableTokenStore.put(nonFungibleToken
