@@ -20,54 +20,38 @@ import static java.util.stream.Collectors.toMap;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.CryptoServiceGrpc;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.FileServiceGrpc;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.FreezeServiceGrpc;
 import com.hederahashgraph.service.proto.java.FreezeServiceGrpc.FreezeServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.NetworkServiceGrpc;
 import com.hederahashgraph.service.proto.java.NetworkServiceGrpc.NetworkServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc;
 import com.hederahashgraph.service.proto.java.ScheduleServiceGrpc.ScheduleServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc;
 import com.hederahashgraph.service.proto.java.SmartContractServiceGrpc.SmartContractServiceBlockingStub;
-import com.hederahashgraph.service.proto.java.TokenServiceGrpc;
 import com.hederahashgraph.service.proto.java.TokenServiceGrpc.TokenServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.UtilServiceGrpc;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class HapiApiClients {
     static final Logger log = LogManager.getLogger(HapiApiClients.class);
 
-    private static Map<String, FileServiceBlockingStub> fileSvcStubs = new HashMap<>();
-    private static Map<String, CryptoServiceBlockingStub> cryptoSvcStubs = new HashMap<>();
-    private static Map<String, TokenServiceBlockingStub> tokenSvcStubs = new HashMap<>();
-    private static Map<String, ScheduleServiceBlockingStub> scheduleSvcStubs = new HashMap<>();
-    private static Map<String, FreezeServiceBlockingStub> freezeSvcStubs = new HashMap<>();
-    private static Map<String, NetworkServiceBlockingStub> networkSvcStubs = new HashMap<>();
-    private static Map<String, ScheduleServiceBlockingStub> schedSvcStubs = new HashMap<>();
-    private static Map<String, ConsensusServiceBlockingStub> consSvcStubs = new HashMap<>();
-    private static Map<String, SmartContractServiceBlockingStub> scSvcStubs = new HashMap<>();
-    private static Map<String, UtilServiceGrpc.UtilServiceBlockingStub> utilSvcStubs = new HashMap<>();
+    private static final SplittableRandom RANDOM = new SplittableRandom();
+
     private final AccountID defaultNode;
     private final List<NodeConnectInfo> nodes;
     /**
@@ -78,16 +62,25 @@ public class HapiApiClients {
      * Id of node-{host, port} pairs to use for non-workflow operations using TLS ports
      */
     private final Map<AccountID, String> tlsStubIds;
-    /**
-     * Id of node-{host, port} pairs to use for workflow operations
-     */
-    private final Map<AccountID, String> workflowStubIds;
-    /**
-     * Id of node-{host, port} pairs to use for workflow operations using TLS ports
-     */
-    private final Map<AccountID, String> workflowTlsStubIds;
 
-    private static Map<String, ManagedChannel> channels = new HashMap<>();
+    /**
+     * Maps from a node connection URI to a pool of {@link ChannelStubs} that have been created for that URI.
+     * Many specs can run in parallel against the same nodes, so we use a concurrent map and copy-on-write
+     * lists to avoid concurrent modification exceptions.
+     *
+     * <p>When a {@link HapiSpec} asks for stubs to a particular node's services, we randomly return one of
+     * the channels in the pool.
+     */
+    private static final Map<String, List<ChannelStubs>> channelPools = new ConcurrentHashMap<>();
+
+    private static final Function<String, List<ChannelStubs>> COPY_ON_WRITE_LIST_SUPPLIER =
+            ignore -> new CopyOnWriteArrayList<>();
+
+    /**
+     * Given a specific node connection URI, we continue creating new {@link ChannelStubs} as new {@link HapiSpec}'s
+     * initialize until we have reached thd number.
+     */
+    private static final int MAX_DESIRED_CHANNELS_PER_NODE = 50;
 
     private ManagedChannel createNettyChannel(boolean useTls, final String host, final int port, final int tlsPort) {
         try {
@@ -118,154 +111,75 @@ public class HapiApiClients {
         return null;
     }
 
-    private void addStubs(
-            final NodeConnectInfo node,
-            final String uri,
-            final boolean useTls,
-            final Set<HederaFunctionality> workflowOperations) {
-        if (!channels.containsKey(uri)) {
-            // Add a new channel for the workflow operations if non-empty
-            addNewNettyChannelForWorkflowOperations(node, uri, useTls, workflowOperations);
-
-            ManagedChannel channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
-            channels.put(uri, channel);
-
-            scSvcStubs.put(uri, SmartContractServiceGrpc.newBlockingStub(channel));
-            consSvcStubs.put(uri, ConsensusServiceGrpc.newBlockingStub(channel));
-            fileSvcStubs.put(uri, FileServiceGrpc.newBlockingStub(channel));
-            schedSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
-            tokenSvcStubs.put(uri, TokenServiceGrpc.newBlockingStub(channel));
-            scheduleSvcStubs.put(uri, ScheduleServiceGrpc.newBlockingStub(channel));
-            cryptoSvcStubs.put(uri, CryptoServiceGrpc.newBlockingStub(channel));
-            freezeSvcStubs.put(uri, FreezeServiceGrpc.newBlockingStub(channel));
-            networkSvcStubs.put(uri, NetworkServiceGrpc.newBlockingStub(channel));
-            utilSvcStubs.put(uri, UtilServiceGrpc.newBlockingStub(channel));
+    private void ensureChannelStubsInPool(final NodeConnectInfo node, final String uri, final boolean useTls) {
+        final var existingPool = channelPools.computeIfAbsent(uri, COPY_ON_WRITE_LIST_SUPPLIER);
+        if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
+            final var channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
+            existingPool.add(ChannelStubs.from(channel));
         }
     }
 
-    /**
-     * Since we need to submit workflow operations to a different port, we need to create a channel for that port.
-     * @param node Nodes to connect to
-     * @param uri String specifying host, port
-     * @param useTls true if tls is used, false otherwise
-     * @param workflowOperations set of HAPI operations client should submit to a different port
-     */
-    private void addNewNettyChannelForWorkflowOperations(
-            NodeConnectInfo node, String uri, boolean useTls, Set<HederaFunctionality> workflowOperations) {
-        // If there are no workflowOperations, no need to construct channel.
-        // In JRS or GitHub Actions, we won't bind the new gRPC ports, so don't try
-        // to construct any Netty channels to them
-        if (workflowOperations.isEmpty()) {
-            return;
-        }
-        String workflowUri = "";
-        if (uri.equals(node.uri())) {
-            workflowUri = node.workflowUri();
-        } else if (uri.equals(node.tlsUri())) {
-            workflowUri = node.workflowTlsUri();
-        }
-
-        ManagedChannel workflowChannel =
-                createNettyChannel(useTls, node.getHost(), node.getWorkflowPort(), node.getWorkflowTlsPort());
-        channels.put(workflowUri, workflowChannel);
-        // Currently we are supporting only Consensus operations. If we need to
-        // support other operations, we need to add a condition to add stubs based
-        // on the operations present.
-        consSvcStubs.put(workflowUri, ConsensusServiceGrpc.newBlockingStub(workflowChannel));
-    }
-
-    private HapiApiClients(
-            final List<NodeConnectInfo> nodes,
-            final AccountID defaultNode,
-            final Set<HederaFunctionality> workflowOperations) {
+    private HapiApiClients(final List<NodeConnectInfo> nodes, final AccountID defaultNode) {
         this.nodes = nodes;
         stubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::uri));
         tlsStubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::tlsUri));
-        workflowStubIds = nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::workflowUri));
-        workflowTlsStubIds =
-                nodes.stream().collect(toMap(NodeConnectInfo::getAccount, NodeConnectInfo::workflowTlsUri));
-        int before = stubCount();
         nodes.forEach(node -> {
-            addStubs(node, node.uri(), false, workflowOperations);
-            addStubs(node, node.tlsUri(), true, workflowOperations);
+            ensureChannelStubsInPool(node, node.uri(), false);
+            ensureChannelStubsInPool(node, node.tlsUri(), true);
         });
-        int after = stubCount();
         this.defaultNode = defaultNode;
-        if (after > before) {
-            String message = String.format("Constructed %s new stubs building clients for %s", (after - before), this);
-            log.info(message);
-        }
-    }
-
-    private int stubCount() {
-        return scSvcStubs.size()
-                + consSvcStubs.size()
-                + fileSvcStubs.size()
-                + schedSvcStubs.size()
-                + tokenSvcStubs.size()
-                + cryptoSvcStubs.size()
-                + freezeSvcStubs.size()
-                + networkSvcStubs.size()
-                + scheduleSvcStubs.size()
-                + utilSvcStubs.size();
     }
 
     public static HapiApiClients clientsFor(HapiSpecSetup setup) {
-        return new HapiApiClients(setup.nodes(), setup.defaultNode(), setup.workflowOperations());
+        return new HapiApiClients(setup.nodes(), setup.defaultNode());
     }
 
     public FileServiceBlockingStub getFileSvcStub(AccountID nodeId, boolean useTls) {
-        return fileSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).fileSvcStubs();
     }
 
     public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls) {
-        return tokenSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).tokenSvcStubs();
     }
 
     public CryptoServiceBlockingStub getCryptoSvcStub(AccountID nodeId, boolean useTls) {
-        return cryptoSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).cryptoSvcStubs();
     }
 
     public FreezeServiceBlockingStub getFreezeSvcStub(AccountID nodeId, boolean useTls) {
-        return freezeSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).freezeSvcStubs();
     }
 
     public SmartContractServiceBlockingStub getScSvcStub(AccountID nodeId, boolean useTls) {
-        return scSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).scSvcStubs();
     }
 
-    public ConsensusServiceBlockingStub getConsSvcStub(
-            AccountID nodeId, boolean useTls, Set<HederaFunctionality> operations) {
-        final String id;
-        if (!operations.isEmpty()) {
-            // Currently we support only consensus operations.
-            // If we need to support other operations, then we should check
-            // the workflow operations have consensus operations
-            id = workflowStubId(nodeId, useTls);
-        } else {
-            id = stubId(nodeId, useTls);
-        }
-        return consSvcStubs.get(id);
+    public ConsensusServiceBlockingStub getConsSvcStub(AccountID nodeId, boolean useTls) {
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).consSvcStubs();
     }
 
     public NetworkServiceBlockingStub getNetworkSvcStub(AccountID nodeId, boolean useTls) {
-        return networkSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).networkSvcStubs();
     }
 
     public ScheduleServiceBlockingStub getScheduleSvcStub(AccountID nodeId, boolean useTls) {
-        return schedSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).scheduleSvcStubs();
     }
 
     public UtilServiceGrpc.UtilServiceBlockingStub getUtilSvcStub(AccountID nodeId, boolean useTls) {
-        return utilSvcStubs.get(stubId(nodeId, useTls));
+        return randomStubsFromPool(channelPools.get(stubId(nodeId, useTls))).utilSvcStubs();
     }
 
     private String stubId(AccountID nodeId, boolean useTls) {
         return useTls ? tlsStubIds.get(nodeId) : stubIds.get(nodeId);
     }
 
-    private String workflowStubId(AccountID nodeId, boolean useTls) {
-        return useTls ? workflowTlsStubIds.get(nodeId) : workflowStubIds.get(nodeId);
+    private static ChannelStubs randomStubsFromPool(@NonNull final List<ChannelStubs> stubs) {
+        Objects.requireNonNull(stubs);
+        if (stubs.isEmpty()) {
+            throw new IllegalArgumentException("Should have ensured at least one channel in pool");
+        }
+        return stubs.get(RANDOM.nextInt(stubs.size()));
     }
 
     @Override
@@ -280,27 +194,17 @@ public class HapiApiClients {
 
     /** Close all netty channels that are opened for clients */
     private static void closeChannels() {
-        if (channels.isEmpty()) {
+        if (channelPools.isEmpty()) {
             return;
         }
-        channels.forEach((uri, channel) -> channel.shutdown());
-        channels.clear();
+        channelPools.forEach((uri, channelPool) -> channelPool.forEach(ChannelStubs::shutdown));
+        channelPools.clear();
     }
 
-    private static void clearStubs() {
-        scSvcStubs.clear();
-        consSvcStubs.clear();
-        fileSvcStubs.clear();
-        tokenSvcStubs.clear();
-        scheduleSvcStubs.clear();
-        cryptoSvcStubs.clear();
-        freezeSvcStubs.clear();
-        networkSvcStubs.clear();
-        utilSvcStubs.clear();
-    }
-
+    /**
+     * Should only be called once after all tests are done.
+     */
     public static void tearDown() {
         closeChannels();
-        clearStubs();
     }
 }

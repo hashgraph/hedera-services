@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,7 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * class
  */
 /*@ThreadSafe*/
-final class QueryMethod extends MethodBase {
+public final class QueryMethod extends MethodBase {
     // Constants for metric names and descriptions
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
@@ -52,13 +52,13 @@ final class QueryMethod extends MethodBase {
     private final SpeedometerMetric queriesAnsweredSpeedometer;
 
     /**
-     * Create a new QueryMethod. This is only called by the {@link GrpcServiceBuilder}.
+     * Create a new QueryMethod.
      *
      * @param serviceName a non-null reference to the service name
      * @param methodName a non-null reference to the method name
      * @param workflow a non-null {@link QueryWorkflow}
      */
-    QueryMethod(
+    public QueryMethod(
             @NonNull final String serviceName,
             @NonNull final String methodName,
             @NonNull final QueryWorkflow workflow,

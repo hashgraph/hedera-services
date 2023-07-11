@@ -39,7 +39,6 @@ javaModuleDependencies {
     moduleNameToGA.put("com.swirlds.test.framework", "com.swirlds:swirlds-test-framework")
     moduleNameToGA.put("hamcrest.core", "org.hamcrest:hamcrest-core")
     moduleNameToGA.put("io.grpc", "io.helidon.grpc:io.grpc")
-    moduleNameToGA.put("io.helidon.webserver.http2", "io.helidon.webserver:helidon-webserver-http2")
     moduleNameToGA.put("io.netty.codec.http", "io.netty:netty-codec-http")
     moduleNameToGA.put("io.netty.codec.http2", "io.netty:netty-codec-http2")
     moduleNameToGA.put("io.netty.codec.socks", "io.netty:netty-codec-socks")
@@ -143,9 +142,9 @@ extraJavaModuleInfo {
         exportAllPackages()
         requireAllDefinedDependencies()
     }
-    module("io.perfmark:perfmark-api", "io.perfmark.perfmark.api") {
+    module("io.perfmark:perfmark-api", "io.perfmark") {
         exportAllPackages()
-        requireAllDefinedDependencies()
+        // no dependencies
     }
     module("javax.inject:javax.inject", "javax.inject") {
         exportAllPackages()
@@ -218,7 +217,6 @@ extraJavaModuleInfo {
     knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform.core")
     knownModule("com.swirlds:swirlds-virtualmap", "com.swirlds.virtualmap")
     knownModule("io.github.classgraph:classgraph", "io.github.classgraph")
-    knownModule("io.helidon.grpc:helidon-grpc-server", "io.helidon.grpc.server")
     knownModule("io.helidon.grpc:io.grpc", "io.grpc")
     knownModule("io.netty:netty-codec-http2", "io.netty.codec.http2")
     knownModule("io.netty:netty-handler-proxy", "io.netty.handler.proxy")
@@ -268,7 +266,6 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:arithmetic", "org.hyperledger.besu.arithmetic")
     automaticModule("com.squareup:javapoet", "com.squareup.javapoet")
     automaticModule("org.checkerframework:checker-qual", "org.checkerframework.checker.qual")
-    automaticModule("io.perfmark:perfmark-api", "perfmark.api")
     automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")

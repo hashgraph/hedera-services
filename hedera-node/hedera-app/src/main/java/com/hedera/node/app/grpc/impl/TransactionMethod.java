@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
@@ -32,7 +32,7 @@ import java.util.Objects;
  * class
  */
 /*@ThreadSafe*/
-final class TransactionMethod extends MethodBase {
+public final class TransactionMethod extends MethodBase {
     /** The pipeline contains all the steps needed for handling the ingestion of a transaction. */
     private final IngestWorkflow workflow;
 
@@ -41,7 +41,7 @@ final class TransactionMethod extends MethodBase {
      * @param methodName a non-null reference to the method name
      * @param workflow a non-null {@link IngestWorkflow}
      */
-    TransactionMethod(
+    public TransactionMethod(
             @NonNull final String serviceName,
             @NonNull final String methodName,
             @NonNull final IngestWorkflow workflow,

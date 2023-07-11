@@ -145,9 +145,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getTopicInfoQuery(spec, payment, false);
-        response = spec.clients()
-                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
-                .getTopicInfo(query);
+        response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         if (verboseLoggingOn) {
             String message = String.format(
                     "Info: %s", response.getConsensusGetTopicInfo().getTopicInfo());
@@ -198,9 +196,8 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     @Override
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTopicInfoQuery(spec, payment, true);
-        Response response = spec.clients()
-                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())
-                .getTopicInfo(query);
+        Response response =
+                spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
         return costFrom(response);
     }
 

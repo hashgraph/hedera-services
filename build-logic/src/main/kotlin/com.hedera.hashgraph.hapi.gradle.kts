@@ -37,3 +37,7 @@ protobuf {
         ofSourceSet("main").forEach { it.plugins { id("grpc") } }
     }
 }
+
+configurations.testCompileProtoPath {
+    extendsFrom(configurations["internal"])
+}
