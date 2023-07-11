@@ -256,7 +256,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             setConfig(sourceState.getConfig().copy());
         }
 
-        setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
+        if (sourceState.getNextSeqCons() != null) {
+            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
+        }
         if (platform != null) {
             // If nextSeqCons is shorter than the address book then add 0s until the sizes match
             for (int index = getNextSeqCons().size();
