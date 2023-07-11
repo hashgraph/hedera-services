@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -150,10 +149,6 @@ public final class IngestChecker {
     }
 
     public void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
-        if (txBody == null) {
-            throw new PreCheckException(EMPTY_TRANSACTION_BODY);
-        }
-
         // TODO: not sure if this is how it should be implemented
         // We are throwing an error only if the transactionId is in the cache and if the
         // submitter is the creator of the transaction

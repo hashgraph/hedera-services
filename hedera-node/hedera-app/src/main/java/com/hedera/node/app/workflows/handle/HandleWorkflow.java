@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TRANSACTION_BODY;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -264,11 +263,8 @@ public class HandleWorkflow {
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
     }
 
-  private void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
-    if (txBody == null) {
-      throw new PreCheckException(EMPTY_TRANSACTION_BODY);
-    }
 
+  private void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
     final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
     if (foundTransactionRecord != null) {
       throw new PreCheckException(DUPLICATE_TRANSACTION);
