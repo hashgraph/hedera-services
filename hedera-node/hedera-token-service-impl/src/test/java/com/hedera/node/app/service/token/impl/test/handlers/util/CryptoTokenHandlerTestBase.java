@@ -579,7 +579,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Token givenValidNonFungibleToken() {
-        givenValidFungibleToken();
         return fungibleToken
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
