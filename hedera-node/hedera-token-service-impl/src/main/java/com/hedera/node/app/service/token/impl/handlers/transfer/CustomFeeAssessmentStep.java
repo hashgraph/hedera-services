@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -24,6 +25,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -50,6 +52,7 @@ public class CustomFeeAssessmentStep {
     private final CustomFeeAssessor customFeeAssessor;
     private int levelNum = 0;
     private final HandleContext context;
+    private int totalBalanceChanges = 0;
 
     public CustomFeeAssessmentStep(
             @NonNull final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
@@ -82,6 +85,7 @@ public class CustomFeeAssessmentStep {
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
         final var maxTransfersDepth = ledgerConfig.xferBalanceChangesMaxLen();
         final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
+        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
 
         final List<AssessedCustomFee> customFeesAssessed = new ArrayList<>();
 
@@ -90,10 +94,12 @@ public class CustomFeeAssessmentStep {
         // change can trigger custom fees again
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
         assessCustomFeesFrom(result, tokenTransfers, tokenStore, maxTransfersDepth);
-
         final var level0Builder = changedInputTxn(op, result);
+
+        validateTotalBalanceChanges(level0Builder, maxTransfersDepth);
         customFeesAssessed.addAll(result.getAssessedCustomFees());
         if (!result.haveAssessedChanges()) {
+            recordBuilder.assessedCustomFees(customFeesAssessed);
             return List.of(level0Builder.build());
         }
 
@@ -101,6 +107,7 @@ public class CustomFeeAssessmentStep {
         // transaction
         validateTrue(++levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
         final var level1Builder = buildBodyFromAdjustments(result);
+        validateTotalBalanceChanges(level1Builder, maxTransfersDepth);
 
         // There can only be three levels of custom fees. So assess the generated builder again
         // for last level of custom fees
@@ -111,9 +118,10 @@ public class CustomFeeAssessmentStep {
         result2.setRoyaltiesPaid(result.getRoyaltiesPaid());
 
         assessCustomFeesFrom(result2, level1Builder.build().tokenTransfers(), tokenStore, maxTransfersDepth);
-
         customFeesAssessed.addAll(result2.getAssessedCustomFees());
+
         if (!result2.haveAssessedChanges()) {
+            recordBuilder.assessedCustomFees(customFeesAssessed);
             return List.of(level0Builder.build(), level1Builder.build());
         }
 
@@ -121,12 +129,27 @@ public class CustomFeeAssessmentStep {
         // transaction
         validateTrue(++levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
         final var level2Builder = buildBodyFromAdjustments(result2);
+        validateTotalBalanceChanges(level2Builder, maxTransfersDepth);
 
-        // add all assessed fees to record builder
-        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
         recordBuilder.assessedCustomFees(customFeesAssessed);
-
         return List.of(level0Builder.build(), level1Builder.build(), level2Builder.build());
+    }
+
+    private void validateTotalBalanceChanges(
+            final CryptoTransferTransactionBody.Builder builder, final int maxTransfersDepth) {
+        final var op = builder.build();
+        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT)
+                .accountAmountsOrElse(emptyList())
+                .size();
+        var fungibleTokenChanges = 0;
+        var nftTransfers = 0;
+        for (final var xfer : op.tokenTransfersOrElse(emptyList())) {
+            fungibleTokenChanges += xfer.transfersOrElse(emptyList()).size();
+            nftTransfers += xfer.nftTransfersOrElse(emptyList()).size();
+        }
+
+        totalBalanceChanges += hbarTransfers + fungibleTokenChanges + nftTransfers;
+        validateTrue(totalBalanceChanges <= maxTransfersDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
     }
 
     private CryptoTransferTransactionBody.Builder changedInputTxn(
@@ -135,7 +158,14 @@ public class CustomFeeAssessmentStep {
         final var changedTokenTransfers = result.getInputTokenAdjustments();
         final List<AccountAmount> aaList = new ArrayList<>();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-
+        // If there are no changes for the token , add as it is
+        for (final var xfers : op.tokenTransfers()) {
+            final var token = xfers.token();
+            if (!changedTokenTransfers.containsKey(token)) {
+                tokenTransferLists.add(xfers);
+            }
+        }
+        // If there are changes modify the token transfer list
         for (final var entry : changedTokenTransfers.entrySet()) {
             final var tokenTransferList = TokenTransferList.newBuilder().token(entry.getKey());
             for (final var valueEntry : entry.getValue().entrySet()) {
@@ -145,10 +175,23 @@ public class CustomFeeAssessmentStep {
                         .build());
             }
             tokenTransferList.transfers(aaList);
+            final var expectedDecimals = getExpectedDecimalsFor(op.tokenTransfers(), entry.getKey());
+            if (expectedDecimals != null) {
+                tokenTransferList.expectedDecimals(expectedDecimals);
+            }
             tokenTransferLists.add(tokenTransferList.build());
         }
         copy.tokenTransfers(tokenTransferLists);
         return copy;
+    }
+
+    private Integer getExpectedDecimalsFor(final List<TokenTransferList> tokenTransferLists, final TokenID key) {
+        for (final var tokenTransferList : tokenTransferLists) {
+            if (tokenTransferList.token().equals(key)) {
+                return tokenTransferList.expectedDecimals();
+            }
+        }
+        return null;
     }
 
     private CryptoTransferTransactionBody.Builder buildBodyFromAdjustments(final AssessmentResult result) {
@@ -157,21 +200,21 @@ public class CustomFeeAssessmentStep {
 
         final var newBuilder = CryptoTransferTransactionBody.newBuilder();
         final var transferList = TransferList.newBuilder();
-        final List<AccountAmount> aaList = new ArrayList<>();
+        final List<AccountAmount> hbarList = new ArrayList<>();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
 
         for (final var entry : hbarAdjustments.entrySet()) {
-            aaList.add(AccountAmount.newBuilder()
+            hbarList.add(AccountAmount.newBuilder()
                     .accountID(entry.getKey())
                     .amount(entry.getValue())
                     .build());
         }
-        transferList.accountAmounts(aaList);
+        transferList.accountAmounts(hbarList);
         newBuilder.transfers(transferList.build());
-        aaList.clear();
 
         for (final var entry : tokenAdjustments.entrySet()) {
             final var tokenTransferList = TokenTransferList.newBuilder().token(entry.getKey());
+            final List<AccountAmount> aaList = new ArrayList<>();
             for (final var valueEntry : entry.getValue().entrySet()) {
                 aaList.add(AccountAmount.newBuilder()
                         .accountID(valueEntry.getKey())

@@ -69,15 +69,12 @@ public class AdjustmentUtils {
             final long amount,
             final TokenID denominatingToken,
             final Set<TokenID> exemptDenoms) {
-        if (amount < 0) {
-            // Always add a new change for an HTS debit since it could trigger another assessed fee
-            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
-            // self denominated fees are exempt from further fee charging
-            if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
-                exemptDenoms.add(denominatingToken);
-            }
-        } else {
-            addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
+        // Always add a new change for an HTS debit since it could trigger another assessed fee
+        addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
+        // self denominated fees are exempt from further fee charging.
+        // Because there is a debit for the fee added in above step, we need to exempt the fee
+        if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
+            exemptDenoms.add(denominatingToken);
         }
     }
 
@@ -87,7 +84,7 @@ public class AdjustmentUtils {
             final AccountID collector,
             final long amount,
             final TokenID denominatingToken) {
-        final var denominatingTokenMap = htsAdjustments.get(denominatingToken);
+        final var denominatingTokenMap = htsAdjustments.getOrDefault(denominatingToken, new HashMap<>());
         denominatingTokenMap.merge(sender, -amount, Long::sum);
         denominatingTokenMap.merge(collector, amount, Long::sum);
         htsAdjustments.put(denominatingToken, denominatingTokenMap);
@@ -147,10 +144,8 @@ public class AdjustmentUtils {
      * @return true if the adjustment will trigger a custom fee. False otherwise.
      */
     public static boolean couldTriggerCustomFees(
-            @NonNull final TokenID chargingTokenId,
-            @NonNull final TokenID denominatingTokenID,
-            @NonNull final Set<TokenID> exemptDebits) {
-        if (isExemptFromCustomFees(chargingTokenId, denominatingTokenID, exemptDebits)) {
+            @NonNull final TokenID denominatingTokenID, @NonNull final Set<TokenID> exemptDebits) {
+        if (isExemptFromCustomFees(denominatingTokenID, exemptDebits)) {
             return false;
         } else {
             // This condition is reached only for NftTransfer or Fungible token transfer with adjustment < 0
@@ -167,16 +162,12 @@ public class AdjustmentUtils {
      * @return true if the custom fee is self-denominated
      */
     private static boolean isExemptFromCustomFees(
-            @NonNull final TokenID chargingTokenId,
-            @NonNull final TokenID denominatingTokenID,
-            @NonNull final Set<TokenID> exemptDebits) {
+            @NonNull final TokenID denominatingTokenID, @NonNull final Set<TokenID> exemptDebits) {
         /* But self-denominated fees are exempt from further custom fee charging,
         c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
 
         // Exempt debits will have the denominating token Ids from previous custom fee charging
         // So if the denominating tokenId is in the exempt debits, then it is self-denominated
-
-        return denominatingTokenID != TokenID.DEFAULT && chargingTokenId.equals(denominatingTokenID)
-                || exemptDebits.contains(denominatingTokenID);
+        return denominatingTokenID != TokenID.DEFAULT && exemptDebits.contains(denominatingTokenID);
     }
 }

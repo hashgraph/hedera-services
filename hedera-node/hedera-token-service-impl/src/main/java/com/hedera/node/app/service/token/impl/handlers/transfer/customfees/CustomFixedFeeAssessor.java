@@ -37,10 +37,9 @@ public class CustomFixedFeeAssessor {
     public void assessFixedFees(
             @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {
         for (final var fee : feeMeta.customFees()) {
-            final var tokenId = feeMeta.tokenId();
             if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
                 final var denom = fee.fixedFeeOrThrow().denominatingTokenIdOrElse(TokenID.DEFAULT);
-                if (couldTriggerCustomFees(tokenId, denom, result.getExemptDebits())) {
+                if (couldTriggerCustomFees(denom, result.getExemptDebits())) {
                     final var collector = fee.feeCollectorAccountId();
                     if (sender.equals(collector)) {
                         continue;

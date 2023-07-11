@@ -22,7 +22,6 @@ import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -35,6 +34,7 @@ public class CustomFeeAssessor {
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int totalBalanceChanges = 0;
+    private int initialNftChanges = 0;
 
     @Inject
     public CustomFeeAssessor(
@@ -45,21 +45,16 @@ public class CustomFeeAssessor {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.fractionalFeeAssessor = fractionalFeeAssessor;
         this.royaltyFeeAssessor = royaltyFeeAssessor;
-        totalBalanceChanges = numAdjustmentsFromOriginalBody(op);
+        initialNftChanges = numNftTransfers(op);
     }
 
-    private int numAdjustmentsFromOriginalBody(final CryptoTransferTransactionBody op) {
-        final var hbarChanges = op.transfersOrElse(TransferList.DEFAULT)
-                .accountAmountsOrElse(emptyList())
-                .size();
+    private int numNftTransfers(final CryptoTransferTransactionBody op) {
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        var fungibleTokenChanges = 0;
         var nftTransfers = 0;
         for (final var xfer : tokenTransfers) {
-            fungibleTokenChanges += xfer.transfersOrElse(emptyList()).size();
             nftTransfers += xfer.nftTransfersOrElse(emptyList()).size();
         }
-        return hbarChanges + fungibleTokenChanges + nftTransfers;
+        return nftTransfers;
     }
 
     public void assess(
@@ -84,8 +79,19 @@ public class CustomFeeAssessor {
     }
 
     private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize) {
-        totalBalanceChanges +=
-                result.getHbarAdjustments().size() + result.getHtsAdjustments().size();
-        validateFalse(totalBalanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
+        var inputFungibleTransfers = 0;
+        var newFungibleTransfers = 0;
+        for (final var entry : result.getInputTokenAdjustments().entrySet()) {
+            inputFungibleTransfers += entry.getValue().size();
+        }
+        for (final var entry : result.getHtsAdjustments().entrySet()) {
+            newFungibleTransfers += entry.getValue().size();
+        }
+        final var balanceChanges = result.getHbarAdjustments().size()
+                + newFungibleTransfers
+                + result.getInputHbarAdjustments().size()
+                + inputFungibleTransfers
+                + initialNftChanges;
+        validateFalse(balanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
     }
 }

@@ -75,6 +75,10 @@ public class AssessmentResult {
         return exemptDebits;
     }
 
+    public void addToExemptDebits(final TokenID id) {
+        exemptDebits.add(id);
+    }
+
     public void setExemptDebits(final Set<TokenID> exemptDebits) {
         this.exemptDebits = exemptDebits;
     }
