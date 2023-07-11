@@ -24,17 +24,17 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.operation.DelegateCallOperation;
+import org.hyperledger.besu.evm.operation.StaticCallOperation;
 
 /**
- * Hedera customization of {@link DelegateCallOperation} that immediately halts on calls to missing addresses,
+ * Hedera customization of {@link StaticCallOperation} that immediately halts on calls to missing addresses,
  * <i>unless</i> the call is to an address in the system account range, in which case the fate of the call
  * is determined by the {@link CustomMessageCallProcessor}.
  */
-public class CustomDelegateCallOperation extends DelegateCallOperation implements BasicCustomCallOperation {
+public class CustomStaticCallOperation extends StaticCallOperation implements BasicCustomCallOperation {
     private final AddressChecks addressChecks;
 
-    public CustomDelegateCallOperation(
+    public CustomStaticCallOperation(
             @NonNull final GasCalculator gasCalculator, @NonNull final AddressChecks addressChecks) {
         super(Objects.requireNonNull(gasCalculator));
         this.addressChecks = Objects.requireNonNull(addressChecks);

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -131,6 +132,11 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             throw new IllegalArgumentException("No contract pending or extant at " + address);
         }
         return account.hederaContractId();
+    }
+
+    @Override
+    public @NonNull Bytes entropy() {
+        return pbjToTuweniBytes(scope.dispatch().entropy());
     }
 
     @Nullable

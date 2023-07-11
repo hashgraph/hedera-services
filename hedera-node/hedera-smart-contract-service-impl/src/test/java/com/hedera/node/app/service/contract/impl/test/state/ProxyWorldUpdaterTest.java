@@ -17,8 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
@@ -360,6 +359,13 @@ class ProxyWorldUpdaterTest {
     @Test
     void doesntSupportDeletedAccountAddresses() {
         assertThrows(UnsupportedOperationException.class, subject::getDeletedAccountAddresses);
+    }
+
+    @Test
+    void delegatesEntropy() {
+        givenDispatch();
+        given(dispatch.entropy()).willReturn(OUTPUT_DATA);
+        assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
     }
 
     private void givenDispatch() {

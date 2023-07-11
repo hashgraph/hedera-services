@@ -43,6 +43,15 @@ public interface Dispatch {
     // --- from the returned state via a given {@link ResultTranslator}
 
     /**
+     * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
+     * for details on how the Hedera node implements this.
+     *
+     * @return the available entropy
+     */
+    @NonNull
+    Bytes entropy();
+
+    /**
      * Returns the {@link Nft} with the given id, and also externalizes the result of the state read
      * via a record whose (1) origin is a given contract number and (2) result is derived from the
      * read state via a given {@link ResultTranslator}.

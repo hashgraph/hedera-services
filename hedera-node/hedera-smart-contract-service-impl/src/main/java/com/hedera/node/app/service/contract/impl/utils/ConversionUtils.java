@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -34,6 +35,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
@@ -104,6 +106,21 @@ public class ConversionUtils {
                 .topic(loggedTopics)
                 .bloom(bloomFor(log))
                 .build();
+    }
+
+    /**
+     * Given a {@link MessageFrame}, returns the long-zero address of its {@code recipient} address.
+     *
+     * @param frame the {@link MessageFrame}
+     * @return the long-zero address of the {@code recipient} address
+     */
+    public static Address longZeroAddressOfRecipient(@NonNull final MessageFrame frame) {
+        final var receiverAddress = frame.getRecipientAddress();
+        return isLongZero(receiverAddress)
+                ? receiverAddress
+                : asLongZeroAddress(proxyUpdaterFor(frame)
+                        .getHederaContractId(receiverAddress)
+                        .contractNumOrThrow());
     }
 
     /**
