@@ -60,8 +60,6 @@ import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -771,13 +769,6 @@ public class Browser {
         // Eventually we will not do this, and only transactions will be capable of
         // modifying the address book.
         state.getPlatformState().setAddressBook(addressBook.copy());
-
-        // Invalidate a path down to the new address book
-        new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
-                .forEachRemaining(MerkleNode::invalidateHash);
-
-        // If our hash changes as a result of the new address book then our old signatures may become invalid.
-        signedState.pruneInvalidSignatures();
     }
 
     /**
