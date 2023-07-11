@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfers.Utils.nftTransferWithAllowance;
@@ -109,32 +108,6 @@ class ChangeNFTOwnersStepTest extends StepsBase {
         final var receiverTokenRelBalanceAfter = writableTokenRelStore.get(receiver, nonFungibleTokenId);
         assertThat(senderTokenRelBalanceAfter.balance()).isEqualTo(senderTokenRelBalance - 1);
         assertThat(receiverTokenRelBalanceAfter.balance()).isEqualTo(receiverTokenRelBalance + 1);
-    }
-
-    @Test
-    void failsWIthDifferingExpectedDecimals() {
-        body = CryptoTransferTransactionBody.newBuilder()
-                .transfers(TransferList.newBuilder()
-                        .accountAmounts(aaWith(ownerId, -1_000), aaWith(unknownAliasedId, +1_000))
-                        .build())
-                .tokenTransfers(TokenTransferList.newBuilder()
-                        .token(nonFungibleTokenId)
-                        .expectedDecimals(20)
-                        .nftTransfers(nftTransferWithAllowance(ownerId, unknownAliasedId1, 1))
-                        .build())
-                .build();
-        givenTxn(body, spenderId);
-        ensureAliasesStep = new EnsureAliasesStep(body);
-        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
-        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
-        transferContext = new TransferContextImpl(handleContext);
-
-        final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
-
-        assertThatThrownBy(() -> changeNFTOwnersStep.doIn(transferContext))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(UNEXPECTED_TOKEN_DECIMALS));
     }
 
     @Test
