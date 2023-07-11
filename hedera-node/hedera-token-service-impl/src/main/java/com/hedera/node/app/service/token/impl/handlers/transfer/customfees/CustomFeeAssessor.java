@@ -33,7 +33,6 @@ public class CustomFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
-    private int totalBalanceChanges = 0;
     private int initialNftChanges = 0;
 
     @Inject

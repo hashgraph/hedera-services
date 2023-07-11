@@ -137,7 +137,6 @@ public class AdjustmentUtils {
      * Custom fee is triggered if the fee is not self-denominated and the transfer is not a hbar transfer
      * and the adjustment is a debit.
      *
-     * @param chargingTokenId         the token that is being charged
      * @param denominatingTokenID     the token that is being used as denomination to pay the fee
      * @param exemptDebits            the set of tokens that are exempt from custom fee charging, due to being self
      *                                denominated in previous level of custom fee assessment
@@ -145,18 +144,12 @@ public class AdjustmentUtils {
      */
     public static boolean couldTriggerCustomFees(
             @NonNull final TokenID denominatingTokenID, @NonNull final Set<TokenID> exemptDebits) {
-        if (isExemptFromCustomFees(denominatingTokenID, exemptDebits)) {
-            return false;
-        } else {
-            // This condition is reached only for NftTransfer or Fungible token transfer with adjustment < 0
-            return true;
-        }
+        return !isExemptFromCustomFees(denominatingTokenID, exemptDebits);
     }
 
     /**
      * Custom fee that is self-denominated is exempt from further custom fee charging.
      *
-     * @param chargingTokenId     the token that is being charged
      * @param denominatingTokenID the token that is being used as denomination to pay the fee
      * @param exemptDebits
      * @return true if the custom fee is self-denominated

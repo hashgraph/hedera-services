@@ -35,7 +35,9 @@ import javax.inject.Singleton;
 @Singleton
 public class CustomFixedFeeAssessor {
     @Inject
-    public CustomFixedFeeAssessor() {}
+    public CustomFixedFeeAssessor() {
+        // For Dagger injection
+    }
 
     public void assessFixedFees(
             @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {

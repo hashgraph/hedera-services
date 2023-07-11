@@ -30,6 +30,9 @@ import com.hedera.hapi.node.transaction.CustomFee;
  * </ul>
  */
 public class CustomFeeExemptions {
+    private CustomFeeExemptions() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
     /**
      * Given the fee metadata for a token, and one of this token's custom fees, returns whether the
      * given payer is exempt from the specific custom fee provided.

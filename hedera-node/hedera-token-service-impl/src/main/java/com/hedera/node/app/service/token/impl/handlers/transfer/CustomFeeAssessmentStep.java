@@ -86,58 +86,66 @@ public class CustomFeeAssessmentStep {
         final var maxTransfersDepth = ledgerConfig.xferBalanceChangesMaxLen();
         final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
         final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
-
         final List<AssessedCustomFee> customFeesAssessed = new ArrayList<>();
+
+        /* ----------------------- Level 0 - assess given op level 0 ----------------------- */
 
         // Assess custom fees for given op and produce a next level transaction body builder
         // that needs to be assessed again for custom fees. This is because a custom fee balance
         // change can trigger custom fees again
         final var result = new AssessmentResult(tokenTransfers, hbarTransfers);
         assessCustomFeesFrom(result, tokenTransfers, tokenStore, maxTransfersDepth);
-        final var inputTxnModified = changedInputTxn(op, result);
+        final var modifiedInputBody = changedInputTxn(op, result);
 
-        validateTotalBalanceChanges(inputTxnModified, maxTransfersDepth);
+        // validate balance changes have exceeded max allowed
+        validateTotalAdjustments(modifiedInputBody, maxTransfersDepth);
         customFeesAssessed.addAll(result.getAssessedCustomFees());
         if (!result.haveAssessedChanges()) {
             recordBuilder.assessedCustomFees(customFeesAssessed);
-            return List.of(inputTxnModified.build());
+            return List.of(modifiedInputBody);
         }
+
+        /* -------------- Level 1 - assess the custom fees assessed from previous level -------- */
 
         // increment the level to create transaction body from all custom fees assessed from original
         // transaction
         validateTrue(++levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
-        final var level1Builder = buildBodyFromAdjustments(result);
-        validateTotalBalanceChanges(level1Builder, maxTransfersDepth);
+        final var level1Body = buildBodyFromAdjustments(result);
+        validateTotalAdjustments(level1Body, maxTransfersDepth);
 
-        // There can only be three levels of custom fees. So assess the generated builder again
-        // for last level of custom fees
-        final var result2 = new AssessmentResult(
-                level1Builder.build().tokenTransfersOrElse(emptyList()),
-                level1Builder.build().transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList()));
-        result2.setExemptDebits(result.getExemptDebits());
-        result2.setRoyaltiesPaid(result.getRoyaltiesPaid());
-
-        assessCustomFeesFrom(result2, level1Builder.build().tokenTransfers(), tokenStore, maxTransfersDepth);
+        // Assess the generated builder again for last level of custom fees
+        final var result2 = setUpNextLevelResult(level1Body, result);
+        assessCustomFeesFrom(result2, level1Body.tokenTransfers(), tokenStore, maxTransfersDepth);
         customFeesAssessed.addAll(result2.getAssessedCustomFees());
 
         if (!result2.haveAssessedChanges()) {
             recordBuilder.assessedCustomFees(customFeesAssessed);
-            return List.of(inputTxnModified.build(), level1Builder.build());
+            return List.of(modifiedInputBody, level1Body);
         }
+
+        /* -------------- Level 3 - Since there can only be 3 levels , no assessment here -------- */
 
         // increment the level to create transaction body from all custom fees assessed from original
         // transaction
         validateTrue(++levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
-        final var level2Builder = buildBodyFromAdjustments(result2);
-        validateTotalBalanceChanges(level2Builder, maxTransfersDepth);
+        final var level2Body = buildBodyFromAdjustments(result2);
+        validateTotalAdjustments(level2Body, maxTransfersDepth);
 
         recordBuilder.assessedCustomFees(customFeesAssessed);
-        return List.of(inputTxnModified.build(), level1Builder.build(), level2Builder.build());
+        return List.of(modifiedInputBody, level1Body, level2Body);
     }
 
-    private void validateTotalBalanceChanges(
-            final CryptoTransferTransactionBody.Builder builder, final int maxTransfersDepth) {
-        final var op = builder.build();
+    private AssessmentResult setUpNextLevelResult(
+            final CryptoTransferTransactionBody prevLevelBody, final AssessmentResult result) {
+        final var nextLevelResult = new AssessmentResult(
+                prevLevelBody.tokenTransfersOrElse(emptyList()),
+                prevLevelBody.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList()));
+        nextLevelResult.setExemptDebits(result.getExemptDebits());
+        nextLevelResult.setRoyaltiesPaid(result.getRoyaltiesPaid());
+        return nextLevelResult;
+    }
+
+    private void validateTotalAdjustments(final CryptoTransferTransactionBody op, final int maxTransfersDepth) {
         final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT)
                 .accountAmountsOrElse(emptyList())
                 .size();
@@ -152,7 +160,7 @@ public class CustomFeeAssessmentStep {
         validateTrue(totalBalanceChanges <= maxTransfersDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
     }
 
-    private CryptoTransferTransactionBody.Builder changedInputTxn(
+    private CryptoTransferTransactionBody changedInputTxn(
             final CryptoTransferTransactionBody op, final AssessmentResult result) {
         final var copy = op.copyBuilder();
         final var changedTokenTransfers = result.getInputTokenAdjustments();
@@ -182,7 +190,7 @@ public class CustomFeeAssessmentStep {
             tokenTransferLists.add(tokenTransferList.build());
         }
         copy.tokenTransfers(tokenTransferLists);
-        return copy;
+        return copy.build();
     }
 
     private Integer getExpectedDecimalsFor(final List<TokenTransferList> tokenTransferLists, final TokenID key) {
@@ -194,7 +202,7 @@ public class CustomFeeAssessmentStep {
         return null;
     }
 
-    private CryptoTransferTransactionBody.Builder buildBodyFromAdjustments(final AssessmentResult result) {
+    private CryptoTransferTransactionBody buildBodyFromAdjustments(final AssessmentResult result) {
         final var hbarAdjustments = result.getHbarAdjustments();
         final var tokenAdjustments = result.getHtsAdjustments();
 
@@ -225,7 +233,7 @@ public class CustomFeeAssessmentStep {
             tokenTransferLists.add(tokenTransferList.build());
         }
         newBuilder.tokenTransfers(tokenTransferLists);
-        return newBuilder;
+        return newBuilder.build();
     }
 
     private void assessCustomFeesFrom(
