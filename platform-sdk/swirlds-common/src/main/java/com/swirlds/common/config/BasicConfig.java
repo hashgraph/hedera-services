@@ -78,7 +78,7 @@ import java.time.Duration;
 @ConfigData
 public record BasicConfig(
         @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
-        @ConfigProperty(defaultValue = "false") boolean showInternalStats,
+        @ConfigProperty(defaultValue = "true") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "40") int numConnections,
         @ConfigProperty(defaultValue = "true") boolean logStack,

@@ -55,13 +55,13 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("event")
 public record EventConfig(
-        @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
+        @ConfigProperty(defaultValue = "1000") int maxEventQueueForCons,
         @ConfigProperty(defaultValue = "1000") int eventIntakeQueueThrottleSize,
         @ConfigProperty(defaultValue = "10000") int eventIntakeQueueSize,
         @ConfigProperty(defaultValue = "0") int randomEventProbability,
         @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
         @ConfigProperty(defaultValue = "500") int eventStreamQueueCapacity,
-        @ConfigProperty(defaultValue = "60") long eventsLogPeriod,
+        @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
-        @ConfigProperty(defaultValue = "false") boolean enableEventStreaming) {}
+        @ConfigProperty(defaultValue = "true") boolean enableEventStreaming) {}

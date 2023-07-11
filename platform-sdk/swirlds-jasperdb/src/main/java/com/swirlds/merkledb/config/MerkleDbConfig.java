@@ -108,7 +108,7 @@ import java.time.temporal.ChronoUnit;
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
-        @Min(0) @ConfigProperty(defaultValue = "0") long hashesRamToDiskThreshold,
+        @Min(0) @ConfigProperty(defaultValue = "8388608") long hashesRamToDiskThreshold,
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
@@ -119,7 +119,7 @@ public record MerkleDbConfig(
         @Min(0) @ConfigProperty(defaultValue = "1") long mergeActivatePeriod,
         @Min(0) @ConfigProperty(defaultValue = "60") long mediumMergePeriod,
         @Min(0) @ConfigProperty(defaultValue = "1440") long fullMergePeriod,
-        @Positive @ConfigProperty(defaultValue = "1048576") int iteratorInputBufferBytes,
+        @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,
         @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
