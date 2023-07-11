@@ -35,7 +35,9 @@ dependencies {
     testImplementation(project(":swirlds-config-impl"))
     testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
     testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
+    testImplementation(testFixtures(project(":swirlds-config-api")))
     testImplementation(libs.log4j.core)
 }

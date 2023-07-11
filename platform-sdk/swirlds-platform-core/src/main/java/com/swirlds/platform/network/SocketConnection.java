@@ -143,8 +143,8 @@ public class SocketConnection implements Connection {
      * @throws SocketException if there is an error in the underlying protocol, such as a TCP error.
      */
     @Override
-    public void setTimeout(final int timeoutMillis) throws SocketException {
-        socket.setSoTimeout(timeoutMillis);
+    public void setTimeout(final long timeoutMillis) throws SocketException {
+        socket.setSoTimeout(timeoutMillis > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) timeoutMillis);
     }
 
     /**

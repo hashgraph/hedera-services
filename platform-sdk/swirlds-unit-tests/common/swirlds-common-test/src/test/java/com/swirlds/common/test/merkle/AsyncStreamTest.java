@@ -33,9 +33,9 @@ import com.swirlds.common.test.merkle.dummy.BlockingOutputStream;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,11 +47,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Async Stream Test")
 class AsyncStreamTest {
 
-    private void configureAsyncStreamSettings(final int bufferSize, final int timeoutMilliseconds) {
+    private void configureAsyncStreamSettings() {
         new TestConfigBuilder()
-                .withValue("reconnect.asyncOutputStreamFlushMilliseconds", timeoutMilliseconds)
-                .withValue("reconnect.asyncStreamBufferSize", bufferSize)
-                .withValue("reconnect.asyncOutputStreamFlushMilliseconds", "50")
+                .withValue("reconnect.asyncOutputStream", 10000)
+                .withValue("reconnect.asyncStreamBufferSize", 100)
+                .withValue("reconnect.asyncOutputStreamFlush", "50ms")
                 .getOrCreateConfig();
     }
 
@@ -132,7 +132,7 @@ class AsyncStreamTest {
     void maxOutputQueueSize() throws InterruptedException, IOException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings(bufferSize, 10_000);
+        configureAsyncStreamSettings();
 
         final int count = 1_000;
 
@@ -199,7 +199,7 @@ class AsyncStreamTest {
     void maxInputQueueSize() throws IOException, InterruptedException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings(bufferSize, 10_000);
+        configureAsyncStreamSettings();
 
         final int count = 1_000;
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
