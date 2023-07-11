@@ -44,11 +44,7 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
     @Nullable
     @Override
-    public StakingNodeInfo get(@NonNull final AccountID nodeId) {
-        return getStakingInfoLeaf(nodeId);
-    }
-
-    private StakingNodeInfo getStakingInfoLeaf(final AccountID nodeId) {
+    public StakingNodeInfo get(final long nodeId) {
         return stakingInfoState.get(nodeId);
     }
 }
