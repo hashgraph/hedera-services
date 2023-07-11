@@ -17,22 +17,22 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.base.StakingInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with node stakimg infos.
+ * working with account-specific staking info.
  */
 public interface ReadableStakingInfoStore {
     /**
-     * Fetches a {@link StakingNodeInfo} object from state with the given {@link AccountID}. If the node could not be
-     * fetched because the given node doesn't exist, returns {@code null}.
+     * Fetches a {@link StakingInfo} object from state with the given {@link AccountID}. If the info can't be
+     * fetched because the given account's staking info doesn't exist, returns {@code null}.
      *
-     * @param nodeId given node account id
-     * @return {@link StakingNodeInfo} object if successfully fetched or {@code null} if the node doesn't exist
+     * @param accountId the given account id
+     * @return {@link StakingInfo} object if successfully fetched or {@code null} if the staking info doesn't exist
      */
     @Nullable
-    StakingNodeInfo get(@NonNull final AccountID nodeId);
+    StakingInfo get(@NonNull final AccountID accountId);
 }

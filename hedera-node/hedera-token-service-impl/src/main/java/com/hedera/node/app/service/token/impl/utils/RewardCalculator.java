@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.utils;
 
+import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public interface RewardCalculator {
     // those are functions from mono RewardCalculator
     long epochSecondAtStartOfPeriod(final long stakePeriod);
 
-    long estimatePendingRewards(final Account account, @Nullable final StakingNodeInfo stakingNodeInfo);
+    long estimatePendingRewards(final Account account, @Nullable final StakingInfo stakingInfo);
 }

@@ -18,10 +18,9 @@ package com.hedera.node.app.service.mono.state.migration;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.ReadableStakingNodeInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -31,13 +30,17 @@ import java.util.stream.Collectors;
  */
 public final class StakingNodeInfoStateTranslator {
 
-    @NonNull
+    private StakingNodeInfoStateTranslator() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     /**
      * Translates a {@link StakingNodeInfo} to a {@link  com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}.
-     * @param stakingNodeInfo the {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInf} to translate
+     * @param merkleStakingInfo the {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo} to translate
      * @return the translated {@link StakingNodeInfo}
      */
-    public static StakingNodeInfo stakingInfoFromMerkleStakingInfo(
+    @NonNull
+    public static StakingNodeInfo stakingNodeInfoFromMerkleStakingInfo(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfo) {
         requireNonNull(merkleStakingInfo);
         return StakingNodeInfo.newBuilder()
@@ -59,15 +62,15 @@ public final class StakingNodeInfoStateTranslator {
     @NonNull
     /**
      * Translates a {@link StakingNodeInfo} to a {@link  com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}.
-     * @param accountID the {@link AccountID} to get the staking info for
-     * @param readableStakingInfoStore the {@link ReadableStakingInfoStore} to get the staking info from
+     * @param nodeId the {@link Long} node ID to get the staking info for
+     * @param readableStakingNodeInfoStore the {@link ReadableStakingNodeInfoStore} to get the node's staking info from
      * @return the translated {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}
      */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfoFromStakingNodeInfo(
-            @NonNull AccountID accountID, @NonNull ReadableStakingInfoStore readableStakingInfoStore) {
-        requireNonNull(accountID);
-        requireNonNull(readableStakingInfoStore);
-        final var optionalStakingInfo = readableStakingInfoStore.get(accountID);
+            @NonNull Long nodeId, @NonNull ReadableStakingNodeInfoStore readableStakingNodeInfoStore) {
+        requireNonNull(nodeId);
+        requireNonNull(readableStakingNodeInfoStore);
+        final var optionalStakingInfo = readableStakingNodeInfoStore.get(nodeId);
         if (optionalStakingInfo == null) {
             throw new IllegalArgumentException("Staking Info not found");
         }

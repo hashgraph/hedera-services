@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -44,16 +44,16 @@ class ReadableStakingInfoStoreImplTest {
     private ReadableStates states;
 
     @Mock
-    private StakingNodeInfo tokingNodeInfo;
+    private StakingInfo stakingInfo;
 
     private ReadableStakingInfoStoreImpl subject;
 
     @BeforeEach
     void setUp() {
-        final var readableStakingNodes = MapReadableKVState.<AccountID, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .value(ACCOUNT_10_ID, tokingNodeInfo)
+        final var readableStakingNodes = MapReadableKVState.<AccountID, StakingInfo>builder(STAKING_INFO_KEY)
+                .value(ACCOUNT_10_ID, stakingInfo)
                 .build();
-        given(states.<AccountID, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        given(states.<AccountID, StakingInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
 
         subject = new ReadableStakingInfoStoreImpl(states);
     }
@@ -67,7 +67,7 @@ class ReadableStakingInfoStoreImplTest {
     @Test
     void testGet() {
         final var result = subject.get(ACCOUNT_10_ID);
-        Assertions.assertThat(result).isEqualTo(tokingNodeInfo);
+        Assertions.assertThat(result).isEqualTo(stakingInfo);
     }
 
     @Test

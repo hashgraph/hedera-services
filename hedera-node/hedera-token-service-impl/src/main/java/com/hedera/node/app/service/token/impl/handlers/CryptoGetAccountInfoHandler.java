@@ -45,7 +45,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountInfo;
@@ -151,7 +150,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                         }
 
                         @Override
-                        public long estimatePendingRewards(Account account, @Nullable StakingNodeInfo stakingNodeInfo) {
+                        public long estimatePendingRewards(Account account, @Nullable StakingInfo stakingInfo) {
                             return 0;
                         }
                     }); // remove this when we have a real reward calculator
@@ -324,7 +323,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                 }
             }
         }
-        return null;
+        return new byte[0];
     }
 
     /**
@@ -335,7 +334,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * @return StakingInfo object
      */
     private StakingInfo getStakingInfo(
-            final Account account,
+            @NonNull final Account account,
             @NonNull final RewardCalculator rewardCalculator,
             @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
         final var stakingInfo =
@@ -345,7 +344,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         if (stakedNum < 0) {
             // Staked num for a node is (-nodeId -1)
             stakingInfo.stakedNodeId(-stakedNum - 1);
-            addNodeStakeMeta(stakingInfo, account, rewardCalculator, readableStakingInfoStore);
+            addStakingMeta(stakingInfo, account, rewardCalculator, readableStakingInfoStore);
         } else if (stakedNum > 0) {
             stakingInfo.stakedAccountId(
                     AccountID.newBuilder().realmNum(0).shardNum(0).accountNum(stakedNum));
@@ -360,20 +359,19 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * @param account   the account to be calculated from
      * @param rewardCalculator  the reward calculator
      * @param readableStakingInfoStore  readable staking info store
-     * @return long of StakedNodeAddressBookId
      */
-    private void addNodeStakeMeta(
-            final StakingInfo.Builder stakingInfo,
+    private void addStakingMeta(
+            @NonNull final StakingInfo.Builder stakingInfo,
             @NonNull final Account account,
             @NonNull final RewardCalculator rewardCalculator,
             @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
         final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.stakePeriodStart());
         stakingInfo.stakePeriodStart(Timestamp.newBuilder().seconds(startSecond));
         if (mayHavePendingReward(account)) {
-            final var stakingNodeInfo = readableStakingInfoStore.get(AccountID.newBuilder()
+            final var nodeAcctStakingInfo = readableStakingInfoStore.get(AccountID.newBuilder()
                     .accountNum(getStakedNodeAddressBookId(account))
                     .build());
-            final var pendingReward = rewardCalculator.estimatePendingRewards(account, stakingNodeInfo);
+            final var pendingReward = rewardCalculator.estimatePendingRewards(account, nodeAcctStakingInfo);
             stakingInfo.pendingReward(pendingReward);
         }
     }

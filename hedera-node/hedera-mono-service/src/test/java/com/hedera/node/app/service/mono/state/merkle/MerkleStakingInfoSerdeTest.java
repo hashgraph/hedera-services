@@ -47,7 +47,7 @@ public class MerkleStakingInfoSerdeTest extends SelfSerializableDataTest<MerkleS
         final var seededObject = (version < MerkleStakingInfo.RELEASE_0371_VERSION
                 ? propertySource.next0370StakingInfo()
                 : propertySource.next0371StakingInfo());
-        final var pbjStaking = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(seededObject);
+        final var pbjStaking = StakingNodeInfoStateTranslator.stakingNodeInfoFromMerkleStakingInfo(seededObject);
         final var merkleStakingInfo = StakingNodeInfoStateTranslator.merkleStakingInfoFromStakingNodeInfo(pbjStaking);
         return merkleStakingInfo;
     }
