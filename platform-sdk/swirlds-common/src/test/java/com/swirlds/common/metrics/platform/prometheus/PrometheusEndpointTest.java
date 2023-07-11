@@ -25,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
@@ -56,8 +57,7 @@ import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
@@ -398,7 +398,7 @@ class PrometheusEndpointTest {
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
-            assertThat(collector.get()).isEqualTo(Units.SECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.get()).isEqualTo(UnitConstants.SECONDS_TO_MILLISECONDS, within(EPSILON));
         }
     }
 
@@ -433,8 +433,10 @@ class PrometheusEndpointTest {
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
-            assertThat(collector.labels(LABEL_1).get()).isEqualTo(Units.MICROSECONDS_TO_MILLISECONDS, within(EPSILON));
-            assertThat(collector.labels(LABEL_2).get()).isEqualTo(Units.NANOSECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.labels(LABEL_1).get())
+                    .isEqualTo(UnitConstants.MICROSECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.labels(LABEL_2).get())
+                    .isEqualTo(UnitConstants.NANOSECONDS_TO_MILLISECONDS, within(EPSILON));
         }
     }
 

@@ -35,6 +35,7 @@ dependencies {
     implementation(testLibs.bundles.mocking)
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(testFixtures(project(":swirlds-config-api")))
     implementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(project(":swirlds-merkle"))
@@ -43,6 +44,7 @@ dependencies {
     testImplementation(libs.classgraph)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.utils)
+    testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(project(":swirlds-config-impl"))

@@ -16,6 +16,8 @@
 
 package com.swirlds.common.units;
 
+import com.swirlds.common.units.internal.UnitConverter;
+
 /**
  * Units for describing frequency.
  */

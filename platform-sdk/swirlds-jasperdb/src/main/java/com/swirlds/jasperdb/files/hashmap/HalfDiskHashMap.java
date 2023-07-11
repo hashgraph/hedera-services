@@ -23,7 +23,7 @@ import static com.swirlds.jasperdb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.LongList;
 import com.swirlds.jasperdb.collections.LongListDisk;
@@ -286,7 +286,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                 fileCollection.mergeFiles(bucketIndexToBucketLocation, filesToMerge, mergingPaused);
         logMergeStats(
                 storeName,
-                (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS,
+                (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS,
                 filesToMergeSize,
                 getSizeOfFilesByPath(newFilesCreated),
                 fileCollection,

@@ -196,6 +196,13 @@ public class EntityId implements SelfSerializable {
         return new EntityId(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
     }
 
+    public static EntityId fromPbjAccountId(final com.hedera.hapi.node.base.AccountID id) {
+        if (id == null) {
+            return MISSING_ENTITY_ID;
+        }
+        return new EntityId(id.shardNum(), id.realmNum(), id.accountNum());
+    }
+
     public static EntityId fromGrpcFileId(final FileID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
