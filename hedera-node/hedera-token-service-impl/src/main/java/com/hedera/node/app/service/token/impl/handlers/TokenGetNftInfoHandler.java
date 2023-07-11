@@ -26,9 +26,9 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
-import com.hedera.hapi.node.token.NftID;
 import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
 import com.hedera.hapi.node.token.TokenNftInfo;
 import com.hedera.hapi.node.transaction.Query;
@@ -74,10 +74,10 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         final var nftStore = context.createStore(ReadableNftStore.class);
         final var op = query.tokenGetNftInfoOrThrow();
         final var nftId = op.nftIDOrThrow();
-        validateTruePreCheck(nftId.hasTokenID(), INVALID_TOKEN_ID);
+        validateTruePreCheck(nftId.hasTokenId(), INVALID_TOKEN_ID);
         validateTruePreCheck(nftId.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
-        final var nft = nftStore.get(nftId.tokenID(), nftId.serialNumber());
+        final var nft = nftStore.get(nftId.tokenId(), nftId.serialNumber());
         validateFalsePreCheck(nft == null, INVALID_NFT_ID);
     }
 
@@ -126,7 +126,7 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         requireNonNull(readableNftStore);
         requireNonNull(config);
 
-        final var nft = readableNftStore.get(nftId.tokenID(), nftId.serialNumber());
+        final var nft = readableNftStore.get(nftId.tokenId(), nftId.serialNumber());
         if (nft == null) {
             return Optional.empty();
         } else {

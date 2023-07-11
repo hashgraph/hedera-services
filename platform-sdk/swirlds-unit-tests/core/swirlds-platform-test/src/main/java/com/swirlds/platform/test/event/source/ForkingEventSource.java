@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.event.source;
 
-import com.swirlds.common.test.TransactionGenerator;
+import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.ArrayList;
 import java.util.LinkedList;

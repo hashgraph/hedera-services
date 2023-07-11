@@ -319,7 +319,7 @@ class EntityIdUtilsTest {
     @Test
     void prettyPrintsNftIds() {
         final var tokenID = TokenID.newBuilder().setShardNum(1).setRealmNum(2).setTokenNum(3);
-        final var id = NftID.newBuilder().setTokenID(tokenID).setSerialNumber(1).build();
+        final var id = NftID.newBuilder().setTokenId(tokenID).setSerialNumber(1).build();
 
         assertEquals("1.2.3.1", EntityIdUtils.readableId(id));
     }

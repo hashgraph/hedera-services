@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.AssertionUtils;
+import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.platform.internal.ConsensusRound;
