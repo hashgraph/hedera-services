@@ -113,7 +113,7 @@ public class HapiApiClients {
 
     private void ensureChannelStubsInPool(final NodeConnectInfo node, final String uri, final boolean useTls) {
         final var existingPool = channelPools.computeIfAbsent(uri, COPY_ON_WRITE_LIST_SUPPLIER);
-        if (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
+        while (existingPool.size() < MAX_DESIRED_CHANNELS_PER_NODE) {
             final var channel = createNettyChannel(useTls, node.getHost(), node.getPort(), node.getTlsPort());
             existingPool.add(ChannelStubs.from(channel));
         }
