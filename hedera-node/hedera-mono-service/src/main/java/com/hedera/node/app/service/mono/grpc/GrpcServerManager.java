@@ -16,13 +16,9 @@
 
 package com.hedera.node.app.service.mono.grpc;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import io.helidon.grpc.server.GrpcServer;
-import java.util.List;
 import java.util.function.Consumer;
 
 /** Defines a type able to configure and start the gRPC servers. */
 public interface GrpcServerManager {
-    @NonNull
-    List<GrpcServer> start(int port, int tlsPort, Consumer<String> println);
+    void start(int port, int tlsPort, Consumer<String> println);
 }
