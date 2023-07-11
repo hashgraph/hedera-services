@@ -20,7 +20,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct handler
+ *
+ * @deprecated This interface is not needed anymore
  */
+@Deprecated(forRemoval = true)
 @FunctionalInterface
 public interface PreHandleDispatcher {
     /**
