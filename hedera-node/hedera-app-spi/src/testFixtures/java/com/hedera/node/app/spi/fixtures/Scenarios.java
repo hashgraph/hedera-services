@@ -21,6 +21,8 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
 
@@ -327,22 +329,29 @@ public interface Scenarios extends TransactionFactory {
 
     TestUser FRANK = new TestUser(AccountID.newBuilder().accountNum(2000L).build(), null, FAKE_ECDSA_KEY_INFOS[3]);
 
-    default Map<Long, Account> defaultAccounts() {
+    default Map<AccountID, Account> defaultAccounts() {
         return Map.of(
-                NODE_1.nodeAccountID().accountNumOrThrow(), NODE_1.account(),
-                ALICE.accountID().accountNumOrThrow(), ALICE.account(),
-                ERIN.accountID().accountNumOrThrow(), ERIN.account());
+                NODE_1.nodeAccountID(), NODE_1.account(),
+                ALICE.accountID(), ALICE.account(),
+                ERIN.accountID(), ERIN.account());
     }
 
-    default Map<String, AccountID> defaultAliases() {
+    default Map<Bytes, AccountID> defaultAliases() {
         return Map.of();
     }
 
-    default MapReadableKVState<Long, Account> defaultAccountKVState() {
+    default MapReadableKVState<AccountID, Account> defaultAccountKVState() {
         return new MapReadableKVState<>("ACCOUNTS", defaultAccounts());
     }
 
-    default MapReadableKVState<String, AccountID> defaultAliasesKVState() {
+    default MapReadableKVState<Bytes, AccountID> defaultAliasesKVState() {
         return new MapReadableKVState<>("ALIASES", defaultAliases());
+    }
+
+    default ReadableStates defaultTokenReadableStates() {
+        return MapReadableStates.builder()
+                .state(defaultAccountKVState())
+                .state(defaultAliasesKVState())
+                .build();
     }
 }

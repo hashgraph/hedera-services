@@ -438,14 +438,16 @@ class MonoTransactionDispatcherTest {
                 TransactionBody.newBuilder()
                         .systemDelete(SystemDeleteTransactionBody.newBuilder().build())
                         .build(),
-                configuration);
+                configuration,
+                dispatcher);
         final var invalidSystemUndelete = new PreHandleContextImpl(
                 readableStoreFactory,
                 TransactionBody.newBuilder()
                         .systemUndelete(
                                 SystemUndeleteTransactionBody.newBuilder().build())
                         .build(),
-                configuration);
+                configuration,
+                dispatcher);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(null)).isInstanceOf(NullPointerException.class);
@@ -462,7 +464,7 @@ class MonoTransactionDispatcherTest {
     void testDataNotSetFails() throws PreCheckException {
         // given
         final var txBody = TransactionBody.newBuilder().build();
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration, dispatcher);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
@@ -476,7 +478,7 @@ class MonoTransactionDispatcherTest {
         final var txBody = TransactionBody.newBuilder()
                 .nodeStakeUpdate(NodeStakeUpdateTransactionBody.newBuilder())
                 .build();
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration, dispatcher);
 
         // then
         assertThatThrownBy(() -> dispatcher.dispatchPreHandle(context))
@@ -866,7 +868,7 @@ class MonoTransactionDispatcherTest {
             final TransactionBody txBody, final Function<TransactionHandlers, TransactionHandler> handlerProvider)
             throws PreCheckException {
         // given
-        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration);
+        final var context = new PreHandleContextImpl(readableStoreFactory, txBody, configuration, dispatcher);
         final var handler = handlerProvider.apply(handlers);
 
         // when

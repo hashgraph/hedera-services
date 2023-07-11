@@ -32,7 +32,9 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -77,29 +79,35 @@ public class PreHandleContextImpl implements PreHandleContext {
     /** Configuration to be used during pre-handle */
     private final Configuration configuration;
 
+    private final TransactionDispatcher dispatcher;
+
     public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
-            @NonNull final Configuration configuration)
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher)
             throws PreCheckException {
         this(
                 storeFactory,
                 txn,
                 txn.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                configuration);
+                configuration,
+                dispatcher);
     }
 
     /** Create a new instance */
-    private PreHandleContextImpl(
+    public PreHandleContextImpl(
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final TransactionBody txn,
             @NonNull final AccountID payer,
-            @NonNull final Configuration configuration)
+            @NonNull final Configuration configuration,
+            @NonNull final TransactionDispatcher dispatcher)
             throws PreCheckException {
-        this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' must not be null.");
-        this.txn = requireNonNull(txn, "The supplied argument 'txn' cannot be null!");
-        this.payer = requireNonNull(payer, "The supplied argument 'payer' cannot be null!");
-        this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
+        this.storeFactory = requireNonNull(storeFactory, "storeFactory must not be null.");
+        this.txn = requireNonNull(txn, "txn must not be null!");
+        this.payer = requireNonNull(payer, "payer msut not be null!");
+        this.configuration = requireNonNull(configuration, "configuration must not be null!");
+        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null!");
 
         this.accountStore = storeFactory.getStore(ReadableAccountStore.class);
 
@@ -346,12 +354,24 @@ public class PreHandleContextImpl implements PreHandleContext {
         return this;
     }
 
+    @NonNull
+    @Override
+    public TransactionKeys allKeysForTransaction(
+            @NonNull TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException {
+        dispatcher.dispatchPureChecks(nestedTxn);
+        final var nestedContext =
+                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
+        dispatcher.dispatchPreHandle(nestedContext);
+        return nestedContext;
+    }
+
     @Override
     @NonNull
     public PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested)
             throws PreCheckException {
-        this.innerContext = new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration);
+        this.innerContext =
+                new PreHandleContextImpl(storeFactory, nestedTxn, payerForNested, configuration, dispatcher);
         return this.innerContext;
     }
 
