@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -1292,7 +1291,10 @@ public class ContractCallSuite extends HapiSuite {
         return defaultHapiSpec("InsufficientFee")
                 .given(cryptoCreate("accountToPay"), uploadInitCode(contract), contractCreate(contract))
                 .when()
-                .then(contractCall(contract, "create").fee(0L).payingWith("accountToPay"));
+                .then(contractCall(contract, "create")
+                        .fee(0L)
+                        .payingWith("accountToPay")
+                        .hasPrecheck(INSUFFICIENT_TX_FEE));
     }
 
     HapiSpec nonPayable() {
@@ -1320,7 +1322,7 @@ public class ContractCallSuite extends HapiSuite {
 
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
-        return onlyDefaultHapiSpec("smartContractFailFirst")
+        return defaultHapiSpec("smartContractFailFirst")
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
                         cryptoCreate(civilian).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
