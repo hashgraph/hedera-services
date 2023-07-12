@@ -19,6 +19,7 @@ module com.hedera.node.app {
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
+    requires transitive grpc.netty;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.contract;
@@ -35,9 +36,8 @@ module com.hedera.node.app {
     requires com.swirlds.platform;
     requires grpc.stub;
     requires io.grpc;
-    requires io.helidon.common.configurable;
-    requires io.helidon.grpc.core;
-    requires io.helidon.grpc.server;
+    requires io.netty.handler;
+    requires io.netty.transport.classes.epoll;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires org.hyperledger.besu.datatypes;
