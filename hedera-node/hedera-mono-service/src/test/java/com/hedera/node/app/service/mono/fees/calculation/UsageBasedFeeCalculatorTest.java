@@ -204,7 +204,7 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void estimatesContractCallPayerBalanceChanges() throws Throwable {
         // setup:
-        final long gas = 100_234L;
+        final long gas = 1_234L;
         final long sent = 5_432L;
         signedTxn = newSignedContractCall()
                 .payer(asAccountString(payer))
