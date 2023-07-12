@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -55,6 +55,7 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -148,7 +149,10 @@ public class HandleWorkflow {
                     preHandleResult.txInfo().signedBytes());
 
             // Check transaction duplication
-            checkDuplicates(preHandleResult.txInfo().txBody());
+            checkDuplicates(preHandleResult.txInfo().txBody().transactionIDOrThrow());
+
+            // If the transaction is not duplicated we want to add it to the cache
+            addTransactionToCache(preHandleResult, consensusNow);
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -219,11 +223,20 @@ public class HandleWorkflow {
         recordManager.endUserTransaction(recordListBuilder.build());
     }
 
-    private void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
-        final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+    private void checkDuplicates(@NonNull final TransactionID transactionID) throws PreCheckException {
+        final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
         if (foundTransactionRecord != null) {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
+    }
+
+    private void addTransactionToCache(
+            @NonNull final PreHandleResult preHandleResult, @NonNull final Instant consensusNow) {
+        final var txBody = preHandleResult.txInfo().txBody();
+        final var nodeId = txBody.nodeAccountID().accountNum();
+        final var payerAccountId = preHandleResult.payer();
+        final var transactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+        hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
     }
 
     private void recordFailedTransaction(

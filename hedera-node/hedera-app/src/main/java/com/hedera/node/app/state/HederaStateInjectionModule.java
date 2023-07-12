@@ -33,6 +33,9 @@ public interface HederaStateInjectionModule {
     RecordCache provideRecordCache(RecordCacheImpl cache);
 
     @Binds
+    HederaRecordCache provideHederaRecordCache(RecordCacheImpl cache);
+
+    @Binds
     DeduplicationCache provideDeduplicationCache(DeduplicationCacheImpl cache);
 
     @Provides
