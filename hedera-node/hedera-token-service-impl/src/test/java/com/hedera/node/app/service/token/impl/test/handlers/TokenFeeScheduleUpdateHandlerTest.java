@@ -82,9 +82,18 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update works as expected for fungible token")
     void handleWorksAsExpectedForFungibleToken() {
+        txn = TransactionBody.newBuilder()
+                .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .customFees(List.of(withFixedFee(htsFixedFee), withFractionalFee(fractionalFee)))
+                        .build())
+                .build();
+        given(context.body()).willReturn(txn);
+
         // before fee schedule update, validate no custom fees on the token
         final var originalToken = writableTokenStore.get(fungibleTokenId);
-        assertThat(originalToken.customFees()).isEmpty();
+        assertThat(originalToken.customFees())
+                .isEqualTo(List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee)));
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context);
@@ -96,7 +105,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         final var expectedToken = writableTokenStore.get(fungibleTokenId);
         assertThat(expectedToken.customFees()).hasSize(2);
         assertThat(expectedToken.customFees())
-                .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(fixedFee)));
+                .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(htsFixedFee)));
     }
 
     @Test
@@ -106,14 +115,19 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         txn = TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
                         .tokenId(tokenId)
-                        .customFees(List.of(withRoyaltyFee(royaltyFee)))
+                        .customFees(List.of(withRoyaltyFee(royaltyFee
+                                .copyBuilder()
+                                .fallbackFee(htsFixedFee)
+                                .build())))
                         .build())
                 .build();
         given(context.body()).willReturn(txn);
 
         // before fee schedule update, validate no custom fees on the token
         final var originalToken = writableTokenStore.get(tokenId);
-        assertThat(originalToken.customFees()).isEmpty();
+        assertThat(originalToken.customFees())
+                .isEqualTo(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee(hbarFixedFee).build())));
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context);
@@ -124,7 +138,9 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var expectedToken = writableTokenStore.get(nonFungibleTokenId);
         assertThat(expectedToken.customFees()).hasSize(1);
-        assertThat(expectedToken.customFees()).hasSameElementsAs(List.of(withRoyaltyFee(royaltyFee)));
+        assertThat(expectedToken.customFees())
+                .hasSameElementsAs(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())));
     }
 
     @Test

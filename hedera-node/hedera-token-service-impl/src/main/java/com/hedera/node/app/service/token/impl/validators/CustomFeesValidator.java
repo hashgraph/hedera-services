@@ -68,6 +68,12 @@ public class CustomFeesValidator {
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final List<CustomFee> customFees) {
+        requireNonNull(createdToken);
+        requireNonNull(accountStore);
+        requireNonNull(tokenRelationStore);
+        requireNonNull(tokenStore);
+        requireNonNull(customFees);
+
         // It is possible that denominating tokenId is set to sentinel value of 0.0.0.
         // In that scenario, the created token should be used as the denominating token.
         // This is a valid scenario for fungible common tokens.
