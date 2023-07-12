@@ -94,9 +94,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -151,7 +148,6 @@ class UsageBasedFeeCalculatorTest {
     private PricedUsageCalculator pricedUsageCalculator;
 
     private final AtomicLong suggestedMultiplier = new AtomicLong(1L);
-    private final GasCalculator gasCalculator = new LondonGasCalculator();
 
     private UsageBasedFeeCalculator subject;
 
@@ -186,8 +182,7 @@ class UsageBasedFeeCalculatorTest {
                 new NestedMultiplierSource(),
                 pricedUsageCalculator,
                 Set.of(incorrectQueryEstimator, correctQueryEstimator),
-                txnUsageEstimators,
-                gasCalculator);
+                txnUsageEstimators);
     }
 
     @Test
@@ -207,29 +202,7 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void estimatesContractCallPayerBalanceChangesLessThanIntrinsicGas() throws Throwable {
-        // setup:
-        final long gas = 1_234L;
-        final long sent = 5_432L;
-        signedTxn = newSignedContractCall()
-                .payer(asAccountString(payer))
-                .gas(gas)
-                .sending(sent)
-                .txnValidStart(at)
-                .get();
-        accessor = SignedTxnAccessor.from(signedTxn.toByteArray());
-
-        given(exchange.rate(at)).willReturn(currentRate);
-        given(usagePrices.defaultPricesGiven(ContractCall, at)).willReturn(defaultCurrentPrices);
-        // and:
-        final long expectedGasPrice = getTinybarsFromTinyCents(currentRate, mockFees.getGas() / FEE_DIVISOR_FACTOR);
-
-        // expect:
-        assertEquals(-(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false) * expectedGasPrice + sent), subject.estimatedNonFeePayerAdjustments(accessor, at));
-    }
-
-    @Test
-    void estimatesContractCallPayerBalanceChangesMoreThanIntrinsicGas() throws Throwable {
+    void estimatesContractCallPayerBalanceChanges() throws Throwable {
         // setup:
         final long gas = 100_234L;
         final long sent = 5_432L;
