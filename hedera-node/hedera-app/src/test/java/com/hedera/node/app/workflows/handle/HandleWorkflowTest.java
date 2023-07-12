@@ -147,9 +147,6 @@ class HandleWorkflowTest extends AppTestBase {
   @Mock(strictness = LENIENT)
   private SwirldTransaction platformTxn;
 
-  @Mock
-  private HederaRecordCache recordCache;
-
   private HandleWorkflow workflow;
 
   @Mock(strictness = LENIENT)
@@ -200,7 +197,6 @@ class HandleWorkflowTest extends AppTestBase {
         hederaRecordCache);
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     void testContructorWithInvalidArguments() {
         final var instantSource = InstantSource.system();

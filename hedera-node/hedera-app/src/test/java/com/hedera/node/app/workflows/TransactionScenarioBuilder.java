@@ -39,7 +39,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class TransactionScenarioBuilder implements Scenarios {
     private TransactionBody body;
-    private HederaFunctionality function;
+    private final HederaFunctionality function;
 
     public TransactionScenarioBuilder() {
         this(goodDefaultBody(), HederaFunctionality.CRYPTO_TRANSFER);
@@ -138,6 +138,7 @@ public class TransactionScenarioBuilder implements Scenarios {
                         .build())
                 .transactionFee(1L)
                 .transactionValidDuration(Duration.newBuilder().seconds(60).build())
+                .nodeAccountID(ALICE.accountID())
                 .build();
     }
 }
