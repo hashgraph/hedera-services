@@ -1393,6 +1393,22 @@ public class ContractCallSuite extends HapiSuite {
                             allRunFor(spec, subop4);
                         }),
                         withOpContext((spec, ignore) -> {
+                            final var subop1 = balanceSnapshot("balanceBefore3", civilian);
+                            final var subop2 = contractCall(
+                                    SIMPLE_STORAGE_CONTRACT, "set", BigInteger.valueOf(999_999L))
+                                    .payingWith(civilian)
+                                    .gas(0)
+                                    .hasKnownStatus(INSUFFICIENT_GAS)
+                                    .refusingEthConversion()
+                                    .via("setValueNoGas");
+                            final var subop3 = getTxnRecord("setValue");
+                            allRunFor(spec, subop1, subop2, subop3);
+                            final var delta = subop3.getResponseRecord().getTransactionFee();
+                            final var subop4 = getAccountBalance(civilian)
+                                    .hasTinyBars(changeFromSnapshot("balanceBefore3", 0));
+                            allRunFor(spec, subop4);
+                        }),
+                        withOpContext((spec, ignore) -> {
                             final var subop1 = balanceSnapshot("balanceBefore4", civilian);
                             final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
                                     .payingWith(civilian)
