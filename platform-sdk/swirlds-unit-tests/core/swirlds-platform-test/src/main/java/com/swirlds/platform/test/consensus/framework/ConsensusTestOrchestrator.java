@@ -157,4 +157,8 @@ public class ConsensusTestOrchestrator {
     public List<Long> getWeights() {
         return weights;
     }
+
+    public List<ConsensusTestNode> getNodes() {
+        return nodes;
+    }
 }

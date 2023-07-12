@@ -149,6 +149,10 @@ public class TestIntake implements LoadableFromSignedState {
         return output.getConsensusRounds();
     }
 
+    public ConsensusRound getLatestRound(){
+        return output.getConsensusRounds().pollLast();
+    }
+
     /** prints the number of events in each round that reached consensus */
     public void printRoundSizes() {
         for (final ConsensusRound round : getConsensusRounds()) {

@@ -128,4 +128,8 @@ public class ConsensusTestNode {
     public TestIntake getIntake() {
         return intake;
     }
+
+    public Random getRandom() {
+        return random;
+    }
 }

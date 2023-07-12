@@ -28,6 +28,7 @@ import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.platform.internal.ConsensusRound;
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
@@ -102,11 +103,16 @@ public abstract class ConsensusUtils {
      */
     public static void loadEventsIntoGenerator(
             final SignedState signedState, final GraphGenerator<?> generator, final Random random) {
+        loadEventsIntoGenerator(signedState.getEvents(), generator, random);
+    }
+
+    public static void loadEventsIntoGenerator(
+            final EventImpl[] events, final GraphGenerator<?> generator, final Random random) {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
             final EventSource<?> source =
                     generator.getSource((int) address.getNodeId().id());
-            final List<IndexedEvent> eventsByCreator = Arrays.stream(signedState.getEvents())
+            final List<IndexedEvent> eventsByCreator = Arrays.stream(events)
                     .map(IndexedEvent.class::cast)
                     .filter(e -> e.getCreatorId().id() == address.getNodeId().id())
                     .toList();
