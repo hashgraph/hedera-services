@@ -447,6 +447,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
     }
 
     @Test
+    @DisplayName("Root node should be hashed after full leaves rehash")
+    void testHashedAfterFullRehash() {
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        root.fullLeafRehashIfNecessary();
+
+        assertTrue(root.isHashed());
+    }
+
+    @Test
     @DisplayName("Fail to do full rehash because of save failure")
     void testFullRehash_failOnSave() throws InterruptedException {
         final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
