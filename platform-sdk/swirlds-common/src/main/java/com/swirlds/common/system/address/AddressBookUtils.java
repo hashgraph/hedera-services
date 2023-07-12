@@ -113,8 +113,8 @@ public class AddressBookUtils {
                 nextNodeIdParsed = true;
             } else {
                 throw new ParseException(
-                        "The line [%s] does not start with `address` or `nextAvailableNodeId`."
-                                .formatted(line.substring(0, 30)),
+                        "The line [%s] does not start with `%s` or `%s`."
+                                .formatted(line.substring(0, 30), ADDRESS_KEYWORD, NEXT_NODE_ID_KEYWORD),
                         0);
             }
         }
