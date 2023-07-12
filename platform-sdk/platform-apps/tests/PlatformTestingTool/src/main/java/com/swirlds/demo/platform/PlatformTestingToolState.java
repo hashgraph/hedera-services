@@ -252,9 +252,13 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
 
-        setConfig(sourceState.getConfig().copy());
+        if (sourceState.getConfig() != null) {
+            setConfig(sourceState.getConfig().copy());
+        }
 
-        setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
+        if (sourceState.getNextSeqCons() != null) {
+            setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
+        }
         if (platform != null) {
             // If nextSeqCons is shorter than the address book then add 0s until the sizes match
             for (int index = getNextSeqCons().size();
@@ -318,14 +322,18 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         }
 
-        setIssLeaf(sourceState.getIssLeaf().copy());
+        if (sourceState.getIssLeaf() != null) {
+            setIssLeaf(sourceState.getIssLeaf().copy());
+        }
 
         if (sourceState.getNftLedger() != null) {
             setNftLedger(sourceState.getNftLedger().copy());
         }
 
         // set the current value of QuorumResult from source state
-        setQuorumResult(sourceState.getQuorumResult().copy());
+        if (sourceState.getQuorumResult() != null) {
+            setQuorumResult(sourceState.getQuorumResult().copy());
+        }
         if (controlQuorum != null) {
             controlQuorum.setQuorumResult(getQuorumResult().copy());
         }
