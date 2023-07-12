@@ -17,8 +17,7 @@
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
-
-import com.swirlds.common.utility.Units;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 
 /**
  * Responsible for throttling transaction by gas limit. Uses a {@link DiscreteLeakyBucket} under the
@@ -27,7 +26,7 @@ import com.swirlds.common.utility.Units;
  * called.
  */
 public class GasLimitBucketThrottle {
-    private static final long TIME_TO_EMPTY = Units.SECONDS_TO_NANOSECONDS;
+    private static final long TIME_TO_EMPTY = SECONDS_TO_NANOSECONDS;
 
     private final DiscreteLeakyBucket bucket;
     private long lastAllowedUnits = 0L;
