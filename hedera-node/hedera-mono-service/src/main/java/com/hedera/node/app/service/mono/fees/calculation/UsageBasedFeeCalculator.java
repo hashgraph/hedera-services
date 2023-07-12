@@ -59,8 +59,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and
@@ -77,7 +75,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private final PricedUsageCalculator pricedUsageCalculator;
     private final List<QueryResourceUsageEstimator> queryUsageEstimators;
     private final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators;
-    private final GasCalculator gasCalculator;
+
     @Inject
     public UsageBasedFeeCalculator(
             final AutoRenewCalcs autoRenewCalcs,
@@ -87,8 +85,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             final @GenericPriceMultiplier FeeMultiplierSource feeMultiplierSource,
             final PricedUsageCalculator pricedUsageCalculator,
             final Set<QueryResourceUsageEstimator> queryUsageEstimators,
-            final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators,
-            final GasCalculator gasCalculator) {
+            final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators) {
         this.exchange = exchange;
         this.usagePrices = usagePrices;
         this.feeMultiplierSource = feeMultiplierSource;
@@ -96,7 +93,6 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         this.txnUsageEstimators = txnUsageEstimators;
         this.queryUsageEstimators = new ArrayList<>(queryUsageEstimators);
         this.pricedUsageCalculator = pricedUsageCalculator;
-        this.gasCalculator = gasCalculator;
 
         autoCreationLogic.setFeeCalculator(this);
     }
@@ -194,7 +190,7 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             case ContractCall:
                 var contractCallOp = accessor.getTxn().getContractCall();
                 return -contractCallOp.getAmount()
-                        - Math.max(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false), contractCallOp.getGas()) * estimatedGasPriceInTinybars(ContractCall, at);
+                        - contractCallOp.getGas() * estimatedGasPriceInTinybars(ContractCall, at);
             case EthereumTransaction:
                 return -accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
             default:

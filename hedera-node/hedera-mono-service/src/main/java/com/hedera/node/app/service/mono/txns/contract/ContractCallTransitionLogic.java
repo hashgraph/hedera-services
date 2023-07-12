@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -59,11 +59,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @Singleton
 public class ContractCallTransitionLogic implements PreFetchableTransition {
     private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
-
     private static final Address NEVER_ACTIVE_CONTRACT_ADDRESS = Address.ZERO;
 
     private final AccountStore accountStore;
@@ -78,6 +78,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private final EntityAccess entityAccess;
     private final EvmSigsVerifier sigsVerifier;
     private final WorldLedgers worldLedgers;
+    private final GasCalculator gasCalculator;
 
     @Inject
     public ContractCallTransitionLogic(
@@ -92,7 +93,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             final AliasManager aliasManager,
             final EntityAccess entityAccess,
             final EvmSigsVerifier sigsVerifier,
-            final WorldLedgers worldLedgers) {
+            final WorldLedgers worldLedgers,
+            final GasCalculator gasCalculator) {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.worldState = worldState;
@@ -105,6 +107,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         this.entityAccess = entityAccess;
         this.sigsVerifier = sigsVerifier;
         this.worldLedgers = worldLedgers;
+        this.gasCalculator = gasCalculator;
     }
 
     @Override
@@ -224,8 +227,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
         var op = transactionBody.getContractCall();
 
-        if (op.getGas() < 0) {
-            return CONTRACT_NEGATIVE_GAS;
+        if (op.getGas() < gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)) {
+            return INSUFFICIENT_GAS;
         }
         if (op.getAmount() < 0) {
             return CONTRACT_NEGATIVE_VALUE;
