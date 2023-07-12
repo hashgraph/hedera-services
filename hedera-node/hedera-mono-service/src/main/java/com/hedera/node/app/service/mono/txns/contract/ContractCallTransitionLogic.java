@@ -65,6 +65,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class ContractCallTransitionLogic implements PreFetchableTransition {
     private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
     private static final Address NEVER_ACTIVE_CONTRACT_ADDRESS = Address.ZERO;
+    private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
 
     private final AccountStore accountStore;
     private final TransactionContext txnCtx;
@@ -227,7 +228,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
     private ResponseCodeEnum validateSemantics(final TransactionBody transactionBody) {
         var op = transactionBody.getContractCall();
 
-        if (op.getGas() < gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)) {
+        if (op.getGas()
+                < Math.max(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false), INTRINSIC_GAS_LOWER_BOUND)) {
             return INSUFFICIENT_GAS;
         }
         if (op.getAmount() < 0) {

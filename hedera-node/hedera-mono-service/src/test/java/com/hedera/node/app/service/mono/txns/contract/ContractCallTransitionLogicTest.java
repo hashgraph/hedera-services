@@ -177,6 +177,8 @@ class ContractCallTransitionLogicTest {
                 sigsVerifier,
                 worldLedgers,
                 gasCalculator);
+        // reset the gas value for each test.
+        gas = 21_000;
     }
 
     @Test
