@@ -16,15 +16,11 @@
 
 package com.hedera.node.app.workflows;
 
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.handle.HandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowInjectionModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowInjectionModule;
-import dagger.Binds;
 import dagger.Module;
-import javax.inject.Singleton;
 
 /**
  * Dagger module for all workflows
@@ -36,9 +32,4 @@ import javax.inject.Singleton;
             PreHandleWorkflowInjectionModule.class,
             QueryWorkflowInjectionModule.class
         })
-public interface WorkflowsInjectionModule {
-
-    @Binds
-    @Singleton
-    HederaRecordCache bindHederaRecordCache(RecordCacheImpl recordCache);
-}
+public interface WorkflowsInjectionModule {}

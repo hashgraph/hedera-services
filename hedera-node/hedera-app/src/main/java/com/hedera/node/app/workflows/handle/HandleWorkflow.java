@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -35,6 +36,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -57,6 +59,7 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -179,7 +182,10 @@ public class HandleWorkflow {
           }
 
           // Check transaction duplication
-          checkDuplicates(preHandleResult.txInfo().txBody());
+          checkDuplicates(preHandleResult.txInfo().txBody().transactionIDOrThrow());
+
+          // If the transaction is not duplicated we want to add it to the cache
+          addTransactionToCache(preHandleResult, consensusNow);
 
           // Check all signature verifications. This will also wait, if validation is still ongoing.
           final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -269,6 +275,24 @@ public class HandleWorkflow {
     if (foundTransactionRecord != null) {
       throw new PreCheckException(DUPLICATE_TRANSACTION);
     }
+  }
+
+  private void addTransactionToCache(
+      @NonNull final PreHandleResult preHandleResult, @NonNull final Instant consensusNow) {
+    final var txBody = preHandleResult.txInfo().txBody();
+    final var nodeId = txBody.nodeAccountID().accountNum();
+    final var payerAccountId = preHandleResult.payer();
+    final var transactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+    hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
+  }
+
+  private void recordFailedTransaction(
+      @NonNull final ResponseCodeEnum status,
+      @NonNull final SingleTransactionRecordBuilder recordBuilder,
+      @NonNull final RecordListBuilder recordListBuilder) {
+    recordBuilder.status(status);
+    recordListBuilder.revertChildRecordBuilders(recordBuilder);
+    // TODO: Finalize failed transaction with the help of token-service and commit required state changes
   }
 
   private void recordFailedTransaction(
