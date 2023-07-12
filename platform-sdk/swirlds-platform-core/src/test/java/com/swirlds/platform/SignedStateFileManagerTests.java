@@ -211,6 +211,7 @@ class SignedStateFileManagerTests {
 
         if (successExpected) {
             validateSavingOfState(signedState);
+            assertEquals(signedState.getRound(), manager.getLatestSavedStateRound());
         }
 
         assertEquals(successExpected, saveSucceeded.get(), "Invalid 'success' value passed to StateToDiskConsumer");
@@ -567,6 +568,8 @@ class SignedStateFileManagerTests {
                         },
                         Duration.ofSeconds(2),
                         "state saving should have wrapped up by now");
+
+                assertEquals(signedState.getRound(), manager.getLatestSavedStateRound());
 
                 // The first state with a timestamp after this boundary should be saved
                 nextBoundary = Instant.ofEpochSecond(

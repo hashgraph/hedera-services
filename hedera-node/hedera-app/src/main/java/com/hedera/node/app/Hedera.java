@@ -110,11 +110,6 @@ import org.apache.logging.log4j.Logger;
  * controls execution of the node. If you want to understand our system, this is a great place to start!
  */
 public final class Hedera implements SwirldMain {
-    static {
-        // Helidon uses java.util.logging, so we need to set up the bridge before it has a chance to log anything
-        System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
-    }
-
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;

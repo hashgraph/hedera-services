@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.signed;
 
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
@@ -47,6 +48,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -113,6 +115,12 @@ public class SignedStateFileManager implements Startable {
      * This method must be called when the minimum generation non-ancient of the oldest state snapshot on disk changes.
      */
     private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
+
+    /**
+     * The round number of the latest saved state, or {@link com.swirlds.common.system.UptimeData#NO_ROUND} if no state
+     * has been saved since booting up.
+     */
+    private final AtomicLong latestSavedStateRound = new AtomicLong(NO_ROUND);
 
     /**
      * Creates a new instance.
@@ -231,6 +239,9 @@ public class SignedStateFileManager implements Startable {
             try (reservedSignedState) {
                 try {
                     writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
+                    if (round > latestSavedStateRound.get()) {
+                        latestSavedStateRound.set(round);
+                    }
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
@@ -431,5 +442,15 @@ public class SignedStateFileManager implements Startable {
      */
     public synchronized long getMinimumGenerationNonAncientForOldestState() {
         return minimumGenerationNonAncientForOldestState;
+    }
+
+    /**
+     * Get the round of the latest state written to disk, or {@link com.swirlds.common.system.UptimeData#NO_ROUND} if no
+     * states have been written to disk since booting up.
+     *
+     * @return the latest saved state round
+     */
+    public long getLatestSavedStateRound() {
+        return latestSavedStateRound.get();
     }
 }
