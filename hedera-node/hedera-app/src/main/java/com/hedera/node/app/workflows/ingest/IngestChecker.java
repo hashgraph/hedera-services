@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -29,7 +28,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.info.CurrentPlatformStatus;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -37,7 +35,6 @@ import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -64,7 +61,6 @@ public final class IngestChecker {
     private final SolvencyPreCheck solvencyPreCheck;
     private final SignatureVerifier signatureVerifier;
     private final SignatureExpander signatureExpander;
-    private final HederaRecordCache hederaRecordCache;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -84,15 +80,13 @@ public final class IngestChecker {
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final HederaRecordCache hederaRecordCache) {
+            @NonNull final SignatureVerifier signatureVerifier) {
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.transactionChecker = requireNonNull(transactionChecker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.solvencyPreCheck = solvencyPreCheck;
         this.signatureVerifier = requireNonNull(signatureVerifier);
         this.signatureExpander = requireNonNull(signatureExpander);
-        this.hederaRecordCache = requireNonNull(hederaRecordCache);
     }
 
     /**
@@ -125,41 +119,24 @@ public final class IngestChecker {
         // will convert that to INVALID_TRANSACTION_BODY.
         assert functionality != HederaFunctionality.NONE;
 
-        // 2. Check transaction duplication
-        checkDuplicates(txBody);
-
-        // 3. Check throttles
+        // 2. Check throttles
         if (throttleAccumulator.shouldThrottle(txInfo.txBody())) {
             throw new PreCheckException(BUSY);
         }
 
-        // 4. Get payer account
+        // 3. Get payer account
         final AccountID payerId =
                 txBody.transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT);
 
         solvencyPreCheck.checkPayerAccountStatus(state, payerId);
 
-        // 5. Check account balance
+        // 4. Check account balance
         solvencyPreCheck.checkSolvencyOfVerifiedPayer(state, tx);
 
-        // 6. Verify payer's signatures
+        // 5. Verify payer's signatures
         verifyPayerSignature(state, txInfo, payerId);
 
         return txInfo;
-    }
-
-    public void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
-        // TODO: not sure if this is how it should be implemented
-        // We are throwing an error only if the transactionId is in the cache and if the
-        // submitter is the creator of the transaction
-        final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
-        if (foundTransactionRecord != null) {
-            if (txBody.nodeAccountID() != null
-                    && txBody.nodeAccountID()
-                            .equals(txBody.transactionIDOrThrow().accountID())) {
-                throw new PreCheckException(DUPLICATE_TRANSACTION);
-            }
-        }
     }
 
     private void verifyPayerSignature(
