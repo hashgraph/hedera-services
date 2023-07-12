@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -152,7 +153,7 @@ public class HandleWorkflow {
             checkDuplicates(preHandleResult.txInfo().txBody().transactionIDOrThrow());
 
             // If the transaction is not duplicated we want to add it to the cache
-            addTransactionToCache(preHandleResult, consensusNow);
+            addTransactionToCache(preHandleResult, recordBuilder.build().recordStreamItem().record(), consensusNow);
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -231,11 +232,12 @@ public class HandleWorkflow {
     }
 
     private void addTransactionToCache(
-            @NonNull final PreHandleResult preHandleResult, @NonNull final Instant consensusNow) {
+            @NonNull final PreHandleResult preHandleResult,
+            @NonNull final TransactionRecord transactionRecord,
+            @NonNull final Instant consensusNow) {
         final var txBody = preHandleResult.txInfo().txBody();
         final var nodeId = txBody.nodeAccountID().accountNum();
         final var payerAccountId = preHandleResult.payer();
-        final var transactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
         hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
     }
 
