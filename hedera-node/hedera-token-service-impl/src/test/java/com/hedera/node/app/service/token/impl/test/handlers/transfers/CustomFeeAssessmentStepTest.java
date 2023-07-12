@@ -74,7 +74,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void hbarFixedFeeAndRoyaltyFeeWithFallback() {
+    void hbarFixedFeeAndRoyaltyFeeWithFallbackSelfDenomination() {
         // fungible token transfer with custom hbar fixed fee
         // and a fractional fee with netOfTransfers false
         // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hbar fee
@@ -138,18 +138,15 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         final var expectedLevel1TokenTransfers = Map.of(
                 fungibleTokenId,
-                Map.of(
-                        feeCollectorId,
-                        20L,
-                        tokensReceiver,
-                        -10L, // fallback royalty fee
-                        ownerId,
-                        -10L)); // fixed fee with fungible token
+                Map.of(feeCollectorId, 20L, tokensReceiver, -20L)); // First 10 is for fallback royalty fee from level 0
+        // second 10 is for next assessment of hts fee, since sef denominated will be modified in existing txn
+
         final var expectedGivenOpTokenTransfers = Map.of(
                 fungibleTokenId,
                 Map.of(
                         tokensReceiver, 1000L,
-                        ownerId, -1000L));
+                        ownerId, -1010L,
+                        feeCollectorId, 10L)); // hts self denominated fee will be adjusted in given txn
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
@@ -161,7 +158,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void hbarFixedFeeAndRoyaltyFeeNoFallback() {
+    void hbarFixedFeeAndRoyaltyFeeNoFallbackSelfDenomination() {
         // fungible token transfer with custom hbar fixed fee
         // and a fractional fee with netOfTransfers false
         // NFT transfer with royalty fee (fraction 1/2), no fallbackFee
@@ -220,21 +217,18 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenTxn();
 
         final var listOfOps = subject.assessCustomFees(transferContext);
-        assertThat(listOfOps).hasSize(2);
+        assertThat(listOfOps).hasSize(1);
 
         final var givenOp = listOfOps.get(0);
-        final var level1Op = listOfOps.get(1);
 
-        final var expectedLevel1TokenTransfers =
-                Map.of(fungibleTokenId, Map.of(feeCollectorId, 10L, ownerId, -10L)); // fixed fee with fungible token
         final var expectedGivenOpTokenTransfers = Map.of(
                 fungibleTokenId,
                 Map.of(
                         tokensReceiver, 1000L,
-                        ownerId, -1000L));
+                        ownerId, -1010L,
+                        feeCollectorId, 10L)); // fixed fee with self denomination will be adjusted in same txn body
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
-        assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
                 givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
@@ -243,7 +237,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void hbarFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfers() {
+    void hbarFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfersSelfDenomination() {
         // fungible token transfer with custom hbar fixed fee
         // and a fractional fee with netOfTransfers true
         // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hbar fee
@@ -263,11 +257,10 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenTxn();
 
         final var listOfOps = subject.assessCustomFees(transferContext);
-        assertThat(listOfOps).hasSize(3);
+        assertThat(listOfOps).hasSize(2);
 
         final var givenOp = listOfOps.get(0);
         final var level1Op = listOfOps.get(1);
-        final var level2Op = listOfOps.get(2);
 
         final var expectedLevel1Trasfers = Map.of(
                 feeCollectorId,
@@ -282,13 +275,12 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         feeCollectorId,
                                 10L, // since netOfTransfers is true fractional fee is charged to payer in next level
                         ownerId, -10L));
-        final var expectedLevel2Transfers = Map.of(
-                feeCollectorId, 1000L, ownerId, -1000L); // fixed fee for fractional token custom fee from level 1
         final var expectedGivenOpTokenTransfers = Map.of(
                 fungibleTokenId,
                 Map.of(
                         tokensReceiver, 1000L,
-                        ownerId, -1000L));
+                        ownerId, -1010L,
+                        feeCollectorId, 10L)); // fractional fees all are adjusted to input txn
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
         assertThatTransfersContains(level1Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel1Trasfers);
@@ -296,11 +288,10 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(
                 givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
-        assertThatTransfersContains(level2Op.transfers().accountAmountsOrElse(emptyList()), expectedLevel2Transfers);
     }
 
     @Test
-    void htsFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfers() {
+    void htsFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfersSelfDenomination() {
         // fungible token transfer with custom hts fixed fee
         // and a fractional fee with netOfTransfers true
         // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hts fee
@@ -310,6 +301,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 withFixedFee(htsFixedFee),
                 withFractionalFee(
                         fractionalFee.copyBuilder().netOfTransfers(true).build()));
+        // fractional fee with self denomination will modify given transaction
         writableTokenStore.put(
                 fungibleToken.copyBuilder().customFees(customfees).build());
         writableTokenStore.put(nonFungibleToken
@@ -334,14 +326,16 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                         feeCollectorId,
                         20L,
                         tokensReceiver,
-                        -10L, // fallback royalty fee
-                        ownerId,
-                        -10L)); // fixed fee with fungible token
+                        -20L)); // 10 is for fallback royalty fee from given transaction.
+        // When assessing the next level, since it is self denominated we append in same transaction body
+
         final var expectedGivenOpTokenTransfers = Map.of(
                 fungibleTokenId,
                 Map.of(
                         tokensReceiver, 1000L,
-                        ownerId, -1000L));
+                        ownerId, -1010L,
+                        feeCollectorId, 10L)); // fractional fees with self denomination
+        // all are adjusted to input txn
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);

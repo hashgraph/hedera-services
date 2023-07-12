@@ -62,19 +62,26 @@ public class AdjustmentUtils {
     }
 
     public static void adjustHtsFees(
-            final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
+            final AssessmentResult result,
             final AccountID sender,
             final AccountID collector,
             final CustomFeeMeta chargingTokenMeta,
             final long amount,
-            final TokenID denominatingToken,
-            final Set<TokenID> exemptDenoms) {
-        // Always add a new change for an HTS debit since it could trigger another assessed fee
-        addHtsAdjustment(htsAdjustments, sender, collector, amount, denominatingToken);
-        // self denominated fees are exempt from further fee charging.
-        // Because there is a debit for the fee added in above step, we need to exempt the fee
+            final TokenID denominatingToken) {
+        final var newHtsAdjustments = result.getHtsAdjustments();
+        final var inputHtsAdjustments = result.getInputTokenAdjustments();
+
+        // If the fee is self-denominated, we don't need tit to trigger next level custom fees
+        // So add assessments in given input transaction body.
         if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
-            exemptDenoms.add(denominatingToken);
+            // If the fee is self-denominated, we don't need to add a new change
+            // because the fee is already included in the amount
+            // We do need to exempt the fee from further fee charging
+            result.addToExemptDebits(denominatingToken);
+            addHtsAdjustment(inputHtsAdjustments, sender, collector, amount, denominatingToken);
+        } else {
+            // Always add a new change for an HTS debit since it could trigger another assessed fee
+            addHtsAdjustment(newHtsAdjustments, sender, collector, amount, denominatingToken);
         }
     }
 

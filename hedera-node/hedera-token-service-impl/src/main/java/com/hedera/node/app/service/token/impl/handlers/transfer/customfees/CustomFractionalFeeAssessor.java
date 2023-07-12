@@ -39,7 +39,7 @@ import javax.inject.Singleton;
 
 /**
  * Assesses fractional custom fees for given token transfer.
- * All fractional fees without netOfTransfers flag set to true, will manipulate the given transaction body.
+ * All fractional fees, that are not netOfTransfers will manipulate the given transaction body.
  * If netOfTransfers flag is set to false, the custom fee si reclaimed from the credits in
  * given transaction body.
  * If netOfTransfers flag is set to true the sender will pay the custom fees.Else the receivers will pay custom fees This means that the fee will be charged from the sender account. This is done to avoid
@@ -54,6 +54,15 @@ public class CustomFractionalFeeAssessor {
         this.fixedFeeAssessor = fixedFeeAssessor;
     }
 
+    /**
+     * Calculates the custom fee amount that should be paid for given fraction fee.
+     * If the fee is netOfTransfers the sender will pay the fee, otherwise the receiver will pay the fee
+     * If netOfTransfers is true the assessed fee will be accumulated for next level transaction body.
+     * If netOfTransfers is false the assessed fee will be reclaimed from the credits in given transaction body.
+     * @param feeMeta the fee meta
+     * @param sender the sender, who might be payer for the fee if netOfTransfers is true
+     * @param result the result
+     */
     public void assessFractionalFees(
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
@@ -128,10 +137,17 @@ public class CustomFractionalFeeAssessor {
         }
     }
 
+    /**
+     * For a given input token transfers from transaction body, if the fractional fee has to be
+     * adjusted from credits, adjusts the given transaction body with the adjustments
+     * @param inputTokenAdjustments the input token adjustments from given transaction body
+     * @param denom the token id
+     * @param filteredCredits the credits that should be adjusted
+     */
     private void adjustInputTokenTransfersWithReclaimAmounts(
-            final Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments,
-            final TokenID denom,
-            final Map<AccountID, Long> filteredCredits) {
+            @NonNull final Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments,
+            @NonNull final TokenID denom,
+            @NonNull final Map<AccountID, Long> filteredCredits) {
         // if we reached here it means there are credits for the token
         final var map = inputTokenAdjustments.get(denom);
         for (final var entry : filteredCredits.entrySet()) {
@@ -142,8 +158,19 @@ public class CustomFractionalFeeAssessor {
         inputTokenAdjustments.put(denom, map);
     }
 
+    /**
+     * From the given credits, filters all credits whose payer is not exempt from custom fee.
+     * Returns credits back if there are no credits whose payer is not exempt from custom fee.
+     * If all credits are exempt from custom fee, returns empty map
+     * @param creditsForToken the credits for a token
+     * @param feeMeta the fee meta
+     * @param fee the custom fee
+     * @return the filtered credits whose payer is not exempt from custom fee
+     */
     private Map<AccountID, Long> filteredByExemptions(
-            final Map<AccountID, Long> creditsForToken, final CustomFeeMeta feeMeta, final CustomFee fee) {
+            @NonNull final Map<AccountID, Long> creditsForToken,
+            @NonNull final CustomFeeMeta feeMeta,
+            @NonNull final CustomFee fee) {
         final var filteredCredits = new HashMap<AccountID, Long>();
         for (final var entry : creditsForToken.entrySet()) {
             final var account = entry.getKey();
@@ -155,12 +182,18 @@ public class CustomFractionalFeeAssessor {
         return !filteredCredits.isEmpty() ? filteredCredits : creditsForToken;
     }
 
-    private long amountOwed(final long initialUnits, @NonNull final FractionalFee fractionalFee) {
+    /**
+     * Calculates the amount owned to be paid as fractional custom fee
+     * @param givenUnits  units transferred in the transaction
+     * @param fractionalFee the fractional fee
+     * @return the amount owned to be paid as fractional custom fee
+     */
+    private long amountOwed(final long givenUnits, @NonNull final FractionalFee fractionalFee) {
         final var numerator = fractionalFee.fractionalAmount().numerator();
         final var denominator = fractionalFee.fractionalAmount().denominator();
         var nominalFee = 0L;
         try {
-            nominalFee = safeFractionMultiply(numerator, denominator, initialUnits);
+            nominalFee = safeFractionMultiply(numerator, denominator, givenUnits);
         } catch (final ArithmeticException e) {
             throw new HandleException(CUSTOM_FEE_OUTSIDE_NUMERIC_RANGE);
         }
@@ -171,7 +204,14 @@ public class CustomFractionalFeeAssessor {
         return effectiveFee;
     }
 
-    private long reclaim(final long amount, final Map<AccountID, Long> credits) {
+    /**
+     * Reclaims the given amount from the given credits. If there are multiple credits to same account,
+     * reclaims proportionally from each credit.
+     * @param amount the amount to be reclaimed
+     * @param credits the credits to be reclaimed from
+     * @return the amount reclaimed
+     */
+    private long reclaim(final long amount, @NonNull final Map<AccountID, Long> credits) {
         var availableToReclaim = 0L;
         for (final var entry : credits.entrySet()) {
             availableToReclaim += entry.getValue();

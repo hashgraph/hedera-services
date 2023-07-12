@@ -121,14 +121,11 @@ public class CustomFixedFeeAssessor {
             @NonNull final CustomFeeMeta chargingTokenMeta,
             @NonNull final CustomFee htsFee,
             @NonNull final AssessmentResult result) {
-        final var htsAdjustments = result.getHtsAdjustments();
-        final var exemptDenoms = result.getExemptDebits();
-
         final var collector = htsFee.feeCollectorAccountIdOrThrow();
         final var fixedFeeSpec = htsFee.fixedFeeOrThrow();
         final var amount = fixedFeeSpec.amount();
         final var denominatingToken = fixedFeeSpec.denominatingTokenIdOrThrow();
-        adjustHtsFees(htsAdjustments, sender, collector, chargingTokenMeta, amount, denominatingToken, exemptDenoms);
+        adjustHtsFees(result, sender, collector, chargingTokenMeta, amount, denominatingToken);
 
         // add all assessed fees for transaction record
         result.addAssessedCustomFee(AssessedCustomFee.newBuilder()

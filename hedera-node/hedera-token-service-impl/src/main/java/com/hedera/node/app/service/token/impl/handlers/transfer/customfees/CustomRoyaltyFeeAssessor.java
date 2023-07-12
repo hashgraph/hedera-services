@@ -36,6 +36,12 @@ import java.util.Map;
 import javax.inject.Inject;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * Assesses royalty fees for given token transfer. Royalty fees are only charged for NON_FUNGIBLE_TOKEN
+ * type. If the nft has already paid royalty in any level of CryptoTransfer, it will not be charged
+ * custom fees again.
+ * If there is fungible exchange value to the receiver of the NFT,
+ */
 public class CustomRoyaltyFeeAssessor {
     private CustomFixedFeeAssessor fixedFeeAssessor;
 
@@ -44,6 +50,14 @@ public class CustomRoyaltyFeeAssessor {
         this.fixedFeeAssessor = fixedFeeAssessor;
     }
 
+    /**
+     * Assesses royalty fees for given token transfer.
+     * @param feeMeta
+     * @param sender
+     * @param receiver
+     * @param result
+     * @param handleContext
+     */
     public void assessRoyaltyFees(
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
@@ -89,6 +103,15 @@ public class CustomRoyaltyFeeAssessor {
         }
     }
 
+    /**
+     * Charges royalty fees to the receiver of the NFT. If the receiver is not receiving any fungible value
+     * then the fallback fee is charged to the receiver balance. Otherwise, the royalty fee is charged to the
+     * credit value of the receiver.
+     * @param exchangedValues fungible values exchanged to the receiver
+     * @param feeMeta custom fee meta
+     * @param fee royalty fee
+     * @param result assessment result
+     */
     private void chargeRoyalty(
             @NonNull Map<AccountID, Pair<Long, TokenID>> exchangedValues,
             @NonNull final CustomFeeMeta feeMeta,
@@ -112,20 +135,13 @@ public class CustomRoyaltyFeeAssessor {
             final var denom = tokenId == null ? null : tokenId;
             /* The id of the charging token is only used here to avoid recursively charging
             on fees charged in the units of their denominating token; but this is a credit,
-            hence the id is irrelevant and we can use MISSING_ID. */
+            hence the id is irrelevant, and we can use MISSING_ID. */
             if (denom == null) {
                 // exchange is for hbar
                 adjustHbarFees(result, account, fee);
             } else {
                 // exchange is for token
-                adjustHtsFees(
-                        result.getHtsAdjustments(),
-                        account,
-                        feeCollector,
-                        feeMeta,
-                        amount,
-                        denom,
-                        result.getExemptDebits());
+                adjustHtsFees(result, account, feeCollector, feeMeta, amount, denom);
             }
             /* Note that this account has now paid all royalties for this NFT type */
             result.addToRoyaltiesPaid(Pair.of(account, tokenId));
