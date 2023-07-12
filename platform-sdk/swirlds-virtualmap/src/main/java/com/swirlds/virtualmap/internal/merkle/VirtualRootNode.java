@@ -78,6 +78,7 @@ import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
 import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import com.swirlds.virtualmap.internal.reconnect.VirtualTeacherTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -1219,7 +1220,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      *
      * @param value Hash value to set
      */
-    private void setHashPrivate(final Hash value) {
+    private void setHashPrivate(@Nullable final Hash value) {
         hash.set(value);
     }
 
