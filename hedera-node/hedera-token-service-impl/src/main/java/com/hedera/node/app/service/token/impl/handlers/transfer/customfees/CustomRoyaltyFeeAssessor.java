@@ -135,7 +135,7 @@ public class CustomRoyaltyFeeAssessor {
             final var denom = tokenId == null ? null : tokenId;
             /* The id of the charging token is only used here to avoid recursively charging
             on fees charged in the units of their denominating token; but this is a credit,
-            hence the id is irrelevant, and we can use MISSING_ID. */
+            hence the id is irrelevant, and we can use null. */
             if (denom == null) {
                 // exchange is for hbar
                 adjustHbarFees(result, account, fee);

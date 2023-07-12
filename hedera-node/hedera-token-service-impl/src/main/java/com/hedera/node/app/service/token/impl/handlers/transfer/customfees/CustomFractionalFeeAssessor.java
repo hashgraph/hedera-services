@@ -205,7 +205,7 @@ public class CustomFractionalFeeAssessor {
     }
 
     /**
-     * Reclaims the given amount from the given credits. If there are multiple credits to same account,
+     * Deducts the given amount from the given credits. If there are multiple credits to same account,
      * reclaims proportionally from each credit.
      * @param amount the amount to be reclaimed
      * @param credits the credits to be reclaimed from

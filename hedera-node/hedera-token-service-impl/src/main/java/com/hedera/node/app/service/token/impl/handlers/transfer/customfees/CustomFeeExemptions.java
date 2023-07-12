@@ -29,7 +29,7 @@ import com.hedera.hapi.node.transaction.CustomFee;
  *       all_collectors_are_exempt=true}.
  * </ul>
  */
-public class CustomFeeExemptions {
+public final class CustomFeeExemptions {
     private CustomFeeExemptions() {
         throw new UnsupportedOperationException("Utility Class");
     }

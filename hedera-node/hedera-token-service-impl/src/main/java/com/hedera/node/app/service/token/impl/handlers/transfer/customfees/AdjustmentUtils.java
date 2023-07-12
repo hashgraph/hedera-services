@@ -33,17 +33,34 @@ public class AdjustmentUtils {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static long safeFractionMultiply(final long n, final long d, final long v) {
-        if (v != 0 && n > Long.MAX_VALUE / v) {
-            return BigInteger.valueOf(v)
-                    .multiply(BigInteger.valueOf(n))
-                    .divide(BigInteger.valueOf(d))
+    /**
+     * This method is used to adjust the balance changes for a custom fee. It is used for
+     * fractional fees to calculate the amount to be charged.
+     * @param numerator The numerator of the fraction
+     * @param denominator The denominator of the fraction
+     * @param amount The given units transferred
+     * @return The amount to be charged
+     */
+    public static long safeFractionMultiply(final long numerator, final long denominator, final long amount) {
+        if (amount != 0 && numerator > Long.MAX_VALUE / amount) {
+            return BigInteger.valueOf(amount)
+                    .multiply(BigInteger.valueOf(numerator))
+                    .divide(BigInteger.valueOf(denominator))
                     .longValueExact();
         } else {
-            return n * v / d;
+            return numerator * amount / denominator;
         }
     }
 
+    /**
+     * Given the token deomination, fee collector and the amount to be charged, this method
+     * returns the {@link FixedFee} representation of custom fee.
+     * @param unitsToCollect The amount to be charged
+     * @param tokenDenomination The token denomination
+     * @param feeCollector The fee collector
+     * @param allCollectorsAreExempt Whether all collectors are exempt
+     * @return The {@link FixedFee} representation of custom fee
+     */
     public static CustomFee asFixedFee(
             final long unitsToCollect,
             final TokenID tokenDenomination,
@@ -61,6 +78,17 @@ public class AdjustmentUtils {
                 .build();
     }
 
+    /**
+     * Adjusts a HTS fee. If the fee is self-denominated, it should not trigger custom fees again
+     * So add the adjustment to previous level transaction. If the fee is not self-denominated,
+     * it should trigger custom fees again. So add the adjustment to next level transaction.
+     * @param result The {@link AssessmentResult} object
+     * @param sender The sender account
+     * @param collector The fee collector
+     * @param chargingTokenMeta The {@link CustomFeeMeta} object of token to be charged
+     * @param amount The amount to be charged
+     * @param denominatingToken The token denomination
+     */
     public static void adjustHtsFees(
             final AssessmentResult result,
             final AccountID sender,
@@ -74,17 +102,27 @@ public class AdjustmentUtils {
         // If the fee is self-denominated, we don't need tit to trigger next level custom fees
         // So add assessments in given input transaction body.
         if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
-            // If the fee is self-denominated, we don't need to add a new change
-            // because the fee is already included in the amount
-            // We do need to exempt the fee from further fee charging
+            // If the fee is self-denominated, it should not trigger custom fees again
+            // So add the adjustment to previous level transaction
             result.addToExemptDebits(denominatingToken);
             addHtsAdjustment(inputHtsAdjustments, sender, collector, amount, denominatingToken);
         } else {
-            // Always add a new change for an HTS debit since it could trigger another assessed fee
+            // Any change that might trigger next level custom fees should be added to next
+            // level transaction adjustments
             addHtsAdjustment(newHtsAdjustments, sender, collector, amount, denominatingToken);
         }
     }
 
+    /**
+     * Adds HTS adjustment to given adjustments map. It makes 2 adjustments a debit
+     * for sender and credit to collector
+     * If there is already an entry merges the new change with it, otherwise creates a new entry.
+     * @param htsAdjustments given adjustments map
+     * @param sender sender account
+     * @param collector collector account
+     * @param amount amount to be charged
+     * @param denominatingToken token denomination
+     */
     private static void addHtsAdjustment(
             final Map<TokenID, Map<AccountID, Long>> htsAdjustments,
             final AccountID sender,
@@ -97,6 +135,11 @@ public class AdjustmentUtils {
         htsAdjustments.put(denominatingToken, denominatingTokenMap);
     }
 
+    /**
+     * Given a list of changes for a specific token, filters all credits and returns them
+     * @param tokenIdChanges The list of changes for a specific token
+     * @return The list of credits
+     */
     public static Map<AccountID, Long> getFungibleTokenCredits(final Map<AccountID, Long> tokenIdChanges) {
         final var credits = new HashMap<AccountID, Long>();
         for (final var entry : tokenIdChanges.entrySet()) {
@@ -109,6 +152,14 @@ public class AdjustmentUtils {
         return credits;
     }
 
+    /**
+     * Given a list of changes for a specific token, filters all fungible credits including hbar or
+     * fungible token balances for a given beneficiary and returns them
+     * @param result The {@link AssessmentResult} object
+     * @param tokenId The token id
+     * @param beneficiary The beneficiary account
+     * @return The list of credits
+     */
     public static Map<AccountID, Pair<Long, TokenID>> getFungibleCredits(
             final AssessmentResult result, final TokenID tokenId, final AccountID beneficiary) {
         final var tokenChanges = result.getInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
@@ -130,6 +181,13 @@ public class AdjustmentUtils {
         return credits;
     }
 
+    /**
+     * Adjusts hbar fees. It makes 2 adjustments a debit for sender and credit to collector.
+     * If there is already an entry merges the new change with it, otherwise creates a new entry.
+     * @param result The {@link AssessmentResult} object
+     * @param sender The sender account
+     * @param hbarFee The {@link CustomFee} object
+     */
     public static void adjustHbarFees(final AssessmentResult result, final AccountID sender, final CustomFee hbarFee) {
         final var hbarAdjustments = result.getHbarAdjustments();
         final var collector = hbarFee.feeCollectorAccountId();
@@ -146,7 +204,7 @@ public class AdjustmentUtils {
      *
      * @param denominatingTokenID     the token that is being used as denomination to pay the fee
      * @param exemptDebits            the set of tokens that are exempt from custom fee charging, due to being self
-     *                                denominated in previous level of custom fee assessment
+     *                                denominated in same level of custom fee assessment
      * @return true if the adjustment will trigger a custom fee. False otherwise.
      */
     public static boolean couldTriggerCustomFees(
@@ -158,7 +216,8 @@ public class AdjustmentUtils {
      * Custom fee that is self-denominated is exempt from further custom fee charging.
      *
      * @param denominatingTokenID the token that is being used as denomination to pay the fee
-     * @param exemptDebits
+     * @param exemptDebits       the set of tokens that are exempt from custom fee charging, due to being self
+     *                           denominated in the same level of custom fee assessment
      * @return true if the custom fee is self-denominated
      */
     private static boolean isExemptFromCustomFees(

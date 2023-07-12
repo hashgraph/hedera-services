@@ -40,6 +40,7 @@ import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilde
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -74,7 +75,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void hbarFixedFeeAndRoyaltyFeeWithFallbackSelfDenomination() {
+    @DisplayName("Transfer which triggers hbar fixed fee, fractional fee and royalty fee with fall back")
+    void hbarFixedFeeAndRoyaltyFeeWithFallback() {
         // fungible token transfer with custom hbar fixed fee
         // and a fractional fee with netOfTransfers false
         // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hbar fee
@@ -111,6 +113,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
+    @DisplayName("Transfer which triggers hts fixed fee that is self denominated, fractional fee "
+            + "and royalty fee with fall back that is hts fixed fee")
     void htsFixedFeeAndRoyaltyFeeWithFallbackSelfDenomination() {
         // fungible token transfer with custom hts fixed fee
         // and a fractional fee with netOfTransfers false
@@ -158,7 +162,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void hbarFixedFeeAndRoyaltyFeeNoFallbackSelfDenomination() {
+    @DisplayName("Transfer which triggers hbar fixed fee and royalty fee with no fall back")
+    void hbarFixedFeeAndRoyaltyFeeNoFallback() {
         // fungible token transfer with custom hbar fixed fee
         // and a fractional fee with netOfTransfers false
         // NFT transfer with royalty fee (fraction 1/2), no fallbackFee
@@ -197,7 +202,9 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void htsFixedFeeAndRoyaltyFeeNoFallbackSelfDenomination() {
+    @DisplayName(
+            "Transfer which triggers hts fixed fee that is self denominated " + "and royalty fee with no fall back")
+    void htsFixedFeeSelfDenominationAndRoyaltyFeeNoFallback() {
         // fungible token transfer with custom hts fixed fee
         // and a fractional fee with netOfTransfers false
         // NFT transfer with royalty fee (fraction 1/2), no fallbackFee
@@ -237,7 +244,9 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
-    void hbarFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfersSelfDenomination() {
+    @DisplayName("Transfer which triggers hbar fixed fee, fractional fee with netOfTransfers is true "
+            + "and royalty fee with fall back hbar fixed fee")
+    void hbarFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfers() {
         // fungible token transfer with custom hbar fixed fee
         // and a fractional fee with netOfTransfers true
         // NFT transfer with royalty fee (fraction 1/2), fallbackFee with fixed hbar fee
@@ -291,6 +300,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     @Test
+    @DisplayName("Transfer which triggers hts fixed fee with self denomination, fractional fee "
+            + "with netOfTransfers is true and royalty fee with fall back hbar fixed fee")
     void htsFixedFeeAndRoyaltyFeeWithFallbackNetOfTransfersSelfDenomination() {
         // fungible token transfer with custom hts fixed fee
         // and a fractional fee with netOfTransfers true

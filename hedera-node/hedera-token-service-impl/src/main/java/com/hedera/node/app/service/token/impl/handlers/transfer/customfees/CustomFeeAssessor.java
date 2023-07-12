@@ -26,9 +26,10 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-@Singleton
+/**
+ * Assesses custom fees for a given crypto transfer transaction.
+ */
 public class CustomFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;

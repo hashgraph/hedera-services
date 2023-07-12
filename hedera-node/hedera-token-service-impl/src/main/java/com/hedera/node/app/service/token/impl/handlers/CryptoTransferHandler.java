@@ -215,14 +215,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var txn : customFeeAssessedOps) {
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
             final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
+            steps.add(assessHbarTransfers);
+
             // Step 4: Charge token transfers with an approval. Modify the allowances map on account
             final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(txn, topLevelPayer);
+            steps.add(assessFungibleTokenTransfers);
+
             // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
             final var changeNftOwners = new NFTOwnersChangeStep(txn, topLevelPayer);
-            // Step 6: TODO Pay staking rewards
-
-            steps.add(assessHbarTransfers);
-            steps.add(assessFungibleTokenTransfers);
             steps.add(changeNftOwners);
         }
 

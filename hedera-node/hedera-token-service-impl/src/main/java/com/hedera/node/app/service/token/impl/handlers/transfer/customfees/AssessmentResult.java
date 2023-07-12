@@ -49,7 +49,7 @@ public class AssessmentResult {
 
     public AssessmentResult(
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
-        inputTokenAdjustments = buildTokenTransferMap(inputTokenTransfers);
+        inputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
         inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
 
         htsAdjustments = new HashMap<>();
@@ -115,7 +115,8 @@ public class AssessmentResult {
         inputHbarAdjustments.put(id, amount);
     }
 
-    private Map<TokenID, Map<AccountID, Long>> buildTokenTransferMap(final List<TokenTransferList> tokenTransfers) {
+    private Map<TokenID, Map<AccountID, Long>> buildFungibleTokenTransferMap(
+            final List<TokenTransferList> tokenTransfers) {
         final var fungibleTransfersMap = new HashMap<TokenID, Map<AccountID, Long>>();
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();

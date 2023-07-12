@@ -73,7 +73,7 @@ public class FinalizeRecordHandler implements TransactionHandler {
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var readableNftStore = context.readableStore(ReadableNftStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
-
+        // TODO : Need to pay staking rewards
         // ---------- Hbar transfers
         final var hbarChanges = calculateHbarChanges(writableAccountStore, readableAccountStore);
         if (!hbarChanges.isEmpty()) {

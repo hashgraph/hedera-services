@@ -82,7 +82,7 @@ public class CustomFixedFeeAssessor {
         if (!fixedFeeSpec.hasDenominatingTokenId()) {
             assessHbarFees(sender, fee, result);
         } else {
-            assessHtsFees(sender, feeMeta, fee, result);
+            assessHTSFees(sender, feeMeta, fee, result);
         }
     }
 
@@ -116,7 +116,7 @@ public class CustomFixedFeeAssessor {
      * @param htsFee the hts fee to be assessed
      * @param result the assessment result which will be used to create next level of transaction body
      */
-    private void assessHtsFees(
+    private void assessHTSFees(
             @NonNull final AccountID sender,
             @NonNull final CustomFeeMeta chargingTokenMeta,
             @NonNull final CustomFee htsFee,

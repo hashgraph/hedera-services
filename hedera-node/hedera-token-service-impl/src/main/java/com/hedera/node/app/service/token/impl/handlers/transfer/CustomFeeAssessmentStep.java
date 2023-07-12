@@ -45,7 +45,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Charges custom fees for the crypto transfer operation. This is yet to be implemented
+ * Charges custom fees for the crypto transfer operation.
+ * Custom fees can be a Fixed Fee (HBAR or HTS), Fractional Fee or Royalty Fee.
+ * Any fixed fees that are not self-denominated can trigger next level of custom fees assessment.
+ * Fractional fees and Royalty fees are not recursive.
+ * When assessing custom fees in this approach, we build list of transaction bodies that include assessed custom fees.
+ * We also build list of assessed custom fees to be added to the record.
+ * We do this in 2 steps:
+ * 1. Assess custom fees for the transaction body given as input (Level-0 Body)
+ * 2. If there are any fractional fees, adjust the assessed changes in the Level-0 Body
+ * 3. Any non-self denominated fixed (HBAR or HTS) fees, assess them and create Level-1 Body.
+ * But any self denominated fees will be adjusted in Level- 0 Body (since they can't trigger further custom fee charging.)
+ * 4.Any royalty fees which are not self denominated will be added to level-1 body.
  */
 public class CustomFeeAssessmentStep {
     private final CryptoTransferTransactionBody op;
@@ -81,7 +92,7 @@ public class CustomFeeAssessmentStep {
         final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
         final var tokensConfig = handleContext.configuration().getConfigData(TokensConfig.class);
-        final var maxTransfersDepth = ledgerConfig.xferBalanceChangesMaxLen();
+        final var maxTransfersAllowed = ledgerConfig.xferBalanceChangesMaxLen();
         final var maxCustomFeeDepth = tokensConfig.maxCustomFeeDepth();
         final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
         // list of total assessed custom fees to be added to the record
@@ -98,13 +109,13 @@ public class CustomFeeAssessmentStep {
         do {
             validateTrue(levelNum <= maxCustomFeeDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH);
             // The result after each assessment
-            final var result = assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, maxTransfersDepth);
+            final var result = assessCustomFeesFrom(hbarTransfers, tokenTransfers, tokenStore, maxTransfersAllowed);
 
             // when there are adjustments made to given transaction, need to re-build the transaction
             final var modifiedInputBody = changedInputTxn(txnToAssess, result);
             assessedTxns.add(modifiedInputBody);
 
-            validateTotalAdjustments(modifiedInputBody, maxTransfersDepth);
+            validateTotalAdjustments(modifiedInputBody, maxTransfersAllowed);
             customFeesAssessed.addAll(result.getAssessedCustomFees());
 
             // build body from assessed custom fees to be fed to next level of assessment
@@ -136,24 +147,25 @@ public class CustomFeeAssessmentStep {
         }
 
         totalBalanceChanges += hbarTransfers + fungibleTokenChanges + nftTransfers;
+        // totalBalanceChanges should be less than maxTransfersDepth
         validateTrue(totalBalanceChanges <= maxTransfersDepth, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
     }
 
     private CryptoTransferTransactionBody changedInputTxn(
             final CryptoTransferTransactionBody op, final AssessmentResult result) {
         final var copy = op.copyBuilder();
-        final var changedTokenTransfers = result.getInputTokenAdjustments();
+        final var changedFungibleTokenTransfers = result.getInputTokenAdjustments();
         final List<AccountAmount> aaList = new ArrayList<>();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
         // If there are no changes for the token , add as it is
         for (final var xfers : op.tokenTransfers()) {
             final var token = xfers.token();
-            if (!changedTokenTransfers.containsKey(token)) {
+            if (!changedFungibleTokenTransfers.containsKey(token)) {
                 tokenTransferLists.add(xfers);
             }
         }
         // If there are changes modify the token transfer list
-        for (final var entry : changedTokenTransfers.entrySet()) {
+        for (final var entry : changedFungibleTokenTransfers.entrySet()) {
             final var tokenTransferList = TokenTransferList.newBuilder().token(entry.getKey());
             for (final var valueEntry : entry.getValue().entrySet()) {
                 aaList.add(AccountAmount.newBuilder()
