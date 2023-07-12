@@ -17,6 +17,8 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
 import static com.swirlds.common.system.status.PlatformStatus.OBSERVING;
 import static com.swirlds.common.system.status.PlatformStatus.REPLAYING_EVENTS;
 import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
@@ -163,6 +165,12 @@ public final class PreconsensusEventReplayWorkflow {
 
         // Sanity check for platform status can be removed after we clean up platform status management
         final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
+
+        if (currentPlatformStatus == FREEZING || currentPlatformStatus == FREEZE_COMPLETE) {
+            logger.info(STARTUP.getMarker(), "Freeze boundary crossed while replaying the preconsensus event stream.");
+            return;
+        }
+
         if (currentPlatformStatus != REPLAYING_EVENTS) {
             throw new IllegalStateException(
                     "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus);
