@@ -106,6 +106,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         this.transactionHandlingHistory = that.transactionHandlingHistory;
         this.stateLong = that.stateLong;
+        this.roundsHandled = that.roundsHandled;
+        this.freezeAfterGenesis = that.freezeAfterGenesis;
     }
 
     /**
@@ -210,7 +212,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(round);
         Objects.requireNonNull(swirldDualState);
 
-        if (roundsHandled == 0 && freezeAfterGenesis != null) {
+        if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
             // This is the first round after genesis.
             logger.info(
                     STARTUP.getMarker(),
