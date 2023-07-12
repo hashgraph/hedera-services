@@ -148,7 +148,7 @@ class HandleWorkflowTest extends AppTestBase {
 
     private HandleWorkflow workflow;
 
-    @Mock(strictness = LENIENT)
+    @Mock
     private HederaRecordCache hederaRecordCache;
 
     @BeforeEach
@@ -195,7 +195,6 @@ class HandleWorkflowTest extends AppTestBase {
                 hederaRecordCache);
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     void testContructorWithInvalidArguments() {
         final var instantSource = InstantSource.system();
