@@ -33,7 +33,7 @@ import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import java.io.FileInputStream;
 import java.io.IOException;

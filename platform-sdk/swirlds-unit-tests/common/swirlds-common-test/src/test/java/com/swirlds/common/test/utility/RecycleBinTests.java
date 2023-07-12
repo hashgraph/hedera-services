@@ -23,7 +23,7 @@ import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;

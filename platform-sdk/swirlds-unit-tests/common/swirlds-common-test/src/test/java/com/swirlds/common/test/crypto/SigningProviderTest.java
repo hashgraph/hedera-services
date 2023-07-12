@@ -28,7 +28,7 @@ import com.swirlds.common.test.fixtures.crypto.ECDSASigningProvider;
 import com.swirlds.common.test.fixtures.crypto.ED25519SigningProvider;
 import com.swirlds.common.test.fixtures.crypto.EcdsaUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.util.SplittableRandom;
 import org.junit.jupiter.api.BeforeAll;

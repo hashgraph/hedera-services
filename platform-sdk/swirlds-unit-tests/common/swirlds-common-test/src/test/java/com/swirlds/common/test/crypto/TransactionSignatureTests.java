@@ -27,7 +27,7 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.threading.futures.FuturePool;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.Arrays;
