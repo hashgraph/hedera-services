@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.mono.stream;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.MB_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MB_TO_BYTES;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;

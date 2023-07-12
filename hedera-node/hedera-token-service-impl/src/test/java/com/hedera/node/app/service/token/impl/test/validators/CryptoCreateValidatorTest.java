@@ -40,7 +40,7 @@ class CryptoCreateValidatorTest {
 
     private Configuration configuration;
 
-    private TestConfigBuilder testConfigBuilder;
+    private HederaTestConfigBuilder testConfigBuilder;
 
     @BeforeEach
     void setUp() {
