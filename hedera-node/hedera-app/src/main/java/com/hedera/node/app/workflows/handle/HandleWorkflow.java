@@ -138,9 +138,15 @@ public class HandleWorkflow {
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
             final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
+
             recordBuilder.transaction(
                     preHandleResult.txInfo().transaction(),
                     preHandleResult.txInfo().signedBytes());
+
+            recordBuilder.transactionFee(preHandleResult.txInfo().transaction().body().transactionFee());
+
+            recordBuilder.exchangeRate();
+            recordBuilder.parentConsensusTimestamp(consensusNow);
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
