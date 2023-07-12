@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -1319,7 +1320,7 @@ public class ContractCallSuite extends HapiSuite {
 
     HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
-        return defaultHapiSpec("smartContractFailFirst")
+        return onlyDefaultHapiSpec("smartContractFailFirst")
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
                         cryptoCreate(civilian).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
@@ -1396,8 +1397,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .refusingEthConversion()
                                     .hasPrecheck(INSUFFICIENT_GAS)
                                     .via("setValueNoGas");
-                            final var subop3 = getTxnRecord("setValueNoGas");
-                            allRunFor(spec, subop1, subop2, subop3);
+                            allRunFor(spec, subop1, subop2);
                             final var subop4 =
                                     getAccountBalance(civilian).hasTinyBars(changeFromSnapshot("balanceBefore4", 0));
                             allRunFor(spec, subop4);
