@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.test.handlers.transfers;
+package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static java.util.Collections.emptyList;
@@ -62,7 +62,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
         given(handleContext.body()).willReturn(txn);
-        givenConditions();
+        givenAutoCreationDispatchEffects();
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);
@@ -381,7 +381,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     }
 
     CryptoTransferTransactionBody getReplacedOp() {
-        givenConditions();
+        givenAutoCreationDispatchEffects();
         ensureAliasesStep.doIn(transferContext);
         associateTokenRecepientsStep.doIn(transferContext);
         return replaceAliasesWithIDsInOp.replaceAliasesWithIds(body, transferContext);
