@@ -81,7 +81,7 @@ public class TransactionProcessor {
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final HederaEvmContext context,
-            @NonNull final HederaTracer tracer,
+            @NonNull final HederaEvmTracer tracer,
             @NonNull final Configuration config) {
         final InvolvedParties parties;
         final GasCharges gasCharges;

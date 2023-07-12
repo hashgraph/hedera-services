@@ -16,8 +16,10 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.hapi.streams.SidecarType;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
+import java.util.Set;
 
 @ConfigData("contracts")
 public record ContractsConfig(
@@ -43,8 +45,8 @@ public record ContractsConfig(
         @ConfigProperty(value = "maxKvPairs.individual", defaultValue = "163840") int maxKvPairsIndividual,
         @ConfigProperty(defaultValue = "5000000") long maxNumber,
         @ConfigProperty(defaultValue = "295") int chainId,
-        // @ConfigProperty(defaultValue = "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE,CONTRACT_ACTION") Set<SidecarType>
-        // sidecars,
+        @ConfigProperty(defaultValue = "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE,CONTRACT_ACTION")
+                Set<SidecarType> sidecars,
         @ConfigProperty(defaultValue = "false") boolean sidecarValidationEnabled,
         @ConfigProperty(value = "throttle.throttleByGas", defaultValue = "true") boolean throttleThrottleByGas,
         @ConfigProperty(defaultValue = "20") int maxRefundPercentOfGasLimit,

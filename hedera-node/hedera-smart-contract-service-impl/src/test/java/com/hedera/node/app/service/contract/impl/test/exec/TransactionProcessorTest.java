@@ -76,7 +76,7 @@ class TransactionProcessorTest {
     private HederaWorldUpdater feesOnlyUpdater;
 
     @Mock
-    private HederaTracer tracer;
+    private HederaEvmTracer tracer;
 
     @Mock
     private Configuration config;

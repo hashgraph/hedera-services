@@ -21,10 +21,23 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * Placeholder for future Hedera-specific tracing implementation.
+ * Two Hedera-specific extensions to the {@link OperationTracer} interface.
  */
-public interface HederaTracer extends OperationTracer {
-    void initProcess(@NonNull MessageFrame frame);
+public interface HederaEvmTracer extends OperationTracer {
+    /**
+     * A hook we use to insert an action at the beginning of a transaction,
+     * corresponding to the top-levle HAPI operation.
+     *
+     * @param frame the initial frame of the just-beginning EVM transaction
+     */
+    void customInit(@NonNull MessageFrame frame);
 
-    void finalizeProcess(@NonNull MessageFrame frame);
+    /**
+     * A hook we use to "sanitize" any contract actions that have been
+     * tracked during the transaction. Prevents invalid actions from
+     * being exported to mirror nodes
+     *
+     * @param frame the initial frame of the just-finished EVM transaction
+     */
+    void customFinalize(@NonNull MessageFrame frame);
 }

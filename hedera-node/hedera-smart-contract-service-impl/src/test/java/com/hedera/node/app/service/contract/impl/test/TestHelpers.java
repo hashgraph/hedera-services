@@ -51,6 +51,7 @@ public class TestHelpers {
     public static Wei WEI_VALUE = Wei.of(VALUE);
     public static long INTRINSIC_GAS = 12_345;
     public static long GAS_LIMIT = 1_000_000;
+    public static long REMAINING_GAS = GAS_LIMIT / 2;
     public static long DEFAULT_COINBASE = 98;
     public static long SOME_BLOCK_NO = 321321;
     public static long USER_OFFERED_GAS_PRICE = 666;
@@ -58,6 +59,7 @@ public class TestHelpers {
     public static Wei WEI_NETWORK_GAS_PRICE = Wei.of(NETWORK_GAS_PRICE);
     public static long BESU_MAX_REFUND_QUOTIENT = 2;
     public static long MAX_GAS_ALLOWANCE = 666_666_666;
+    public static int STACK_DEPTH = 1;
     public static Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
     public static Bytes LOG_DATA = Bytes.wrap(new byte[] {6, 6, 6});
     public static Bytes OUTPUT_DATA = Bytes.wrap(new byte[] {9, 8, 7, 6, 5, 4, 3, 2, 1});
@@ -67,12 +69,17 @@ public class TestHelpers {
     public static AccountID RELAYER_ID = AccountID.newBuilder().accountNum(2345).build();
     public static ContractID CALLED_CONTRACT_ID =
             ContractID.newBuilder().contractNum(666).build();
+    public static AccountID CALLED_EOA_ID =
+            AccountID.newBuilder().accountNum(666).build();
     public static ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
     public static Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString("0x167");
     public static Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
+    public static AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
+            .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
+            .build();
     public static org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
     public static ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()
