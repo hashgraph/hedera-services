@@ -30,6 +30,7 @@ import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -106,7 +107,7 @@ public class HandleContextVerifier {
             }
             case KEY_LIST -> {
                 final var keys = key.keyListOrThrow().keysOrElse(emptyList());
-                var failed = false;
+                var failed = keys.isEmpty();
                 for (final var childKey : keys) {
                     failed |= verificationFor(childKey, callback).failed();
                 }
@@ -214,8 +215,11 @@ public class HandleContextVerifier {
 
     @NonNull
     private SignatureVerification resolveFuture(
-            @NonNull final Future<SignatureVerification> future,
+            @Nullable final Future<SignatureVerification> future,
             @NonNull final Supplier<SignatureVerification> fallback) {
+        if (future == null) {
+            return fallback.get();
+        }
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (final InterruptedException e) {

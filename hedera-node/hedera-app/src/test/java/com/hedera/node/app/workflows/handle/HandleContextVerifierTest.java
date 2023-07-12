@@ -29,7 +29,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.of;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Streams;
 import com.hedera.hapi.node.base.Key;
@@ -38,6 +44,7 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -52,6 +59,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,12 +68,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class HandleContextVerifierTest {
 
     private static final HederaConfig HEDERA_CONFIG =
             HederaTestConfigBuilder.createConfig().getConfigData(HederaConfig.class);
+
+    @Mock
+    VerificationAssistant verificationAssistant;
 
     @SuppressWarnings("ConstantConditions")
     @Test
@@ -73,6 +86,7 @@ class HandleContextVerifierTest {
         // given
         final var keyVerifications = Map.<Key, SignatureVerificationFuture>of();
         final var verifier = createVerifier(keyVerifications);
+        final var key = ALICE.keyInfo().publicKey();
 
         // then
         assertThatThrownBy(() -> new HandleContextVerifier(null, keyVerifications))
@@ -81,6 +95,8 @@ class HandleContextVerifierTest {
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> verifier.verificationFor(null, verificationAssistant)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> verifier.verificationFor(key, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -102,6 +118,17 @@ class HandleContextVerifierTest {
                     .isEqualTo(false);
         }
 
+        @ParameterizedTest
+        @MethodSource("provideCompoundKeys")
+        @DisplayName("If there are no verification results, then the result is failed")
+        void noVerificationResultsWithAssistant(@NonNull final Key key) {
+            final var result = createVerifier(Map.of());
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            verify(verificationAssistant).test(eq(key), any());
+        }
+
         @Test
         @DisplayName("If the key is a cryptographic key in the results then it is returned")
         void cryptoKeyIsPresent() {
@@ -115,8 +142,18 @@ class HandleContextVerifierTest {
                     Map.<Key, SignatureVerificationFuture>of(aliceKey, aliceFuture, bobKey, bobFuture);
             final var result = createVerifier(verificationResults);
 
+            when(verificationAssistant.test(aliceKey, aliceVerification)).thenReturn(true);
+            when(verificationAssistant.test(bobKey, bobVerification)).thenReturn(false);
+
             assertThat(result.verificationFor(aliceKey)).isSameAs(aliceVerification);
             assertThat(result.verificationFor(bobKey)).isSameAs(bobVerification);
+
+            assertThat(result.verificationFor(aliceKey, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
+            assertThat(result.verificationFor(bobKey, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         @Test
@@ -128,6 +165,7 @@ class HandleContextVerifierTest {
             final var bobKey = BOB.keyInfo().publicKey(); // ED25519
             final var bobVerification = mock(SignatureVerification.class);
             final var bobFuture = new FakeSignatureVerificationFuture(bobVerification);
+            final var erinKey = ERIN.keyInfo().publicKey();
             final var verificationResults =
                     Map.<Key, SignatureVerificationFuture>of(aliceKey, aliceFuture, bobKey, bobFuture);
             final var result = createVerifier(verificationResults);
@@ -136,6 +174,13 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(ERIN.keyInfo().publicKey()))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
+
+            when(verificationAssistant.test(eq(erinKey), any())).thenReturn(true);
+
+            // ERIN is another ECDSA key, but one that is not in the verification results
+            assertThat(result.verificationFor(erinKey, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         /** A provider that supplies basic cryptographic keys */
@@ -176,6 +221,14 @@ class HandleContextVerifierTest {
         // Used twice in the key list
         private static final Key ED25519_X2 = FAKE_ED25519_KEY_INFOS[2].publicKey();
 
+        @BeforeEach
+        void setup() {
+            when(verificationAssistant.test(any(), any())).thenAnswer(invocation -> {
+                final SignatureVerification verification = invocation.getArgument(1);
+                return verification.passed();
+            });
+        }
+
         private Map<Key, SignatureVerificationFuture> verificationResults(Map<Key, Boolean> keysAndPassFail) {
             final var results = new HashMap<Key, SignatureVerificationFuture>();
             for (final var entry : keysAndPassFail.entrySet()) {
@@ -207,6 +260,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         /**
@@ -231,6 +287,9 @@ class HandleContextVerifierTest {
             final var result = createVerifier(verificationResults);
             // Then we find the verification results are passing because we have met the minimum threshold
             assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
         }
@@ -281,6 +340,9 @@ class HandleContextVerifierTest {
             final var result = createVerifier(verificationResults);
             // Then we find the verification results are passing because we have met the minimum threshold
             assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
         }
@@ -392,6 +454,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         static Stream<Arguments> provideMoreThanEnoughAndMoreThanNeededAreValid() {
@@ -497,6 +562,9 @@ class HandleContextVerifierTest {
             final var result = createVerifier(verificationResults);
             // Then we find the verification results are NOT passing because we have NOT met the minimum threshold
             assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
         }
@@ -650,6 +718,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         static Stream<Arguments> provideNotEnoughSignatures() {
@@ -672,6 +743,15 @@ class HandleContextVerifierTest {
     @ExtendWith(MockitoExtension.class)
     final class FindingSignatureVerificationWithCompoundKeyTests {
 
+        @BeforeEach
+        void setup() {
+            lenient().when(verificationAssistant.test(any(), any())).thenAnswer(invocation -> {
+                final SignatureVerification verification = invocation.getArgument(1);
+                return verification.passed();
+            });
+
+        }
+
         // A ThresholdKey with a threshold greater than max keys acts like a KeyList
 
         @Test
@@ -686,6 +766,11 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            verify(verificationAssistant, never()).test(any(), any());
+
         }
 
         @ParameterizedTest
@@ -717,6 +802,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         @Test
@@ -740,6 +828,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         /**
@@ -752,6 +843,9 @@ class HandleContextVerifierTest {
         void keyWithNoVerificationResults(@NonNull final Key key) {
             final var result = createVerifier(emptyMap());
             assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
         }
@@ -775,6 +869,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         /**
@@ -796,6 +893,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
         }
 
         /**
@@ -814,6 +914,9 @@ class HandleContextVerifierTest {
 
             // Then we find the verification results are passing because we have met the minimum threshold
             assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(true);
+            assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
         }
@@ -838,6 +941,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         /**
@@ -857,6 +963,9 @@ class HandleContextVerifierTest {
 
             // Then we find the verification results are passing because we have met the minimum threshold
             assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
         }
