@@ -95,7 +95,8 @@ class HandleContextVerifierTest {
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> verifier.verificationFor(null, verificationAssistant)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> verifier.verificationFor(null, verificationAssistant))
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor(key, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> verifier.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
     }
@@ -749,7 +750,6 @@ class HandleContextVerifierTest {
                 final SignatureVerification verification = invocation.getArgument(1);
                 return verification.passed();
             });
-
         }
 
         // A ThresholdKey with a threshold greater than max keys acts like a KeyList
@@ -770,7 +770,6 @@ class HandleContextVerifierTest {
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
             verify(verificationAssistant, never()).test(any(), any());
-
         }
 
         @ParameterizedTest
