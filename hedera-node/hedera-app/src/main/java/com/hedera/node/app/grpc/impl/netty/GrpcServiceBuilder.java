@@ -14,19 +14,30 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl.netty;
 
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.grpc.impl.MethodBase;
+import com.hedera.node.app.grpc.impl.QueryMethod;
+import com.hedera.node.app.grpc.impl.TransactionMethod;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
-import io.helidon.grpc.core.MarshallerSupplier;
-import io.helidon.grpc.server.ServiceDescriptor;
+import io.grpc.MethodDescriptor.MethodType;
+import io.grpc.ServerCall;
+import io.grpc.ServerCall.Listener;
+import io.grpc.ServerMethodDefinition;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * for working with protobuf.
  */
 /*@NotThreadSafe*/
-public final class GrpcServiceBuilder {
+final class GrpcServiceBuilder {
     /** Logger */
     private static final Logger logger = LoggerFactory.getLogger(GrpcServiceBuilder.class);
 
@@ -57,19 +68,6 @@ public final class GrpcServiceBuilder {
      * {@link InputStream}s. This class is thread safe.
      */
     private static final DataBufferMarshaller MARSHALLER = new DataBufferMarshaller();
-
-    /**
-     * Create a single instance of the marshaller supplier to provide to every gRPC method
-     * registered with the system. We only need the one, and it always returns the same
-     * NoopMarshaller instance. This is fine to use with multiple app instances within the same JVM.
-     */
-    private static final MarshallerSupplier MARSHALLER_SUPPLIER = new MarshallerSupplier() {
-        @Override
-        public <T> MethodDescriptor.Marshaller<T> get(final Class<T> clazz) {
-            //noinspection unchecked
-            return (MethodDescriptor.Marshaller<T>) MARSHALLER;
-        }
-    };
 
     /** The name of the service we are building. For example, the TokenService. */
     private final String serviceName;
@@ -164,23 +162,123 @@ public final class GrpcServiceBuilder {
     }
 
     /**
-     * Build a gRPC {@link ServiceDescriptor} for each transaction and query method registered with
-     * this builder.
+     * Build a grpc {@link ServerServiceDefinition} for each transaction and query method registered with this builder.
      *
-     * @return a non-null {@link ServiceDescriptor}.
+     * @param metrics Used for recording metrics for the transaction or query methods
+     * @return A {@link ServerServiceDefinition} that can be registered with a gRPC server
      */
-    public ServiceDescriptor build(final Metrics metrics) {
-        final var builder = ServiceDescriptor.builder(null, serviceName);
+    @NonNull
+    public ServerServiceDefinition build(@NonNull final Metrics metrics) {
+        final var builder = ServerServiceDefinition.builder(serviceName);
         txMethodNames.forEach(methodName -> {
             logger.debug("Registering gRPC transaction method {}.{}", serviceName, methodName);
             final var method = new TransactionMethod(serviceName, methodName, ingestWorkflow, metrics);
-            builder.unary(methodName, method, rules -> rules.marshallerSupplier(MARSHALLER_SUPPLIER));
+            addMethod(builder, serviceName, methodName, method);
         });
         queryMethodNames.forEach(methodName -> {
             logger.debug("Registering gRPC query method {}.{}", serviceName, methodName);
             final var method = new QueryMethod(serviceName, methodName, queryWorkflow, metrics);
-            builder.unary(methodName, method, rules -> rules.marshallerSupplier(MARSHALLER_SUPPLIER));
+            addMethod(builder, serviceName, methodName, method);
         });
         return builder.build();
+    }
+
+    /** Utility method for adding a {@link MethodBase} to the {@link ServerServiceDefinition.Builder}. */
+    private void addMethod(
+            @NonNull final ServerServiceDefinition.Builder builder,
+            @NonNull final String serviceName,
+            @NonNull final String methodName,
+            @NonNull final MethodBase method) {
+
+        requireNonNull(builder);
+        requireNonNull(serviceName);
+        requireNonNull(methodName);
+        requireNonNull(method);
+
+        final var methodDescriptor = MethodDescriptor.<BufferedData, BufferedData>newBuilder()
+                .setType(MethodType.UNARY)
+                .setFullMethodName(serviceName + "/" + methodName)
+                .setRequestMarshaller(MARSHALLER)
+                .setResponseMarshaller(MARSHALLER)
+                .build();
+
+        builder.addMethod(
+                ServerMethodDefinition.create(methodDescriptor, (call, ignored) -> new ListenerImpl(call, method)));
+    }
+
+    /**
+     * Listens to events coming from the client and invokes the appropriate method on the {@link MethodBase}. Receives
+     * response information via {@link StreamObserver} and passes the response to the client.
+     *
+     * <p>The {@link Listener} interface is used to receive events from the client. Among the possible events are when
+     * the client connection is ready and when a message has arrived. We handle both of these events.
+     *
+     * <p>When a message is sent, we forward it to the {@link MethodBase}. The {@link MethodBase} communicates back by
+     * means of the {@link StreamObserver} interface. There are three cases to handle: a response is ready, an error
+     * occurred, the response is complete.
+     */
+    private static final class ListenerImpl extends Listener<BufferedData> implements StreamObserver<BufferedData> {
+        private final ServerCall<BufferedData, BufferedData> call;
+        private final MethodBase method;
+
+        private ListenerImpl(
+                @NonNull final ServerCall<BufferedData, BufferedData> call, @NonNull final MethodBase method) {
+            requireNonNull(call);
+            requireNonNull(method);
+            this.call = call;
+            this.method = method;
+        }
+
+        // ================================================================================================================
+        // Implementation of Listener
+        //
+        // These methods are callbacks based on events coming from the CLIENT. When the connection is ready, we have
+        // to indicate that we're expecting a message. Netty will then call `onMessage` to give us the message.
+
+        @Override
+        public void onReady() {
+            // As per the javadoc for `onReady`:
+            // Because there is a processing delay to deliver this notification, it is possible for concurrent writes
+            // to cause isReady() == false within this callback. Handle "spurious" notifications by checking isReady()'s
+            // current value instead of assuming it is now true. If isReady() == false the normal expectations apply,
+            // so there would be another onReady() callback.
+            if (call.isReady()) {
+                call.request(1);
+            }
+        }
+
+        @Override
+        public void onMessage(BufferedData requestBuffer) {
+            method.invoke(requestBuffer, this);
+        }
+
+        // ================================================================================================================
+        // Implementation of StreamObserver
+        //
+        // The StreamObserver is the callback interface for the SERVER to send messages back to the CLIENT. It will be
+        // called by the MethodBase.
+
+        @Override
+        public void onNext(BufferedData responseBuffer) {
+            // Send the response back to the client
+            call.sendHeaders(new Metadata());
+            call.sendMessage(responseBuffer);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            // We have encountered an unknown error.
+            var status = Status.UNKNOWN;
+            if (t instanceof StatusRuntimeException ex) {
+                status = ex.getStatus();
+            }
+            call.close(status, new Metadata());
+        }
+
+        @Override
+        public void onCompleted() {
+            // We're done. Happy day.
+            call.close(Status.OK, new Metadata());
+        }
     }
 }
