@@ -21,12 +21,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,5 +72,11 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
     @Test
     void nullArgsFail() {
         assertThrows(NullPointerException.class, () -> new ReadableUpgradeStoreImpl(null));
+    }
+
+    @Test
+    void validGetFullFileContent() throws IOException {
+        givenValidFile();
+        assertTrue(subject.getFull().length() > 0);
     }
 }
