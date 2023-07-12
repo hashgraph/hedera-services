@@ -1396,7 +1396,7 @@ public class ContractCallSuite extends HapiSuite {
                                     .refusingEthConversion()
                                     .hasPrecheck(INSUFFICIENT_GAS)
                                     .via("setValueNoGas");
-                            final var subop3 = getTxnRecord("setValue");
+                            final var subop3 = getTxnRecord("setValueNoGas");
                             allRunFor(spec, subop1, subop2, subop3);
                             final var subop4 =
                                     getAccountBalance(civilian).hasTinyBars(changeFromSnapshot("balanceBefore4", 0));
