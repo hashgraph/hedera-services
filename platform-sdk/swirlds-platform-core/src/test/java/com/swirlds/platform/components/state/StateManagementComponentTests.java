@@ -114,7 +114,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
 
         component.start();
 
@@ -161,7 +161,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
 
         component.start();
 
@@ -255,7 +255,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
 
         component.start();
 
@@ -301,7 +301,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
 
         systemTransactionConsumer.reset();
         component.start();
@@ -379,7 +379,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
 
         component.start();
 
@@ -398,8 +398,8 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(
-                addressBook, defaultConfigBuilder().withValue("state.saveReconnectStateToDisk", true));
+
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, true);
 
         component.start();
 
@@ -637,14 +637,19 @@ class StateManagementComponentTests {
     }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
-        return newStateManagementComponent(addressBook, defaultConfigBuilder());
+    private DefaultStateManagementComponent newStateManagementComponent(
+            @NonNull final AddressBook addressBook, final boolean saveReconnectState) {
+        return newStateManagementComponent(addressBook, defaultConfigBuilder(), saveReconnectState);
     }
 
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
-        configBuilder.withValue("state.savedStateDirectory", tmpDir.toFile().toString());
+            @NonNull final AddressBook addressBook,
+            @NonNull final TestConfigBuilder configBuilder,
+            final boolean saveReconnectState) {
+        configBuilder
+                .withValue("state.savedStateDirectory", tmpDir.toFile().toString())
+                .withValue("state.saveReconnectStateToDisk", saveReconnectState ? "true" : "false");
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
