@@ -16,16 +16,16 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -269,7 +269,6 @@ public class HandleWorkflow {
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
     }
 
-
   private void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
     final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
     if (foundTransactionRecord != null) {
@@ -278,11 +277,12 @@ public class HandleWorkflow {
   }
 
   private void addTransactionToCache(
-      @NonNull final PreHandleResult preHandleResult, @NonNull final Instant consensusNow) {
+      @NonNull final PreHandleResult preHandleResult,
+      @NonNull final TransactionRecord transactionRecord,
+      @NonNull final Instant consensusNow) {
     final var txBody = preHandleResult.txInfo().txBody();
     final var nodeId = txBody.nodeAccountID().accountNum();
     final var payerAccountId = preHandleResult.payer();
-    final var transactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
     hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
   }
 
