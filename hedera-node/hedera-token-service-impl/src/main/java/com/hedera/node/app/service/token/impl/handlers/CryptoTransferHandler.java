@@ -19,11 +19,16 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isAlias;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -34,15 +39,31 @@ import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessmentStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
+import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.handlers.transfer.TransferStep;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.data.LazyCreationConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -53,14 +74,18 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
+    private final CryptoTransferValidator validator;
+
     @Inject
-    public CryptoTransferHandler() {
-        // Exists for injection
+    public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
+        this.validator = validator;
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        pureChecks(context.body());
+
         final var op = context.body().cryptoTransferOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
@@ -76,10 +101,125 @@ public class CryptoTransferHandler implements TransactionHandler {
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn);
+        final var op = txn.cryptoTransfer();
+        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
+        validator.pureChecks(op);
     }
 
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context);
+        final var txn = context.body();
+        final var op = txn.cryptoTransferOrThrow();
+        final var topLevelPayer = txn.transactionIDOrThrow().accountIDOrThrow();
+
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+
+        validator.validateSemantics(op, ledgerConfig, hederaConfig, tokensConfig);
+
+        // create a new transfer context that is specific only for this transaction
+        final var transferContext = new TransferContextImpl(context);
+
+        // Replace all aliases in the transaction body with its account ids
+        final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
+        // Use the op with replaced aliases in further steps
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer);
+        for (final var step : steps) {
+            // Apply all changes to the handleContext's States
+            step.doIn(transferContext);
+        }
+    }
+
+    /**
+     * Ensures all aliases specified in the transfer exist. If the aliases are in receiver section, and don't exist
+     * they will be auto-created. This step populates resolved aliases and number of auto creations in the
+     * transferContext, which is used by subsequent steps and throttling.
+     * It will also replace all aliases in the {@link CryptoTransferTransactionBody} with its account ids, so it will
+     * be easier to process in next steps.
+     * @param txn the given transaction body
+     * @param transferContext the given transfer context
+     * @param context the given handle context
+     * @return the replaced transaction body with all aliases replaced with its account ids
+     * @throws HandleException if any error occurs during the process
+     */
+    private CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
+            final TransactionBody txn, final TransferContextImpl transferContext, final HandleContext context)
+            throws HandleException {
+        final var op = txn.cryptoTransferOrThrow();
+
+        // ensure all aliases exist, if not create then if receivers
+        ensureExistenceOfAliasesOrCreate(op, transferContext);
+        if (transferContext.numOfLazyCreations() > 0) {
+            final var config = context.configuration().getConfigData(LazyCreationConfig.class);
+            validateTrue(config.enabled(), NOT_SUPPORTED);
+        }
+
+        // replace all aliases with its account ids, so it will be easier to process in next steps
+        final var replacedOp = new ReplaceAliasesWithIDsInOp().replaceAliasesWithIds(op, transferContext);
+        // re-run pure checks on this op to see if there are no duplicates
+        try {
+            final var txnBody = txn.copyBuilder().cryptoTransfer(replacedOp).build();
+            pureChecks(txnBody);
+        } catch (PreCheckException e) {
+            throw new HandleException(e.responseCode());
+        }
+        return replacedOp;
+    }
+
+    private void ensureExistenceOfAliasesOrCreate(
+            @NonNull final CryptoTransferTransactionBody op, @NonNull final TransferContextImpl transferContext) {
+        final var ensureAliasExistence = new EnsureAliasesStep(op);
+        ensureAliasExistence.doIn(transferContext);
+    }
+
+    /**
+     * Decomposes a crypto transfer into a sequence of steps that can be executed in order.
+     * Each step validates the preconditions needed from TransferContextImpl in order to perform its action.
+     * Steps are as follows:
+     * <ol>
+     *     <li>(c,o)Ensure existence of alias-referenced accounts</li>
+     *     <li>(+,c)Charge custom fees for token transfers</li>
+     *     <li>(o)Ensure associations of token recipients</li>
+     *     <li>(+)Do zero-sum hbar balance changes</li>
+     *     <li>(+)Do zero-sum fungible token transfers</li>
+     *     <li>(+)Change NFT owners</li>
+     *     <li>(+,c)Pay staking rewards, possibly to previously unmentioned stakee accounts</li>
+     * </ol>
+     * LEGEND: '+' = creates new BalanceChange(s) from either the transaction body, custom fee schedule, or staking reward situation
+     *        'c' = updates an existing BalanceChange
+     *        'o' = causes a side effect not represented as BalanceChange
+     *
+     * @param op            The crypto transfer transaction body
+     * @param topLevelPayer
+     * @return A list of steps to execute
+     */
+    private List<TransferStep> decomposeIntoSteps(
+            final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
+        final List<TransferStep> steps = new ArrayList<>();
+        // Step 1: associate any token recipients that are not already associated and have
+        // auto association slots open
+        final var associateTokenRecepients = new AssociateTokenRecipientsStep(op);
+        // Step 2: Charge custom fees for token transfers. yet to be implemented
+        final var customFeeAssessmentStep = new CustomFeeAssessmentStep(op);
+        // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
+        final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);
+        // Step 4: Charge token transfers with an approval. Modify the allowances map on account
+        final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(op, topLevelPayer);
+        // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
+        final var changeNftOwners = new NFTOwnersChangeStep(op, topLevelPayer);
+        // Step 6: TODO Pay staking rewards
+
+        steps.add(associateTokenRecepients);
+        steps.add(assessHbarTransfers);
+        steps.add(assessFungibleTokenTransfers);
+        steps.add(changeNftOwners);
+
+        return steps;
+    }
     /**
      * As part of pre-handle, checks that HBAR or fungible token transfers in the transfer list are plausible.
      *
@@ -197,8 +337,8 @@ public class CryptoTransferHandler implements TransactionHandler {
             // to check that the receiver signed the transaction, UNLESS the sender or receiver is
             // the treasury, in which case fallback fees will not be applied when the transaction is handled,
             // so the receiver key does not need to sign.
-            final var treasury = tokenMeta.treasuryNum();
-            if (treasury != senderId.accountNumOrThrow() && treasury != receiverId.accountNumOrThrow()) {
+            final var treasuryId = tokenMeta.treasuryAccountId();
+            if (!treasuryId.equals(senderId) && !treasuryId.equals(receiverId)) {
                 meta.requireKeyOrThrow(receiverId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
             }
         }
@@ -252,9 +392,5 @@ public class CryptoTransferHandler implements TransactionHandler {
             }
         }
         return false;
-    }
-
-    public static boolean isAlias(final AccountID idOrAlias) {
-        return !idOrAlias.hasAccountNum() && idOrAlias.hasAlias();
     }
 }

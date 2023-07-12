@@ -21,31 +21,19 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.util.BootstrapUtils.loadAppMain;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Round;
-import com.swirlds.common.system.SwirldDualState;
-import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.*;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
@@ -65,7 +53,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -85,6 +72,7 @@ public final class EventRecoveryWorkflow {
      * Read a signed state from disk and apply events from an event stream on disk. Write the resulting signed state to
      * disk.
      *
+     * @param platformContext         the platform context
      * @param signedStateFile         the bootstrap signed state file
      * @param configurationFiles      files containing configuration
      * @param eventStreamDirectory    a directory containing the event stream
@@ -98,6 +86,7 @@ public final class EventRecoveryWorkflow {
      * @param loadSigningKeys         if true then load the signing keys
      */
     public static void recoverState(
+            @NonNull final PlatformContext platformContext,
             @NonNull final Path signedStateFile,
             @NonNull final List<Path> configurationFiles,
             @NonNull final Path eventStreamDirectory,
@@ -108,6 +97,7 @@ public final class EventRecoveryWorkflow {
             @NonNull final NodeId selfId,
             final boolean loadSigningKeys)
             throws IOException {
+        Objects.requireNonNull(platformContext);
         Objects.requireNonNull(signedStateFile, "signedStateFile must not be null");
         Objects.requireNonNull(configurationFiles, "configurationFiles must not be null");
         Objects.requireNonNull(eventStreamDirectory, "eventStreamDirectory must not be null");
@@ -125,21 +115,7 @@ public final class EventRecoveryWorkflow {
             Files.createDirectories(resultingStateDirectory);
         }
 
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
-
-        for (final Path configurationFile : configurationFiles) {
-            logger.info(STARTUP.getMarker(), "Loading configuration from {}", configurationFile);
-            configurationBuilder.withSource(new LegacyFileConfigSource(configurationFile));
-        }
-
-        final Configuration configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
-
-        final PlatformContext platformContext =
-                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
                         platformContext, signedStateFile)
@@ -157,14 +133,7 @@ public final class EventRecoveryWorkflow {
             logger.info(STARTUP.getMarker(), "Reapplying transactions");
 
             final ReservedSignedState resultingState = reapplyTransactions(
-                    platformContext,
-                    configuration,
-                    initialState,
-                    appMain,
-                    roundIterator,
-                    finalRound,
-                    selfId,
-                    loadSigningKeys);
+                    platformContext, initialState, appMain, roundIterator, finalRound, selfId, loadSigningKeys);
 
             logger.info(
                     STARTUP.getMarker(),
@@ -231,7 +200,6 @@ public final class EventRecoveryWorkflow {
      * Apply transactions on top of a state to produce a new state
      *
      * @param platformContext the platform context
-     * @param configuration   the configuration for the node
      * @param initialState    the starting signed state
      * @param appMain         the {@link SwirldMain} for the app. Ignored if null.
      * @param roundIterator   an iterator that walks over transactions
@@ -245,7 +213,6 @@ public final class EventRecoveryWorkflow {
     @NonNull
     public static ReservedSignedState reapplyTransactions(
             @NonNull final PlatformContext platformContext,
-            @NonNull final Configuration configuration,
             @NonNull final ReservedSignedState initialState,
             @NonNull final SwirldMain appMain,
             @NonNull final IOIterator<Round> roundIterator,
@@ -255,11 +222,12 @@ public final class EventRecoveryWorkflow {
             throws IOException {
 
         Objects.requireNonNull(platformContext, "platformContext must not be null");
-        Objects.requireNonNull(configuration, "configuration must not be null");
         Objects.requireNonNull(initialState, "initialState must not be null");
         Objects.requireNonNull(appMain, "appMain must not be null");
         Objects.requireNonNull(roundIterator, "roundIterator must not be null");
         Objects.requireNonNull(selfId, "selfId must not be null");
+
+        final Configuration configuration = platformContext.getConfiguration();
 
         final long roundsNonAncient =
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();
@@ -284,7 +252,6 @@ public final class EventRecoveryWorkflow {
                                 .getPlatformState()
                                 .getPlatformData()
                                 .getCreationSoftwareVersion());
-        initialState.get().getState().markAsInitialized();
 
         appMain.init(platform, platform.getSelfId());
 

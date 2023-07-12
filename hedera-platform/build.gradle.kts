@@ -30,7 +30,7 @@ val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
 val nettyVersion = "4.1.87.Final"
 val protobufVersion = "3.21.7"
-val swirldsVersion = "0.40.0-adhoc.x61290789"
+val swirldsVersion = "0.40.0-adhoc.x5482f0a8"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.2.0"
@@ -68,14 +68,12 @@ dependencies.constraints {
         api(gav("dagger", daggerVersion))
         api(gav("dagger.compiler", daggerVersion))
         api(gav("grpc.netty", grpcVersion))
+        api(gav("grpc.protobuf", grpcVersion))
         api(gav("grpc.stub", grpcVersion))
         api(gav("headlong", "6.1.1"))
         api(gav("info.picocli", "4.6.3"))
         api(gav("io.github.classgraph", "4.8.65"))
         api(gav("io.grpc", helidonVersion))
-        api(gav("io.helidon.grpc.client", helidonVersion))
-        api(gav("io.helidon.grpc.core", helidonVersion))
-        api(gav("io.helidon.grpc.server", helidonVersion))
         api(gav("io.netty.handler", nettyVersion))
         api(gav("io.netty.transport", nettyVersion))
         api(gav("io.netty.transport.classes.epoll", nettyVersion))
@@ -90,6 +88,7 @@ dependencies.constraints {
         api(gav("org.apache.commons.lang3", "3.12.0"))
         api(gav("org.apache.logging.log4j", log4jVersion))
         api(gav("org.apache.logging.log4j.core", log4jVersion))
+        api(gav("org.apache.logging.log4j.jul", log4jVersion))
         api(gav("org.assertj.core", "3.23.1"))
         api(gav("org.bouncycastle.pkix", bouncycastleVersion))
         api(gav("org.bouncycastle.provider", bouncycastleVersion))

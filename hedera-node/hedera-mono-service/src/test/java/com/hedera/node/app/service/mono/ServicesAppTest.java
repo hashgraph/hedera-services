@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.ScreenedNodeFileProps;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
-import com.hedera.node.app.service.mono.grpc.HelidonGrpcServerManager;
+import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
@@ -64,11 +64,13 @@ import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -101,6 +103,9 @@ class ServicesAppTest {
     private UniqueTokenMapAdapter nftsAdapter;
 
     @Mock
+    private Configuration configuration;
+
+    @Mock
     private TokenRelStorageAdapter tokenRelsAdapter;
 
     private ServicesApp subject;
@@ -113,8 +118,11 @@ class ServicesAppTest {
         final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
+        final var transactionConfig = new TransactionConfig(1, 2, 3, 4, 5);
 
         given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(TransactionConfig.class)).willReturn(transactionConfig);
         given(platformContext.getCryptography()).willReturn(cryptography);
         given(platform.getSelfId()).willReturn(selfNodeId);
         if (!nodeProps.containsProperty(logDirKey)) {
@@ -160,7 +168,7 @@ class ServicesAppTest {
         assertTrue(maybeRecoveredStateListener.isPresent());
         assertThat(maybeRecoveredStateListener.get(), instanceOf(ExportingRecoveredStateListener.class));
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
-        assertThat(subject.grpc(), instanceOf(HelidonGrpcServerManager.class));
+        assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
         assertThat(subject.accountsExporter(), instanceOf(ToStringAccountsExporter.class));
         assertThat(subject.balancesExporter(), instanceOf(SignedStateBalancesExporter.class));

@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -131,29 +132,27 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             @NonNull final ReadableTokenStore readableTokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore) {
         final var ret = new ArrayList<TokenBalance>();
-        var tokenNum = account.headTokenNumber();
+        var tokenId = asToken(account.headTokenNumber());
         int count = 0;
         TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
-        TokenID tokenID; // build from tokenNum
         AccountID accountID; // build from accountNumber
         TokenBalance tokenBalance; // created TokenBalance object
-        while (tokenNum != 0 && count < tokenConfig.maxRelsPerInfoQuery()) {
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < tokenConfig.maxRelsPerInfoQuery()) {
             accountID =
                     AccountID.newBuilder().accountNum(account.accountNumber()).build();
-            tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
-            tokenRelation = tokenRelationStore.get(accountID, tokenID);
+            tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
-                token = readableTokenStore.get(tokenID);
+                token = readableTokenStore.get(tokenId);
                 if (token != null) {
                     tokenBalance = TokenBalance.newBuilder()
-                            .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
+                            .tokenId(tokenId)
                             .balance(tokenRelation.balance())
                             .decimals(token.decimals())
                             .build();
                     ret.add(tokenBalance);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenId = tokenRelation.nextToken();
             } else {
                 break;
             }

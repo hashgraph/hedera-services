@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -40,6 +41,9 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
+import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,6 +69,8 @@ public class HandleContextImpl implements HandleContext {
     private final WritableStoreFactory writableStoreFactory;
 
     private ReadableStoreFactory readableStoreFactory;
+    private AttributeValidator attributeValidator;
+    private ExpiryValidator expiryValidator;
 
     /**
      * Constructs a {@link HandleContextImpl}.
@@ -151,13 +157,30 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public AttributeValidator attributeValidator() {
-        return current().attributeValidator();
+        if (attributeValidator == null) {
+            attributeValidator = new AttributeValidatorImpl(this);
+        }
+        return attributeValidator;
     }
 
     @Override
     @NonNull
     public ExpiryValidator expiryValidator() {
-        return current().expiryValidator();
+        if (expiryValidator == null) {
+            expiryValidator = new ExpiryValidatorImpl(this);
+        }
+        return expiryValidator;
+    }
+
+    @NonNull
+    @Override
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException {
+        dispatcher.dispatchPureChecks(nestedTxn);
+        final var nestedContext = new PreHandleContextImpl(
+                readableStoreFactory(), nestedTxn, payerForNested, configuration(), dispatcher);
+        dispatcher.dispatchPreHandle(nestedContext);
+        return nestedContext;
     }
 
     @Override
@@ -182,14 +205,18 @@ public class HandleContextImpl implements HandleContext {
         return verifier.verificationFor(evmAlias);
     }
 
+    private ReadableStoreFactory readableStoreFactory() {
+        if (readableStoreFactory == null) {
+            readableStoreFactory = new ReadableStoreFactory(stack);
+        }
+        return readableStoreFactory;
+    }
+
     @Override
     @NonNull
     public <C> C readableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        if (readableStoreFactory == null) {
-            readableStoreFactory = new ReadableStoreFactory(stack);
-        }
-        return readableStoreFactory.getStore(storeInterface);
+        return readableStoreFactory().getStore(storeInterface);
     }
 
     @Override

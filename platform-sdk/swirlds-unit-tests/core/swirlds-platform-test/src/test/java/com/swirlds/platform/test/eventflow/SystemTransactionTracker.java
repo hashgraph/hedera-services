@@ -19,19 +19,19 @@ package com.swirlds.platform.test.eventflow;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.state.State;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class SystemTransactionTracker
         implements PreConsensusSystemTransactionConsumer, PostConsensusSystemTransactionConsumer, Failable {

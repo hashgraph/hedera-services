@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -25,7 +25,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.SwirldTransactionSubmitter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -36,12 +36,14 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -62,21 +64,23 @@ public class EventFlowWrapper {
     /**
      * Creates new instances and starts the handlers.
      *
-     * @param random
-     * @param numNodes
-     * @param preConsensusEventHandler
-     * @param consensusEventHandler
+     * @param random                the random number generator
+     * @param addressBook            the address book to use
+     * @param preConsensusEventHandler the pre-consensus event handler
+     * @param consensusEventHandler the consensus event handler
      */
     public EventFlowWrapper(
-            final Random random,
-            final int numNodes,
-            final PreConsensusEventHandler preConsensusEventHandler,
-            final ConsensusRoundHandler consensusEventHandler,
-            final SwirldStateManager swirldStateManager) {
-        this.preConsensusEventHandler = preConsensusEventHandler;
-        this.consensusRoundHandler = consensusEventHandler;
-        this.swirldStateManager = swirldStateManager;
-        defaultEventGenerator = EventFlowTestUtils.createEventEmitter(random, numNodes);
+            @NonNull final Random random,
+            @NonNull final AddressBook addressBook,
+            @NonNull final PreConsensusEventHandler preConsensusEventHandler,
+            @NonNull final ConsensusRoundHandler consensusEventHandler,
+            @NonNull final SwirldStateManager swirldStateManager) {
+        Objects.requireNonNull(random);
+        Objects.requireNonNull(addressBook);
+        this.preConsensusEventHandler = Objects.requireNonNull(preConsensusEventHandler);
+        this.consensusRoundHandler = Objects.requireNonNull(consensusEventHandler);
+        this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
+        defaultEventGenerator = EventFlowTestUtils.createEventEmitter(random, addressBook);
         preConsensusEventHandler.start();
         consensusEventHandler.start();
     }

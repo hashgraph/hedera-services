@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics;
 
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.EnumSet;
 
 /**

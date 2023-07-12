@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -133,7 +132,6 @@ public class HandleContextVerifier {
             }
         };
     }
-
     /**
      * Look for a {@link SignatureVerification} that applies to the given hollow account.
      * @param evmAlias The evm alias to lookup verification for.
@@ -216,9 +214,8 @@ public class HandleContextVerifier {
 
     @NonNull
     private SignatureVerification resolveFuture(
-            @Nullable final Future<SignatureVerification> future,
+            @NonNull final Future<SignatureVerification> future,
             @NonNull final Supplier<SignatureVerification> fallback) {
-        if (future == null) return fallback.get();
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (final InterruptedException e) {

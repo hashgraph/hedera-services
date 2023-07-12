@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
@@ -166,9 +165,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
         // This should exist as it is validated in validateSemantics
-        final var treasury = accountStore.get(AccountID.newBuilder()
-                .accountNum(newToken.treasuryAccountNumber())
-                .build());
+        final var treasury = accountStore.get(newToken.treasuryAccountId());
         // Validate if token relation can be created between treasury and new token
         // If this succeeds, create and link token relation.
         tokenCreateValidator.validateAssociation(entitiesConfig, tokensConfig, treasury, newToken, tokenRelStore);
@@ -194,12 +191,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private Token buildToken(
             final long newTokenNum, final TokenCreateTransactionBody op, final ExpiryMeta resolvedExpiryMeta) {
         return new Token(
-                newTokenNum,
+                asToken(newTokenNum),
                 op.name(),
                 op.symbol(),
                 op.decimals(),
                 0, // is this correct ?
-                op.treasury().accountNum(),
+                op.treasury(),
                 op.adminKey(),
                 op.kycKey(),
                 op.freezeKey(),
@@ -211,7 +208,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
                 false,
                 op.tokenType(),
                 op.supplyType(),
-                resolvedExpiryMeta.autoRenewNum(),
+                resolvedExpiryMeta.autoRenewAccountId(),
                 resolvedExpiryMeta.autoRenewPeriod(),
                 resolvedExpiryMeta.expiry(),
                 op.memo(),
@@ -231,13 +228,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
     private ExpiryMeta getExpiryMeta(final long consensusTime, @NonNull final TokenCreateTransactionBody op) {
         final var impliedExpiry =
                 consensusTime + op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
+
         return new ExpiryMeta(
                 impliedExpiry,
                 op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds(),
                 // Shard and realm will be ignored if num is NA
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().shardNum() : NA,
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().realmNum() : NA,
-                op.hasAutoRenewAccount() ? op.autoRenewAccount().accountNumOrElse(NA) : NA);
+                op.autoRenewAccount());
     }
 
     /**
@@ -267,11 +263,12 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = context.expiryValidator().resolveCreationAttempt(false, givenExpiryMeta);
 
         // validate auto-renew account exists
-        if (resolvedExpiryMeta.autoRenewNum() != 0) {
-            final var id = AccountID.newBuilder()
-                    .accountNum(resolvedExpiryMeta.autoRenewNum())
-                    .build();
-            TokenHandlerHelper.getIfUsable(id, accountStore, context.expiryValidator(), INVALID_AUTORENEW_ACCOUNT);
+        if (resolvedExpiryMeta.hasAutoRenewAccountId()) {
+            TokenHandlerHelper.getIfUsable(
+                    resolvedExpiryMeta.autoRenewAccountId(),
+                    accountStore,
+                    context.expiryValidator(),
+                    INVALID_AUTORENEW_ACCOUNT);
         }
         return resolvedExpiryMeta;
     }

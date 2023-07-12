@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -35,6 +35,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -43,10 +44,11 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
@@ -69,8 +71,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -88,7 +90,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.provider.Arguments;
@@ -160,7 +161,7 @@ class EventFlowTests {
 
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         // Submits events
         final HashSet<ConsensusTransactionImpl> transactions = applyToWrapper.apply(wrapper);
@@ -247,7 +248,7 @@ class EventFlowTests {
 
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState, state);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
 
@@ -303,7 +304,7 @@ class EventFlowTests {
         final Random random = RandomUtils.initRandom(seed);
 
         init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(addressBook, numEvents);
 
@@ -366,7 +367,7 @@ class EventFlowTests {
         final AtomicLong freezeRound = new AtomicLong(-1);
 
         init(random, numNodes, origSwirldState, null, prepareConfig(signedStateFreq));
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds =
                 wrapper.applyConsensusRounds(addressBook, numEvents, newConsRound -> {
@@ -463,10 +464,10 @@ class EventFlowTests {
             final Long seed, final int numNodes, final int numTransactions, final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final Set<ConsensusTransactionImpl> transactions = wrapper.applyPreConsensusEvents(
-                numTransactions, EventFlowTestUtils.createEventEmitter(random, numNodes, 1.0));
+                numTransactions, EventFlowTestUtils.createEventEmitter(random, addressBook, 1.0));
 
         assertEventuallyEquals(
                 transactions.size(),
@@ -497,10 +498,10 @@ class EventFlowTests {
             final Long seed, final int numNodes, final int numEvents, final SwirldState origSwirldState) {
         final Random random = RandomUtils.initRandom(seed);
         init(random, numNodes, origSwirldState);
-        final EventFlowWrapper wrapper = createEventFlowWrapper(random, numNodes);
+        final EventFlowWrapper wrapper = createEventFlowWrapper(random, addressBook);
 
         final List<ConsensusRound> consensusRounds = wrapper.applyConsensusRounds(
-                addressBook, numEvents, EventFlowTestUtils.createEventEmitter(random, numNodes, 1.0));
+                addressBook, numEvents, EventFlowTestUtils.createEventEmitter(random, addressBook, 1.0));
 
         final HashSet<Transaction> systemTransactions = extractTransactions((selfNodeId) -> true, consensusRounds);
 
@@ -570,7 +571,6 @@ class EventFlowTests {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(true)
                 .build();
 
         final Configuration configuration = new TestConfigBuilder()
@@ -602,7 +602,6 @@ class EventFlowTests {
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
         final State state = getInitialState(swirldState, initialState, addressBook);
 
         systemTransactionTracker = new SystemTransactionTracker();
@@ -627,7 +626,8 @@ class EventFlowTests {
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,
-                state);
+                state,
+                new BasicSoftwareVersion(1));
 
         ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
@@ -684,9 +684,11 @@ class EventFlowTests {
         return state;
     }
 
-    protected EventFlowWrapper createEventFlowWrapper(final Random random, final int numNodes) {
+    protected EventFlowWrapper createEventFlowWrapper(
+            @NonNull final Random random, @NonNull final AddressBook addressBook) {
+        // arguments are checked for null in the constructor.
         return new EventFlowWrapper(
-                random, numNodes, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
+                random, addressBook, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
     }
 
     /**

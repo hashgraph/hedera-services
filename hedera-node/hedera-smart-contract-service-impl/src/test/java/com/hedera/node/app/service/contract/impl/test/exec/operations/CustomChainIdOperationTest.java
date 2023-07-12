@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.TransactionProcessor.CONFIG_CONTEXT_VARIABLE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -57,7 +57,9 @@ class CustomChainIdOperationTest {
 
     @Test
     void usesContractsConfigFromContext() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("hedera.allowances.maxAccountLimit", 2)
+                .getOrCreateConfig();
         given(messageFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         given(messageFrame.getRemainingGas()).willReturn(Long.MAX_VALUE);
         final var contractsConfig = config.getConfigData(ContractsConfig.class);

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.Utilities.isMajority;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -253,7 +253,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -300,7 +299,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -345,7 +343,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -396,7 +393,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -430,7 +426,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -472,7 +467,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -518,7 +512,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();

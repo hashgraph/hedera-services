@@ -16,14 +16,14 @@
 
 package com.swirlds.common.settings;
 
-import static com.swirlds.common.utility.Units.DAYS_TO_HOURS;
-import static com.swirlds.common.utility.Units.HOURS_TO_MINUTES;
-import static com.swirlds.common.utility.Units.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.MINUTES_TO_SECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.WEEKS_TO_DAYS;
+import static com.swirlds.common.units.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.WEEKS_TO_DAYS;
 
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
@@ -33,8 +33,8 @@ import java.util.regex.Pattern;
 /**
  * This class contains utilities for parsing various types of settings.
  *
- * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future. If you need
- * 		to use this class please try to do as less static access as possible.
+ * @deprecated will be replaced by the {@link com.swirlds.config.api.Configuration} API in near future. If you need to
+ * use this class please try to do as less static access as possible.
  */
 @Deprecated(forRemoval = true)
 public final class ParsingUtils {
@@ -44,13 +44,17 @@ public final class ParsingUtils {
      */
     private static final Pattern durationRegex = Pattern.compile("^\\s*(\\d*\\.?\\d*)\\s*([a-zA-Z]+)\\s*$");
 
+    /**
+     * Regular expression for parsing a single number.
+     */
+    private static final Pattern numberRegex = Pattern.compile("\\d+");
+
     private ParsingUtils() {}
 
     /**
      * Make an attempt to parse a duration using default deserialization.
      *
-     * @param str
-     * 		the string that is expected to contain a duration
+     * @param str the string that is expected to contain a duration
      * @return a Duration object if one can be parsed, otherwise null;
      */
     private static Duration attemptDefaultDurationDeserialization(final String str) {
@@ -64,18 +68,18 @@ public final class ParsingUtils {
     /**
      * Parse a duration from a string.
      * <p>
-     * For large durations (i.e. when the number of nanoseconds exceeds {@link Long#MAX_VALUE}), the duration
-     * returned will be rounded unless the duration is written using {@link Duration#toString()}.
-     * Rounding process is deterministic.
+     * For large durations (i.e. when the number of nanoseconds exceeds {@link Long#MAX_VALUE}), the duration returned
+     * will be rounded unless the duration is written using {@link Duration#toString()}. Rounding process is
+     * deterministic.
      * <p>
-     * This parser currently utilizes a regex which may have superlinear time complexity
-     * for arbitrary input. Until that is addressed, do not use this parser on untrusted strings.
+     * If a string containing a single number is passed in, it will be interpreted as a number of milliseconds.
+     * <p>
+     * This parser currently utilizes a regex which may have superlinear time complexity for arbitrary input. Until that
+     * is addressed, do not use this parser on untrusted strings.
      *
-     * @param str
-     * 		a string containing a duration
+     * @param str a string containing a duration
      * @return a Duration
-     * @throws SettingsException
-     * 		if there is a problem parsing the string
+     * @throws SettingsException if there is a problem parsing the string
      */
     public static Duration parseDuration(final String str) {
 
@@ -177,6 +181,11 @@ public final class ParsingUtils {
             return Duration.ofNanos((long) totalNanoseconds);
 
         } else {
+            final Matcher integerMatcher = numberRegex.matcher(str);
+            if (integerMatcher.matches()) {
+                return Duration.ofMillis(Long.parseLong(str));
+            }
+
             final Duration duration = attemptDefaultDurationDeserialization(str);
             if (duration == null) {
                 throw new SettingsException("Invalid duration format, unable to parse \"" + str + "\"");

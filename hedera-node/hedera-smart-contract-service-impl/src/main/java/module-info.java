@@ -12,6 +12,8 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
+    requires com.swirlds.common;
+    requires com.swirlds.config;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.jasperdb;
@@ -27,16 +29,20 @@ module com.hedera.node.app.service.contract.impl {
     exports com.hedera.node.app.service.contract.impl.state to
             com.hedera.node.app.service.contract.impl.test,
             com.hedera.node.app;
-    exports com.hedera.node.app.service.contract.impl.utils to
+
+    opens com.hedera.node.app.service.contract.impl.utils to
             com.hedera.node.app.service.contract.impl.test;
+
     exports com.hedera.node.app.service.contract.impl.infra to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.exec.gas to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.exec.v030 to
             com.hedera.node.app.service.contract.impl.test;
-    exports com.hedera.node.app.service.contract.impl.exec.utils to
+
+    opens com.hedera.node.app.service.contract.impl.exec.utils to
             com.hedera.node.app.service.contract.impl.test;
+
     exports com.hedera.node.app.service.contract.impl.exec.failure to
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.exec;
@@ -48,4 +54,6 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.exec.v038 to
             com.hedera.node.app.service.contract.impl.test;
+    exports com.hedera.node.app.service.contract.impl.utils;
+    exports com.hedera.node.app.service.contract.impl.exec.utils;
 }

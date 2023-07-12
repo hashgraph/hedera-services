@@ -32,4 +32,13 @@ public interface Authorizer {
      * @return true if the account is authorized, otherwise false.
      */
     boolean isAuthorized(@NonNull AccountID id, @NonNull HederaFunctionality function);
+
+    /**
+     * Checks whether the given account refers to a superuser. If the {@link AccountID} does not contain an account
+     * number (for example, because it uses an alias), then this method will return false.
+     *
+     * @param id The ID of the account to check
+     * @return Whether the ID definitively refers to a super-user
+     */
+    boolean isSuperUser(@NonNull AccountID id);
 }

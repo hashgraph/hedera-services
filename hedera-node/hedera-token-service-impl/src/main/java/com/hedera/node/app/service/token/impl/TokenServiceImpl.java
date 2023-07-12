@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.config.data.BootstrapConfig;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -85,6 +86,7 @@ public class TokenServiceImpl implements TokenService {
                 // TBD Verify this is correct. We need to preload all the special accounts
                 final var accounts = ctx.newStates().get(ACCOUNTS_KEY);
                 final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+                final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
                 final var superUserKeyBytes = bootstrapConfig.genesisPublicKey();
                 if (superUserKeyBytes.length() != 32) {
                     throw new IllegalStateException("'" + superUserKeyBytes + "' is not a possible Ed25519 public key");
@@ -92,11 +94,21 @@ public class TokenServiceImpl implements TokenService {
                 final var superUserKey =
                         Key.newBuilder().ed25519(superUserKeyBytes).build();
 
+                long remainingBalance = ledgerConfig.totalTinyBarFloat();
                 try {
                     accounts.put(
                             AccountID.newBuilder().accountNum(2).build(),
                             Account.newBuilder()
                                     .accountNumber(2)
+                                    .tinybarBalance(remainingBalance - 100_000_000_000L)
+                                    .key(superUserKey)
+                                    .declineReward(true)
+                                    .build());
+                    accounts.put(
+                            AccountID.newBuilder().accountNum(3).build(),
+                            Account.newBuilder()
+                                    .accountNumber(3)
+                                    .tinybarBalance(100_000_000_000L)
                                     .key(superUserKey)
                                     .declineReward(true)
                                     .build());

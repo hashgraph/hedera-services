@@ -32,7 +32,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
@@ -42,6 +41,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -92,7 +92,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
     private static final long CLASS_ID = 0xf052378c7364ef47L;
 
-    private long selfId;
+    private NodeId selfId;
 
     /** false until the test scenario has been validated, true afterwards. */
     private final AtomicBoolean validationPerformed = new AtomicBoolean(false);
@@ -153,7 +153,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         logger.info(STARTUP.getMarker(), "init called in State.");
         throwIfImmutable();
 
-        this.selfId = platform.getSelfId().id();
+        this.selfId = platform.getSelfId();
     }
 
     /**
@@ -403,13 +403,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
-                && theStateAddressBookWasNull(true);
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
     }
 
     private boolean genesisForceUseOfConfigAddressBookTrue(@NonNull final AddressBookTestScenario testScenario)
@@ -420,13 +421,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
-                && theStateAddressBookWasNull(true)
                 && theConfigurationAddressBookWasUsed();
     }
 
@@ -504,28 +506,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                         EXCEPTION.getMarker(),
                         "The address books are equal as config text. {}",
                         StackTrace.getStackTrace());
-            }
-        }
-        return pass;
-    }
-
-    /**
-     * This test passes if expectedResult is true and the state address book was null, or if expectedResult is false and
-     * the state address book was not null.
-     *
-     * @param expectedResult the expected result of the test.
-     * @return true if the test passes, false otherwise.
-     */
-    private boolean theStateAddressBookWasNull(final boolean expectedResult) throws IOException {
-        final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
-        final String textAfterStateHeader = getTextAfterHeader(fileContents, STATE_ADDRESS_BOOK_HEADER);
-        final boolean pass = textAfterStateHeader.contains(STATE_ADDRESS_BOOK_NULL) == expectedResult;
-        if (!pass) {
-            if (expectedResult) {
-                logger.error(
-                        EXCEPTION.getMarker(), "The state address book was not null. {}", StackTrace.getStackTrace());
-            } else {
-                logger.error(EXCEPTION.getMarker(), "The state address book was null. {}", StackTrace.getStackTrace());
             }
         }
         return pass;

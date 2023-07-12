@@ -33,21 +33,23 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.state.PlatformData;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -189,6 +191,15 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final State state = new State();
         state.setSwirldState(swirldState);
 
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        state.setPlatformState(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
         final AddressBook addressBook = new RandomAddressBookGenerator().build();
 
         final Configuration configuration = new TestConfigBuilder()
@@ -208,7 +219,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,
-                state);
+                state,
+                new BasicSoftwareVersion(1));
 
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,

@@ -70,12 +70,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import org.junit.jupiter.api.Test;
 
 class CryptoTransferHandlerParityTest extends ParityTestBase {
-    private final CryptoTransferHandler subject = new CryptoTransferHandler();
+    private final CryptoTransferValidator validator = new CryptoTransferValidator();
+    private final CryptoTransferHandler subject = new CryptoTransferHandler(validator);
 
     @Test
     void cryptoTransferTokenReceiverIsMissingAliasScenario() throws PreCheckException {
@@ -355,7 +357,11 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
+        // We don't want the NO_RECEIVER_SIG_KT to be included in the required keys because the account's receiver sig
+        // required is false
+        assertThat(
+                context.requiredNonPayerKeys(),
+                contains(FIRST_TOKEN_SENDER_KT.asPbjKey(), SECOND_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test
@@ -366,7 +372,10 @@ class CryptoTransferHandlerParityTest extends ParityTestBase {
         context.registerStore(ReadableTokenStore.class, readableTokenStore);
         subject.preHandle(context);
         assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-        assertThat(context.requiredNonPayerKeys(), contains(FIRST_TOKEN_SENDER_KT.asPbjKey()));
+        // Again, we don't want NO_RECEIVER_SIG_KT in the required keys because receiver sig required is false
+        assertThat(
+                context.requiredNonPayerKeys(),
+                containsInAnyOrder(FIRST_TOKEN_SENDER_KT.asPbjKey(), SECOND_TOKEN_SENDER_KT.asPbjKey()));
     }
 
     @Test

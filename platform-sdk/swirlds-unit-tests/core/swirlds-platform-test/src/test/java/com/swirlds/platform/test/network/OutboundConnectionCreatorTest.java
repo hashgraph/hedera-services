@@ -32,9 +32,10 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
@@ -42,7 +43,7 @@ import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
 import com.swirlds.platform.network.connectivity.SocketFactory;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,7 +52,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -69,7 +69,6 @@ class OutboundConnectionCreatorTest {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -166,7 +165,6 @@ class OutboundConnectionCreatorTest {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);
@@ -226,7 +224,6 @@ class OutboundConnectionCreatorTest {
                 .setSize(numNodes)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
-                .setSequentialIds(false)
                 .build();
         final int thisNodeIndex = r.nextInt(numNodes);
         final int otherNodeIndex = r.nextInt(numNodes);

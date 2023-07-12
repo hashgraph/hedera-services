@@ -29,8 +29,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
@@ -44,6 +44,8 @@ import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -64,7 +66,7 @@ import org.junit.jupiter.api.Test;
  */
 final class ReconnectTest {
 
-    private static final int RECONNECT_SOCKET_TIMEOUT = 1_000;
+    private static final Duration RECONNECT_SOCKET_TIMEOUT = Duration.of(1_000, ChronoUnit.MILLIS);
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
@@ -104,7 +106,6 @@ final class ReconnectTest {
                 .setAverageWeight(weightPerNode)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(false)
                 .build();
 
         try (final PairedStreams pairedStreams = new PairedStreams()) {

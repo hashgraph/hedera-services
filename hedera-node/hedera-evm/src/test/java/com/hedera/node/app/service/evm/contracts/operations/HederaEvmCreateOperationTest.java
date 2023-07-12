@@ -19,10 +19,12 @@ package com.hedera.node.app.service.evm.contracts.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldUpdater;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.CreateOperation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,8 +35,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaEvmCreateOperationTest {
     private static final long baseGas = 100L;
-
     private final Address recipientAddr = Address.fromHexString("0x0102030405060708090a0b0c0d0e0f1011121314");
+
+    @Mock
+    private UpdateTrackingAccount sender;
 
     @Mock
     private MessageFrame frame;
@@ -43,7 +47,7 @@ class HederaEvmCreateOperationTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private HederaEvmWorldUpdater hederaWorldUpdater;
+    private HederaEvmStackedWorldUpdater stackedUpdater;
 
     private HederaEvmCreateOperation subject;
 
@@ -71,10 +75,29 @@ class HederaEvmCreateOperationTest {
 
     @Test
     void computesExpectedTargetAddress() {
-        given(frame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+        given(frame.getWorldUpdater()).willReturn(stackedUpdater);
         given(frame.getRecipientAddress()).willReturn(recipientAddr);
-        given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
+        given(stackedUpdater.get(recipientAddr)).willReturn(sender);
+        given(sender.getNonce()).willReturn(1L);
+
+        final var besuOp = new TestCreateOperation(gasCalculator, 48 * 1024);
+        final var expectedAlias = besuOp.targetContractAddress(frame);
+        given(stackedUpdater.getAccount(recipientAddr)).willReturn(sender);
+        given(stackedUpdater.newAliasedContractAddress(recipientAddr, expectedAlias))
+                .willReturn(Address.ZERO);
+
         var targetAddr = subject.targetContractAddress(frame);
-        assertEquals(Address.ZERO, targetAddr);
+        assertEquals(expectedAlias, targetAddr);
+    }
+
+    private class TestCreateOperation extends CreateOperation {
+        public TestCreateOperation(GasCalculator gasCalculator, int contractSizeLimit) {
+            super(gasCalculator, contractSizeLimit);
+        }
+
+        @Override
+        public Address targetContractAddress(MessageFrame frame) {
+            return super.targetContractAddress(frame);
+        }
     }
 }

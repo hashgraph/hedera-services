@@ -17,17 +17,13 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNKNOWN;
-import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
@@ -158,17 +154,5 @@ public record PreHandleResult(
                 verificationResults,
                 null,
                 UNKNOWN_VERSION);
-    }
-
-    /** Convenience method to create a SignatureVerification that failed */
-    @NonNull
-    private static Future<SignatureVerification> failedVerificationFuture(@NonNull final Key key) {
-        return completedFuture(failedVerification(key));
-    }
-
-    /** Convenience method to create a SignatureVerification for a hollow account that failed */
-    @NonNull
-    private static Future<SignatureVerification> failedVerificationFuture(@NonNull final Bytes evmAlias) {
-        return completedFuture(failedVerification(evmAlias));
     }
 }

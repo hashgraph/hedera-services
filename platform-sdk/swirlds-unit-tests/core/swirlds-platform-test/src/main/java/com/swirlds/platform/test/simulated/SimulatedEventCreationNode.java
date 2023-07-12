@@ -19,6 +19,7 @@ package com.swirlds.platform.test.simulated;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
@@ -28,9 +29,10 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.config.ThreadConfig;
@@ -45,7 +47,7 @@ import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.simulated.config.NodeConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -103,12 +105,19 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
         this.eventByHash = Objects.requireNonNull(eventByHash, "the event by hash function is null");
         this.config = Objects.requireNonNull(config, "the node config is null");
 
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.creation.useTipsetAlgorithm", "false")
+                .getOrCreateConfig();
+
         final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
         final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
 
         criticalQuorum = new CriticalQuorumImpl(
-                new NoOpMetrics(), new NodeId(0), addressBook, false, chatterConfig.criticalQuorumSoftening());
+                new NoOpMetrics(),
+                addressBook.getNodeId(0),
+                addressBook,
+                false,
+                chatterConfig.criticalQuorumSoftening());
 
         final OtherParentTracker otherParentTracker = new OtherParentTracker();
         final LoggingEventCreationRules eventCreationRules = LoggingEventCreationRules.create(
@@ -122,7 +131,13 @@ public class SimulatedEventCreationNode implements GossipMessageHandler {
                     invocation.getArgument(0, SerializableHashable.class).setHash(hash);
                     return hash;
                 });
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         chatterEventCreator = new ChatterEventCreator(
+                platformContext,
                 softwareVersion,
                 nodeId,
                 new RandomSigner(random),

@@ -27,9 +27,9 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
@@ -87,10 +87,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      * the size of the signed transaction pool
      */
     private int signedTransPoolSize = 1024;
-    /**
-     * ID number for this member
-     */
-    private long selfId;
     /**
      * the app is run by this
      */
@@ -152,9 +148,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void init(final Platform platform, final NodeId id) {
-
         this.platform = platform;
-        selfId = id.id();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
@@ -183,7 +177,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                                 + " such as the number of transactions per second.");
 
         transactionPool = new TransactionPool(
-                platform.getSelfId().id(),
+                platform.getSelfId(),
                 signedTransPoolSize,
                 bytesPerTrans,
                 true,
@@ -282,7 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(selfId, () -> transactionPool);
+        return new StatsSigningTestingToolState(() -> transactionPool);
     }
 
     /**

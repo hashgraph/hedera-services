@@ -32,6 +32,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
@@ -39,7 +40,8 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -85,10 +87,8 @@ public class ReconnectProtocolTests {
         for (final boolean teacherIsThrottled : List.of(true, false)) {
             for (final boolean selfIsBehind : List.of(true, false)) {
                 for (final boolean teacherHasValidState : List.of(true, false)) {
-                    for (final boolean stateIsInitialized : List.of(true, false)) {
-                        arguments.add(Arguments.of(new AcceptParams(
-                                teacherIsThrottled, selfIsBehind, teacherHasValidState, stateIsInitialized)));
-                    }
+                    arguments.add(
+                            Arguments.of(new AcceptParams(teacherIsThrottled, selfIsBehind, teacherHasValidState)));
                 }
             }
         }
@@ -96,22 +96,17 @@ public class ReconnectProtocolTests {
         return arguments.stream();
     }
 
-    private record AcceptParams(
-            boolean teacherIsThrottled,
-            boolean selfIsBehind,
-            boolean teacherHasValidState,
-            boolean stateIsInitialized) {
+    private record AcceptParams(boolean teacherIsThrottled, boolean selfIsBehind, boolean teacherHasValidState) {
 
         public boolean shouldAccept() {
-            return !teacherIsThrottled && !selfIsBehind && teacherHasValidState && stateIsInitialized;
+            return !teacherIsThrottled && !selfIsBehind && teacherHasValidState;
         }
 
         @Override
         public String toString() {
             return (teacherIsThrottled ? "throttled teacher" : "un-throttled teacher") + ", "
                     + (selfIsBehind ? "teacher is behind" : "teacher not behind")
-                    + ", " + (teacherHasValidState ? "teacher has valid state" : "teacher has no valid state")
-                    + ", " + (stateIsInitialized ? "state is initialized" : "state is not initialized");
+                    + ", " + (teacherHasValidState ? "teacher has valid state" : "teacher has no valid state");
         }
     }
 
@@ -137,7 +132,7 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
@@ -160,9 +155,6 @@ public class ReconnectProtocolTests {
         if (params.teacherHasValidState) {
             signedState = spy(new RandomSignedStateGenerator().build());
             when(signedState.isComplete()).thenReturn(true);
-            if (params.stateIsInitialized) {
-                signedState.getState().markAsInitialized();
-            }
         } else {
             signedState = null;
         }
@@ -175,7 +167,7 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 teacherThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -198,7 +190,7 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
@@ -243,7 +235,7 @@ public class ReconnectProtocolTests {
                 node1,
                 reconnectThrottle,
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -252,7 +244,6 @@ public class ReconnectProtocolTests {
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
         when(signedState.getState()).thenReturn(state);
-        when(state.isInitialized()).thenReturn(true);
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
@@ -261,7 +252,7 @@ public class ReconnectProtocolTests {
                 node2,
                 reconnectThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -300,7 +291,7 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
@@ -331,7 +322,6 @@ public class ReconnectProtocolTests {
 
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
-        signedState.getState().markAsInitialized();
 
         final ReservedSignedState reservedSignedState = signedState.reserve("test");
 
@@ -340,7 +330,7 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 reconnectThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
@@ -372,7 +362,7 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 reconnectThrottle,
                 ReservedSignedState::createNullReservation,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),

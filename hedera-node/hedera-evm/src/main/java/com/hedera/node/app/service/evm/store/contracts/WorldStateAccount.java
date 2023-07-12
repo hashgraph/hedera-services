@@ -59,7 +59,7 @@ public class WorldStateAccount implements Account {
 
     @Override
     public long getNonce() {
-        return 0;
+        return entityAccess.getNonce(address);
     }
 
     @Override

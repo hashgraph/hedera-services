@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -52,4 +53,8 @@ public interface QueryContext {
      */
     @NonNull
     Configuration configuration();
+
+    /** Gets the {@link RecordCache}. */
+    @NonNull
+    RecordCache recordCache();
 }
