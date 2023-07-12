@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -31,8 +30,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
-    /** The underlying data storage class that holds the account data. */
-    private final ReadableKVState<AccountID, StakingNodeInfo> stakingInfoState;
+    /** The underlying data storage class that holds node staking data. */
+    private final ReadableKVState<Long, StakingNodeInfo> stakingInfoState;
     /**
      * Create a new {@link ReadableStakingInfoStoreImpl} instance.
      *

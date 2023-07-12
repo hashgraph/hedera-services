@@ -34,9 +34,6 @@ class WritableStakingInfoStoreImplTest {
 
     private WritableStakingInfoStoreImpl subject;
 
-    // TODO: use get() instead of getForModify() for assertion verifications once the readable store uses a long key
-    // instead of an account ID key
-
     @BeforeEach
     void setUp() {
         final var wrappedState = MapWritableKVState.<Long, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
@@ -68,13 +65,13 @@ class WritableStakingInfoStoreImplTest {
 
     @Test
     void getForModifyNodeIdNotFound() {
-        Assertions.assertThat(subject.getForModify(-1)).isNull();
-        Assertions.assertThat(subject.getForModify(NODE_ID_1 + 1)).isNull();
+        Assertions.assertThat(subject.get(-1)).isNull();
+        Assertions.assertThat(subject.get(NODE_ID_1 + 1)).isNull();
     }
 
     @Test
     void getForModifyInfoFound() {
-        Assertions.assertThat(subject.getForModify(NODE_ID_1)).isNotNull().isInstanceOf(StakingNodeInfo.class);
+        Assertions.assertThat(subject.get(NODE_ID_1)).isNotNull().isInstanceOf(StakingNodeInfo.class);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -90,7 +87,7 @@ class WritableStakingInfoStoreImplTest {
                 StakingNodeInfo.newBuilder().nodeNumber(newNodeId).stake(20).build();
         subject.put(newNodeId, newStakingInfo);
 
-        Assertions.assertThat(subject.getForModify(2)).isEqualTo(newStakingInfo);
+        Assertions.assertThat(subject.get(2)).isEqualTo(newStakingInfo);
     }
 
     @Test
@@ -99,7 +96,7 @@ class WritableStakingInfoStoreImplTest {
 
         subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 20);
 
-        final var savedStakeInfo = subject.getForModify(NODE_ID_1);
+        final var savedStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();
         // The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward start
         // value should be the current stake reward start value
@@ -112,9 +109,9 @@ class WritableStakingInfoStoreImplTest {
 
         subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 9);
 
-        final var savedStakeInfo = subject.getForModify(NODE_ID_1);
+        final var savedStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The result should be the stake reward start + the unclaimed stake reward start (5 + 9 = 14)
+        // The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
         Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(14);
     }
 
@@ -124,13 +121,14 @@ class WritableStakingInfoStoreImplTest {
 
         subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 10);
 
-        final var savedStakeInfo = subject.getForModify(NODE_ID_1);
+        final var savedStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();
+        // Stake reward start + unclaimed stake reward start, 5 + 10 = 15
         Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
     }
 
     private void assertUnclaimedStakeRewardStartPrecondition() {
-        final var existingStakeInfo = subject.getForModify(NODE_ID_1);
+        final var existingStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(existingStakeInfo).isNotNull();
         Assertions.assertThat(existingStakeInfo.unclaimedStakeRewardStart()).isEqualTo(5);
     }
