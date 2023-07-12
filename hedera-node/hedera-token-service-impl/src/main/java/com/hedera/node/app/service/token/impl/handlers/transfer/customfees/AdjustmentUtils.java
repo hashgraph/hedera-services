@@ -26,9 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class AdjustmentUtils {
+    public static final Function<TokenID, Map<AccountID, Long>> ADJUSTMENTS_MAP_FACTORY = ignore -> new HashMap<>();
+
     private AdjustmentUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -99,7 +102,7 @@ public class AdjustmentUtils {
         final var newHtsAdjustments = result.getHtsAdjustments();
         final var inputHtsAdjustments = result.getInputTokenAdjustments();
 
-        // If the fee is self-denominated, we don't need tit to trigger next level custom fees
+        // If the fee is self-denominated, we don't need it to trigger next level custom fees
         // So add assessments in given input transaction body.
         if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
             // If the fee is self-denominated, it should not trigger custom fees again
@@ -129,7 +132,7 @@ public class AdjustmentUtils {
             final AccountID collector,
             final long amount,
             final TokenID denominatingToken) {
-        final var denominatingTokenMap = htsAdjustments.getOrDefault(denominatingToken, new HashMap<>());
+        final var denominatingTokenMap = htsAdjustments.computeIfAbsent(denominatingToken, ADJUSTMENTS_MAP_FACTORY);
         denominatingTokenMap.merge(sender, -amount, Long::sum);
         denominatingTokenMap.merge(collector, amount, Long::sum);
         htsAdjustments.put(denominatingToken, denominatingTokenMap);
@@ -162,7 +165,7 @@ public class AdjustmentUtils {
      */
     public static Map<AccountID, Pair<Long, TokenID>> getFungibleCredits(
             final AssessmentResult result, final TokenID tokenId, final AccountID beneficiary) {
-        final var tokenChanges = result.getInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
+        final var tokenChanges = result.getInputTokenAdjustments().computeIfAbsent(tokenId, ADJUSTMENTS_MAP_FACTORY);
         final var credits = new HashMap<AccountID, Pair<Long, TokenID>>();
         for (final var entry : tokenChanges.entrySet()) {
             final var account = entry.getKey();

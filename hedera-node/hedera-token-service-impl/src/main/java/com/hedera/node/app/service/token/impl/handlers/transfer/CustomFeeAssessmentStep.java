@@ -43,11 +43,13 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Charges custom fees for the crypto transfer operation.
  * Custom fees can be a Fixed Fee (HBAR or HTS), Fractional Fee or Royalty Fee.
- * Any fixed fees that are not self-denominated can trigger next level of custom fees assessment.
+ * Any fixed HTS fees that are not self-denominated can trigger next level of custom fees assessment.
  * Fractional fees and Royalty fees are not recursive.
  * When assessing custom fees in this approach, we build list of transaction bodies that include assessed custom fees.
  * We also build list of assessed custom fees to be added to the record.
@@ -64,6 +66,8 @@ public class CustomFeeAssessmentStep {
     private int levelNum = 0;
     private final HandleContext context;
     private int totalBalanceChanges = 0;
+    private static final int MAX_PLAUSIBLE_LEVEL_NUM = 10;
+    private static final Logger log = LogManager.getLogger(CustomFeeAssessmentStep.class);
 
     public CustomFeeAssessmentStep(
             @NonNull final CryptoTransferTransactionBody op, final TransferContextImpl transferContext) {
@@ -72,7 +76,8 @@ public class CustomFeeAssessmentStep {
         final var fixedFeeAssessor = new CustomFixedFeeAssessor();
         final var fractionalFeeAssessor = new CustomFractionalFeeAssessor(fixedFeeAssessor);
         final var royaltyFeeAssessor = new CustomRoyaltyFeeAssessor(fixedFeeAssessor);
-        customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor, op);
+        customFeeAssessor = new CustomFeeAssessor(fixedFeeAssessor, fractionalFeeAssessor, royaltyFeeAssessor);
+        customFeeAssessor.calculateAndSetInitialNftChanges(op);
     }
 
     /**
@@ -125,13 +130,19 @@ public class CustomFeeAssessmentStep {
             hbarTransfers = txnToAssess.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
 
             levelNum++;
-        } while (!tokenTransfers.isEmpty());
+        } while (!tokenTransfers.isEmpty() && levelNum <= MAX_PLAUSIBLE_LEVEL_NUM);
+
+        if (levelNum > MAX_PLAUSIBLE_LEVEL_NUM) {
+            log.error("Recursive charging exceeded maximum plausible depth for transaction {}", op);
+            throw new IllegalStateException("Custom fee charging exceeded max recursion depth");
+        }
 
         if (!hbarTransfers.isEmpty()) {
             assessedTxns.add(txnToAssess);
         }
 
         recordBuilder.assessedCustomFees(customFeesAssessed);
+        customFeeAssessor.resetInitialNftChanges();
         return assessedTxns;
     }
 
