@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -154,6 +155,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -276,6 +278,12 @@ public class SwirldsPlatform implements Platform, Startable {
      * Creates new events using the tipset algorithm.
      */
     private final TipsetEventCreationManager tipsetEventCreator;
+
+    /**
+     * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
+     * if no reconnect state has been received since startup.
+     */
+    private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -545,7 +553,9 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeQueue,
                 eventObserverDispatcher,
                 currentPlatformStatus::get,
-                startUpEventFrozenManager);
+                startUpEventFrozenManager,
+                latestReconnectRound::get,
+                stateManagementComponent::getLatestSavedStateRound);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
@@ -685,29 +695,32 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         final State initialState = signedState.getState();
-        final Hash initialHash = initialState.getSwirldState().getHash();
+
+        // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
+        // of that state here. That copy should have caused the hash to be cleared.
+        if (initialState.getHash() != null) {
+            throw new IllegalStateException("Expected initial state to be unhashed");
+        }
+        if (initialState.getSwirldState().getHash() != null) {
+            throw new IllegalStateException("Expected initial swirld state to be unhashed");
+        }
 
         initialState.getSwirldState().init(this, initialState.getSwirldDualState(), trigger, previousSoftwareVersion);
 
-        final Hash currentHash = initialState.getSwirldState().getHash();
+        abortAndThrowIfInterrupted(
+                () -> {
+                    try {
+                        MerkleCryptoFactory.getInstance()
+                                .digestTreeAsync(initialState)
+                                .get();
+                    } catch (final ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                "interrupted while attempting to hash the state");
 
-        // If the current hash is null, we must hash the state
-        // It's also possible that the application modified the state and hashed itself in init(), if so we need to
-        // rehash the state as a whole.
-        if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
-            initialState.invalidateHash();
-            abortAndThrowIfInterrupted(
-                    () -> {
-                        try {
-                            MerkleCryptoFactory.getInstance()
-                                    .digestTreeAsync(initialState)
-                                    .get();
-                        } catch (final ExecutionException e) {
-                            throw new RuntimeException(e);
-                        }
-                    },
-                    "interrupted while attempting to hash the state");
-        }
+        // If our hash changes as a result of the new address book then our old signatures may become invalid.
+        signedState.pruneInvalidSignatures();
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
@@ -829,6 +842,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             swirldStateManager.loadFromSignedState(signedState);
 
+            latestReconnectRound.set(signedState.getRound());
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensusAndEventMapper(signedState);

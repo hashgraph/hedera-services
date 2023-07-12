@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.event.tipset.rules;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Combines multiple {@link TipsetEventCreationRule} objects into a single object. Allows event creation if all the
@@ -24,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class AggregateTipsetEventCreationRules implements TipsetEventCreationRule {
 
-    private final TipsetEventCreationRule[] rules;
+    private final List<TipsetEventCreationRule> rules;
 
     /**
      * Create a new {@link AggregateTipsetEventCreationRules} from the given list of rules.
@@ -32,7 +34,7 @@ public class AggregateTipsetEventCreationRules implements TipsetEventCreationRul
      * @param rules the rules to combine, if no rules are provided then event creation is always permitted.
      * @return an aggregate rule that permits event creation if and only if all rules permit creation.
      */
-    public static AggregateTipsetEventCreationRules of(@Nullable final TipsetEventCreationRule... rules) {
+    public static AggregateTipsetEventCreationRules of(@NonNull final List<TipsetEventCreationRule> rules) {
         return new AggregateTipsetEventCreationRules(rules);
     }
 
@@ -41,8 +43,8 @@ public class AggregateTipsetEventCreationRules implements TipsetEventCreationRul
      *
      * @param rules the limiters to combine
      */
-    private AggregateTipsetEventCreationRules(@Nullable final TipsetEventCreationRule... rules) {
-        this.rules = rules == null ? new TipsetEventCreationRule[0] : rules;
+    private AggregateTipsetEventCreationRules(@NonNull final List<TipsetEventCreationRule> rules) {
+        this.rules = Objects.requireNonNull(rules);
     }
 
     /**
