@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.hapi.streams.CallOperationType.*;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -44,6 +46,12 @@ public class ConversionUtils {
     public static final long MISSING_ENTITY_NUMBER = -1L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
+    public static final int OP_CODE_CREATE = 0xF0;
+    public static final int OP_CODE_CALL = 0xF1;
+    public static final int OP_CODE_CALLCODE = 0xF2;
+    public static final int OP_CODE_DELEGATECALL = 0xF4;
+    public static final int OP_CODE_CREATE2 = 0xF5;
+    public static final int OP_CODE_STATICCALL = 0xFA;
 
     private ConversionUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -128,6 +136,19 @@ public class ConversionUtils {
     public static long hederaIdNumOfOriginatorIn(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
         return hederaIdNumberIn(frame, frame.getOriginatorAddress());
+    }
+
+    /**
+     * Given a {@link MessageFrame}, returns the id number of the given address's Hedera id.
+     *
+     * @param frame the {@link MessageFrame}
+     * @param address the address to get the id number of
+     * @return the id number of the given address's Hedera id
+     */
+    public static long hederaIdNumberIn(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        return isLongZero(address)
+                ? numberOfLongZero(address)
+                : proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow();
     }
 
     /**
@@ -350,9 +371,21 @@ public class ConversionUtils {
                         proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow());
     }
 
-    private static long hederaIdNumberIn(@NonNull final MessageFrame frame, @NonNull final Address address) {
-        return isLongZero(address)
-                ? numberOfLongZero(address)
-                : proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow();
+    /**
+     * Given an opcode, returns the corresponding {@link CallOperationType}.
+     *
+     * @param opCode the opcode to convert
+     * @return the corresponding {@link CallOperationType}
+     */
+    public static CallOperationType asCallOperationType(final int opCode) {
+        return switch (opCode) {
+            case OP_CODE_CREATE -> OP_CREATE;
+            case OP_CODE_CALL -> OP_CALL;
+            case OP_CODE_CALLCODE -> OP_CALLCODE;
+            case OP_CODE_DELEGATECALL -> OP_DELEGATECALL;
+            case OP_CODE_CREATE2 -> OP_CREATE2;
+            case OP_CODE_STATICCALL -> OP_STATICCALL;
+            default -> OP_UNKNOWN;
+        };
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import com.hedera.hapi.streams.ContractActionType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
@@ -40,4 +41,12 @@ public interface HederaEvmTracer extends OperationTracer {
      * @param frame the initial frame of the just-finished EVM transaction
      */
     void customFinalize(@NonNull MessageFrame frame);
+
+    /**
+     * A hook we use to manage the action sidecar of a precompile call result.
+     *
+     * @param frame the frame calling the precompile
+     * @param type the type of precompile called; expected values are {@code PRECOMPILE} and {@code SYSTEM}
+     */
+    void customTracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type);
 }
