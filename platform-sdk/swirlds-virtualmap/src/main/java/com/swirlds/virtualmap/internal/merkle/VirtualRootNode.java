@@ -78,6 +78,7 @@ import com.swirlds.virtualmap.internal.reconnect.ReconnectState;
 import com.swirlds.virtualmap.internal.reconnect.VirtualLearnerTreeView;
 import com.swirlds.virtualmap.internal.reconnect.VirtualTeacherTreeView;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.channels.ClosedByInterruptException;
@@ -89,6 +90,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -245,6 +247,11 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private VirtualPipeline pipeline;
 
     /**
+     * Hash of this root node. If null, the node isn't hashed yet.
+     */
+    private final AtomicReference<Hash> hash = new AtomicReference<>();
+
+    /**
      * If true, then this copy of {@link VirtualRootNode} should eventually be flushed to disk. A heuristic is
      * used to determine which copy is flushed.
      */
@@ -264,11 +271,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * This latch is used to implement {@link #waitUntilFlushed()}.
      */
     private final CountDownLatch flushLatch = new CountDownLatch(1);
-
-    /**
-     * True if this copy has been hashed, false if it has not yet been hashed.
-     */
-    private final AtomicBoolean hashed = new AtomicBoolean(false);
 
     /**
      * Specifies whether this current copy has been flushed. This will only be true if {@link #shouldBeFlushed}
@@ -546,7 +548,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                     "It took {} seconds to feed all leaves to the hasher for the VirtualMap at {}",
                     secondsSpent,
                     getRoute());
-            super.setHash(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT - secondsSpent, SECONDS));
+            setHashPrivate(fullRehashFuture.get(MAX_FULL_REHASHING_TIMEOUT - secondsSpent, SECONDS));
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during full rehashing";
             throw new MerkleSynchronizationException(message, e);
@@ -822,6 +824,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     public void put(final K key, final V value) {
         throwIfImmutable();
+        assert !isHashed() : "Cannot modify already hashed node";
         Objects.requireNonNull(key, NO_NULL_KEYS_ALLOWED_MESSAGE);
 
         final long path = records.findKey(key);
@@ -836,7 +839,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         final VirtualLeafRecord<K, V> leaf = new VirtualLeafRecord<>(path, key, value);
         cache.putLeaf(leaf);
         statistics.countUpdatedEntities();
-        super.setHash(null);
     }
 
     /**
@@ -1198,10 +1200,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public Hash getHash() {
-        if (super.getHash() == null) {
+        if (hash.get() == null) {
             pipeline.hashCopy(this);
         }
-        return super.getHash();
+        return hash.get();
     }
 
     /**
@@ -1210,6 +1212,16 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     public void setHash(final Hash hash) {
         throw new UnsupportedOperationException("data type is self hashing");
+    }
+
+    /**
+     * This class is self-hashing, it doesn't use inherited {@link #setHash} method. Instead,
+     * the hash is set using this private method.
+     *
+     * @param value Hash value to set
+     */
+    private void setHashPrivate(@Nullable final Hash value) {
+        hash.set(value);
     }
 
     /**
@@ -1225,7 +1237,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public boolean isHashed() {
-        return hashed.get();
+        return hash.get() != null;
     }
 
     /**
@@ -1233,7 +1245,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public void computeHash() {
-        if (hashed.get()) {
+        if (hash.get() != null) {
             return;
         }
 
@@ -1262,15 +1274,13 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             virtualHash = (rootHash != null) ? rootHash : hasher.emptyRootHash();
         }
 
-        super.setHash(virtualHash);
+        setHashPrivate(virtualHash);
 
         final long end = System.currentTimeMillis();
         statistics.recordHash(end - start);
 
         // There are no remaining changes to be made to the cache, so we can seal it.
         cache.seal();
-
-        hashed.set(true);
     }
 
     /*
@@ -1466,7 +1476,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             reconnectIterator.close();
             if (reconnectHashingStarted.get()) {
                 // Only block on future if the hashing thread is known to have been started.
-                super.setHash(reconnectHashingFuture.get());
+                setHashPrivate(reconnectHashingFuture.get());
             } else {
                 logger.warn(RECONNECT.getMarker(), "virtual map hashing thread was never started");
             }
@@ -1507,6 +1517,9 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * 		The value to add. May be null.
      */
     private void add(final K key, final V value) {
+        throwIfImmutable();
+        assert !isHashed() : "Cannot modify already hashed node";
+
         // We're going to imagine what happens to the leaf and the tree without
         // actually bringing into existence any nodes. Virtual Virtual!! SUPER LAZY FTW!!
 
@@ -1581,7 +1594,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
         final VirtualLeafRecord<K, V> newLeaf = new VirtualLeafRecord<>(leafPath, key, value);
         cache.putLeaf(newLeaf);
-        super.setHash(null); // Make sure VirtualMap has an invalid hash, so it will be recomputed later
     }
 
     /**
@@ -1595,10 +1607,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * @return true if the key was found in the map, false otherwise.
      */
     private boolean replaceImpl(K key, V value) {
+        throwIfImmutable();
+        assert !isHashed() : "Cannot modify already hashed node";
+
         final VirtualLeafRecord<K, V> rec = records.findLeafRecord(key, true);
         if (rec != null) {
             rec.setValue(value);
-            super.setHash(null);
             return true;
         }
 
@@ -1607,6 +1621,6 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     @Override
     public long getFastCopyVersion() {
-        return cache.getFastCopyVersion();
+        return fastCopyVersion;
     }
 }
