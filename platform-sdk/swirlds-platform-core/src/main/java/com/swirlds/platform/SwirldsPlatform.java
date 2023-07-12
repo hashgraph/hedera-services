@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -154,6 +155,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -276,6 +278,12 @@ public class SwirldsPlatform implements Platform, Startable {
      * Creates new events using the tipset algorithm.
      */
     private final TipsetEventCreationManager tipsetEventCreator;
+
+    /**
+     * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
+     * if no reconnect state has been received since startup.
+     */
+    private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
 
     /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
@@ -545,7 +553,9 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeQueue,
                 eventObserverDispatcher,
                 currentPlatformStatus::get,
-                startUpEventFrozenManager);
+                startUpEventFrozenManager,
+                latestReconnectRound::get,
+                stateManagementComponent::getLatestSavedStateRound);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
@@ -829,6 +839,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             swirldStateManager.loadFromSignedState(signedState);
 
+            latestReconnectRound.set(signedState.getRound());
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensusAndEventMapper(signedState);

@@ -597,4 +597,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public long getFirstStateRound() {
         return signedStateManager.getFirstStateRound();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getLatestSavedStateRound() {
+        return signedStateFileManager.getLatestSavedStateRound();
+    }
 }
