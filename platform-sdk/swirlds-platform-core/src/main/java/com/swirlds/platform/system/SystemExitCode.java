@@ -21,7 +21,7 @@ public enum SystemExitCode {
     /**
      * Configuration error.
      */
-    CONFIGURATION_ERROR(1),
+    CONFIGURATION_ERROR(33),
     /**
      * This node encountered an ISS.
      */

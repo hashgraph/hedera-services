@@ -125,7 +125,7 @@ public final class AddressBookValidator {
         final int newSize = newAddressBook.getSize();
 
         // Verify that the old next node id is greater than the highest node id in the old address book.
-        final NodeId oldLastNodeId = oldSize > 0 ? oldAddressBook.getNodeId(oldSize - 1) : null;
+        final NodeId oldLastNodeId = (oldSize == 0 ? null : oldAddressBook.getNodeId(oldSize - 1));
         if (oldLastNodeId != null && oldLastNodeId.compareTo(oldNextNodeId) > 0) {
             throw new IllegalStateException(
                     "The oldNextNodeId must be greater than the highest node id in the old address book.");
