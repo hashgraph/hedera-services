@@ -24,6 +24,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -58,6 +59,11 @@ public class ConsensusRound implements Round {
     private final EventImpl keystoneEvent;
 
     /**
+     * The consensus timestamp of this round.
+     */
+    private final Instant consensusTimestamp;
+
+    /**
      * Create a new instance with the provided consensus events.
      *
      * @param consensusEvents the events in the round, in consensus order
@@ -87,6 +93,10 @@ public class ConsensusRound implements Round {
         }
 
         this.roundNum = consensusEvents.get(0).getRoundReceived();
+
+        // FUTURE WORK: once we properly handle rounds with no events, we need to define the consensus timestamp of a
+        // round with no events as 1 nanosecond later than the previous round.
+        consensusTimestamp = consensusEvents.get(consensusEvents.size() - 1).getLastTransTime();
     }
 
     /**
@@ -151,6 +161,15 @@ public class ConsensusRound implements Round {
     @Override
     public int getEventCount() {
         return consensusEvents.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public Instant getConsensusTimestamp() {
+        return consensusTimestamp;
     }
 
     /**

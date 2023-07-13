@@ -60,9 +60,6 @@ import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -724,7 +721,7 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
-                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // IMPORTANT: this swirlds app thread must be non-daemon,
                 // so that the JVM will not exit when the main thread exits
                 appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
@@ -737,6 +734,25 @@ public class Browser {
         }
 
         return Collections.unmodifiableList(platforms);
+    }
+
+    /**
+     * Create a copy of the initial signed state. There are currently data structures that become immutable after
+     * being hashed, and we need to make a copy to force it to become mutable again.
+     *
+     * @param platformContext    the platform's context
+     * @param initialSignedState the initial signed state
+     * @return a copy of the initial signed state
+     */
+    private static ReservedSignedState copyInitialSignedState(
+            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
+
+        final State stateCopy = initialSignedState.getState().copy();
+        final SignedState signedStateCopy =
+                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
+        signedStateCopy.setSigSet(initialSignedState.getSigSet());
+
+        return signedStateCopy.reserve("Browser copied initial state");
     }
 
     /**
@@ -755,16 +771,6 @@ public class Browser {
         // Eventually we will not do this, and only transactions will be capable of
         // modifying the address book.
         state.getPlatformState().setAddressBook(addressBook.copy());
-
-        // Invalidate a path down to the new address book
-        new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
-                .forEachRemaining(MerkleNode::invalidateHash);
-
-        // We should only have to rehash a few nodes, so simpler to use the synchronous algorithm.
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
-
-        // If our hash changes as a result of the new address book then our old signatures may become invalid.
-        signedState.pruneInvalidSignatures();
     }
 
     /**
@@ -806,22 +812,23 @@ public class Browser {
                 configAddressBook,
                 emergencyRecoveryManager);
 
-        if (loadedState.isNotNull()) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    new SavedStateLoadedPayload(
-                            loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-            return loadedState;
+        try (loadedState) {
+            if (loadedState.isNotNull()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        new SavedStateLoadedPayload(
+                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+
+                return copyInitialSignedState(platformContext, loadedState.get());
+            }
         }
 
-        // Not strictly necessary to close a null reservation, but it's nice to be consistent.
-        loadedState.close();
-
-        final State genesisState =
+        final ReservedSignedState genesisState =
                 buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
 
-        final SignedState signedState = new SignedState(platformContext, genesisState, "genesis state");
-        return signedState.reserve("genesis state");
+        try (genesisState) {
+            return copyInitialSignedState(platformContext, genesisState.get());
+        }
     }
 
     /**

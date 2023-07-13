@@ -17,6 +17,11 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
+import static com.swirlds.common.system.status.PlatformStatus.OBSERVING;
+import static com.swirlds.common.system.status.PlatformStatus.REPLAYING_EVENTS;
+import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -131,8 +136,47 @@ public final class PreconsensusEventReplayWorkflow {
     }
 
     /**
-     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for
-     * them to complete even after we exhaust all available events from the stream.
+     * Update the platform status for PCES replay.
+     */
+    private static void setupReplayStatus(
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
+            @NonNull final Consumer<PlatformStatus> setPlatformStatus) {
+
+        // Sanity check for platform status can be removed after we clean up platform status management
+        final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
+        if (currentPlatformStatus != STARTING_UP) {
+            throw new IllegalStateException(
+                    "Platform status should be STARTING_UP, current status is " + currentPlatformStatus);
+        }
+
+        setPlatformStatus.accept(REPLAYING_EVENTS);
+    }
+
+    /**
+     * Update the platform status to indicate that PCES replay has completed.
+     */
+    private static void setupEndOfReplayStatus(
+            @NonNull final Supplier<PlatformStatus> getPlatformStatus,
+            @NonNull final Consumer<PlatformStatus> setPlatformStatus) {
+
+        // Sanity check for platform status can be removed after we clean up platform status management
+        final PlatformStatus currentPlatformStatus = getPlatformStatus.get();
+
+        if (currentPlatformStatus == FREEZING || currentPlatformStatus == FREEZE_COMPLETE) {
+            logger.info(STARTUP.getMarker(), "Freeze boundary crossed while replaying the preconsensus event stream.");
+            return;
+        }
+
+        if (currentPlatformStatus != REPLAYING_EVENTS) {
+            throw new IllegalStateException(
+                    "Platform status should be REPLAYING_EVENTS, current status is " + currentPlatformStatus);
+        }
+        setPlatformStatus.accept(OBSERVING);
+    }
+
+    /**
+     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for them
+     * to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,

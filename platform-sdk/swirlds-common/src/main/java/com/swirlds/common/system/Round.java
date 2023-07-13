@@ -18,18 +18,20 @@ package com.swirlds.common.system;
 
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * A collection of unique events that reached consensus at the same time. The consensus data for every event in the round
- * will never change, and no more events will ever be added to the round. A round with a lower round number will always
- * reach consensus before a round with a higher round number.
+ * A collection of unique events that reached consensus at the same time. The consensus data for every event in the
+ * round will never change, and no more events will ever be added to the round. A round with a lower round number will
+ * always reach consensus before a round with a higher round number.
  * <p>
- * IMPORTANT: Although this interface is not sealed, it should only be implemented by internal classes. This
- * interface may be changed at any time, in any way, without notice or prior deprecation. Third parties should NOT
- * implement this interface.
+ * IMPORTANT: Although this interface is not sealed, it should only be implemented by internal classes. This interface
+ * may be changed at any time, in any way, without notice or prior deprecation. Third parties should NOT implement this
+ * interface.
  */
 public interface Round extends Iterable<ConsensusEvent> {
 
@@ -43,8 +45,8 @@ public interface Round extends Iterable<ConsensusEvent> {
     Iterator<ConsensusEvent> iterator();
 
     /**
-     * Provides the unique round number for this round. Lower numbers reach consensus before higher numbers. This
-     * method is thread safe.
+     * Provides the unique round number for this round. Lower numbers reach consensus before higher numbers. This method
+     * is thread safe.
      *
      * @return the round number
      */
@@ -67,8 +69,7 @@ public interface Round extends Iterable<ConsensusEvent> {
     /**
      * A convenience method that supplies every transaction in this round to a consumer.
      *
-     * @param transactionConsumer
-     * 		a transaction consumer
+     * @param transactionConsumer a transaction consumer
      */
     default void forEachTransaction(final Consumer<ConsensusTransaction> transactionConsumer) {
         for (final Iterator<ConsensusEvent> eventIt = iterator(); eventIt.hasNext(); ) {
@@ -84,8 +85,7 @@ public interface Round extends Iterable<ConsensusEvent> {
      * A convenience method that supplies every transaction in this round to a consumer, along with the transaction's
      * event.
      *
-     * @param consumer
-     * 		an event and transaction consumer
+     * @param consumer an event and transaction consumer
      */
     default void forEachEventTransaction(final BiConsumer<ConsensusEvent, ConsensusTransaction> consumer) {
         for (final Iterator<ConsensusEvent> eventIt = iterator(); eventIt.hasNext(); ) {
@@ -96,4 +96,15 @@ public interface Round extends Iterable<ConsensusEvent> {
             }
         }
     }
+
+    /**
+     * The timestamp of the end of a round. Is equal to the consensus timestamp of the last transaction in the last
+     * event in the round, or the consensus timestamp of the last event in the round if there are no transactions in the
+     * last event. The consensus timestamp of a round is guaranteed to be strictly greater than the consensus timestamp
+     * of the previous round.
+     *
+     * @return the timestamp of the end of a round
+     */
+    @NonNull
+    Instant getConsensusTimestamp();
 }
