@@ -155,6 +155,13 @@ public class FileTestBase {
     }
 
     @NonNull
+    protected MapWritableKVState<FileID, File> writableFileStateWithoutKey(File fileWithouthKey) {
+        return MapWritableKVState.<FileID, File>builder(FILES)
+                .value(fileId, fileWithouthKey)
+                .build();
+    }
+
+    @NonNull
     protected MapReadableKVState<FileID, File> readableFileState() {
         return MapReadableKVState.<FileID, File>builder(FILES)
                 .value(fileId, file)
