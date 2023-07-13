@@ -50,4 +50,5 @@ module com.swirlds.demo.platform {
     requires java.sql;
     requires com.swirlds.fchashmap;
     requires com.hedera.pbj.runtime;
+    requires com.swirlds.common.test.fixtures;
 }

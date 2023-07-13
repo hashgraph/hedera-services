@@ -16,13 +16,14 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.AssertionUtils.assertIteratorEquality;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertIteratorEquality;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -35,7 +36,6 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.config.api.Configuration;

@@ -205,7 +205,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willReturn(new ExpiryMeta(expirationTime, NA, NA));
+                .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
@@ -236,7 +236,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
+                .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
@@ -283,7 +283,7 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
-                .willReturn(new ExpiryMeta(1_234_567L, NA, NA));
+                .willReturn(new ExpiryMeta(1_234_567L, NA, null));
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)

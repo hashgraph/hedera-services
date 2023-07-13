@@ -54,7 +54,7 @@ public class CryptoBenchMerkleDb extends CryptoBench {
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
-        return new VirtualMap<>("vm" + System.nanoTime(), dataSourceBuilder);
+        return new VirtualMap<>(LABEL, dataSourceBuilder);
     }
 
     public static void main(String[] args) throws Exception {

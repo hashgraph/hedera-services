@@ -18,6 +18,7 @@ package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -44,6 +45,7 @@ import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -115,7 +117,7 @@ public abstract class VirtualMapReconnectTestBase {
         new TestConfigBuilder()
                 .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "5000")
+                .withValue("reconnect.asyncStreamTimeout", "5000ms")
                 .getOrCreateConfig();
     }
 
@@ -140,6 +142,8 @@ public abstract class VirtualMapReconnectTestBase {
                     final var node = MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
                     node.release();
                     assertEquals(attempts - 1, i, "We should only succeed on the last try");
+                    final VirtualRoot root = learnerMap.getRight();
+                    assertTrue(root.isHashed(), "Learner root node must be hashed");
                 } catch (Exception e) {
                     if (i == attempts - 1) {
                         fail("We did not expect an exception on this reconnect attempt!", e);

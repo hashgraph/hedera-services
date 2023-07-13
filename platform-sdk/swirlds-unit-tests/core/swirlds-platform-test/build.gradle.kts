@@ -35,13 +35,16 @@ dependencies {
     implementation(testLibs.bundles.mocking)
     implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(testFixtures(project(":swirlds-config-api")))
+    implementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(project(":swirlds-merkle"))
-    testImplementation(project(":swirlds-sign-tool")) // TODO: should be removed in future
+    testImplementation(project(":swirlds-sign-tool")) // FUTURE WORK: should be removed in future
     testImplementation(libs.commons.collections4)
     testImplementation(libs.classgraph)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.utils)
+    testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(project(":swirlds-config-impl"))

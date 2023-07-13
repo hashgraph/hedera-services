@@ -16,7 +16,7 @@
 
 package com.swirlds.common.test.notification;
 
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

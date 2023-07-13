@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.heartbeats.HeartbeatProtocol;

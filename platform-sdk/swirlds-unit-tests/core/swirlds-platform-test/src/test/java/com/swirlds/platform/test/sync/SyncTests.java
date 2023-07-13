@@ -1003,6 +1003,13 @@ public class SyncTests {
         // the caller will have only signed state events
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
             caller.getGeneratedEvents().forEach(EventImpl::markAsSignedStateEvent);
+
+            // a signed sent event needs to be identified as needed by the peer
+            // if it is ancient, it will not be marked as needed, so need to make sure no events are ancient
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
         });
 
         executor.execute();

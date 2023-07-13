@@ -29,12 +29,12 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -114,6 +114,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
     protected final AccountID spenderId =
             AccountID.newBuilder().accountNum(12345).build();
+    protected final AccountID feeCollectorId = transferAccountId;
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -152,6 +153,15 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .tokenId(nonFungibleTokenId)
             .build();
 
+    protected final EntityIDPair feeCollectorFTPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenId)
+            .build();
+    protected final EntityIDPair feeCollectorNFTPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(nonFungibleTokenId)
+            .build();
+
     protected final EntityIDPair treasuryFTPair = EntityIDPair.newBuilder()
             .accountId(treasuryId)
             .tokenId(fungibleTokenId)
@@ -160,14 +170,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .accountId(treasuryId)
             .tokenId(nonFungibleTokenId)
             .build();
-    protected final UniqueTokenId uniqueTokenIdSl1 = UniqueTokenId.newBuilder()
-            .tokenId(nonFungibleTokenId)
-            .serialNumber(1L)
-            .build();
-    protected final UniqueTokenId uniqueTokenIdSl2 = UniqueTokenId.newBuilder()
-            .tokenId(nonFungibleTokenId)
-            .serialNumber(2L)
-            .build();
+    protected final NftID nftIdSl1 =
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(1L).build();
+    protected final NftID nftIdSl2 =
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(2L).build();
 
     /* ---------- Allowances --------------- */
     protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
@@ -198,21 +204,24 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .delegatingSpender(delegatingSpenderId)
             .build();
     /* ---------- Fees ------------------ */
-    protected FixedFee fixedFee = FixedFee.newBuilder()
-            .amount(1_000L)
-            .denominatingTokenId(TokenID.newBuilder().tokenNum(1L).build())
+    protected FixedFee hbarFixedFee = FixedFee.newBuilder().amount(1_000L).build();
+    protected FixedFee htsFixedFee = FixedFee.newBuilder()
+            .amount(10L)
+            .denominatingTokenId(fungibleTokenId)
             .build();
     protected FractionalFee fractionalFee = FractionalFee.newBuilder()
-            .maximumAmount(1_000L)
+            .maximumAmount(100L)
             .minimumAmount(1L)
-            .fractionalAmount(Fraction.newBuilder().numerator(1).denominator(2).build())
+            .fractionalAmount(
+                    Fraction.newBuilder().numerator(1).denominator(100).build())
+            .netOfTransfers(false)
             .build();
     protected RoyaltyFee royaltyFee = RoyaltyFee.newBuilder()
             .exchangeValueFraction(
                     Fraction.newBuilder().numerator(1).denominator(2).build())
-            .fallbackFee(fixedFee)
+            .fallbackFee(hbarFixedFee)
             .build();
-    protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
+    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -233,8 +242,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapWritableKVState<TokenID, Token> writableTokenState;
     protected MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
     protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
-    protected MapReadableKVState<UniqueTokenId, Nft> readableNftState;
-    protected MapWritableKVState<UniqueTokenId, Nft> writableNftState;
+    protected MapReadableKVState<NftID, Nft> readableNftState;
+    protected MapWritableKVState<NftID, Nft> writableNftState;
 
     /* ---------- Stores */
 
@@ -259,6 +268,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected TokenRelation ownerNFTRelation;
     protected TokenRelation treasuryFTRelation;
     protected TokenRelation treasuryNFTRelation;
+    protected TokenRelation feeCollectorFTRelation;
+    protected TokenRelation feeCollectorNFTRelation;
 
     /* ---------- Accounts ---------- */
     protected Account account;
@@ -319,6 +330,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokenRelsMap.put(ownerNFTPair, ownerNFTRelation);
         tokenRelsMap.put(treasuryFTPair, treasuryFTRelation);
         tokenRelsMap.put(treasuryNFTPair, treasuryNFTRelation);
+        tokenRelsMap.put(feeCollectorFTPair, feeCollectorFTRelation);
+        tokenRelsMap.put(feeCollectorNFTPair, feeCollectorNFTRelation);
     }
 
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
@@ -395,19 +408,19 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     private void givenReadableNftStore() {
         readableNftState = emptyReadableNftStateBuilder()
-                .value(uniqueTokenIdSl1, nftSl1)
-                .value(uniqueTokenIdSl2, nftSl2)
+                .value(nftIdSl1, nftSl1)
+                .value(nftIdSl2, nftSl2)
                 .build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(readableNftState);
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(readableNftState);
         readableNftStore = new ReadableNftStoreImpl(readableStates);
     }
 
     private void givenWritableNftStore() {
         writableNftState = emptyWritableNftStateBuilder()
-                .value(uniqueTokenIdSl1, nftSl1)
-                .value(uniqueTokenIdSl2, nftSl2)
+                .value(nftIdSl1, nftSl1)
+                .value(nftIdSl2, nftSl2)
                 .build();
-        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
     }
 
@@ -494,13 +507,21 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .accountId(treasuryId)
                 .build();
+        feeCollectorFTRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .build();
+        feeCollectorNFTRelation = givenNonFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .build();
     }
 
     private void givenValidTokens() {
         fungibleToken = givenValidFungibleToken();
         nonFungibleToken = givenValidNonFungibleToken();
-        nftSl1 = givenNft(uniqueTokenIdSl1);
-        nftSl2 = givenNft(uniqueTokenIdSl2);
+        nftSl1 = givenNft(nftIdSl1);
+        nftSl2 = givenNft(nftIdSl2);
     }
 
     private void givenValidAccounts() {
@@ -531,6 +552,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         delegatingSpenderAccount = givenValidAccount()
                 .copyBuilder()
                 .accountNumber(delegatingSpenderId.accountNum())
+                .build();
+        transferAccount = givenValidAccount()
+                .copyBuilder()
+                .accountNumber(transferAccountId.accountNum())
                 .build();
         treasuryAccount = givenValidAccount()
                 .copyBuilder()
@@ -579,16 +604,15 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                Collections.emptyList());
+                customFees);
     }
 
     protected Token givenValidNonFungibleToken() {
-        givenValidFungibleToken();
         return fungibleToken
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .treasuryAccountId(treasuryId)
-                .customFees(List.of())
+                .customFees(List.of(withRoyaltyFee(royaltyFee)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }
@@ -657,14 +681,13 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected Nft givenNft(UniqueTokenId uniqueTokenId) {
-        return Nft.newBuilder().ownerId(ownerId).id(uniqueTokenId).build();
+    protected Nft givenNft(NftID tokenID) {
+        return Nft.newBuilder().ownerId(ownerId).id(tokenID).build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
         return CustomFee.newBuilder()
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .fixedFee(fixedFee)
                 .build();
     }
@@ -672,16 +695,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected CustomFee withFractionalFee(final FractionalFee fractionalFee) {
         return CustomFee.newBuilder()
                 .fractionalFee(fractionalFee)
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 
     protected CustomFee withRoyaltyFee(final RoyaltyFee royaltyFee) {
         return CustomFee.newBuilder()
                 .royaltyFee(royaltyFee)
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 
