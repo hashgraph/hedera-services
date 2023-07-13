@@ -249,28 +249,4 @@ public class AddressBookUtils {
                 externalPort,
                 memoToUse);
     }
-
-    /**
-     * Determine a new next node id value from an address book and the old next node id value.
-     *
-     * @param addressBook   the address book to use
-     * @param oldNextNodeId the old next node id value
-     * @return the new next node id value
-     */
-    @NonNull
-    public static NodeId determineNewNextNodeId(
-            @NonNull final AddressBook addressBook, @Nullable final NodeId oldNextNodeId) {
-        final int addressBookSize = addressBook.getSize();
-        if (addressBookSize <= 0) {
-            return Objects.requireNonNullElse(oldNextNodeId, NodeId.FIRST_NODE_ID);
-        }
-        final NodeId lastNodeId = addressBook.getNodeId(addressBookSize - 1);
-        if (oldNextNodeId != null && lastNodeId.compareTo(oldNextNodeId) < 0) {
-            // the last node id in the address book is not higher than the old NextNodeId
-            return oldNextNodeId;
-        } else {
-            // the last node id in the address book is high enough to bump the next node id value.
-            return lastNodeId.getOffset(1);
-        }
-    }
 }

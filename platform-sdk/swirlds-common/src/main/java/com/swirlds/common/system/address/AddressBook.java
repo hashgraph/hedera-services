@@ -557,14 +557,6 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         Objects.requireNonNull(in, "in must not be null");
         in.readSerializableIterableWithSize(MAX_ADDRESSES, false, Address::new, this::addNewAddress);
 
-        if (version < ClassVersion.ADDRESS_BOOK_STORE_SUPPORT) {
-            round = UNKNOWN_ROUND;
-            if (!orderedNodeIds.isEmpty()) {
-                nextNodeId = orderedNodeIds.get(getSize() - 1).getOffset(1);
-            }
-            return;
-        }
-
         round = in.readLong();
         if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
             nextNodeId = new NodeId(in.readLong());
@@ -578,7 +570,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.UTILITY_SERIALIZATION;
+        return ClassVersion.ADDRESS_BOOK_STORE_SUPPORT;
     }
 
     /**
