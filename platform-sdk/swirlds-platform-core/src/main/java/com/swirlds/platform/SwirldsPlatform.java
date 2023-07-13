@@ -79,9 +79,7 @@ import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -385,14 +383,12 @@ public class SwirldsPlatform implements Platform, Startable {
         wiring.registerComponents(components);
 
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManagerFactory()
-                        .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
-                        .build();
+                new PreConsensusSystemTransactionManager();
 
         final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManagerFactory()
-                        .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
-                        .build();
+                new PostConsensusSystemTransactionManager();
+
+        // TODO add handlers
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());

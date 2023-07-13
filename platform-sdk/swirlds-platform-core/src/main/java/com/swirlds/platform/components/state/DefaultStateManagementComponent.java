@@ -40,8 +40,6 @@ import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsum
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
@@ -563,23 +561,24 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
-        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
-                StateSignatureTransaction.class, this::handleStateSignatureTransactionPreConsensus));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
-        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
-                StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
-    }
+    // TODO we need to register these handlers
+    //    /**
+    //     * {@inheritDoc}
+    //     */
+    //    @Override
+    //    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
+    //        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
+    //                StateSignatureTransaction.class, this::handleStateSignatureTransactionPreConsensus));
+    //    }
+    //
+    //    /**
+    //     * {@inheritDoc}
+    //     */
+    //    @Override
+    //    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
+    //        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
+    //                StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
+    //    }
 
     /**
      * {@inheritDoc}

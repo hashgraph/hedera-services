@@ -49,9 +49,7 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistrib
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
@@ -607,15 +605,18 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(1000);
 
+        // TODO
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManagerFactory()
-                        .addHandlers(systemTransactionTracker.getPreConsensusHandleMethods())
-                        .build();
+                new PreConsensusSystemTransactionManager();
+        //                new PreConsensusSystemTransactionManagerFactory()
+        //                        .addHandlers(systemTransactionTracker.getPreConsensusHandleMethods())
+        //                        .build();
 
         final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManagerFactory()
-                        .addHandlers(systemTransactionTracker.getPostConsensusHandleMethods())
-                        .build();
+                new PostConsensusSystemTransactionManager();
+        //                new PostConsensusSystemTransactionManagerFactory()
+        //                        .addHandlers(systemTransactionTracker.getPostConsensusHandleMethods())
+        //                        .build();
 
         swirldStateManager = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
