@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.pbj.runtime.OneOf;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collections;
@@ -259,7 +260,7 @@ public class TokenHandlerTestBase {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                 true,
                 true,
                 3,

@@ -234,7 +234,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo();
 
-        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
+        account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
@@ -271,7 +271,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfos();
 
-        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
+        account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
@@ -335,7 +335,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo2();
 
-        account = account.copyBuilder().stakedNumber(1).declineReward(false).build();
+        account = account.copyBuilder()
+                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .declineReward(false)
+                .build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
@@ -373,7 +376,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var expectedInfo = getExpectedAccountInfoEvm(evmAddress);
 
         account = account.copyBuilder()
-                .stakedNumber(-1)
+                .stakedNodeId(0)
                 .declineReward(false)
                 .alias(evmAddress)
                 .build();

@@ -91,6 +91,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -332,7 +333,7 @@ class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    0L,
+                    new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                     false,
                     receiverSigRequired,
                     3L,

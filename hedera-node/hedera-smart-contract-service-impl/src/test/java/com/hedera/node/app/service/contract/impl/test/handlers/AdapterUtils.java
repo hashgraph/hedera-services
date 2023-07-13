@@ -79,6 +79,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.HashMap;
@@ -300,7 +301,7 @@ public class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    0L,
+                    new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                     false,
                     receiverSigRequired,
                     3L,

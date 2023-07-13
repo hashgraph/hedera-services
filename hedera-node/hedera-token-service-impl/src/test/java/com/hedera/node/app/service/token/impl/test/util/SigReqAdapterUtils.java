@@ -96,6 +96,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
@@ -316,7 +317,7 @@ public class SigReqAdapterUtils {
                 false,
                 1_234_567L,
                 1_234_567L,
-                0L,
+                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                 false,
                 receiverSigRequired,
                 3L,

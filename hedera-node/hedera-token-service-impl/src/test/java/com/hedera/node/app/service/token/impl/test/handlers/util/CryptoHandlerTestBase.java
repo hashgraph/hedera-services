@@ -44,6 +44,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -253,7 +254,7 @@ public class CryptoHandlerTestBase {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                 true,
                 true,
                 3,
@@ -289,7 +290,7 @@ public class CryptoHandlerTestBase {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                 true,
                 true,
                 3,

@@ -69,6 +69,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
@@ -599,7 +600,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
                 true,
                 true,
                 3,
