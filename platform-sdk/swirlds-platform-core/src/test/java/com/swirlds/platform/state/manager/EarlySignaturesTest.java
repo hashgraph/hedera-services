@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -84,12 +85,18 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         // send out signatures super early. Many will be rejected.
         for (long round = 0; round < count; round++) {
             // All node 0 and 2 signatures are sent very early.
-            manager.preConsensusSignatureObserver(round, addressBook.getNodeId(0), buildReallyFakeSignature());
-            manager.preConsensusSignatureObserver(round, addressBook.getNodeId(2), buildReallyFakeSignature());
+            manager.handlePreconsensusSignatureTransaction(
+                    addressBook.getNodeId(0),
+                    new StateSignatureTransaction(round, buildReallyFakeSignature(), null)); // TODO hash
+            manager.handlePreconsensusSignatureTransaction(
+                    addressBook.getNodeId(2),
+                    new StateSignatureTransaction(round, buildReallyFakeSignature(), null)); // TODO hash
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
-                manager.preConsensusSignatureObserver(round, addressBook.getNodeId(3), buildReallyFakeSignature());
+                manager.handlePreconsensusSignatureTransaction(
+                        addressBook.getNodeId(3),
+                        new StateSignatureTransaction(round, buildReallyFakeSignature(), null)); // TODO hash
             }
         }
 

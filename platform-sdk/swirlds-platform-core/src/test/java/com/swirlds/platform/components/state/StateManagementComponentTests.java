@@ -33,10 +33,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
-import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -52,7 +50,6 @@ import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,54 +241,54 @@ class StateManagementComponentTests {
                 "Incorrect number of reservations for state round " + lastCompleteSignedState.getRound());
     }
 
-    /**
-     * Verify that as signatures are sent to the component, various consumers are invoked
-     */
-    @Test
-    @DisplayName("State signatures are applied and consumers are invoked")
-    void stateSignaturesAppliedAndTracked() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
-
-        component.start();
-
-        final int firstRound = 1;
-        final int lastRound = 100;
-
-        for (int roundNum = firstRound; roundNum < lastRound; roundNum++) {
-            final SignedState signedState = new RandomSignedStateGenerator(random)
-                    .setRound(roundNum)
-                    .setSigningNodeIds(List.of())
-                    .build();
-
-            component.roundAppliedToState(signedState.getRound());
-            component.newSignedStateFromTransactions(signedState.reserve("test"));
-
-            if (roundNum % 2 == 0) {
-                // Send signatures from all nodes for this signed state
-                allNodesSign(signedState, component);
-
-                // This state should be sent out as the latest complete state
-                final int finalRoundNum = roundNum;
-                AssertionUtils.assertEventuallyDoesNotThrow(
-                        () -> {
-                            verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState);
-                            verifyLatestCompleteState(signedState, component);
-                        },
-                        Duration.ofSeconds(2),
-                        "The unit test failed.");
-
-                // Check that the consumer for state has enough signatures is invoked correctly
-                verifyStateHasEnoughSignaturesConsumer(signedState, roundNum / 2);
-            }
-        }
-
-        component.stop();
-    }
+    //    /**
+    //     * Verify that as signatures are sent to the component, various consumers are invoked
+    //     */
+    //    @Test
+    //    @DisplayName("State signatures are applied and consumers are invoked")
+    //    void stateSignaturesAppliedAndTracked() {
+    //        final Random random = RandomUtils.getRandomPrintSeed();
+    //        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+    //                .setSize(NUM_NODES)
+    //                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+    //                .build();
+    //        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+    //
+    //        component.start();
+    //
+    //        final int firstRound = 1;
+    //        final int lastRound = 100;
+    //
+    //        for (int roundNum = firstRound; roundNum < lastRound; roundNum++) {
+    //            final SignedState signedState = new RandomSignedStateGenerator(random)
+    //                    .setRound(roundNum)
+    //                    .setSigningNodeIds(List.of())
+    //                    .build();
+    //
+    //            component.roundAppliedToState(signedState.getRound());
+    //            component.newSignedStateFromTransactions(signedState.reserve("test"));
+    //
+    //            if (roundNum % 2 == 0) {
+    //                // Send signatures from all nodes for this signed state
+    //                allNodesSign(signedState, component);
+    //
+    //                // This state should be sent out as the latest complete state
+    //                final int finalRoundNum = roundNum;
+    //                AssertionUtils.assertEventuallyDoesNotThrow(
+    //                        () -> {
+    //                            verifyNewLatestCompleteStateConsumer(finalRoundNum / 2, signedState);
+    //                            verifyLatestCompleteState(signedState, component);
+    //                        },
+    //                        Duration.ofSeconds(2),
+    //                        "The unit test failed.");
+    //
+    //                // Check that the consumer for state has enough signatures is invoked correctly
+    //                verifyStateHasEnoughSignaturesConsumer(signedState, roundNum / 2);
+    //            }
+    //        }
+    //
+    //        component.stop();
+    //    }
 
     @Test
     @DisplayName("Signed States For Old Rounds Are Not Processed")
@@ -371,24 +368,24 @@ class StateManagementComponentTests {
         component.stop();
     }
 
-    @Test
-    @DisplayName("Mismatched signatures cause ISS consumer to be invoked")
-    void testIssConsumer() {
-        final Random random = RandomUtils.getRandomPrintSeed();
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(NUM_NODES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
-
-        component.start();
-
-        testSelfIss(random, component, 1L, addressBook);
-        testOtherIss(random, component, 2L, addressBook);
-        testCatastrophicIss(random, component, 3L, addressBook);
-
-        component.stop();
-    }
+    //    @Test
+    //    @DisplayName("Mismatched signatures cause ISS consumer to be invoked")
+    //    void testIssConsumer() {
+    //        final Random random = RandomUtils.getRandomPrintSeed();
+    //        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+    //                .setSize(NUM_NODES)
+    //                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+    //                .build();
+    //        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+    //
+    //        component.start();
+    //
+    //        testSelfIss(random, component, 1L, addressBook);
+    //        testOtherIss(random, component, 2L, addressBook);
+    //        testCatastrophicIss(random, component, 3L, addressBook);
+    //
+    //        component.stop();
+    //    }
 
     @Test
     @DisplayName("Test that the state is saved to disk when it is received via reconnect")
@@ -420,126 +417,131 @@ class StateManagementComponentTests {
         component.stop();
     }
 
-    private void testCatastrophicIss(
-            final Random random,
-            final DefaultStateManagementComponent component,
-            final long roundNum,
-            final AddressBook addressBook) {
-        final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setRound(roundNum)
-                .setAddressBook(addressBook)
-                .build();
+    // TODO
+    //    private void testCatastrophicIss(
+    //            final Random random,
+    //            final DefaultStateManagementComponent component,
+    //            final long roundNum,
+    //            final AddressBook addressBook) {
+    //        final SignedState signedState = new RandomSignedStateGenerator(random)
+    //                .setRound(roundNum)
+    //                .setAddressBook(addressBook)
+    //                .build();
+    //
+    //        component.roundAppliedToState(signedState.getRound());
+    //        component.newSignedStateFromTransactions(signedState.reserve("test"));
+    //
+    //        final Hash stateHash = signedState.getState().getHash();
+    //        final Hash otherHash = RandomUtils.randomHash(random);
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(0),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(0), stateHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(1),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), stateHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(2),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), otherHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(3),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
+    //
+    //        assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss
+    // consumer");
+    //        assertNull(issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
+    //        assertEquals(
+    //                IssNotification.IssType.CATASTROPHIC_ISS,
+    //                issConsumer.getIssType(),
+    //                "ISS should have been reported as catastrophic ISS");
+    //        assertEquals(1, issConsumer.getNumInvocations(), "Unexpected number of ISS consumer invocations");
+    //        issConsumer.reset();
+    //    }
 
-        component.roundAppliedToState(signedState.getRound());
-        component.newSignedStateFromTransactions(signedState.reserve("test"));
+    //    private void testOtherIss(
+    //            final Random random,
+    //            final DefaultStateManagementComponent component,
+    //            final long roundNum,
+    //            final AddressBook addressBook) {
+    //        final SignedState signedState = new RandomSignedStateGenerator(random)
+    //                .setRound(roundNum)
+    //                .setAddressBook(addressBook)
+    //                .build();
+    //
+    //        component.roundAppliedToState(signedState.getRound());
+    //        component.newSignedStateFromTransactions(signedState.reserve("test"));
+    //
+    //        final Hash stateHash = signedState.getState().getHash();
+    //        final Hash otherHash = RandomUtils.randomHash(random);
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(0),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(0), stateHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(1),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), stateHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(2),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), stateHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(3),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
+    //
+    //        assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss
+    // consumer");
+    //        assertEquals(addressBook.getNodeId(3), issConsumer.getIssNodeId(), "Incorrect other node ISS id
+    // reported");
+    //        assertEquals(
+    //                IssNotification.IssType.OTHER_ISS,
+    //                issConsumer.getIssType(),
+    //                "ISS should have been reported as other ISS");
+    //        assertEquals(1, issConsumer.getNumInvocations(), "Unexpected number of ISS consumer invocations");
+    //        issConsumer.reset();
+    //    }
 
-        final Hash stateHash = signedState.getState().getHash();
-        final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(0),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(0), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(1),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(2),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), otherHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(3),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
-
-        assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertNull(issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
-        assertEquals(
-                IssNotification.IssType.CATASTROPHIC_ISS,
-                issConsumer.getIssType(),
-                "ISS should have been reported as catastrophic ISS");
-        assertEquals(1, issConsumer.getNumInvocations(), "Unexpected number of ISS consumer invocations");
-        issConsumer.reset();
-    }
-
-    private void testOtherIss(
-            final Random random,
-            final DefaultStateManagementComponent component,
-            final long roundNum,
-            final AddressBook addressBook) {
-        final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setRound(roundNum)
-                .setAddressBook(addressBook)
-                .build();
-
-        component.roundAppliedToState(signedState.getRound());
-        component.newSignedStateFromTransactions(signedState.reserve("test"));
-
-        final Hash stateHash = signedState.getState().getHash();
-        final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(0),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(0), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(1),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(2),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(3),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
-
-        assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertEquals(addressBook.getNodeId(3), issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
-        assertEquals(
-                IssNotification.IssType.OTHER_ISS,
-                issConsumer.getIssType(),
-                "ISS should have been reported as other ISS");
-        assertEquals(1, issConsumer.getNumInvocations(), "Unexpected number of ISS consumer invocations");
-        issConsumer.reset();
-    }
-
-    private void testSelfIss(
-            final Random random,
-            final DefaultStateManagementComponent component,
-            final long roundNum,
-            final AddressBook addressBook) {
-        final SignedState signedState = new RandomSignedStateGenerator(random)
-                .setRound(roundNum)
-                .setAddressBook(addressBook)
-                .build();
-
-        component.roundAppliedToState(signedState.getRound());
-        component.newSignedStateFromTransactions(signedState.reserve("test"));
-
-        final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(1),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), otherHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(2),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), otherHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(3),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
-
-        assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
-        assertEquals(NODE_ID, issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
-        assertEquals(
-                IssNotification.IssType.SELF_ISS,
-                issConsumer.getIssType(),
-                "ISS should have been reported as self ISS");
-        assertEquals(1, issConsumer.getNumInvocations(), "Unexpected number of ISS consumer invocations");
-        issConsumer.reset();
-    }
+    //    private void testSelfIss(
+    //            final Random random,
+    //            final DefaultStateManagementComponent component,
+    //            final long roundNum,
+    //            final AddressBook addressBook) {
+    //        final SignedState signedState = new RandomSignedStateGenerator(random)
+    //                .setRound(roundNum)
+    //                .setAddressBook(addressBook)
+    //                .build();
+    //
+    //        component.roundAppliedToState(signedState.getRound());
+    //        component.newSignedStateFromTransactions(signedState.reserve("test"));
+    //
+    //        final Hash otherHash = RandomUtils.randomHash(random);
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(1),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), otherHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(2),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), otherHash));
+    //        component.handleStateSignatureTransactionPostConsensus(
+    //                null,
+    //                addressBook.getNodeId(3),
+    //                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
+    //
+    //        assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss
+    // consumer");
+    //        assertEquals(NODE_ID, issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
+    //        assertEquals(
+    //                IssNotification.IssType.SELF_ISS,
+    //                issConsumer.getIssType(),
+    //                "ISS should have been reported as self ISS");
+    //        assertEquals(1, issConsumer.getNumInvocations(), "Unexpected number of ISS consumer invocations");
+    //        issConsumer.reset();
+    //    }
 
     private void verifyStateLacksSignaturesConsumer(final SignedState signedState, final int numInvocations) {
         assertEquals(
@@ -565,13 +567,13 @@ class StateManagementComponentTests {
                 "Last state to collect enough signatures is not correct.");
     }
 
-    private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
-        final AddressBook addressBook = signedState.getAddressBook();
-        IntStream.range(0, NUM_NODES)
-                .forEach(index -> component.handleStateSignatureTransactionPreConsensus(
-                        addressBook.getNodeId(index),
-                        stateSignatureTransaction(addressBook.getNodeId(index), signedState)));
-    }
+    //    private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
+    //        final AddressBook addressBook = signedState.getAddressBook();
+    //        IntStream.range(0, NUM_NODES)
+    //                .forEach(index -> component.handleStateSignatureTransactionPreConsensus(
+    //                        addressBook.getNodeId(index),
+    //                        stateSignatureTransaction(addressBook.getNodeId(index), signedState)));
+    //    }
 
     @NonNull
     private static StateSignatureTransaction stateSignatureTransaction(

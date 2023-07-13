@@ -51,10 +51,9 @@ public class PreConsensusSystemTransactionManager {
      *
      * @param clazz   the class of the transaction being handled
      * @param handler a method to handle this transaction type
-     * @return this object
      */
     @SuppressWarnings("unchecked")
-    public <T extends SystemTransaction> PreConsensusSystemTransactionManager addHandler(
+    public <T extends SystemTransaction> void addHandler(
             @NonNull final Class<T> clazz, @NonNull final PreConsensusSystemTransactionHandler<T> handler) {
 
         Objects.requireNonNull(clazz);
@@ -62,8 +61,6 @@ public class PreConsensusSystemTransactionManager {
 
         handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
                 .add((PreConsensusSystemTransactionHandler<SystemTransaction>) handler);
-
-        return this;
     }
 
     /**

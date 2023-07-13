@@ -60,6 +60,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -135,8 +136,10 @@ import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
@@ -382,13 +385,19 @@ public class SwirldsPlatform implements Platform, Startable {
                 currentPlatformStatus::get);
         wiring.registerComponents(components);
 
+        final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
+        final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
+
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManager();
+        preConsensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
 
         final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
                 new PostConsensusSystemTransactionManager();
-
-        // TODO add handlers
+        postConsensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class,
+                (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());

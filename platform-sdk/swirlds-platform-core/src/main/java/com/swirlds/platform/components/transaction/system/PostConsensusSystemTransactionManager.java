@@ -53,16 +53,13 @@ public class PostConsensusSystemTransactionManager {
      *
      * @param clazz   the class of the transaction being handled
      * @param handler a method to handle this transaction type
-     * @return this object
      */
     @SuppressWarnings("unchecked")
-    public <T extends SystemTransaction> PostConsensusSystemTransactionManager addHandler(
+    public <T extends SystemTransaction> void addHandler(
             @NonNull final Class<T> clazz, @NonNull final PostConsensusSystemTransactionHandler<T> handler) {
 
         handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
                 .add((PostConsensusSystemTransactionHandler<SystemTransaction>) handler);
-
-        return this;
     }
 
     /**
