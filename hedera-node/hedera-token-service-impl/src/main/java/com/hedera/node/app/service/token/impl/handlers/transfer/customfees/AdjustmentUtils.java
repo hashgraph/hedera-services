@@ -98,7 +98,7 @@ public class AdjustmentUtils {
             final long amount,
             final TokenID denominatingToken) {
         final var newHtsAdjustments = result.getHtsAdjustments();
-        final var inputHtsAdjustments = result.getInputTokenAdjustments();
+        final var inputHtsAdjustments = result.getMutableInputTokenAdjustments();
 
         // If the fee is self-denominated, we don't need it to trigger next level custom fees
         // So add assessments in given input transaction body.
@@ -162,7 +162,7 @@ public class AdjustmentUtils {
      */
     public static Map<AccountID, Pair<Long, TokenID>> getFungibleCredits(
             final AssessmentResult result, final TokenID tokenId, final AccountID beneficiary) {
-        final var tokenChanges = result.getInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
+        final var tokenChanges = result.getImmutableInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
         final var credits = new HashMap<AccountID, Pair<Long, TokenID>>();
         for (final var entry : tokenChanges.entrySet()) {
             final var account = entry.getKey();

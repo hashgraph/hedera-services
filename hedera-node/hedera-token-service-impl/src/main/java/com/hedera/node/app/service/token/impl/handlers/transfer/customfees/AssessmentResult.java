@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class AssessmentResult {
@@ -38,8 +39,8 @@ public class AssessmentResult {
     // to construct a transaction body that needs to be assessed again for custom fees
     private Map<AccountID, Long> hbarAdjustments;
     private Set<Pair<AccountID, TokenID>> royaltiesPaid;
-    private Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments;
-
+    private Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments;
+    private Map<TokenID, Map<AccountID, Long>> mutableInputTokenAdjustments;
     private Map<AccountID, Long> inputHbarAdjustments;
     /* And for each "assessable change" that can be charged a custom fee, delegate to our
     fee assessor to update the balance changes with the custom fee. */
@@ -47,7 +48,11 @@ public class AssessmentResult {
 
     public AssessmentResult(
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
-        inputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
+        mutableInputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
+        immutableInputTokenAdjustments = mutableInputTokenAdjustments.entrySet().stream()
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(Map.Entry::getKey, entry -> Map.copyOf(entry.getValue())), Map::copyOf));
+
         inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
 
         htsAdjustments = new HashMap<>();
@@ -56,8 +61,12 @@ public class AssessmentResult {
         assessedCustomFees = new ArrayList<>();
     }
 
-    public Map<TokenID, Map<AccountID, Long>> getInputTokenAdjustments() {
-        return inputTokenAdjustments;
+    public Map<TokenID, Map<AccountID, Long>> getImmutableInputTokenAdjustments() {
+        return immutableInputTokenAdjustments;
+    }
+
+    public Map<TokenID, Map<AccountID, Long>> getMutableInputTokenAdjustments() {
+        return mutableInputTokenAdjustments;
     }
 
     public Map<AccountID, Long> getHbarAdjustments() {

@@ -81,7 +81,7 @@ public class CustomFeeAssessor {
     private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
-        for (final var entry : result.getInputTokenAdjustments().entrySet()) {
+        for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
             inputFungibleTransfers += entry.getValue().size();
         }
         for (final var entry : result.getHtsAdjustments().entrySet()) {

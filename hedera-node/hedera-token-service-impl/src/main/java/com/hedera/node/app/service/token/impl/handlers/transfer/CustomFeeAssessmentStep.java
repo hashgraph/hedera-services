@@ -165,7 +165,7 @@ public class CustomFeeAssessmentStep {
     private CryptoTransferTransactionBody changedInputTxn(
             final CryptoTransferTransactionBody op, final AssessmentResult result) {
         final var copy = op.copyBuilder();
-        final var changedFungibleTokenTransfers = result.getInputTokenAdjustments();
+        final var changedFungibleTokenTransfers = result.getMutableInputTokenAdjustments();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
         // If there are no changes for the token , add as it is
         for (final var xfers : op.tokenTransfers()) {

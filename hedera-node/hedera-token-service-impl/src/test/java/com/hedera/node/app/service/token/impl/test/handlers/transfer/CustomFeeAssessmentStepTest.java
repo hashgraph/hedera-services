@@ -336,17 +336,18 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 fungibleTokenId,
                 Map.of(
                         feeCollectorId,
-                        20L,
+                        21L,
                         tokensReceiver,
-                        -20L)); // 10 is for fallback royalty fee from given transaction.
-        // When assessing the next level, since it is self denominated we append in same transaction body
+                        -21L)); // 10 is for fallback royalty fee from given transaction.
+        // When assessing this level, we have a fixed fee of 10 and fractional fee of 1 (self denominated)
 
         final var expectedGivenOpTokenTransfers = Map.of(
                 fungibleTokenId,
                 Map.of(
                         tokensReceiver, 1000L,
-                        ownerId, -1010L,
-                        feeCollectorId, 10L)); // fractional fees with self denomination
+                        ownerId, -1020L,
+                        feeCollectorId,
+                                20L)); // fixed hts fee self denomination and fractional fees with self denomination
         // all are adjusted to input txn
         final var expectedGivenOpHbarTransfers = Map.of(hbarsReceiver, 1000L, ownerId, -1000L);
 
