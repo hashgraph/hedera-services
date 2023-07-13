@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile.getInputEmergencyRecoveryFilePath;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,6 +52,7 @@ import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.LinkedList;
@@ -235,7 +237,7 @@ public class SavedStateLoaderTests {
      */
     @Test
     @DisplayName("Emergency Saved State Load")
-    void testEmergencyLoad() { // TODO this fails
+    void testEmergencyLoad() {
         final int numStateToWrite = 4;
         final var config = prepareConfiguration();
 
@@ -246,7 +248,7 @@ public class SavedStateLoaderTests {
         final SavedStateInfo[] stateInfos = toStateInfos(statesOnDisk);
 
         writeEmergencyFile(10L);
-
+        assertTrue(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
         init(stateInfos, config);
 
         // latest state is valid
@@ -255,7 +257,9 @@ public class SavedStateLoaderTests {
                 () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The first saved state should have been returned for emergency recovery");
         verifyEmergencySignedStateReturned(statesOnDisk.get(0), stateToLoad);
+        assertFalse(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
 
+        writeEmergencyFile(10L);
         init(stateInfos, config);
 
         // latest state is invalid
@@ -264,7 +268,10 @@ public class SavedStateLoaderTests {
                 () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The second saved state should have been returned for emergency recovery");
         verifyEmergencySignedStateReturned(statesOnDisk.get(1), stateToLoad);
+        assertFalse(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
 
+        writeEmergencyFile(10L);
+        assertTrue(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
         init(stateInfos, config);
 
         // latest 2 states are invalid
@@ -273,7 +280,10 @@ public class SavedStateLoaderTests {
                 () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The third saved state should have been returned for emergency recovery");
         verifyEmergencySignedStateReturned(statesOnDisk.get(2), stateToLoad);
+        assertFalse(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
 
+        writeEmergencyFile(10L);
+        assertTrue(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
         init(stateInfos, config);
 
         // all states are invalid
@@ -282,6 +292,7 @@ public class SavedStateLoaderTests {
                 () -> savedStateLoader.getSavedStateToLoad().get(),
                 "The first saved state with a round smaller than the emergency round should have been returned");
         verifyNonEmergencySignedStateReturned(statesOnDisk.get(3), stateToLoad);
+        assertTrue(Files.exists(getInputEmergencyRecoveryFilePath(tmpDir)));
     }
 
     private void init(final SavedStateInfo[] stateInfos, final Configuration config) {
