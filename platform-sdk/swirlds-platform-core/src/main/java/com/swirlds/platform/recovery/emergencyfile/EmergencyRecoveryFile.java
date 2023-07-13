@@ -132,6 +132,7 @@ public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
      * @param directory the directory containing the emergency recovery file
      * @return the path to the emergency recovery file in the specified directory
      */
+    @NonNull
     public static Path getInputEmergencyRecoveryFilePath(@NonNull final Path directory) {
         return directory.resolve(INPUT_FILENAME);
     }
