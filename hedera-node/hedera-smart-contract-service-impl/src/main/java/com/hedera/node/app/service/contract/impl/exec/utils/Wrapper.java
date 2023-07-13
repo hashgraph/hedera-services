@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.Objects;
+
 /**
  * A non-atomic wrapper for a value, useful when we want to a "stable reference" to an evolving PBJ object,
  * which will actually need to be recreated each time it changes.

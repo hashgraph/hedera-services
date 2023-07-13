@@ -36,6 +36,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
+
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -96,14 +98,7 @@ public class ActionStack {
      * @param validate whether to validate the final action
      */
     public void finalizeLastActionIn(@NonNull final MessageFrame frame, final boolean validate) {
-        requireNonNull(frame);
-        final var lastWrappedAction = requireNonNull(allActions.get(allActions.size() - 1));
-        // Intentional use of referential equality here, only pop if this exact wrapper is on the stack
-        if (lastWrappedAction == actionsStack.peek()) {
-            actionsStack.pop();
-        }
-        // Swap in the final form of the last action
-        lastWrappedAction.set(finalFormOf(lastWrappedAction.get(), frame, validate));
+        internalFinalize(validate, frame, UnaryOperator.identity());
     }
 
     /**
@@ -115,8 +110,13 @@ public class ActionStack {
      * @param validate whether to validate the final action
      */
     public void finalizeLastActionAsPrecompileIn(
-            @NonNull final MessageFrame frame, @NonNull final ContractActionType type, final boolean validate) {
-        throw new AssertionError("Not implemented");
+            @NonNull final MessageFrame frame,
+            @NonNull final ContractActionType type,
+            final boolean validate) {
+        internalFinalize(validate, frame, action -> action.copyBuilder()
+                .recipientContract(asNumberedContractId(frame.getContractAddress()))
+                .callType(type)
+                .build());
     }
 
     /**
@@ -134,7 +134,7 @@ public class ActionStack {
         final var builder = ContractAction.newBuilder()
                 .callOperationType(asCallOperationType(frame.getType()))
                 .callingAccount(accountIdWith(hederaIdNumOfOriginatorIn(frame)));
-        completeAction(builder, frame);
+        completePush(builder, frame);
     }
 
     /**
@@ -152,7 +152,7 @@ public class ActionStack {
                 .callOperationType(ConversionUtils.asCallOperationType(
                         frame.getCurrentOperation().getOpcode()))
                 .callingContract(contractIdWith(hederaIdNumOfContractIn(frame)));
-        completeAction(builder, requireNonNull(frame.getMessageFrameStack().peek()));
+        completePush(builder, requireNonNull(frame.getMessageFrameStack().peek()));
     }
 
     /**
@@ -180,7 +180,7 @@ public class ActionStack {
         }
     }
 
-    private void completeAction(@NonNull ContractAction.Builder builder, @NonNull final MessageFrame frame) {
+    private void completePush(@NonNull ContractAction.Builder builder, @NonNull final MessageFrame frame) {
         builder.callType(asActionType(frame.getType()))
                 .gas(frame.getRemainingGas())
                 .input(tuweniToPbjBytes(frame.getInputData()))
@@ -198,8 +198,27 @@ public class ActionStack {
         actionsStack.push(wrappedAction);
     }
 
+    private void internalFinalize(
+            final boolean validate,
+            @NonNull final MessageFrame frame,
+            @NonNull final UnaryOperator<ContractAction> transform) {
+        requireNonNull(frame);
+        requireNonNull(transform);
+        final var lastWrappedAction = requireNonNull(allActions.get(allActions.size() - 1));
+        // Intentional use of referential equality here, only pop if this exact wrapper is on the stack
+        if (lastWrappedAction == actionsStack.peek()) {
+            actionsStack.pop();
+        }
+        // Swap in the final form of the last action
+        lastWrappedAction.set(transform.apply(finalFormOf(lastWrappedAction.get(), frame)));
+        if (validate && !helper.isValid(lastWrappedAction.get())) {
+            invalidActions.add(lastWrappedAction);
+        }
+    }
+
     private ContractAction finalFormOf(
-            @NonNull final ContractAction action, @NonNull final MessageFrame frame, final boolean validate) {
+            @NonNull final ContractAction action,
+            @NonNull final MessageFrame frame) {
         return switch (frame.getState()) {
             case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED -> action;
             case CODE_SUCCESS, COMPLETED_SUCCESS -> {

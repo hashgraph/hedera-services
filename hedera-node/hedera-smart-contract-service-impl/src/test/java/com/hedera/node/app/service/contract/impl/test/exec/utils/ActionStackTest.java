@@ -18,8 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.hapi.streams.CallOperationType.OP_CALL;
 import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
-import static com.hedera.hapi.streams.ContractActionType.CALL;
-import static com.hedera.hapi.streams.ContractActionType.CREATE;
+import static com.hedera.hapi.streams.ContractActionType.*;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -28,17 +27,20 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionsHelper;
 import com.hedera.node.app.service.contract.impl.exec.utils.Wrapper;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
@@ -175,6 +177,59 @@ class ActionStackTest {
         assertEquals(REMAINING_GAS, finalAction.gasUsed());
         assertSame(Bytes.EMPTY, finalAction.error());
         assertTrue(actionsStack.isEmpty());
+    }
+
+    @Test
+    void configuresPrecompileActionAsExpected() {
+        given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
+        final var pretendPrecompileAction = CALL_ACTION.copyBuilder()
+                .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
+                .build();
+        final var wrappedAction = new Wrapper<>(pretendPrecompileAction);
+        allActions.add(wrappedAction);
+        actionsStack.push(wrappedAction);
+        given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
+        given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+
+        subject.finalizeLastActionAsPrecompileIn(parentFrame, PRECOMPILE, true);
+
+        assertEquals(1, allActions.size());
+        assertEquals(wrappedAction, allActions.get(0));
+        final var finalAction = wrappedAction.get();
+        assertEquals(ContractID.newBuilder()
+                .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
+                .build(), finalAction.recipientContract());
+        assertEquals(PRECOMPILE, finalAction.callType());
+        assertTrue(actionsStack.isEmpty());
+        assertEquals(1, invalidActions.size());
+        assertSame(finalAction, invalidActions.get(0).get());
+        assertEquals(wrappedAction, invalidActions.get(0));
+    }
+
+    @Test
+    void doesNotPushInvalidIfInappropriate() {
+        given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
+        final var pretendPrecompileAction = CALL_ACTION.copyBuilder()
+                .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
+                .build();
+        final var wrappedAction = new Wrapper<>(pretendPrecompileAction);
+        allActions.add(wrappedAction);
+        actionsStack.push(wrappedAction);
+        given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
+        given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+        given(helper.isValid(any())).willReturn(true);
+
+        subject.finalizeLastActionAsPrecompileIn(parentFrame, PRECOMPILE, true);
+
+        assertEquals(1, allActions.size());
+        assertEquals(wrappedAction, allActions.get(0));
+        final var finalAction = wrappedAction.get();
+        assertEquals(ContractID.newBuilder()
+                .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
+                .build(), finalAction.recipientContract());
+        assertEquals(PRECOMPILE, finalAction.callType());
+        assertTrue(actionsStack.isEmpty());
+        assertTrue(invalidActions.isEmpty());
     }
 
     @Test
