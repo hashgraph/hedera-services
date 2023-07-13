@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -355,6 +356,84 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                 givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
 
         verify(recordBuilder).assessedCustomFees(anyList());
+    }
+
+    @Test
+    void multiLevelTransfers() {
+        body = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(
+                        TokenTransferList.newBuilder()
+                                .token(fungibleTokenId)
+                                .expectedDecimals(1000)
+                                .transfers(List.of(aaWith(ownerId, -1_00), aaWith(payerId, +1_00)))
+                                .build(),
+                        TokenTransferList.newBuilder()
+                                .token(fungibleTokenIDB)
+                                .expectedDecimals(1000)
+                                .transfers(List.of(aaWith(payerId, -10), aaWith(ownerId, +10)))
+                                .build())
+                .build();
+        givenDifferentTxn(body, payerId);
+
+        writableTokenStore.put(fungibleToken
+                .copyBuilder()
+                .customFees(withFractionalFee(
+                        fractionalFee.copyBuilder().netOfTransfers(true).build()))
+                .build());
+        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        final var listOfOps = subject.assessCustomFees(transferContext);
+        assertThat(listOfOps).hasSize(3);
+
+        final var givenOp = listOfOps.get(0);
+        final var level1Op = listOfOps.get(1);
+        final var level2Op = listOfOps.get(2);
+
+        final var expectedGivenOpTokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        ownerId, -101L, // 100 is given transfers, fractional fee self denominated
+                        // is 1/100 so 1 addition change to input txn
+                        payerId, 100L,
+                        feeCollectorId, 1L),
+                fungibleTokenIDB,
+                Map.of(
+                        payerId, -10L, // These are original changes, fixed custom fee is charged in next level
+                        ownerId, 10L));
+        final var expectedLevel1TokenTransfers = Map.of(
+                fungibleTokenIDC,
+                Map.of(
+                        payerId, -1000L, // fixed fee is charged here from fungibleTokenIDB changes
+                        feeCollectorId, 1000L));
+        final var expectedLevel2TokenTransfers = Map.of(
+                fungibleTokenId,
+                Map.of(
+                        payerId, -41L, // when fungibleTokenIDC is assessed it has fixed fee in A , so moves
+                        // to this level and when assessing this level , C has fractional fee of A.
+                        // Since fractional fee is self denominated, causes change in same level
+                        feeCollectorId, 41L));
+
+        assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
+        assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
+        assertThatTransferListContains(level2Op.tokenTransfers(), expectedLevel2TokenTransfers);
+
+        verify(recordBuilder).assessedCustomFees(anyList());
+    }
+
+    private void givenDifferentTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
+        givenStoresAndConfig(handleContext);
+        givenTxn(body, payerId);
+        given(handleContext.body()).willReturn(txn);
+        givenAutoCreationDispatchEffects();
+
+        transferContext = new TransferContextImpl(handleContext);
+        ensureAliasesStep = new EnsureAliasesStep(body);
+        replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
+        associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
+
+        final var replacedOp = getReplacedOp();
+        subject = new CustomFeeAssessmentStep(replacedOp, transferContext);
     }
 
     private void assertThatTransferListContains(

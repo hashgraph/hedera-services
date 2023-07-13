@@ -166,7 +166,6 @@ public class CustomFeeAssessmentStep {
             final CryptoTransferTransactionBody op, final AssessmentResult result) {
         final var copy = op.copyBuilder();
         final var changedFungibleTokenTransfers = result.getInputTokenAdjustments();
-        final List<AccountAmount> aaList = new ArrayList<>();
         final List<TokenTransferList> tokenTransferLists = new ArrayList<>();
         // If there are no changes for the token , add as it is
         for (final var xfers : op.tokenTransfers()) {
@@ -178,6 +177,7 @@ public class CustomFeeAssessmentStep {
         // If there are changes modify the token transfer list
         for (final var entry : changedFungibleTokenTransfers.entrySet()) {
             final var tokenTransferList = TokenTransferList.newBuilder().token(entry.getKey());
+            final var aaList = new ArrayList<AccountAmount>();
             for (final var valueEntry : entry.getValue().entrySet()) {
                 aaList.add(AccountAmount.newBuilder()
                         .accountID(valueEntry.getKey())
