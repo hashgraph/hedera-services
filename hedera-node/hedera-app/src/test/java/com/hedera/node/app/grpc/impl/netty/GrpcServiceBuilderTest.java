@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl.netty;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -106,8 +106,7 @@ final class GrpcServiceBuilderTest {
     }
 
     /**
-     * A builder with no transactions and queries still creates and returns a {@link
-     * io.helidon.grpc.server.ServiceDescriptor}.
+     * A builder with no transactions and queries still creates and returns a {@link io.grpc.ServerServiceDefinition}.
      */
     @Test
     @DisplayName("The build method will return a ServiceDescriptor")
@@ -116,19 +115,19 @@ final class GrpcServiceBuilderTest {
     }
 
     /**
-     * A {@link GrpcServiceBuilder} may define transactions which will be created on the {@link
-     * io.helidon.grpc.server.ServiceDescriptor}.
+     * A {@link GrpcServiceBuilder} may define transactions which will be created on the
+     * {@link io.grpc.ServerServiceDefinition}.
      */
     @Test
     @DisplayName("The built ServiceDescriptor includes a method with the name of the defined" + " transaction")
     void singleTransaction() {
         final var sd = builder.transaction("txA").build(metrics);
-        assertNotNull(sd.method("txA"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/txA"));
     }
 
     /**
-     * A {@link GrpcServiceBuilder} may define transactions which will be created on the {@link
-     * io.helidon.grpc.server.ServiceDescriptor}.
+     * A {@link GrpcServiceBuilder} may define transactions which will be created on the
+     * {@link io.grpc.ServerServiceDefinition}.
      */
     @Test
     @DisplayName("The built ServiceDescriptor includes all methods defined by the builder")
@@ -142,13 +141,13 @@ final class GrpcServiceBuilderTest {
                 .transaction("txD")
                 .build(metrics);
 
-        assertNotNull(sd.method("txA"));
-        assertNotNull(sd.method("txB"));
-        assertNotNull(sd.method("txC"));
-        assertNotNull(sd.method("txD"));
-        assertNotNull(sd.method("qA"));
-        assertNotNull(sd.method("qB"));
-        assertNotNull(sd.method("qC"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/txA"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/txB"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/txC"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/txD"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/qA"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/qB"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/qC"));
     }
 
     @Test
@@ -156,7 +155,7 @@ final class GrpcServiceBuilderTest {
     void duplicateTransaction() {
         final var sd = builder.transaction("txA").transaction("txA").build(metrics);
 
-        assertNotNull(sd.method("txA"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/txA"));
     }
 
     @Test
@@ -164,6 +163,6 @@ final class GrpcServiceBuilderTest {
     void duplicateQuery() {
         final var sd = builder.query("qA").query("qA").build(metrics);
 
-        assertNotNull(sd.method("qA"));
+        assertNotNull(sd.getMethod(SERVICE_NAME + "/qA"));
     }
 }

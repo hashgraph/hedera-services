@@ -127,7 +127,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context);
         // Use the op with replaced aliases in further steps
-        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer);
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer, transferContext);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
@@ -193,30 +193,38 @@ public class CryptoTransferHandler implements TransactionHandler {
      *        'c' = updates an existing BalanceChange
      *        'o' = causes a side effect not represented as BalanceChange
      *
-     * @param op            The crypto transfer transaction body
-     * @param topLevelPayer
+     * @param op              The crypto transfer transaction body
+     * @param topLevelPayer   The payer of the transaction
+     * @param transferContext
      * @return A list of steps to execute
      */
     private List<TransferStep> decomposeIntoSteps(
-            final CryptoTransferTransactionBody op, final AccountID topLevelPayer) {
+            final CryptoTransferTransactionBody op,
+            final AccountID topLevelPayer,
+            final TransferContextImpl transferContext) {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
-        final var associateTokenRecepients = new AssociateTokenRecipientsStep(op);
+        steps.add(new AssociateTokenRecipientsStep(op));
         // Step 2: Charge custom fees for token transfers. yet to be implemented
-        final var customFeeAssessmentStep = new CustomFeeAssessmentStep(op);
-        // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
-        final var assessHbarTransfers = new AdjustHbarChangesStep(op, topLevelPayer);
-        // Step 4: Charge token transfers with an approval. Modify the allowances map on account
-        final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(op, topLevelPayer);
-        // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
-        final var changeNftOwners = new NFTOwnersChangeStep(op, topLevelPayer);
-        // Step 6: TODO Pay staking rewards
+        final var customFeeStep = new CustomFeeAssessmentStep(op, transferContext);
+        // The below steps should be doe for both custom fee assessed transaction in addition to
+        // original transaction
+        final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
 
-        steps.add(associateTokenRecepients);
-        steps.add(assessHbarTransfers);
-        steps.add(assessFungibleTokenTransfers);
-        steps.add(changeNftOwners);
+        for (final var txn : customFeeAssessedOps) {
+            // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
+            final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
+            steps.add(assessHbarTransfers);
+
+            // Step 4: Charge token transfers with an approval. Modify the allowances map on account
+            final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(txn, topLevelPayer);
+            steps.add(assessFungibleTokenTransfers);
+
+            // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT
+            final var changeNftOwners = new NFTOwnersChangeStep(txn, topLevelPayer);
+            steps.add(changeNftOwners);
+        }
 
         return steps;
     }

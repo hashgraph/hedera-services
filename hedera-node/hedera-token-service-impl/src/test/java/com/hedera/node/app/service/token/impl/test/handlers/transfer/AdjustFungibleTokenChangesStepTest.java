@@ -72,7 +72,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isEqualTo(0L);
+        assertThat(receiverRelBefore.balance()).isZero();
 
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
@@ -112,7 +112,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isEqualTo(0L);
+        assertThat(receiverRelBefore.balance()).isZero();
 
         assertThat(senderAccountBefore.tokenAllowances()).hasSize(1);
 
