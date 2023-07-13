@@ -167,12 +167,30 @@ class EvmActionTracerTest {
     }
 
     @Test
+    void systemPrecompileTraceIsStillTrackedEvenIfHalted() {
+        givenSidecarsOnly();
+
+        subject.customTracePrecompileResult(frame, ContractActionType.SYSTEM);
+
+        verify(actionStack).finalizeLastActionAsPrecompileIn(frame, ContractActionType.SYSTEM, false);
+    }
+
+    @Test
     void accountCreationTraceIsNoopIfNoSidecars() {
         givenNoActionSidecars();
 
         subject.traceAccountCreationResult(frame, Optional.empty());
 
         verifyNoInteractions(actionStack);
+    }
+
+    @Test
+    void accountCreationTraceFinalizesWithSidecars() {
+        givenActionSidecarsAndValidation();
+
+        subject.traceAccountCreationResult(frame, Optional.empty());
+
+        verify(actionStack).finalizeLastActionIn(frame, true);
     }
 
     private void givenNoActionSidecars() {

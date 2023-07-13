@@ -315,7 +315,7 @@ public class ActionStack {
     }
 
     private static <E, I> String get(
-            final E subject, final Function<E, I> getter, final Function<I, String> processor) {
-        return null != subject ? processor.compose(getter).apply(subject) : "null";
+            @NonNull final E subject, final Function<E, I> getter, final Function<I, String> processor) {
+        return processor.compose(getter).apply(subject);
     }
 }

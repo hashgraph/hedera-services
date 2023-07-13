@@ -58,6 +58,7 @@ class ConversionUtilsTest {
         "0xF4,OP_DELEGATECALL",
         "0xF5,OP_CREATE2",
         "0xFA,OP_STATICCALL",
+        "0x12,OP_UNKNOWN",
     })
     void convertsOpcodesToCallOpsAsExpected(final int opCode, @NonNull final CallOperationType type) {
         assertEquals(type, asCallOperationType(opCode));
