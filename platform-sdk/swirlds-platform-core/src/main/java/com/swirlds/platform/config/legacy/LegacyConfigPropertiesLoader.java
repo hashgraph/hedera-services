@@ -53,7 +53,8 @@ public final class LegacyConfigPropertiesLoader {
 
     private static final String APP_PROPERTY_NAME = "app";
     private static final String ADDRESS_PROPERTY_NAME = "address";
-    private static final String NEXT_NODE_ID_PROPERTY_NAME = "nextnodeid";
+    private static final String NEXT_NODE_ID_PROPERTY_NAME = "nextNodeId";
+    private static final String NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE = "nextnodeid";
     private static final String SWIRLD_PROPERTY_NAME = "swirld";
     private static final String GENESIS_FREEZE_TIME_PROPERTY_NAME = "genesisfreezetime";
 
@@ -124,14 +125,18 @@ public final class LegacyConfigPropertiesLoader {
                         case GENESIS_FREEZE_TIME_PROPERTY_NAME -> {
                             setGenesisFreezeTime(configurationProperties, lineParameters.length, pars[1]);
                         }
-                        case NEXT_NODE_ID_PROPERTY_NAME -> {
+                        case NEXT_NODE_ID_PROPERTY_NAME_LOWERCASE -> {
                             try {
-                                final NodeId nextNodeId = new NodeId(Long.parseLong(pars[1]));
-                                if (nextNodeId.compareTo(addressBook.getNextNodeId()) < 0) {
-                                    onError(ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS);
+                                if (!parsOriginalCase[0].equals(AddressBookUtils.NEXT_NODE_ID_KEYWORD)) {
+                                    onError(ERROR_PROPERTY_NOT_KNOWN.formatted(pars[0]));
+                                } else {
+                                    final NodeId nextNodeId = new NodeId(Long.parseLong(pars[1]));
+                                    if (nextNodeId.compareTo(addressBook.getNextNodeId()) < 0) {
+                                        onError(ERROR_NEXT_NODE_NOT_GREATER_THAN_HIGHEST_ADDRESS);
+                                    }
+                                    addressBook.setNextNodeId(nextNodeId);
+                                    nextNodeIdParsed = true;
                                 }
-                                addressBook.setNextNodeId(nextNodeId);
-                                nextNodeIdParsed = true;
                             } catch (final NumberFormatException ex) {
                                 onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
                             }

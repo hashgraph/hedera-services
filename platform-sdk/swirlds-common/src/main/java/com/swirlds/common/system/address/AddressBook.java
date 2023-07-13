@@ -86,7 +86,9 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
     private long round = UNKNOWN_ROUND;
 
     /**
-     * The next node ID that can be added must be greater than or equal to this value.
+     * The node ID of the next address that can be added must be greater than or equal to this value.
+     * <p>
+     * INVARIANT: that nextNodeId is greater than the node ids of all addresses in the address book.
      */
     private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
@@ -306,12 +308,8 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
             throw new IllegalArgumentException("The provided nextNodeId %s is less than the current nextNodeId %s"
                     .formatted(newNextNodeId, this.nextNodeId));
         }
-        for (final Address address : this) {
-            if (address.getNodeId().compareTo(newNextNodeId) >= 0) {
-                throw new IllegalArgumentException("This address book contains an address " + address
-                        + " with a node ID that is greater or equal to " + newNextNodeId);
-            }
-        }
+        // the newNextNodeId is greater than all address node ids in the address book is true because it is
+        // greater than or equal to the current nextNodeId which is greater than all address node ids.
 
         this.nextNodeId = newNextNodeId;
         return this;
@@ -429,7 +427,7 @@ public class AddressBook extends PartialMerkleLeaf implements Iterable<Address>,
         final NodeId addressNodeId = address.getNodeId();
         final int nodeIdComparison = addressNodeId.compareTo(nextNodeId);
         if (nodeIdComparison < 0) {
-            throw new IllegalArgumentException("Can not add address for node with ID " + address.getNodeId()
+            throw new IllegalArgumentException("Can not add address with node ID " + address.getNodeId()
                     + ", the next address to be added is required have a node ID greater or equal to "
                     + nextNodeId);
         }

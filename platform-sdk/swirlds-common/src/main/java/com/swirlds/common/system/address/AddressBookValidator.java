@@ -95,9 +95,16 @@ public final class AddressBookValidator {
     }
 
     /**
-     * Validate that the nextNodeId in the new address book is greater than or equal to the nextNodeId in the old
-     * AddressBook and that all nodes that are in the new address book and not in the old address book are greater than
-     * or equal to the nextNodeId in the old address book and less than the nextNodeId in the new address book.
+     * Validates the following properties:
+     * <ul>
+     * <li>newAddressBook.getNextNodeId() is greater than or equal to oldAddressBook.getNextNodeId() </li>
+     * <li>for each nodeId in newAddressBook that is not in oldAddressBook:
+     * <ul>
+     *     <li>the nodeId is greater than or equal to oldAddressBook.getNextNodeId()</li>
+     *     <li>the nodeId is less than newAddressBook.getNextNodeId()</li>
+     * </ul>
+     * </li>
+     * </ul>
      *
      * @param oldAddressBook the old address book
      * @param newAddressBook the new address book

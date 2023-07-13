@@ -176,7 +176,7 @@ nextNodeId, 4
 # Boolean parameters can be any of on/1/true/yes/t/y for true,
 # and any of off/0/false/no/f/n for false, where capitalization doesn’t matter.
 #
-# The `nextnode` field must be an higher integer than all node ids of uncommented addresses.
+# The `nextNodeId` field must be a higher integer than all node ids of uncommented addresses.
 # When adding new addresses and starting from a saved state, the new addresses must have
 # node ids greater than or equal to the nextNodeId value of the address book in the saved state.
 ###############################################################################################

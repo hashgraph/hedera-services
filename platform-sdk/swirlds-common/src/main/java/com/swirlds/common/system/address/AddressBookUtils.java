@@ -45,12 +45,12 @@ import java.util.Objects;
  * </ul>
  * Example: `address, 22, node22, node22, 1, 10.10.11.12, 5060, 212.25.36.123, 5060, memo for node 22`
  * <p>
- * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextnodeid, 23`
+ * The last line of the config.txt address book contains the nextNodeId value in the form of: `nextNodeId, 23`
  */
 public class AddressBookUtils {
 
     public static final String ADDRESS_KEYWORD = "address";
-    public static final String NEXT_NODE_ID_KEYWORD = "nextnodeid";
+    public static final String NEXT_NODE_ID_KEYWORD = "nextNodeId";
 
     private AddressBookUtils() {}
 
@@ -108,7 +108,7 @@ public class AddressBookUtils {
                     addressBook.add(address);
                 }
             } else if (trimmedLine.startsWith(NEXT_NODE_ID_KEYWORD)) {
-                final NodeId nodeId = parseNextAvailableNodeId(trimmedLine);
+                final NodeId nodeId = parseNextNodeId(trimmedLine);
                 addressBook.setNextNodeId(nodeId);
                 nextNodeIdParsed = true;
             } else {
@@ -129,24 +129,21 @@ public class AddressBookUtils {
      * `nextAvailableNodeId` followed by a comma and then the node id.  The node id must be a positive integer greater
      * than all nodeIds in the address book.
      *
-     * @param nextAvailableNodeIdText the text to parse.
+     * @param nextNodeId the text to parse.
      * @return the parsed node id.
      * @throws ParseException if there is any problem with parsing the node id.
      */
     @NonNull
-    public static NodeId parseNextAvailableNodeId(@NonNull final String nextAvailableNodeIdText) throws ParseException {
-        Objects.requireNonNull(nextAvailableNodeIdText, "The nextAvailableNodeIdText must not be null.");
-        final String[] parts = nextAvailableNodeIdText.split(",");
+    public static NodeId parseNextNodeId(@NonNull final String nextNodeId) throws ParseException {
+        Objects.requireNonNull(nextNodeId, "The nextNodeId must not be null.");
+        final String[] parts = nextNodeId.split(",");
         if (parts.length != 2) {
             throw new ParseException(
-                    "The nextAvailableNodeIdText [%s] does not have exactly 2 comma separated parts."
-                            .formatted(nextAvailableNodeIdText),
-                    0);
+                    "The nextNodeId [%s] does not have exactly 2 comma separated parts.".formatted(nextNodeId), 0);
         }
         if (!parts[0].trim().equals(NEXT_NODE_ID_KEYWORD)) {
             throw new ParseException(
-                    "The nextAvailableNodeIdText [%s] does not start with the keyword `nextAvailableNodeId`."
-                            .formatted(nextAvailableNodeIdText),
+                    "The nextNodeId [%s] does not start with the keyword `nextAvailableNodeId`.".formatted(nextNodeId),
                     0);
         }
         final String nodeIdText = parts[1].trim();
@@ -154,16 +151,12 @@ public class AddressBookUtils {
             final long nodeId = Long.parseLong(nodeIdText);
             if (nodeId < 0) {
                 throw new ParseException(
-                        "The nextAvailableNodeIdText [%s] does not have a positive integer node id."
-                                .formatted(nextAvailableNodeIdText),
-                        1);
+                        "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
             }
             return new NodeId(nodeId);
         } catch (final NumberFormatException e) {
             throw new ParseException(
-                    "The nextAvailableNodeIdText [%s] does not have a positive integer node id."
-                            .formatted(nextAvailableNodeIdText),
-                    1);
+                    "The nextNodeId [%s] does not have a positive integer node id.".formatted(nextNodeId), 1);
         }
     }
 
