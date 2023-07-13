@@ -110,7 +110,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
      * @param offset the amount to offset by
      * @return the NodeId offset by the given amount
      */
-    public NodeId getOffset(long offset) {
+    public NodeId getOffset(final long offset) {
         final long newValue = id + offset;
         if (newValue < LOWEST_NODE_NUMBER) {
             throw new IllegalArgumentException("the new NodeId, %d, must not be below the minimum value of %d."
