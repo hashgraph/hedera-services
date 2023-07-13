@@ -71,11 +71,6 @@ public class CustomFractionalFeeAssessor {
             @NonNull final AssessmentResult result) {
         final var denom = feeMeta.tokenId();
 
-        // If the custom fee exempted
-        if (result.getExemptDebits().contains(denom)) {
-            return;
-        }
-
         final var inputTokenTransfers = result.getInputTokenAdjustments();
 
         // get the initial units for this token change from given input.

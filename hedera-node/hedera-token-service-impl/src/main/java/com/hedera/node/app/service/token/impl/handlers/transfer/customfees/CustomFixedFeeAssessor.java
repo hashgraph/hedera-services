@@ -18,11 +18,9 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHbarFees;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.adjustHtsFees;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.AdjustmentUtils.couldTriggerCustomFees;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeExemptions.isPayerExempt;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.CustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,15 +50,12 @@ public class CustomFixedFeeAssessor {
             @NonNull final CustomFeeMeta feeMeta, @NonNull final AccountID sender, final AssessmentResult result) {
         for (final var fee : feeMeta.customFees()) {
             if (fee.fee().kind().equals(CustomFee.FeeOneOfType.FIXED_FEE)) {
-                final var denom = fee.fixedFeeOrThrow().denominatingTokenIdOrElse(TokenID.DEFAULT);
-                if (couldTriggerCustomFees(denom, result.getExemptDebits())) {
-                    final var collector = fee.feeCollectorAccountId();
-                    if (sender.equals(collector)) {
-                        continue;
-                    }
-                    // This is a top-level fixed fee, not a fallback royalty fee
-                    assessFixedFee(feeMeta, sender, fee, result);
+                final var collector = fee.feeCollectorAccountId();
+                if (sender.equals(collector)) {
+                    continue;
                 }
+                // This is a top-level fixed fee, not a fallback royalty fee
+                assessFixedFee(feeMeta, sender, fee, result);
             }
         }
     }

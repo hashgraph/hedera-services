@@ -20,12 +20,10 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -107,7 +105,6 @@ public class AdjustmentUtils {
         if (chargingTokenMeta.tokenId().equals(denominatingToken)) {
             // If the fee is self-denominated, it should not trigger custom fees again
             // So add the adjustment to previous level transaction
-            result.addToExemptDebits(denominatingToken);
             addHtsAdjustment(inputHtsAdjustments, sender, collector, amount, denominatingToken);
         } else {
             // Any change that might trigger next level custom fees should be added to next
@@ -198,38 +195,5 @@ public class AdjustmentUtils {
         final var amount = fixedSpec.amount();
         hbarAdjustments.merge(sender, -amount, Long::sum);
         hbarAdjustments.merge(collector, amount, Long::sum);
-    }
-
-    /**
-     * Checks if the adjustment will trigger a custom fee.
-     * Custom fee is triggered if the fee is not self-denominated and the transfer is not a hbar transfer
-     * and the adjustment is a debit.
-     *
-     * @param denominatingTokenID     the token that is being used as denomination to pay the fee
-     * @param exemptDebits            the set of tokens that are exempt from custom fee charging, due to being self
-     *                                denominated in same level of custom fee assessment
-     * @return true if the adjustment will trigger a custom fee. False otherwise.
-     */
-    public static boolean couldTriggerCustomFees(
-            @NonNull final TokenID denominatingTokenID, @NonNull final Set<TokenID> exemptDebits) {
-        return !isExemptFromCustomFees(denominatingTokenID, exemptDebits);
-    }
-
-    /**
-     * Custom fee that is self-denominated is exempt from further custom fee charging.
-     *
-     * @param denominatingTokenID the token that is being used as denomination to pay the fee
-     * @param exemptDebits       the set of tokens that are exempt from custom fee charging, due to being self
-     *                           denominated in the same level of custom fee assessment
-     * @return true if the custom fee is self-denominated
-     */
-    private static boolean isExemptFromCustomFees(
-            @NonNull final TokenID denominatingTokenID, @NonNull final Set<TokenID> exemptDebits) {
-        /* But self-denominated fees are exempt from further custom fee charging,
-        c.f. https://github.com/hashgraph/hedera-services/issues/1925 */
-
-        // Exempt debits will have the denominating token Ids from previous custom fee charging
-        // So if the denominating tokenId is in the exempt debits, then it is self-denominated
-        return denominatingTokenID != TokenID.DEFAULT && exemptDebits.contains(denominatingTokenID);
     }
 }

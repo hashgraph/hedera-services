@@ -37,8 +37,6 @@ public class AssessmentResult {
     // two maps to aggregate all custom fee balance changes. These two maps are used
     // to construct a transaction body that needs to be assessed again for custom fees
     private Map<AccountID, Long> hbarAdjustments;
-    // Any debits in this set should not trigger custom fee charging again
-    private Set<TokenID> exemptDebits;
     private Set<Pair<AccountID, TokenID>> royaltiesPaid;
     private Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments;
 
@@ -54,7 +52,6 @@ public class AssessmentResult {
 
         htsAdjustments = new HashMap<>();
         hbarAdjustments = new HashMap<>();
-        exemptDebits = new HashSet<>();
         royaltiesPaid = new HashSet<>();
         assessedCustomFees = new ArrayList<>();
     }
@@ -69,14 +66,6 @@ public class AssessmentResult {
 
     public Map<TokenID, Map<AccountID, Long>> getHtsAdjustments() {
         return htsAdjustments;
-    }
-
-    public Set<TokenID> getExemptDebits() {
-        return exemptDebits;
-    }
-
-    public void addToExemptDebits(final TokenID id) {
-        exemptDebits.add(id);
     }
 
     public List<AssessedCustomFee> getAssessedCustomFees() {
@@ -109,7 +98,7 @@ public class AssessmentResult {
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
-            if(fungibleTokenTransfers.isEmpty()) {
+            if (fungibleTokenTransfers.isEmpty()) {
                 continue;
             }
             final var tokenTransferMap = new HashMap<AccountID, Long>();
