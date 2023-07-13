@@ -71,8 +71,6 @@ public enum Threshold {
      * @param part  the numerator
      * @param whole the denominator
      * @return true if the threshold is satisfied by the provided ratio
-     * @throws IllegalArgumentException if part is negative or whole is non-positive or zero, or if part is greater than
-     *                                  whole
      */
     public boolean isSatisfiedBy(final long part, final long whole) {
         return evaluator.isSatisfiedBy(part, whole);
