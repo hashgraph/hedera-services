@@ -44,6 +44,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -605,18 +606,15 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(1000);
 
-        // TODO
         final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
                 new PreConsensusSystemTransactionManager();
-        //                new PreConsensusSystemTransactionManagerFactory()
-        //                        .addHandlers(systemTransactionTracker.getPreConsensusHandleMethods())
-        //                        .build();
+        preConsensusSystemTransactionManager.addHandler(
+                SystemTransactionPing.class, systemTransactionTracker::handlePreConsensusSystemTransaction);
 
         final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
                 new PostConsensusSystemTransactionManager();
-        //                new PostConsensusSystemTransactionManagerFactory()
-        //                        .addHandlers(systemTransactionTracker.getPostConsensusHandleMethods())
-        //                        .build();
+        postConsensusSystemTransactionManager.addHandler(
+                SystemTransactionPing.class, systemTransactionTracker::handlePostconsensusSystemTransaction);
 
         swirldStateManager = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),

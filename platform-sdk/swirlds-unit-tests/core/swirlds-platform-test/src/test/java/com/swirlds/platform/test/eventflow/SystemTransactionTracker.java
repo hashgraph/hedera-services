@@ -73,7 +73,7 @@ public class SystemTransactionTracker implements Failable {
      * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
-    public void handlePostConsensusSystemTransaction(
+    public void handlePostconsensusSystemTransaction(
             @NonNull final State state,
             @NonNull final NodeId creatorId,
             @NonNull final SystemTransactionPing transaction) {
@@ -108,17 +108,4 @@ public class SystemTransactionTracker implements Failable {
     public String getFailure() {
         return failureMsg.toString();
     }
-
-    // TODO
-    //    @Override
-    //    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
-    //        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
-    //                SystemTransactionPing.class, this::handlePreConsensusSystemTransaction));
-    //    }
-    //
-    //    @Override
-    //    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
-    //        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
-    //                SystemTransactionPing.class, this::handlePostConsensusSystemTransaction));
-    //    }
 }
