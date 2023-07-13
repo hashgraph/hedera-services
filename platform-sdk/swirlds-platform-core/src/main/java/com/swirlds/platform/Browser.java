@@ -655,8 +655,8 @@ public class Browser {
                 // time this class is used.
                 final BasicConfig basicConfig =
                         platformContext.getConfiguration().getConfigData(BasicConfig.class);
-                final EmergencyRecoveryManager emergencyRecoveryManager =
-                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
+                        shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir(), recycleBin);
 
                 final ReservedSignedState initialState = getInitialState(
                         platformContext,
@@ -735,8 +735,8 @@ public class Browser {
     }
 
     /**
-     * Create a copy of the initial signed state. There are currently data structures that become immutable after
-     * being hashed, and we need to make a copy to force it to become mutable again.
+     * Create a copy of the initial signed state. There are currently data structures that become immutable after being
+     * hashed, and we need to make a copy to force it to become mutable again.
      *
      * @param platformContext    the platform's context
      * @param initialSignedState the initial signed state

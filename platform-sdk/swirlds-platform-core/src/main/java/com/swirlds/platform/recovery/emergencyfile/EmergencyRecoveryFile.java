@@ -111,7 +111,7 @@ public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
      */
     public static EmergencyRecoveryFile read(@NonNull final Path directory, final boolean failOnMissingFields)
             throws IOException {
-        final Path fileToRead = directory.resolve(INPUT_FILENAME);
+        final Path fileToRead = getInputEmergencyRecoveryFilePath(directory);
         if (!Files.exists(fileToRead)) {
             return null;
         }
@@ -125,6 +125,15 @@ public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
         final EmergencyRecoveryFile file = mapper.readValue(fileToRead.toFile(), EmergencyRecoveryFile.class);
         validate(file);
         return file;
+    }
+
+    /**
+     * Returns the path to the emergency recovery file in the specified directory.
+     * @param directory the directory containing the emergency recovery file
+     * @return the path to the emergency recovery file in the specified directory
+     */
+    public static Path getInputEmergencyRecoveryFilePath(@NonNull final Path directory) {
+        return directory.resolve(INPUT_FILENAME);
     }
 
     /**

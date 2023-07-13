@@ -17,12 +17,17 @@
 package com.swirlds.platform.recovery;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile.getInputEmergencyRecoveryFilePath;
 import static com.swirlds.platform.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 
+import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,17 +38,23 @@ public class EmergencyRecoveryManager {
     private static final Logger logger = LogManager.getLogger(EmergencyRecoveryManager.class);
     private final ShutdownRequestedTrigger shutdownRequestedTrigger;
     private final EmergencyRecoveryFile emergencyRecoveryFile;
+    private final Path emergencyRecoveryDir;
+    private final RecycleBin recycleBin;
     private volatile boolean emergencyStateRequired;
 
     /**
-     * @param shutdownRequestedTrigger
-     * 		a trigger that requests the platform to shut down
-     * @param emergencyRecoveryDir
-     * 		the directory to look for an emergency recovery file in
+     * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
+     * @param emergencyRecoveryDir     the directory to look for an emergency recovery file in
      */
     public EmergencyRecoveryManager(
-            final ShutdownRequestedTrigger shutdownRequestedTrigger, final Path emergencyRecoveryDir) {
-        this.shutdownRequestedTrigger = shutdownRequestedTrigger;
+            @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
+            @NonNull final Path emergencyRecoveryDir,
+            @NonNull final RecycleBin recycleBin) {
+
+        this.shutdownRequestedTrigger = Objects.requireNonNull(shutdownRequestedTrigger);
+        this.emergencyRecoveryDir = Objects.requireNonNull(emergencyRecoveryDir);
+        this.recycleBin = Objects.requireNonNull(recycleBin);
+
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
         emergencyStateRequired = emergencyRecoveryFile != null;
     }
@@ -68,10 +79,26 @@ public class EmergencyRecoveryManager {
     }
 
     /**
-     * Invoked when an emergency state has been loaded into the system.
+     * Invoked when an emergency state has been loaded into the system. Causes the emergency recovery file to be
+     * recycled.
      */
     public void emergencyStateLoaded() {
         emergencyStateRequired = false;
+
+        final Path emergencyRecoveryFilePath = getInputEmergencyRecoveryFilePath(emergencyRecoveryDir);
+        logger.info(
+                STARTUP.getMarker(),
+                "Emergency state loaded, recycling emergency recovery file at {}",
+                emergencyRecoveryFilePath);
+        try {
+            recycleBin.recycle(emergencyRecoveryFilePath);
+        } catch (final IOException e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    "Unable to recycle emergency recovery file at {}",
+                    emergencyRecoveryFilePath,
+                    e);
+        }
     }
 
     /**
