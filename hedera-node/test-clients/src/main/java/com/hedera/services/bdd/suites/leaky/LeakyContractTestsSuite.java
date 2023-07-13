@@ -1309,7 +1309,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when()
                 .then(
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(101L)
+                                .gas(21_000L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
