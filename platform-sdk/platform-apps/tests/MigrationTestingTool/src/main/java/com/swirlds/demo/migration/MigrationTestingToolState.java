@@ -101,8 +101,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
         super(that);
-        setMerkleMap(that.getMerkleMap().copy());
-        setVirtualMap(that.getVirtualMap().copy());
+        if (that.getMerkleMap() != null) {
+            setMerkleMap(that.getMerkleMap().copy());
+        }
+        if (that.getVirtualMap() != null) {
+            setVirtualMap(that.getVirtualMap().copy());
+        }
         that.setImmutable(true);
         this.setImmutable(false);
         this.selfId = that.selfId;
