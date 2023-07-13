@@ -171,4 +171,8 @@ public class ConsensusTestArgs {
     public static Stream<Arguments> migrationTestParams() {
         return Stream.of(Arguments.of(new ConsensusTestParams(27, RANDOM, RANDOM_WEIGHT_DESC)));
     }
+
+    public static Stream<Arguments> nodeRemoveTestParams() {
+        return Stream.of(Arguments.of(new ConsensusTestParams(4, RANDOM, RANDOM_WEIGHT_DESC)));
+    }
 }

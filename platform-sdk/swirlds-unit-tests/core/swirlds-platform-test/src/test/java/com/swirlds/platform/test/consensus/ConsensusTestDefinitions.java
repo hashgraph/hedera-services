@@ -551,11 +551,7 @@ public final class ConsensusTestDefinitions {
 				Validations.standard().ratios(EventRatioValidation.blank().setMinimumConsensusRatio(0.5)));
 	}
 
-	@Test
-	@Disabled("address book changing is not yet supported")
-	void removeNode() {
-		final TestInput input = new TestInput(4, WeightGenerators.RANDOM, 0, 10_000);
-
+	public static void removeNode(final TestInput input) {
 		final ConsensusTestOrchestrator orchestrator1 =
 				OrchestratorBuilder.builder().setTestInput(input).build();
 		orchestrator1.generateEvents(0.5);

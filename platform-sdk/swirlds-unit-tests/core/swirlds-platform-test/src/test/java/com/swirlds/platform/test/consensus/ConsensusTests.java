@@ -23,6 +23,7 @@ import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -273,6 +274,21 @@ class ConsensusTests {
     void migrationTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::migrationTest)
+                .setParams(params)
+                .setIterations(NUM_ITER)
+                .run();
+    }
+
+    @ParameterizedTest
+    @MethodSource("com.swirlds.platform.test.consensus.ConsensusTestArgs#nodeRemoveTestParams")
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.PLATFORM)
+    @Tag(TestComponentTags.CONSENSUS)
+    @DisplayName("Remove a node from the address book at restart")
+    @Disabled("address book changing is not yet supported")
+    void nodeRemoveTest(final ConsensusTestParams params) {
+        ConsensusTestRunner.create()
+                .setTest(ConsensusTestDefinitions::removeNode)
                 .setParams(params)
                 .setIterations(NUM_ITER)
                 .run();
