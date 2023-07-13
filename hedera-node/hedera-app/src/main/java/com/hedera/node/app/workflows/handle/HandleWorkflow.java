@@ -180,12 +180,10 @@ public class HandleWorkflow {
             case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
             default -> throw new PreCheckException(preHandleResult.responseCode());
           }
-
-          // Check transaction duplication
-          checkDuplicates(preHandleResult.txInfo().txBody().transactionIDOrThrow());
-
-          // If the transaction is not duplicated we want to add it to the cache
-          addTransactionToCache(preHandleResult, consensusNow);
+          
+          // Verify if the transaction is a duplicate and add it to the cache
+          checkDuplicatesAndIncludeInCache(
+              preHandleResult, recordBuilder.build().recordStreamItem().record(), consensusNow);
 
           // Check all signature verifications. This will also wait, if validation is still ongoing.
           final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -234,43 +232,51 @@ public class HandleWorkflow {
           // commit state
           stack.commit();
         } catch (final PreCheckException e) {
-            recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
+          recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
-            recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
+          recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
         } catch (final InterruptedException e) {
-            logger.error("Interrupted while waiting for signature verification", e);
-            Thread.currentThread().interrupt();
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          logger.error("Interrupted while waiting for signature verification", e);
+          Thread.currentThread().interrupt();
+          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (final TimeoutException e) {
-            logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
+          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (final Throwable e) {
-            logger.error("An unexpected exception was thrown during handle", e);
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          logger.error("An unexpected exception was thrown during handle", e);
+          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
-        // TODO: handle long scheduled transactions
+      // TODO: handle long scheduled transactions
 
-        // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
-        // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
+      // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
+      // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
 
-        // store all records at once
-        final var recordListResult = recordListBuilder.build();
+      // store all records at once
+      final var recordListResult = recordListBuilder.build();
 
-        if (preHandleResult != null) {
-          // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
-          // https://github.com/hashgraph/hedera-services/pull/7473
-          hederaRecordCache.add(
-              0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
-        } else {
-          throw new IllegalStateException("pre handle result was null!");
-        }
+      if (preHandleResult != null) {
+        // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
+        // https://github.com/hashgraph/hedera-services/pull/7473
+        hederaRecordCache.add(
+            0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
+      } else {
+        throw new IllegalStateException("pre handle result was null!");
+      }
 
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
     }
 
-  private void checkDuplicates(final TransactionBody txBody) throws PreCheckException {
-    final var foundTransactionRecord = hederaRecordCache.getRecord(txBody.transactionIDOrThrow());
+  private void checkDuplicatesAndIncludeInCache(
+      @NonNull final PreHandleResult preHandleResult,
+      @NonNull final TransactionRecord transactionRecord,
+      @NonNull final Instant consensusNow)
+      throws PreCheckException {
+    final var transactionID = preHandleResult.txInfo().txBody().transactionIDOrThrow();
+    final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
+
+    addTransactionToCache(preHandleResult, transactionRecord, consensusNow);
+
     if (foundTransactionRecord != null) {
       throw new PreCheckException(DUPLICATE_TRANSACTION);
     }
