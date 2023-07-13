@@ -35,7 +35,7 @@ import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.swirlds.config.api.Configuration;
-
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
