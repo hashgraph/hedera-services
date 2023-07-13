@@ -30,6 +30,7 @@ dependencies {
         testImplementation(gav("org.junit.jupiter.params"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.swirlds.test.framework"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
     }
 }

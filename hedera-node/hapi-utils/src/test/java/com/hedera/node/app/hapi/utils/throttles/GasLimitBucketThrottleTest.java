@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import org.junit.jupiter.api.Test;
 
 class GasLimitBucketThrottleTest {
@@ -37,7 +37,7 @@ class GasLimitBucketThrottleTest {
         subject.bucket().useCapacity(capacity / 2);
 
         assertEquals(50.0, subject.percentUsed(0));
-        assertEquals(25.0, subject.percentUsed(Units.SECONDS_TO_NANOSECONDS / 4));
+        assertEquals(25.0, subject.percentUsed(UnitConstants.SECONDS_TO_NANOSECONDS / 4));
     }
 
     @Test
