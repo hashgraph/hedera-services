@@ -165,7 +165,7 @@ public class AdjustmentUtils {
      */
     public static Map<AccountID, Pair<Long, TokenID>> getFungibleCredits(
             final AssessmentResult result, final TokenID tokenId, final AccountID beneficiary) {
-        final var tokenChanges = result.getInputTokenAdjustments().computeIfAbsent(tokenId, ADJUSTMENTS_MAP_FACTORY);
+        final var tokenChanges = result.getInputTokenAdjustments().getOrDefault(tokenId, new HashMap<>());
         final var credits = new HashMap<AccountID, Pair<Long, TokenID>>();
         for (final var entry : tokenChanges.entrySet()) {
             final var account = entry.getKey();

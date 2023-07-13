@@ -79,20 +79,12 @@ public class AssessmentResult {
         exemptDebits.add(id);
     }
 
-    public void setExemptDebits(final Set<TokenID> exemptDebits) {
-        this.exemptDebits = exemptDebits;
-    }
-
     public List<AssessedCustomFee> getAssessedCustomFees() {
         return assessedCustomFees;
     }
 
     public void addAssessedCustomFee(final AssessedCustomFee assessedCustomFee) {
         assessedCustomFees.add(assessedCustomFee);
-    }
-
-    public void setAssessedCustomFees(final List<AssessedCustomFee> assessedCustomFees) {
-        this.assessedCustomFees = assessedCustomFees;
     }
 
     public Set<Pair<AccountID, TokenID>> getRoyaltiesPaid() {
@@ -111,16 +103,15 @@ public class AssessmentResult {
         return inputHbarAdjustments;
     }
 
-    public void addToInputHbarAdjustments(final AccountID id, final Long amount) {
-        inputHbarAdjustments.put(id, amount);
-    }
-
     private Map<TokenID, Map<AccountID, Long>> buildFungibleTokenTransferMap(
             final List<TokenTransferList> tokenTransfers) {
         final var fungibleTransfersMap = new HashMap<TokenID, Map<AccountID, Long>>();
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
+            if(fungibleTokenTransfers.isEmpty()) {
+                continue;
+            }
             final var tokenTransferMap = new HashMap<AccountID, Long>();
             for (final var aa : fungibleTokenTransfers) {
                 tokenTransferMap.put(aa.accountID(), aa.amount());
