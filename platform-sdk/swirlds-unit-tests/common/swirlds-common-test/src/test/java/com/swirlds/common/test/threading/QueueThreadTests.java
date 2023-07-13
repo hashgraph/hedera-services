@@ -17,10 +17,11 @@
 package com.swirlds.common.test.threading;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration.UNLIMITED_CAPACITY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
@@ -43,7 +45,6 @@ import com.swirlds.common.metrics.platform.DefaultIntegerAccumulator;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -52,6 +53,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfigura
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -994,6 +996,150 @@ class QueueThreadTests {
         // Once we unblock the queue, we should expect the waitUntilNotBusy() call to return
         queueBlockingLatch.countDown();
         assertTrue(finishedWaitingLatch.await(100, MILLISECONDS));
+
+        queue.stop();
+    }
+
+    @Test
+    @DisplayName("Idle Callback Test")
+    void idleCallbackTest() throws InterruptedException {
+        final AtomicBoolean error = new AtomicBoolean(false);
+
+        final AtomicBoolean idleCallbackPermitted = new AtomicBoolean(false);
+        final AtomicBoolean idleCallbackCalled = new AtomicBoolean(false);
+        final InterruptableRunnable idleCallback = () -> {
+            if (idleCallbackPermitted.get()) {
+                idleCallbackCalled.set(true);
+            } else {
+                error.set(true);
+            }
+        };
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setIdleCallback(idleCallback)
+                .setHandler(Runnable::run)
+                .setWaitForWorkDuration(Duration.ofMillis(1))
+                .build();
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch latch3 = new CountDownLatch(1);
+
+        queue.add(() -> {
+            try {
+                latch1.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch2.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch3.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.start();
+
+        // The queue should not call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch1.countDown();
+
+        // The queue should not call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch2.countDown();
+
+        // The queue should not call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterward.
+        idleCallbackPermitted.set(true);
+
+        latch3.countDown();
+
+        assertEventuallyTrue(idleCallbackCalled::get, Duration.ofSeconds(1), "Idle callback was not called");
+
+        queue.stop();
+
+        assertFalse(error.get());
+    }
+
+    @Test
+    void batchCompletedCallbackTest() throws InterruptedException {
+        final AtomicInteger count = new AtomicInteger(0);
+
+        final int bufferSize = 100;
+
+        final QueueThread<Integer> queue = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
+                .setThreadName("test")
+                .setBatchHandledCallback(count::getAndIncrement)
+                .setHandler(x -> {})
+                .setCapacity(UNLIMITED_CAPACITY)
+                .setMaxBufferSize(bufferSize)
+                .build();
+
+        // Add a bunch of stuff to the queue. Things haven't started yet, so we shouldn't have any callbacks.
+        for (int i = 0; i < bufferSize; i++) {
+            queue.add(i);
+        }
+
+        assertEquals(0, count.get());
+
+        // Start the queue. We should see the batch complete callback exactly once, since all 100 items will fit
+        // into the buffer.
+
+        queue.start();
+
+        assertEventuallyEquals(1, count::get, Duration.ofSeconds(1), "Batch completed callback was not called");
+
+        // Wait for a while. Callback should not be called, but give the thread time to misbehave it wants to.
+        MILLISECONDS.sleep(10);
+        assertEquals(1, count.get());
+
+        // Adding just a single element should cause the callback to be called again.
+        queue.add(42);
+
+        assertEventuallyEquals(2, count::get, Duration.ofSeconds(1), "Batch completed callback was not called");
+
+        // Wait for a while. Callback should not be called, but give the thread time to misbehave it wants to.
+        MILLISECONDS.sleep(10);
+        assertEquals(2, count.get());
+
+        // Add a bunch of stuff. Any number of callbacks between 1
+        // and the number of elements divided by buffer size is legal.
+        final int amountToAdd = 10_000;
+        for (int i = 0; i < amountToAdd; i++) {
+            queue.add(i);
+        }
+
+        final int minCount = 2 + (amountToAdd / bufferSize);
+        final int maxCount = 2 + amountToAdd;
+
+        assertEventuallyTrue(
+                () -> count.get() >= minCount,
+                Duration.ofSeconds(1),
+                "Batch completed callback was not called enough times");
+
+        // Give the thread some time to misbehave if it wants to.
+        MILLISECONDS.sleep(10);
+
+        assertTrue(count.get() <= maxCount, "Batch completed callback was called too many times");
 
         queue.stop();
     }

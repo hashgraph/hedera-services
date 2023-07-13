@@ -22,8 +22,9 @@ import com.swirlds.config.api.ConfigProperty;
 /**
  * Config for consistency testing tool
  *
- * @param logfileName the name of the log file
+ * @param logfileDirectory the directory where consistency information is stored, relative to
+ * {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
  */
 @ConfigData("consistencyTestingTool")
 public record ConsistencyTestingToolConfig(
-        @ConfigProperty(defaultValue = "ConsistencyTestLog.csv") String logfileName) {}
+        @ConfigProperty(defaultValue = "consistency-test") String logfileDirectory) {}

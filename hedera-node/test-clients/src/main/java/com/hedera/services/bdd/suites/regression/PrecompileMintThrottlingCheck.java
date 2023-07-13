@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite.MINT_NFT_CONTRACT;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -38,9 +37,11 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +62,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
     private static final int EXPECTED_MAX_MINTS_PER_SEC = 50;
     private static final double ALLOWED_THROTTLE_NOISE_TOLERANCE = 0.05;
     private static final String NON_FUNGIBLE_TOKEN = "NON_FUNGIBLE_TOKEN";
+    public static final int GAS_TO_OFFER = 1_000_000;
 
     public static void main(String... args) {
         new PrecompileMintThrottlingCheck().runSuiteSync();
@@ -117,7 +119,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
                         contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .contractSupplyKey(MINT_NFT_CONTRACT)
+                                .contractKey(Set.of(TokenKeyType.SUPPLY_KEY), MINT_NFT_CONTRACT)
                                 .initialSupply(0)
                                 .exposingAddressTo(mintContractAddress::set),
                         getTokenInfo(NON_FUNGIBLE_TOKEN).logged());

@@ -18,10 +18,12 @@ package com.swirlds.platform.state.signed;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
+import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -30,7 +32,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
@@ -171,7 +172,7 @@ public class SignedState implements SignedStateInfo {
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
 
         if (stateConfig.stateHistoryEnabled()) {
-            history = new SignedStateHistory(OSTime.getInstance(), getRound(), stateConfig.debugStackTracesEnabled());
+            history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
         } else {
             history = null;
@@ -195,6 +196,15 @@ public class SignedState implements SignedStateInfo {
     @Override
     public long getRound() {
         return state.getPlatformState().getPlatformData().getRound();
+    }
+
+    /**
+     * Check if this state is the genesis state.
+     *
+     * @return true if this is the genesis state
+     */
+    public boolean isGenesisState() {
+        return state.getPlatformState().getPlatformData().getRound() == GENESIS_ROUND;
     }
 
     /**

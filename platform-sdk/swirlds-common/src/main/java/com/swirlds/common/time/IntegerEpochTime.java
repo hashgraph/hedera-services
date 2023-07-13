@@ -16,7 +16,8 @@
 
 package com.swirlds.common.time;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.base.time.Time;
+import com.swirlds.common.units.UnitConstants;
 
 /**
  * A wrapper around a {@link Time} instance that provides the lower 31 bits of the epoch, and calculates elapsed time.
@@ -43,7 +44,7 @@ public class IntegerEpochTime {
      * @return the lower 31 bits of the current microsecond epoch according to the clock stored in this instance
      */
     public int getMicroTime() {
-        return (int) ((time.nanoTime() / Units.MICROSECONDS_TO_NANOSECONDS) % Integer.MAX_VALUE);
+        return (int) ((time.nanoTime() / UnitConstants.MICROSECONDS_TO_NANOSECONDS) % Integer.MAX_VALUE);
     }
 
     /**
@@ -64,7 +65,7 @@ public class IntegerEpochTime {
 
     /**
      * @param startTime a value previously returned by {@link #getMilliTime()}
-     * @param endTime a value previously returned by {@link #getMilliTime()}
+     * @param endTime   a value previously returned by {@link #getMilliTime()}
      * @return the elapsed time in from the start time until the end time
      */
     public static int elapsed(final int startTime, final int endTime) {

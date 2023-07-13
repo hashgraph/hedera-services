@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.spi.meta.bni;
 
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -43,6 +43,15 @@ public interface Dispatch {
     // --- from the returned state via a given {@link ResultTranslator}
 
     /**
+     * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
+     * for details on how the Hedera node implements this.
+     *
+     * @return the available entropy
+     */
+    @NonNull
+    Bytes entropy();
+
+    /**
      * Returns the {@link Nft} with the given id, and also externalizes the result of the state read
      * via a record whose (1) origin is a given contract number and (2) result is derived from the
      * read state via a given {@link ResultTranslator}.
@@ -53,8 +62,7 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNftAndExternalizeResult(
-            UniqueTokenId id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
+    Nft getNftAndExternalizeResult(NftID id, long callingContractNumber, @NonNull ResultTranslator<Nft> translator);
 
     /**
      * Returns the {@link Token} with the given number, and also externalizes the result of the state read
@@ -141,8 +149,24 @@ public interface Dispatch {
      * @param strategy         the {@link VerificationStrategy} to use
      * @return the result of the transfer attempt
      */
-    ResponseCodeEnum transferValue(
+    ResponseCodeEnum transferWithReceiverSigCheck(
             long amount, long fromEntityNumber, long toEntityNumber, @NonNull VerificationStrategy strategy);
+
+    /**
+     * Collects the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param fromEntityNumber the number of the entity to collect fees from
+     * @param amount          the amount of fees to collect
+     */
+    void collectFee(long fromEntityNumber, long amount);
+
+    /**
+     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
+     *
+     * @param fromEntityNumber the number of the entity to refund fees to
+     * @param amount          the amount of fees to collect
+     */
+    void refundFee(long fromEntityNumber, long amount);
 
     /**
      * Links the given {@code evmAddress} to the given {@code entityNumber} as an alias.
@@ -295,5 +319,15 @@ public interface Dispatch {
      * @return the NFT, or {@code null} if no such NFT exists
      */
     @Nullable
-    Nft getNft(@NonNull UniqueTokenId id);
+    Nft getNft(@NonNull NftID id);
+
+    // --- (SECTION V) Miscellaneous methods
+    /**
+     * Tracks the deletion of a contract and the beneficiary that should receive any staking awards otherwise
+     * earned by the deleted contract.
+     *
+     * @param deletedNumber the number of the deleted contract
+     * @param beneficiaryNumber the number of the beneficiary
+     */
+    void trackDeletion(long deletedNumber, long beneficiaryNumber);
 }

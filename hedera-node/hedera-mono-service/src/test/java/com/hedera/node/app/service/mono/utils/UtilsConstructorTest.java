@@ -58,6 +58,7 @@ import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
+import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
 import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils;
@@ -99,6 +100,7 @@ import org.junit.jupiter.api.Test;
 class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
             EntityIoUtils.class,
+            TokenStateTranslator.class,
             OrderedComparison.class,
             RecordParsers.class,
             Units.class,

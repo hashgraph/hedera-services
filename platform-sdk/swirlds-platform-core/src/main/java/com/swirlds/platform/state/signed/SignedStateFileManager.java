@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.io.utility.FileUtils.deleteDirectoryAndLog;
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
@@ -27,7 +27,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.config.BasicConfig;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
@@ -35,9 +35,9 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
+import com.swirlds.platform.config.ThreadConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -46,6 +46,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -109,6 +110,12 @@ public class SignedStateFileManager implements Startable {
     private final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer;
 
     /**
+     * The round number of the latest saved state, or {@link com.swirlds.common.system.UptimeData#NO_ROUND} if no state
+     * has been saved since booting up.
+     */
+    private final AtomicLong latestSavedStateRound = new AtomicLong(NO_ROUND);
+
+    /**
      * Creates a new instance.
      *
      * @param threadManager responsible for creating and managing threads
@@ -127,22 +134,22 @@ public class SignedStateFileManager implements Startable {
             @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
             @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
 
-        this.metrics = throwArgNull(metrics, "metrics");
+        this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
         this.selfId = selfId;
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
-        this.minimumGenerationNonAncientConsumer =
-                throwArgNull(minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer");
+        this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
+                minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
 
-        final BasicConfig basicConfig = context.getConfiguration().getConfigData(BasicConfig.class);
+        final ThreadConfig threadConfig = context.getConfiguration().getConfigData(ThreadConfig.class);
 
         this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
-                .setPriority(basicConfig.threadPriorityNonSync())
+                .setPriority(threadConfig.threadPriorityNonSync())
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("signed-state-file-manager")
@@ -222,6 +229,9 @@ public class SignedStateFileManager implements Startable {
             try (reservedSignedState) {
                 try {
                     writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
+                    if (round > latestSavedStateRound.get()) {
+                        latestSavedStateRound.set(round);
+                    }
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
@@ -355,7 +365,7 @@ public class SignedStateFileManager implements Startable {
      * state's {@link SignedState#isStateToSave()} flag will be set to true.
      *
      * @param signedState the signed state in question
-     * @param source     the source of the signed state
+     * @param source      the source of the signed state
      */
     public synchronized void determineIfStateShouldBeSaved(
             @NonNull final SignedState signedState, @NonNull final SourceOfSignedState source) {
@@ -421,5 +431,15 @@ public class SignedStateFileManager implements Startable {
      */
     public synchronized long getMinimumGenerationNonAncientForOldestState() {
         return minimumGenerationNonAncientForOldestState;
+    }
+
+    /**
+     * Get the round of the latest state written to disk, or {@link com.swirlds.common.system.UptimeData#NO_ROUND} if no
+     * states have been written to disk since booting up.
+     *
+     * @return the latest saved state round
+     */
+    public long getLatestSavedStateRound() {
+        return latestSavedStateRound.get();
     }
 }

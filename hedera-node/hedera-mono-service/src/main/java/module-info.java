@@ -32,7 +32,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.consensus.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.schedule.impl;
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -46,7 +47,7 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.networkadmin.impl,
             com.hedera.node.app.service.consensus.impl.test,
             com.hedera.node.app.service.networkadmin.impl.test,
-            com.hedera.services.cli,
+            com.hedera.node.services.cli,
             com.hedera.node.app.service.file.impl,
             com.hedera.node.app.service.file.impl.test,
             com.hedera.node.app.service.network.admin.impl;
@@ -56,21 +57,6 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.store.models to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
-    exports com.hedera.node.app.service.mono.state.merkle to
-            com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app.service.token.impl,
-            com.hedera.node.app.service.token.impl.test,
-            com.hedera.node.app.service.contract.impl.test,
-            com.hedera.node.app.service.contract.impl,
-            com.hedera.node.app.service.networkadmin.impl,
-            com.hedera.node.app.service.consensus.impl,
-            com.hedera.node.app.service.file.impl,
-            com.hedera.node.app,
-            com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.networkadmin.impl.test,
-            com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.consensus.impl.test,
-            com.hedera.node.app.service.network.admin.impl;
     exports com.hedera.node.app.service.mono.state.validation to
             com.hedera.node.app,
             com.hedera.node.app.service.consensus.impl,
@@ -80,13 +66,15 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.sigs.utils to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.service.mono.sigs.verification to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.files to
             com.hedera.node.app.service.mono.test.fixtures,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.file.impl;
     exports com.hedera.node.app.service.mono.state.virtual.schedule to
             com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.service.schedule.impl,
@@ -115,7 +103,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.config;
     exports com.hedera.node.app.service.mono.ledger.accounts.staking to
             com.hedera.node.config,
-            com.hedera.node.app;
+            com.hedera.node.app,
+            com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.mono.context.init to
             com.hedera.node.app;
     exports com.hedera.node.app.service.mono.state.initialization to
@@ -257,15 +246,20 @@ module com.hedera.node.app.service.mono {
     opens com.hedera.node.app.service.mono.cache to
             com.swirlds.common;
 
+    exports com.hedera.node.app.service.mono.state.merkle;
+
+    opens com.hedera.node.app.service.mono.state.migration to
+            com.swirlds.common;
+
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.evm;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
-    requires transitive com.hedera.pbj.runtime;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.fchashmap;
     requires transitive com.swirlds.fcqueue;
@@ -273,11 +267,11 @@ module com.hedera.node.app.service.mono {
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
     requires transitive dagger;
+    requires transitive grpc.netty;
     requires transitive grpc.stub;
     requires transitive headlong;
     requires transitive io.grpc;
     requires transitive javax.inject;
-    requires transitive org.apache.commons.codec;
     requires transitive org.apache.commons.lang3;
     requires transitive org.apache.logging.log4j;
     requires transitive org.eclipse.collections.api;
@@ -286,16 +280,18 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
-    requires com.github.spotbugs.annotations;
     requires com.swirlds.base;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
-    requires io.helidon.common.configurable;
-    requires io.helidon.grpc.core;
-    requires io.helidon.grpc.server;
+    requires io.netty.handler;
+    requires io.netty.transport.classes.epoll;
+    requires io.netty.transport;
+    requires org.apache.commons.codec;
     requires org.apache.commons.collections4;
     requires org.apache.commons.io;
     requires org.bouncycastle.provider;
     requires org.eclipse.collections.impl;
     requires org.slf4j;
+    requires static com.github.spotbugs.annotations;
+    requires com.hedera.node.app.service.token;
 }

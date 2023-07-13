@@ -57,7 +57,6 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
@@ -66,8 +65,8 @@ import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import com.swirlds.common.stream.internal.LinkedObjectStreamValidateUtils;
 import com.swirlds.common.stream.internal.SingleStreamIterator;
 import com.swirlds.common.stream.internal.StreamValidationResult;
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -114,9 +113,6 @@ class StreamUtilitiesTest {
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
-        SettingsCommon.maxTransactionCountPerEvent = 245760;
-        SettingsCommon.maxTransactionBytesPerEvent = 245760;
-        SettingsCommon.transactionMaxBytes = 6144;
     }
 
     private static File getResourceFile(final String path) {

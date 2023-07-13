@@ -71,8 +71,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
      */
     private final RuntimeObjectRecord registryRecord;
 
-    private boolean initialized = false;
-
     public State() {
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
@@ -81,7 +79,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
         super(that);
 
         registryRecord = RuntimeObjectRegistry.createRecord(getClass());
-        this.initialized = that.initialized;
 
         if (that.getSwirldState() != null) {
             this.setSwirldState(that.getSwirldState().copy());
@@ -228,20 +225,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleInternal {
             event.setSelfParent(eventsByHash.get(event.getSelfParentHash()));
             event.setOtherParent(eventsByHash.get(event.getOtherParentHash()));
         }
-    }
-
-    /**
-     * Mark this state as having been initialized.
-     */
-    public void markAsInitialized() {
-        initialized = true;
-    }
-
-    /**
-     * Has this state been initialized?
-     */
-    public boolean isInitialized() {
-        return initialized;
     }
 
     /**

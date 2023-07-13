@@ -20,8 +20,9 @@ import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
 import com.swirlds.common.config.OSHealthCheckConfig;
-import com.swirlds.common.utility.Units;
-import com.swirlds.platform.Settings;
+import com.swirlds.common.config.PathsConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.units.UnitConstants;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -34,7 +35,8 @@ public final class OSFileSystemChecker {
     public static boolean performFileSystemCheck(final StringBuilder sb, final OSHealthCheckConfig osHealthConfig) {
         try {
             final OSFileSystemCheck.Report fileSystemReport = OSFileSystemCheck.execute(
-                    Settings.getInstance().getConfigPath(), osHealthConfig.fileReadTimeoutMillis());
+                    ConfigurationHolder.getConfigData(PathsConfig.class).getConfigPath(),
+                    osHealthConfig.fileReadTimeoutMillis());
             return appendReport(sb, fileSystemReport, osHealthConfig.maxFileReadMillis());
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -56,7 +58,7 @@ public final class OSFileSystemChecker {
     private static boolean appendReport(
             final StringBuilder sb, final OSFileSystemCheck.Report fileSystemReport, final long maxFileReadMillis) {
         if (fileSystemReport.code() == OSFileSystemCheck.TestResultCode.SUCCESS) {
-            final double readMillis = fileSystemReport.readNanos() * Units.NANOSECONDS_TO_MILLISECONDS;
+            final double readMillis = fileSystemReport.readNanos() * UnitConstants.NANOSECONDS_TO_MILLISECONDS;
             if (TimeUnit.NANOSECONDS.toMillis(fileSystemReport.readNanos()) > maxFileReadMillis) {
                 reportHeader(sb, OSFileSystemCheck.Report.name(), false);
                 addLine(

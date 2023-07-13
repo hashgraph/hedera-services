@@ -28,7 +28,7 @@ package com.swirlds.demo.stats;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
@@ -75,7 +75,7 @@ public class StatsDemoMain implements SwirldMain {
     /** path and filename of the .csv file to write to */
     private String path;
     /** ID number for this member */
-    private long selfId;
+    private NodeId selfId;
     /** the app is run by this */
     private Platform platform;
     /** a console window for text output */
@@ -209,7 +209,7 @@ public class StatsDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
 
         this.platform = platform;
-        selfId = id.id();
+        selfId = id;
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
         final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));

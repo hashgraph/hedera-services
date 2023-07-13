@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomInstant;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;

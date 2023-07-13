@@ -34,4 +34,6 @@ public record StakingConfig(
         @ConfigProperty(defaultValue = "false") boolean requireMinStakeToReward,
         @ConfigProperty(defaultValue = "0") long rewardRate,
         @ConfigProperty(defaultValue = "25000000000000000") long startThreshold,
-        @ConfigProperty(defaultValue = "500") int sumOfConsensusWeights) {}
+        @ConfigProperty(defaultValue = "500") int sumOfConsensusWeights,
+        @ConfigProperty(defaultValue = "0") long stakingRewardBalanceThreshold,
+        @ConfigProperty(defaultValue = "5000000000000000000") long stakingMaxStakeRewarded) {}

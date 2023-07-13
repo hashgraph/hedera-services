@@ -51,12 +51,13 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +88,7 @@ class BackedSystemAccountsCreatorTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup() throws DecoderException, NegativeAccountBalanceException, IllegalArgumentException {
+    void setup() throws InvalidKeyException, NegativeAccountBalanceException, IllegalArgumentException {
         genesisKey = JKey.mapKey(Key.newBuilder()
                 .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(pretendKey)))
                 .build());
@@ -109,7 +110,7 @@ class BackedSystemAccountsCreatorTest {
         given(address.getMemo()).willReturn("0.0.3");
         book = mock(AddressBook.class);
         given(book.getSize()).willReturn(1);
-        given(book.getAddress(0L)).willReturn(address);
+        given(book.getAddress(new NodeId(0L))).willReturn(address);
 
         backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
         given(backingAccounts.idSet())

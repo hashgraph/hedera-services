@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,8 +27,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
@@ -236,7 +236,6 @@ class DefaultSignedStateValidatorTests {
         addressBook = new RandomAddressBookGenerator()
                 .setNodeIds(nodeWeights.keySet())
                 .setCustomWeightGenerator(nodeWeights::get)
-                .setSequentialIds(false)
                 .build();
 
         validator = new DefaultSignedStateValidator();

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomInstant;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow.replayPreconsensusEvents;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.buildGraphGenerator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,10 +31,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.system.platformstatus.PlatformStatus;
+import com.swirlds.base.time.Time;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -191,7 +191,7 @@ class PreconsensusEventReplayWorkflowTests {
         replayPreconsensusEvents(
                 TestPlatformContextBuilder.create().build(),
                 AdHocThreadManager.getStaticThreadManager(),
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 preconsensusEventFileManager,
                 preconsensusEventWriter,
                 eventTaskDispatcher,

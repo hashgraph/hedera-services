@@ -22,9 +22,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,9 +39,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomPositiveLong;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomPositiveLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -56,7 +54,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
+import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 class EventRecoveryWorkflowTests {
 
     @TempDir
@@ -339,10 +338,10 @@ class EventRecoveryWorkflowTests {
         assertEquals(round, updatedRecoveryFile.round(), "round does not match");
         assertEquals(hash, updatedRecoveryFile.hash(), "hash does not match");
         assertEquals(stateTimestamp, updatedRecoveryFile.timestamp(), "state timestamp does not match");
-        assertNotNull(updatedRecoveryFile.recovery().boostrap(), "bootstrap should not be null");
+        assertNotNull(updatedRecoveryFile.recovery().bootstrap(), "bootstrap should not be null");
         assertEquals(
                 bootstrapTime,
-                updatedRecoveryFile.recovery().boostrap().timestamp(),
+                updatedRecoveryFile.recovery().bootstrap().timestamp(),
                 "bootstrap timestamp does not match");
 
         // Verify the contents of the backup recovery file (copy of the original)
@@ -351,7 +350,7 @@ class EventRecoveryWorkflowTests {
         assertEquals(round, backupFile.round(), "round does not match");
         assertEquals(hash, backupFile.hash(), "hash does not match");
         assertEquals(stateTimestamp, backupFile.timestamp(), "state timestamp does not match");
-        assertNull(backupFile.recovery().boostrap(), "No bootstrap information should exist in the backup");
+        assertNull(backupFile.recovery().bootstrap(), "No bootstrap information should exist in the backup");
     }
 
     // FUTURE WORK reapplyTransactions() test

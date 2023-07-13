@@ -18,8 +18,10 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
+import java.util.Set;
 
 /**
  * Implements the HAPI <a
@@ -34,6 +36,12 @@ public interface ScheduleService extends Service {
     @Override
     default String getServiceName() {
         return NAME;
+    }
+
+    @NonNull
+    @Override
+    default Set<RpcServiceDefinition> rpcDefinitions() {
+        return Set.of(ScheduleServiceDefinition.INSTANCE);
     }
 
     /**

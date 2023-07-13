@@ -16,8 +16,8 @@
 
 package com.swirlds.common.io.extendable.extensions;
 
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.io.extendable.InputStreamExtension;
@@ -63,8 +63,7 @@ public class ThrottleStreamExtension implements InputStreamExtension, OutputStre
     /**
      * Create a thread safe throttle extension.
      *
-     * @param bytesPerSecond
-     * 		the maximum allowable throughput
+     * @param bytesPerSecond the maximum allowable throughput
      */
     public ThrottleStreamExtension(final long bytesPerSecond) {
         this(bytesPerSecond, DEFAULT_INCREMENT);
@@ -73,11 +72,9 @@ public class ThrottleStreamExtension implements InputStreamExtension, OutputStre
     /**
      * Create a throttle extension.
      *
-     * @param bytesPerSecond
-     * 		the maximum allowable throughput
-     * @param timeIncrement
-     * 		the time increment. Smaller time increments result in smoother throttling at the
-     * 		cost of additional overhead.
+     * @param bytesPerSecond the maximum allowable throughput
+     * @param timeIncrement  the time increment. Smaller time increments result in smoother throttling at the cost of
+     *                       additional overhead.
      */
     public ThrottleStreamExtension(final long bytesPerSecond, final Duration timeIncrement) {
         this.timeIncrement = timeIncrement;
@@ -87,12 +84,10 @@ public class ThrottleStreamExtension implements InputStreamExtension, OutputStre
     }
 
     /**
-     * Check the current capacity of the stream, and return the number of bytes that are permitted to pass
-     * at this moment. If the current capacity is 0 then this method will block until more capacity becomes
-     * available.
+     * Check the current capacity of the stream, and return the number of bytes that are permitted to pass at this
+     * moment. If the current capacity is 0 then this method will block until more capacity becomes available.
      *
-     * @param requestedLength
-     * 		the requested number of bytes to pass
+     * @param requestedLength the requested number of bytes to pass
      * @return the allowed number of bytes to pass
      */
     public int getAvailableCapacity(final int requestedLength) {

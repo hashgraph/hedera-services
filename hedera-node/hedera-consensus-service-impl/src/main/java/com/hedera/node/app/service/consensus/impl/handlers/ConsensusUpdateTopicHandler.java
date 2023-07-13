@@ -106,8 +106,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
         final var topicUpdate = handleContext.body().consensusUpdateTopic();
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
-        final var maybeTopic = requireNonNull(topicStore)
-                .get(topicUpdate.topicIDOrElse(TopicID.DEFAULT).topicNum());
+        final var maybeTopic = requireNonNull(topicStore).get(topicUpdate.topicIDOrElse(TopicID.DEFAULT));
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
@@ -119,7 +118,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         // Now we apply the mutations to a builder
         final var builder = new Topic.Builder();
         // But first copy over the immutable topic attributes to the builder
-        builder.topicNumber(topic.topicNumber());
+        builder.id(topic.id());
         builder.sequenceNumber(topic.sequenceNumber());
         builder.runningHash(topic.runningHash());
         builder.deleted(topic.deleted());
@@ -157,7 +156,7 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var resolvedExpiryMeta = resolvedUpdateMetaFrom(handleContext.expiryValidator(), op, topic);
         builder.expiry(resolvedExpiryMeta.expiry());
         builder.autoRenewPeriod(resolvedExpiryMeta.autoRenewPeriod());
-        builder.autoRenewAccountNumber(resolvedExpiryMeta.autoRenewNum());
+        builder.autoRenewAccountId(resolvedExpiryMeta.autoRenewAccountId());
     }
 
     private void validateMaybeNewAttributes(
@@ -181,14 +180,9 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull final ConsensusUpdateTopicTransactionBody op,
             @NonNull final Topic topic) {
-        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountNumber());
+        final var currentMeta = new ExpiryMeta(topic.expiry(), topic.autoRenewPeriod(), topic.autoRenewAccountId());
         if (updatesExpiryMeta(op)) {
-            final var updateMeta = new ExpiryMeta(
-                    effExpiryOf(op),
-                    effAutoRenewPeriodOf(op),
-                    effAutoRenewShardOf(op),
-                    effAutoRenewRealmOf(op),
-                    effAutoRenewNumOf(op));
+            final var updateMeta = new ExpiryMeta(effExpiryOf(op), effAutoRenewPeriodOf(op), op.autoRenewAccount());
             return expiryValidator.resolveUpdateAttempt(currentMeta, updateMeta);
         } else {
             return currentMeta;
@@ -201,18 +195,6 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
 
     private long effAutoRenewPeriodOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
         return op.hasAutoRenewPeriod() ? op.autoRenewPeriodOrThrow().seconds() : NA;
-    }
-
-    private long effAutoRenewShardOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().shardNum() : NA;
-    }
-
-    private long effAutoRenewRealmOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().realmNum() : NA;
-    }
-
-    private long effAutoRenewNumOf(@NonNull final ConsensusUpdateTopicTransactionBody op) {
-        return op.hasAutoRenewAccount() ? op.autoRenewAccountOrThrow().accountNumOrElse(NA) : NA;
     }
 
     private boolean updatesExpiryMeta(@NonNull final ConsensusUpdateTopicTransactionBody op) {

@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -60,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -150,6 +150,7 @@ public class Create2OperationSuite extends HapiSuite {
     private static final String ADMIN_KEY = "adminKey";
     private static final String ENTITY_MEMO = "JUST DO IT";
     private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
+    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -181,7 +182,6 @@ public class Create2OperationSuite extends HapiSuite {
                 allLogOpcodesResolveExpectedContractId(),
                 eip1014AliasIsPriorityInErcOwnerPrecompile(),
                 canAssociateInConstructor(),
-                childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
                 /* --- HIP 583 --- */
                 canMergeCreate2ChildWithHollowAccount(),
                 canMergeCreate2MultipleCreatesWithHollowAccount());
@@ -551,13 +551,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 .nodePayment(ONE_HBAR)),
                         sourcing(() -> setExpectedCreate2Address(
                                 contract, salt, expectedCreate2Address, testContractInitcode)),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)),
-                        sourcing(() ->
-                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
                         lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
                         getTxnRecord(creation)
@@ -627,9 +620,9 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount")
-                .preserving(LAZY_CREATION_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED, CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE, CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -672,13 +665,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 .nodePayment(ONE_HBAR)),
                         sourcing(() -> setExpectedCreate2Address(
                                 contract, salt, expectedCreate2Address, testContractInitcode)),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)),
-                        sourcing(() ->
-                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt(DELETED_CREATE_2_LOG),
                         // Now create a hollow account at the desired address
                         lazyCreateAccount(creation, expectedCreate2Address, ftId, nftId, partyAlias),
                         getTxnRecord(creation)
@@ -699,6 +685,16 @@ public class Create2OperationSuite extends HapiSuite {
                                 CREATE_2_TXN,
                                 mergedMirrorAddr,
                                 mergedAliasAddr),
+                        withOpContext((spec, opLog) -> {
+                            final var opExpectedMergedNonce = getTxnRecord(CREATE_2_TXN)
+                                    .andAllChildRecords()
+                                    .hasPriority(recordWith()
+                                            .contractCallResult(resultWith()
+                                                    .contractWithNonce(
+                                                            contractIdFromHexedMirrorAddress(mergedMirrorAddr.get()),
+                                                            3L)));
+                            allRunFor(spec, opExpectedMergedNonce);
+                        }),
                         sourcing(() -> getContractInfo(mergedAliasAddr.get())
                                 .has(contractWith()
                                         .numKvPairs(4)
@@ -778,36 +774,6 @@ public class Create2OperationSuite extends HapiSuite {
                                         .contractCallResult(htsPrecompileResult()
                                                 .forFunction(FunctionType.ERC_OWNER)
                                                 .withOwner(unhex(userAliasAddr.get())))))));
-    }
-
-    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
-        final var ft = "fungibleToken";
-        final var multiKey = SWISS;
-        final var creationAndAssociation = "creationAndAssociation";
-        final var immediateChildAssoc = "ImmediateChildAssociation";
-
-        final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
-                .preserving("contracts.maxNumWithHapiSigsAccess")
-                .given(
-                        overriding("contracts.maxNumWithHapiSigsAccess", "10_000_000"),
-                        newKeyNamed(multiKey),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(ft)
-                                .exposingCreatedIdTo(id ->
-                                        tokenMirrorAddr.set(hex(asSolidityAddress(HapiPropertySource.asToken(id))))))
-                .when(uploadInitCode(immediateChildAssoc), sourcing(() -> contractCreate(
-                                immediateChildAssoc, asHeadlongAddress(tokenMirrorAddr.get()))
-                        .gas(2_000_000)
-                        .adminKey(multiKey)
-                        .payingWith(GENESIS)
-                        .sigMapPrefixes(uniqueWithFullPrefixesFor(GENESIS, multiKey))
-                        .signedBy(GENESIS, multiKey)
-                        .exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
-                        .via(creationAndAssociation)))
-                .then(sourcing(() -> getContractInfo(childMirrorAddr.get()).logged()));
     }
 
     @SuppressWarnings("java:S5669")

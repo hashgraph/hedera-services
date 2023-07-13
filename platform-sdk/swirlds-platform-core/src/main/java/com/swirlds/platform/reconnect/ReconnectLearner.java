@@ -38,6 +38,7 @@ import com.swirlds.platform.state.signed.SignedStateValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +55,7 @@ public class ReconnectLearner {
     private final Connection connection;
     private final AddressBook addressBook;
     private final State currentState;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final SignedStateValidationData stateValidationData;
     private SigSet sigSet;
@@ -82,23 +83,23 @@ public class ReconnectLearner {
      */
     public ReconnectLearner(
             @NonNull final PlatformContext platformContext,
-            final ThreadManager threadManager,
-            final Connection connection,
-            final AddressBook addressBook,
-            final State currentState,
-            final int reconnectSocketTimeout,
-            final ReconnectMetrics statistics) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final Connection connection,
+            @NonNull final AddressBook addressBook,
+            @NonNull final State currentState,
+            @NonNull final Duration reconnectSocketTimeout,
+            @NonNull final ReconnectMetrics statistics) {
 
         currentState.throwIfImmutable("Can not perform reconnect with immutable state");
         currentState.throwIfDestroyed("Can not perform reconnect with destroyed state");
 
         this.platformContext = Objects.requireNonNull(platformContext);
-        this.threadManager = threadManager;
-        this.connection = connection;
-        this.addressBook = addressBook;
-        this.currentState = currentState;
-        this.reconnectSocketTimeout = reconnectSocketTimeout;
-        this.statistics = statistics;
+        this.threadManager = Objects.requireNonNull(threadManager);
+        this.connection = Objects.requireNonNull(connection);
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.currentState = Objects.requireNonNull(currentState);
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
+        this.statistics = Objects.requireNonNull(statistics);
 
         // Save some of the current state data for validation
         this.stateValidationData =
@@ -112,7 +113,7 @@ public class ReconnectLearner {
     private void increaseSocketTimeout() throws ReconnectException {
         try {
             originalSocketTimeout = connection.getTimeout();
-            connection.setTimeout(reconnectSocketTimeout);
+            connection.setTimeout(reconnectSocketTimeout.toMillis());
         } catch (final SocketException e) {
             throw new ReconnectException(e);
         }
@@ -147,7 +148,8 @@ public class ReconnectLearner {
      * 		state is invalid
      * @return the state received from the other node
      */
-    public ReservedSignedState execute(final SignedStateValidator validator) throws ReconnectException {
+    @NonNull
+    public ReservedSignedState execute(@NonNull final SignedStateValidator validator) throws ReconnectException {
         increaseSocketTimeout();
         try {
             receiveSignatures();
@@ -170,6 +172,7 @@ public class ReconnectLearner {
      * @throws InterruptedException
      * 		if the current thread is interrupted
      */
+    @NonNull
     private ReservedSignedState reconnect() throws InterruptedException {
         statistics.incrementReceiverStartTimes();
 

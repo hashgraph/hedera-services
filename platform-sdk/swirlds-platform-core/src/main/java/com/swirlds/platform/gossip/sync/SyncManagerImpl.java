@@ -20,12 +20,12 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.event.EventIntakeTask;
@@ -55,7 +55,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
      */
     private static final int MAXIMUM_NEIGHBORS_TO_QUERY = 10;
 
-    private final Settings settings = Settings.getInstance();
+    private final EventConfig eventConfig;
 
     /** the event intake queue */
     private final BlockingQueue<EventIntakeTask> intakeQueue;
@@ -94,7 +94,8 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
             @NonNull final EventCreationRules eventCreationRules,
             @NonNull final CriticalQuorum criticalQuorum,
             @NonNull final AddressBook addressBook,
-            @NonNull final FallenBehindManager fallenBehindManager) {
+            @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final EventConfig eventConfig) {
 
         this.intakeQueue = Objects.requireNonNull(intakeQueue);
         this.connectionGraph = Objects.requireNonNull(connectionGraph);
@@ -105,6 +106,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         this.addressBook = Objects.requireNonNull(addressBook);
 
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.eventConfig = Objects.requireNonNull(eventConfig);
 
         metrics.getOrCreate(
                 new FunctionGauge.Config<>(INTERNAL_CATEGORY, "hasFallenBehind", Object.class, this::hasFallenBehind)
@@ -129,7 +131,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
 
         // we shouldn't sync if the event intake queue is too big
         final int intakeQueueSize = intakeQueue.size();
-        if (intakeQueueSize > settings.getEventIntakeQueueThrottleSize()) {
+        if (intakeQueueSize > eventConfig.eventIntakeQueueThrottleSize()) {
             logger.debug(
                     SYNC.getMarker(),
                     "don't accept sync because event intake queue is too big, size: {}",
@@ -152,7 +154,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // we shouldn't sync if the event intake queue is too big
-        return intakeQueue.size() <= settings.getEventIntakeQueueThrottleSize();
+        return intakeQueue.size() <= eventConfig.eventIntakeQueueThrottleSize();
     }
 
     /**
@@ -243,8 +245,9 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // check 4: staleEventPrevention
-        if (settings.getStaleEventPreventionThreshold() > 0
-                && info.getEventsRead() > settings.getStaleEventPreventionThreshold() * addressBook.getSize()) {
+        final int staleEventPreventionThreshold = eventConfig.staleEventPreventionThreshold();
+        if (staleEventPreventionThreshold > 0
+                && info.getEventsRead() > staleEventPreventionThreshold * addressBook.getSize()) {
             // if we read too many events during this sync, we skip creating an event to reduce the probability of
             // having a stale event
             return false;

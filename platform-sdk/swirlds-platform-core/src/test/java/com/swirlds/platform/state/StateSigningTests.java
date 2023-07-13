@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.platform.Utilities.isMajority;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,10 +36,11 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +49,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -70,7 +70,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -171,7 +170,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -265,7 +263,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -347,7 +344,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -399,7 +395,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -458,7 +453,6 @@ class StateSigningTests {
                         evenWeighting
                                 ? RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED
                                 : RandomAddressBookGenerator.WeightDistributionStrategy.GAUSSIAN)
-                .setSequentialIds(false)
                 .setSize(nodeCount)
                 .build();
 
@@ -499,7 +493,7 @@ class StateSigningTests {
             newAddressBook.add(address.copySetWeight(0));
             final Address newAddress = newAddressBook.getAddress(newAddressBook.getNodeId(i));
             Assertions.assertNotNull(newAddress);
-            assertTrue(address.equalsWithoutWeightAndOwnHost(newAddress));
+            assertTrue(address.equalsWithoutWeight(newAddress));
             i++;
         }
 

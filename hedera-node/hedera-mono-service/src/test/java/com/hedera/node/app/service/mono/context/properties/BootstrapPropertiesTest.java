@@ -136,7 +136,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
@@ -194,9 +193,11 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
@@ -296,20 +297,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith({LogCaptureExtension.class})
 class BootstrapPropertiesTest {
-    @LoggingTarget
-    private LogCaptor logCaptor;
-
-    @LoggingSubject
-    private BootstrapProperties subject = new BootstrapProperties();
-
     private static final String STD_PROPS_RESOURCE = "bootstrap/standard.properties";
     private static final String INVALID_PROPS_RESOURCE = "bootstrap/not.properties";
     private static final String UNREADABLE_PROPS_RESOURCE = "bootstrap/unreadable.properties";
     private static final String INCOMPLETE_STD_PROPS_RESOURCE = "bootstrap/incomplete.properties";
-
     private static final String OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/override.properties";
     private static final String EMPTY_OVERRIDE_PROPS_LOC = "src/test/resources/bootstrap/empty-override.properties";
-
     private static final Map<String, Object> expectedProps = Map.ofEntries(
             entry(BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE, "feeSchedules.json"),
             entry(BOOTSTRAP_GENESIS_PUBLIC_KEY, "0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"),
@@ -344,7 +337,7 @@ class BootstrapPropertiesTest {
             entry(AUTO_RENEW_GRANT_FREE_RENEWALS, false),
             entry(CONTRACTS_ALLOW_CREATE2, true),
             entry(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, false),
-            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 10_000_000L),
+            entry(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, 0L),
             entry(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS, Set.<Address>of()),
             entry(
                     CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS,
@@ -391,7 +384,7 @@ class BootstrapPropertiesTest {
             entry(DEV_ONLY_DEFAULT_NODE_LISTENS, true),
             entry(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, true),
             entry(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED, true),
-            entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, false),
+            entry(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, true),
             entry(DEV_DEFAULT_LISTENING_NODE_ACCOUNT, "0.0.3"),
             entry(ENTITIES_MAX_LIFETIME, 3153600000L),
             entry(ENTITIES_SYSTEM_DELETABLE, EnumSet.of(EntityType.FILE)),
@@ -502,6 +495,8 @@ class BootstrapPropertiesTest {
             entry(STAKING_IS_ENABLED, true),
             entry(STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS, Map.of()),
             entry(STAKING_PERIOD_MINS, 1440L),
+            entry(STAKING_MAX_STAKE_REWARDED, 5000000000000000000L),
+            entry(STAKING_REWARD_BALANCE_THRESHOLD, 0L),
             entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
             entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
             entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
@@ -547,7 +542,6 @@ class BootstrapPropertiesTest {
             entry(CONTRACTS_SIDECARS, EnumSet.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_BYTECODE)),
             entry(CONTRACTS_SIDECAR_VALIDATION_ENABLED, false),
             entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, 256),
-            entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, false),
             entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, 9L),
             entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, 10L),
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, false),
@@ -561,6 +555,12 @@ class BootstrapPropertiesTest {
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, 30),
             entry(CONFIG_VERSION, 10),
             entry(RECORDS_USE_CONSOLIDATED_FCQ, false));
+
+    @LoggingTarget
+    private LogCaptor logCaptor;
+
+    @LoggingSubject
+    private BootstrapProperties subject = new BootstrapProperties();
 
     @Test
     void containsProperty() {

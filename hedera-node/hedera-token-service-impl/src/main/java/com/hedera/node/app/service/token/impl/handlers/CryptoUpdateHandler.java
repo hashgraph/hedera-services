@@ -38,6 +38,7 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -60,13 +61,17 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
     private final CryptoSignatureWaivers waivers;
     private StakingValidator stakingValidator;
+    private NetworkInfo networkInfo;
 
     @Inject
     public CryptoUpdateHandler(
-            @NonNull final CryptoSignatureWaivers waivers, @NonNull final StakingValidator stakingValidator) {
+            @NonNull final CryptoSignatureWaivers waivers,
+            @NonNull final StakingValidator stakingValidator,
+            @NonNull final NetworkInfo networkInfo) {
         this.waivers = requireNonNull(waivers, "The supplied argument 'waivers' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
+        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'networkInfo' must not be null");
     }
 
     @Override
@@ -206,11 +211,13 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate expiry metadata
         final var currentMetadata = new ExpiryMeta(
-                updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountNumber());
+                updateAccount.expiry(),
+                updateAccount.autoRenewSecs(),
+                asAccount(updateAccount.autoRenewAccountNumber())); // update after issue#7243
         final var updateMeta = new ExpiryMeta(
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
-                NA);
+                null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
 
         // If an account is detached and pending removal, it cannot be updated
@@ -265,6 +272,8 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedId().kind().name(),
                 op.stakedAccountId(),
                 op.stakedNodeId(),
-                accountStore);
+                accountStore,
+                context,
+                networkInfo);
     }
 }

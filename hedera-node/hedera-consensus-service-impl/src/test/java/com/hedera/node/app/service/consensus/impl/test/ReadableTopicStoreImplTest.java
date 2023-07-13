@@ -26,16 +26,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
-import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusHandlerTestBase;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
+class ReadableTopicStoreImplTest extends ConsensusTestBase {
     private ReadableTopicStore subject;
 
     @BeforeEach
@@ -50,12 +51,12 @@ class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.topicNumber());
+        assertEquals(topicEntityNum.longValue(), topic.id().topicNum());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(autoRenewId.accountNum(), topic.autoRenewAccountNumber());
+        assertEquals(autoRenewId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));
@@ -63,9 +64,10 @@ class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
 
     @Test
     void getsTopicIfTopicExistsWithNoAutoRenewAccount() {
-        givenValidTopic(0L);
+        final var accountId = AccountID.newBuilder().accountNum(0L).build();
+        givenValidTopic(accountId);
         readableTopicState = readableTopicState();
-        given(readableStates.<EntityNum, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
+        given(readableStates.<TopicID, Topic>get(TOPICS_KEY)).willReturn(readableTopicState);
         readableStore = new ReadableTopicStoreImpl(readableStates);
         subject = new ReadableTopicStoreImpl(readableStates);
 
@@ -73,12 +75,12 @@ class ReadableTopicStoreImplTest extends ConsensusHandlerTestBase {
 
         assertNotNull(topic);
 
-        assertEquals(topicEntityNum.longValue(), topic.topicNumber());
+        assertEquals(topicEntityNum.longValue(), topic.id().topicNum());
         assertEquals(adminKey.toString(), topic.adminKey().toString());
         assertEquals(adminKey.toString(), topic.submitKey().toString());
         assertEquals(this.topic.sequenceNumber(), topic.sequenceNumber());
         assertEquals(this.topic.autoRenewPeriod(), topic.autoRenewPeriod());
-        assertEquals(0L, topic.autoRenewAccountNumber());
+        assertEquals(accountId, topic.autoRenewAccountId());
         assertEquals(memo, topic.memo());
         assertFalse(topic.deleted());
         assertArrayEquals(runningHash, asBytes(topic.runningHash()));

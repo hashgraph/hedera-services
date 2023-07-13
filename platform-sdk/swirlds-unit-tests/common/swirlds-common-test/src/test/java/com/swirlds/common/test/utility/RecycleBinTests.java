@@ -24,11 +24,11 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +83,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle File Test")
     void recycleFileTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
+        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
 
         final Path path1 = testDirectory.resolve("file1.txt");
         writeFile(path1, "file1");
@@ -123,7 +123,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Directory Test")
     void recycleDirectoryTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
+        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
 
         final Path directory = testDirectory.resolve("foo/bar/baz");
         Files.createDirectories(directory);
@@ -173,7 +173,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Non-Existent File Test")
     void recycleNonExistentFileTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
+        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
         recycleBin.recycle(path);
@@ -186,7 +186,7 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle Duplicate File Test")
     void recycleDuplicateFileTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBin(configuration, new NodeId(0));
+        final RecycleBin recycleBin = RecycleBin.create(configuration, new NodeId(0));
 
         final Path path = testDirectory.resolve("file.txt");
         final Path recycledPath =

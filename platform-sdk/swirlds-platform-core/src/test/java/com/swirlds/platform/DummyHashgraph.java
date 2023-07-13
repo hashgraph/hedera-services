@@ -18,8 +18,10 @@ package com.swirlds.platform;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
+import java.util.Random;
 
 public class DummyHashgraph {
 
@@ -30,12 +32,12 @@ public class DummyHashgraph {
     public long lastRoundReceivedAllTransCons;
     public AddressBook addressBook;
 
-    DummyHashgraph(final int selfIndex) {
+    DummyHashgraph(@NonNull final Random random, final int selfIndex) {
         eventIntakeQueueSize = 0;
         isInCriticalQuorum = new HashMap<>();
         numUserTransEvents = 0;
         lastRoundReceivedAllTransCons = 0;
-        addressBook = new RandomAddressBookGenerator().setSize(100).build();
+        addressBook = new RandomAddressBookGenerator(random).setSize(100).build();
         this.selfId = addressBook.getNodeId(selfIndex);
     }
 

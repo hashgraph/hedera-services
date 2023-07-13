@@ -16,8 +16,13 @@
 
 package com.swirlds.platform.config.legacy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.swirlds.common.internal.ConfigurationException;
-import java.net.InetAddress;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
+import com.swirlds.common.system.address.AddressBook;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,7 +53,7 @@ class LegacyConfigPropertiesLoaderTest {
         final LegacyConfigProperties properties = LegacyConfigPropertiesLoader.loadConfigFile(path);
 
         // then
-        Assertions.assertNotNull(properties, "The properties should never be null");
+        assertNotNull(properties, "The properties should never be null");
         Assertions.assertFalse(properties.appConfig().isPresent(), "Value must not be set for an empty file");
         Assertions.assertFalse(properties.tls().isPresent(), "Value must not be set for an empty file");
         Assertions.assertFalse(properties.ipTos().isPresent(), "Value must not be set for an empty file");
@@ -57,8 +62,6 @@ class LegacyConfigPropertiesLoaderTest {
         Assertions.assertFalse(properties.genesisFreezeTime().isPresent(), "Value must not be set for an empty file");
         Assertions.assertFalse(properties.saveStatePeriod().isPresent(), "Value must not be set for an empty file");
         Assertions.assertFalse(properties.transactionMaxBytes().isPresent(), "Value must not be set for an empty file");
-        Assertions.assertEquals(
-                0, properties.getAddressConfigs().size(), "no address config should be added for an empty file");
     }
 
     @Test
@@ -71,7 +74,7 @@ class LegacyConfigPropertiesLoaderTest {
         final LegacyConfigProperties properties = LegacyConfigPropertiesLoader.loadConfigFile(path);
 
         // then
-        Assertions.assertNotNull(properties, "The properties should never be null");
+        assertNotNull(properties, "The properties should never be null");
 
         Assertions.assertFalse(
                 properties.tls().isPresent(), "Value must not be set since it is not defined in the file");
@@ -98,85 +101,25 @@ class LegacyConfigPropertiesLoaderTest {
                 new String[] {"1", "0", "0", "0", "0", "0", "0", "0", "0", "0", "all"},
                 properties.appConfig().get().params());
 
-        Assertions.assertEquals(
-                4, properties.getAddressConfigs().size(), "no address config should be added for an empty file");
+        final AddressBook addressBook = properties.getAddressBook();
+        assertNotNull(addressBook);
 
-        final InetAddress localhost = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
+        assertEquals(4, addressBook.getSize());
 
-        Assertions.assertEquals(
-                "A", properties.getAddressConfigs().get(0).nickname(), "value must match to config" + ".txt");
-        Assertions.assertEquals(
-                "Alice", properties.getAddressConfigs().get(0).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(0).weight(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(0).internalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15301, properties.getAddressConfigs().get(0).internalPort(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(0).externalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15301, properties.getAddressConfigs().get(0).externalPort(), "value must match to config.txt");
-        Assertions.assertEquals("", properties.getAddressConfigs().get(0).memo(), "value must match to config.txt");
+        final NodeId firstNode = addressBook.getNodeId(0);
+        final Address firstAddress = addressBook.getAddress(firstNode);
+        assertEquals(1L, firstAddress.getNodeId().id());
 
-        Assertions.assertEquals(
-                "B", properties.getAddressConfigs().get(1).nickname(), "value must match to config" + ".txt");
-        Assertions.assertEquals(
-                "Bob", properties.getAddressConfigs().get(1).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(1).weight(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(1).internalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15302, properties.getAddressConfigs().get(1).internalPort(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(1).externalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15302, properties.getAddressConfigs().get(1).externalPort(), "value must match to config.txt");
-        Assertions.assertEquals("", properties.getAddressConfigs().get(1).memo(), "value must match to config.txt");
+        final NodeId secondNode = addressBook.getNodeId(1);
+        final Address secondAddress = addressBook.getAddress(secondNode);
+        assertEquals(3L, secondAddress.getNodeId().id());
 
-        Assertions.assertEquals(
-                "C", properties.getAddressConfigs().get(2).nickname(), "value must match to config" + ".txt");
-        Assertions.assertEquals(
-                "Carol", properties.getAddressConfigs().get(2).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(2).weight(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(2).internalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15303, properties.getAddressConfigs().get(2).internalPort(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(2).externalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15303, properties.getAddressConfigs().get(2).externalPort(), "value must match to config.txt");
-        Assertions.assertEquals("", properties.getAddressConfigs().get(2).memo(), "value must match to config.txt");
+        final NodeId thirdNode = addressBook.getNodeId(2);
+        final Address thirdAddress = addressBook.getAddress(thirdNode);
+        assertEquals(20L, thirdAddress.getNodeId().id());
 
-        Assertions.assertEquals(
-                "D", properties.getAddressConfigs().get(3).nickname(), "value must match to config" + ".txt");
-        Assertions.assertEquals(
-                "Dave", properties.getAddressConfigs().get(3).selfName(), "value must match to config.txt");
-        Assertions.assertEquals(1, properties.getAddressConfigs().get(3).weight(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(3).internalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15304, properties.getAddressConfigs().get(3).internalPort(), "value must match to config.txt");
-        Assertions.assertEquals(
-                localhost,
-                properties.getAddressConfigs().get(3).externalInetAddressName(),
-                "value must match to config.txt");
-        Assertions.assertEquals(
-                15304, properties.getAddressConfigs().get(3).externalPort(), "value must match to config.txt");
-        Assertions.assertEquals("", properties.getAddressConfigs().get(3).memo(), "value must match to config.txt");
+        final NodeId fourthNode = addressBook.getNodeId(3);
+        final Address fourthAddress = addressBook.getAddress(fourthNode);
+        assertEquals(95L, fourthAddress.getNodeId().id());
     }
 }

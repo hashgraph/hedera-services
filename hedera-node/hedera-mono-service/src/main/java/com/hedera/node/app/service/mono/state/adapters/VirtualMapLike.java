@@ -56,6 +56,9 @@ public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
     void extractVirtualMapData(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
             throws InterruptedException;
 
+    void extractVirtualMapDataC(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
+            throws InterruptedException;
+
     static <K extends VirtualKey, V extends VirtualValue> VirtualMapLike<K, V> from(final VirtualMap<K, V> real) {
         return new VirtualMapLike<>() {
             @Override
@@ -70,6 +73,15 @@ public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
                     final int threadCount)
                     throws InterruptedException {
                 VirtualMapMigration.extractVirtualMapData(threadManager, real, handler, threadCount);
+            }
+
+            @Override
+            public void extractVirtualMapDataC(
+                    final ThreadManager threadManager,
+                    final InterruptableConsumer<Pair<K, V>> handler,
+                    final int threadCount)
+                    throws InterruptedException {
+                VirtualMapMigration.extractVirtualMapDataC(threadManager, real, handler, threadCount);
             }
 
             @Override

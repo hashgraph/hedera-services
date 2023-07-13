@@ -55,11 +55,11 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.platformstatus.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.Units;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -434,8 +434,10 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     private long summation(List<TransactionCounter> counters, ValueExtractor valueExtractor) {
         long total = 0;
-        for (TransactionCounter counter : counters) {
-            total += valueExtractor.getValue(counter);
+        if (counters != null) {
+            for (TransactionCounter counter : counters) {
+                total += valueExtractor.getValue(counter);
+            }
         }
         return total;
     }
@@ -547,11 +549,19 @@ public class PlatformTestingToolMain implements SwirldMain {
             // FUTURE WORK implement mirrorNode
             final String myName = platform.getSelfAddress().getSelfName();
 
+            // Parameters[0]: JSON file for test config
             String jsonFileName = null;
             final String[] parameters = ParameterProvider.getInstance().getParameters();
             if (parameters != null && parameters.length > 0) {
                 jsonFileName = parameters[0];
             }
+
+            // Parameters[1]: JSON file for app client (parsed below), optional
+
+            // Parameters[2]: indicates whether to use MerkleDb (true) or JasperDB (false) for virtual maps, optional
+            final boolean useMerkleDb =
+                    parameters != null && parameters.length > 2 && Boolean.parseBoolean(parameters[2]);
+            logger.info(LOGM_DEMO_INFO, "Using {} data sources", (useMerkleDb ? "MerkleDb" : "JasperDB"));
 
             final ProgressCfg progressCfg = new ProgressCfg();
 
@@ -609,7 +619,8 @@ public class PlatformTestingToolMain implements SwirldMain {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
                             virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.getKey());
                             virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.getValue());
-                            VirtualMerkleStateInitializer.initStateChildren(platform, selfId.id(), virtualMerkleConfig);
+                            VirtualMerkleStateInitializer.initStateChildren(
+                                    platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
                         }
                         final Metrics metrics = platform.getContext().getMetrics();
                         if (state.getVirtualMap() != null) {
@@ -708,12 +719,16 @@ public class PlatformTestingToolMain implements SwirldMain {
     }
 
     private void initializeAppClient(final String[] pars, final ObjectMapper objectMapper) throws IOException {
-        if (pars.length < 2 || !selfId.equals(new NodeId(0L))) {
+        if ((pars == null) || (pars.length < 2) || !selfId.equals(new NodeId(0L))) {
             return;
         }
 
-        logger.info(LOGM_DEMO_INFO, "Parsing JSON for client ");
         final String jsonFileName = pars[1];
+        if (jsonFileName.trim().isBlank()) {
+            return;
+        }
+
+        logger.info(LOGM_DEMO_INFO, "Parsing JSON for client: {}", jsonFileName);
         final SuperConfig clientConfig = objectMapper.readValue(new File(jsonFileName), SuperConfig.class);
         for (int k = 0; k < CLIENT_AMOUNT; k++) {
             appClient[k] = new AppClient(
@@ -1205,7 +1220,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void queryInState() {
         // time in nanoseconds between successive queries
-        final long periodInNanos = Units.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
+        final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(

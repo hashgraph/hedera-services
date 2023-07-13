@@ -40,13 +40,14 @@ import static com.hedera.test.utils.IdUtils.asSchedule;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.withSettings;
 import static org.mockito.quality.Strictness.LENIENT;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -83,14 +84,16 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.time.Instant;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.commons.codec.DecoderException;
 
 public interface TxnHandlingScenario {
-    PlatformTxnAccessor platformTxn() throws Throwable;
+    PlatformTxnAccessor platformTxn() throws Exception;
 
     default com.hedera.hapi.node.transaction.TransactionBody pbjTxnBody() {
         try {
@@ -250,7 +253,7 @@ public interface TxnHandlingScenario {
         }
     }
 
-    default HederaFs hfs() throws Exception {
+    default HederaFs hfs() throws InvalidKeyException {
         HederaFs hfs = mock(HederaFs.class);
         given(hfs.exists(MISC_FILE)).willReturn(true);
         given(hfs.exists(SYS_FILE)).willReturn(true);
@@ -267,7 +270,7 @@ public interface TxnHandlingScenario {
         return topics;
     }
 
-    private static HFileMeta convert(final FileGetInfoResponse.FileInfo fi) throws DecoderException {
+    private static HFileMeta convert(final FileGetInfoResponse.FileInfo fi) throws InvalidKeyException {
         return new HFileMeta(
                 fi.getDeleted(),
                 JKey.mapKey(Key.newBuilder().setKeyList(fi.getKeys()).build()),
@@ -388,7 +391,8 @@ public interface TxnHandlingScenario {
         return tokenStore;
     }
 
-    default byte[] extantSchedulingBodyBytes() throws Throwable {
+    default byte[] extantSchedulingBodyBytes()
+            throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException, InvalidKeyException {
         return scheduleCreateTxnWith(
                         Key.getDefaultInstance(),
                         "",
@@ -590,18 +594,18 @@ public interface TxnHandlingScenario {
     AccountID TOKEN_RECEIVER = asAccount(TOKEN_RECEIVER_ID);
 
     NftID KNOWN_TOKEN_NFT = NftID.newBuilder()
-            .setTokenID(KNOWN_TOKEN_WITH_WIPE)
+            .setTokenId(KNOWN_TOKEN_WITH_WIPE)
             .setSerialNumber(1L)
             .build();
     NftID ROYALTY_TOKEN_NFT = NftID.newBuilder()
-            .setTokenID(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)
+            .setTokenId(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK)
             .setSerialNumber(1L)
             .build();
 
     String UNKNOWN_TOKEN_ID = "0.0.666";
     TokenID MISSING_TOKEN = asToken(UNKNOWN_TOKEN_ID);
     NftID MISSING_TOKEN_NFT =
-            NftID.newBuilder().setTokenID(MISSING_TOKEN).setSerialNumber(1L).build();
+            NftID.newBuilder().setTokenId(MISSING_TOKEN).setSerialNumber(1L).build();
 
     KeyTree FIRST_TOKEN_SENDER_KT = withRoot(ed25519());
     KeyTree SECOND_TOKEN_SENDER_KT = withRoot(ed25519());

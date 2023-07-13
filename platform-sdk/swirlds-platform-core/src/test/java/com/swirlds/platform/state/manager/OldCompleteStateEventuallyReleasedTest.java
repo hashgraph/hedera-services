@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,7 +27,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -46,10 +46,8 @@ class OldCompleteStateEventuallyReleasedTest extends AbstractSignedStateManagerT
     // the class file with other tests.
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setSequentialIds(false)
-            .build();
+    private final AddressBook addressBook =
+            new RandomAddressBookGenerator(random).setSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.

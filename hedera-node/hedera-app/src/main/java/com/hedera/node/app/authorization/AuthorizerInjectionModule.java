@@ -16,18 +16,15 @@
 
 package com.hedera.node.app.authorization;
 
-import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
 /** A Dagger module for providing dependencies based on {@link Authorizer}. */
 @Module
 public interface AuthorizerInjectionModule {
-    @Provides
+    @Binds
     @Singleton
-    static Authorizer provideAuthorizer(@NonNull final HapiOpPermissions permissions) {
-        return new AuthorizerImpl(permissions);
-    }
+    Authorizer provideAuthorizer(@NonNull final AuthorizerImpl impl);
 }

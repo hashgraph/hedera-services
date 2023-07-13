@@ -19,9 +19,10 @@ package com.swirlds.platform.network;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import java.io.IOException;
@@ -142,8 +143,8 @@ public class SocketConnection implements Connection {
      * @throws SocketException if there is an error in the underlying protocol, such as a TCP error.
      */
     @Override
-    public void setTimeout(final int timeoutMillis) throws SocketException {
-        socket.setSoTimeout(timeoutMillis);
+    public void setTimeout(final long timeoutMillis) throws SocketException {
+        socket.setSoTimeout(timeoutMillis > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) timeoutMillis);
     }
 
     /**
@@ -190,8 +191,8 @@ public class SocketConnection implements Connection {
         /* track the number of bytes written and read during a sync */
         getDis().getSyncByteCounter().resetCount();
         getDos().getSyncByteCounter().resetCount();
-
-        this.setTimeout(Settings.getInstance().getTimeoutSyncClientSocket());
+        final SocketConfig socketConfig = ConfigurationHolder.getConfigData(SocketConfig.class);
+        this.setTimeout(socketConfig.timeoutSyncClientSocket());
     }
 
     @Override

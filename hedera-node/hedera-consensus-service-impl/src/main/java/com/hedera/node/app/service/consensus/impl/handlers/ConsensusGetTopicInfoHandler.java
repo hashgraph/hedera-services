@@ -25,7 +25,6 @@ import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.QueryHeader;
@@ -124,6 +123,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
      * Provides information about a topic.
      * @param topicID the topic to get information about
      * @param topicStore the topic store
+     * @param config the LedgerConfig
      * @return the information about the topic
      */
     private Optional<ConsensusTopicInfo> infoForTopic(
@@ -142,8 +142,7 @@ public class ConsensusGetTopicInfoHandler extends PaidQueryHandler {
             if (!isEmpty(meta.adminKey())) info.adminKey(meta.adminKey());
             if (!isEmpty(meta.submitKey())) info.submitKey(meta.submitKey());
             info.autoRenewPeriod(Duration.newBuilder().seconds(meta.autoRenewPeriod()));
-            if (meta.autoRenewAccountNumber() != 0)
-                info.autoRenewAccount(AccountID.newBuilder().accountNum(meta.autoRenewAccountNumber()));
+            if (meta.hasAutoRenewAccountId()) info.autoRenewAccount(meta.autoRenewAccountId());
 
             info.ledgerId(config.id());
             return Optional.of(info.build());

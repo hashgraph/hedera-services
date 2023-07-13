@@ -20,29 +20,39 @@ import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryp
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum ScheduleSignScenarios implements TxnHandlingScenario {
     SCHEDULE_SIGN_MISSING_SCHEDULE {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
                     newSignedScheduleSign().signing(UNKNOWN_SCHEDULE).get());
         }
     },
     SCHEDULE_SIGN_KNOWN_SCHEDULE {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
                     newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_ADMIN).get());
         }
 
         @Override
-        public byte[] extantSchedulingBodyBytes() throws Throwable {
+        public byte[] extantSchedulingBodyBytes()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             final var accessor = SignedTxnAccessor.from(newSignedCryptoTransfer()
                     .sansTxnId()
                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
@@ -58,14 +68,18 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
     },
     SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(newSignedScheduleSign()
                     .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
                     .get());
         }
 
         @Override
-        public byte[] extantSchedulingBodyBytes() throws Throwable {
+        public byte[] extantSchedulingBodyBytes()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             final var accessor = SignedTxnAccessor.from(newSignedCryptoTransfer()
                     .sansTxnId()
                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
@@ -81,14 +95,18 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
     },
     SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER_SELF {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(newSignedScheduleSign()
                     .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF)
                     .get());
         }
 
         @Override
-        public byte[] extantSchedulingBodyBytes() throws Throwable {
+        public byte[] extantSchedulingBodyBytes()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             final var accessor = SignedTxnAccessor.from(newSignedCryptoTransfer()
                     .sansTxnId()
                     .transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
@@ -104,7 +122,9 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
     },
     SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(newSignedScheduleSign()
                     .signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
                     .get());

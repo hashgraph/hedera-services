@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

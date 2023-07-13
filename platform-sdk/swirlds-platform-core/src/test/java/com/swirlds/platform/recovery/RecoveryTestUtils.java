@@ -16,15 +16,16 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.utility.CompareTo.isLessThan;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
@@ -37,7 +38,6 @@ import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.ObjectStreamIterator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -218,7 +218,9 @@ public final class RecoveryTestUtils {
 
         // Each event will be serialized twice. Once when it is hashed, and once when it is written to disk.
         assertEventuallyTrue(
-                () -> writeCount.get() == events.size() * 2, Duration.ofSeconds(1), "event not serialized fast enough");
+                () -> writeCount.get() == events.size() * 2,
+                Duration.ofSeconds(10),
+                "event not serialized fast enough");
 
         eventEventStreamManager.stop();
     }

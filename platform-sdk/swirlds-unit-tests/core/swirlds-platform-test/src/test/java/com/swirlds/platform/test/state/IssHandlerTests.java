@@ -16,17 +16,17 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.time.OSTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -68,7 +68,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -115,7 +115,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -168,7 +168,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -217,7 +217,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -263,7 +263,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -317,7 +317,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -360,7 +360,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -407,7 +407,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -461,7 +461,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -511,7 +511,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -558,7 +558,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -612,7 +612,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -666,7 +666,7 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(selfId),
@@ -708,7 +708,7 @@ class IssHandlerTests {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final IssHandler issHandler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
                 new NodeId(0L),

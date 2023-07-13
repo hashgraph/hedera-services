@@ -18,12 +18,11 @@ package com.swirlds.platform.test.consensus;
 
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
@@ -55,7 +54,7 @@ public class TestIntake implements LoadableFromSignedState {
     private int numEventsAdded = 0;
 
     public TestIntake(final AddressBook ab) {
-        this(ab, OSTime.getInstance());
+        this(ab, Time.getCurrent());
     }
 
     public TestIntake(final AddressBook ab, final Time time) {
@@ -63,7 +62,7 @@ public class TestIntake implements LoadableFromSignedState {
     }
 
     public TestIntake(final AddressBook ab, final ConsensusConfig consensusConfig) {
-        this(ab, OSTime.getInstance(), consensusConfig);
+        this(ab, Time.getCurrent(), consensusConfig);
     }
 
     /**

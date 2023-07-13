@@ -30,9 +30,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 
 public class TokenCreateWrapper {
     private final boolean isFungible;
@@ -153,7 +153,7 @@ public class TokenCreateWrapper {
         this.royaltyFees = royaltyFees;
     }
 
-    public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
+    public void setAllInheritedKeysTo(final JKey senderKey) throws InvalidKeyException {
         for (final var tokenKey : tokenKeys) {
             if (tokenKey.key().isShouldInheritAccountKeySet()) {
                 tokenKey.key().setInheritedKey(JKey.mapJKey(senderKey));

@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenFeeScheduleUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
@@ -71,7 +70,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         validator = new CustomFeesValidator();
         subject = new TokenFeeScheduleUpdateHandler(validator);
         givenTxn();
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxCustomFeesAllowed", 1000)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -83,50 +82,65 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update works as expected for fungible token")
     void handleWorksAsExpectedForFungibleToken() {
+        txn = TransactionBody.newBuilder()
+                .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .customFees(List.of(withFixedFee(htsFixedFee), withFractionalFee(fractionalFee)))
+                        .build())
+                .build();
+        given(context.body()).willReturn(txn);
+
         // before fee schedule update, validate no custom fees on the token
         final var originalToken = writableTokenStore.get(fungibleTokenId);
-        assertThat(originalToken.customFees()).isEmpty();
+        assertThat(originalToken.customFees())
+                .isEqualTo(List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee)));
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context);
 
         // validate after fee schedule update fixed and fractional custom fees are added to the token
         assertThat(writableTokenStore.modifiedTokens()).hasSize(1);
-        assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(fungibleTokenNum));
+        assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(fungibleTokenId));
 
         final var expectedToken = writableTokenStore.get(fungibleTokenId);
         assertThat(expectedToken.customFees()).hasSize(2);
         assertThat(expectedToken.customFees())
-                .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(fixedFee)));
+                .hasSameElementsAs(List.of(withFractionalFee(fractionalFee), withFixedFee(htsFixedFee)));
     }
 
     @Test
     @DisplayName("fee schedule update works as expected for non-fungible token")
     void handleWorksAsExpectedForNonFungibleToken() {
-        final var tokenId =
-                TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
+        final var tokenId = nonFungibleTokenId;
         txn = TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
                         .tokenId(tokenId)
-                        .customFees(List.of(withRoyaltyFee(royaltyFee)))
+                        .customFees(List.of(withRoyaltyFee(royaltyFee
+                                .copyBuilder()
+                                .fallbackFee(htsFixedFee)
+                                .build())))
                         .build())
                 .build();
         given(context.body()).willReturn(txn);
 
         // before fee schedule update, validate no custom fees on the token
         final var originalToken = writableTokenStore.get(tokenId);
-        assertThat(originalToken.customFees()).isEmpty();
+        assertThat(originalToken.customFees())
+                .isEqualTo(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee(hbarFixedFee).build())));
         assertThat(writableTokenStore.modifiedTokens()).isEmpty();
 
         subject.handle(context);
 
         // validate after fee schedule update royalty custom fees are added to the token
         assertThat(writableTokenStore.modifiedTokens()).hasSize(1);
-        assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(nonFungibleTokenNum));
+        assertThat(writableTokenStore.modifiedTokens()).hasSameElementsAs(Set.of(tokenId));
 
         final var expectedToken = writableTokenStore.get(nonFungibleTokenId);
         assertThat(expectedToken.customFees()).hasSize(1);
-        assertThat(expectedToken.customFees()).hasSameElementsAs(List.of(withRoyaltyFee(royaltyFee)));
+        assertThat(expectedToken.customFees())
+                .hasSameElementsAs(List.of(withRoyaltyFee(
+                        royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build())));
     }
 
     @Test
@@ -134,10 +148,10 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     void validatesTokenHasFeeScheduleKey() {
         final var tokenWithoutFeeScheduleKey =
                 fungibleToken.copyBuilder().feeScheduleKey((Key) null).build();
-        writableTokenState = MapWritableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(fungibleTokenNum, tokenWithoutFeeScheduleKey)
+        writableTokenState = MapWritableKVState.<TokenID, Token>builder(TOKENS)
+                .value(fungibleTokenId, tokenWithoutFeeScheduleKey)
                 .build();
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
@@ -150,7 +164,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @DisplayName("fee schedule update fails if token does not exist")
     void rejectsInvalidTokenId() {
         writableTokenState = emptyWritableTokenState();
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates);
         given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
 
@@ -162,7 +176,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("fee schedule update fails if custom fees list is too long")
     void failsIfTooManyCustomFees() {
-        final var config = new HederaTestConfigBuilder()
+        final var config = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxCustomFeesAllowed", 1)
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
@@ -188,9 +202,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private void givenTxn() {
         txn = TransactionBody.newBuilder()
                 .tokenFeeScheduleUpdate(TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                        .tokenId(TokenID.newBuilder()
-                                .tokenNum(fungibleTokenNum.longValue())
-                                .build())
+                        .tokenId(fungibleTokenId)
                         .customFees(customFees)
                         .build())
                 .build();

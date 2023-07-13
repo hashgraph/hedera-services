@@ -32,9 +32,9 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.AssertionUtils;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.AssertionUtils;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -50,8 +50,8 @@ import com.swirlds.platform.reconnect.ReconnectHelper;
 import com.swirlds.platform.reconnect.ReconnectLearnerFactory;
 import com.swirlds.platform.reconnect.ReconnectLearnerThrottle;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -60,6 +60,7 @@ import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -232,7 +233,7 @@ public class EmergencyReconnectTests {
                         TestPlatformContextBuilder.create().build(),
                         getStaticThreadManager(),
                         addressBook,
-                        100_000,
+                        Duration.of(100_000, ChronoUnit.MILLIS),
                         mock(ReconnectMetrics.class)));
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
@@ -270,7 +271,7 @@ public class EmergencyReconnectTests {
                 null,
                 reconnectThrottle,
                 signedStateManager,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(FallenBehindManager.class));
@@ -290,7 +291,7 @@ public class EmergencyReconnectTests {
                 emergencyRecoveryManager,
                 mock(ReconnectThrottle.class),
                 mock(SignedStateManager.class),
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(FallenBehindManager.class));
@@ -307,7 +308,6 @@ public class EmergencyReconnectTests {
                 .setAverageWeight(100L)
                 .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
-                .setSequentialIds(false)
                 .build();
     }
 

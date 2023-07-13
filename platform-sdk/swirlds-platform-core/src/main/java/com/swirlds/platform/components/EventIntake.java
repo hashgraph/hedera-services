@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
@@ -36,6 +35,7 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,13 +77,13 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph) {
-        this.selfId = throwArgNull(selfId, "selfId");
-        this.eventLinker = throwArgNull(eventLinker, "eventLinker");
-        this.consensusSupplier = throwArgNull(consensusSupplier, "consensusSupplier");
-        this.addressBook = throwArgNull(addressBook, "addressBook");
-        this.dispatcher = throwArgNull(dispatcher, "dispatcher");
-        this.stats = throwArgNull(stats, "stats");
-        this.shadowGraph = throwArgNull(shadowGraph, "shadowGraph");
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        this.eventLinker = Objects.requireNonNull(eventLinker, "eventLinker must not be null");
+        this.consensusSupplier = Objects.requireNonNull(consensusSupplier, "consensusSupplier must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
+        this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher must not be null");
+        this.stats = Objects.requireNonNull(stats, "stats must not be null");
+        this.shadowGraph = Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
     }
 
     /**

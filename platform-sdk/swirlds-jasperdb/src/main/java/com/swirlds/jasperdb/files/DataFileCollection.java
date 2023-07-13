@@ -16,8 +16,8 @@
 
 package com.swirlds.jasperdb.files;
 
-import static com.swirlds.common.utility.Units.GIBIBYTES_TO_BYTES;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.GIBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.jasperdb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.jasperdb.files.DataFileCommon.byteOffsetFromDataLocation;
 import static com.swirlds.jasperdb.files.DataFileCommon.fileIndexFromDataLocation;

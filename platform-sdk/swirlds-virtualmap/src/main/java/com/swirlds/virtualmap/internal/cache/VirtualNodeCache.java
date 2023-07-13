@@ -1318,8 +1318,11 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private static <K, V> void filterMutations(final ConcurrentArray<Mutation<K, V>> array) {
         final Consumer<Mutation<K, V>> action = mutation -> {
-            if (mutation.next != null) {
-                mutation.next.setFiltered();
+            // local variable is required because mutation.next can be changed by another thread to null
+            // see https://github.com/hashgraph/hedera-services/issues/7046 for the context
+            Mutation<K, V> nextMutation = mutation.next;
+            if (nextMutation != null) {
+                nextMutation.setFiltered();
             }
         };
         try {

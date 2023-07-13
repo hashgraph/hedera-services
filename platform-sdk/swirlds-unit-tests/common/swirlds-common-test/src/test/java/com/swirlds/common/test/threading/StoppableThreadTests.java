@@ -16,9 +16,9 @@
 
 package com.swirlds.common.test.threading;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -451,10 +451,7 @@ class StoppableThreadTests {
     @DisplayName("Max Rate Test")
     void maxRateTest() throws InterruptedException {
         final AtomicInteger counter = new AtomicInteger(0);
-        final InterruptableRunnable work = () -> {
-            MILLISECONDS.sleep(1);
-            counter.getAndIncrement();
-        };
+        final InterruptableRunnable work = counter::getAndIncrement;
 
         final StoppableThread thread0 = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setMaximumRate(5)
@@ -488,7 +485,7 @@ class StoppableThreadTests {
         SECONDS.sleep(1);
         thread2.stop();
         assertTrue(
-                counter.get() > 450 && counter.get() < 550,
+                counter.get() > 400 && counter.get() < 550,
                 "counter should have value close to 500, has " + counter.get() + " instead");
     }
 

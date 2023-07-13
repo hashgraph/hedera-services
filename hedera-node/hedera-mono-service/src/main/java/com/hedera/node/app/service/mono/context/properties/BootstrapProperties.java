@@ -136,7 +136,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_PROFILES_ACTIVE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
@@ -194,9 +193,11 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
@@ -494,7 +495,6 @@ public final class BootstrapProperties implements PropertySource {
             FEES_PERCENT_CONGESTION_MULTIPLIERS,
             FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
             FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER,
-            HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
             TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO,
             TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC,
             HEDERA_TXN_MAX_MEMO_UTF8_BYTES,
@@ -536,6 +536,8 @@ public final class BootstrapProperties implements PropertySource {
             STAKING_REQUIRE_MIN_STAKE_TO_REWARD,
             STAKING_REWARD_RATE,
             STAKING_START_THRESH,
+            STAKING_MAX_STAKE_REWARDED,
+            STAKING_REWARD_BALANCE_THRESHOLD,
             TOKENS_MAX_AGGREGATE_RELS,
             TOKENS_STORE_RELS_ON_DISK,
             TOKENS_MAX_NUM,
@@ -673,7 +675,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(HEDERA_RECORD_STREAM_SIG_FILE_VERSION, AS_INT),
             entry(HEDERA_RECORD_STREAM_QUEUE_CAPACITY, AS_INT),
             entry(HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, AS_INT),
-            entry(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, AS_BOOLEAN),
             entry(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, AS_LONG),
             entry(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, AS_LONG),
             entry(HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, AS_BOOLEAN),
@@ -739,6 +740,8 @@ public final class BootstrapProperties implements PropertySource {
             entry(STAKING_REWARD_RATE, AS_LONG),
             entry(STAKING_START_THRESH, AS_LONG),
             entry(STAKING_SUM_OF_CONSENSUS_WEIGHTS, AS_INT),
+            entry(STAKING_MAX_STAKE_REWARDED, AS_LONG),
+            entry(STAKING_REWARD_BALANCE_THRESHOLD, AS_LONG),
             entry(TOKENS_MAX_AGGREGATE_RELS, AS_LONG),
             entry(TOKENS_STORE_RELS_ON_DISK, AS_BOOLEAN),
             entry(TOKENS_MAX_NUM, AS_LONG),

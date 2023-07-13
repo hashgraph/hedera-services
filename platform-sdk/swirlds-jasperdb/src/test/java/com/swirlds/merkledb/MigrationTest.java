@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -90,5 +92,52 @@ class MigrationTest {
         }
 
         map.release();
+    }
+
+    private static long bytesToLong(byte[] bytes) {
+        long result = 0L;
+        for (byte b : bytes) {
+            result = result * 256 + ((long) b & 0xff);
+        }
+        return result;
+    }
+
+    @Test
+    @Tag(TestQualifierTags.TIME_CONSUMING)
+    @DisplayName("Extract VirtualMap Data Concurrently")
+    void extractDataConcurrentlyTest() throws IOException, InterruptedException {
+
+        final int size = 5_000_000;
+
+        // Build a virtual map.
+        VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> map =
+                new VirtualMap<>("extractDataConcurrentlyTest", constructBuilder());
+
+        final Random random = new Random(42);
+        final byte[] value = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
+        long checkSum = 0L;
+        for (int i = 0; i < size; i++) {
+            if ((i + 1) % (size / 100) == 0) {
+                // Make a copy of the map in order to allow things to be flushed to disk
+                VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> copy = map.copy();
+                map.release();
+                map = copy;
+            }
+
+            random.nextBytes(value);
+            map.put(new ExampleLongKeyFixedSize(i), new ExampleFixedSizeVirtualValue(i, value));
+            checkSum += bytesToLong(value);
+        }
+
+        // Migrate the last copy concurrently
+        final AtomicLong checkSum2 = new AtomicLong(0L);
+        VirtualMapMigration.extractVirtualMapDataC(
+                getStaticThreadManager(),
+                map,
+                (final Pair<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> pair) -> {
+                    checkSum2.addAndGet(bytesToLong(pair.getValue().getData()));
+                },
+                32);
+        assertEquals(checkSum, checkSum2.get());
     }
 }

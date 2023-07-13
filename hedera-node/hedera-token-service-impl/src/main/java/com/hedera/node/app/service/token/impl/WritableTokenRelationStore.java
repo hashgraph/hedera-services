@@ -20,13 +20,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
     /** The underlying data storage class that holds the token data. */
-    private final WritableKVState<EntityNumPair, TokenRelation> tokenRelState;
+    private final WritableKVState<EntityIDPair, TokenRelation> tokenRelState;
 
     /**
      * Create a new {@link WritableTokenRelationStore} instance.
@@ -56,10 +56,12 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation - the tokenRelation to be persisted
      */
     public void put(@NonNull final TokenRelation tokenRelation) {
-        requireNonNull(tokenRelState)
-                .put(
-                        EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()),
-                        Objects.requireNonNull(tokenRelation));
+        tokenRelState.put(
+                EntityIDPair.newBuilder()
+                        .accountId(tokenRelation.accountId())
+                        .tokenId(tokenRelation.tokenId())
+                        .build(),
+                Objects.requireNonNull(tokenRelation));
     }
 
     /**
@@ -68,8 +70,10 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param tokenRelation the {@code TokenRelation} to be removed
      */
     public void remove(@NonNull final TokenRelation tokenRelation) {
-        requireNonNull(tokenRelState)
-                .remove(EntityNumPair.fromLongs(tokenRelation.accountNumber(), tokenRelation.tokenNumber()));
+        tokenRelState.remove(EntityIDPair.newBuilder()
+                .accountId(tokenRelation.accountId())
+                .tokenId(tokenRelation.tokenId())
+                .build());
     }
 
     /**
@@ -79,22 +83,21 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
      * @param accountId - the number of the account to be retrieved
      * @param tokenId   - the number of the token to be retrieved
      */
-    @NonNull
-    public Optional<TokenRelation> getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+    @Nullable
+    public TokenRelation getForModify(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
 
-        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return Optional.empty();
+        if (AccountID.DEFAULT.equals(accountId) || TokenID.DEFAULT.equals(tokenId)) return null;
 
-        final var token = Objects.requireNonNull(tokenRelState)
-                .getForModify(EntityNumPair.fromLongs(accountId.accountNum(), tokenId.tokenNum()));
-        return Optional.ofNullable(token);
+        return tokenRelState.getForModify(
+                EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
     }
 
     /**
      * @return the set of token relations modified in existing state
      */
-    public Set<EntityNumPair> modifiedTokens() {
+    public Set<EntityIDPair> modifiedTokens() {
         return tokenRelState.modifiedKeys();
     }
 }

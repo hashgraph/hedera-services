@@ -35,6 +35,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,10 +55,27 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
+    private static Level currentLogLevel;
     /** Temporary directory provided by JUnit */
     @SuppressWarnings("unused")
     @TempDir
     Path testDirectory;
+
+    @BeforeAll
+    public static void setup() {
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final Configuration config = ctx.getConfiguration();
+        final LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+        currentLogLevel = loggerConfig.getLevel();
+        // To prevent excessive logging we reduce the log level to WARN for this test.
+        // See https://github.com/hashgraph/hedera-services/issues/7083 for the context
+        loggerConfig.setLevel(Level.WARN);
+    }
+
+    @AfterAll
+    public static void cleanUp() {
+        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, currentLogLevel);
+    }
 
     /**
      * Hammers the {@link MemoryIndexDiskKeyValueStore} looking for any race conditions or weakness
@@ -440,21 +465,25 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
         protected void doWork() throws Exception {
             if (iteration % 100 == 0) {
                 // Do a big merge that includes everything
-                coll.merge(list -> list, 2);
+                coll.merge(list -> list, 2, null, null);
             } else if (iteration % 25 == 0) {
                 // Do a medium merge that just has medium size files
                 coll.merge(
                         list -> list.stream()
                                 .filter(file -> file.getSize() > 1_000_000 && file.getSize() < 32_000_000)
                                 .collect(Collectors.toList()),
-                        2);
+                        2,
+                        null,
+                        null);
             } else if (iteration % 5 == 0) {
                 // Do a small merge
                 coll.merge(
                         list -> list.stream()
                                 .filter(file -> file.getSize() < 1_000_000)
                                 .collect(Collectors.toList()),
-                        2);
+                        2,
+                        null,
+                        null);
             } else {
                 MILLISECONDS.sleep(10);
             }

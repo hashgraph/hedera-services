@@ -25,7 +25,6 @@ module com.hedera.node.app.hapi.utils {
     requires transitive org.apache.commons.lang3;
     requires com.hedera.node.app.service.evm;
     requires com.fasterxml.jackson.databind;
-    requires com.github.spotbugs.annotations;
     requires com.google.common;
     requires com.sun.jna;
     requires org.apache.commons.codec;
@@ -34,4 +33,5 @@ module com.hedera.node.app.hapi.utils {
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.secp256k1;
+    requires static com.github.spotbugs.annotations;
 }

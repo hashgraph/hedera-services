@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.meta;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -25,6 +26,8 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -86,6 +89,12 @@ public class MonoHandleContext implements HandleContext {
         return txBody;
     }
 
+    @NonNull
+    @Override
+    public AccountID payer() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -93,6 +102,12 @@ public class MonoHandleContext implements HandleContext {
     @NonNull
     public Configuration configuration() {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Nullable
+    @Override
+    public Key payerKey() {
+        return null;
     }
 
     /**
@@ -121,17 +136,24 @@ public class MonoHandleContext implements HandleContext {
         return expiryValidator;
     }
 
+    @NonNull
+    @Override
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
-    @Nullable
+    @NonNull
     public SignatureVerification verificationFor(@NonNull Key key) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    @Nullable
+    @NonNull
     public SignatureVerification verificationFor(@NonNull Bytes evmAlias) {
         throw new UnsupportedOperationException("Not yet implemented");
     }

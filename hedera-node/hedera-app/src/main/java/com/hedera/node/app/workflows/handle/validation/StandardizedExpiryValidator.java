@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -44,7 +45,10 @@ import javax.inject.Inject;
  * An implementation of {@link ExpiryValidator} that encapsulates the current policies
  * for validating expiry metadata of create and update transactions, <i>without</i> using
  * any {@code mono-service} components.
+ *
+ * @deprecated Use {@link ExpiryValidatorImpl} instead.
  */
+@Deprecated(forRemoval = true)
 public class StandardizedExpiryValidator implements ExpiryValidator {
     private final Consumer<Id> idValidator;
     private final LongSupplier consensusSecondNow;
@@ -69,11 +73,12 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public ExpiryMeta resolveCreationAttempt(final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMeta) {
-        if (creationMeta.hasAutoRenewNum()) {
-            validateAutoRenewAccount(
-                    creationMeta.autoRenewShard(), creationMeta.autoRenewRealm(), creationMeta.autoRenewNum());
+    public ExpiryMeta resolveCreationAttempt(
+            final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMeta) {
+        if (creationMeta.hasAutoRenewAccountId()) {
+            validateAutoRenewAccount(creationMeta.autoRenewAccountId());
         }
 
         final var thisSecond = consensusSecondNow.getAsLong();
@@ -90,17 +95,18 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
         if (creationMeta.hasAutoRenewPeriod()) {
             attributeValidator.validateAutoRenewPeriod(creationMeta.autoRenewPeriod());
         }
-        return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewNum());
+        return new ExpiryMeta(effectiveExpiry, creationMeta.autoRenewPeriod(), creationMeta.autoRenewAccountId());
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public ExpiryMeta resolveUpdateAttempt(final ExpiryMeta currentMeta, final ExpiryMeta updateMeta) {
-        if (updateMeta.hasAutoRenewNum()) {
-            validateAutoRenewAccount(
-                    updateMeta.autoRenewShard(), updateMeta.autoRenewRealm(), updateMeta.autoRenewNum());
+    public ExpiryMeta resolveUpdateAttempt(
+            @NonNull final ExpiryMeta currentMeta, @NonNull final ExpiryMeta updateMeta) {
+        if (updateMeta.hasAutoRenewAccountId()) {
+            validateAutoRenewAccount(updateMeta.autoRenewAccountId());
         }
 
         var resolvedExpiry = currentMeta.expiry();
@@ -116,20 +122,21 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
             resolvedAutoRenewPeriod = updateMeta.autoRenewPeriod();
         }
 
-        var resolvedAutoRenewNum = currentMeta.autoRenewNum();
-        if (updateMeta.hasAutoRenewNum()) {
+        var resolvedAutoRenewId = currentMeta.autoRenewAccountId();
+        if (updateMeta.hasAutoRenewAccountId()) {
             // If just now adding an auto-renew account, confirm the resolved auto-renew period is valid
-            if (!currentMeta.hasAutoRenewNum()) {
+            if (!currentMeta.hasAutoRenewAccountId()) {
                 attributeValidator.validateAutoRenewPeriod(resolvedAutoRenewPeriod);
             }
-            resolvedAutoRenewNum = updateMeta.autoRenewNum();
+            resolvedAutoRenewId = updateMeta.autoRenewAccountId();
         }
-        return new ExpiryMeta(resolvedExpiry, resolvedAutoRenewPeriod, resolvedAutoRenewNum);
+        return new ExpiryMeta(resolvedExpiry, resolvedAutoRenewPeriod, resolvedAutoRenewId);
     }
 
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
     public ResponseCodeEnum expirationStatus(
             @NonNull final EntityType entityType,
@@ -159,7 +166,7 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
      * @return whether the entity has a complete auto-renew configuration
      */
     private boolean hasCompleteAutoRenewSpec(
-            final boolean entityCanSelfFundRenewal, final ExpiryMeta creationMetadata) {
+            final boolean entityCanSelfFundRenewal, @NonNull final ExpiryMeta creationMetadata) {
         return creationMetadata.hasFullAutoRenewSpec()
                 || (!creationMetadata.hasExplicitExpiry() && entityCanSelfFundRenewal);
     }
@@ -167,18 +174,18 @@ public class StandardizedExpiryValidator implements ExpiryValidator {
     /**
      * Helper to validate that the given account number is a valid auto-renew account.
      *
-     * @param shard the account shard to validate
-     * @param realm the account realm to validate
-     * @param num the account number to validate
+     * @param accountID the account id to validate
      * @throws HandleException if the account number is invalid
      */
-    private void validateAutoRenewAccount(final long shard, final long realm, final long num) {
-        validateTrue(shard == numbers.shard() && realm == numbers.realm(), INVALID_AUTORENEW_ACCOUNT);
-        if (num == 0L) {
+    private void validateAutoRenewAccount(final AccountID accountID) {
+        validateTrue(
+                accountID.shardNum() == numbers.shard() && accountID.realmNum() == numbers.realm(),
+                INVALID_AUTORENEW_ACCOUNT);
+        if (accountID.accountNum() == 0L) {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
-        final var autoRenewId = new Id(numbers.shard(), numbers.realm(), num);
+        final var autoRenewId = new Id(numbers.shard(), numbers.realm(), accountID.accountNum());
         idValidator.accept(autoRenewId);
     }
 

@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.Utilities.isMajority;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
@@ -31,14 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.time.OSTime;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
@@ -79,12 +79,11 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         dispatchBuilder.registerObserver(this, SelfIssTrigger.class, (a, b, c) -> fail.set(true));
@@ -118,7 +117,6 @@ class ConsensusHashManagerTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -182,8 +180,8 @@ class ConsensusHashManagerTests {
         }
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicBoolean fail = new AtomicBoolean(false);
         final AtomicInteger issCount = new AtomicInteger(0);
@@ -317,13 +315,12 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -381,13 +378,12 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         dispatchBuilder.registerObserver(
                 this, CatastrophicIssTrigger.class, (a, b) -> fail("did not expect catastrophic ISS"));
@@ -431,13 +427,12 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -521,13 +516,12 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());
@@ -584,13 +578,12 @@ class ConsensusHashManagerTests {
                 .setSize(100)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
-                .setSequentialIds(false)
                 .build();
         final NodeId selfId = addressBook.getNodeId(0);
 
         final DispatchBuilder dispatchBuilder = new DispatchBuilder(getDefaultDispatchConfiguration());
-        final ConsensusHashManager manager = new ConsensusHashManager(
-                OSTime.getInstance(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
+        final ConsensusHashManager manager =
+                new ConsensusHashManager(Time.getCurrent(), dispatchBuilder, addressBook, consensusConfig, stateConfig);
 
         final AtomicInteger issCount = new AtomicInteger();
         dispatchBuilder.registerObserver(this, CatastrophicIssTrigger.class, (a, b) -> issCount.getAndIncrement());

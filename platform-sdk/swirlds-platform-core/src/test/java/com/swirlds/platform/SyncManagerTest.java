@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.EventCreationRuleResponse.CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.DONT_CREATE;
 import static com.swirlds.common.system.EventCreationRuleResponse.PASS;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -30,12 +31,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
@@ -46,6 +51,8 @@ import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
+import java.util.Random;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -71,6 +78,7 @@ public class SyncManagerTest {
         public SyncManagerImpl syncManager;
         public CriticalQuorum criticalQuorum;
         public DummyEventQueue eventQueue;
+        public Configuration configuration;
 
         public SyncManagerTestData() {
             this(spy(SwirldStateManager.class));
@@ -79,8 +87,11 @@ public class SyncManagerTest {
         public SyncManagerTestData(final SwirldStateManager swirldStateManager) {
             freezeManager = mock(FreezeManager.class);
             startUpEventFrozenManager = mock(StartUpEventFrozenManager.class);
-            hashgraph = new DummyHashgraph(0);
-            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), null, null));
+            final Random random = getRandomPrintSeed();
+            hashgraph = new DummyHashgraph(random, 0);
+            final TransactionConfig transactionConfig =
+                    new TestConfigBuilder().getOrCreateConfig().getConfigData(TransactionConfig.class);
+            eventTransactionPool = spy(new EventTransactionPool(new NoOpMetrics(), transactionConfig, null));
 
             this.swirldStateManager = swirldStateManager;
 
@@ -110,10 +121,13 @@ public class SyncManagerTest {
                     return null;
                 }
             };
-            final ReconnectConfig config = new TestConfigBuilder()
+            configuration = new TestConfigBuilder()
                     .withValue("reconnect.fallenBehindThreshold", "0.25")
-                    .getOrCreateConfig()
-                    .getConfigData(ReconnectConfig.class);
+                    .withValue("event.eventIntakeQueueThrottleSize", "100")
+                    .withValue("event.staleEventPreventionThreshold", "10")
+                    .getOrCreateConfig();
+            final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+            final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
                     new NoOpMetrics(),
@@ -123,15 +137,19 @@ public class SyncManagerTest {
                     new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),
                     criticalQuorum,
                     hashgraph.getAddressBook(),
-                    new FallenBehindManagerImpl(addressBook, selfId, connectionGraph, () -> {}, () -> {}, config));
+                    new FallenBehindManagerImpl(
+                            addressBook, selfId, connectionGraph, () -> {}, () -> {}, reconnectConfig),
+                    eventConfig);
         }
     }
 
-    protected void resetTestSettings() {
-        Settings.getInstance().setEventIntakeQueueThrottleSize(100);
-        Settings.getInstance().setMaxIncomingSyncsInc(10);
-        Settings.getInstance().setMaxOutgoingSyncs(10);
-        Settings.getInstance().setStaleEventPreventionThreshold(10);
+    @BeforeAll
+    static void beforeAll() {
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("sync.maxIncomingSyncsInc", 10)
+                .withValue("sync.maxOutgoingSyncs", 10)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
     }
 
     /**
@@ -141,7 +159,6 @@ public class SyncManagerTest {
     @Order(0)
     void basicTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         final int[] neighbors = test.connectionGraph.getNeighbors(0);
 
@@ -176,7 +193,7 @@ public class SyncManagerTest {
         }
 
         // add the report that will go over the [fallenBehindThreshold]
-        test.syncManager.reportFallenBehind(new NodeId(neighbors[10]));
+        test.syncManager.reportFallenBehind(test.addressBook.getNodeId(neighbors[10]));
 
         // we should now say we have fallen behind
         assertTrue(test.syncManager.hasFallenBehind());
@@ -195,7 +212,6 @@ public class SyncManagerTest {
     @Order(1)
     void shouldAcceptSyncTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         // We should accept a sync if the event queue is empty and we aren't exceeding the maximum number of syncs
         test.hashgraph.eventIntakeQueueSize = 0;
@@ -217,7 +233,6 @@ public class SyncManagerTest {
     @Order(2)
     void shouldInitiateSyncTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
 
         // It is ok to initiate a sync if the intake queue is not full.
         test.hashgraph.eventIntakeQueueSize = 0;
@@ -235,7 +250,6 @@ public class SyncManagerTest {
     @Order(3)
     void getNeighborsToCall() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId selfId = test.hashgraph.selfId;
         final NodeId firstNode = addressBook.getNodeId(0);
@@ -261,7 +275,6 @@ public class SyncManagerTest {
     @Order(5)
     void shouldCreateEventTest() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
@@ -299,10 +312,7 @@ public class SyncManagerTest {
     @Test
     @Order(7)
     void shouldCreateEventFreeze() {
-        resetTestSettings();
-
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
@@ -333,8 +343,6 @@ public class SyncManagerTest {
     @Order(8)
     void shouldCreateEventFallenBehind() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
-
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId OTHER_ID = addressBook.getNodeId(1);
 
@@ -350,7 +358,6 @@ public class SyncManagerTest {
     @Test
     @Order(9)
     void shouldCreateEventThrottled() {
-        resetTestSettings();
         final int eventsRead = 0;
         final int eventsWritten = 0;
 
@@ -385,11 +392,10 @@ public class SyncManagerTest {
     @Order(10)
     void shouldCreateEventLargeRead() {
         final SyncManagerTestData test = new SyncManagerTestData();
-        resetTestSettings();
-
         final AddressBook addressBook = test.hashgraph.getAddressBook();
         final NodeId ID = addressBook.getNodeId(0);
         final NodeId OTHER_ID = addressBook.getNodeId(1);
+        final EventConfig config = test.configuration.getConfigData(EventConfig.class);
 
         // If events read is too large then do not create an event
         test.hashgraph.isInCriticalQuorum.put(ID, true);
@@ -397,7 +403,7 @@ public class SyncManagerTest {
                 test.syncManager.shouldCreateEvent(
                         OTHER_ID,
                         false,
-                        Settings.getInstance().getStaleEventPreventionThreshold()
+                        config.staleEventPreventionThreshold()
                                         * test.hashgraph.getAddressBook().getSize()
                                 + 1,
                         0),

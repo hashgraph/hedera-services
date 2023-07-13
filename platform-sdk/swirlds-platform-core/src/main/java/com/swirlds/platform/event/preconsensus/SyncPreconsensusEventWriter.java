@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
 import static com.swirlds.common.units.DataUnit.UNIT_BYTES;
 import static com.swirlds.common.units.DataUnit.UNIT_MEGABYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -139,8 +139,8 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     public SyncPreconsensusEventWriter(
             @NonNull final PlatformContext platformContext, @NonNull final PreconsensusEventFileManager fileManager) {
 
-        throwArgNull(platformContext, "platformContext");
-        throwArgNull(fileManager, "fileManager");
+        Objects.requireNonNull(platformContext, "platformContext must not be null");
+        Objects.requireNonNull(fileManager, "fileManager must not be null");
 
         final PreconsensusEventStreamConfig config =
                 platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
@@ -213,6 +213,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
         final PreconsensusEventFile file = fileManager.getNextFileDescriptor(0, 0, true);
 
         try {
+            Files.createDirectories(file.getPath().getParent());
             Files.createFile(file.getPath());
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to create file to mark discontinuity", e);
@@ -256,7 +257,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      */
     @Override
     public boolean isEventDurable(@NonNull final EventImpl event) {
-        throwArgNull(event, "event");
+        Objects.requireNonNull(event, "event must not be null");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             // Stale events are not written to disk.
             return false;
@@ -269,7 +270,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      */
     @Override
     public void waitUntilDurable(@NonNull final EventImpl event) throws InterruptedException {
-        throwArgNull(event, "event");
+        Objects.requireNonNull(event, "event must not be null");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }
@@ -282,8 +283,8 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
     @Override
     public boolean waitUntilDurable(@NonNull final EventImpl event, @NonNull final Duration timeToWait)
             throws InterruptedException {
-        throwArgNull(event, "event");
-        throwArgNull(timeToWait, "timeToWait");
+        Objects.requireNonNull(event, "event must not be null");
+        Objects.requireNonNull(timeToWait, "timeToWait must not be null");
         if (event.getStreamSequenceNumber() == EventImpl.STALE_EVENT_STREAM_SEQUENCE_NUMBER) {
             throw new IllegalStateException("Event is stale and will never be durable");
         }

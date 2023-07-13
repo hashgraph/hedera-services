@@ -28,6 +28,7 @@ import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +41,7 @@ public class ReconnectProtocol implements Protocol {
     private final NodeId peerId;
     private final ReconnectThrottle teacherThrottle;
     private final Supplier<ReservedSignedState> lastCompleteSignedState;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
     private final SignedStateValidator validator;
@@ -64,7 +65,7 @@ public class ReconnectProtocol implements Protocol {
             final NodeId peerId,
             final ReconnectThrottle teacherThrottle,
             final Supplier<ReservedSignedState> lastCompleteSignedState,
-            final int reconnectSocketTimeout,
+            final Duration reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController,
             final SignedStateValidator validator,
@@ -122,15 +123,7 @@ public class ReconnectProtocol implements Protocol {
             return false;
         }
 
-        if (!teacherState.get().getState().isInitialized()) {
-            teacherState.close();
-            teacherState = null;
-            logger.warn(
-                    RECONNECT.getMarker(),
-                    "Rejecting reconnect request from node {} " + "due to lack of an initialized signed state.",
-                    peerId);
-            return false;
-        } else if (!teacherState.get().isComplete()) {
+        if (!teacherState.get().isComplete()) {
             // this is only possible if signed state manager violates its contractual obligations
             teacherState.close();
             teacherState = null;

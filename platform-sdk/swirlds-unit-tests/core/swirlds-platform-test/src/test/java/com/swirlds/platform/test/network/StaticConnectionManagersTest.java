@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.connectivity.OutboundConnectionCreator;
@@ -62,7 +62,6 @@ class StaticConnectionManagersTest {
             return new FakeConnection(selfId, peerId);
         });
         for (final Boolean unidirectional : List.of(true, false)) {
-
             final StaticTopology topology = new StaticTopology(addressBook, selfId, numNeighbors, unidirectional);
             final StaticConnectionManagers managers = new StaticConnectionManagers(topology, connectionCreator);
             final List<NodeId> neighbors = topology.getNeighbors();

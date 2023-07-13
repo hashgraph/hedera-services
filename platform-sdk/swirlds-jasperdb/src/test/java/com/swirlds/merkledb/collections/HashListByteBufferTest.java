@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,8 +74,8 @@ class HashListByteBufferTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
 

@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.file.File;
@@ -97,9 +98,7 @@ public class FileCreateHandler implements TransactionHandler {
                 expiry,
                 NA,
                 // Shard and realm will be ignored if num is NA
-                NA,
-                NA,
-                NA);
+                AccountID.newBuilder().shardNum(NA).realmNum(NA).accountNum(NA).build());
 
         try {
             final var effectiveExpiryMeta =
@@ -110,15 +109,19 @@ public class FileCreateHandler implements TransactionHandler {
             builder.memo(fileCreateTransactionBody.memo());
 
             builder.keys(fileCreateTransactionBody.keys());
-            builder.fileNumber(handleContext.newEntityNum());
+            final var fileId = FileID.newBuilder()
+                    .fileNum(handleContext.newEntityNum())
+                    .shardNum(fileCreateTransactionBody.shardIDOrThrow().shardNum())
+                    .realmNum(fileCreateTransactionBody.realmIDOrThrow().realmNum())
+                    .build();
+            builder.fileId(fileId);
             validateContent(PbjConverter.asBytes(fileCreateTransactionBody.contents()), fileServiceConfig);
             builder.contents(fileCreateTransactionBody.contents());
 
             final var file = builder.build();
             fileStore.put(file);
 
-            final var fileID = FileID.newBuilder().fileNum(file.fileNumber()).build();
-            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileID);
+            handleContext.recordBuilder(CreateFileRecordBuilder.class).fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
                 // Since for some reason CreateTransactionBody does not have an expiration time,

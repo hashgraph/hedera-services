@@ -34,7 +34,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenKycStatus;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountDetails;
 import com.hedera.hapi.node.token.GetAccountDetailsQuery;
 import com.hedera.hapi.node.token.GetAccountDetailsResponse;
@@ -43,7 +42,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -195,21 +193,14 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             ReadableTokenStore readableTokenStore,
             ReadableTokenRelationStore tokenRelationStore) {
         final var tokenRelationshipList = new ArrayList<TokenRelationship>();
-        var tokenNum = account.headTokenNumber();
+        var tokenId = TokenID.newBuilder().tokenNum(account.headTokenNumber()).build();
         int count = 0;
 
-        while (tokenNum != 0 && count <= maxRelsPerInfoQuery) {
-            final Optional<TokenRelation> optionalTokenRelation = tokenRelationStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
-                    TokenID.newBuilder().tokenNum(tokenNum).build());
-            if (optionalTokenRelation.isPresent()) {
-                final var tokenId = TokenID.newBuilder()
-                        .shardNum(StaticProperties.getShard())
-                        .realmNum(StaticProperties.getRealm())
-                        .tokenNum(tokenNum)
-                        .build();
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count <= maxRelsPerInfoQuery) {
+            final var tokenRelation = tokenRelationStore.get(
+                    AccountID.newBuilder().accountNum(account.accountNumber()).build(), tokenId);
+            if (tokenRelation != null) {
                 final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
-                final var tokenRelation = optionalTokenRelation.get();
                 if (token != null) {
                     final TokenRelationship tokenRelationship = TokenRelationship.newBuilder()
                             .tokenId(tokenId)
@@ -226,7 +217,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
                             .build();
                     tokenRelationshipList.add(tokenRelationship);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenId = tokenRelation.nextToken();
             } else {
                 break;
             }

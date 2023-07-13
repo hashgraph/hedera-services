@@ -32,12 +32,6 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 @ExtendWith(SystemStubsExtension.class)
 class ConfigProviderImplTest {
 
-    @Test
-    void testNullConfig() {
-        // then
-        assertThatThrownBy(() -> new ConfigProviderImpl(null)).isInstanceOf(NullPointerException.class);
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void testInitialConfig(final boolean isGenesis) {

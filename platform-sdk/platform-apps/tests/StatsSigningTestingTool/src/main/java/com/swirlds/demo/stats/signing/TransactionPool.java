@@ -20,16 +20,20 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.LogMarker.ADV_CRYPTO_SYSTEM;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.demo.stats.signing.algorithms.ExtendedSignature;
 import com.swirlds.demo.stats.signing.algorithms.SigningAlgorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,7 +72,7 @@ final class TransactionPool {
 
     private final Map<Byte, SigningAlgorithm> activeAlgorithms;
 
-    private final long nodeId;
+    private final NodeId nodeId;
 
     /**
      * Constructs a TransactionPool instance with a fixed pool size, fixed transaction size, and whether to pre-sign
@@ -85,11 +89,11 @@ final class TransactionPool {
      * 		if the {@code poolSize} or the {@code transactionSize} parameters are less than one (1)
      */
     TransactionPool(
-            final long nodeId,
+            @NonNull final NodeId nodeId,
             final int poolSize,
             final int transactionSize,
             final boolean signed,
-            final SigningAlgorithm... enabledAlgorithms) {
+            @Nullable final SigningAlgorithm... enabledAlgorithms) {
         if (poolSize < 1) {
             throw new IllegalArgumentException("poolSize");
         }
@@ -101,7 +105,7 @@ final class TransactionPool {
         this.random = new Random();
         this.signed = signed;
 
-        this.nodeId = nodeId;
+        this.nodeId = Objects.requireNonNull(nodeId);
         this.transactionSize = transactionSize;
         this.transactions = new byte[poolSize][];
         this.enabledAlgorithms = new ArrayList<>();
@@ -143,7 +147,7 @@ final class TransactionPool {
 
         final List<SigningAlgorithm> algorithms = new ArrayList<>(this.activeAlgorithms.values());
         int lastChosenAlg = 0;
-        long transactionId = nodeId * transactions.length;
+        long transactionId = nodeId.id() * transactions.length;
 
         for (int i = 0; i < transactions.length; i++) {
             final byte[] data = new byte[transactionSize];

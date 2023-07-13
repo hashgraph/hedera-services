@@ -23,8 +23,6 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEventDescriptor;
-import com.swirlds.platform.gossip.chatter.protocol.messages.EventDescriptor;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -36,7 +34,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
-    private ChatterEventDescriptor descriptor;
+    private EventDescriptor descriptor;
     private Instant timeReceived;
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
@@ -92,6 +90,9 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     @Override
     public EventDescriptor getDescriptor() {
+        if (descriptor == null) {
+            throw new IllegalStateException("Can not get descriptor until event has been hashed");
+        }
         return descriptor;
     }
 
@@ -101,7 +102,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     public void buildDescriptor() {
         this.descriptor =
-                new ChatterEventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
+                new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
     }
 
     /**

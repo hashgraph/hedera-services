@@ -19,9 +19,10 @@ package com.swirlds.common.system.events;
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -214,7 +215,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        deserialize(in, version, SettingsCommon.maxTransactionCountPerEvent);
+        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
+        deserialize(in, version, transactionConfig.maxTransactionCountPerEvent());
     }
 
     public void deserialize(

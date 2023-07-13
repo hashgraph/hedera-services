@@ -45,6 +45,11 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
 
     private static final long CLASS_ID = 0x1f89d0c43a8c08bdL;
 
+    /**
+     * The round of the genesis state.
+     */
+    public static final long GENESIS_ROUND = 0;
+
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
         public static final int EPOCH_HASH = 2;
@@ -64,7 +69,7 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      * (genesis state) has a round of 0 because the first round is round defined as round 1, and the genesis state is
      * before any transactions are handled.
      */
-    private long round;
+    private long round = GENESIS_ROUND;
 
     /**
      * running hash of the hashes of all consensus events have there been throughout all of history, up through the
