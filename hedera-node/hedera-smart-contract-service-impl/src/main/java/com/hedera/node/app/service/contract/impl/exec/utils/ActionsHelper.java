@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.hapi.streams.CallOperationType.OP_UNKNOWN;
+import static com.hedera.hapi.streams.ContractActionType.NO_ACTION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractAction;
@@ -29,7 +32,7 @@ import java.util.function.Function;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
- * Helper class for creating and validating {@link ContractAction}s.
+ * Helper class for pretty-printing, validating, and creating synthetic {@link ContractAction}s.
  */
 public class ActionsHelper {
     private static final Bytes MISSING_ADDRESS_ERROR = Bytes.wrap("INVALID_SOLIDITY_ADDRESS".getBytes(UTF_8));
@@ -60,7 +63,14 @@ public class ActionsHelper {
      * @return whether the given action is valid
      */
     public boolean isValid(@NonNull final ContractAction action) {
-        throw new AssertionError("Not implemented");
+        var ok = true;
+        ok &= null != action.callType() && NO_ACTION != action.callType();
+        ok &= 1 == countNonNulls(action.callingAccount(), action.callingContract());
+        ok &= null != action.input();
+        ok &= 1 >= countNonNulls(action.recipientAccount(), action.recipientContract(), action.targetedAddress());
+        ok &= 1 == countNonNulls(action.output(), action.revertReason(), action.error());
+        ok &= null != action.callOperationType() && OP_UNKNOWN != action.callOperationType();
+        return ok;
     }
 
     /**
@@ -102,5 +112,15 @@ public class ActionsHelper {
 
     private ContractID contractIdWith(final long num) {
         return ContractID.newBuilder().contractNum(num).build();
+    }
+
+    private static int countNonNulls(@NonNull final Object... objs) {
+        var count = 0;
+        for (var obj : requireNonNull(objs)) {
+            if (null != obj) {
+                count++;
+            }
+        }
+        return count;
     }
 }

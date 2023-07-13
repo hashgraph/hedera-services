@@ -165,7 +165,6 @@ class ActionStackTest {
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
-        given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS);
 
         subject.finalizeLastActionIn(parentFrame, false);
 
@@ -434,8 +433,6 @@ class ActionStackTest {
 
     @Test
     void tracksIntermediateCallAsExpected() {
-        givenResolvableEvmAddress();
-
         given(operation.getOpcode()).willReturn(0xF1);
         given(parentFrame.getCurrentOperation()).willReturn(operation);
         given(parentFrame.getMessageFrameStack()).willReturn(frameStack);
@@ -449,6 +446,8 @@ class ActionStackTest {
         given(childFrame.getMessageStackDepth()).willReturn(STACK_DEPTH);
         given(childFrame.getContractAddress()).willReturn(EIP_1014_ADDRESS);
         given(childFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(EIP_1014_ADDRESS)).willReturn(account);
+        given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
 
         subject.pushActionOfIntermediate(parentFrame);
 

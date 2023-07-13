@@ -22,7 +22,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * Two Hedera-specific extensions to the {@link OperationTracer} interface.
+ * The Hedera-specific extensions to the {@link OperationTracer} interface.
  */
 public interface HederaEvmTracer extends OperationTracer {
     /**

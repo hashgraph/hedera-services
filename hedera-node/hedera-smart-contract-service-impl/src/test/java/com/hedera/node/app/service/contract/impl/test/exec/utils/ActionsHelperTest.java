@@ -22,6 +22,8 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
@@ -47,6 +49,55 @@ class ActionsHelperTest {
     private ProxyWorldUpdater worldUpdater;
 
     private final ActionsHelper subject = new ActionsHelper();
+
+    @Test
+    void isValidWithAllFieldsSet() {
+        assertTrue(subject.isValid(CALL_ACTION));
+    }
+
+    @Test
+    void invalidWithMissingCallType() {
+        assertFalse(subject.isValid(CALL_ACTION.copyBuilder().callType(null).build()));
+        assertFalse(subject.isValid(
+                CALL_ACTION.copyBuilder().callType(ContractActionType.NO_ACTION).build()));
+    }
+
+    @Test
+    void invalidWithMissingCallOperationType() {
+        assertFalse(subject.isValid(
+                CALL_ACTION.copyBuilder().callOperationType(null).build()));
+        assertFalse(subject.isValid(CALL_ACTION
+                .copyBuilder()
+                .callOperationType(CallOperationType.OP_UNKNOWN)
+                .build()));
+    }
+
+    @Test
+    void mustHaveCallingAccountOrContract() {
+        assertFalse(subject.isValid(
+                ContractAction.newBuilder().callType(ContractActionType.CALL).build()));
+    }
+
+    @Test
+    void mustHaveNonNullInput() {
+        assertFalse(subject.isValid(CALL_ACTION.copyBuilder().input(null).build()));
+    }
+
+    @Test
+    void isNotRequiredToHaveRecipientAccountOrContractOrTargetedAddress() {
+        assertTrue(subject.isValid(
+                CALL_ACTION.copyBuilder().recipientContract((ContractID) null).build()));
+        assertTrue(subject.isValid(CALL_ACTION
+                .copyBuilder()
+                .recipientContract((ContractID) null)
+                .recipientAccount(AccountID.newBuilder().accountNum(123).build())
+                .build()));
+        assertTrue(subject.isValid(CALL_ACTION
+                .copyBuilder()
+                .recipientContract((ContractID) null)
+                .targetedAddress(Bytes.wrap(new byte[20]))
+                .build()));
+    }
 
     @Test
     void representsCallToMissingAddressAsExpected() {

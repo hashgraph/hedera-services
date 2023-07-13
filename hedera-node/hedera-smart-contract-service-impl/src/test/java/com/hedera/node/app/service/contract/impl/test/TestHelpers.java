@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
@@ -122,7 +123,12 @@ public class TestHelpers {
 
     public static final ContractAction CALL_ACTION = ContractAction.newBuilder()
             .callType(ContractActionType.CALL)
+            .input(CALL_DATA)
+            .output(OUTPUT_DATA)
             .gas(REMAINING_GAS)
+            .callingContract(CALLED_CONTRACT_ID)
+            .recipientContract(CALLED_CONTRACT_ID)
+            .callOperationType(CallOperationType.OP_CALL)
             .build();
 
     public static final ContractAction MISSING_ADDRESS_CALL_ACTION = ContractAction.newBuilder()
