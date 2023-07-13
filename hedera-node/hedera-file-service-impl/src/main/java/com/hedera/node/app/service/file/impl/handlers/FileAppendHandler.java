@@ -93,6 +93,7 @@ public class FileAppendHandler implements TransactionHandler {
             throw new HandleException(INVALID_FILE_ID);
         }
 
+        // the update file always will be for the node, not a particular ledger that's why we just compare th num
         if (target.fileNum() == fileServiceConfig.upgradeFileNumber()) {
             handleAppendUpgradeFile(fileAppend, handleContext);
             return;

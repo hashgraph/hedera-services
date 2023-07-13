@@ -112,6 +112,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             @NonNull final FilesConfig fileServiceConfig) {
 
         FileMetadata meta = null;
+        // the update file always will be for the node, not a particular ledger that's why we just compare th num
         if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
             final var file = upgradeStore.peek();
             if (file != null) {
