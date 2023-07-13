@@ -15,9 +15,9 @@
         <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="20">
-        <Delete basePath="output" maxDepth="1">
-          <IfFileName glob="*/hgcaa-*.log.gz">
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="hgcaa-*.log.gz">
             <IfLastModified age="P3D"/>
           </IfFileName>
         </Delete>
@@ -34,9 +34,9 @@
         <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="20">
-        <Delete basePath="output" maxDepth="1">
-          <IfFileName glob="*/queries-*.log.gz">
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="queries-*.log.gz">
             <IfLastModified age="P3D"/>
           </IfFileName>
         </Delete>
@@ -52,9 +52,9 @@
         <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="20">
-        <Delete basePath="output" maxDepth="1">
-          <IfFileName glob="*/swirlds-sdk-*.log.gz">
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="swirlds-sdk-*.log.gz">
             <IfLastModified age="P10D"/>
           </IfFileName>
         </Delete>
@@ -70,9 +70,9 @@
         <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="20">
-        <Delete basePath="output" maxDepth="1">
-          <IfFileName glob="*/swirlds-vmap-*.log.gz">
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="swirlds-vmap-*.log.gz">
             <IfLastModified age="P3D"/>
           </IfFileName>
         </Delete>
@@ -89,9 +89,9 @@
         <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="100 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="20">
-        <Delete basePath="output" maxDepth="1">
-          <IfFileName glob="*/swirlds-hashstream/swirlds-hashstream-*.log.gz">
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="swirlds-hashstream/swirlds-hashstream-*.log.gz">
             <IfLastModified age="P3D"/>
           </IfFileName>
         </Delete>
