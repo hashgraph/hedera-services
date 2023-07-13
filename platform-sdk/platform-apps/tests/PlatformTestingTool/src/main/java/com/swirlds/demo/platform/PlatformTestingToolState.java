@@ -164,8 +164,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has init() been called on this copy
-     * or an ancestor copy of this object?
+     * Has init() been called on this copy or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -307,9 +306,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.roundCounter = sourceState.roundCounter;
 
         if (sourceState.getTransactionCounter() != null) {
-            setTransactionCounter(
-                    new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int index = 0; index < sourceState.getTransactionCounter().size(); index++) {
+            final int size = sourceState.getTransactionCounter().size();
+            setTransactionCounter(new TransactionCounterList(size));
+            for (int index = 0; index < size; index++) {
                 getTransactionCounter()
                         .add(
                                 index,
