@@ -33,7 +33,9 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -77,26 +79,46 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
 
+        // Create a series of signed states.
+        final List<SignedState> states = new ArrayList<>();
+        for (int round = 0; round < count; round++) {
+            final SignedState signedState = new RandomSignedStateGenerator(random)
+                    .setAddressBook(addressBook)
+                    .setRound(round)
+                    .setSignatures(new HashMap<>())
+                    .build();
+            states.add(signedState);
+        }
+
         // send out signatures super early. Many will be rejected.
-        for (long round = 0; round < count; round++) {
+        for (int round = 0; round < count; round++) {
             // All node 0 and 2 signatures are sent very early.
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(0),
-                    new StateSignatureTransaction(round, buildReallyFakeSignature(), null)); // TODO hash
+                    new StateSignatureTransaction(
+                            round,
+                            buildReallyFakeSignature(),
+                            states.get(round).getState().getHash()));
             manager.handlePreconsensusSignatureTransaction(
                     addressBook.getNodeId(2),
-                    new StateSignatureTransaction(round, buildReallyFakeSignature(), null)); // TODO hash
+                    new StateSignatureTransaction(
+                            round,
+                            buildReallyFakeSignature(),
+                            states.get(round).getState().getHash()));
 
             // Even numbered rounds have 3 sent very early.
             if (round % 2 == 0) {
                 manager.handlePreconsensusSignatureTransaction(
                         addressBook.getNodeId(3),
-                        new StateSignatureTransaction(round, buildReallyFakeSignature(), null)); // TODO hash
+                        new StateSignatureTransaction(
+                                round,
+                                buildReallyFakeSignature(),
+                                states.get(round).getState().getHash()));
             }
         }
 
@@ -109,13 +131,8 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         Instant firstTimestamp = null;
         final long firstRound = 0;
 
-        // Create a series of signed states.
         for (int round = 0; round < count; round++) {
-            final SignedState signedState = new RandomSignedStateGenerator(random)
-                    .setAddressBook(addressBook)
-                    .setRound(round)
-                    .setSignatures(new HashMap<>())
-                    .build();
+            final SignedState signedState = states.get(round);
 
             signedStates.put((long) round, signedState);
             highestRound.set(round);
