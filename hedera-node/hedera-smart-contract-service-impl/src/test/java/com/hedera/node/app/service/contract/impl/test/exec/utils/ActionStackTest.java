@@ -182,7 +182,8 @@ class ActionStackTest {
     @Test
     void configuresPrecompileActionAsExpected() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var pretendPrecompileAction = CALL_ACTION.copyBuilder()
+        final var pretendPrecompileAction = CALL_ACTION
+                .copyBuilder()
                 .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
                 .build();
         final var wrappedAction = new Wrapper<>(pretendPrecompileAction);
@@ -196,9 +197,11 @@ class ActionStackTest {
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
         final var finalAction = wrappedAction.get();
-        assertEquals(ContractID.newBuilder()
-                .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
-                .build(), finalAction.recipientContract());
+        assertEquals(
+                ContractID.newBuilder()
+                        .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
+                        .build(),
+                finalAction.recipientContract());
         assertEquals(PRECOMPILE, finalAction.callType());
         assertTrue(actionsStack.isEmpty());
         assertEquals(1, invalidActions.size());
@@ -209,7 +212,8 @@ class ActionStackTest {
     @Test
     void doesNotPushInvalidIfInappropriate() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var pretendPrecompileAction = CALL_ACTION.copyBuilder()
+        final var pretendPrecompileAction = CALL_ACTION
+                .copyBuilder()
                 .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
                 .build();
         final var wrappedAction = new Wrapper<>(pretendPrecompileAction);
@@ -224,9 +228,11 @@ class ActionStackTest {
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
         final var finalAction = wrappedAction.get();
-        assertEquals(ContractID.newBuilder()
-                .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
-                .build(), finalAction.recipientContract());
+        assertEquals(
+                ContractID.newBuilder()
+                        .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
+                        .build(),
+                finalAction.recipientContract());
         assertEquals(PRECOMPILE, finalAction.callType());
         assertTrue(actionsStack.isEmpty());
         assertTrue(invalidActions.isEmpty());

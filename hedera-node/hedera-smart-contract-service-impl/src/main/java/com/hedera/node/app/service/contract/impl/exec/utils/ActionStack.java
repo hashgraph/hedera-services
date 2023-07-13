@@ -37,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
@@ -110,9 +109,7 @@ public class ActionStack {
      * @param validate whether to validate the final action
      */
     public void finalizeLastActionAsPrecompileIn(
-            @NonNull final MessageFrame frame,
-            @NonNull final ContractActionType type,
-            final boolean validate) {
+            @NonNull final MessageFrame frame, @NonNull final ContractActionType type, final boolean validate) {
         internalFinalize(validate, frame, action -> action.copyBuilder()
                 .recipientContract(asNumberedContractId(frame.getContractAddress()))
                 .callType(type)
@@ -216,9 +213,7 @@ public class ActionStack {
         }
     }
 
-    private ContractAction finalFormOf(
-            @NonNull final ContractAction action,
-            @NonNull final MessageFrame frame) {
+    private ContractAction finalFormOf(@NonNull final ContractAction action, @NonNull final MessageFrame frame) {
         return switch (frame.getState()) {
             case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED -> action;
             case CODE_SUCCESS, COMPLETED_SUCCESS -> {
