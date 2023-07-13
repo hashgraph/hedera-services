@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,10 @@ import java.util.function.ObjIntConsumer;
 
 /**
  * Iteration algorithm for
- * {@link com.swirlds.common.merkle.iterators.MerkleIterationOrder#PRE_ORDERED_DEPTH_FIRST PRE_ORDERED_DEPTH_FIRST}.
+ * {@link com.swirlds.common.merkle.iterators.MerkleIterationOrder#REVERSE_POST_ORDERED_DEPTH_FIRST
+ * REVERSE_POST_ORDERED_DEPTH_FIRST}.
  */
-public class PreOrderedDepthFirstAlgorithm extends PostOrderedDepthFirstAlgorithm {
+public class ReversePostOrderedDepthFirstAlgorithm extends PostOrderedDepthFirstAlgorithm {
 
     /**
      * {@inheritDoc}
@@ -32,9 +33,9 @@ public class PreOrderedDepthFirstAlgorithm extends PostOrderedDepthFirstAlgorith
     @Override
     public void pushChildren(
             @NonNull final MerkleInternal parent, @NonNull final ObjIntConsumer<MerkleInternal> pushNode) {
-        // Swap the order of the parent and child to switch to pre-ordered
-        pop();
-        super.pushChildren(parent, pushNode);
-        push(parent);
+        final int childCount = parent.getNumberOfChildren();
+        for (int childIndex = 0; childIndex < childCount; childIndex++) {
+            pushNode.accept(parent, childIndex);
+        }
     }
 }

@@ -19,6 +19,7 @@ package com.swirlds.common.test.merkle;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.POST_ORDERED_DEPTH_FIRST;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.PRE_ORDERED_DEPTH_FIRST;
+import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.REVERSE_POST_ORDERED_DEPTH_FIRST;
 import static com.swirlds.common.merkle.route.MerkleRouteFactory.buildRoute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -123,6 +124,20 @@ class MerkleIterationTests {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
+    @DisplayName("Iterate Empty Tree Reverse Depth-First Post-Ordered")
+    void iterateEmptyTreeReverseDepthFirstPostOrdered() {
+        final MerkleNode root = MerkleTestUtils.buildSizeZeroTree();
+
+        final List<ExpectedNode> sequence = new LinkedList<>();
+        assertIterationOrder(new MerkleIterator<>(root).setOrder(REVERSE_POST_ORDERED_DEPTH_FIRST), sequence);
+    }
+
+    /**
+     * A tree with no nodes is a valid root. Verify that iterators do not choke on an empty root.
+     */
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Empty Tree Depth-First Pre-Ordered")
     void iterateEmptyTreeDepthFirstPreOrdered() {
         final MerkleNode root = MerkleTestUtils.buildSizeZeroTree();
@@ -167,6 +182,22 @@ class MerkleIterationTests {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
+    @DisplayName("Iterate Single Node Tree Reverse Depth-First Post-Ordered")
+    void iterateSingleNodeTreeReverseDepthFirstPostOrdered() {
+        final MerkleNode root = MerkleTestUtils.buildSizeOneTree();
+
+        final List<ExpectedNode> sequence = new LinkedList<>();
+        sequence.add(new ExpectedNode(false, "A"));
+
+        assertIterationOrder(root.treeIterator().setOrder(REVERSE_POST_ORDERED_DEPTH_FIRST), sequence);
+    }
+
+    /**
+     * Ensure that a MerkleIterator can handle a tree with only a single node.
+     */
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Single Node Tree Depth-First Pre-Ordered")
     void iterateSingleNodeTreeDepthFirstPreOrdered() {
         final MerkleNode root = MerkleTestUtils.buildSizeOneTree();
@@ -201,6 +232,19 @@ class MerkleIterationTests {
         sequence.add(new ExpectedNode(false, "A"));
         sequence.add(new ExpectedNode(true, "root"));
         assertIterationOrder(root.treeIterator(), sequence);
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.MERKLE)
+    @DisplayName("Iterate Simple Tree Reverse Depth-First Post-Ordered")
+    void iterateSimpleTreeReverseDepthFirstPostOrdered() {
+        final MerkleNode root = MerkleTestUtils.buildSimpleTree();
+
+        final List<ExpectedNode> sequence = new LinkedList<>();
+        sequence.add(new ExpectedNode(false, "A"));
+        sequence.add(new ExpectedNode(true, "root"));
+        assertIterationOrder(root.treeIterator().setOrder(REVERSE_POST_ORDERED_DEPTH_FIRST), sequence);
     }
 
     @Test
@@ -251,6 +295,25 @@ class MerkleIterationTests {
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestComponentTags.MERKLE)
+    @DisplayName("Iterate Less Simple Tree Reverse Depth-First Post-Ordered")
+    void iterateLessSimpleTreeReverseDepthFirstPostOrdered() {
+        final MerkleNode root = MerkleTestUtils.buildLessSimpleTree();
+
+        // The standard iterator will visit each node except for the null value
+        final List<ExpectedNode> sequence = new LinkedList<>();
+        sequence.add(new ExpectedNode(false, "D"));
+        sequence.add(new ExpectedNode(true, "i1"));
+        sequence.add(new ExpectedNode(false, "C"));
+        sequence.add(new ExpectedNode(false, "B"));
+        sequence.add(new ExpectedNode(true, "i0"));
+        sequence.add(new ExpectedNode(false, "A"));
+        sequence.add(new ExpectedNode(true, "root"));
+        assertIterationOrder(root.treeIterator().setOrder(REVERSE_POST_ORDERED_DEPTH_FIRST), sequence);
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.MERKLE)
     @DisplayName("Iterate Less Simple Tree Depth-First Pre-Ordered")
     void iterateLessSimpleTreeDepthFirstPreOrdered() {
         final MerkleNode root = MerkleTestUtils.buildLessSimpleTree();
@@ -284,6 +347,26 @@ class MerkleIterationTests {
         sequence.add(new ExpectedNode(true, "i1"));
         sequence.add(new ExpectedNode(true, "root"));
         assertIterationOrder(root.treeIterator().ignoreNull(false), sequence);
+    }
+
+    @Test
+    @Tag(TestTypeTags.FUNCTIONAL)
+    @Tag(TestComponentTags.MERKLE)
+    @DisplayName("Do Not Ignore Null Reverse Depth-First Post-Ordered")
+    void doNotIgnoreNullReverseDepthFirstPostOrdered() {
+        final MerkleNode root = MerkleTestUtils.buildLessSimpleTree();
+
+        final List<ExpectedNode> sequence = new LinkedList<>();
+        sequence.add(new ExpectedNode(false, null, buildRoute(2, 1)));
+        sequence.add(new ExpectedNode(false, "D"));
+        sequence.add(new ExpectedNode(true, "i1"));
+        sequence.add(new ExpectedNode(false, "C"));
+        sequence.add(new ExpectedNode(false, "B"));
+        sequence.add(new ExpectedNode(true, "i0"));
+        sequence.add(new ExpectedNode(false, "A"));
+        sequence.add(new ExpectedNode(true, "root"));
+        assertIterationOrder(
+                root.treeIterator().ignoreNull(false).setOrder(REVERSE_POST_ORDERED_DEPTH_FIRST), sequence);
     }
 
     @Test

@@ -26,6 +26,10 @@ public enum MerkleIterationOrder {
      */
     POST_ORDERED_DEPTH_FIRST,
     /**
+     * Similar to {@link #POST_ORDERED_DEPTH_FIRST}, but with order between sibling subtrees reversed.
+     */
+    REVERSE_POST_ORDERED_DEPTH_FIRST,
+    /**
      * Similar to {@link #POST_ORDERED_DEPTH_FIRST}, but with order between sibling subtrees randomized.
      */
     POST_ORDERED_DEPTH_FIRST_RANDOM,
