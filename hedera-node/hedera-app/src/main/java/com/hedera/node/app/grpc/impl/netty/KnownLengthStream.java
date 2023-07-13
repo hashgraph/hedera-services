@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.grpc;
+package com.hedera.node.app.grpc.impl.netty;
 
 import static java.util.Objects.requireNonNull;
 
