@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
@@ -149,11 +148,9 @@ public class HandleWorkflow {
                     preHandleResult.txInfo().transaction(),
                     preHandleResult.txInfo().signedBytes());
 
-            // Check transaction duplication
-            checkDuplicates(preHandleResult.txInfo().txBody().transactionIDOrThrow());
-
-            // If the transaction is not duplicated we want to add it to the cache
-            addTransactionToCache(preHandleResult, recordBuilder.build().recordStreamItem().record(), consensusNow);
+            // Verify if the transaction is a duplicate and add it to the cache
+            checkDuplicatesAndIncludeInCache(
+                    preHandleResult, recordBuilder.build().recordStreamItem().record(), consensusNow);
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -224,8 +221,16 @@ public class HandleWorkflow {
         recordManager.endUserTransaction(recordListBuilder.build());
     }
 
-    private void checkDuplicates(@NonNull final TransactionID transactionID) throws PreCheckException {
+    private void checkDuplicatesAndIncludeInCache(
+            @NonNull final PreHandleResult preHandleResult,
+            @NonNull final TransactionRecord transactionRecord,
+            @NonNull final Instant consensusNow)
+            throws PreCheckException {
+        final var transactionID = preHandleResult.txInfo().txBody().transactionIDOrThrow();
         final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
+
+        addTransactionToCache(preHandleResult, transactionRecord, consensusNow);
+
         if (foundTransactionRecord != null) {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }

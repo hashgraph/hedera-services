@@ -39,8 +39,6 @@ import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -90,10 +88,6 @@ public interface HederaInjectionComponent {
     Provider<IngestInjectionComponent.Factory> ingestComponentFactory();
 
     WorkingStateAccessor workingStateAccessor();
-
-    RecordCache recordCache();
-
-    HederaRecordCache hederaRecordCache();
 
     GrpcServerManager grpcServerManager();
 
