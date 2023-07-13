@@ -111,7 +111,7 @@ public abstract class ConsensusUtils {
         Instant lastTimestamp = Instant.MIN;
         for (final Address address : generator.getAddressBook()) {
             final EventSource<?> source =
-                    generator.getSource((int) address.getNodeId().id());
+                    generator.getSource(address.getNodeId());
             final List<IndexedEvent> eventsByCreator = Arrays.stream(events)
                     .map(IndexedEvent.class::cast)
                     .filter(e -> e.getCreatorId().id() == address.getNodeId().id())

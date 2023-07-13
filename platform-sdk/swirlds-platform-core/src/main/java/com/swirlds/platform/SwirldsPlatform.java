@@ -598,7 +598,6 @@ public class SwirldsPlatform implements Platform, Startable {
             consensusRef.set(new ConsensusImpl(
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     consensusMetrics,
-                    consensusRoundHandler::addMinGenInfo,
                     getAddressBook()));
         } else {
             initialMinimumGenerationNonAncient =
@@ -780,7 +779,6 @@ public class SwirldsPlatform implements Platform, Startable {
         consensusRef.set(new ConsensusImpl(
                 platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                 consensusMetrics,
-                consensusRoundHandler::addMinGenInfo,
                 getAddressBook(),
                 signedState));
 

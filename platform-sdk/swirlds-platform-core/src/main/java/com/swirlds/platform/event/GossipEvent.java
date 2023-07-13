@@ -105,6 +105,11 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
                 new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
     }
 
+    @Override
+    public long getGeneration() {
+        return hashedData.getGeneration();
+    }
+
     /**
      * {@inheritDoc}
      */

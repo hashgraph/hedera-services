@@ -16,11 +16,9 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import static com.swirlds.common.test.WeightGenerators.BALANCED;
-
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.ResettableRandom;
-import com.swirlds.common.test.WeightGenerator;
+import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.ResettableRandom;
+import com.swirlds.common.test.fixtures.WeightGenerator;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitterGenerator;
 import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
@@ -31,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import static com.swirlds.common.test.fixtures.WeightGenerators.BALANCED;
 
 /** A builder for {@link ConsensusTestOrchestrator} instances */
 public class OrchestratorBuilder {

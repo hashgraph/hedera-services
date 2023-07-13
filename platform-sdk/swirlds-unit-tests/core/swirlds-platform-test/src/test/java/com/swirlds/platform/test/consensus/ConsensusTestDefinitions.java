@@ -24,7 +24,7 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShu
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
@@ -339,7 +339,8 @@ public final class ConsensusTestDefinitions {
 		final int staleNodeProvider = input.numberOfNodes() - 1;
 		final ConsensusTestOrchestrator orchestrator =
 				OrchestratorBuilder.builder().setTestInput(input).build();
-		orchestrator.configGenerators(g -> g.getSource(staleNodeProvider)
+		//TODO dont use index
+		orchestrator.configGenerators(g -> g.getSource(new NodeId(staleNodeProvider))
 				.setRecentEventRetentionSize(5000)
 				.setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
 		orchestrator.generateAllEvents();
@@ -355,7 +356,8 @@ public final class ConsensusTestDefinitions {
 		final int staleNodeProvider = input.numberOfNodes() - 1;
 		final ConsensusTestOrchestrator orchestrator =
 				OrchestratorBuilder.builder().setTestInput(input).build();
-		orchestrator.configGenerators(g -> g.getSource(staleNodeProvider)
+		//TODO dont use index
+		orchestrator.configGenerators(g -> g.getSource(new NodeId(staleNodeProvider))
 				.setRecentEventRetentionSize(5000)
 				.setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300)));
 		orchestrator.generateAllEvents();

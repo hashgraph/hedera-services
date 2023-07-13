@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
@@ -143,7 +144,8 @@ public class ConsensusTestOrchestrator {
      */
     public void setNewEventWeight(final int nodeIndex, final double eventWeight) {
         for (final ConsensusTestNode node : nodes) {
-            node.getEventEmitter().getGraphGenerator().getSource(nodeIndex).setNewEventWeight(eventWeight);
+            //TODO dont use index
+            node.getEventEmitter().getGraphGenerator().getSource(new NodeId(nodeIndex)).setNewEventWeight(eventWeight);
         }
     }
 

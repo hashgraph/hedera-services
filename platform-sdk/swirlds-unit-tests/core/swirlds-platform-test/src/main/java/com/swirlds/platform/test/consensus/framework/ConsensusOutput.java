@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
-import com.swirlds.common.time.Time;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;

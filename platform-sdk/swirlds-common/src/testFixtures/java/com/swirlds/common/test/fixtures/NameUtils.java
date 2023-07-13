@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test;
+package com.swirlds.common.test.fixtures;
 
 /** Utility for creating human-readable names deterministically */
 public final class NameUtils {

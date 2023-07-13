@@ -984,9 +984,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
                     x.setStronglySeeP(mm, null);
                 } else {
                     long weight = 0;
-                    for (long m3 = 0; m3 < numMembers; m3++) {
+                    for (int m3 = 0; m3 < numMembers; m3++) {
                         if (seeThru(x, mm, m3) == st) { // only count intermediates that see the canonical witness
-                            weight += addressBook.getAddress(m3).getWeight();
+                            weight += addressBook.getAddress(addressBook.getNodeId(m3)).getWeight();
                         }
                     }
                     if (Utilities.isSuperMajority(weight, totalWeight)) { // strongly see supermajority of
@@ -1085,9 +1085,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         // sum of stake involved
         long weight = 0;
         int numStronglySeen = 0;
-        for (long m = 0; m < numMembers; m++) {
+        for (int m = 0; m < numMembers; m++) {
             if (timedStronglySeeP(x, m) != null) {
-                weight += addressBook.getAddress(m).getWeight();
+                weight += addressBook.getAddress(addressBook.getNodeId(m)).getWeight();
                 numStronglySeen++;
             }
         }
