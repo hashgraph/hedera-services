@@ -1071,12 +1071,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     private void checkPlatformStatus() {
-        final int numNodes = initialAddressBook.getSize();
-
         synchronized (currentPlatformStatus) {
-            if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
-                setPlatformStatus(PlatformStatus.DISCONNECTED);
-            } else if (gossip.hasFallenBehind()) {
+            if (gossip.hasFallenBehind()) {
                 setPlatformStatus(PlatformStatus.BEHIND);
             } else if (freezeManager.isFreezeStarted()) {
                 setPlatformStatus(PlatformStatus.FREEZING);
