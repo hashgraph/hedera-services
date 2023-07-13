@@ -31,19 +31,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Routs system transactions to the appropriate handlers, preconsensus.
+ * Routs preconsensus system transactions to the appropriate handlers.
  */
-public class PreConsensusSystemTransactionManager {
+public class PreconsensusSystemTransactionManager {
 
     /**
      * Class logger
      */
-    private static final Logger logger = LogManager.getLogger(PreConsensusSystemTransactionManager.class);
+    private static final Logger logger = LogManager.getLogger(PreconsensusSystemTransactionManager.class);
 
     /**
      * The pre-consensus handle methods that have been registered
      */
-    private final Map<Class<?>, List<PreConsensusSystemTransactionHandler<SystemTransaction>>> handlers =
+    private final Map<Class<?>, List<PreconsensusSystemTransactionHandler<SystemTransaction>>> handlers =
             new HashMap<>();
 
     /**
@@ -54,13 +54,13 @@ public class PreConsensusSystemTransactionManager {
      */
     @SuppressWarnings("unchecked")
     public <T extends SystemTransaction> void addHandler(
-            @NonNull final Class<T> clazz, @NonNull final PreConsensusSystemTransactionHandler<T> handler) {
+            @NonNull final Class<T> clazz, @NonNull final PreconsensusSystemTransactionHandler<T> handler) {
 
         Objects.requireNonNull(clazz);
         Objects.requireNonNull(handler);
 
         handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
-                .add((PreConsensusSystemTransactionHandler<SystemTransaction>) handler);
+                .add((PreconsensusSystemTransactionHandler<SystemTransaction>) handler);
     }
 
     /**
@@ -73,7 +73,7 @@ public class PreConsensusSystemTransactionManager {
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         Objects.requireNonNull(transaction, "transaction must not be null");
 
-        final List<PreConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
+        final List<PreconsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
                 handlers.get(transaction.getClass());
 
         if (relevantHandlers == null) {
@@ -81,13 +81,13 @@ public class PreConsensusSystemTransactionManager {
             return;
         }
 
-        for (final PreConsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
+        for (final PreconsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
             try {
                 handler.handle(creatorId, transaction);
             } catch (final RuntimeException e) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Error while handling system transaction pre-consensus: handler: {}, id: {}, transaction: {}, error: {}",
+                        "Error while handling system transaction preconsensus: handler: {}, id: {}, transaction: {}, error: {}",
                         handler,
                         creatorId,
                         transaction,

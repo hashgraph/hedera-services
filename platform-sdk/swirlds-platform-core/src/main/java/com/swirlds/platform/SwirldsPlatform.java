@@ -79,8 +79,8 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -388,14 +388,14 @@ public class SwirldsPlatform implements Platform, Startable {
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
         final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
 
-        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManager();
+        final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager =
+                new PreconsensusSystemTransactionManager();
         preConsensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
 
-        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManager();
-        postConsensusSystemTransactionManager.addHandler(
+        final ConsensusSystemTransactionManager consensusSystemTransactionManager =
+                new ConsensusSystemTransactionManager();
+        consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
@@ -435,7 +435,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 initialAddressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 metrics,
                 transactionConfig,
                 freezeManager::isFreezeStarted,

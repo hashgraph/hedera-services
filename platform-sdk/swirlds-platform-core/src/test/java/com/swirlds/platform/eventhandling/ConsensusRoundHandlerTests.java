@@ -215,7 +215,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,

@@ -36,8 +36,8 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -155,7 +155,7 @@ public final class PlatformConstructor {
      * @param addressBook                           the address book
      * @param selfId                                this node's id
      * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
-     * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
+     * @param consensusSystemTransactionManager the manager which handles system transactions post-consensus
      * @param metrics                               reference to the metrics-system
      * @param transactionConfig                     the transaction configuration
      * @param initialState                          the initial state
@@ -166,8 +166,8 @@ public final class PlatformConstructor {
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final Metrics metrics,
             @NonNull final TransactionConfig transactionConfig,
             @NonNull final BooleanSupplier inFreezeChecker,
@@ -178,7 +178,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(preConsensusSystemTransactionManager);
-        Objects.requireNonNull(postConsensusSystemTransactionManager);
+        Objects.requireNonNull(consensusSystemTransactionManager);
         Objects.requireNonNull(metrics);
         Objects.requireNonNull(transactionConfig);
         Objects.requireNonNull(inFreezeChecker);
@@ -190,7 +190,7 @@ public final class PlatformConstructor {
                 addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 new SwirldStateMetrics(metrics),
                 transactionConfig,
                 inFreezeChecker,

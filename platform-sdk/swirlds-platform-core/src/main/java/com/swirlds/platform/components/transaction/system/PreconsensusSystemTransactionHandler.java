@@ -18,23 +18,21 @@ package com.swirlds.platform.components.transaction.system;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Handles system transactions post-consensus
+ * Handles system transactions pre-consensus
  *
  * @param <T> the system transaction type
  */
 @FunctionalInterface
-public interface PostConsensusSystemTransactionHandler<T extends SystemTransaction> {
+public interface PreconsensusSystemTransactionHandler<T extends SystemTransaction> {
 
     /**
-     * Execute the post-consensus system transaction handler
+     * Execute the pre-consensus system transaction handler
      *
-     * @param state       a mutable state
      * @param nodeId      the id of the node which created the transaction
      * @param transaction the transaction being handled
      */
-    void handle(@NonNull State state, @NonNull NodeId nodeId, @NonNull T transaction);
+    void handle(@NonNull NodeId nodeId, @NonNull T transaction);
 }

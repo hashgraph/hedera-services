@@ -49,8 +49,8 @@ import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
@@ -606,14 +606,14 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(1000);
 
-        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManager();
+        final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager =
+                new PreconsensusSystemTransactionManager();
         preConsensusSystemTransactionManager.addHandler(
                 SystemTransactionPing.class, systemTransactionTracker::handlePreConsensusSystemTransaction);
 
-        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManager();
-        postConsensusSystemTransactionManager.addHandler(
+        final ConsensusSystemTransactionManager consensusSystemTransactionManager =
+                new ConsensusSystemTransactionManager();
+        consensusSystemTransactionManager.addHandler(
                 SystemTransactionPing.class, systemTransactionTracker::handlePostconsensusSystemTransaction);
 
         swirldStateManager = new SwirldStateManagerImpl(
@@ -621,7 +621,7 @@ class EventFlowTests {
                 addressBook,
                 selfId,
                 preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,

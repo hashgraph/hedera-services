@@ -33,20 +33,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Routs system transactions to the appropriate handlers, post consensus.
+ * Routs consensus system transactions to the appropriate handlers.
  */
-public class PostConsensusSystemTransactionManager {
+public class ConsensusSystemTransactionManager {
 
     /**
      * Class logger
      */
-    private static final Logger logger = LogManager.getLogger(PostConsensusSystemTransactionManager.class);
+    private static final Logger logger = LogManager.getLogger(ConsensusSystemTransactionManager.class);
 
     /**
      * The post-consensus handle methods that have been registered
      */
-    private final Map<Class<?>, List<PostConsensusSystemTransactionHandler<SystemTransaction>>> handlers =
-            new HashMap<>();
+    private final Map<Class<?>, List<ConsensusSystemTransactionHandler<SystemTransaction>>> handlers = new HashMap<>();
 
     /**
      * Add a handle method
@@ -56,10 +55,10 @@ public class PostConsensusSystemTransactionManager {
      */
     @SuppressWarnings("unchecked")
     public <T extends SystemTransaction> void addHandler(
-            @NonNull final Class<T> clazz, @NonNull final PostConsensusSystemTransactionHandler<T> handler) {
+            @NonNull final Class<T> clazz, @NonNull final ConsensusSystemTransactionHandler<T> handler) {
 
         handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
-                .add((PostConsensusSystemTransactionHandler<SystemTransaction>) handler);
+                .add((ConsensusSystemTransactionHandler<SystemTransaction>) handler);
     }
 
     /**
@@ -74,7 +73,7 @@ public class PostConsensusSystemTransactionManager {
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         Objects.requireNonNull(transaction, "transaction must not be null");
 
-        final List<PostConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
+        final List<ConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
                 handlers.get(transaction.getClass());
 
         if (relevantHandlers == null) {
@@ -82,7 +81,7 @@ public class PostConsensusSystemTransactionManager {
             return;
         }
 
-        for (final PostConsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
+        for (final ConsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
             try {
                 handler.handle(state, creatorId, transaction);
             } catch (final RuntimeException e) {

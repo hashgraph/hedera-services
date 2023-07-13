@@ -24,8 +24,8 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -47,8 +47,8 @@ public abstract class AbstractEventHandlerTests {
     protected SwirldStateMetrics ssStats;
     protected ConsensusMetrics consensusMetrics;
     protected ConsensusHandlingMetrics consensusHandlingMetrics;
-    protected PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
-    protected PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
+    protected PreconsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    protected ConsensusSystemTransactionManager consensusSystemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
     protected Random random;
 
@@ -59,8 +59,8 @@ public abstract class AbstractEventHandlerTests {
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        preConsensusSystemTransactionManager = mock(PreConsensusSystemTransactionManager.class);
-        postConsensusSystemTransactionManager = mock(PostConsensusSystemTransactionManager.class);
+        preConsensusSystemTransactionManager = mock(PreconsensusSystemTransactionManager.class);
+        consensusSystemTransactionManager = mock(ConsensusSystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
         random = ThreadLocalRandom.current();
     }
