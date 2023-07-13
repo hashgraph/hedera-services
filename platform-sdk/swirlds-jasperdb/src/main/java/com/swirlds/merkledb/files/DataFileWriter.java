@@ -166,8 +166,6 @@ public final class DataFileWriter<D> {
         return metadata;
     }
 
-    final static AtomicInteger ec = new AtomicInteger(0);
-
     /**
      * Write a data item copied from another file like during merge. The data item serializer
      * copyItem() method will be called to give it a chance to pass the data for or upgrade the

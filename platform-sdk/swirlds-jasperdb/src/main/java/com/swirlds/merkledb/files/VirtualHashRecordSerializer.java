@@ -22,20 +22,15 @@ import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
-import com.hedera.pbj.runtime.ProtoConstants;
-import com.hedera.pbj.runtime.ProtoParserTools;
-import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public final class VirtualHashRecordSerializer implements DataItemSerializer<VirtualHashRecord> {
 
@@ -68,6 +63,7 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
     }
 
     @Override
+    // TODO: is it really used anywhere?
     public int getSerializedSize() {
         return SERIALIZED_SIZE;
     }
@@ -75,27 +71,54 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
     @Override
     public int getSerializedSize(VirtualHashRecord data) {
 //        return ProtoWriterTools.sizeOfLong(FIELD_HASHRECORD_PATH, data.path()) +
-        return ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt64(data.path()) +
-                ProtoUtils.sizeOfBytes(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
+        int size = 0;
+        if (data.path() != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_VARINT) +
+                    ProtoUtils.sizeOfUnsignedVarInt64(data.path());
+        }
+        size += ProtoUtils.sizeOfBytes(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
+        return size;
     }
 
     @Override
-    public VirtualHashRecord deserialize(final ReadableSequentialData in) throws IOException {
-        final int pathTag = in.readVarInt(false);
-        assert pathTag == ((FIELD_HASHRECORD_PATH.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_VARINT);
+    public VirtualHashRecord deserialize(final ReadableSequentialData in) {
+        // default values
+        long path = 0;
+        Hash hash = null;
+
+        // read fields, they may be in any order or even missing at all
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int number = tag >> TAG_FIELD_OFFSET;
+            if (number == FIELD_HASHRECORD_PATH.number()) {
+                path = readPath(in);
+            } else if (number == FIELD_HASHRECORD_HASH.number()) {
+                hash = readHash(in);
+            } else {
+                throw new IllegalArgumentException("Unknown virtual hash record field: " + number);
+            }
+        }
+
+        // we actually don't expect null hashes here
+        assert hash != null : "Null virtual hash record hash";
+        return new VirtualHashRecord(path, hash);
+    }
+
+    private long readPath(final ReadableSequentialData in) {
         final long path = in.readVarLong(false);
-        final int hashTag = in.readVarInt(false);
-        assert hashTag == ((FIELD_HASHRECORD_HASH.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_DELIMITED);
+        return path;
+    }
+
+    private Hash readHash(final ReadableSequentialData in) {
         final int hashSize = in.readVarInt(false);
-        final Hash newHash = new Hash(DigestType.SHA_384);
-        assert hashSize == newHash.getValue().length;
-        in.readBytes(newHash.getValue());
-        return new VirtualHashRecord(path, newHash);
+        final Hash hash = new Hash(DigestType.SHA_384);
+        assert hashSize == hash.getValue().length;
+        in.readBytes(hash.getValue());
+        return hash;
     }
 
     @Override
-    public long deserializeKey(BufferedData dataItemData) {
+    public long extractKey(BufferedData dataItemData) {
         return dataItemData.getLong(0);
     }
 
@@ -108,10 +131,12 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
         }
 //        ProtoWriterTools.writeLong(out, FIELD_HASHRECORD_PATH, hashRecord.path());
         // TODO: force write default values
-        ProtoUtils.writeTag(out, FIELD_HASHRECORD_PATH);
-        out.writeVarLong(hashRecord.path(), false);
         ProtoUtils.writeBytes(out, FIELD_HASHRECORD_HASH, hashRecord.hash().getValue().length,
                 o -> o.writeBytes(hashRecord.hash().getValue()));
+        if (hashRecord.path() != 0) {
+            ProtoUtils.writeTag(out, FIELD_HASHRECORD_PATH);
+            out.writeVarLong(hashRecord.path(), false);
+        }
     }
 
     /** {@inheritDoc} */

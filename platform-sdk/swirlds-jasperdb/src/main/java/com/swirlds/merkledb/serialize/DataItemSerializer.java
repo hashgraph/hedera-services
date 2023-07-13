@@ -27,5 +27,5 @@ public interface DataItemSerializer<D> extends BaseSerializer<D> {
 
     D deserialize(ReadableSequentialData in) throws IOException;
 
-    long deserializeKey(BufferedData dataItemData);
+    long extractKey(BufferedData dataItemData);
 }

@@ -23,13 +23,10 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.BufferedInputStream;
-import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -177,7 +174,7 @@ public final class DataFileIterator implements AutoCloseable {
      * @return the key for current dataItem
      */
     public long getDataItemsKey() {
-        return dataItemSerializer.deserializeKey(dataItemBuffer);
+        return dataItemSerializer.extractKey(dataItemBuffer);
     }
 
     /**

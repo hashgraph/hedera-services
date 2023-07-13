@@ -57,7 +57,7 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     }
 
     @Override
-    public long deserializeKey(BufferedData dataItemData) {
+    public long extractKey(BufferedData dataItemData) {
         return dataItemData.getLong(0);
     }
 }

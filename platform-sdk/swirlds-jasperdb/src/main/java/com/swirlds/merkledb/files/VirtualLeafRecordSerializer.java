@@ -16,12 +16,12 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoParserTools;
-import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -93,43 +93,72 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
     @Override
     public int getSerializedSize(VirtualLeafRecord<K, V> data) {
 //        return ProtoWriterTools.sizeOfLong(FIELD_LEAFRECORD_PATH, data.getPath()) +
-        return ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt64(data.getPath()) +
-                ProtoUtils.sizeOfBytes(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey())) +
-                ProtoUtils.sizeOfBytes(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
+        int size = 0;
+        if (data.getPath() != 0) {
+            size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT) +
+                    ProtoUtils.sizeOfUnsignedVarInt64(data.getPath());
+        }
+        size += ProtoUtils.sizeOfBytes(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey()));
+        size += ProtoUtils.sizeOfBytes(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
+        return size;
     }
 
     @Override
     public VirtualLeafRecord<K, V> deserialize(ReadableSequentialData in) throws IOException {
-        final int pathTag = in.readVarInt(false);
-        assert pathTag ==
-                ((FIELD_LEAFRECORD_PATH.number() << ProtoParserTools.TAG_FIELD_OFFSET) | ProtoUtils.WIRE_TYPE_VARINT);
-        final long path = in.readVarLong(false);
-        final int keyTag = in.readVarInt(false);
-        assert keyTag ==
-                ((FIELD_LEAFRECORD_KEY.number() << ProtoParserTools.TAG_FIELD_OFFSET) | ProtoUtils.WIRE_TYPE_DELIMITED);
-        final int keySize = in.readVarInt(false);
-        final K key = keySerializer.deserialize(in);
-        assert keySize == keySerializer.getSerializedSize(key);
-        final int valueTag = in.readVarInt(false);
-        assert valueTag ==
-                ((FIELD_LEAFRECORD_VALUE.number() << ProtoParserTools.TAG_FIELD_OFFSET) | ProtoUtils.WIRE_TYPE_DELIMITED);
-        final int valueSize = in.readVarInt(false);
-        final V value = valueSerializer.deserialize(in);
-        assert valueSize == valueSerializer.getSerializedSize(value);
+        // default values
+        long path = 0;
+        K key = null;
+        V value = null;
+
+        // read fields, they may be missing or in any order
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int number = tag >> TAG_FIELD_OFFSET;
+            if (number == FIELD_LEAFRECORD_PATH.number()) {
+                path = readPath(in);
+            } else if (number == FIELD_LEAFRECORD_KEY.number()) {
+                key = readKey(in);
+            } else if (number == FIELD_LEAFRECORD_VALUE.number()) {
+                value = readValue(in);
+            } else {
+                throw new IllegalArgumentException("Unknown virtual leaf record field: " + number);
+            }
+        }
+
         return new VirtualLeafRecord<>(path, key, value);
     }
 
+    private long readPath(final ReadableSequentialData in) {
+        final long path = in.readVarLong(false);
+        return path;
+    }
+
+    private K readKey(final ReadableSequentialData in) throws IOException {
+        final int keySize = in.readVarInt(false);
+        final K key = keySerializer.deserialize(in);
+        assert keySize == keySerializer.getSerializedSize(key);
+        return key;
+    }
+
+    private V readValue(final ReadableSequentialData in) throws IOException {
+        final int valueSize = in.readVarInt(false);
+        final V value = valueSerializer.deserialize(in);
+        assert valueSize == valueSerializer.getSerializedSize(value);
+        return value;
+    }
+
     @Override
-    public long deserializeKey(BufferedData dataItemData) {
+    public long extractKey(BufferedData dataItemData) {
         return dataItemData.getLong(0);
     }
 
     @Override
     public void serialize(VirtualLeafRecord<K, V> leafRecord, WritableSequentialData out) throws IOException {
 //        ProtoWriterTools.writeLong(out, FIELD_LEAFRECORD_PATH, leafRecord.getPath());
-        ProtoUtils.writeTag(out, FIELD_LEAFRECORD_PATH);
-        out.writeVarLong(leafRecord.getPath(), false);
+        if (leafRecord.getPath() != 0) {
+            ProtoUtils.writeTag(out, FIELD_LEAFRECORD_PATH);
+            out.writeVarLong(leafRecord.getPath(), false);
+        }
         ProtoUtils.writeBytes(out, FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(leafRecord.getKey()),
                 o -> keySerializer.serialize(leafRecord.getKey(), o));
         ProtoUtils.writeBytes(out, FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(leafRecord.getValue()),

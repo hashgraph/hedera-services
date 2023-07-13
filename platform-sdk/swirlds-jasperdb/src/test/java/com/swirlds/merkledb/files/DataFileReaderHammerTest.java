@@ -156,7 +156,7 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
-        public long deserializeKey(BufferedData dataItemData) {
+        public long extractKey(BufferedData dataItemData) {
             return 0;
         }
     }

@@ -129,7 +129,7 @@ public final class DataFileCommon {
     static final FieldDefinition FIELD_DATAFILE_CREATION_NANOS =
             new FieldDefinition("creationDateNanos", FieldType.UINT32, false, true, false, 3);
     static final FieldDefinition FIELD_DATAFILE_ITEMS_COUNT =
-            new FieldDefinition("itemsCount", FieldType.UINT64, false, true, false, 4);
+            new FieldDefinition("itemsCount", FieldType.FIXED64, false, true, false, 4);
     static final FieldDefinition FIELD_DATAFILE_ITEM_VERSION =
             new FieldDefinition("itemsVersion", FieldType.UINT64, false, true, false, 5);
     static final FieldDefinition FIELD_DATAFILE_ITEMS =

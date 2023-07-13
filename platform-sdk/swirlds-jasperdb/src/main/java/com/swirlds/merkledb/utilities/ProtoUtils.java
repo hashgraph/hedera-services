@@ -17,7 +17,13 @@ public class ProtoUtils {
     public static final int WIRE_TYPE_VARINT = 0;
 
     // Copied from ProtoConstants
+    public static final int WIRE_TYPE_FIXED_64_BIT = 1;
+
+    // Copied from ProtoConstants
     public static final int WIRE_TYPE_DELIMITED = 2;
+
+    // Copied from ProtoConstants
+    public static final int WIRE_TYPE_FIXED_32_BIT = 5;
 
     // Copied from ProtoWriterTools
     private static final int MAX_VARINT_SIZE = 10;
@@ -68,7 +74,14 @@ public class ProtoUtils {
     }
 
     public static void writeTag(final WritableSequentialData out, final FieldDefinition field) {
-        out.writeVarInt((field.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_VARINT, false);
+        final int wireType = switch (field.type()) {
+            case UINT32, UINT64 -> WIRE_TYPE_VARINT;
+            case FIXED32 -> WIRE_TYPE_FIXED_32_BIT;
+            case FIXED64 -> WIRE_TYPE_FIXED_64_BIT;
+            case BYTES, MESSAGE -> WIRE_TYPE_DELIMITED;
+            default -> throw new UnsupportedOperationException("Field type not supported: " + field.type());
+        };
+        out.writeVarInt((field.number() << TAG_FIELD_OFFSET) | wireType, false);
     }
 
     // Copied from ProtoWriterTools

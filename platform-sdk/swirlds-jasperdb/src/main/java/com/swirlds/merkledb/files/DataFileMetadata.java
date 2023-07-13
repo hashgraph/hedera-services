@@ -21,17 +21,14 @@ import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COUNT;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
+import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.hedera.pbj.runtime.ProtoParserTools;
-import com.hedera.pbj.runtime.ProtoWriterTools;
-import com.hedera.pbj.runtime.io.SequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -115,7 +112,7 @@ public final class DataFileMetadata {
             this.creationDate = Instant.ofEpochSecond(creationDataSeconds, creationDataNanos);
             this.itemsCount = ProtoUtils.readProtoField(
                     readingHeaderPbjData, FIELD_DATAFILE_ITEMS_COUNT,
-                    o -> o.readLong());
+                    o -> o.readLong(ByteOrder.LITTLE_ENDIAN));
             this.serializationVersion = ProtoUtils.readProtoField(
                     readingHeaderPbjData, FIELD_DATAFILE_ITEM_VERSION,
                     o -> o.readVarLong(false));
@@ -138,7 +135,7 @@ public final class DataFileMetadata {
                 ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT) +
                 ProtoUtils.sizeOfUnsignedVarInt32(creationDate.getNano()) +
 //                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_ITEMS_COUNT, itemsCount) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT) +
                 Long.BYTES +
 //                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_ITEM_VERSION, serializationVersion);
                 ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT) +
@@ -159,7 +156,7 @@ public final class DataFileMetadata {
         dataItemCountHeaderOffset = out.position();
 //        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, 0); // will be updated later
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
-        out.writeLong(0); // will be updated later
+        out.writeLong(0, ByteOrder.LITTLE_ENDIAN); // will be updated later
 //        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEM_VERSION, getSerializationVersion());
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
         out.writeVarLong(getSerializationVersion(), false);
@@ -183,7 +180,7 @@ public final class DataFileMetadata {
         out.position(dataItemCountHeaderOffset);
 //        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, count);
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
-        out.writeLong(count); // will be updated later
+        out.writeLong(count, ByteOrder.LITTLE_ENDIAN);
     }
 
     /** Get the files index, out of a set of data files */

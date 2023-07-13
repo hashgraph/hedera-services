@@ -109,7 +109,7 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     }
 
     @Override
-    public long deserializeKey(final BufferedData dataItemData) {
+    public long extractKey(final BufferedData dataItemData) {
         return Bucket.extractKey(dataItemData);
     }
 

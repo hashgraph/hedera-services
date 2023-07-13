@@ -81,7 +81,7 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    public long deserializeKey(BufferedData dataItemData) {
+    public long extractKey(BufferedData dataItemData) {
         return dataItemData.getLong(Long.BYTES); // Read the second long. The first one is the size
     }
 }
