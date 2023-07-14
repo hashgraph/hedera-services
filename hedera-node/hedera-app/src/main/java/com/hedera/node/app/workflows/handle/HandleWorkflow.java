@@ -217,7 +217,7 @@ public class HandleWorkflow {
             try {
                 checkDuplicatesAndIncludeInCache(
                         preHandleResult,
-                        recordListBuilder.build().mainRecord().recordStreamItem().record(),
+                        recordListResult.mainRecord().recordStreamItem().record(),
                         consensusNow);
             } catch (final PreCheckException e) {
                 recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
