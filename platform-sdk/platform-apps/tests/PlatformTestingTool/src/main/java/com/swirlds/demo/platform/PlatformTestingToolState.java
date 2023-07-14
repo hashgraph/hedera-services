@@ -164,8 +164,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has init() been called on this copy
-     * or an ancestor copy of this object?
+     * Has init() been called on this copy or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -252,7 +251,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
 
-        setConfig(sourceState.getConfig().copy());
+        if (sourceState.getConfig() != null) {
+            setConfig(sourceState.getConfig().copy());
+        }
 
         if (platform != null && sourceState.getNextSeqCons() != null) {
             setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
@@ -305,9 +306,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.roundCounter = sourceState.roundCounter;
 
         if (sourceState.getTransactionCounter() != null) {
-            setTransactionCounter(
-                    new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int index = 0; index < sourceState.getTransactionCounter().size(); index++) {
+            final int size = sourceState.getTransactionCounter().size();
+            setTransactionCounter(new TransactionCounterList(size));
+            for (int index = 0; index < size; index++) {
                 getTransactionCounter()
                         .add(
                                 index,
@@ -315,14 +316,18 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             }
         }
 
-        setIssLeaf(sourceState.getIssLeaf().copy());
+        if (sourceState.getIssLeaf() != null) {
+            setIssLeaf(sourceState.getIssLeaf().copy());
+        }
 
         if (sourceState.getNftLedger() != null) {
             setNftLedger(sourceState.getNftLedger().copy());
         }
 
         // set the current value of QuorumResult from source state
-        setQuorumResult(sourceState.getQuorumResult().copy());
+        if (sourceState.getQuorumResult() != null) {
+            setQuorumResult(sourceState.getQuorumResult().copy());
+        }
         if (controlQuorum != null) {
             controlQuorum.setQuorumResult(getQuorumResult().copy());
         }

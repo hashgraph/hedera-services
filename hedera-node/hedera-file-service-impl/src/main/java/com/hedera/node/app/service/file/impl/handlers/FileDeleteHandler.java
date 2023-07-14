@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -32,6 +31,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -62,7 +62,7 @@ public class FileDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
+        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, true);
 
         validateAndAddRequiredKeys(fileMeta.keys(), context, true);
     }
@@ -77,23 +77,10 @@ public class FileDeleteHandler implements TransactionHandler {
         }
         var fileId = fileDeleteTransactionBody.fileIDOrThrow();
 
+        final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
-        var optionalFile = fileStore.get(fileId);
 
-        if (optionalFile.isEmpty()) {
-            throw new HandleException(INVALID_FILE_ID);
-        }
-
-        final var file = optionalFile.get();
-
-        if (!file.hasKeys() || file.keys().keys().isEmpty()) {
-            // @todo('protobuf change needed') change to immutable file response code
-            throw new HandleException(UNAUTHORIZED);
-        }
-
-        if (file.deleted()) {
-            throw new HandleException(FILE_DELETED);
-        }
+        final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
         /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()

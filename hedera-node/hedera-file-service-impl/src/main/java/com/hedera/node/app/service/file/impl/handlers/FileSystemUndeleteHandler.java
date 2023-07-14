@@ -79,7 +79,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
-        final File file = FileServiceUtils.verifySystemFile(ledgerConfig, fileStore, fileId, true);
+        final File file = FileServiceUtils.verifyNotSystemFile(ledgerConfig, fileStore, fileId, true);
 
         final var oldExpiry = file.expirationTime();
         // If the file is already expired, remove it from the state otherwise update the deleted flag to false

@@ -87,6 +87,7 @@ class FileDeleteTest extends FileTestBase {
         writableStore = new WritableFileStore(writableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
+        lenient().when(handleContext.configuration()).thenReturn(configuration);
     }
 
     @Test

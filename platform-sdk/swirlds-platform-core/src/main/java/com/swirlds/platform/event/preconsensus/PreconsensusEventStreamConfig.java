@@ -103,9 +103,7 @@ public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "5") int minimumGenerationalCapacity,
         @ConfigProperty(defaultValue = "false") boolean permitGaps,
         @ConfigProperty(defaultValue = "preconsensus-events") Path databaseDirectory,
-        // FUTURE WORK: once tested make this default true
-        @ConfigProperty(defaultValue = "false") boolean enableStorage,
-        // FUTURE WORK: once tested make this default true
-        @ConfigProperty(defaultValue = "false") boolean enableReplay,
+        @ConfigProperty(defaultValue = "true") boolean enableStorage,
+        @ConfigProperty(defaultValue = "true") boolean enableReplay,
         @ConfigProperty(defaultValue = "1024") int replayQueueSize,
         @ConfigProperty(defaultValue = "8") int replayHashPoolSize) {}

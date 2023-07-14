@@ -98,7 +98,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
-        final var context = new FakePreHandleContext(accountStore, newSystemDeleteTxn());
+        final var context = new FakePreHandleContext(accountStore, newFileDeleteTxn());
         context.registerStore(ReadableFileStoreImpl.class, mockStore);
 
         // when:
@@ -111,7 +111,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         // given:
         mockPayerLookup();
         mockFileLookup(null, mockStore);
-        lenient().when(preHandleContext.body()).thenReturn(newSystemDeleteTxn());
+        lenient().when(preHandleContext.body()).thenReturn(newFileDeleteTxn());
         lenient()
                 .when(preHandleContext.createStore(ReadableFileStoreImpl.class))
                 .thenReturn(mockStore);
@@ -123,7 +123,7 @@ class FileSystemUndeleteTest extends FileTestBase {
     @Test
     @DisplayName("Fails handle if file doesn't exist")
     void fileDoesntExist() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -135,9 +135,9 @@ class FileSystemUndeleteTest extends FileTestBase {
     }
 
     @Test
-    @DisplayName("Fails handle if the file is not a system file")
+    @DisplayName("Fails handle if the file is a system file")
     void fileIsNotSystemFile() {
-        given(handleContext.body()).willReturn(newFileDeleteTxn());
+        given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
         final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
@@ -151,8 +151,8 @@ class FileSystemUndeleteTest extends FileTestBase {
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file system to be deleted")
     void keysDoesntExist() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
-        fileSystem = new File(fileSystemfileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
@@ -165,11 +165,11 @@ class FileSystemUndeleteTest extends FileTestBase {
     }
 
     @Test
-    @DisplayName("Handle works as expected and file system deleted when time is expired(less than epoch second)")
+    @DisplayName("Handle works as expected and file  deleted when time is expired(less than epoch second)")
     void handleWorksAsExpectedWhenExpirationTimeIsExpired() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
 
-        final var existingFile = writableStore.get(fileSystemfileId);
+        final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -178,7 +178,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileSystemfileId);
+        final var changedFile = writableStore.get(fileId);
 
         assertEquals(changedFile, Optional.empty());
     }
@@ -186,7 +186,7 @@ class FileSystemUndeleteTest extends FileTestBase {
     @Test
     @DisplayName("Handle works as expected and the system file marked as undeleted")
     void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
-        given(handleContext.body()).willReturn(newSystemDeleteTxn());
+        given(handleContext.body()).willReturn(newFileDeleteTxn());
 
         final var existingFile = writableStore.get(fileSystemfileId);
         assertTrue(existingFile.isPresent());

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifySystemFile;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -81,7 +81,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
-        final File file = verifySystemFile(ledgerConfig, fileStore, fileId);
+        final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
         final var newExpiry = systemDeleteTransactionBody
                 .expirationTimeOrElse(new TimestampSeconds(file.expirationTime()))
