@@ -67,9 +67,8 @@ public final class SignatureTransmitter {
         Objects.requireNonNull(signature);
         Objects.requireNonNull(stateHash);
 
-        final PlatformStatus platformStatus = platformStatusGetter.getCurrentStatus();
-        if (platformStatus != PlatformStatus.ACTIVE && platformStatus != PlatformStatus.FREEZING) {
-            // Only send transactions if the platform is in ACTIVE or FREEZING state.
+        if (platformStatusGetter.getCurrentStatus() == PlatformStatus.REPLAYING_EVENTS) {
+            // the only time we don't want to submit signatures is during PCES replay
             return;
         }
 

@@ -16,10 +16,12 @@
 
 package com.swirlds.common.system.status;
 
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
@@ -164,8 +166,11 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
         final String previousStatusName = currentStatusLogic.getStatus().name();
         final String newStatusName = newLogic.getStatus().name();
 
-        final String statusChangeMessage = "Platform spent %s time in %s. Now in %s"
-                .formatted(Duration.between(currentStatusStartTime, time.now()), previousStatusName, newStatusName);
+        final Duration statusDuration = Duration.between(currentStatusStartTime, time.now());
+        final UnitFormatter unitFormatter = new UnitFormatter(statusDuration.toMillis(), UNIT_MILLISECONDS);
+
+        final String statusChangeMessage = "Platform spent %s in %s. Now in %s"
+                .formatted(unitFormatter.render(), previousStatusName, newStatusName);
 
         logger.info(
                 PLATFORM_STATUS.getMarker(),
