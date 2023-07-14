@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with node staking rewards.
+ * working with network staking rewards.
  */
 public interface ReadableNetworkStakingRewardsStore {
     /**

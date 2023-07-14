@@ -27,7 +27,7 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Default implementation of {@link ReadableStakingInfoStore}
+ * Default implementation of {@link ReadableNetworkStakingRewardsStore}
  */
 public class ReadableNetworkStakingRewardsStoreImpl implements ReadableNetworkStakingRewardsStore {
 
