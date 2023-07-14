@@ -76,6 +76,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
@@ -111,19 +112,29 @@ public class SigReqAdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
     private static final AccountCryptoAllowance CRYPTO_ALLOWANCES = AccountCryptoAllowance.newBuilder()
-            .spenderNum(DEFAULT_PAYER.getAccountNum())
+            .spenderId(AccountID.newBuilder()
+                    .accountNum(DEFAULT_PAYER.getAccountNum())
+                    .build())
             .amount(500L)
             .build();
     private static final AccountFungibleTokenAllowance FUNGIBLE_TOKEN_ALLOWANCES =
             AccountFungibleTokenAllowance.newBuilder()
-                    .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                    .spenderNum(DEFAULT_PAYER.getAccountNum())
+                    .tokenId(TokenID.newBuilder()
+                            .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+                            .build())
+                    .spenderId(AccountID.newBuilder()
+                            .accountNum(DEFAULT_PAYER.getAccountNum())
+                            .build())
                     .amount(10_000L)
                     .build();
 
     private static final AccountApprovalForAllAllowance NFT_ALLOWANCES = AccountApprovalForAllAllowance.newBuilder()
-            .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-            .spenderNum(DEFAULT_PAYER.getAccountNum())
+            .tokenId(TokenID.newBuilder()
+                    .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
+                    .build())
+            .spenderId(AccountID.newBuilder()
+                    .accountNum(DEFAULT_PAYER.getAccountNum())
+                    .build())
             .build();
 
     /**
@@ -307,7 +318,7 @@ public class SigReqAdapterUtils {
             List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
             List<AccountApprovalForAllAllowance> nftTokenAllowances) {
         return new Account(
-                number,
+                AccountID.newBuilder().accountNum(number).build(),
                 Bytes.EMPTY,
                 key,
                 10_000L,
@@ -319,8 +330,8 @@ public class SigReqAdapterUtils {
                 0L,
                 false,
                 receiverSigRequired,
-                3L,
-                2L,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1L,
                 2,
                 3,
@@ -330,7 +341,7 @@ public class SigReqAdapterUtils {
                 3,
                 0,
                 1_234_5678L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 76_000L,
                 0,
                 cryptoAllowances,

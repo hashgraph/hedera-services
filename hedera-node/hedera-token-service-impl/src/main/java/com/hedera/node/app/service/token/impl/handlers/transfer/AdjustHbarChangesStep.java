@@ -96,7 +96,7 @@ public class AdjustHbarChangesStep extends BaseTokenHandler implements TransferS
                 // If isApproval flag is set then the spender account must have paid for the transaction.
                 // The transfer list specifies the owner who granted allowance as sender
                 // check if the allowances from the sender account has the payer account as spender
-                if (allowance.spenderNum() == topLevelPayer.accountNum()) {
+                if (allowance.spenderId() == topLevelPayer) {
                     haveSpenderAllowance = true;
                     final var newAllowanceAmount = allowance.amount() + amount;
                     validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);

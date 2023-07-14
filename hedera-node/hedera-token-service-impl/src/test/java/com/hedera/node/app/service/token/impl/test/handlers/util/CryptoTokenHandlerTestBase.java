@@ -595,37 +595,33 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         spenderAccount = givenValidAccount()
                 .copyBuilder()
                 .key(spenderKey)
-                .accountNumber(spenderId.accountNum())
+                .accountId(spenderId)
                 .build();
         ownerAccount = givenValidAccount()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
-                        .spenderNum(spenderId.accountNum())
+                        .spenderId(spenderId)
                         .amount(1000)
                         .build())
                 .tokenAllowances(AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(fungibleTokenId.tokenNum())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(fungibleTokenId)
+                        .spenderId(spenderId)
                         .amount(1000)
                         .build())
                 .approveForAllNftAllowances(AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(nonFungibleTokenId.tokenNum())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(nonFungibleTokenId)
+                        .spenderId(spenderId)
                         .build())
                 .key(ownerKey)
                 .build();
-        delegatingSpenderAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(delegatingSpenderId.accountNum())
-                .build();
-        transferAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(transferAccountId.accountNum())
-                .build();
+        delegatingSpenderAccount =
+                givenValidAccount().copyBuilder().accountId(delegatingSpenderId).build();
+        transferAccount =
+                givenValidAccount().copyBuilder().accountId(transferAccountId).build();
         treasuryAccount = givenValidAccount()
                 .copyBuilder()
-                .accountNumber(treasuryId.accountNum())
+                .accountId(treasuryId)
                 .key(treasuryKey)
                 .build();
     }
@@ -685,7 +681,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected Account givenValidAccount() {
         return new Account(
-                accountNum,
+                payerId,
                 alias.alias(),
                 key,
                 1_234_567L,
@@ -697,8 +693,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 0,
                 true,
                 true,
-                3,
-                2,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1,
                 2,
                 10,
@@ -708,7 +704,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 2,
                 0,
                 1000L,
-                0,
+                AccountID.newBuilder().accountNum(0L).build(),
                 72000,
                 0,
                 Collections.emptyList(),

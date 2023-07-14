@@ -98,7 +98,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var spenderAccount = accountStore.getAccountById(spender);
             validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
             validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
-            validateFalse(effectiveOwner.accountNumber() == spender.accountNumOrThrow(), SPENDER_ACCOUNT_SAME_AS_OWNER);
+            validateFalse(effectiveOwner.accountId() == spender, SPENDER_ACCOUNT_SAME_AS_OWNER);
         }
     }
 
@@ -171,8 +171,8 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
                             DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL);
                 }
                 final var approveForAllKey = AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(tokenId.tokenNum())
-                        .spenderNum(spender.accountNumOrThrow())
+                        .tokenId(tokenId)
+                        .spenderId(spender)
                         .build();
                 validateTrue(
                         effectiveOwner
@@ -202,13 +202,11 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final AccountID spender,
             final Token token,
             final ReadableTokenRelationStore tokenRelStore) {
-        final var ownerId =
-                AccountID.newBuilder().accountNum(owner.accountNumber()).build();
+        final var ownerId = owner.accountId();
         final var tokenId = token.tokenId();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
-                !token.tokenType().equals(TokenType.FUNGIBLE_COMMON)
-                        && owner.accountNumber() == spender.accountNumOrThrow(),
+                !token.tokenType().equals(TokenType.FUNGIBLE_COMMON) && owner.accountId() == spender,
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
         validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

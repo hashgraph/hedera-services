@@ -73,7 +73,9 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -210,19 +212,19 @@ class AdapterUtils {
         private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
         private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-                .spenderNum(DEFAULT_PAYER.getAccountNum())
+                .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                 .amount(500L)
                 .build();
         private static AccountFungibleTokenAllowance fungibleTokenAllowances =
                 AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                        .spenderNum(DEFAULT_PAYER.getAccountNum())
+                        .tokenId(TokenID.newBuilder().tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum()))
+                        .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                         .amount(10_000L)
                         .build();
 
         private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
-                .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-                .spenderNum(DEFAULT_PAYER.getAccountNum())
+                .tokenId(TokenID.newBuilder().tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum()))
+                .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                 .build();
 
         public static Map<AccountID, Account> wellKnownAccountStoreAt() {
@@ -323,7 +325,7 @@ class AdapterUtils {
                 List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
                 List<AccountApprovalForAllAllowance> nftTokenAllowances) {
             return new Account(
-                    number,
+                    AccountID.newBuilder().accountNum(number).build(),
                     Bytes.EMPTY,
                     key,
                     10_000L,
@@ -335,8 +337,10 @@ class AdapterUtils {
                     0L,
                     false,
                     receiverSigRequired,
-                    3L,
-                    2L,
+                    TokenID.newBuilder().tokenNum(3L).build(),
+                    NftID.newBuilder()
+                            .tokenId(TokenID.newBuilder().tokenNum(2L))
+                            .build(),
                     1L,
                     2,
                     3,
@@ -346,7 +350,7 @@ class AdapterUtils {
                     3,
                     0,
                     1_234_5678L,
-                    2,
+                    AccountID.newBuilder().accountNum(2L).build(),
                     76_000L,
                     0,
                     cryptoAllowances,

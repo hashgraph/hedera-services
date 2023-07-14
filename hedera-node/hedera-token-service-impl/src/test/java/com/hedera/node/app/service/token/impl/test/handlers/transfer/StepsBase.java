@@ -128,7 +128,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected static final Bytes create2Alias = Bytes.wrap(create2Address);
     protected static final Long mirrorNum = Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20));
     protected final int hbarReceiver = 10000000;
+    protected final AccountID hbarReceiverId =
+            AccountID.newBuilder().accountNum(hbarReceiver).build();
     protected final int tokenReceiver = hbarReceiver + 1;
+    protected final AccountID tokenReceiverId =
+            AccountID.newBuilder().accountNum(tokenReceiver).build();
 
     protected TransactionBody asTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {
         return TransactionBody.newBuilder()
@@ -198,7 +202,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .alias(ecKeyAlias)
-                            .accountNumber(hbarReceiver)
+                            .accountId(AccountID.newBuilder().accountNum(hbarReceiver))
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
@@ -207,7 +211,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
                             .alias(edKeyAlias)
-                            .accountNumber(tokenReceiver)
+                            .accountId(AccountID.newBuilder().accountNum(tokenReceiver))
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));

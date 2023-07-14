@@ -99,7 +99,8 @@ public class TokenServiceImpl implements TokenService {
                     accounts.put(
                             AccountID.newBuilder().accountNum(2).build(),
                             Account.newBuilder()
-                                    .accountNumber(2)
+                                    .accountId(
+                                            AccountID.newBuilder().accountNum(2).build())
                                     .tinybarBalance(remainingBalance - 100_000_000_000L)
                                     .key(superUserKey)
                                     .declineReward(true)
@@ -107,7 +108,8 @@ public class TokenServiceImpl implements TokenService {
                     accounts.put(
                             AccountID.newBuilder().accountNum(3).build(),
                             Account.newBuilder()
-                                    .accountNumber(3)
+                                    .accountId(
+                                            AccountID.newBuilder().accountNum(3).build())
                                     .tinybarBalance(100_000_000_000L)
                                     .key(superUserKey)
                                     .declineReward(true)

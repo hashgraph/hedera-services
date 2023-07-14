@@ -139,8 +139,8 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 // If isApproval flag is set then the spender account must have paid for the transaction.
                 // The transfer list specifies the owner who granted allowance as sender
                 // check if the allowances from the sender account has the payer account as spender
-                if (allowance.spenderNum() == topLevelPayer.accountNum()
-                        && allowance.tokenNum() == tokenId.tokenNum()) {
+                if (allowance.spenderId().equals(topLevelPayer)
+                        && allowance.tokenId().equals(tokenId)) {
                     haveExistingAllowance = true;
                     final var newAllowanceAmount = allowance.amount() + amount;
                     validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);

@@ -70,7 +70,7 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
@@ -98,7 +98,7 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
@@ -127,7 +127,7 @@ class AutoAccountCreatorTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(address, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
