@@ -166,6 +166,9 @@ class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final ScheduleVirtualValue schedule = mock(ScheduleVirtualValue.class);
 
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
+
     @SuppressWarnings("unchecked")
     private static final ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById =
             (ReadableKVStateBase<Long, ScheduleVirtualValue>) mock(ReadableKVStateBase.class);
@@ -333,7 +336,7 @@ class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
+                    UNSET_STAKED_ID,
                     false,
                     receiverSigRequired,
                     3L,

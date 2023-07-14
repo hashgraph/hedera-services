@@ -71,6 +71,9 @@ public class NetworkAdminHandlerTestBase {
     protected static final String TOKENS = "TOKENS";
     protected static final String TOKEN_RELS = "TOKEN_RELS";
 
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
+
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
 
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
@@ -341,7 +344,7 @@ public class NetworkAdminHandlerTestBase {
                 isDeleted,
                 1_234L,
                 1_234_568L,
-                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
+                UNSET_STAKED_ID,
                 true,
                 true,
                 2,

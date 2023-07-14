@@ -111,6 +111,9 @@ public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
+    public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
+
     private static final AccountCryptoAllowance CRYPTO_ALLOWANCES = AccountCryptoAllowance.newBuilder()
             .spenderNum(DEFAULT_PAYER.getAccountNum())
             .amount(500L)
@@ -317,7 +320,7 @@ public class SigReqAdapterUtils {
                 false,
                 1_234_567L,
                 1_234_567L,
-                new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
+                UNSET_STAKED_ID,
                 false,
                 receiverSigRequired,
                 3L,

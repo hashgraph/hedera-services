@@ -385,6 +385,6 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         if (!account.hasStakedNodeId()) {
             throw new IllegalStateException("Account is not staked to a node");
         }
-        return -account.stakedNodeId() - 1;
+        return account.stakedNodeId();
     }
 }

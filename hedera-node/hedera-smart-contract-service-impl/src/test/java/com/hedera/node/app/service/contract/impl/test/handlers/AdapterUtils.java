@@ -93,6 +93,9 @@ public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
 
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
+
     private AdapterUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
@@ -301,7 +304,7 @@ public class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    new OneOf<>(Account.StakedIdOneOfType.UNSET, null),
+                    UNSET_STAKED_ID,
                     false,
                     receiverSigRequired,
                     3L,
