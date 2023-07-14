@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.state.token.StakingRewards;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.impl.ReadableStakingRewardsStoreImpl;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -44,7 +44,7 @@ class ReadableStakingRewardsStoreImplTest {
     @BeforeEach
     void setUp() {
         given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn(stakingRewardsState);
-        given(stakingRewardsState.get()).willReturn(new StakingRewards(true, 1L, 2L, 3L));
+        given(stakingRewardsState.get()).willReturn(new NetworkStakingRewards(true, 1L, 2L, 3L));
         subject = new ReadableStakingRewardsStoreImpl(states);
     }
 

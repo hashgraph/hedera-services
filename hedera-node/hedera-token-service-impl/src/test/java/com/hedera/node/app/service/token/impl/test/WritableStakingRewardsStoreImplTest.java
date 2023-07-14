@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_RE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.state.token.StakingRewards;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.impl.WritableStakingRewardsStoreImpl;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
@@ -38,13 +38,13 @@ class WritableStakingRewardsStoreImplTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private WritableStates states;
 
-    private WritableSingletonStateBase<StakingRewards> stakingRewardsState;
+    private WritableSingletonStateBase<NetworkStakingRewards> stakingRewardsState;
     private WritableStakingRewardsStoreImpl subject;
 
     @BeforeEach
     void setUp() {
-        final AtomicReference<StakingRewards> backingValue =
-                new AtomicReference<>(new StakingRewards(true, 1L, 2L, 3L));
+        final AtomicReference<NetworkStakingRewards> backingValue =
+                new AtomicReference<>(new NetworkStakingRewards(true, 1L, 2L, 3L));
         stakingRewardsState =
                 new WritableSingletonStateBase<>(STAKING_REWARDS_KEY, backingValue::get, backingValue::set);
         given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn((WritableSingletonState) stakingRewardsState);
@@ -65,7 +65,7 @@ class WritableStakingRewardsStoreImplTest {
 
     @Test
     void putSucceeds() {
-        final var newRewards = StakingRewards.newBuilder()
+        final var newRewards = NetworkStakingRewards.newBuilder()
                 .stakingRewardsActivated(false)
                 .totalStakedRewardStart(100L)
                 .totalStakedStart(200L)

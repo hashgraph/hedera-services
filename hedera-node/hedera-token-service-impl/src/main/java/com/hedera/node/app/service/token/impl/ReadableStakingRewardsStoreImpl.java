@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.token.StakingRewards;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableStakingRewardsStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -32,7 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public class ReadableStakingRewardsStoreImpl implements ReadableStakingRewardsStore {
 
     /** The underlying data storage class that holds staking reward data for all nodes. */
-    private final ReadableSingletonState<StakingRewards> stakingRewardsState;
+    private final ReadableSingletonState<NetworkStakingRewards> stakingRewardsState;
     /**
      * Create a new {@link ReadableStakingRewardsStoreImpl} instance.
      *
