@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class AssessmentResult {
@@ -37,11 +38,9 @@ public class AssessmentResult {
     // two maps to aggregate all custom fee balance changes. These two maps are used
     // to construct a transaction body that needs to be assessed again for custom fees
     private Map<AccountID, Long> hbarAdjustments;
-    // Any debits in this set should not trigger custom fee charging again
-    private Set<TokenID> exemptDebits;
     private Set<Pair<AccountID, TokenID>> royaltiesPaid;
-    private Map<TokenID, Map<AccountID, Long>> inputTokenAdjustments;
-
+    private Map<TokenID, Map<AccountID, Long>> immutableInputTokenAdjustments;
+    private Map<TokenID, Map<AccountID, Long>> mutableInputTokenAdjustments;
     private Map<AccountID, Long> inputHbarAdjustments;
     /* And for each "assessable change" that can be charged a custom fee, delegate to our
     fee assessor to update the balance changes with the custom fee. */
@@ -49,18 +48,25 @@ public class AssessmentResult {
 
     public AssessmentResult(
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
-        inputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
+        mutableInputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
+        immutableInputTokenAdjustments = mutableInputTokenAdjustments.entrySet().stream()
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(Map.Entry::getKey, entry -> Map.copyOf(entry.getValue())), Map::copyOf));
+
         inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
 
         htsAdjustments = new HashMap<>();
         hbarAdjustments = new HashMap<>();
-        exemptDebits = new HashSet<>();
         royaltiesPaid = new HashSet<>();
         assessedCustomFees = new ArrayList<>();
     }
 
-    public Map<TokenID, Map<AccountID, Long>> getInputTokenAdjustments() {
-        return inputTokenAdjustments;
+    public Map<TokenID, Map<AccountID, Long>> getImmutableInputTokenAdjustments() {
+        return immutableInputTokenAdjustments;
+    }
+
+    public Map<TokenID, Map<AccountID, Long>> getMutableInputTokenAdjustments() {
+        return mutableInputTokenAdjustments;
     }
 
     public Map<AccountID, Long> getHbarAdjustments() {
@@ -71,28 +77,12 @@ public class AssessmentResult {
         return htsAdjustments;
     }
 
-    public Set<TokenID> getExemptDebits() {
-        return exemptDebits;
-    }
-
-    public void addToExemptDebits(final TokenID id) {
-        exemptDebits.add(id);
-    }
-
-    public void setExemptDebits(final Set<TokenID> exemptDebits) {
-        this.exemptDebits = exemptDebits;
-    }
-
     public List<AssessedCustomFee> getAssessedCustomFees() {
         return assessedCustomFees;
     }
 
     public void addAssessedCustomFee(final AssessedCustomFee assessedCustomFee) {
         assessedCustomFees.add(assessedCustomFee);
-    }
-
-    public void setAssessedCustomFees(final List<AssessedCustomFee> assessedCustomFees) {
-        this.assessedCustomFees = assessedCustomFees;
     }
 
     public Set<Pair<AccountID, TokenID>> getRoyaltiesPaid() {
@@ -111,16 +101,15 @@ public class AssessmentResult {
         return inputHbarAdjustments;
     }
 
-    public void addToInputHbarAdjustments(final AccountID id, final Long amount) {
-        inputHbarAdjustments.put(id, amount);
-    }
-
     private Map<TokenID, Map<AccountID, Long>> buildFungibleTokenTransferMap(
             final List<TokenTransferList> tokenTransfers) {
         final var fungibleTransfersMap = new HashMap<TokenID, Map<AccountID, Long>>();
         for (final var xfer : tokenTransfers) {
             final var tokenId = xfer.token();
             final var fungibleTokenTransfers = xfer.transfersOrElse(emptyList());
+            if (fungibleTokenTransfers.isEmpty()) {
+                continue;
+            }
             final var tokenTransferMap = new HashMap<AccountID, Long>();
             for (final var aa : fungibleTokenTransfers) {
                 tokenTransferMap.put(aa.accountID(), aa.amount());
