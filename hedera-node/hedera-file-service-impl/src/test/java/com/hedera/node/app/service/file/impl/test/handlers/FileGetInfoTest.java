@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,6 +52,7 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.crypto.CryptographyHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -217,8 +219,10 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     private FileInfo getExpectedSystemInfo() {
+        final var upgradeHash =
+                hex(CryptographyHolder.get().digestSync(contents).getValue());
         return FileInfo.newBuilder()
-                .memo(file.memo())
+                .memo(upgradeHash)
                 .fileID(fileSystemfileId)
                 .keys(keys)
                 .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))

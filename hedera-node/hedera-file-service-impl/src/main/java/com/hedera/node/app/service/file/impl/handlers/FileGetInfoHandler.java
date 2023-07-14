@@ -18,6 +18,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -38,8 +39,11 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -90,7 +94,12 @@ public class FileGetInfoHandler extends FileQueryBase {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeStore, fileServiceConfig);
+            final Optional<FileInfo> optionalInfo;
+            try {
+                optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeStore, fileServiceConfig);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to read file contents", e);
+            }
             optionalInfo.ifPresent(responseBuilder::fileInfo);
         }
 
@@ -109,19 +118,26 @@ public class FileGetInfoHandler extends FileQueryBase {
             @NonNull final ReadableFileStore fileStore,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final ReadableUpgradeStoreImpl upgradeStore,
-            @NonNull final FilesConfig fileServiceConfig) {
+            @NonNull final FilesConfig fileServiceConfig)
+            throws IOException {
 
         FileMetadata meta = null;
+        long contentSize = 0L;
         // the update file always will be for the node, not a particular ledger that's why we just compare th num
         if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
             final var file = upgradeStore.peek();
             if (file != null) {
+                // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
+                final var contents = upgradeStore.getFull().toByteArray();
+                contentSize = contents.length;
+                final var upgradeHash =
+                        hex(CryptographyHolder.get().digestSync(contents).getValue());
                 meta = new FileMetadata(
                         file.fileId(),
                         Timestamp.newBuilder().seconds(file.expirationTime()).build(),
                         file.keys(),
-                        file.contents(),
-                        file.memo(),
+                        Bytes.EMPTY,
+                        upgradeHash,
                         file.deleted());
             }
         } else {
@@ -134,7 +150,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             final var info = FileInfo.newBuilder();
             info.memo(meta.memo() == null ? "" : meta.memo());
             info.fileID(fileID);
-            info.size(meta.contents().length());
+            info.size((contentSize > 0L ? contentSize : meta.contents().length()));
             info.expirationTime(meta.expirationTimestamp());
             info.deleted(meta.deleted());
             info.keys(meta.keys());

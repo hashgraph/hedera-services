@@ -122,8 +122,7 @@ public class FileUpdateHandler implements TransactionHandler {
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
         final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
         // empty old upgrade file
-        while (fileStore.poll() != null)
-            ;
+        fileStore.resetFileContents();
         final var file = new File.Builder()
                 .fileId(fileUpdate.fileIDOrThrow())
                 .contents(fileUpdate.contents())

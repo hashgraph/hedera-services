@@ -35,6 +35,8 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
     /** The underlying data storage class that holds the file data. */
     private final WritableQueueState<File> writableUpgradeState;
 
+    private static final Predicate<File> TRUE_PREDICATE = new TruePredicate();
+
     /**
      * Create a new {@link WritableUpgradeStore} instance.
      *
@@ -50,13 +52,20 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
         writableUpgradeState.add(file);
     }
 
-    @Nullable
-    public File poll() {
-        return writableUpgradeState.poll();
+    public void resetFileContents() {
+        while (writableUpgradeState.removeIf(TRUE_PREDICATE) != null)
+            ;
     }
 
     @Nullable
     public File removeIf(@NonNull Predicate<File> predicate) {
         return writableUpgradeState.removeIf(predicate);
+    }
+
+    private static class TruePredicate implements Predicate<File> {
+        @Override
+        public boolean test(File file) {
+            return true;
+        }
     }
 }
