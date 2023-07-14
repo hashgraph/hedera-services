@@ -268,6 +268,7 @@ public class HandleWorkflow {
       }
 
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
+      
     }
 
   private void checkDuplicatesAndIncludeInCache(
