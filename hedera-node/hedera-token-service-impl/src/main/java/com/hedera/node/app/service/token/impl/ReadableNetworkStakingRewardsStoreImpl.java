@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_RE
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
