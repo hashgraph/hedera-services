@@ -201,14 +201,11 @@ public class HandleWorkflow {
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
-        // TODO update receipt
-
-        // TODO: handle long scheduled transactions
+        // store all records at once
+        final var recordListResult = recordListBuilder.build();
+        recordManager.endUserTransaction(recordListResult.recordStream());
 
         // TODO: handle system tasks
-
-        // store all records at once
-        recordManager.endUserTransaction(recordListBuilder.build());
     }
 
     private void recordFailedTransaction(

@@ -35,14 +35,12 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.RecordStreamItem;
-import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -51,11 +49,9 @@ import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilde
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -121,75 +117,81 @@ public class SingleTransactionRecordBuilder
 
     @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
-        // compute transaction hash: TODO could pass in if we have it calculated else where
-        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
-        final byte[] transactionBytes = new byte[(int) this.transactionBytes.length()];
-        this.transactionBytes.getBytes(0, transactionBytes);
-        final Bytes transactionHash = Bytes.wrap(new Hash(transactionBytes).getValue());
-        // create body one of
-        OneOf<TransactionRecord.BodyOneOfType> body = new OneOf<>(TransactionRecord.BodyOneOfType.UNSET, null);
-        if (contractCallResult != null)
-            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CALL_RESULT, contractCallResult);
-        if (contractCreateResult != null)
-            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CREATE_RESULT, contractCreateResult);
-        // create list of sidecar records
-        List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
-        contractStateChanges.stream()
-                .map(pair -> new TransactionSidecarRecord(
-                        consensusTimestamp,
-                        pair.getValue(),
-                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, pair.getKey())))
-                .forEach(transactionSidecarRecords::add);
-        contractActions.stream()
-                .map(pair -> new TransactionSidecarRecord(
-                        consensusTimestamp,
-                        pair.getValue(),
-                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, pair.getKey())))
-                .forEach(transactionSidecarRecords::add);
-        contractBytecodes.stream()
-                .map(pair -> new TransactionSidecarRecord(
-                        consensusTimestamp,
-                        pair.getValue(),
-                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
-                .forEach(transactionSidecarRecords::add);
-        // build
-        return new SingleTransactionRecord(
-                new RecordStreamItem(
-                        transaction,
-                        new TransactionRecord(
-                                new TransactionReceipt(
-                                        status,
-                                        accountID,
-                                        fileID,
-                                        contractID,
-                                        exchangeRate,
-                                        topicID,
-                                        topicSequenceNumber,
-                                        topicRunningHash,
-                                        topicRunningHashVersion,
-                                        tokenID,
-                                        newTotalSupply,
-                                        scheduleID,
-                                        scheduledTransactionID,
-                                        serialNumbers),
-                                transactionHash,
-                                consensusTimestamp,
-                                transaction.body().transactionID(),
-                                transaction.body().memo(),
-                                transactionFee,
-                                body,
-                                transferList,
-                                tokenTransferLists,
-                                scheduleRef,
-                                assessedCustomFees,
-                                automaticTokenAssociations,
-                                parentConsensusTimestamp,
-                                alias,
-                                ethereumHash,
-                                paidStakingRewards,
-                                entropy,
-                                evmAddress)),
-                transactionSidecarRecords);
+        // TODO: Temporarily return dummy-record until this has been fixed
+        return new SingleTransactionRecord(RecordStreamItem.DEFAULT, List.of());
+
+        //        // compute transaction hash: TODO could pass in if we have it calculated else where
+        //        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
+        //        final byte[] transactionBytes = new byte[(int) this.transactionBytes.length()];
+        //        this.transactionBytes.getBytes(0, transactionBytes);
+        //        final Bytes transactionHash = Bytes.wrap(new Hash(transactionBytes).getValue());
+        //        // create body one of
+        //        OneOf<TransactionRecord.BodyOneOfType> body = new OneOf<>(TransactionRecord.BodyOneOfType.UNSET,
+        // null);
+        //        if (contractCallResult != null)
+        //            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CALL_RESULT, contractCallResult);
+        //        if (contractCreateResult != null)
+        //            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CREATE_RESULT, contractCreateResult);
+        //        // create list of sidecar records
+        //        List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
+        //        contractStateChanges.stream()
+        //                .map(pair -> new TransactionSidecarRecord(
+        //                        consensusTimestamp,
+        //                        pair.getValue(),
+        //                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES,
+        // pair.getKey())))
+        //                .forEach(transactionSidecarRecords::add);
+        //        contractActions.stream()
+        //                .map(pair -> new TransactionSidecarRecord(
+        //                        consensusTimestamp,
+        //                        pair.getValue(),
+        //                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, pair.getKey())))
+        //                .forEach(transactionSidecarRecords::add);
+        //        contractBytecodes.stream()
+        //                .map(pair -> new TransactionSidecarRecord(
+        //                        consensusTimestamp,
+        //                        pair.getValue(),
+        //                        new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE,
+        // pair.getKey())))
+        //                .forEach(transactionSidecarRecords::add);
+        //        // build
+        //        return new SingleTransactionRecord(
+        //                new RecordStreamItem(
+        //                        transaction,
+        //                        new TransactionRecord(
+        //                                new TransactionReceipt(
+        //                                        status,
+        //                                        accountID,
+        //                                        fileID,
+        //                                        contractID,
+        //                                        exchangeRate,
+        //                                        topicID,
+        //                                        topicSequenceNumber,
+        //                                        topicRunningHash,
+        //                                        topicRunningHashVersion,
+        //                                        tokenID,
+        //                                        newTotalSupply,
+        //                                        scheduleID,
+        //                                        scheduledTransactionID,
+        //                                        serialNumbers),
+        //                                transactionHash,
+        //                                consensusTimestamp,
+        //                                transaction.body().transactionID(),
+        //                                transaction.body().memo(),
+        //                                transactionFee,
+        //                                body,
+        //                                transferList,
+        //                                tokenTransferLists,
+        //                                scheduleRef,
+        //                                assessedCustomFees,
+        //                                automaticTokenAssociations,
+        //                                parentConsensusTimestamp,
+        //                                alias,
+        //                                ethereumHash,
+        //                                paidStakingRewards,
+        //                                entropy,
+        //                                evmAddress)),
+        //                transactionSidecarRecords);
     }
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
