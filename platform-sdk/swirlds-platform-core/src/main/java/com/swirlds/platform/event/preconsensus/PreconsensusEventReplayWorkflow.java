@@ -17,11 +17,6 @@
 package com.swirlds.platform.event.preconsensus;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.common.system.status.PlatformStatus.FREEZE_COMPLETE;
-import static com.swirlds.common.system.status.PlatformStatus.FREEZING;
-import static com.swirlds.common.system.status.PlatformStatus.OBSERVING;
-import static com.swirlds.common.system.status.PlatformStatus.REPLAYING_EVENTS;
-import static com.swirlds.common.system.status.PlatformStatus.STARTING_UP;
 import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
