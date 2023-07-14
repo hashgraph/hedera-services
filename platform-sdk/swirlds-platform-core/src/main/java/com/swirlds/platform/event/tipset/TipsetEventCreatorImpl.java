@@ -137,7 +137,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         tipsetTracker = new TipsetTracker(addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+                platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));

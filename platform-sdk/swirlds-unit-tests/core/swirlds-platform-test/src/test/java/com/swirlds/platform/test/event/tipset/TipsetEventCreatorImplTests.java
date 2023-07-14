@@ -127,7 +127,7 @@ class TipsetEventCreatorImplTests {
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
