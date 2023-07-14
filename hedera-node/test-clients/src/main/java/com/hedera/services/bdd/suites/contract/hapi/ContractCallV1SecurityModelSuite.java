@@ -125,6 +125,7 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                 CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(adminKey),
                         cryptoCreate(treasury),
+                        cryptoCreate(OWNER).balance(ONE_MILLION_HBARS),
                         // we need a new user, expiry to 1 Jan 2100 costs 11M gas for token
                         // associate
                         tokenCreate(ticketToken)
@@ -154,7 +155,8 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                 .then(
                         /* Take a ticket */
                         contractCall(contract, "takeTicket")
-                                .alsoSigningWithFullPrefix(DEFAULT_CONTRACT_SENDER, treasury)
+                                .alsoSigningWithFullPrefix(OWNER, treasury)
+                                .payingWith(OWNER)
                                 .gas(4_000_000)
                                 .via(ticketTaking)
                                 .exposingResultTo(result -> {
@@ -162,18 +164,20 @@ public class ContractCallV1SecurityModelSuite extends HapiSuite {
                                     ticketSerialNo.set(((Long) result[0]));
                                 }),
                         getTxnRecord(ticketTaking),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).logged().hasTokenBalance(ticketToken, 1L),
+                        getAccountBalance(OWNER).logged().hasTokenBalance(ticketToken, 1L),
                         /* Our ticket number is 3 (b/c of the two pre-mints), so we must call
                          * work twice before the contract will actually accept our ticket. */
                         sourcing(() -> contractCall(contract, "workTicket", ticketSerialNo.get())
                                 .gas(2_000_000)
-                                .alsoSigningWithFullPrefix(DEFAULT_CONTRACT_SENDER)),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTokenBalance(ticketToken, 1L),
+                                .alsoSigningWithFullPrefix(OWNER)
+                                .payingWith(OWNER)),
+                        getAccountBalance(OWNER).logged().hasTokenBalance(ticketToken, 1L),
                         sourcing(() -> contractCall(contract, "workTicket", ticketSerialNo.get())
                                 .gas(2_000_000)
-                                .alsoSigningWithFullPrefix(DEFAULT_CONTRACT_SENDER)
+                                .alsoSigningWithFullPrefix(OWNER)
+                                .payingWith(OWNER)
                                 .via(ticketWorking)),
-                        getAccountBalance(DEFAULT_CONTRACT_SENDER).hasTokenBalance(ticketToken, 0L),
+                        getAccountBalance(OWNER).hasTokenBalance(ticketToken, 0L),
                         getTokenInfo(ticketToken).hasTotalSupply(1L),
                         /* Review the history */
                         getTxnRecord(ticketTaking).andAllChildRecords().logged(),
