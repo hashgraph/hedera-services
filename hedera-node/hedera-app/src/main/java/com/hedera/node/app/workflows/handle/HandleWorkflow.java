@@ -255,13 +255,16 @@ public class HandleWorkflow {
       // store all records at once
       final var recordListResult = recordListBuilder.build();
 
-      if (preHandleResult != null) {
-        // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
-        // https://github.com/hashgraph/hedera-services/pull/7473
-        hederaRecordCache.add(
-            0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
-      } else {
-        throw new IllegalStateException("pre handle result was null!");
+      // Verify if the transaction is a duplicate and add it to the cache
+      if (preHandleResult != null) { // this should always be true, but just in case
+        try {
+          checkDuplicatesAndIncludeInCache(
+              preHandleResult,
+              recordListBuilder.build().mainRecord().recordStreamItem().record(),
+              consensusNow);
+        } catch (final PreCheckException e) {
+          recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
+        }
       }
 
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
