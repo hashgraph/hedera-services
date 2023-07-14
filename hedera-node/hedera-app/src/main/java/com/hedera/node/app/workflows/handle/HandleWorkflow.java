@@ -138,19 +138,16 @@ public class HandleWorkflow {
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
+        PreHandleResult preHandleResult = null;
         try {
             // Setup configuration
             final var configuration = configProvider.getConfiguration();
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
-            final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
+            preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             recordBuilder.transaction(
                     preHandleResult.txInfo().transaction(),
                     preHandleResult.txInfo().signedBytes());
-
-            // Verify if the transaction is a duplicate and add it to the cache
-            checkDuplicatesAndIncludeInCache(
-                    preHandleResult, recordBuilder.build().recordStreamItem().record(), consensusNow);
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -214,6 +211,18 @@ public class HandleWorkflow {
         // store all records at once
         final var recordListResult = recordListBuilder.build();
         recordManager.endUserTransaction(recordListResult.recordStream());
+
+        // Verify if the transaction is a duplicate and add it to the cache
+        if (preHandleResult != null) { // this should always be true, but just in case
+            try {
+                checkDuplicatesAndIncludeInCache(
+                        preHandleResult,
+                        recordListBuilder.build().mainRecord().recordStreamItem().record(),
+                        consensusNow);
+            } catch (final PreCheckException e) {
+                recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
+            }
+        }
 
         // TODO: handle system tasks
     }
