@@ -34,6 +34,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -42,6 +43,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * custom fees again.
  * If there is fungible exchange value to the receiver of the NFT,
  */
+@Singleton
 public class CustomRoyaltyFeeAssessor {
     private CustomFixedFeeAssessor fixedFeeAssessor;
 
@@ -67,6 +69,9 @@ public class CustomRoyaltyFeeAssessor {
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         final var tokenId = feeMeta.tokenId();
+        // In a given CryptoTransfer, we only charge royalties to an account once per token type; so
+        // even if 0.0.A is sending multiple NFTs of type 0.0.T in a single transfer, we only deduct
+        // royalty fees once from the value it receives in return.
         if (result.getRoyaltiesPaid().contains(Pair.of(sender, tokenId))) {
             return;
         }
@@ -86,12 +91,6 @@ public class CustomRoyaltyFeeAssessor {
                     continue;
                 }
                 final var fallback = royaltyFee.fallbackFeeOrThrow();
-                // A NFT transfer with royalty fees to an unknown alias is not possible, since
-                // the auto-created account will not have any hbar to pay the fallback fee
-                // Validate the account balance is greater than zero
-                validateTrue(
-                        accountStore.get(receiver).tinybarBalance() != 0,
-                        INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                 final var fallbackFee = asFixedFee(
                         fallback.amount(), fallback.denominatingTokenId(), collector, fee.allCollectorsAreExempt());
                 fixedFeeAssessor.assessFixedFee(feeMeta, receiver, fallbackFee, result);
