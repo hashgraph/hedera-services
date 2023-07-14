@@ -16,25 +16,33 @@
 
 package com.swirlds.platform.event.tipset;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.Utilities.isSuperMajority;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Calculates tipset advancement weights for events created by a node.
  */
 public class TipsetWeightCalculator {
+
+    private static final Logger logger = LogManager.getLogger(TipsetWeightCalculator.class);
 
     /**
      * The node ID that is being tracked by this object.
@@ -93,10 +101,14 @@ public class TipsetWeightCalculator {
      */
     private Tipset latestSelfEventTipset;
 
+    private final RateLimitedLogger ancientParentLogger;
+    private final RateLimitedLogger allParentsAreAncientLogger;
+
     /**
      * Create a new tipset weight calculator.
      *
      * @param platformContext       the platform context
+     * @param time                  provides wall clock time
      * @param addressBook           the current address book
      * @param selfId                the ID of the node tracked by this object
      * @param tipsetTracker         builds tipsets for individual events
@@ -104,6 +116,7 @@ public class TipsetWeightCalculator {
      */
     public TipsetWeightCalculator(
             @NonNull final PlatformContext platformContext,
+            @NonNull final Time time,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
             @NonNull final TipsetTracker tipsetTracker,
@@ -125,6 +138,9 @@ public class TipsetWeightCalculator {
         snapshot = new Tipset(addressBook);
         latestSelfEventTipset = snapshot;
         snapshotHistory.add(snapshot);
+
+        ancientParentLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        allParentsAreAncientLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /**
@@ -206,7 +222,30 @@ public class TipsetWeightCalculator {
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventDescriptor parent : parents) {
-            parentTipsets.add(tipsetTracker.getTipset(parent));
+            final Tipset parentTipset = tipsetTracker.getTipset(parent);
+
+            if (parentTipset == null) {
+                // For some reason we are trying to use an ancient parent. In theory possible that a self
+                // parent may be ancient. But we shouldn't even be considering non-self parents that are ancient.
+                if (!parent.getCreator().equals(selfId)) {
+                    ancientParentLogger.error(
+                            EXCEPTION.getMarker(),
+                            "When looking at possible parents, we should never "
+                                    + "consider ancient parents that are not self parents. "
+                                    + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
+                            parent.getCreator(),
+                            parent.getGeneration(),
+                            tipsetTracker.getMinimumGenerationNonAncient());
+                }
+                continue;
+            }
+
+            parentTipsets.add(parentTipset);
+        }
+
+        if (parentTipsets.isEmpty()) {
+            allParentsAreAncientLogger.error(EXCEPTION.getMarker(), "all parents being considered are ancient");
+            return ZERO_ADVANCEMENT_WEIGHT;
         }
 
         // Don't bother advancing the self generation in this theoretical tipset,

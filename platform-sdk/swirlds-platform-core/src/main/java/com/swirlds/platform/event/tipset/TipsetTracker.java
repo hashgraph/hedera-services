@@ -16,23 +16,31 @@
 
 package com.swirlds.platform.event.tipset;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.tipset.Tipset.merge;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.sequence.map.SequenceMap;
 import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Computes and tracks tipsets for non-ancient events.
  */
 public class TipsetTracker {
+
+    private static final Logger logger = LogManager.getLogger(TipsetTracker.class);
 
     private static final int INITIAL_TIPSET_MAP_CAPACITY = 64;
 
@@ -50,18 +58,25 @@ public class TipsetTracker {
 
     private final AddressBook addressBook;
 
+    private long minimumGenerationNonAncient;
+
+    private final RateLimitedLogger ancientEventLogger;
+
     /**
      * Create a new tipset tracker.
      *
+     * @param time        provides wall clock time
      * @param addressBook the current address book
      */
-    public TipsetTracker(@NonNull final AddressBook addressBook) {
+    public TipsetTracker(@NonNull final Time time, @NonNull final AddressBook addressBook) {
 
         this.addressBook = Objects.requireNonNull(addressBook);
 
         this.latestGenerations = new Tipset(addressBook);
 
         tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, EventDescriptor::getGeneration);
+
+        ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /**
@@ -71,6 +86,16 @@ public class TipsetTracker {
      */
     public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         tipsets.shiftWindow(minimumGenerationNonAncient);
+        this.minimumGenerationNonAncient = minimumGenerationNonAncient;
+    }
+
+    /**
+     * Get the minimum generation that is not considered ancient (from this class's perspective).
+     *
+     * @return the minimum non-ancient generation, all lower generations are ancient
+     */
+    public long getMinimumGenerationNonAncient() {
+        return minimumGenerationNonAncient;
     }
 
     /**
@@ -83,6 +108,17 @@ public class TipsetTracker {
     @NonNull
     public Tipset addEvent(
             @NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
+
+        if (eventDescriptor.getGeneration() < minimumGenerationNonAncient) {
+            ancientEventLogger.error(
+                    EXCEPTION.getMarker(),
+                    "Rejecting ancient event from {} with generation {}. "
+                            + "Current minimum generation non-ancient is {}",
+                    eventDescriptor.getCreator(),
+                    eventDescriptor.getGeneration(),
+                    minimumGenerationNonAncient);
+        }
+
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
         for (final EventDescriptor parent : parents) {
             final Tipset parentTipset = tipsets.get(parent);
