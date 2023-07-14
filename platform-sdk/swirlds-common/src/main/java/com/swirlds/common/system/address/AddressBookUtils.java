@@ -119,15 +119,15 @@ public class AddressBookUtils {
             }
         }
         if (!nextNodeIdParsed) {
-            throw new ParseException("The address book text does not contain a `nextAvailableNodeId` line.", 0);
+            throw new ParseException("The address book text does not contain a `nextNodeId` line.", 0);
         }
         return addressBook;
     }
 
     /**
-     * Parse the next available node id from a single line of text.  The line must start with the keyword
-     * `nextAvailableNodeId` followed by a comma and then the node id.  The node id must be a positive integer greater
-     * than all nodeIds in the address book.
+     * Parse the next available node id from a single line of text.  The line must start with the keyword `nextNodeId`
+     * followed by a comma and then the node id.  The node id must be a positive integer greater than all nodeIds in the
+     * address book.
      *
      * @param nextNodeId the text to parse.
      * @return the parsed node id.
@@ -143,8 +143,7 @@ public class AddressBookUtils {
         }
         if (!parts[0].trim().equals(NEXT_NODE_ID_KEYWORD)) {
             throw new ParseException(
-                    "The nextNodeId [%s] does not start with the keyword `nextAvailableNodeId`.".formatted(nextNodeId),
-                    0);
+                    "The nextNodeId [%s] does not start with the keyword `nextNodeId`.".formatted(nextNodeId), 0);
         }
         final String nodeIdText = parts[1].trim();
         try {
