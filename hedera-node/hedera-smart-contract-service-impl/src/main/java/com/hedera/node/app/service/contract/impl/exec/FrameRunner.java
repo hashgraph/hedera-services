@@ -28,7 +28,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTracer;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,7 +65,7 @@ public class FrameRunner {
     public HederaEvmTransactionResult runToCompletion(
             final long gasLimit,
             @NonNull final MessageFrame frame,
-            @NonNull final HederaEvmTracer tracer,
+            @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         requireNonNull(frame);
@@ -79,13 +79,13 @@ public class FrameRunner {
         final var recipientId = resolvedHederaId(frame, recipientAddress);
 
         // Now run the transaction implied by the frame
-        tracer.customInit(frame);
+        tracer.traceOriginAction(frame);
         final var stack = frame.getMessageFrameStack();
         stack.addFirst(frame);
         while (!stack.isEmpty()) {
             runToCompletion(stack.peekFirst(), tracer, messageCall, contractCreation);
         }
-        tracer.customFinalize(frame);
+        tracer.sanitizeTracedActions(frame);
 
         // And package up its result
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
@@ -104,7 +104,7 @@ public class FrameRunner {
 
     private void runToCompletion(
             @NonNull final MessageFrame frame,
-            @NonNull final HederaEvmTracer tracer,
+            @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         final var executor =

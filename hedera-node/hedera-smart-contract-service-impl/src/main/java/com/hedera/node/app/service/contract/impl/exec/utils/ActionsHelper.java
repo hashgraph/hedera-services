@@ -18,9 +18,9 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import static com.hedera.hapi.streams.CallOperationType.OP_UNKNOWN;
 import static com.hedera.hapi.streams.ContractActionType.NO_ACTION;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asCallOperationType;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.utils.OpcodeUtils.asCallOperationType;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.hedera.hapi.node.base.ContractID;

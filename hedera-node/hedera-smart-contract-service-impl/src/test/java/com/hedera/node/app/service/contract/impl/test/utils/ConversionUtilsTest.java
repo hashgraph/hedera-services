@@ -16,16 +16,25 @@
 
 package com.hedera.node.app.service.contract.impl.test.utils;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TOPIC;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -40,8 +49,6 @@ import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -50,18 +57,9 @@ class ConversionUtilsTest {
     @Mock
     private Dispatch dispatch;
 
-    @ParameterizedTest
-    @CsvSource({
-        "0xF0,OP_CREATE",
-        "0xF1,OP_CALL",
-        "0xF2,OP_CALLCODE",
-        "0xF4,OP_DELEGATECALL",
-        "0xF5,OP_CREATE2",
-        "0xFA,OP_STATICCALL",
-        "0x12,OP_UNKNOWN",
-    })
-    void convertsOpcodesToCallOpsAsExpected(final int opCode, @NonNull final CallOperationType type) {
-        assertEquals(type, asCallOperationType(opCode));
+    @Test
+    void numberedIdsRequireLongZeroAddress() {
+        assertThrows(IllegalArgumentException.class, () -> asNumberedContractId(EIP_1014_ADDRESS));
     }
 
     @Test

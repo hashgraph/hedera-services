@@ -57,7 +57,7 @@ class EvmActionTracerTest {
     void customInitIsNoopWithoutActionSidecars() {
         givenNoActionSidecars();
 
-        subject.customInit(frame);
+        subject.traceOriginAction(frame);
 
         verifyNoInteractions(actionStack);
     }
@@ -66,7 +66,7 @@ class EvmActionTracerTest {
     void customInitTracksTopLevel() {
         givenSidecarsOnly();
 
-        subject.customInit(frame);
+        subject.traceOriginAction(frame);
 
         verify(actionStack).pushActionOfTopLevel(frame);
     }
@@ -75,7 +75,7 @@ class EvmActionTracerTest {
     void customFinalizeNoopIfNoActionSidecars() {
         givenNoActionSidecars();
 
-        subject.customFinalize(frame);
+        subject.sanitizeTracedActions(frame);
 
         verifyNoInteractions(actionStack);
     }
@@ -84,7 +84,7 @@ class EvmActionTracerTest {
     void customFinalizeNoopIfNotValidatingActions() {
         givenSidecarsOnly();
 
-        subject.customFinalize(frame);
+        subject.sanitizeTracedActions(frame);
 
         verifyNoInteractions(actionStack);
     }
@@ -93,7 +93,7 @@ class EvmActionTracerTest {
     void customFinalizeSanitizesActionsIfValidating() {
         givenActionSidecarsAndValidation();
 
-        subject.customFinalize(frame);
+        subject.sanitizeTracedActions(frame);
 
         verify(actionStack).sanitizeFinalActionsAndLogAnomalies(eq(frame), any(Logger.class), eq(Level.WARN));
     }
@@ -141,7 +141,7 @@ class EvmActionTracerTest {
     void precompileTraceIsNoopIfNoSidecars() {
         givenNoActionSidecars();
 
-        subject.customTracePrecompileResult(frame, ContractActionType.SYSTEM);
+        subject.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
         verifyNoInteractions(actionStack);
     }
@@ -150,7 +150,7 @@ class EvmActionTracerTest {
     void systemPrecompileTraceIsStillTrackedEvenIfHalted() {
         givenSidecarsOnly();
 
-        subject.customTracePrecompileResult(frame, ContractActionType.SYSTEM);
+        subject.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
         verify(actionStack)
                 .finalizeLastStackActionAsPrecompile(frame, ContractActionType.SYSTEM, ActionStack.Validation.OFF);

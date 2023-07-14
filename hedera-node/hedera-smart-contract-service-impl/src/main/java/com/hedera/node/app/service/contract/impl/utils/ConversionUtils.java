@@ -16,13 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
-import static com.hedera.hapi.streams.CallOperationType.*;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
-import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -41,17 +39,14 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
+/**
+ * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
+ */
 public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
     public static final long MISSING_ENTITY_NUMBER = -1L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
-    public static final int OP_CODE_CREATE = 0xF0;
-    public static final int OP_CODE_CALL = 0xF1;
-    public static final int OP_CODE_CALLCODE = 0xF2;
-    public static final int OP_CODE_DELEGATECALL = 0xF4;
-    public static final int OP_CODE_CREATE2 = 0xF5;
-    public static final int OP_CODE_STATICCALL = 0xFA;
 
     private ConversionUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -239,11 +234,26 @@ public class ConversionUtils {
         return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(requireNonNull(bytes).toArrayUnsafe());
     }
 
+    /**
+     * Converts an EVM address to a PBJ {@link ContractID} with alias instead of id number.
+     *
+     * @param address the EVM address
+     * @return the PBJ {@link ContractID}
+     */
     public static ContractID asEvmContractId(@NonNull final Address address) {
         return ContractID.newBuilder().evmAddress(tuweniToPbjBytes(address)).build();
     }
 
+    /**
+     * Converts a long-zero address to a PBJ {@link ContractID} with id number instead of alias.
+     *
+     * @param address the EVM address
+     * @return the PBJ {@link ContractID}
+     */
     public static ContractID asNumberedContractId(@NonNull final Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
         return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
     }
 
@@ -369,23 +379,5 @@ public class ConversionUtils {
                 ? address
                 : asLongZeroAddress(
                         proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow());
-    }
-
-    /**
-     * Given an opcode, returns the corresponding {@link CallOperationType}.
-     *
-     * @param opCode the opcode to convert
-     * @return the corresponding {@link CallOperationType}
-     */
-    public static CallOperationType asCallOperationType(final int opCode) {
-        return switch (opCode) {
-            case OP_CODE_CREATE -> OP_CREATE;
-            case OP_CODE_CALL -> OP_CALL;
-            case OP_CODE_CALLCODE -> OP_CALLCODE;
-            case OP_CODE_DELEGATECALL -> OP_DELEGATECALL;
-            case OP_CODE_CREATE2 -> OP_CREATE2;
-            case OP_CODE_STATICCALL -> OP_STATICCALL;
-            default -> OP_UNKNOWN;
-        };
     }
 }

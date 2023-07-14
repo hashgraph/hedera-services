@@ -22,16 +22,18 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /**
- * The Hedera-specific extensions to the {@link OperationTracer} interface.
+ * The Hedera-specific extensions to the {@link OperationTracer} interface we use to construct
+ * and manage the {@link com.hedera.hapi.streams.ContractAction}'s in a sidecar of type
+ * {@link com.hedera.hapi.streams.SidecarType#CONTRACT_ACTION}.
  */
-public interface HederaEvmTracer extends OperationTracer {
+public interface ActionSidecarContentTracer extends OperationTracer {
     /**
      * A hook we use to insert an action at the beginning of a transaction,
-     * corresponding to the top-levle HAPI operation.
+     * corresponding to the top-level HAPI operation.
      *
      * @param frame the initial frame of the just-beginning EVM transaction
      */
-    void customInit(@NonNull MessageFrame frame);
+    void traceOriginAction(@NonNull MessageFrame frame);
 
     /**
      * A hook we use to "sanitize" any contract actions that have been
@@ -40,13 +42,13 @@ public interface HederaEvmTracer extends OperationTracer {
      *
      * @param frame the initial frame of the just-finished EVM transaction
      */
-    void customFinalize(@NonNull MessageFrame frame);
+    void sanitizeTracedActions(@NonNull MessageFrame frame);
 
     /**
      * A hook we use to manage the action sidecar of a precompile call result.
      *
-     * @param frame the frame calling the precompile
+     * @param frame the frame that called the precompile
      * @param type the type of precompile called; expected values are {@code PRECOMPILE} and {@code SYSTEM}
      */
-    void customTracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type);
+    void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type);
 }

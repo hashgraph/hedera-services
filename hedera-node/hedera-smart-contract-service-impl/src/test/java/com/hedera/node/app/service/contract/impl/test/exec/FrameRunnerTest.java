@@ -28,7 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTracer;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -58,7 +58,7 @@ class FrameRunnerTest {
     private MessageFrame childFrame;
 
     @Mock
-    private HederaEvmTracer tracer;
+    private ActionSidecarContentTracer tracer;
 
     @Mock
     private CustomMessageCallProcessor messageCallProcessor;
@@ -87,10 +87,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).customInit(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).customFinalize(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertTrue(result.isSuccess());
         assertEquals(expectedGasUsed(frame), result.gasUsed());
@@ -110,10 +110,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).customInit(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).customFinalize(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertSuccessExpectationsWith(
                 NON_SYSTEM_CONTRACT_ID, asEvmContractId(NON_SYSTEM_LONG_ZERO_ADDRESS), frame, result);
@@ -129,10 +129,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).customInit(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).customFinalize(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(tuweniToPbjBytes(SOME_REVERT_REASON), result.revertReason());
@@ -149,10 +149,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).customInit(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).customFinalize(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(TOO_MANY_CHILD_RECORDS.toString(), result.haltReason());

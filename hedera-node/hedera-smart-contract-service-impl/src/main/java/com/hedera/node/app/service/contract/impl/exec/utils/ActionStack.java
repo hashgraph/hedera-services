@@ -39,7 +39,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -63,9 +63,9 @@ public class ActionStack {
     private static final Logger log = LogManager.getLogger(ActionStack.class);
 
     private final ActionsHelper helper;
-    private final List<ActionWrapper<ContractAction>> allActions;
-    private final Deque<ActionWrapper<ContractAction>> actionsStack;
-    private final List<ActionWrapper<ContractAction>> invalidActions;
+    private final List<ActionWrapper> allActions;
+    private final Deque<ActionWrapper> actionsStack;
+    private final List<ActionWrapper> invalidActions;
 
     /**
      * Controls whether the stack should validate the next action it is finalizing.
@@ -107,9 +107,9 @@ public class ActionStack {
      */
     public ActionStack(
             @NonNull final ActionsHelper helper,
-            @NonNull final List<ActionWrapper<ContractAction>> allActions,
-            @NonNull final Deque<ActionWrapper<ContractAction>> actionsStack,
-            @NonNull final List<ActionWrapper<ContractAction>> invalidActions) {
+            @NonNull final List<ActionWrapper> allActions,
+            @NonNull final Deque<ActionWrapper> actionsStack,
+            @NonNull final List<ActionWrapper> invalidActions) {
         this.helper = helper;
         this.invalidActions = invalidActions;
         this.allActions = allActions;
@@ -177,7 +177,7 @@ public class ActionStack {
         requireNonNull(source);
 
         // Try to get the action from the stack or the list as requested; warn and return if not found
-        final ActionWrapper<ContractAction> lastWrappedAction;
+        final ActionWrapper lastWrappedAction;
         if (source == Source.POPPED_FROM_STACK) {
             if (actionsStack.isEmpty()) {
                 log.warn("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
@@ -241,7 +241,7 @@ public class ActionStack {
                     final var haltReason = maybeHaltReason.get();
                     builder.error(Bytes.wrap(haltReason.name().getBytes(UTF_8)));
                     if (CALL.equals(action.callType()) && MISSING_ADDRESS.equals(haltReason)) {
-                        allActions.add(new ActionWrapper<>(helper.createSynthActionForMissingAddressIn(frame)));
+                        allActions.add(new ActionWrapper(helper.createSynthActionForMissingAddressIn(frame)));
                     }
                 } else {
                     builder.error(Bytes.EMPTY);
@@ -284,7 +284,7 @@ public class ActionStack {
      */
     public void pushActionOfIntermediate(@NonNull final MessageFrame frame) {
         final var builder = ContractAction.newBuilder()
-                .callOperationType(ConversionUtils.asCallOperationType(
+                .callOperationType(OpcodeUtils.asCallOperationType(
                         frame.getCurrentOperation().getOpcode()))
                 .callingContract(contractIdWith(hederaIdNumOfContractIn(frame)));
         completePush(builder, requireNonNull(frame.getMessageFrameStack().peek()));
@@ -306,7 +306,7 @@ public class ActionStack {
         } else {
             builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
         }
-        final var wrappedAction = new ActionWrapper<>(builder.build());
+        final var wrappedAction = new ActionWrapper(builder.build());
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
     }

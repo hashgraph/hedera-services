@@ -61,7 +61,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionWrapper;
@@ -119,9 +118,9 @@ class ActionStackTest {
     @Mock
     private LogBuilder logBuilder;
 
-    private final List<ActionWrapper<ContractAction>> invalidActions = new ArrayList<>();
-    private final List<ActionWrapper<ContractAction>> allActions = new ArrayList<>();
-    private final Deque<ActionWrapper<ContractAction>> actionsStack = new ArrayDeque<>();
+    private final List<ActionWrapper> invalidActions = new ArrayList<>();
+    private final List<ActionWrapper> allActions = new ArrayList<>();
+    private final Deque<ActionWrapper> actionsStack = new ArrayDeque<>();
 
     private ActionStack subject;
 
@@ -141,7 +140,7 @@ class ActionStackTest {
         given(log.atLevel(Level.ERROR)).willReturn(logBuilder);
         final var contextCaptor = forClass(String.class);
         final var anomaliesCaptor = forClass(String.class);
-        final var invalidWrapper = new ActionWrapper<>(MISSING_ADDRESS_CALL_ACTION);
+        final var invalidWrapper = new ActionWrapper(MISSING_ADDRESS_CALL_ACTION);
         invalidActions.add(invalidWrapper);
         allActions.add(invalidWrapper);
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
@@ -171,7 +170,7 @@ class ActionStackTest {
         given(log.atLevel(Level.ERROR)).willReturn(logBuilder);
         final var contextCaptor = forClass(String.class);
         final var anomaliesCaptor = forClass(String.class);
-        final var invalidWrapper = new ActionWrapper<>(MISSING_ADDRESS_CALL_ACTION);
+        final var invalidWrapper = new ActionWrapper(MISSING_ADDRESS_CALL_ACTION);
         actionsStack.push(invalidWrapper);
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(parentFrame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
@@ -194,7 +193,7 @@ class ActionStackTest {
     @Test
     void withoutHaltReasonJustUsesEmptyErrorAndNullsCalledContract() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new ActionWrapper<>(CREATE_ACTION);
+        final var wrappedAction = new ActionWrapper(CREATE_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
@@ -225,7 +224,7 @@ class ActionStackTest {
                 .copyBuilder()
                 .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
                 .build();
-        final var wrappedAction = new ActionWrapper<>(pretendPrecompileAction);
+        final var wrappedAction = new ActionWrapper(pretendPrecompileAction);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
@@ -255,7 +254,7 @@ class ActionStackTest {
                 .copyBuilder()
                 .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
                 .build();
-        final var wrappedAction = new ActionWrapper<>(pretendPrecompileAction);
+        final var wrappedAction = new ActionWrapper(pretendPrecompileAction);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
@@ -279,7 +278,7 @@ class ActionStackTest {
 
     @Test
     void worksAroundEmptyStack() {
-        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
 
         assertDoesNotThrow(
@@ -295,7 +294,7 @@ class ActionStackTest {
     @Test
     void withNonMissingHaltReasonJustSetsIt() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
@@ -314,7 +313,7 @@ class ActionStackTest {
     @Test
     void withInvalidSolidityAddressHaltReasonAddsSyntheticInvalidActionToCall() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
@@ -335,7 +334,7 @@ class ActionStackTest {
     @Test
     void withInvalidSolidityAddressHaltReasonDoesNotAddSyntheticInvalidActionToCreate() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new ActionWrapper<>(CREATE_ACTION);
+        final var wrappedAction = new ActionWrapper(CREATE_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
@@ -354,7 +353,7 @@ class ActionStackTest {
     void finalizationDoesNothingButMaybePopStackForUnexpectedStates(
             @NonNull final MessageFrame.State state, final boolean actionIsOnStack) {
         given(parentFrame.getState()).willReturn(state);
-        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
         if (actionIsOnStack) {
             actionsStack.push(wrappedAction);
@@ -393,7 +392,7 @@ class ActionStackTest {
             givenResolvableEvmAddress();
         }
 
-        final var wrappedAction = new ActionWrapper<>(action);
+        final var wrappedAction = new ActionWrapper(action);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
@@ -423,7 +422,7 @@ class ActionStackTest {
         given(parentFrame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
 
-        final var wrappedAction = new ActionWrapper<>(CREATE_ACTION);
+        final var wrappedAction = new ActionWrapper(CREATE_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
@@ -444,7 +443,7 @@ class ActionStackTest {
         given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS - gasUsed);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
 
-        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper(CALL_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
