@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.token;
 
-import com.hedera.hapi.node.state.token.StakingRewards;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with node staking rewards.
@@ -35,13 +32,13 @@ public interface ReadableStakingRewardsStore {
      * beginning of the new staking period.
      * @return total stake reward start
      */
-    long getTotalStakeRewardStart();
+    long totalStakeRewardStart();
     /**
      * Total of (balance + stakedToMe) for all accounts staked to this node with declineReward=false, at the
      * beginning of the new staking period.
      * @return total staked start
      */
-    long getTotalStakedStart();
+    long totalStakedStart();
     /**
      * The total amount in tinybars that will be received in the next reward situation.
      * @return total reward

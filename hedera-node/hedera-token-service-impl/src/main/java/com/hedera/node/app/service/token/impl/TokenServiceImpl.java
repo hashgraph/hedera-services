@@ -167,8 +167,8 @@ public class TokenServiceImpl implements TokenService {
 
     private StateDefinition<EntityNum, MerkleStakingInfo> stakingInfoDef() {
         final var keySerdes = new EntityNumCodec();
-        final var valueSerdes = MonoMapCodecAdapter.codecForSelfSerializable(
-                MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
+        final var valueSerdes =
+                MonoMapCodecAdapter.codecForSelfSerializable(MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
         return StateDefinition.inMemory(STAKING_INFO_KEY, keySerdes, valueSerdes);
     }
 }

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
-
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.StakingRewards;
@@ -25,7 +24,6 @@ import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableStakingRewardsStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -52,13 +50,13 @@ public class ReadableStakingRewardsStoreImpl implements ReadableStakingRewardsSt
 
     /** {@inheritDoc} */
     @Override
-    public long getTotalStakeRewardStart() {
+    public long totalStakeRewardStart() {
         return requireNonNull(stakingRewardsState.get()).totalStakedRewardStart();
     }
 
     /** {@inheritDoc} */
     @Override
-    public long getTotalStakedStart() {
+    public long totalStakedStart() {
         return requireNonNull(stakingRewardsState.get()).totalStakedStart();
     }
 

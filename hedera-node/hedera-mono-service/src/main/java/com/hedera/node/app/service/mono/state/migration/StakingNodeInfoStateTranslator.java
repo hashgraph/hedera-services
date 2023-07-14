@@ -63,8 +63,9 @@ public final class StakingNodeInfoStateTranslator {
      */
     @NonNull
     public static com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfoFromStakingNodeInfo(
-            final long nodeId, @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
+            @NonNull final Long nodeId, @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
         requireNonNull(readableStakingInfoStore);
+        requireNonNull(nodeId);
         final var optionalStakingInfo = readableStakingInfoStore.get(nodeId);
         if (optionalStakingInfo == null) {
             throw new IllegalArgumentException("Staking Info not found");
