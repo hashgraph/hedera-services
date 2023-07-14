@@ -20,27 +20,28 @@ package com.hedera.node.app.service.token;
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with node staking rewards.
  */
-public interface ReadableStakingRewardsStore {
+public interface ReadableNetworkStakingRewardsStore {
     /**
-     * Whether staking rewards are activated for this node. This is set to true when the balance of 0.0.800
-     * reaches minimum required balance.
+     * Whether staking rewards are activated on the network. This is set to true when the balance of
+     * 0.0.800 reaches minimum required balance.
      * @return true if staking rewards are activated
      */
     boolean isStakingRewardsActivated();
     /**
-     * Total of (balance + stakedToMe) for all accounts staked to all nodes with declineReward=true, at the
+     * Total of (balance + stakedToMe) for all accounts staked to all nodes in the network with declineReward=false, at the
      * beginning of the new staking period.
      * @return total stake reward start
      */
     long totalStakeRewardStart();
     /**
-     * Total of (balance + stakedToMe) for all accounts staked to this node with declineReward=false, at the
-     * beginning of the new staking period.
+     * Total of (balance + stakedToMe) for all accounts staked to all nodes in the network, at the beginning of the new
+     * staking period.
      * @return total staked start
      */
     long totalStakedStart();
     /**
-     * The total amount in tinybars that will be received in the next reward situation.
+     * The total staking rewards in tinybars that COULD be collected by all accounts staking to all nodes after the end
+     * of this staking period; assuming that no account "renounces" its rewards by, for example, setting declineReward=true.
      * @return total reward
      */
     long pendingRewards();

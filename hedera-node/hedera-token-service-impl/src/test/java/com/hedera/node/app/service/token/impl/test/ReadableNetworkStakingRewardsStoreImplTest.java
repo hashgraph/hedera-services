@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.token.impl.ReadableStakingRewardsStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,26 +32,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ReadableStakingRewardsStoreImplTest {
+class ReadableNetworkStakingRewardsStoreImplTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableStates states;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ReadableSingletonState stakingRewardsState;
 
-    private ReadableStakingRewardsStoreImpl subject;
+    private ReadableNetworkStakingRewardsStoreImpl subject;
 
     @BeforeEach
     void setUp() {
         given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn(stakingRewardsState);
         given(stakingRewardsState.get()).willReturn(new NetworkStakingRewards(true, 1L, 2L, 3L));
-        subject = new ReadableStakingRewardsStoreImpl(states);
+        subject = new ReadableNetworkStakingRewardsStoreImpl(states);
     }
 
     @Test
     void testNullConstructorArgs() {
         //noinspection DataFlowIssue
-        assertThrows(NullPointerException.class, () -> new ReadableStakingRewardsStoreImpl(null));
+        assertThrows(NullPointerException.class, () -> new ReadableNetworkStakingRewardsStoreImpl(null));
     }
 
     @Test

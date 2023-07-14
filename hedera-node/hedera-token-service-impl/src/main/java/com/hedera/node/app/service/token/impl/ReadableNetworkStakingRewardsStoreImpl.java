@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.service.token.ReadableStakingRewardsStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,16 +29,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Default implementation of {@link ReadableStakingInfoStore}
  */
-public class ReadableStakingRewardsStoreImpl implements ReadableStakingRewardsStore {
+public class ReadableNetworkStakingRewardsStoreImpl implements ReadableNetworkStakingRewardsStore {
 
     /** The underlying data storage class that holds staking reward data for all nodes. */
     private final ReadableSingletonState<NetworkStakingRewards> stakingRewardsState;
     /**
-     * Create a new {@link ReadableStakingRewardsStoreImpl} instance.
+     * Create a new {@link ReadableNetworkStakingRewardsStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableStakingRewardsStoreImpl(@NonNull final ReadableStates states) {
+    public ReadableNetworkStakingRewardsStoreImpl(@NonNull final ReadableStates states) {
         this.stakingRewardsState = requireNonNull(states).getSingleton(STAKING_REWARDS_KEY);
     }
 

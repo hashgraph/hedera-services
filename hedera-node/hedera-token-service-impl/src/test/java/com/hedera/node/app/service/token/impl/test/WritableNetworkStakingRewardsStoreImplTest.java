@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.token.impl.WritableStakingRewardsStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -34,12 +34,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableStakingRewardsStoreImplTest {
+class WritableNetworkStakingRewardsStoreImplTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private WritableStates states;
 
     private WritableSingletonStateBase<NetworkStakingRewards> stakingRewardsState;
-    private WritableStakingRewardsStoreImpl subject;
+    private WritableNetworkStakingRewardsStoreImpl subject;
 
     @BeforeEach
     void setUp() {
@@ -49,12 +49,12 @@ class WritableStakingRewardsStoreImplTest {
                 new WritableSingletonStateBase<>(STAKING_REWARDS_KEY, backingValue::get, backingValue::set);
         given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn((WritableSingletonState) stakingRewardsState);
 
-        subject = new WritableStakingRewardsStoreImpl(states);
+        subject = new WritableNetworkStakingRewardsStoreImpl(states);
     }
 
     @Test
     void constructorWithNullArg() {
-        Assertions.assertThatThrownBy(() -> new WritableStakingRewardsStoreImpl(null))
+        Assertions.assertThatThrownBy(() -> new WritableNetworkStakingRewardsStoreImpl(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
