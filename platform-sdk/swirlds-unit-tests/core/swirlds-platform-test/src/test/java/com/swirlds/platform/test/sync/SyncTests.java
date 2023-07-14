@@ -34,7 +34,6 @@ import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
@@ -47,6 +46,7 @@ import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.platform.test.graph.PartitionedGraphCreator;
 import com.swirlds.platform.test.graph.SplitForkGraphCreator;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.net.SocketException;
 import java.util.List;
@@ -1003,6 +1003,13 @@ public class SyncTests {
         // the caller will have only signed state events
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
             caller.getGeneratedEvents().forEach(EventImpl::markAsSignedStateEvent);
+
+            // a signed sent event needs to be identified as needed by the peer
+            // if it is ancient, it will not be marked as needed, so need to make sure no events are ancient
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
         });
 
         executor.execute();

@@ -21,11 +21,14 @@ import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.event.tipset.Tipset.merge;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
@@ -75,10 +78,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(addressBook);
+        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator =
-                new TipsetWeightCalculator(platformContext, addressBook, selfId, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
+                platformContext, Time.getCurrent(), addressBook, selfId, builder, childlessEventTracker);
 
         List<EventDescriptor> previousParents = List.of();
         TipsetAdvancementWeight runningAdvancementScore = ZERO_ADVANCEMENT_WEIGHT;
@@ -206,10 +209,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker tracker = new TipsetTracker(addressBook);
+        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator =
-                new TipsetWeightCalculator(platformContext, addressBook, nodeA, tracker, childlessEventTracker);
+        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
+                platformContext, Time.getCurrent(), addressBook, nodeA, tracker, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -420,10 +423,10 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(addressBook);
+        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
-        final TipsetWeightCalculator calculator =
-                new TipsetWeightCalculator(platformContext, addressBook, nodeA, builder, childlessEventTracker);
+        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
+                platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
 
         final Tipset snapshot1 = calculator.getSnapshot();
 
@@ -470,5 +473,67 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot2 = calculator.getSnapshot();
         assertNotEquals(snapshot1, snapshot2);
         assertEquals(snapshot2, builder.getTipset(eventA4));
+    }
+
+    @Test
+    @DisplayName("Ancient Parent Test")
+    void ancientParentTest() {
+        final Random random = getRandomPrintSeed();
+        final int nodeCount = 4;
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setSize(nodeCount)
+                .setAverageWeight(1)
+                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+                .build();
+
+        final NodeId nodeA = addressBook.getNodeId(0);
+        final NodeId nodeB = addressBook.getNodeId(1);
+        final NodeId nodeC = addressBook.getNodeId(2);
+        final NodeId nodeD = addressBook.getNodeId(3);
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
+        final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
+        final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
+                platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
+
+        // Create generation 1 events.
+        final EventDescriptor eventA1 = new EventDescriptor(randomHash(random), nodeA, 1);
+        builder.addEvent(eventA1, List.of());
+        final EventDescriptor eventB1 = new EventDescriptor(randomHash(random), nodeB, 1);
+        builder.addEvent(eventB1, List.of());
+        final EventDescriptor eventC1 = new EventDescriptor(randomHash(random), nodeC, 1);
+        builder.addEvent(eventC1, List.of());
+        final EventDescriptor eventD1 = new EventDescriptor(randomHash(random), nodeD, 1);
+        builder.addEvent(eventD1, List.of());
+
+        // Create some generation 2 events. A does not create an event yet.
+        final EventDescriptor eventB2 = new EventDescriptor(randomHash(random), nodeB, 2);
+        builder.addEvent(eventB2, List.of(eventA1, eventB1, eventC1, eventD1));
+        final EventDescriptor eventC2 = new EventDescriptor(randomHash(random), nodeC, 2);
+        builder.addEvent(eventC2, List.of(eventA1, eventB1, eventC1, eventD1));
+        final EventDescriptor eventD2 = new EventDescriptor(randomHash(random), nodeD, 2);
+        builder.addEvent(eventD2, List.of(eventA1, eventB1, eventC1, eventD1));
+
+        // Mark generation 1 as ancient.
+        builder.setMinimumGenerationNonAncient(2);
+        childlessEventTracker.pruneOldEvents(2);
+
+        // We shouldn't be able to find tipsets for ancient events.
+        assertNull(builder.getTipset(eventA1));
+        assertNull(builder.getTipset(eventB1));
+        assertNull(builder.getTipset(eventC1));
+        assertNull(builder.getTipset(eventD1));
+
+        // Including generation 1 events as parents shouldn't cause us to throw. (Angry log messages are ok).
+        assertDoesNotThrow(() -> {
+            calculator.getTheoreticalAdvancementWeight(List.of(eventA1, eventB2, eventC2, eventD1));
+            final EventDescriptor eventA2 = new EventDescriptor(randomHash(random), nodeA, 2);
+            builder.addEvent(eventA2, List.of(eventA1, eventB2, eventC2, eventD1));
+            calculator.addEventAndGetAdvancementWeight(eventA2);
+        });
     }
 }
