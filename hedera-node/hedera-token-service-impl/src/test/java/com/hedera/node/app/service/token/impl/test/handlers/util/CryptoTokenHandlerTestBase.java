@@ -136,6 +136,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final TokenID fungibleTokenId = asToken(1L);
 
     protected final TokenID nonFungibleTokenId = asToken(2L);
+    protected final TokenID fungibleTokenIDB = asToken(6L);
+    protected final TokenID fungibleTokenIDC = asToken(7L);
 
     protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
             .accountId(payerId)
@@ -170,6 +172,22 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final EntityIDPair treasuryNFTPair = EntityIDPair.newBuilder()
             .accountId(treasuryId)
             .tokenId(nonFungibleTokenId)
+            .build();
+    protected final EntityIDPair ownerFTBPair = EntityIDPair.newBuilder()
+            .accountId(ownerId)
+            .tokenId(fungibleTokenIDB)
+            .build();
+    protected final EntityIDPair ownerFTCPair = EntityIDPair.newBuilder()
+            .accountId(ownerId)
+            .tokenId(fungibleTokenIDC)
+            .build();
+    protected final EntityIDPair feeCollectorFTBPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenIDB)
+            .build();
+    protected final EntityIDPair feeCollectorFTCPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenIDC)
             .build();
     protected final NftID nftIdSl1 =
             NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(1L).build();
@@ -259,6 +277,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected WritableNftStore writableNftStore;
     /* ---------- Tokens ---------- */
     protected Token fungibleToken;
+    protected Token fungibleTokenB;
+    protected Token fungibleTokenC;
     protected Token nonFungibleToken;
     protected Nft nftSl1;
     protected Nft nftSl2;
@@ -271,6 +291,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected TokenRelation treasuryNFTRelation;
     protected TokenRelation feeCollectorFTRelation;
     protected TokenRelation feeCollectorNFTRelation;
+    protected TokenRelation ownerFTBRelation;
+    protected TokenRelation ownerFTCRelation;
+    protected TokenRelation feeCollectorFTBRelation;
+    protected TokenRelation feeCollectorFTCRelation;
 
     /* ---------- Accounts ---------- */
     protected Account account;
@@ -319,6 +343,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokensMap = new HashMap<>();
         tokensMap.put(fungibleTokenId, fungibleToken);
         tokensMap.put(nonFungibleTokenId, nonFungibleToken);
+        tokensMap.put(fungibleTokenIDB, fungibleTokenB);
+        tokensMap.put(fungibleTokenIDC, fungibleTokenC);
 
         aliasesMap = new HashMap<>();
         aliasesMap.put(alias.alias(), payerId);
@@ -333,6 +359,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokenRelsMap.put(treasuryNFTPair, treasuryNFTRelation);
         tokenRelsMap.put(feeCollectorFTPair, feeCollectorFTRelation);
         tokenRelsMap.put(feeCollectorNFTPair, feeCollectorNFTRelation);
+        tokenRelsMap.put(ownerFTBPair, ownerFTBRelation);
+        tokenRelsMap.put(ownerFTCPair, ownerFTCRelation);
+        tokenRelsMap.put(feeCollectorFTBPair, feeCollectorFTBRelation);
+        tokenRelsMap.put(feeCollectorFTCPair, feeCollectorFTCRelation);
     }
 
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
@@ -500,6 +530,16 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         nonFungibleTokenRelation = givenNonFungibleTokenRelation();
         ownerFTRelation =
                 givenFungibleTokenRelation().copyBuilder().accountId(ownerId).build();
+        ownerFTBRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(ownerId)
+                .tokenId(fungibleTokenIDB)
+                .build();
+        ownerFTCRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDC)
+                .accountId(ownerId)
+                .build();
         ownerNFTRelation =
                 givenNonFungibleTokenRelation().copyBuilder().accountId(ownerId).build();
         treasuryFTRelation =
@@ -516,10 +556,36 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .copyBuilder()
                 .accountId(feeCollectorId)
                 .build();
+        feeCollectorFTBRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .tokenId(fungibleTokenIDB)
+                .build();
+        feeCollectorFTCRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDC)
+                .accountId(feeCollectorId)
+                .build();
     }
 
     private void givenValidTokens() {
         fungibleToken = givenValidFungibleToken();
+        fungibleTokenB = givenValidFungibleToken()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDB)
+                .customFees(withFixedFee(FixedFee.newBuilder()
+                        .denominatingTokenId(fungibleTokenIDC)
+                        .amount(1000)
+                        .build()))
+                .build();
+        fungibleTokenC = givenValidFungibleToken()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDC)
+                .customFees(withFixedFee(FixedFee.newBuilder()
+                        .denominatingTokenId(fungibleTokenId)
+                        .amount(40)
+                        .build()))
+                .build();
         nonFungibleToken = givenValidNonFungibleToken();
         nftSl1 = givenNft(nftIdSl1);
         nftSl2 = givenNft(nftIdSl2);
