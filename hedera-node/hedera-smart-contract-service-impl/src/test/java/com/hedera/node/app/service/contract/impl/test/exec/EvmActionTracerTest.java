@@ -134,7 +134,7 @@ class EvmActionTracerTest {
 
         subject.tracePostExecution(frame, new Operation.OperationResult(123, null));
 
-        verify(actionStack).finalizeLastActionIn(frame, true);
+        verify(actionStack).finalizeLastAction(ActionStack.Source.POPPED_FROM_STACK, frame, ActionStack.Validation.ON);
     }
 
     @Test
@@ -147,32 +147,13 @@ class EvmActionTracerTest {
     }
 
     @Test
-    void precompileTraceIsNoopIfHaltedHederaPrecompile() {
-        givenActionSidecarsAndValidation();
-        given(frame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-
-        subject.customTracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-
-        verifyNoInteractions(actionStack);
-    }
-
-    @Test
-    void precompileTraceIsTrackedIfNotHalted() {
-        givenSidecarsOnly();
-        given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
-
-        subject.customTracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-
-        verify(actionStack).finalizeLastActionAsPrecompileIn(frame, ContractActionType.PRECOMPILE, false);
-    }
-
-    @Test
     void systemPrecompileTraceIsStillTrackedEvenIfHalted() {
         givenSidecarsOnly();
 
         subject.customTracePrecompileResult(frame, ContractActionType.SYSTEM);
 
-        verify(actionStack).finalizeLastActionAsPrecompileIn(frame, ContractActionType.SYSTEM, false);
+        verify(actionStack)
+                .finalizeLastStackActionAsPrecompile(frame, ContractActionType.SYSTEM, ActionStack.Validation.OFF);
     }
 
     @Test
@@ -190,7 +171,7 @@ class EvmActionTracerTest {
 
         subject.traceAccountCreationResult(frame, Optional.empty());
 
-        verify(actionStack).finalizeLastActionIn(frame, true);
+        verify(actionStack).finalizeLastAction(ActionStack.Source.READ_FROM_LIST_END, frame, ActionStack.Validation.ON);
     }
 
     private void givenNoActionSidecars() {

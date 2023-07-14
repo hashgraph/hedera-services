@@ -18,14 +18,41 @@ package com.hedera.node.app.service.contract.impl.test.exec.utils;
 
 import static com.hedera.hapi.streams.CallOperationType.OP_CALL;
 import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
-import static com.hedera.hapi.streams.ContractActionType.*;
+import static com.hedera.hapi.streams.ContractActionType.CALL;
+import static com.hedera.hapi.streams.ContractActionType.CREATE;
+import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
+import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
+import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.POPPED_FROM_STACK;
+import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.READ_FROM_LIST_END;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_EOA_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_ACTION;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONTRACT_CODE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CREATE_ACTION;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.LAZY_CREATE_ACTION;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MISSING_ADDRESS_CALL_ACTION;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_REVERT_REASON;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.STACK_DEPTH;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALUE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_VALUE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,13 +64,17 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
+import com.hedera.node.app.service.contract.impl.exec.utils.ActionWrapper;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionsHelper;
-import com.hedera.node.app.service.contract.impl.exec.utils.Wrapper;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogBuilder;
 import org.apache.logging.log4j.Logger;
@@ -88,15 +119,15 @@ class ActionStackTest {
     @Mock
     private LogBuilder logBuilder;
 
-    private List<Wrapper<ContractAction>> invalidActions = new ArrayList<>();
-    private List<Wrapper<ContractAction>> allActions = new ArrayList<>();
-    private Deque<Wrapper<ContractAction>> actionsStack = new ArrayDeque<>();
+    private final List<ActionWrapper<ContractAction>> invalidActions = new ArrayList<>();
+    private final List<ActionWrapper<ContractAction>> allActions = new ArrayList<>();
+    private final Deque<ActionWrapper<ContractAction>> actionsStack = new ArrayDeque<>();
 
     private ActionStack subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ActionStack(helper, invalidActions, allActions, actionsStack);
+        subject = new ActionStack(helper, allActions, actionsStack, invalidActions);
     }
 
     @Test
@@ -110,7 +141,7 @@ class ActionStackTest {
         given(log.atLevel(Level.ERROR)).willReturn(logBuilder);
         final var contextCaptor = forClass(String.class);
         final var anomaliesCaptor = forClass(String.class);
-        final var invalidWrapper = new Wrapper<>(MISSING_ADDRESS_CALL_ACTION);
+        final var invalidWrapper = new ActionWrapper<>(MISSING_ADDRESS_CALL_ACTION);
         invalidActions.add(invalidWrapper);
         allActions.add(invalidWrapper);
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
@@ -140,7 +171,7 @@ class ActionStackTest {
         given(log.atLevel(Level.ERROR)).willReturn(logBuilder);
         final var contextCaptor = forClass(String.class);
         final var anomaliesCaptor = forClass(String.class);
-        final var invalidWrapper = new Wrapper<>(MISSING_ADDRESS_CALL_ACTION);
+        final var invalidWrapper = new ActionWrapper<>(MISSING_ADDRESS_CALL_ACTION);
         actionsStack.push(invalidWrapper);
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(parentFrame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
@@ -163,12 +194,12 @@ class ActionStackTest {
     @Test
     void withoutHaltReasonJustUsesEmptyErrorAndNullsCalledContract() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new Wrapper<>(CREATE_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CREATE_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -180,19 +211,27 @@ class ActionStackTest {
     }
 
     @Test
+    void haltedHederaPrecompileIsAlreadyFinalized() {
+        given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
+
+        assertDoesNotThrow(
+                () -> subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON));
+    }
+
+    @Test
     void configuresPrecompileActionAsExpected() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
         final var pretendPrecompileAction = CALL_ACTION
                 .copyBuilder()
                 .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
                 .build();
-        final var wrappedAction = new Wrapper<>(pretendPrecompileAction);
+        final var wrappedAction = new ActionWrapper<>(pretendPrecompileAction);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
 
-        subject.finalizeLastActionAsPrecompileIn(parentFrame, PRECOMPILE, true);
+        subject.finalizeLastStackActionAsPrecompile(parentFrame, SYSTEM, ActionStack.Validation.ON);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -202,7 +241,7 @@ class ActionStackTest {
                         .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
                         .build(),
                 finalAction.recipientContract());
-        assertEquals(PRECOMPILE, finalAction.callType());
+        assertEquals(SYSTEM, finalAction.callType());
         assertTrue(actionsStack.isEmpty());
         assertEquals(1, invalidActions.size());
         assertSame(finalAction, invalidActions.get(0).get());
@@ -210,20 +249,20 @@ class ActionStackTest {
     }
 
     @Test
-    void doesNotPushInvalidIfInappropriate() {
-        given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
+    void doesNotAddValidActionToInvalidList() {
+        given(parentFrame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
         final var pretendPrecompileAction = CALL_ACTION
                 .copyBuilder()
                 .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
                 .build();
-        final var wrappedAction = new Wrapper<>(pretendPrecompileAction);
+        final var wrappedAction = new ActionWrapper<>(pretendPrecompileAction);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
         given(helper.isValid(any())).willReturn(true);
 
-        subject.finalizeLastActionAsPrecompileIn(parentFrame, PRECOMPILE, true);
+        subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -239,15 +278,30 @@ class ActionStackTest {
     }
 
     @Test
+    void worksAroundEmptyStack() {
+        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
+        allActions.add(wrappedAction);
+
+        assertDoesNotThrow(
+                () -> subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF));
+    }
+
+    @Test
+    void worksAroundEmptyList() {
+        assertDoesNotThrow(
+                () -> subject.finalizeLastAction(READ_FROM_LIST_END, parentFrame, ActionStack.Validation.OFF));
+    }
+
+    @Test
     void withNonMissingHaltReasonJustSetsIt() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new Wrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(ILLEGAL_STATE_CHANGE));
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -260,14 +314,14 @@ class ActionStackTest {
     @Test
     void withInvalidSolidityAddressHaltReasonAddsSyntheticInvalidActionToCall() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new Wrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(MISSING_ADDRESS));
         given(helper.createSynthActionForMissingAddressIn(parentFrame)).willReturn(MISSING_ADDRESS_CALL_ACTION);
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(2, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -281,13 +335,13 @@ class ActionStackTest {
     @Test
     void withInvalidSolidityAddressHaltReasonDoesNotAddSyntheticInvalidActionToCreate() {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-        final var wrappedAction = new Wrapper<>(CREATE_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CREATE_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
         given(parentFrame.getExceptionalHaltReason()).willReturn(Optional.of(MISSING_ADDRESS));
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -300,13 +354,14 @@ class ActionStackTest {
     void finalizationDoesNothingButMaybePopStackForUnexpectedStates(
             @NonNull final MessageFrame.State state, final boolean actionIsOnStack) {
         given(parentFrame.getState()).willReturn(state);
-        final var wrappedAction = new Wrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
         allActions.add(wrappedAction);
         if (actionIsOnStack) {
             actionsStack.push(wrappedAction);
         }
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        final var source = actionIsOnStack ? POPPED_FROM_STACK : READ_FROM_LIST_END;
+        subject.finalizeLastAction(source, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -338,11 +393,11 @@ class ActionStackTest {
             givenResolvableEvmAddress();
         }
 
-        final var wrappedAction = new Wrapper<>(action);
+        final var wrappedAction = new ActionWrapper<>(action);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -368,11 +423,11 @@ class ActionStackTest {
         given(parentFrame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
 
-        final var wrappedAction = new Wrapper<>(CREATE_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CREATE_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));
@@ -389,11 +444,11 @@ class ActionStackTest {
         given(parentFrame.getRemainingGas()).willReturn(REMAINING_GAS - gasUsed);
         given(parentFrame.getType()).willReturn(CONTRACT_CREATION);
 
-        final var wrappedAction = new Wrapper<>(CALL_ACTION);
+        final var wrappedAction = new ActionWrapper<>(CALL_ACTION);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
 
-        subject.finalizeLastActionIn(parentFrame, false);
+        subject.finalizeLastAction(POPPED_FROM_STACK, parentFrame, ActionStack.Validation.OFF);
 
         assertEquals(1, allActions.size());
         assertEquals(wrappedAction, allActions.get(0));

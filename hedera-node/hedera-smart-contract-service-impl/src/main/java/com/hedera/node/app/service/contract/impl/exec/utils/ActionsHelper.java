@@ -18,9 +18,10 @@ package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import static com.hedera.hapi.streams.CallOperationType.OP_UNKNOWN;
 import static com.hedera.hapi.streams.ContractActionType.NO_ACTION;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asCallOperationType;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.ContractAction;
@@ -116,7 +117,7 @@ public class ActionsHelper {
 
     private static int countNonNulls(@NonNull final Object... objs) {
         var count = 0;
-        for (var obj : requireNonNull(objs)) {
+        for (var obj : objs) {
             if (null != obj) {
                 count++;
             }

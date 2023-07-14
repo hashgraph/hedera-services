@@ -26,10 +26,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param <T> the type of the value
  */
-public class Wrapper<T> {
+public class ActionWrapper<T> {
     private T value;
 
-    public Wrapper(@NonNull final T value) {
+    public ActionWrapper(@NonNull final T value) {
         this.value = requireNonNull(value);
     }
 
