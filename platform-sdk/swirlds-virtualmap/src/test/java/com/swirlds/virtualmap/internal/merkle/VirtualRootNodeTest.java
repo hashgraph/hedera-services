@@ -32,8 +32,8 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -444,6 +444,15 @@ class VirtualRootNodeTest extends VirtualTestBase {
         IntStream.range(1, 101).forEach(index -> {
             assertNotNull(root.getRecords().findHash(index));
         });
+    }
+
+    @Test
+    @DisplayName("Root node should be hashed after full leaves rehash")
+    void testHashedAfterFullRehash() {
+        final VirtualRootNode<TestKey, TestValue> root = prepareRootForFullRehash();
+        root.fullLeafRehashIfNecessary();
+
+        assertTrue(root.isHashed());
     }
 
     @Test

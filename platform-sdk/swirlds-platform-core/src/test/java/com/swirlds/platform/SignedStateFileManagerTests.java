@@ -49,7 +49,6 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
@@ -62,6 +61,7 @@ import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -209,6 +209,7 @@ class SignedStateFileManagerTests {
 
         if (successExpected) {
             validateSavingOfState(signedState);
+            assertEquals(signedState.getRound(), manager.getLatestSavedStateRound());
         }
 
         assertEquals(successExpected, saveSucceeded.get(), "Invalid 'success' value passed to StateToDiskConsumer");
@@ -561,6 +562,8 @@ class SignedStateFileManagerTests {
                         },
                         Duration.ofSeconds(2),
                         "state saving should have wrapped up by now");
+
+                assertEquals(signedState.getRound(), manager.getLatestSavedStateRound());
 
                 // The first state with a timestamp after this boundary should be saved
                 nextBoundary = Instant.ofEpochSecond(
