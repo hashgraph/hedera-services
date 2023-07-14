@@ -123,7 +123,7 @@ class TipsetEventCreatorImplTests {
             final TipsetEventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(

@@ -134,7 +134,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         cryptography = platformContext.getCryptography();
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        tipsetTracker = new TipsetTracker(addressBook);
+        tipsetTracker = new TipsetTracker(time, addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
                 platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);

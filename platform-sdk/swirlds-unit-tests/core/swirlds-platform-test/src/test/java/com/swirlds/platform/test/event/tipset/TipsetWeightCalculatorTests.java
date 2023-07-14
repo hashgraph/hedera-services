@@ -78,7 +78,7 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(addressBook);
+        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
                 platformContext, Time.getCurrent(), addressBook, selfId, builder, childlessEventTracker);
@@ -208,7 +208,7 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker tracker = new TipsetTracker(addressBook);
+        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
                 platformContext, Time.getCurrent(), addressBook, nodeA, tracker, childlessEventTracker);
@@ -422,7 +422,7 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(addressBook);
+        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
                 platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);
@@ -494,7 +494,7 @@ class TipsetWeightCalculatorTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final TipsetTracker builder = new TipsetTracker(addressBook);
+        final TipsetTracker builder = new TipsetTracker(Time.getCurrent(), addressBook);
         final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
         final TipsetWeightCalculator calculator = new TipsetWeightCalculator(
                 platformContext, Time.getCurrent(), addressBook, nodeA, builder, childlessEventTracker);

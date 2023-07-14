@@ -231,7 +231,11 @@ public class TipsetWeightCalculator {
                     ancientParentLogger.error(
                             EXCEPTION.getMarker(),
                             "When looking at possible parents, we should never "
-                                    + "consider ancient parents that are not self parents.");
+                                    + "consider ancient parents that are not self parents. "
+                                    + "Parent ID = {}, parent generation = {}, minimum generation non-ancient = {}",
+                            parent.getCreator(),
+                            parent.getGeneration(),
+                            tipsetTracker.getMinimumGenerationNonAncient());
                 }
                 continue;
             }
