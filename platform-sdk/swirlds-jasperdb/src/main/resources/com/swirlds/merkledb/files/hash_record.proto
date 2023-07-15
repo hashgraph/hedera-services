@@ -7,7 +7,7 @@ option java_multiple_files = true;
 
 message HashRecord {
 
-    uint64 path = 1;
+    optional uint64 path = 1;
 
     bytes hash = 2;
 }

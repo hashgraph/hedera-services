@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Function;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -210,10 +211,10 @@ class BucketTest {
         }
         assertEquals(testKeys.length, bucket.getBucketEntryCount(), "Check we have correct count");
         // get raw bytes first to compare to
-        final int size = bucket.getSize();
+        final int size = bucket.sizeInBytes();
         final byte[] goodBytes = new byte[size];
-        final BufferedData bucketData = bucket.getBucketBuffer();
-        bucketData.readBytes(goodBytes);
+        final BufferedData bucketData = BufferedData.wrap(goodBytes);
+        bucket.writeTo(bucketData);
         final String goodBytesStr = Arrays.toString(goodBytes);
         // now test write to buffer
         final BufferedData bbuf = BufferedData.allocate(size);
@@ -223,7 +224,7 @@ class BucketTest {
 
         // create new bucket with good bytes and check it is the same
         final Bucket<VirtualLongKey> bucket2 = new Bucket<>(keyType.keySerializer);
-        bucket2.putAllData(ByteBuffer.wrap(goodBytes));
+        bucket2.readFrom(BufferedData.wrap(goodBytes));
         assertEquals(bucket.toString(), bucket2.toString(), "Expect bucket toStrings to match");
 
         // test clear
@@ -232,23 +233,68 @@ class BucketTest {
         assertEquals(bucket3.toString(), bucket.toString(), "Expect bucket toStrings to match");
     }
 
+    @ParameterizedTest
+    @EnumSource(KeyType.class)
+    @DisplayName("Bucket serializer can extract bucket index from buffer data")
+    void testExtractBucketIndex(KeyType keyType) throws IOException {
+        // create some keys to test with
+        final VirtualLongKey[] keys = new VirtualLongKey[4];
+        for (int i = 0; i < keys.length; i++) {
+            keys[i] = keyType.keyConstructor.apply((long) (i + 10));
+        }
+
+        // create a bucket
+        final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
+        final BucketSerializer<VirtualLongKey> bucketSerializer = new BucketSerializer<>(keyType.keySerializer);
+        int bucketSize = bucket.sizeInBytes();
+        BufferedData buf = BufferedData.allocate(bucketSize);
+        bucket.writeTo(buf);
+        buf.reset();
+        assertEquals(0, bucketSerializer.extractKey(buf), "Bucket index should be 0");
+
+        // now check with a different index
+        bucket.setBucketIndex(99);
+        bucketSize = bucket.sizeInBytes();
+        buf = BufferedData.allocate(bucketSize);
+        bucket.writeTo(buf);
+        buf.reset();
+        assertEquals(99, bucketSerializer.extractKey(buf), "Bucket index should be 99");
+
+        // and now some large value
+        bucket.setBucketIndex(123465);
+        bucketSize = bucket.sizeInBytes();
+        buf = BufferedData.allocate(bucketSize);
+        bucket.writeTo(buf);
+        buf.reset();
+        assertEquals(123465, bucketSerializer.extractKey(buf), "Bucket index should be 123465");
+    }
+
     @Test
     void toStringAsExpectedForBucket() {
         final ExampleLongKeyFixedSize.Serializer keySerializer = new ExampleLongKeyFixedSize.Serializer();
         final Bucket<ExampleLongKeyFixedSize> bucket = new Bucket<>(keySerializer);
 
         final String emptyBucketRepr =
-                "Bucket{bucketIndex=-1, entryCount=0, size=12\n" + "} RAW DATA = FF FF FF FF 00 00 00 0C 00 00 00 00 ";
+                "Bucket{bucketIndex=0, entryCount=0, size=0\n" + "}";
         assertEquals(emptyBucketRepr, bucket.toString(), "Empty bucket should represent as expected");
+
+        final String bucketWithIndex0Repr =
+                "Bucket{bucketIndex=0, entryCount=0, size=0\n" + "}";
+        bucket.setBucketIndex(0);
+        assertEquals(bucketWithIndex0Repr, bucket.toString(), "Empty bucket should represent as expected");
+
+        final String bucketWithIndex1Repr =
+                "Bucket{bucketIndex=1, entryCount=0, size=2\n" + "}";
+        bucket.setBucketIndex(1);
+        assertEquals(bucketWithIndex1Repr, bucket.toString(), "Empty bucket should represent as expected");
 
         final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(2056);
         bucket.putValue(key, 5124);
         bucket.setBucketIndex(0);
-        final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=36\n"
+        final String nonEmptyBucketRepr = "Bucket{bucketIndex=0, entryCount=1, size=18\n"
                 + "    ENTRY[0] value= 5124 keyHashCode=2056"
-                + " key=LongVirtualKey{value=2056, hashCode=2056} keySize=8\n"
-                + "} RAW DATA = 00 00 00 00 00 00 00 24 00 00 00 01 00 00 08 08 00 00 00 00 00"
-                + " 00 14 04 00 00 00 08 00 00 00 00 00 00 08 08 ";
+                + " key=LongVirtualKey{value=2056, hashCode=2056}\n"
+                + "}";
         assertEquals(nonEmptyBucketRepr, bucket.toString(), "Non-empty bucket represent as expected");
     }
 

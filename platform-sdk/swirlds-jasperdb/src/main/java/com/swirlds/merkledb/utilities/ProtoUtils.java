@@ -73,9 +73,18 @@ public class ProtoUtils {
         return n;
     }
 
+    public static int sizeOfVarInt64(final long value) {
+        if (value >= 0) {
+            return sizeOfUnsignedVarInt64(value);
+        } else {
+            // Must sign-extend.
+            return 10; // MAX_VARINT_SIZE;
+        }
+    }
+
     public static void writeTag(final WritableSequentialData out, final FieldDefinition field) {
         final int wireType = switch (field.type()) {
-            case UINT32, UINT64 -> WIRE_TYPE_VARINT;
+            case INT32, UINT32, INT64, UINT64 -> WIRE_TYPE_VARINT;
             case FIXED32 -> WIRE_TYPE_FIXED_32_BIT;
             case FIXED64 -> WIRE_TYPE_FIXED_64_BIT;
             case BYTES, MESSAGE -> WIRE_TYPE_DELIMITED;
@@ -85,7 +94,7 @@ public class ProtoUtils {
     }
 
     // Copied from ProtoWriterTools
-    public static int sizeOfBytes(final FieldDefinition field, final int length) {
+    public static int sizeOfDelimited(final FieldDefinition field, final int length) {
         return Math.toIntExact(sizeOfTag(field, WIRE_TYPE_DELIMITED) + sizeOfVarInt32(length) + length);
     }
 

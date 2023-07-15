@@ -21,7 +21,6 @@ import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
-import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
@@ -98,8 +97,8 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
             size += ProtoUtils.sizeOfTag(FIELD_LEAFRECORD_PATH, WIRE_TYPE_VARINT) +
                     ProtoUtils.sizeOfUnsignedVarInt64(data.getPath());
         }
-        size += ProtoUtils.sizeOfBytes(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey()));
-        size += ProtoUtils.sizeOfBytes(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
+        size += ProtoUtils.sizeOfDelimited(FIELD_LEAFRECORD_KEY, keySerializer.getSerializedSize(data.getKey()));
+        size += ProtoUtils.sizeOfDelimited(FIELD_LEAFRECORD_VALUE, valueSerializer.getSerializedSize(data.getValue()));
         return size;
     }
 

@@ -98,13 +98,13 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
 
     @Override
     public int getSerializedSize(final Bucket<K> bucket) {
-        return bucket.getSize();
+        return bucket.sizeInBytes();
     }
 
     @Override
     public Bucket<K> deserialize(ReadableSequentialData in) throws IOException {
         final Bucket<K> bucket = reusableBucketPool.getBucket();
-        bucket.putAllData(in);
+        bucket.readFrom(in);
         return bucket;
     }
 

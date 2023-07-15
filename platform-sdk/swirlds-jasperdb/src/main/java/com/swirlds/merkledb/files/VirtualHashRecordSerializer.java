@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.files;
 
 import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_DELIMITED;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 
 import com.hedera.pbj.runtime.FieldDefinition;
@@ -76,7 +75,7 @@ public final class VirtualHashRecordSerializer implements DataItemSerializer<Vir
             size += ProtoUtils.sizeOfTag(FIELD_HASHRECORD_PATH, WIRE_TYPE_VARINT) +
                     ProtoUtils.sizeOfUnsignedVarInt64(data.path());
         }
-        size += ProtoUtils.sizeOfBytes(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
+        size += ProtoUtils.sizeOfDelimited(FIELD_HASHRECORD_HASH, data.hash().getValue().length);
         return size;
     }
 
