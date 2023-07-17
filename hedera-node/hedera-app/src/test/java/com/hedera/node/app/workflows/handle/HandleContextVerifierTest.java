@@ -791,6 +791,9 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
 
             // Now verify that if we verify with one valid verification result, the threshold verification passes
             verificationResults =
@@ -804,6 +807,42 @@ class HandleContextVerifierTest {
             assertThat(result.verificationFor(key, verificationAssistant))
                     .extracting(SignatureVerification::passed)
                     .isEqualTo(true);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {-1, 0, 1})
+        @DisplayName("A threshold of less than 1 is clamped to 1")
+        void thresholdWithEmptyKeylist(final int threshold) {
+            // Given a ThresholdKey with a threshold less than 1
+            final var thresholdKey = ThresholdKey.newBuilder()
+                    .threshold(threshold)
+                    .keys(KeyList.newBuilder().build())
+                    .build();
+            final var key = Key.newBuilder().thresholdKey(thresholdKey).build();
+
+            // First, verify that if there are NO valid verification results the threshold verification fails
+            Map<Key, SignatureVerificationFuture> verificationResults =
+                    Map.of(FAKE_ECDSA_KEY_INFOS[1].publicKey(), goodFuture(FAKE_ECDSA_KEY_INFOS[1].publicKey()));
+            var result = createVerifier(verificationResults);
+            assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+
+            // Now verify that if we verify with one valid verification result, the threshold verification fails
+            verificationResults =
+                    Map.of(FAKE_ECDSA_KEY_INFOS[0].publicKey(), goodFuture(FAKE_ECDSA_KEY_INFOS[0].publicKey()));
+            // When we pre handle
+            result = createVerifier(verificationResults);
+            // Then we find the verification results will pass if we have at least 1 valid signature
+            assertThat(result.verificationFor(key))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
+            assertThat(result.verificationFor(key, verificationAssistant))
+                    .extracting(SignatureVerification::passed)
+                    .isEqualTo(false);
         }
 
         @Test

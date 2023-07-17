@@ -118,7 +118,7 @@ public class HandleContextVerifier {
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
                 final var keys = keyList.keysOrElse(emptyList());
                 final var threshold = thresholdKey.threshold();
-                final var clampedThreshold = Math.min(Math.max(1, threshold), keys.size());
+                final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 var passed = 0;
                 for (final var childKey : keys) {
                     if (verificationFor(childKey, callback).passed()) {
@@ -186,7 +186,7 @@ public class HandleContextVerifier {
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
                 final var keys = keyList.keysOrElse(emptyList());
                 final var threshold = thresholdKey.threshold();
-                final var clampedThreshold = Math.min(Math.max(1, threshold), keys.size());
+                final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 yield verificationFutureFor(key, keys, keys.size() - clampedThreshold);
             }
             case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> completedFuture(
