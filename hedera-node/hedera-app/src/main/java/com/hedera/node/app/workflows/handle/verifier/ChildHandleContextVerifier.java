@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.workflows.handle.verifier;
@@ -41,7 +40,8 @@ public class ChildHandleContextVerifier implements HandleContextVerifier {
      * @param parent the parent {@link HandleContextVerifier}
      * @param parentCallback the parent {@link VerificationAssistant}
      */
-    public ChildHandleContextVerifier(@NonNull final HandleContextVerifier parent, @NonNull final VerificationAssistant parentCallback) {
+    public ChildHandleContextVerifier(
+            @NonNull final HandleContextVerifier parent, @NonNull final VerificationAssistant parentCallback) {
         this.parent = requireNonNull(parent, "parent must not be null");
         this.parentCallback = requireNonNull(parentCallback, "parentCallback must not be null");
     }
@@ -55,7 +55,8 @@ public class ChildHandleContextVerifier implements HandleContextVerifier {
 
     @NonNull
     @Override
-    public SignatureVerification verificationFor(@NonNull final Key key, @NonNull final VerificationAssistant callback) {
+    public SignatureVerification verificationFor(
+            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
         requireNonNull(key, "key must not be null");
         requireNonNull(callback, "callback must not be null");
         final VerificationAssistant composedCallback = (key1, signatureVerification) -> {

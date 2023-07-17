@@ -5,14 +5,13 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.hedera.node.app.workflows.handle.verifier;
@@ -70,8 +69,7 @@ class ChildHandleContextVerifierTest {
                 Arguments.of(true, true, true),
                 Arguments.of(true, true, false),
                 Arguments.of(true, false, true),
-                Arguments.of(true, false, false)
-        );
+                Arguments.of(true, false, false));
     }
 
     @BeforeEach
@@ -88,8 +86,7 @@ class ChildHandleContextVerifierTest {
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.verificationFor(null, childCallback))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.verificationFor(null, childCallback)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.verificationFor(KEY, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
     }
@@ -107,10 +104,10 @@ class ChildHandleContextVerifierTest {
     @MethodSource("getVerificationResults")
     void testVerificationForFailingCallbacks(boolean originalResult, boolean parentResult, boolean childResult) {
         // given
-        final var originalVerification = originalResult? passedVerification(KEY) : failedVerification(KEY);
+        final var originalVerification = originalResult ? passedVerification(KEY) : failedVerification(KEY);
         when(parentCallback.test(KEY, originalVerification)).thenReturn(parentResult);
 
-        final var intermediateVerification = parentResult? passedVerification(KEY) : failedVerification(KEY);
+        final var intermediateVerification = parentResult ? passedVerification(KEY) : failedVerification(KEY);
         when(childCallback.test(KEY, intermediateVerification)).thenReturn(childResult);
 
         final var captor = ArgumentCaptor.forClass(VerificationAssistant.class);
@@ -130,7 +127,7 @@ class ChildHandleContextVerifierTest {
     void testVerificationForFailingCallbacks(boolean parentResult, boolean childResult) {
         // given
         when(parentCallback.test(eq(KEY), any())).thenReturn(parentResult);
-        final var intermediateResult = parentResult? passedVerification(KEY) : failedVerification(KEY);
+        final var intermediateResult = parentResult ? passedVerification(KEY) : failedVerification(KEY);
         when(childCallback.test(KEY, intermediateResult)).thenReturn(childResult);
         final var captor = ArgumentCaptor.forClass(VerificationAssistant.class);
         final var verification = mock(SignatureVerification.class);
@@ -153,5 +150,4 @@ class ChildHandleContextVerifierTest {
         // then
         verify(parentVerifier).verificationFor(ALIAS);
     }
-
 }

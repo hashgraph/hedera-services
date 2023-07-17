@@ -273,7 +273,9 @@ public class HandleContextImpl implements HandleContext {
 
     @NonNull
     @Override
-    public <T> T dispatchChildTransaction(@NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass,
+    public <T> T dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
             @NonNull final VerificationAssistant callback) {
         final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
@@ -290,8 +292,10 @@ public class HandleContextImpl implements HandleContext {
 
     @NonNull
     @Override
-    public <T> T dispatchRemovableChildTransaction(@NonNull final TransactionBody txBody,
-            @NonNull final Class<T> recordBuilderClass, @NonNull final VerificationAssistant callback) {
+    public <T> T dispatchRemovableChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final VerificationAssistant callback) {
         final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
         return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
