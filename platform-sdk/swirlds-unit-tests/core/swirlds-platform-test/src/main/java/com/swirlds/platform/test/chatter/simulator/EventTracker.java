@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.chatter.simulator;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.commaSeparatedNumber;
-import static com.swirlds.platform.Utilities.isStrongMinority;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.printHeader;
 import static com.swirlds.platform.test.chatter.simulator.GossipSimulationUtils.roundDecimal;
 
@@ -231,12 +231,12 @@ public class EventTracker {
             String threshold = "";
             String significance = "";
 
-            if (isStrongMinority(i, nodeCount) && !isStrongMinority(i - 1, nodeCount)) {
+            if (STRONG_MINORITY.isSatisfiedBy(i, nodeCount) && !STRONG_MINORITY.isSatisfiedBy(i - 1, nodeCount)) {
                 threshold = ">= 1/3";
                 significance = ">= 1 honest & functional";
             }
 
-            if (isSuperMajority(i, nodeCount) && !isSuperMajority(i - 1, nodeCount)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(i, nodeCount) && !SUPER_MAJORITY.isSatisfiedBy(i - 1, nodeCount)) {
                 threshold = "> 2/3";
                 significance = ">= quorum";
             }
@@ -267,12 +267,12 @@ public class EventTracker {
             String threshold = "";
             String significance = "";
 
-            if (isStrongMinority(i, nodeCount) && !isStrongMinority(i - 1, nodeCount)) {
+            if (STRONG_MINORITY.isSatisfiedBy(i, nodeCount) && !STRONG_MINORITY.isSatisfiedBy(i - 1, nodeCount)) {
                 threshold = ">= 1/3";
                 significance = ">= 1 honest & functional";
             }
 
-            if (isSuperMajority(i, nodeCount) && !isSuperMajority(i - 1, nodeCount)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(i, nodeCount) && !SUPER_MAJORITY.isSatisfiedBy(i - 1, nodeCount)) {
                 threshold = "> 2/3";
                 significance = ">= quorum";
             }
@@ -302,12 +302,12 @@ public class EventTracker {
             String threshold = "";
             String significance = "";
 
-            if (isStrongMinority(i, nodeCount) && !isStrongMinority(i - 1, nodeCount)) {
+            if (STRONG_MINORITY.isSatisfiedBy(i, nodeCount) && !STRONG_MINORITY.isSatisfiedBy(i - 1, nodeCount)) {
                 threshold = ">= 1/3";
                 significance = ">= 1 honest & functional";
             }
 
-            if (isSuperMajority(i, nodeCount) && !isSuperMajority(i - 1, nodeCount)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(i, nodeCount) && !SUPER_MAJORITY.isSatisfiedBy(i - 1, nodeCount)) {
                 threshold = "> 2/3";
                 significance = ">= quorum";
             }

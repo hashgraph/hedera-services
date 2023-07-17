@@ -110,6 +110,9 @@ public class TipsetTracker {
             @NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
 
         if (eventDescriptor.getGeneration() < minimumGenerationNonAncient) {
+            // Note: although we don't immediately return from this method, the tipsets.put()
+            // will not update the data structure for an ancient event. We should never
+            // enter this bock of code. This log is here as a canary to alert us if we somehow do.
             ancientEventLogger.error(
                     EXCEPTION.getMarker(),
                     "Rejecting ancient event from {} with generation {}. "

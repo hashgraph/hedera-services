@@ -18,7 +18,7 @@ package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.event.tipset.Tipset.merge;
 import static com.swirlds.platform.event.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -175,7 +175,8 @@ class TipsetWeightCalculatorTests {
 
             // Validate that the snapshot advances correctly.
             runningAdvancementScore = runningAdvancementScore.plus(advancementScoreChange);
-            if (isSuperMajority(runningAdvancementScore.advancementWeight() + weightMap.get(selfId), totalWeight)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(
+                    runningAdvancementScore.advancementWeight() + weightMap.get(selfId), totalWeight)) {
                 // The snapshot should have been updated.
                 assertNotSame(previousSnapshot, calculator.getSnapshot());
                 previousSnapshot = calculator.getSnapshot();

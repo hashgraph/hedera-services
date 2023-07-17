@@ -16,6 +16,7 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.LogMarker.ADD_EVENT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.internal.EventImpl.MIN_TRANS_TIMESTAMP_INCR_NANOS;
@@ -545,8 +546,8 @@ public class ConsensusImpl implements Consensus {
                     }
                 }
                 long totalWeight = addressBook.getTotalWeight();
-                boolean superMajority = Utilities.isSuperMajority(yesWeight, totalWeight)
-                        || Utilities.isSuperMajority(noWeight, totalWeight);
+                boolean superMajority = SUPER_MAJORITY.isSatisfiedBy(yesWeight, totalWeight)
+                        || SUPER_MAJORITY.isSatisfiedBy(noWeight, totalWeight);
 
                 election.vote[voterIndex] = (yesWeight >= noWeight);
                 if ((election.age % config.coinFreq()) == 0) {
@@ -1240,7 +1241,7 @@ public class ConsensusImpl implements Consensus {
                                 weight += addressBook.getAddress(nodeId).getWeight();
                             }
                         }
-                        if (Utilities.isSuperMajority(weight, totalWeight)) { // strongly see supermajority of
+                        if (SUPER_MAJORITY.isSatisfiedBy(weight, totalWeight)) { // strongly see supermajority of
                             // intermediates
                             x.setStronglySeeP(mm, st);
                         } else {
@@ -1375,7 +1376,7 @@ public class ConsensusImpl implements Consensus {
             }
         }
         consensusMetrics.witnessesStronglySeen(numStronglySeen);
-        if (Utilities.isSuperMajority(weight, addressBook.getTotalWeight())) {
+        if (SUPER_MAJORITY.isSatisfiedBy(weight, addressBook.getTotalWeight())) {
             // it's a supermajority, so advance to the next round
             x.setRoundCreated(1 + parentRound(x));
             consensusMetrics.roundIncrementedByStronglySeen();

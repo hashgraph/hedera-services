@@ -17,6 +17,7 @@
 package com.swirlds.platform.components;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -24,7 +25,6 @@ import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -172,7 +172,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         weightNotExceedingThreshold.put(originalEventCount, newWeightAtThreshold);
 
         // Make sure threshold allows at least 1/3 of the weight to be part of the critical quorum
-        if (!Utilities.isStrongMinority(
+        if (!STRONG_MINORITY.isSatisfiedBy(
                 weightNotExceedingThreshold.getOrDefault(threshold.get(), totalWeight), totalWeight)) {
             threshold.incrementAndGet();
         }
