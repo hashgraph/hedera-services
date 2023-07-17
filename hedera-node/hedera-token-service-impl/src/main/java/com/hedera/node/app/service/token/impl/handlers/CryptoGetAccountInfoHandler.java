@@ -370,9 +370,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.stakePeriodStart());
         stakingInfo.stakePeriodStart(Timestamp.newBuilder().seconds(startSecond));
         if (mayHavePendingReward(account)) {
-            final var stakingNodeInfo = readableStakingInfoStore.get(AccountID.newBuilder()
-                    .accountNum(getStakedNodeAddressBookId(account))
-                    .build());
+            final var stakingNodeInfo = readableStakingInfoStore.get(getStakedNodeAddressBookId(account));
             final var pendingReward = rewardCalculator.estimatePendingRewards(account, stakingNodeInfo);
             stakingInfo.pendingReward(pendingReward);
         }

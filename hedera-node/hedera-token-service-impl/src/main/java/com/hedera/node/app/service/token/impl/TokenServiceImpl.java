@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.mono.state.codec.MonoMapCodecAdapter;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumValue;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -59,6 +60,7 @@ public class TokenServiceImpl implements TokenService {
     public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
+    public static final String STAKING_REWARDS_KEY = "STAKING_REWARDS";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
@@ -78,7 +80,8 @@ public class TokenServiceImpl implements TokenService {
                         onDiskAliasesDef(),
                         onDiskNftsDef(),
                         onDiskTokenRelsDef(),
-                        payerRecordsDef());
+                        payerRecordsDef(),
+                        stakingInfoDef());
             }
 
             @Override
@@ -160,5 +163,12 @@ public class TokenServiceImpl implements TokenService {
         final var valueSerdes =
                 MonoMapCodecAdapter.codecForVirtualValue(UniqueTokenValue.CURRENT_VERSION, UniqueTokenValue::new);
         return StateDefinition.onDisk(NFTS_KEY, keySerdes, valueSerdes, MAX_MINTABLE_NFTS);
+    }
+
+    private StateDefinition<EntityNum, MerkleStakingInfo> stakingInfoDef() {
+        final var keySerdes = new EntityNumCodec();
+        final var valueSerdes =
+                MonoMapCodecAdapter.codecForSelfSerializable(MerkleStakingInfo.CURRENT_VERSION, MerkleStakingInfo::new);
+        return StateDefinition.inMemory(STAKING_INFO_KEY, keySerdes, valueSerdes);
     }
 }

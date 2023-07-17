@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state.iss.internal;
 
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
@@ -213,7 +213,7 @@ public class RoundHashValidator {
                         + "a conclusion about this node's hash validity should have already been reached");
             }
         } else if (hashFinder.getStatus() == ConsensusHashStatus.UNDECIDED) {
-            if (isSuperMajority(hashFinder.getHashReportedWeight(), hashFinder.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(hashFinder.getHashReportedWeight(), hashFinder.getTotalWeight())) {
                 // We have collected many signatures, but were still unable to find a consensus hash.
                 status = HashValidityStatus.CATASTROPHIC_LACK_OF_DATA;
             } else {
