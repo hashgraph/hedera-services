@@ -192,7 +192,7 @@ public class HandleContextImpl implements HandleContext {
 
     @NonNull
     @Override
-    public SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback) {
+    public SignatureVerification verificationFor(@NonNull final Key key, @NonNull final VerificationAssistant callback) {
         requireNonNull(key, "key must not be null");
         requireNonNull(callback, "callback must not be null");
         return verifier.verificationFor(key, callback);
