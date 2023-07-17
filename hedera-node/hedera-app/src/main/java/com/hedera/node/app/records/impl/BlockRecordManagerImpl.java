@@ -119,7 +119,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY);
         this.lastBlockInfo = blockInfoState.get();
         assert this.lastBlockInfo != null : "Cannot be null, because this state is created at genesis";
-        this.provisionalCurrentBlockNumber = lastBlockInfo.lastBlockNo() + 1; // We know what this will be
+        this.provisionalCurrentBlockNumber = lastBlockInfo.lastBlockNumber() + 1; // We know what this will be
         this.provisionalCurrentBlockFirstTransactionTime = null; // We do not know what this will be yet
 
         // Initialize the stream file producer. NOTE, if the producer cannot be initialized, and a random exception is
@@ -155,7 +155,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         // Is this the very first transaction since the node was started?
         final var restarted = provisionalCurrentBlockFirstTransactionTime == null;
         // Check to see if we are in Genesis. If we are, then we need to create a new provisional first block.
-        if (lastBlockInfo.lastBlockNo() == 0 && restarted) {
+        if (lastBlockInfo.lastBlockNumber() == 0 && restarted) {
             // we are in genesis, so create a new block 1
             streamFileProducer.switchBlocks(0, 1, consensusTime);
             // set this transaction as the first transaction in the current block
@@ -165,7 +165,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         } else if (restarted) {
             // We are NOT in genesis, but we did just restart. So we will need to create a new block, but we don't
             // need to close out the old one.
-            final var lastBlockNo = lastBlockInfo.lastBlockNo();
+            final var lastBlockNo = lastBlockInfo.lastBlockNumber();
             provisionalCurrentBlockNumber = lastBlockNo + 1;
             provisionalCurrentBlockFirstTransactionTime = consensusTime;
             streamFileProducer.switchBlocks(lastBlockNo, provisionalCurrentBlockNumber, consensusTime);
@@ -277,7 +277,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     @Override
     public long lastBlockNo() {
-        return lastBlockInfo.lastBlockNo();
+        return lastBlockInfo.lastBlockNumber();
     }
 
     /**
@@ -319,7 +319,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         if (blockNo < 0) {
             return null;
         }
-        final long lastBlockNo = lastBlockInfo.lastBlockNo();
+        final long lastBlockNo = lastBlockInfo.lastBlockNumber();
         final long firstAvailableBlockNo = lastBlockNo - blocksAvailable + 1;
         // If blocksAvailable == 0, then firstAvailable == blockNo; and all numbers are
         // either less than or greater than or equal to blockNo, so we return unavailable
