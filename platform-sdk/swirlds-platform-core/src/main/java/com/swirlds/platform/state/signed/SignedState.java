@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
@@ -35,7 +36,6 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.ReferenceCounter;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.State;
@@ -518,7 +518,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public boolean isComplete() {
-        return Utilities.isMajority(signingWeight, getAddressBook().getTotalWeight());
+        return MAJORITY.isSatisfiedBy(signingWeight, getAddressBook().getTotalWeight());
     }
 
     /**
