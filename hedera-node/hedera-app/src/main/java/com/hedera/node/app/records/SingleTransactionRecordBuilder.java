@@ -118,7 +118,14 @@ public class SingleTransactionRecordBuilder
     @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
         // TODO: Temporarily return dummy-record until this has been fixed
-        return new SingleTransactionRecord(RecordStreamItem.DEFAULT, List.of());
+        final var transactionId = TransactionID.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(1002L).build())
+                .build();
+        final var transactionRecord =
+                TransactionRecord.newBuilder().transactionID(transactionId).build();
+        final var record =
+                RecordStreamItem.newBuilder().record(transactionRecord).build();
+        return new SingleTransactionRecord(record, List.of());
 
         //        // compute transaction hash: TODO could pass in if we have it calculated else where
         //        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
@@ -193,6 +200,7 @@ public class SingleTransactionRecordBuilder
         //                                evmAddress)),
         //                transactionSidecarRecords);
     }
+
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
     public SingleTransactionRecordBuilder transaction(Transaction transaction, Bytes transactionBytes) {
@@ -231,7 +239,8 @@ public class SingleTransactionRecordBuilder
     }
 
     @NonNull
-    public SingleTransactionRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
+    public SingleTransactionRecordBuilder tokenTransferLists(
+            @NonNull List<TokenTransferList> tokenTransferLists) {
         this.tokenTransferLists = tokenTransferLists;
         return this;
     }
@@ -249,7 +258,7 @@ public class SingleTransactionRecordBuilder
     }
 
     public SingleTransactionRecordBuilder automaticTokenAssociations(
-            List<TokenAssociation> automaticTokenAssociations) {
+            final List<TokenAssociation> automaticTokenAssociations) {
         this.automaticTokenAssociations = automaticTokenAssociations;
         return this;
     }
@@ -447,12 +456,14 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
-    public SingleTransactionRecordBuilder addContractAction(ContractActions contractAction, boolean isMigration) {
+    public SingleTransactionRecordBuilder addContractAction(
+            ContractActions contractAction, boolean isMigration) {
         contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
         return this;
     }
 
-    public SingleTransactionRecordBuilder addContractBytecode(ContractBytecode contractBytecode, boolean isMigration) {
+    public SingleTransactionRecordBuilder addContractBytecode(
+            ContractBytecode contractBytecode, boolean isMigration) {
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
         return this;
     }

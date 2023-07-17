@@ -232,7 +232,7 @@ public class HandleWorkflow {
             @NonNull final TransactionRecord transactionRecord,
             @NonNull final Instant consensusNow)
             throws PreCheckException {
-        final var transactionID = preHandleResult.txInfo().txBody().transactionIDOrThrow();
+        final var transactionID = transactionRecord.transactionIDOrThrow();
         final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
 
         addTransactionToCache(preHandleResult, transactionRecord, consensusNow);
@@ -252,7 +252,7 @@ public class HandleWorkflow {
         hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
     }
 
-    private void recordFailedTransaction(
+    public void recordFailedTransaction(
             @NonNull final ResponseCodeEnum status,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final RecordListBuilder recordListBuilder) {

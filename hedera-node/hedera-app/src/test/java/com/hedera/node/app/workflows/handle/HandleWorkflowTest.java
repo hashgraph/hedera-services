@@ -25,18 +25,19 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.node.transaction.TransactionRecord.BodyOneOfType;
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -49,7 +50,11 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -59,7 +64,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -67,10 +71,12 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -146,9 +152,14 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
 
-    private HandleWorkflow workflow;
+    @Mock
+    private DeduplicationCache deduplicationCache;
 
     @Mock
+    private WorkingStateAccessor workingStateAccessor;
+
+    private HandleWorkflow workflow;
+
     private HederaRecordCache hederaRecordCache;
 
     @BeforeEach
@@ -181,6 +192,13 @@ class HandleWorkflowTest extends AppTestBase {
                 .when(dispatcher)
                 .dispatchHandle(any());
 
+        final var fakeHederaState = new FakeHederaState();
+        fakeHederaState.addService(
+                RecordCacheService.NAME, Map.of(RecordCacheService.TXN_RECORD_QUEUE, new LinkedList<>()));
+        when(workingStateAccessor.getHederaState()).thenReturn(fakeHederaState);
+
+        hederaRecordCache = spy(new RecordCacheImpl(deduplicationCache, workingStateAccessor, configProvider));
+
         workflow = new HandleWorkflow(
                 networkInfo,
                 preHandleWorkflow,
@@ -196,7 +214,7 @@ class HandleWorkflowTest extends AppTestBase {
     }
 
     @Test
-    void testContructorWithInvalidArguments() {
+    void testConstructorWithInvalidArguments() {
         final var instantSource = InstantSource.system();
         assertThatThrownBy(() -> new HandleWorkflow(
                         null,
@@ -531,25 +549,24 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     @DisplayName("Test when there is the same transaction in the cache")
     void testExistingTransactionInCache() {
-        // given
-        when(hederaRecordCache.getRecord(any())).thenReturn(generateDummyTransactionRecord());
+        // pre-check
+        final var transactionId = TransactionID.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(1002L).build())
+                .build();
+        Assertions.assertTrue(hederaRecordCache.getRecords(transactionId).isEmpty());
 
-        // when
-        workflow.handleRound(state, round);
+        // given
+        final HandleWorkflow workflowSpy = spy(workflow);
+
+        workflowSpy.handleRound(state, round);
+        Assertions.assertEquals(1, hederaRecordCache.getRecords(transactionId).size());
+
+        // when - we call handleRound with the same arguments
+        workflowSpy.handleRound(state, round);
 
         // then
-        assertThat(accountsState.isModified()).isFalse();
-        assertThat(aliasesState.isModified()).isFalse();
-        verify(recordManager, times(1)).startUserTransaction(any());
-        verify(recordManager, times(1)).endUserTransaction(any());
-    }
-
-    private TransactionRecord generateDummyTransactionRecord() {
-        final var body = new OneOf<>(BodyOneOfType.UNSET, 1);
-        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, 1);
-        return new TransactionRecord(
-                null, null, null, null, null, 1L, body, null, null, null, null, null, null, null, null, null, entropy,
-                null);
+        verify(hederaRecordCache, times(2)).getRecord(transactionId);
+        verify(workflowSpy, times(1)).recordFailedTransaction(eq(ResponseCodeEnum.DUPLICATE_TRANSACTION), any(), any());
     }
 
     @Nested
