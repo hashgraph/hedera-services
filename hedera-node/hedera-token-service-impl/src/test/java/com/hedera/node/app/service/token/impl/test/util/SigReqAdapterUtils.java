@@ -97,6 +97,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
@@ -110,6 +111,9 @@ import org.apache.commons.lang3.NotImplementedException;
 public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
+
+    public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
     private static final AccountCryptoAllowance CRYPTO_ALLOWANCES = AccountCryptoAllowance.newBuilder()
             .spenderId(AccountID.newBuilder()
@@ -327,7 +331,7 @@ public class SigReqAdapterUtils {
                 false,
                 1_234_567L,
                 1_234_567L,
-                0L,
+                UNSET_STAKED_ID,
                 false,
                 receiverSigRequired,
                 TokenID.newBuilder().tokenNum(3L).build(),

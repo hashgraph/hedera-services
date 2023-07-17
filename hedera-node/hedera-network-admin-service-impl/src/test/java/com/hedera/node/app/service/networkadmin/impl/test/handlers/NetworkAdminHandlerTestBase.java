@@ -57,6 +57,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -70,6 +71,9 @@ public class NetworkAdminHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String TOKENS = "TOKENS";
     protected static final String TOKEN_RELS = "TOKEN_RELS";
+
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
 
@@ -341,7 +345,7 @@ public class NetworkAdminHandlerTestBase {
                 isDeleted,
                 1_234L,
                 1_234_568L,
-                0,
+                UNSET_STAKED_ID,
                 true,
                 true,
                 TokenID.newBuilder().tokenNum(2L).build(),

@@ -38,7 +38,7 @@ import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -86,7 +86,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStoreImpl(writableStates);
+        writableStore = new WritableFileStore(writableStates);
         final var configuration = HederaTestConfigBuilder.createConfig();
         lenient().when(preHandleContext.configuration()).thenReturn(configuration);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
@@ -127,8 +127,8 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         writableFileState = emptyWritableFileState();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStoreImpl(writableStates);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        writableStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
@@ -142,7 +142,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_FILE_ID, msg.getStatus());
@@ -156,8 +156,8 @@ class FileSystemUndeleteTest extends FileTestBase {
 
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        writableStore = new WritableFileStoreImpl(writableStates);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        writableStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
 
@@ -172,7 +172,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         final var existingFile = writableStore.get(fileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
@@ -191,7 +191,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         final var existingFile = writableStore.get(fileSystemfileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);

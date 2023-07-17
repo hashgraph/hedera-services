@@ -339,14 +339,13 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var stakingInfo =
                 StakingInfo.newBuilder().declineReward(account.declineReward()).stakedToMe(account.stakedToMe());
 
-        final var stakedNum = account.stakedNumber();
-        if (stakedNum < 0) {
-            // Staked num for a node is (-nodeId -1)
-            stakingInfo.stakedNodeId(-stakedNum - 1);
+        final var stakedNode = account.stakedNodeId();
+        final var stakedAccount = account.stakedAccountId();
+        if (stakedNode != null) {
+            stakingInfo.stakedNodeId(stakedNode);
             addNodeStakeMeta(stakingInfo, account, rewardCalculator, readableStakingInfoStore);
-        } else if (stakedNum > 0) {
-            stakingInfo.stakedAccountId(
-                    AccountID.newBuilder().realmNum(0).shardNum(0).accountNum(stakedNum));
+        } else if (stakedAccount != null) {
+            stakingInfo.stakedAccountId(stakedAccount);
         }
 
         return stakingInfo.build();
@@ -368,22 +367,20 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.stakePeriodStart());
         stakingInfo.stakePeriodStart(Timestamp.newBuilder().seconds(startSecond));
         if (mayHavePendingReward(account)) {
-            final var stakingNodeInfo = readableStakingInfoStore.get(AccountID.newBuilder()
-                    .accountNum(getStakedNodeAddressBookId(account))
-                    .build());
+            final var stakingNodeInfo = readableStakingInfoStore.get(getStakedNodeAddressBookId(account));
             final var pendingReward = rewardCalculator.estimatePendingRewards(account, stakingNodeInfo);
             stakingInfo.pendingReward(pendingReward);
         }
     }
 
     private boolean mayHavePendingReward(Account account) {
-        return account.stakedNumber() < 0 && !account.declineReward();
+        return account.hasStakedNodeId() && !account.declineReward();
     }
 
     private long getStakedNodeAddressBookId(Account account) {
-        if (account.stakedNumber() >= 0) {
+        if (!account.hasStakedNodeId()) {
             throw new IllegalStateException("Account is not staked to a node");
         }
-        return -account.stakedNumber() - 1;
+        return account.stakedNodeId();
     }
 }

@@ -65,7 +65,11 @@ public class AccountStateTranslator {
                 : Bytes.wrap(account.getFirstContractStorageKey()
                         .getKeyAsBigInteger()
                         .toByteArray());
-        return Account.newBuilder()
+        final var stakedAccountId = account.getStakedId() > 0
+                ? AccountID.newBuilder().accountNum(account.getStakedId()).build()
+                : null;
+        final var stakedNodeId = account.getStakedId() < 0 ? -account.getStakedId() - 1 : -1;
+        final var acntBuilder = Account.newBuilder()
                 .accountId(AccountID.newBuilder()
                         .accountNum(account.getKey().longValue())
                         .realmNum(StaticProperties.getRealm())
@@ -99,7 +103,8 @@ public class AccountStateTranslator {
                 .stakeAtStartOfLastRewardedPeriod(account.totalStakeAtStartOfLastRewardedPeriod())
                 .stakedToMe(account.getStakedToMe())
                 .stakePeriodStart(account.getStakePeriodStart())
-                .stakedNumber(account.getStakedId())
+                .stakedAccountId(stakedAccountId)
+                .stakedNodeId(stakedNodeId)
                 .firstContractStorageKey(firstContractStorageKey)
                 .headNftId(NftID.newBuilder()
                         .tokenId(TokenID.newBuilder()
@@ -114,7 +119,11 @@ public class AccountStateTranslator {
                         .realmNum(StaticProperties.getRealm())
                         .shardNum(StaticProperties.getShard()))
                 .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval())
-                .build();
+
+        if (stakedAccountId != null) acntBuilder.stakedAccountId(stakedAccountId);
+        else if (stakedNodeId != -1) acntBuilder.stakedNodeId(stakedNodeId);
+
+        return acntBuilder.build();
     }
 
     @Nullable
@@ -227,6 +236,10 @@ public class AccountStateTranslator {
         requireNonNull(account);
         com.hedera.node.app.service.mono.state.merkle.MerkleAccount merkleAccount =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleAccount();
+        final var stakedId = (account.hasStakedNodeId() && account.stakedNodeId() != -1)
+                ? -1 - account.stakedNodeId()
+                : (account.hasStakedAccountId() ? account.stakedAccountId().accountNum() : 0);
+
         merkleAccount.setKey(
                 EntityNum.fromLong(account.accountIdOrElse(AccountID.DEFAULT).accountNum()));
         merkleAccount.setNftsOwned(account.numberOwnedNfts());
@@ -256,7 +269,7 @@ public class AccountStateTranslator {
         merkleAccount.setStakeAtStartOfLastRewardedPeriod(account.stakeAtStartOfLastRewardedPeriod());
         merkleAccount.setStakedToMe(account.stakedToMe());
         merkleAccount.setStakePeriodStart(account.stakePeriodStart());
-        merkleAccount.setStakedId(account.stakedNumber());
+        merkleAccount.setStakedId(stakedId);
         merkleAccount.setAutoRenewAccount(
                 new EntityId(0, 0, account.autoRenewAccountId().accountNum()));
         merkleAccount.setExpiredAndPendingRemoval(account.expiredAndPendingRemoval());

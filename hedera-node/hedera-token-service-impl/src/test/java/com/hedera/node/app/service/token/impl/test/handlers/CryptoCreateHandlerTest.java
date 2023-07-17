@@ -286,7 +286,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.stakedToMe());
         assertEquals(0L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
-        assertEquals(3, createdAccount.stakedNumber());
+        assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
         assertNull(createdAccount.headTokenId());
@@ -354,7 +354,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.stakedToMe());
         assertEquals(0L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
-        assertEquals(3, createdAccount.stakedNumber());
+        assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
         assertNull(createdAccount.headTokenId());

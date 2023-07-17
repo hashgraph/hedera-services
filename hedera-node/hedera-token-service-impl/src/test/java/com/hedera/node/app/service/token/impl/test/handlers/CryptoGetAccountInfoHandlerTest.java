@@ -86,7 +86,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private QueryContext context;
 
     @Mock
-    private Token token1, token2, token3;
+    private Token token1, token2;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
 
@@ -139,7 +139,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("Empty account failed during validate")
-    void validatesQueryIfEmptyAccount() throws Throwable {
+    void validatesQueryIfEmptyAccount() {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
@@ -157,7 +157,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("Account Id is needed during validate")
-    void validatesQueryIfInvalidAccount() throws Throwable {
+    void validatesQueryIfInvalidAccount() {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
@@ -174,7 +174,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("deleted account is not valid")
-    void validatesQueryIfDeletedAccount() throws Throwable {
+    void validatesQueryIfDeletedAccount() {
         deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(deleteAccountId, deleteAccount)
@@ -234,7 +234,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo();
 
-        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
+        account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
@@ -271,7 +271,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfos();
 
-        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
+        account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
@@ -335,7 +335,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo2();
 
-        account = account.copyBuilder().stakedNumber(1).declineReward(false).build();
+        account = account.copyBuilder()
+                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .declineReward(false)
+                .build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
@@ -373,7 +376,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var expectedInfo = getExpectedAccountInfoEvm(evmAddress);
 
         account = account.copyBuilder()
-                .stakedNumber(-1)
+                .stakedNodeId(0)
                 .declineReward(false)
                 .alias(evmAddress)
                 .build();
