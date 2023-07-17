@@ -19,25 +19,25 @@ package com.hedera.node.app.service.file.impl.test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableFileStoreImplTest extends FileTestBase {
+class WritableFileStoreTest extends FileTestBase {
     private File file;
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableFileStoreImpl(null));
+        assertThrows(NullPointerException.class, () -> new WritableFileStore(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new WritableFileStoreImpl(writableStates);
+        final var store = new WritableFileStore(writableStates);
         assertNotNull(store);
     }
 
