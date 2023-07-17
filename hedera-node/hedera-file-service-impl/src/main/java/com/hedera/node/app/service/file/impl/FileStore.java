@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * Base class for {@link ReadableFileStoreImpl} and {@link WritableFileStoreImpl}.
+ * Base class for {@link ReadableFileStoreImpl} and {@link WritableFileStore}.
  */
 public abstract class FileStore {
     /**
