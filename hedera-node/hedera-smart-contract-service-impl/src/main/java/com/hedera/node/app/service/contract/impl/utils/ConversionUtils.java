@@ -16,10 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.streams.ContractStateChange;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.hapi.streams.StorageChange;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -30,6 +35,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
@@ -58,6 +64,31 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a list of {@link StorageAccesses}, converts them to a PBJ {@link ContractStateChanges}.
+     *
+     * @param storageAccesses the {@link StorageAccesses}
+     * @return the PBJ {@link ContractStateChanges}
+     */
+    public static ContractStateChanges asPbjStateChanges(@NonNull final List<StorageAccesses> storageAccesses) {
+        final List<ContractStateChange> allStateChanges = new ArrayList<>();
+        for (final var storageAccess : storageAccesses) {
+            final List<StorageChange> changes = new ArrayList<>();
+            for (final var access : storageAccess.accesses()) {
+                changes.add(new StorageChange(
+                        tuweniToPbjBytes(access.key()),
+                        tuweniToPbjBytes(access.value()),
+                        access.isReadOnly() ? null : tuweniToPbjBytes(requireNonNull(access.writtenValue()))));
+            }
+            allStateChanges.add(new ContractStateChange(
+                    ContractID.newBuilder()
+                            .contractNum(storageAccess.contractNumber())
+                            .build(),
+                    changes));
+        }
+        return new ContractStateChanges(allStateChanges);
+    }
+
+    /**
      * Given a Besu {@link Log}, converts it a PBJ {@link ContractLoginfo}.
      *
      * @param log the Besu {@link Log}
@@ -78,11 +109,26 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link MessageFrame}, returns the long-zero address of its {@code recipient} address.
+     *
+     * @param frame the {@link MessageFrame}
+     * @return the long-zero address of the {@code recipient} address
+     */
+    public static Address longZeroAddressOfRecipient(@NonNull final MessageFrame frame) {
+        final var receiverAddress = frame.getRecipientAddress();
+        return isLongZero(receiverAddress)
+                ? receiverAddress
+                : asLongZeroAddress(proxyUpdaterFor(frame)
+                        .getHederaContractId(receiverAddress)
+                        .contractNumOrThrow());
+    }
+
+    /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
      * within the given {@link Dispatch}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
      * and does not correspond to a known Hedera entity.
      *
-     * @param address the EVM address
+     * @param address  the EVM address
      * @param dispatch the dispatch
      * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
      */

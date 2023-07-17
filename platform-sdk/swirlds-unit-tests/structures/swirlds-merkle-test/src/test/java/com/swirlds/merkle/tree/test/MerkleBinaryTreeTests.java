@@ -32,7 +32,7 @@ import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.test.dummy.Key;
 import com.swirlds.common.test.dummy.Value;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
 import com.swirlds.test.framework.TestComponentTags;

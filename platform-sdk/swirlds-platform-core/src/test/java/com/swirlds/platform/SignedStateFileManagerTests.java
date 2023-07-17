@@ -17,11 +17,11 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyDoesNotThrow;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -44,8 +45,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
@@ -209,6 +209,7 @@ class SignedStateFileManagerTests {
 
         if (successExpected) {
             validateSavingOfState(signedState);
+            assertEquals(signedState.getRound(), manager.getLatestSavedStateRound());
         }
 
         assertEquals(successExpected, saveSucceeded.get(), "Invalid 'success' value passed to StateToDiskConsumer");
@@ -561,6 +562,8 @@ class SignedStateFileManagerTests {
                         },
                         Duration.ofSeconds(2),
                         "state saving should have wrapped up by now");
+
+                assertEquals(signedState.getRound(), manager.getLatestSavedStateRound());
 
                 // The first state with a timestamp after this boundary should be saved
                 nextBoundary = Instant.ofEpochSecond(

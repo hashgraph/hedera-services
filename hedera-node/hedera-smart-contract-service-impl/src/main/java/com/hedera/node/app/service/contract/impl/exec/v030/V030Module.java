@@ -19,17 +19,14 @@ package com.hedera.node.app.service.contract.impl.exec.v030;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.REQUIRE_CODE_DEPOSIT_TO_SUCCEED;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
+import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomBalanceOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOperation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreate2Operation;
-import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
+import com.hedera.node.app.service.contract.impl.exec.operations.*;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomContractCreationProcessor;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
@@ -52,6 +49,8 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.operation.SLoadOperation;
+import org.hyperledger.besu.evm.operation.SStoreOperation;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -145,8 +144,25 @@ public interface V030Module {
     @Provides
     @IntoSet
     @ServicesV030
-    static Operation provideChainIdOperation(@NonNull final GasCalculator gasCalculator) {
-        return new CustomChainIdOperation(gasCalculator);
+    static Operation provideDelegateCallOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomDelegateCallOperation(gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideCallCodeOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomCallCodeOperation(gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideStaticCallOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomStaticCallOperation(gasCalculator, addressChecks);
     }
 
     @Provides
@@ -162,6 +178,13 @@ public interface V030Module {
     @Provides
     @IntoSet
     @ServicesV030
+    static Operation provideChainIdOperation(@NonNull final GasCalculator gasCalculator) {
+        return new CustomChainIdOperation(gasCalculator);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
     static Operation provideCreateOperation(@NonNull final GasCalculator gasCalculator) {
         return new CustomCreateOperation(gasCalculator);
     }
@@ -172,5 +195,105 @@ public interface V030Module {
     static Operation provideCreate2Operation(
             @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final FeatureFlags featureFlags) {
         return new CustomCreate2Operation(gasCalculator, featureFlags);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideLog0Operation(@NonNull final GasCalculator gasCalculator) {
+        return new CustomLogOperation(0, gasCalculator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideLog1Operation(final GasCalculator gasCalculator) {
+        return new CustomLogOperation(1, gasCalculator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideLog2Operation(final GasCalculator gasCalculator) {
+        return new CustomLogOperation(2, gasCalculator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideLog3Operation(final GasCalculator gasCalculator) {
+        return new CustomLogOperation(3, gasCalculator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideLog4Operation(final GasCalculator gasCalculator) {
+        return new CustomLogOperation(4, gasCalculator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideExtCodeHashOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomExtCodeHashOperation(gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideExtCodeSizeOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomExtCodeSizeOperation(gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideExtCodeCopyOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomExtCodeCopyOperation(gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation providePrevRandaoOperation(@NonNull final GasCalculator gasCalculator) {
+        return new CustomPrevRandaoOperation(gasCalculator);
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @ServicesV030
+    static Operation provideSelfDestructOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final AddressChecks addressChecks) {
+        return new CustomSelfDestructOperation(gasCalculator, addressChecks);
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideSLoadOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomSLoadOperation(featureFlags, new SLoadOperation(gasCalculator));
+    }
+
+    @Provides
+    @IntoSet
+    @ServicesV030
+    static Operation provideSStoreOperation(
+            @NonNull final GasCalculator gasCalculator, @ServicesV030 @NonNull final FeatureFlags featureFlags) {
+        return new CustomSStoreOperation(featureFlags, new SStoreOperation(gasCalculator, FRONTIER_MINIMUM));
     }
 }

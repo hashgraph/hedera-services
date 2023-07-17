@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -92,20 +93,18 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
 
         subject.handle(handleContext);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId().accountNum())
-                .isNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId().accountNum())
-                .isNull();
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId().accountNum()).isNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId().accountNum()).isNull();
     }
 
     @Test
@@ -117,20 +116,18 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
 
         subject.handle(handleContext);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId().accountNum())
-                .isNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId().accountNum())
-                .isNull();
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId().accountNum()).isNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId().accountNum()).isNull();
     }
 
     @Test
@@ -159,8 +156,10 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void failsDeleteAllowancesOnInvalidTreasury() {
-        writableTokenStore.put(
-                nonFungibleToken.copyBuilder().treasuryAccountNumber(200L).build());
+        writableTokenStore.put(nonFungibleToken
+                .copyBuilder()
+                .treasuryAccountId(asAccount(200L))
+                .build());
         writableNftStore.put(nftSl1.copyBuilder().spenderId(spenderId).build());
         writableNftStore.put(nftSl2.copyBuilder().spenderId(spenderId).build());
 
@@ -168,20 +167,18 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
 
         subject.handle(handleContext);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId().accountNum())
-                .isNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId().accountNum())
-                .isNull();
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId().accountNum()).isNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId().accountNum()).isNull();
     }
 
     @Test
@@ -199,20 +196,18 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isNull();
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isNull();
 
         subject.handle(handleContext);
         // No error thrown and no changes to state
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId().accountNum())
-                .isNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId().accountNum())
-                .isNull();
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId().accountNum()).isNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId().accountNum()).isNull();
     }
 
     @Test
@@ -229,10 +224,10 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(ownerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(ownerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -255,20 +250,18 @@ class CryptoDeleteAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(payerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(payerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId()).isEqualTo(spenderId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(payerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(payerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId()).isEqualTo(spenderId);
+        assertThat(writableNftStore.get(nftIdSl2).spenderId()).isEqualTo(spenderId);
 
         subject.handle(handleContext);
 
         assertThat(ownerAccount.approveForAllNftAllowances()).hasSize(1);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).ownerId()).isEqualTo(payerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).ownerId()).isEqualTo(payerId);
-        assertThat(writableNftStore.get(uniqueTokenIdSl1).spenderId().accountNum())
-                .isNull();
-        assertThat(writableNftStore.get(uniqueTokenIdSl2).spenderId().accountNum())
-                .isNull();
+        assertThat(writableNftStore.get(nftIdSl1).ownerId()).isEqualTo(payerId);
+        assertThat(writableNftStore.get(nftIdSl2).ownerId()).isEqualTo(payerId);
+        assertThat(writableNftStore.get(nftIdSl1).spenderId().accountNum()).isNull();
+        assertThat(writableNftStore.get(nftIdSl2).spenderId().accountNum()).isNull();
     }
 
     private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID txnPayer) {

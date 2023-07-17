@@ -281,7 +281,7 @@ public interface EvmFrameState {
      * @return the full list of account-scoped storage changes
      */
     @NonNull
-    List<StorageChanges> getPendingStorageChanges();
+    List<StorageAccesses> getStorageChanges();
 
     /**
      * Returns the size of the underlying K/V state for contract storage.

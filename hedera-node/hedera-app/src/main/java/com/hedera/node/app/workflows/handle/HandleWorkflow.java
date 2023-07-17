@@ -30,7 +30,7 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
-import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -69,7 +69,7 @@ public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
-    private final NodeInfo nodeInfo;
+    private final NetworkInfo networkInfo;
     private final PreHandleWorkflow preHandleWorkflow;
     private final TransactionDispatcher dispatcher;
     private final RecordManager recordManager;
@@ -82,7 +82,7 @@ public class HandleWorkflow {
 
     @Inject
     public HandleWorkflow(
-            @NonNull final NodeInfo nodeInfo,
+            @NonNull final NetworkInfo networkInfo,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordManager recordManager,
@@ -92,7 +92,7 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource) {
-        this.nodeInfo = requireNonNull(nodeInfo, "nodeInfo must not be null");
+        this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.recordManager = requireNonNull(recordManager, "recordManager must not be null");
@@ -201,8 +201,6 @@ public class HandleWorkflow {
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
-        // TODO update receipt
-
         // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks
@@ -256,8 +254,9 @@ public class HandleWorkflow {
         // Therefore, we simply rerun pre-handle.
         final var storeFactory = new ReadableStoreFactory(state);
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-        final var creator = nodeInfo.accountOf(platformEvent.getCreatorId().id());
-        final var result = preHandleWorkflow.preHandleTransaction(creator, storeFactory, accountStore, platformTxn);
+        final var creator = networkInfo.nodeInfo(platformEvent.getCreatorId().id());
+        final var creatorId = creator == null ? null : creator.accountId();
+        final var result = preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
 
         // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
         return switch (result.status()) {
@@ -300,7 +299,7 @@ public class HandleWorkflow {
 
         // extract keys and hollow accounts again
         final var storeFactory = new ReadableStoreFactory(state);
-        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration);
+        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
         // prepare signature verification

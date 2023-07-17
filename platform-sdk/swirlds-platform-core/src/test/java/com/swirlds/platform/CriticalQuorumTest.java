@@ -16,7 +16,8 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,8 +29,8 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.internal.EventImpl;
@@ -191,7 +192,7 @@ class CriticalQuorumTest {
         final long criticalQuorumThreshold = thresholdToBeInCriticalQuorum(addressBook, criticalQuorum, eventCounts);
 
         assertTrue(
-                Utilities.isStrongMinority(weightInCriticalQuorum, totalWeight),
+                STRONG_MINORITY.isSatisfiedBy(weightInCriticalQuorum, totalWeight),
                 () -> "critical quorum must contain weight equal to or exceeding 1/3 of the total weight."
                         + "\nWith a threshold of "
                         + criticalQuorumThreshold + " the current critical quorum only "
@@ -206,7 +207,7 @@ class CriticalQuorumTest {
                     weightNotExceedingThreshold((int) (criticalQuorumThreshold - 1), addressBook, eventCounts);
 
             assertFalse(
-                    Utilities.isStrongMinority(weightAtLowerThreshold, totalWeight),
+                    STRONG_MINORITY.isSatisfiedBy(weightAtLowerThreshold, totalWeight),
                     () -> "critical quorum is expected to contain the minimum amount of weight possible."
                             + "\nCurrent threshold is "
                             + criticalQuorumThreshold + ", but with a threshold of " + (criticalQuorumThreshold - 1)

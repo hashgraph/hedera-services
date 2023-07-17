@@ -16,36 +16,51 @@
 
 package grpc;
 
-import com.hedera.node.app.grpc.GrpcServiceBuilder;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.Query;
+import com.hedera.hapi.node.transaction.Response;
+import com.hedera.hapi.node.transaction.TransactionResponse;
+import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
+import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.node.config.data.GrpcConfig;
+import com.hedera.node.config.data.NettyConfig;
+import com.hedera.pbj.runtime.RpcMethodDefinition;
+import com.hedera.pbj.runtime.RpcServiceDefinition;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
-import io.grpc.ManagedChannelBuilder;
-import io.helidon.grpc.client.ClientServiceDescriptor;
-import io.helidon.grpc.client.GrpcServiceClient;
-import io.helidon.grpc.server.GrpcRouting;
-import io.helidon.grpc.server.GrpcServer;
-import io.helidon.grpc.server.GrpcServerConfiguration;
-import io.helidon.grpc.server.MethodDescriptor;
-import io.helidon.grpc.server.ServiceDescriptor;
+import com.swirlds.config.api.source.ConfigSource;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.MethodDescriptor;
+import io.grpc.MethodDescriptor.Marshaller;
+import io.grpc.MethodDescriptor.MethodType;
+import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.stub.ClientCalls;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.assertj.core.api.Assumptions;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Base class for testing the gRPC handling engine. This implementation is not suitable for general integration testing,
@@ -66,39 +81,19 @@ abstract class GrpcTestBase extends TestBase {
     protected static final QueryWorkflow NOOP_QUERY_WORKFLOW = (requestBuffer, responseBuffer) -> {};
 
     /**
-     * This {@link GrpcServer} is used to handle the wire protocol tasks and delegate to our gRPC handlers
-     */
-    private GrpcServer grpcServer;
-
-    /**
-     * The {@link GrpcServiceClient}s to use for making different calls to the server. Each different gRPC service has
-     * its own client. The key in this map is the service name.
-     */
-    private final Map<String, GrpcServiceClient> clients = new HashMap<>();
-
-    /**
-     * The registered services. These must be created through {@link #registerService(GrpcServiceBuilder)} <b>BEFORE</b>
-     * the server is started to take any effect. These services will be registered on the server <b>AND</b> on the
-     * client.
-     */
-    private final Set<ServiceDescriptor> services = new HashSet<>();
-
-    /**
-     * The set of services to be registered <b>ON THE CLIENT ONLY</b>. The server won't know about these. This allows us
-     * to test cases where either the method or service is known to the client but not known to the server.
-     */
-    private final Set<ServiceDescriptor> clientOnlyServices = new HashSet<>();
-
-    /**
      * Represents "this node" in our tests.
      */
     private final NodeId nodeSelfId = new NodeId(7);
 
     /**
+     * This {@link NettyGrpcServerManager} is used to handle the wire protocol tasks and delegate to our gRPC handlers
+     */
+    private NettyGrpcServerManager grpcServer;
+    /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
      * correctly for different types of calls.
      */
-    protected Metrics metrics = new DefaultMetrics(
+    protected final Metrics metrics = new DefaultMetrics(
             nodeSelfId,
             new MetricKeyRegistry(),
             METRIC_EXECUTOR,
@@ -107,98 +102,102 @@ abstract class GrpcTestBase extends TestBase {
                     .withConfigDataType(MetricsConfig.class)
                     .build()
                     .getConfigData(MetricsConfig.class));
-
-    /** The host of our gRPC server. */
-    protected String host = "127.0.0.1";
-
-    /** The port our server is running on. We use an ephemeral port, so it is dynamic */
-    protected int port;
+    /** The query method to set up on the server. Only one method supported today */
+    private String queryMethodName;
+    /** The ingest method to set up on the server. Only one method supported today */
+    private String ingestMethodName;
+    /** The ingest workflow to use. */
+    private IngestWorkflow ingestWorkflow = NOOP_INGEST_WORKFLOW;
+    /** The query workflow to use. */
+    private QueryWorkflow queryWorkflow = NOOP_QUERY_WORKFLOW;
+    /** The channel on the client to connect to the grpc server */
+    private Channel channel;
 
     /**
-     * Registers the given service with this test server and client. This method must be called before the server is
-     * started.
-     *
-     * @param builder builds the service
      */
-    protected void registerService(final GrpcServiceBuilder builder) {
-        services.add(builder.build(metrics));
+    protected void registerQuery(
+            @NonNull final String methodName,
+            @NonNull final IngestWorkflow ingestWorkflow,
+            @NonNull final QueryWorkflow queryWorkflow) {
+        this.queryMethodName = methodName;
+        this.queryWorkflow = queryWorkflow;
+        this.ingestWorkflow = ingestWorkflow;
     }
 
-    protected void registerServiceOnClientOnly(final GrpcServiceBuilder builder) {
-        clientOnlyServices.add(builder.build(metrics));
+    protected void registerIngest(
+            @NonNull final String methodName,
+            @NonNull final IngestWorkflow ingestWorkflow,
+            @NonNull final QueryWorkflow queryWorkflow) {
+        this.ingestMethodName = methodName;
+        this.ingestWorkflow = ingestWorkflow;
+        this.queryWorkflow = queryWorkflow;
     }
 
     /** Starts the grpcServer and sets up the clients. */
     protected void startServer() {
-        final var latch = new CountDownLatch(1);
-
-        final var routingBuilder = GrpcRouting.builder();
-        services.forEach(routingBuilder::register);
-        grpcServer =
-                GrpcServer.create(GrpcServerConfiguration.builder().port(port).build(), routingBuilder.build());
-
-        grpcServer.start().thenAccept(server -> latch.countDown());
-
-        // Block this main thread until the server starts
-        try {
-            latch.await();
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Assertions.fail("GRPC Server did not startup", e);
-        }
-
-        // Get the host and port dynamically now that the server is running.
-        host = "127.0.0.1"; // InetAddress.getLocalHost().getHostName();
-        port = grpcServer.port();
-
-        final var channel =
-                ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-
-        // Collect the full set of services and method descriptors for the client side
-        //noinspection rawtypes
-        final var clientDescriptors = new HashMap<String, Set<MethodDescriptor>>();
-        services.forEach(s -> clientDescriptors.put(s.name(), new HashSet<>(s.methods())));
-        clientOnlyServices.forEach(s -> {
-            final var existingMethods = clientDescriptors.get(s.name());
-            if (existingMethods == null) {
-                clientDescriptors.put(s.name(), new HashSet<>(s.methods()));
-            } else {
-                existingMethods.addAll(s.methods());
+        final var testService = new Service() {
+            @NonNull
+            @Override
+            public String getServiceName() {
+                return "TestService";
             }
-        });
 
-        // Setup the client side
-        clientDescriptors.forEach((serviceName, methods) -> {
-            final var builder = io.grpc.ServiceDescriptor.newBuilder(serviceName);
-            methods.forEach(method -> builder.addMethod(method.descriptor()));
-            final var clientServiceDescriptor = builder.build();
-            final var client = GrpcServiceClient.builder(
-                            channel,
-                            ClientServiceDescriptor.builder(clientServiceDescriptor)
-                                    .build())
-                    .build();
+            @NonNull
+            @Override
+            public Set<RpcServiceDefinition> rpcDefinitions() {
+                return Set.of(new RpcServiceDefinition() {
+                    @NonNull
+                    @Override
+                    public String basePath() {
+                        return "proto.TestService";
+                    }
 
-            clients.put(serviceName, client);
-        });
+                    @NonNull
+                    @Override
+                    public Set<RpcMethodDefinition<? extends Record, ? extends Record>> methods() {
+                        final var set = new HashSet<RpcMethodDefinition<? extends Record, ? extends Record>>();
+                        if (queryMethodName != null) {
+                            set.add(new RpcMethodDefinition<>(queryMethodName, Query.class, Response.class));
+                        }
+                        if (ingestMethodName != null) {
+                            set.add(new RpcMethodDefinition<>(
+                                    ingestMethodName, Transaction.class, TransactionResponse.class));
+                        }
+                        return set;
+                    }
+                });
+            }
+        };
+
+        final var config = createConfig(new TestSource());
+        this.grpcServer = new NettyGrpcServerManager(
+                () -> new VersionedConfigImpl(config, 1),
+                () -> Set.of(testService),
+                ingestWorkflow,
+                queryWorkflow,
+                metrics);
+
+        grpcServer.start();
+
+        this.channel = NettyChannelBuilder.forAddress("localhost", grpcServer.port())
+                .usePlaintext()
+                .build();
     }
 
     @AfterEach
     void tearDown() {
-        final var shutdownLatch = new CountDownLatch(1);
-        grpcServer.shutdown().thenRun(shutdownLatch::countDown);
-        try {
-            shutdownLatch.await();
-        } catch (final InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        clients.clear();
-        services.clear();
+        if (this.grpcServer != null) this.grpcServer.stop();
+        grpcServer = null;
+        ingestWorkflow = NOOP_INGEST_WORKFLOW;
+        queryWorkflow = NOOP_QUERY_WORKFLOW;
+        queryMethodName = null;
+        ingestMethodName = null;
     }
 
     /**
-     * Called to invoke a service's function that had been previously registered with {@link
-     * #registerService(GrpcServiceBuilder)}, using the given payload and receiving the given response. Since the gRPC
-     * code only deals in bytes, we can test everything with just strings, no protobuf encoding required.
+     * Called to invoke a service's function that had been previously registered with one of the {@code register}
+     * methods, using the given payload and receiving the given response. Since the gRPC code only deals in bytes, we
+     * can test everything with just strings, no protobuf encoding required.
      *
      * @param service  The service to invoke
      * @param function The function on the service to invoke
@@ -206,12 +205,147 @@ abstract class GrpcTestBase extends TestBase {
      * @return The response from the service function.
      */
     protected String send(final String service, final String function, final String payload) {
-        final var client = clients.get(service);
-        assert client != null;
-        final var bb = BufferedData.wrap(payload.getBytes(StandardCharsets.UTF_8));
-        final BufferedData res = client.blockingUnary(function, bb);
-        final var rb = new byte[(int) res.remaining()];
-        res.readBytes(rb);
-        return new String(rb, StandardCharsets.UTF_8);
+        return ClientCalls.blockingUnaryCall(
+                channel,
+                MethodDescriptor.<String, String>newBuilder()
+                        .setFullMethodName(service + "/" + function)
+                        .setRequestMarshaller(new StringMarshaller())
+                        .setResponseMarshaller(new StringMarshaller())
+                        .setType(MethodType.UNARY)
+                        .build(),
+                CallOptions.DEFAULT,
+                payload);
+    }
+
+    protected Configuration createConfig(@NonNull final TestSource testConfig) {
+        return ConfigurationBuilder.create()
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(GrpcConfig.class)
+                .withConfigDataType(NettyConfig.class)
+                .withSource(testConfig)
+                .build();
+    }
+
+    /**
+     * Checks whether a server process is listening on the given port
+     *
+     * @param portNumber The port to check
+     */
+    protected static boolean isListening(int portNumber) {
+        try (final var socket = new Socket("localhost", portNumber)) {
+            return socket.isConnected();
+        } catch (ConnectException connect) {
+            return false;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Unexpected error while checking whether the port '" + portNumber + "' was free", e);
+        }
+    }
+
+    /**
+     * A config source used by this test to specify the config values
+     */
+    protected static final class TestSource implements ConfigSource {
+        private int port = 0;
+        private int tlsPort = 0;
+        private int startRetries = 3;
+        private int startRetryIntervalMs = 100;
+
+        @Override
+        public int getOrdinal() {
+            return 1000;
+        }
+
+        @NonNull
+        @Override
+        public Set<String> getPropertyNames() {
+            return Set.of("grpc.port", "grpc.tlsPort", "netty.startRetryIntervalMs", "netty.startRetries");
+        }
+
+        @Nullable
+        @Override
+        public String getValue(@NonNull String s) throws NoSuchElementException {
+            return switch (s) {
+                case "grpc.port" -> String.valueOf(port);
+                case "grpc.tlsPort" -> String.valueOf(tlsPort);
+                case "netty.startRetryIntervalMs" -> String.valueOf(startRetryIntervalMs);
+                case "netty.startRetries" -> String.valueOf(startRetries);
+                default -> null;
+            };
+        }
+
+        public int port() {
+            return port;
+        }
+
+        public TestSource withPort(final int value) {
+            this.port = value;
+            return this;
+        }
+
+        // Locates a free port on its own
+        public TestSource withFreePort() {
+            this.port = findFreePort();
+            Assumptions.assumeThat(this.port).isGreaterThan(0);
+            return this;
+        }
+
+        public TestSource withTlsPort(final int value) {
+            this.tlsPort = value;
+            return this;
+        }
+
+        // Locates a free port on its own
+        public TestSource withFreeTlsPort() {
+            this.tlsPort = findFreePort();
+            Assumptions.assumeThat(this.tlsPort).isGreaterThan(0);
+            return this;
+        }
+
+        public TestSource withStartRetries(final int value) {
+            this.startRetries = value;
+            return this;
+        }
+
+        public TestSource withStartRetryIntervalMs(final int value) {
+            this.startRetryIntervalMs = value;
+            return this;
+        }
+
+        private int findFreePort() {
+            for (int i = 1024; i < 10_000; i++) {
+                if (i != port && i != tlsPort && isPortFree(i)) {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        /**
+         * Checks whether the given port is free
+         *
+         * @param portNumber The port to check
+         */
+        private boolean isPortFree(int portNumber) {
+            return !isListening(portNumber);
+        }
+    }
+
+    protected static final class StringMarshaller implements Marshaller<String> {
+
+        @Override
+        public InputStream stream(String value) {
+            return new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8));
+        }
+
+        @Override
+        public String parse(InputStream stream) {
+            try {
+                return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

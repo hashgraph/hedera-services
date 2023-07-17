@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
-import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,18 +40,18 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -78,12 +79,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 @ExtendWith(MockitoExtension.class)
-class HandleContextImplTest extends StateTestBase {
+class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
     private SingleTransactionRecordBuilder recordBuilder;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SavepointStackImpl stack;
 
     @Mock
@@ -349,43 +350,6 @@ class HandleContextImplTest extends StateTestBase {
         }
 
         @Test
-        void testAccessAttributeValidator(
-                @Mock AttributeValidator attributeValidator1, @Mock AttributeValidator attributeValidator2) {
-            // given
-            when(savepoint1.attributeValidator()).thenReturn(attributeValidator1);
-            when(savepoint2.attributeValidator()).thenReturn(attributeValidator2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.attributeValidator();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.attributeValidator();
-
-            // then
-            assertThat(actual1).isSameAs(attributeValidator1);
-            assertThat(actual2).isSameAs(attributeValidator2);
-        }
-
-        @Test
-        void testAccessExpiryValidator(@Mock ExpiryValidator expiryValidator1, @Mock ExpiryValidator expiryValidator2) {
-            // given
-            when(savepoint1.expiryValidator()).thenReturn(expiryValidator1);
-            when(savepoint2.expiryValidator()).thenReturn(expiryValidator2);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.expiryValidator();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.expiryValidator();
-
-            // then
-            assertThat(actual1).isSameAs(expiryValidator1);
-            assertThat(actual2).isSameAs(expiryValidator2);
-        }
-
-        @Test
         void testCreateReadableStore(@Mock ReadableStates readableStates) {
             // given
             when(stack.createReadableStates(TokenService.NAME)).thenReturn(readableStates);
@@ -463,6 +427,82 @@ class HandleContextImplTest extends StateTestBase {
 
             // then
             assertThat(actual).isEqualTo(verification);
+        }
+    }
+
+    @Nested
+    @DisplayName("Requesting keys of child transactions")
+    final class KeyRequestTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void testAllKeysForTransactionWithInvalidParameters() {
+            // given
+            final var bob = BOB.accountID();
+
+            // when
+            assertThatThrownBy(() -> context.allKeysForTransaction(null, bob)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void testAllKeysForTransactionSuccess() throws PreCheckException {
+            // given
+            doAnswer(invocation -> {
+                        final var innerContext = invocation.getArgument(0, PreHandleContext.class);
+                        innerContext.requireKey(BOB.account().key());
+                        innerContext.optionalKey(CAROL.account().key());
+                        return null;
+                    })
+                    .when(dispatcher)
+                    .dispatchPreHandle(any());
+
+            // when
+            final var keys = context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID());
+            assertThat(keys.payerKey()).isEqualTo(ERIN.account().key());
+            assertThat(keys.requiredNonPayerKeys())
+                    .containsExactly(BOB.account().key());
+            assertThat(keys.optionalNonPayerKeys())
+                    .containsExactly(CAROL.account().key());
+        }
+
+        @Test
+        void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
+                    .when(dispatcher)
+                    .dispatchPureChecks(any());
+
+            // when
+            assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_TRANSACTION_BODY));
+        }
+
+        @Test
+        void testAllKeysForTransactionWithFailingPreHandle() throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
+                    .when(dispatcher)
+                    .dispatchPreHandle(any());
+
+            // when
+            assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE));
         }
     }
 

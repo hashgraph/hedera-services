@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.platform.Utilities.isMajority;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -62,12 +62,9 @@ class RoundHashValidatorTests {
     /**
      * Based on the desired network status, generate hashes for all nodes.
      *
-     * @param random
-     * 		a source of randomness
-     * @param addressBook
-     * 		the address book for the round
-     * @param desiredValidityStatus
-     * 		the desired validity status
+     * @param random                a source of randomness
+     * @param addressBook           the address book for the round
+     * @param desiredValidityStatus the desired validity status
      * @return a list of node IDs in the order they should be added to the hash validator
      */
     static HashGenerationData generateNodeHashes(
@@ -118,7 +115,7 @@ class RoundHashValidatorTests {
         for (final NodeId nodeId : randomNodeOrder) {
             final long weight = addressBook.getAddress(nodeId).getWeight();
 
-            if (!isMajority(correctHashWeight, totalWeight)) {
+            if (!MAJORITY.isSatisfiedBy(correctHashWeight, totalWeight)) {
                 correctHashNodes.add(nodeId);
                 correctHashWeight += weight;
             } else {
@@ -155,7 +152,7 @@ class RoundHashValidatorTests {
                     final NodeId nodeId = otherHashNodes.get(0);
                     final long weight = addressBook.getAddress(nodeId).getWeight();
 
-                    if (isMajority(otherHashWeight + weight, totalWeight)) {
+                    if (MAJORITY.isSatisfiedBy(otherHashWeight + weight, totalWeight)) {
                         // We don't want to allow the other hash to accumulate >1/2
                         continue;
                     }
@@ -201,7 +198,7 @@ class RoundHashValidatorTests {
             final long weight = addressBook.getAddress(nodeId).getWeight();
 
             final double choice = random.nextDouble();
-            if (choice < 1.0 / 3 && !isMajority(otherHashWeight + weight, totalWeight)) {
+            if (choice < 1.0 / 3 && !MAJORITY.isSatisfiedBy(otherHashWeight + weight, totalWeight)) {
                 nodes.add(new NodeHashInfo(nodeId, otherHash, round));
                 otherHashWeight += weight;
             } else {
@@ -445,7 +442,7 @@ class RoundHashValidatorTests {
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
-            if (isMajority(addedWeight + weight, totalWeight)) {
+            if (MAJORITY.isSatisfiedBy(addedWeight + weight, totalWeight)) {
                 // Don't add enough hash data to reach a decision
                 break;
             }
@@ -489,7 +486,7 @@ class RoundHashValidatorTests {
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
-            if (isMajority(addedWeight + weight, totalWeight)) {
+            if (MAJORITY.isSatisfiedBy(addedWeight + weight, totalWeight)) {
                 // Don't add enough hash data to reach a decision
                 break;
             }
@@ -542,14 +539,14 @@ class RoundHashValidatorTests {
                 // in time (~1%). That's not the scenario we are trying
                 // to test. But we shouldn't fail if the data choice was unlucky.
                 assertEquals(HashValidityStatus.CATASTROPHIC_ISS, validator.getStatus());
-                assertTrue(isMajority(addedWeight + weight, totalWeight));
+                assertTrue(MAJORITY.isSatisfiedBy(addedWeight + weight, totalWeight));
                 return;
             }
 
             assertEquals(HashValidityStatus.UNDECIDED, validator.getStatus(), "should not be decided");
 
             addedWeight += weight;
-            if (isSuperMajority(addedWeight, totalWeight)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(addedWeight, totalWeight)) {
                 // quit once we add a super majority
                 break;
             }

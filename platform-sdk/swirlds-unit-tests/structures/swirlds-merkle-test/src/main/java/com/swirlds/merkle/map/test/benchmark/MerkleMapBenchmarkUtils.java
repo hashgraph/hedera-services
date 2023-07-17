@@ -16,7 +16,7 @@
 
 package com.swirlds.merkle.map.test.benchmark;
 
-import static com.swirlds.common.test.RandomUtils.randomByteArray;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomByteArray;
 
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Random;

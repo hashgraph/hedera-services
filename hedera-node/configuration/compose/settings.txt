@@ -2,13 +2,12 @@
                                           #    Gossip / Networking    #
                                           #############################
 
-chatter.useChatter,                            false
-doUpnp,                                        false
-maxOutgoingSyncs,                              1                            # differs from mainnet
 numConnections,                                1000
+socket.doUpnp,                                 false
+socket.useLoopbackIp,                          false
+sync.maxOutgoingSyncs,                         1                            # differs from mainnet
 sync.syncAsProtocolEnabled,                    true
 sync.syncProtocolPermitCount,                  2                            # differs from mainnet
-useLoopbackIp,                                 false
 
                                           #############################
                                           #           State           #
@@ -16,6 +15,7 @@ useLoopbackIp,                                 false
 
 jasperDb.iteratorInputBufferBytes,             16777216
 merkleDb.iteratorInputBufferBytes,             16777216
+merkleDb.hashesRamToDiskThreshold,             8388608
 state.checkSignedStateFromDisk,                true
 state.saveStatePeriod,                         300                          # differs from mainnet
 state.signedStateDisk,                         3                            # differs from mainnet

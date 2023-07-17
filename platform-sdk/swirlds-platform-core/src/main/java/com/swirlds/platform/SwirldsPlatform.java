@@ -16,6 +16,10 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.system.InitTrigger.GENESIS;
+import static com.swirlds.common.system.InitTrigger.RESTART;
+import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -23,9 +27,7 @@ import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.event.tipset.TipsetEventCreationManagerFactory.buildTipsetEventCreationManager;
-import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookMetrics.registerAddressBookMetrics;
-import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
@@ -38,9 +40,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
@@ -71,7 +71,6 @@ import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.logging.payloads.PlatformStatusPayload;
-import com.swirlds.logging.payloads.SavedStateLoadedPayload;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
 import com.swirlds.platform.components.EventIntake;
@@ -143,8 +142,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.platform.threading.PauseAndLoad;
 import com.swirlds.platform.util.PlatformComponents;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -158,9 +155,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -205,22 +202,10 @@ public class SwirldsPlatform implements Platform, Startable {
     /** the object that contains all key pairs and CSPRNG state for this member */
     private final Crypto crypto;
     /**
-     * True if this node started from genesis.
-     */
-    private final boolean startedFromGenesis;
-    /**
-     * If a state was loaded from disk, this will have the round of that state.
-     */
-    private final long diskStateRound;
-    /**
      * If a state was loaded from disk, this is the minimum generation non-ancient for that round. If starting from a
      * genesis state, this is 0.
      */
     private final long initialMinimumGenerationNonAncient;
-    /**
-     * If a state was loaded from disk, this will have the hash of that state.
-     */
-    private final Hash diskStateHash;
 
     private final StateManagementComponent stateManagementComponent;
     private final EventTaskDispatcher eventTaskDispatcher;
@@ -295,33 +280,34 @@ public class SwirldsPlatform implements Platform, Startable {
     private final TipsetEventCreationManager tipsetEventCreator;
 
     /**
+     * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
+     * if no reconnect state has been received since startup.
+     */
+    private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
+
+    /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
      * @param platformContext          the context for this platform
      * @param crypto                   an object holding all the public/private key pairs and the CSPRNG state for this
      *                                 member
      * @param recycleBin               used to delete files that may be useful for later debugging
-     * @param initialAddressBook       the address book listing all members in the community
-     * @param id                       the ID number for this member (if this computer has multiple members in one
-     *                                 swirld)
+     * @param id                       the ID for this node
      * @param mainClassName            the name of the app class inheriting from SwirldMain
      * @param swirldName               the name of the swirld being run
      * @param appVersion               the current version of the running application
-     * @param genesisStateBuilder      used to construct a genesis state if no suitable state from disk can be found
-     * @param loadedSignedState        used to initialize the loaded state
+     * @param initialState             the initial state of the platform
      * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
             @NonNull final PlatformContext platformContext,
             @NonNull final Crypto crypto,
             @NonNull final RecycleBin recycleBin,
-            @NonNull final AddressBook initialAddressBook,
             @NonNull final NodeId id,
             @NonNull final String mainClassName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder,
-            @NonNull final ReservedSignedState loadedSignedState,
+            @NonNull final SignedState initialState,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
@@ -349,7 +335,7 @@ public class SwirldsPlatform implements Platform, Startable {
         this.appVersion = appVersion;
 
         this.selfId = id;
-        this.initialAddressBook = initialAddressBook;
+        this.initialAddressBook = initialState.getAddressBook();
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
@@ -415,12 +401,11 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
-        if (address.getMemo() != null && !address.getMemo().isEmpty()) {
+        if (!address.getMemo().isEmpty()) {
             eventStreamManagerName = address.getMemo();
         } else {
             eventStreamManagerName = String.valueOf(selfId);
         }
-        logger.info(STARTUP.getMarker(), "initialize eventStreamManager");
 
         final EventStreamManager<EventImpl> eventStreamManager = new EventStreamManager<>(
                 platformContext,
@@ -434,232 +419,212 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventConfig.eventStreamQueueCapacity(),
                 this::isLastEventBeforeRestart);
 
-        if (loadedSignedState.isNotNull()) {
-            diskStateHash = loadedSignedState.get().getState().getHash();
-            diskStateRound = loadedSignedState.get().getRound();
-            initialMinimumGenerationNonAncient = loadedSignedState
-                    .get()
-                    .getState()
-                    .getPlatformState()
-                    .getPlatformData()
-                    .getMinimumGenerationNonAncient();
-            startedFromGenesis = false;
-        } else {
-            diskStateHash = null;
-            diskStateRound = -1;
-            initialMinimumGenerationNonAncient = 0;
-            startedFromGenesis = true;
+        initializeState(initialState);
+
+        final TransactionConfig transactionConfig =
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+
+        // This object makes a copy of the state. After this point, initialState becomes immutable.
+        swirldStateManager = PlatformConstructor.swirldStateManager(
+                platformContext,
+                initialAddressBook,
+                selfId,
+                preConsensusSystemTransactionManager,
+                postConsensusSystemTransactionManager,
+                metrics,
+                transactionConfig,
+                freezeManager::isFreezeStarted,
+                initialState.getState(),
+                appVersion);
+
+        stateHashSignQueue = components.add(PlatformConstructor.stateHashSignQueue(
+                threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics));
+
+        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
+                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+        consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
+                platformContext,
+                threadManager,
+                selfId,
+                swirldStateManager,
+                new ConsensusHandlingMetrics(metrics, time),
+                eventStreamManager,
+                stateHashSignQueue,
+                preconsensusEventWriter::waitUntilDurable,
+                freezeManager::freezeStarted,
+                stateManagementComponent::roundAppliedToState,
+                appVersion));
+
+        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
+        final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+
+        final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
+                new ShadowGraphEventObserver(shadowGraph),
+                consensusRoundHandler,
+                preConsensusEventHandler,
+                eventMapper,
+                addedEventMetrics,
+                eventIntakeMetrics,
+                (PreConsensusEventObserver) event -> {
+                    sequencer.assignStreamSequenceNumber(event);
+                    abortAndThrowIfInterrupted(
+                            preconsensusEventWriter::writeEvent,
+                            event,
+                            "Interrupted while attempting to enqueue preconsensus event for writing");
+                },
+                (ConsensusRoundObserver) round -> {
+                    abortAndThrowIfInterrupted(
+                            preconsensusEventWriter::setMinimumGenerationNonAncient,
+                            round.getGenerations().getMinGenerationNonAncient(),
+                            "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+
+                    abortAndThrowIfInterrupted(
+                            preconsensusEventWriter::requestFlush,
+                            "Interrupted while requesting preconsensus event flush");
+                });
+
+        final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
+        isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
+
+        eventLinker = buildEventLinker(isDuplicateChecks);
+
+        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+
+        final EventIntake eventIntake = new EventIntake(
+                selfId,
+                eventLinker,
+                consensusRef::get,
+                initialAddressBook,
+                eventObserverDispatcher,
+                intakeCycleStats,
+                shadowGraph);
+
+        final EventCreator eventCreator = buildEventCreator(eventIntake);
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+
+        final List<GossipEventValidator> validators = new ArrayList<>();
+        // it is very important to discard ancient events, otherwise the deduplication will not work, since it
+        // doesn't track ancient events
+        validators.add(new AncientValidator(consensusRef::get));
+        validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
+        validators.add(StaticValidators::isParentDataValid);
+        validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
+        if (basicConfig.verifyEventSigs()) {
+            validators.add(new SignatureValidator(initialAddressBook));
         }
+        final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
-        final LoadedState loadedState = initializeLoadedStateFromSignedState(loadedSignedState, stateConfig);
-        final PreConsensusEventHandler preConsensusEventHandler;
-        try (loadedState.signedStateFromDisk) {
-            final SignedState signedStateFromDisk = loadedState.signedStateFromDisk.getNullable();
+        /* validates events received from gossip */
+        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
 
-            stateHashSignQueue = PlatformConstructor.stateHashSignQueue(
-                    threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics);
-            stateHashSignQueue.start();
+        eventTaskDispatcher = new EventTaskDispatcher(
+                time,
+                eventValidator,
+                eventCreator,
+                eventIntake::addUnlinkedEvent,
+                eventIntakeMetrics,
+                intakeCycleStats);
 
-            final State stateToLoad;
-            if (signedStateFromDisk != null) {
-                logger.debug(STARTUP.getMarker(), () -> new SavedStateLoadedPayload(
-                                signedStateFromDisk.getRound(),
-                                signedStateFromDisk.getConsensusTimestamp(),
-                                startUpEventFrozenManager.getStartUpEventFrozenEndTime())
-                        .toString());
+        intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
+                .setNodeId(selfId)
+                .setComponent(PLATFORM_THREAD_POOL_NAME)
+                .setThreadName("event-intake")
+                // There is a circular dependency between the intake queue and gossip,
+                // which the handler lambda sidesteps (since the lambda is not invoked
+                // until after all things have been constructed).
+                .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
+                .setCapacity(eventConfig.eventIntakeQueueSize())
+                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableBusyTimeMetric())
+                .build());
 
-                stateToLoad = loadedState.initialState;
+        tipsetEventCreator = buildTipsetEventCreationManager(
+                platformContext,
+                threadManager,
+                time,
+                this,
+                initialAddressBook,
+                selfId,
+                appVersion,
+                swirldStateManager.getTransactionPool(),
+                intakeQueue,
+                eventObserverDispatcher,
+                currentPlatformStatus::get,
+                startUpEventFrozenManager,
+                latestReconnectRound::get,
+                stateManagementComponent::getLatestSavedStateRound);
 
-            } else {
-                stateToLoad = buildGenesisState(this, initialAddressBook, appVersion, genesisStateBuilder);
+        transactionSubmitter = new SwirldTransactionSubmitter(
+                currentPlatformStatus::get,
+                transactionConfig,
+                swirldStateManager::submitTransaction,
+                new TransactionMetrics(metrics));
 
-                // if we are not starting from a saved state, don't freeze on startup
-                startUpEventFrozenManager.setStartUpEventFrozenEndTime(null);
-            }
+        final boolean startedFromGenesis = initialState.isGenesisState();
 
-            if (stateToLoad == null) {
-                // this should be impossible
-                throw new IllegalStateException("stateToLoad is null");
-            }
-            final TransactionConfig transactionConfig =
-                    platformContext.getConfiguration().getConfigData(TransactionConfig.class);
-            swirldStateManager = PlatformConstructor.swirldStateManager(
-                    platformContext,
-                    initialAddressBook,
-                    selfId,
-                    preConsensusSystemTransactionManager,
-                    postConsensusSystemTransactionManager,
-                    metrics,
-                    transactionConfig,
-                    freezeManager::isFreezeStarted,
-                    stateToLoad);
+        gossip = GossipFactory.buildGossip(
+                platformContext,
+                threadManager,
+                time,
+                crypto,
+                notificationEngine,
+                initialAddressBook,
+                selfId,
+                appVersion,
+                shadowGraph,
+                emergencyRecoveryManager,
+                consensusRef,
+                intakeQueue,
+                freezeManager,
+                startUpEventFrozenManager,
+                swirldStateManager,
+                startedFromGenesis,
+                stateManagementComponent,
+                eventTaskDispatcher::dispatchTask,
+                eventObserverDispatcher,
+                eventMapper,
+                eventIntakeMetrics,
+                eventLinker,
+                this::checkPlatformStatus,
+                this::loadReconnectState,
+                this::clearAllPipelines);
 
-            // SwirldStateManager will get a copy of the state loaded, that copy will become stateCons.
-            // The original state will be saved in the SignedStateMgr and will be deleted when it becomes old
+        if (startedFromGenesis) {
+            initialMinimumGenerationNonAncient = 0;
 
-            final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
-            preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                    metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
-            consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
-                    platformContext,
-                    threadManager,
-                    selfId,
-                    swirldStateManager,
-                    new ConsensusHandlingMetrics(metrics, time),
-                    eventStreamManager,
-                    stateHashSignQueue,
-                    preconsensusEventWriter::waitUntilDurable,
-                    freezeManager::freezeStarted,
-                    stateManagementComponent::roundAppliedToState,
-                    appVersion));
+            consensusRef.set(new ConsensusImpl(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    consensusMetrics,
+                    consensusRoundHandler::addMinGenInfo,
+                    getAddressBook()));
+        } else {
+            initialMinimumGenerationNonAncient =
+                    initialState.getState().getPlatformState().getPlatformData().getMinimumGenerationNonAncient();
 
-            if (signedStateFromDisk != null) {
-                consensusRoundHandler.loadDataFromSignedState(signedStateFromDisk, false);
-            }
+            stateManagementComponent.stateToLoad(initialState, SourceOfSignedState.DISK);
+            consensusRoundHandler.loadDataFromSignedState(initialState, false);
 
-            final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
-            final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
+            loadStateIntoConsensusAndEventMapper(initialState);
+            loadStateIntoEventCreator(initialState);
+            eventLinker.loadFromSignedState(initialState);
 
-            final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
-                    new ShadowGraphEventObserver(shadowGraph),
-                    consensusRoundHandler,
-                    preConsensusEventHandler,
-                    eventMapper,
-                    addedEventMetrics,
-                    eventIntakeMetrics,
-                    (PreConsensusEventObserver) event -> {
-                        sequencer.assignStreamSequenceNumber(event);
-                        abortAndThrowIfInterrupted(
-                                preconsensusEventWriter::writeEvent,
-                                event,
-                                "Interrupted while attempting to enqueue preconsensus event for writing");
-                    },
-                    (ConsensusRoundObserver) round -> {
-                        abortAndThrowIfInterrupted(
-                                preconsensusEventWriter::setMinimumGenerationNonAncient,
-                                round.getGenerations().getMinGenerationNonAncient(),
-                                "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+            // We don't want to invoke these callbacks until after we are starting up.
+            components.add((Startable) () -> {
+                final long round = initialState.getRound();
+                final Hash hash = initialState.getState().getHash();
 
-                        abortAndThrowIfInterrupted(
-                                preconsensusEventWriter::requestFlush,
-                                "Interrupted while requesting preconsensus event flush");
-                    });
+                // If we loaded from disk then call the appropriate dispatch.
+                // It is important that this is sent after the ConsensusHashManager
+                // is initialized.
+                diskStateLoadedDispatcher.dispatch(round, hash);
 
-            final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
-            isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
-
-            eventLinker = buildEventLinker(isDuplicateChecks);
-
-            final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
-
-            final EventIntake eventIntake = new EventIntake(
-                    selfId,
-                    eventLinker,
-                    consensusRef::get,
-                    initialAddressBook,
-                    eventObserverDispatcher,
-                    intakeCycleStats,
-                    shadowGraph);
-
-            final EventCreator eventCreator = buildEventCreator(eventIntake);
-            final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-            final List<GossipEventValidator> validators = new ArrayList<>();
-            // it is very important to discard ancient events, otherwise the deduplication will not work, since it
-            // doesn't track ancient events
-            validators.add(new AncientValidator(consensusRef::get));
-            validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
-            validators.add(StaticValidators::isParentDataValid);
-            validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
-            if (basicConfig.verifyEventSigs()) {
-                validators.add(new SignatureValidator(initialAddressBook));
-            }
-            final GossipEventValidators eventValidators = new GossipEventValidators(validators);
-
-            /* validates events received from gossip */
-            final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
-
-            eventTaskDispatcher = new EventTaskDispatcher(
-                    time,
-                    eventValidator,
-                    eventCreator,
-                    eventIntake::addUnlinkedEvent,
-                    eventIntakeMetrics,
-                    intakeCycleStats);
-
-            intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
-                    .setNodeId(selfId)
-                    .setComponent(PLATFORM_THREAD_POOL_NAME)
-                    .setThreadName("event-intake")
-                    // There is a circular dependency between the intake queue and gossip,
-                    // which the handler lambda sidesteps (since the lambda is not invoked
-                    // until after all things have been constructed).
-                    .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
-                    .setCapacity(eventConfig.eventIntakeQueueSize())
-                    .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                    .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
-                            .enableMaxSizeMetric()
-                            .enableBusyTimeMetric())
-                    .build());
-
-            tipsetEventCreator = buildTipsetEventCreationManager(
-                    platformContext,
-                    threadManager,
-                    time,
-                    this,
-                    initialAddressBook,
-                    selfId,
-                    appVersion,
-                    swirldStateManager.getTransactionPool(),
-                    intakeQueue,
-                    eventObserverDispatcher,
-                    currentPlatformStatus::get,
-                    startUpEventFrozenManager);
-
-            transactionSubmitter = new SwirldTransactionSubmitter(
-                    currentPlatformStatus::get,
-                    transactionConfig,
-                    swirldStateManager::submitTransaction,
-                    new TransactionMetrics(metrics));
-
-            gossip = GossipFactory.buildGossip(
-                    platformContext,
-                    threadManager,
-                    time,
-                    crypto,
-                    notificationEngine,
-                    initialAddressBook,
-                    selfId,
-                    appVersion,
-                    shadowGraph,
-                    emergencyRecoveryManager,
-                    consensusRef,
-                    intakeQueue,
-                    freezeManager,
-                    startUpEventFrozenManager,
-                    swirldStateManager,
-                    startedFromGenesis,
-                    stateManagementComponent,
-                    eventTaskDispatcher::dispatchTask,
-                    eventObserverDispatcher,
-                    eventMapper,
-                    eventIntakeMetrics,
-                    eventLinker,
-                    this::checkPlatformStatus,
-                    this::loadReconnectState,
-                    this::clearAllPipelines);
-
-            if (signedStateFromDisk != null) {
-                loadStateIntoConsensusAndEventMapper(signedStateFromDisk);
-                loadStateIntoEventCreator(signedStateFromDisk);
-                eventLinker.loadFromSignedState(signedStateFromDisk);
-            } else {
-                consensusRef.set(new ConsensusImpl(
-                        platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                        consensusMetrics,
-                        consensusRoundHandler::addMinGenInfo,
-                        getAddressBook()));
-            }
+                // Let the app know that a state was loaded.
+                notificationEngine.dispatch(
+                        StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
+            });
         }
 
         clearAllPipelines = new LoggingClearables(
@@ -711,116 +676,60 @@ public class SwirldsPlatform implements Platform, Startable {
     }
 
     /**
-     * A container for the initial state.
+     * Initialize the state.
      *
-     * @param signedStateFromDisk the initial signed state loaded from disk
-     * @param initialState        the initial {@link State} object. This is a fast copy of the state loaded from disk
+     * @param signedState the state to initialize
      */
-    private record LoadedState(@NonNull ReservedSignedState signedStateFromDisk, @Nullable State initialState) {}
+    private void initializeState(@NonNull final SignedState signedState) {
 
-    /**
-     * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
-     * only transactions will be capable of modifying the address book.
-     *
-     * @param signedState the state that was loaded from disk
-     * @param addressBook the address book specified in config.txt
-     */
-    private static void updateLoadedStateAddressBook(final SignedState signedState, final AddressBook addressBook) {
-        final State state = signedState.getState();
+        final SoftwareVersion previousSoftwareVersion;
+        final InitTrigger trigger;
 
-        // Update the address book with the current address book read from config.txt.
-        // Eventually we will not do this, and only transactions will be capable of
-        // modifying the address book.
-        state.getPlatformState().setAddressBook(addressBook.copy());
+        if (signedState.isGenesisState()) {
+            previousSoftwareVersion = NO_VERSION;
+            trigger = GENESIS;
+        } else {
+            previousSoftwareVersion =
+                    signedState.getState().getPlatformState().getPlatformData().getCreationSoftwareVersion();
+            trigger = RESTART;
+        }
 
-        // Invalidate a path down to the new address book
-        new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
-                .forEachRemaining(MerkleNode::invalidateHash);
+        final State initialState = signedState.getState();
 
-        // We should only have to rehash a few nodes, so simpler to use the synchronous algorithm.
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
+        // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
+        // of that state here. That copy should have caused the hash to be cleared.
+        if (initialState.getHash() != null) {
+            throw new IllegalStateException("Expected initial state to be unhashed");
+        }
+        if (initialState.getSwirldState().getHash() != null) {
+            throw new IllegalStateException("Expected initial swirld state to be unhashed");
+        }
+
+        initialState.getSwirldState().init(this, initialState.getSwirldDualState(), trigger, previousSoftwareVersion);
+
+        abortAndThrowIfInterrupted(
+                () -> {
+                    try {
+                        MerkleCryptoFactory.getInstance()
+                                .digestTreeAsync(initialState)
+                                .get();
+                    } catch (final ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                "interrupted while attempting to hash the state");
 
         // If our hash changes as a result of the new address book then our old signatures may become invalid.
         signedState.pruneInvalidSignatures();
-    }
 
-    /**
-     * Create the LoadedState from the SignedState loaded from disk, if it is present.
-     *
-     * @param signedStateFromDisk the SignedState loaded from disk.
-     * @param stateConfig         the state configuration
-     * @return the LoadedState
-     */
-    @NonNull
-    private LoadedState initializeLoadedStateFromSignedState(
-            @NonNull final ReservedSignedState signedStateFromDisk, @NonNull final StateConfig stateConfig) {
-        try (signedStateFromDisk) {
-            if (signedStateFromDisk.isNotNull()) {
-                updateLoadedStateAddressBook(signedStateFromDisk.get(), initialAddressBook);
-                final State initialState = loadSavedState(signedStateFromDisk.get(), stateConfig);
-                return new LoadedState(
-                        signedStateFromDisk.getAndReserve("SwirldsPlatform.initializeLoadedStateFromSignedState()"),
-                        initialState);
-            }
-        } catch (final Exception e) {
-            logger.error(EXCEPTION.getMarker(), "Saved state not loaded:", e);
-            // if requireStateLoad is on, we exit. if not, we just log it
-            if (stateConfig.requireStateLoad()) {
-                SystemExitUtils.exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
-            }
-        }
-        return new LoadedState(createNullReservation(), null);
-    }
-
-    private State loadSavedState(
-            @NonNull final SignedState signedStateFromDisk, @NonNull final StateConfig stateConfig) {
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
                 STARTUP.getMarker(),
-                "Information for state loaded from disk:\n{}\n{}",
-                () -> signedStateFromDisk.getState().getPlatformState().getInfoString(),
-                () -> new MerkleTreeVisualizer(signedStateFromDisk.getState())
+                "The platform is using the following initial state:\n{}\n{}",
+                signedState.getState().getPlatformState().getInfoString(),
+                new MerkleTreeVisualizer(signedState.getState())
                         .setDepth(stateConfig.debugHashDepth())
                         .render());
-
-        // The previous version of the software that was run. Null if this is the first time running, or if the previous
-        // version ran before the concept of application software versioning was introduced.
-        final SoftwareVersion previousSoftwareVersion = signedStateFromDisk
-                .getState()
-                .getPlatformState()
-                .getPlatformData()
-                .getCreationSoftwareVersion();
-        final State initialState = signedStateFromDisk.getState().copy();
-        initialState.getPlatformState().getPlatformData().setCreationSoftwareVersion(appVersion);
-
-        final Hash initialHash = initialState.getSwirldState().getHash();
-        initialState
-                .getSwirldState()
-                .init(this, initialState.getSwirldDualState(), InitTrigger.RESTART, previousSoftwareVersion);
-        initialState.markAsInitialized();
-
-        final Hash currentHash = initialState.getSwirldState().getHash();
-
-        // If the current hash is null, we must hash the state
-        // It's also possible that the application modified the state and hashed itself in init(), if so we need to
-        // rehash the state as a whole.
-        if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
-            initialState.invalidateHash();
-            abortAndThrowIfInterrupted(
-                    () -> {
-                        try {
-                            MerkleCryptoFactory.getInstance()
-                                    .digestTreeAsync(initialState)
-                                    .get();
-                        } catch (final ExecutionException e) {
-                            throw new RuntimeException(e);
-                        }
-                    },
-                    "interrupted while attempting to hash the state");
-        }
-
-        stateManagementComponent.stateToLoad(signedStateFromDisk, SourceOfSignedState.DISK);
-
-        return initialState;
     }
 
     /**
@@ -930,10 +839,10 @@ public class SwirldsPlatform implements Platform, Startable {
                                 + reconnectHash + ", new hash is "
                                 + signedState.getState().getHash());
             }
-            signedState.getState().markAsInitialized();
 
             swirldStateManager.loadFromSignedState(signedState);
 
+            latestReconnectRound.set(signedState.getRound());
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensusAndEventMapper(signedState);
@@ -1097,8 +1006,6 @@ public class SwirldsPlatform implements Platform, Startable {
     public void start() {
         components.start();
 
-        sendStartupNotifications();
-
         metrics.start();
 
         if (tipsetEventCreator != null) {
@@ -1115,21 +1022,6 @@ public class SwirldsPlatform implements Platform, Startable {
         // in case of a single node network, the platform status update will not be triggered by connections, so it
         // needs to be triggered now
         checkPlatformStatus();
-    }
-
-    /**
-     * Send notifications that can only be sent after components have been started.
-     */
-    private void sendStartupNotifications() {
-        if (!startedFromGenesis) {
-            // If we loaded from disk then call the appropriate dispatch. This dispatch
-            // must wait until after components have been started.
-            diskStateLoadedDispatcher.dispatch(diskStateRound, diskStateHash);
-
-            // Let the app know that a state was loaded.
-            notificationEngine.dispatch(
-                    StateLoadedFromDiskCompleteListener.class, new StateLoadedFromDiskNotification());
-        }
     }
 
     /**
@@ -1179,12 +1071,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     private void checkPlatformStatus() {
-        final int numNodes = initialAddressBook.getSize();
-
         synchronized (currentPlatformStatus) {
-            if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
-                setPlatformStatus(PlatformStatus.DISCONNECTED);
-            } else if (gossip.hasFallenBehind()) {
+            if (gossip.hasFallenBehind()) {
                 setPlatformStatus(PlatformStatus.BEHIND);
             } else if (freezeManager.isFreezeStarted()) {
                 setPlatformStatus(PlatformStatus.FREEZING);

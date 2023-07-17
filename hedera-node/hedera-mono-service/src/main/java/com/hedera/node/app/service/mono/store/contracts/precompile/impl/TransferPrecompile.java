@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.SYSTEM_ACCOUNT_BOUNDARY;
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
@@ -35,6 +36,7 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAdd
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -248,15 +250,21 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
+
             final var units = change.getAggregatedUnits();
+            final var isDebit = units < 0;
+            final var isCredit = units > 0;
+
             if (change.hasAlias()) {
                 replaceAliasWithId(change, changes, completedLazyCreates);
             }
 
-            final var isDebit = units < 0;
-            final var isCredit = units > 0;
+            // Checks whether the balance modification targets the receiver account (i.e. credit operation).
+            if (isCredit && !change.isForCustomFee()) {
+                revertIfReceiverIsSystemAccount(change);
+            }
 
-            if (change.isForCustomFee() && isDebit) {
+            if (isDebit && change.isForCustomFee()) {
                 if (change.includesFallbackFee())
                     validateTrue(allowRoyaltyFallbackCustomFeeTransfers, NOT_SUPPORTED, "royalty fee");
                 else validateTrue(allowFixedCustomFeeTransfers, NOT_SUPPORTED, "fixed fee");
@@ -835,5 +843,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // ownership change to approval-based authorization, but the synthetic CryptoTransfer op doesn't
         // have a matching ownership change in its token transfer list
         log.error(CHANGE_SWITCHED_TO_APPROVAL_WITHOUT_MATCHING_ADJUSTMENT_IN, switchedChange, opBuilder);
+    }
+
+    private void revertIfReceiverIsSystemAccount(final BalanceChange change) {
+        final var accountNum = change.counterPartyAccountId() != null
+                ? change.counterPartyAccountId().getAccountNum()
+                : change.getAccount().num();
+
+        validateTrueOrRevert(accountNum > SYSTEM_ACCOUNT_BOUNDARY, INVALID_RECEIVING_NODE_ACCOUNT);
     }
 }

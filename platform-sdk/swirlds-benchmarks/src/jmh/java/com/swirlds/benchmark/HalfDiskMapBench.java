@@ -76,7 +76,9 @@ public class HalfDiskMapBench extends BaseBench {
                     count.set(list.size());
                     return list;
                 },
-                2);
+                2,
+                null,
+                null);
         System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content

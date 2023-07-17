@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -26,7 +25,6 @@ import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.*;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -100,8 +98,7 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         final var token = tokenStore.get(tokenId);
         validateTrue(token != null, INVALID_TOKEN_ID);
         // validate treasury relation exists
-        final var treasuryRel = tokenRelStore.get(
-                AccountID.newBuilder().accountNum(token.treasuryAccountNumber()).build(), tokenId);
+        final var treasuryRel = tokenRelStore.get(token.treasuryAccountId(), tokenId);
         validateTrue(treasuryRel != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         if (token.tokenType() == TokenType.FUNGIBLE_COMMON) {
@@ -173,11 +170,10 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
         validateFalse(metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA);
 
         // validate token number from treasury relation
-        final var tokenId = asToken(treasuryRel.tokenNumber());
-        validateTrue(treasuryRel.tokenNumber() == token.tokenNumber(), FAIL_INVALID);
+        final var tokenId = treasuryRel.tokenId();
 
         // get the treasury account
-        final var treasuryAccount = accountStore.get(asAccount(treasuryRel.accountNumber()));
+        final var treasuryAccount = accountStore.get(treasuryRel.accountId());
         validateTrue(treasuryAccount != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
         // get the latest serial number minted for the token
@@ -230,8 +226,8 @@ public class TokenMintHandler extends BaseTokenHandler implements TransactionHan
             @NonNull final Bytes meta,
             final long currentSerialNumber) {
         return Nft.newBuilder()
-                .id(UniqueTokenId.newBuilder()
-                        .tokenTypeNumber(tokenId.tokenNum())
+                .id(NftID.newBuilder()
+                        .tokenId(tokenId)
                         .serialNumber(currentSerialNumber)
                         .build())
                 // ownerID is null to indicate owned by treasury

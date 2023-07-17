@@ -24,5 +24,5 @@ import javax.inject.Singleton;
 public interface ThrottleInjectionModule {
     @Binds
     @Singleton
-    ThrottleAccumulator bindThrottleAccumulator(MonoThrottleAccumulator throttleAccumulator);
+    ThrottleAccumulator bindThrottleAccumulator(ThrottleAccumulatorImpl throttleAccumulator);
 }

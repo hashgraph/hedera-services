@@ -16,8 +16,8 @@
 
 package com.swirlds.virtual.merkle.reconnect;
 
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -313,8 +313,8 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
                 .withValue("reconnect.reconnectWindowSeconds", "0")
                 .withValue("reconnect.fallenBehindThreshold", "0")
                 // This is important! A low value will cause a failed reconnect to finish more quicly.
-                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "500")
-                .withValue("reconnect.asyncOutputStreamFlushMilliseconds", "10")
+                .withValue("reconnect.asyncStreamTimeout", "500ms")
+                .withValue("reconnect.asyncOutputStreamFlush", "10ms")
                 .withValue("reconnect.asyncStreamBufferSize", "1000")
                 .withValue("reconnect.maximumReconnectFailuresBeforeShutdown", "0")
                 .withValue("reconnect.minimumTimeBetweenReconnects", "0s")

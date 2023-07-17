@@ -83,6 +83,7 @@ public record ConsistencyTestingToolRound(long roundNumber, long currentState, @
             field = fields.get(2);
             final String transactionsString = field.substring(field.indexOf("[") + 1, field.indexOf("]"));
             final List<Long> transactionsContents = Arrays.stream(transactionsString.split(LIST_ELEMENT_SEPARATOR))
+                    .filter(s -> !s.isEmpty())
                     .map(Long::parseLong)
                     .toList();
 

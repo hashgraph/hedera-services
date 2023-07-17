@@ -205,6 +205,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
@@ -313,7 +314,8 @@ class MiscUtilsTest {
         given(address.getMemo()).willReturn("0.0.3");
         final var book = mock(AddressBook.class);
         given(book.getSize()).willReturn(1);
-        given(book.getAddress(0)).willReturn(address);
+        given(book.getNodeId(0)).willReturn(new NodeId(0));
+        given(book.getAddress(new NodeId(0))).willReturn(address);
 
         final var accounts = MiscUtils.getNodeAccounts(book);
 

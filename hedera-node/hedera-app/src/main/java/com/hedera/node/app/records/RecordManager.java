@@ -20,6 +20,7 @@ import com.hedera.node.app.spi.records.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -34,6 +35,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class RecordManager {
+
+    @Inject
+    public RecordManager() {}
+
     /**
      * Inform BlockRecordManager of the new consensus time at the beginning of new transaction. This should only be called for before user
      * transactions where the workflow knows 100% that any there will be no new transaction records for any consensus time prior to this one.

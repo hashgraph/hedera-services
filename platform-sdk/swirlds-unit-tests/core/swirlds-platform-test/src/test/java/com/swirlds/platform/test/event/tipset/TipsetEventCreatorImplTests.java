@@ -16,18 +16,18 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -39,8 +39,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
@@ -62,6 +61,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -70,9 +70,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class TipsetEventCreatorImplTests {
 
     /**
-     * @param nodeId                the node ID of the simulated node
-     * @param tipsetTracker         tracks tipsets of events
-     * @param tipsetEventCreator    the event creator for the simulated node
+     * @param nodeId                 the node ID of the simulated node
+     * @param tipsetTracker          tracks tipsets of events
+     * @param tipsetEventCreator     the event creator for the simulated node
      * @param tipsetWeightCalculator used to sanity check event creation logic
      */
     private record SimulatedNode(
@@ -123,11 +123,11 @@ class TipsetEventCreatorImplTests {
             final TipsetEventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
@@ -158,7 +158,8 @@ class TipsetEventCreatorImplTests {
                     // comparing to self
                     continue;
                 }
-                assertNotEquals(event.getCreatorId(), newEvent.getHashedData().getCreatorId());
+                Assertions.assertNotEquals(
+                        event.getCreatorId(), newEvent.getHashedData().getCreatorId());
             }
         }
 

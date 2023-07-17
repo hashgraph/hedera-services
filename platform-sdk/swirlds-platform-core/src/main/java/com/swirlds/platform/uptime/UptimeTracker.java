@@ -163,11 +163,13 @@ public class UptimeTracker {
             @NonNull final Round round,
             @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
             @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
+
         round.forEach(event -> {
             lastEventsInRoundByCreator.put(event.getCreatorId(), event);
-            if (((EventImpl) event).isFamous()) {
-                judgesByCreator.put(event.getCreatorId(), event);
-            }
+            // Temporarily disabled until we properly detect judges in a round
+            //            if (((EventImpl) event).isFamous()) {
+            //                judgesByCreator.put(event.getCreatorId(), event);
+            //            }
         });
 
         final ConsensusEvent lastSelfEvent = lastEventsInRoundByCreator.get(selfId);
@@ -196,10 +198,11 @@ public class UptimeTracker {
                 uptimeData.recordLastEvent((EventImpl) lastEvent);
             }
 
-            final ConsensusEvent judge = judgesByCreator.get(address.getNodeId());
-            if (judge != null) {
-                uptimeData.recordLastJudge((EventImpl) judge);
-            }
+            // Temporarily disabled until we properly detect judges in a round
+            //            final ConsensusEvent judge = judgesByCreator.get(address.getNodeId());
+            //            if (judge != null) {
+            //                uptimeData.recordLastJudge((EventImpl) judge);
+            //            }
         }
     }
 
@@ -232,10 +235,11 @@ public class UptimeTracker {
                 uptimeMetrics.getRoundsSinceLastConsensusEventMetric(id).update(currentRound - lastEventRound);
             }
 
-            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
-            if (lastJudgeRound != NO_ROUND) {
-                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
-            }
+            // Temporarily disabled until we properly detect judges in a round
+            //            final long lastJudgeRound = uptimeData.getLastJudgeRound(id);
+            //            if (lastJudgeRound != NO_ROUND) {
+            //                uptimeMetrics.getRoundsSinceLastJudgeMetric(id).update(currentRound - lastJudgeRound);
+            //            }
         }
 
         final double fractionOfNetworkAlive = (double) nonDegradedConsensusWeight / addressBook.getTotalWeight();

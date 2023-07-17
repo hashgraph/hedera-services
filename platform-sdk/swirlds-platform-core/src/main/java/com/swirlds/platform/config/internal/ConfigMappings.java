@@ -84,7 +84,10 @@ public final class ConfigMappings {
             new ConfigMapping("thread.threadPrioritySync", "threadPrioritySync"),
             new ConfigMapping("thread.threadPriorityNonSync", "threadPriorityNonSync"),
             new ConfigMapping("thread.threadDumpPeriodMs", "threadDumpPeriodMs"),
-            new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"));
+            new ConfigMapping("thread.threadDumpLogDir", "threadDumpLogDir"),
+            new ConfigMapping("reconnect.asyncStreamTimeout", "reconnect.asyncStreamTimeoutMilliseconds"),
+            new ConfigMapping("reconnect.asyncOutputStreamFlush", "reconnect.asyncOutputStreamFlushMilliseconds"),
+            new ConfigMapping("reconnect.maxAckDelay", "reconnect.maxAckDelayMilliseconds"));
 
     /**
      * Add all known aliases to the provided config source
