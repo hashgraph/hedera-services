@@ -42,7 +42,7 @@ public class HederaEvmTransactionProcessor {
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaEvmVersion version,
-            @NonNull final HederaTracer tracer,
+            @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
         return requireNonNull(transactionProcessors.get(version))
                 .processTransaction(
