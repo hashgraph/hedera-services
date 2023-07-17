@@ -73,9 +73,14 @@ public class FinalizeRecordHandler implements TransactionHandler {
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var readableNftStore = context.readableStore(ReadableNftStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
-        // TODO : Need to pay staking rewards
-        // ---------- Hbar transfers
-        final var hbarChanges = calculateHbarChanges(writableAccountStore, readableAccountStore);
+
+        // staking rewards are triggered for any balance changes to account's that are staked to a node
+        // They are also triggered if staking related fields are modified
+        // Calculate staking rewards and add them also to hbarChanges here
+        applyStakingRewardChanges(writableAccountStore, readableAccountStore);
+
+        /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
+        final var hbarChanges = hbarChangesWithStakingRewards(writableAccountStore, readableAccountStore);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(
@@ -102,8 +107,30 @@ public class FinalizeRecordHandler implements TransactionHandler {
         }
     }
 
+    private void applyStakingRewardChanges(final WritableAccountStore writableAccountStore,
+                                           final ReadableAccountStore readableAccountStore) {
+        final var possibleRewardReceivers = new ArrayList<AccountID>();
+        for (final AccountID modifiedId : writableAccountStore.modifiedAccountsInState()) {
+            final var modifiedAcct = writableAccountStore.getAccountById(modifiedId);
+            final var originalAcct = readableAccountStore.getAccountById(modifiedId);
+
+            // It's possible the modified account was created in this transaction, in which case the non-existent
+            // persisted account effectively has no balance (i.e. its prior balance is 0)
+            final var originalBalance = originalAcct != null ? originalAcct.tinybarBalance() : 0;
+
+            // If balance changes, then the account is eligible for staking rewards
+            final var netHbarChange = modifiedAcct.tinybarBalance() - originalBalance;
+            if (netHbarChange != 0) {
+                possibleRewardReceivers.add(modifiedId);
+            }
+
+            // If staking related fields are modified, then the account is eligible for staking rewards
+            final var netStakingChange = modifiedAcct.stakedNumber() - originalAcct.stakedNumber();
+        }
+    }
+
     @NonNull
-    private static List<AccountAmount> calculateHbarChanges(
+    private static List<AccountAmount> hbarChangesWithStakingRewards(
             @NonNull final WritableAccountStore writableAccountStore,
             @NonNull final ReadableAccountStore readableAccountStore) {
         final var hbarChanges = new ArrayList<AccountAmount>();
