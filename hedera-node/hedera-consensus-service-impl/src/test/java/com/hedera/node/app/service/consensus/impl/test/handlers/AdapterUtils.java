@@ -76,6 +76,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.HashMap;
@@ -88,6 +89,9 @@ import org.mockito.Mockito;
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
+
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
     public static final AccountID PARITY_CUSTOM_PAYER =
             AccountID.newBuilder().accountNum(1216).build();
@@ -260,7 +264,7 @@ public class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    0L,
+                    UNSET_STAKED_ID,
                     false,
                     receiverSigRequired,
                     3L,

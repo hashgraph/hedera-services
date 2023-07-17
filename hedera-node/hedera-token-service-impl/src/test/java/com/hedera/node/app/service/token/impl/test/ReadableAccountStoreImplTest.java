@@ -70,7 +70,8 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         given(account.stakedToMe()).willReturn(31L);
         given(account.stakePeriodStart()).willReturn(37L);
         given(account.stakeAtStartOfLastRewardedPeriod()).willReturn(37L);
-        given(account.stakedNumber()).willReturn(41L);
+        given(account.stakedAccountId())
+                .willReturn(AccountID.newBuilder().accountNum(41L).build());
         given(account.declineReward()).willReturn(true);
         given(account.autoRenewAccountNumber()).willReturn(53L);
         given(account.autoRenewSecs()).willReturn(59L);
@@ -96,7 +97,8 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.ethereumNonce()).isEqualTo(29L);
         assertThat(mappedAccount.stakedToMe()).isEqualTo(31L);
         assertThat(mappedAccount.stakePeriodStart()).isEqualTo(37L);
-        assertThat(mappedAccount.stakedNumber()).isEqualTo(41L);
+        assertThat(mappedAccount.stakedAccountId())
+                .isEqualTo(AccountID.newBuilder().accountNum(41L).build());
         assertThat(mappedAccount.declineReward()).isTrue();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
         assertThat(mappedAccount.autoRenewAccountNumber()).isEqualTo(53L);
@@ -134,7 +136,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.ethereumNonce()).isZero();
         assertThat(mappedAccount.stakedToMe()).isZero();
         assertThat(mappedAccount.stakePeriodStart()).isZero();
-        assertThat(mappedAccount.stakedNumber()).isZero();
+        assertThat(mappedAccount.stakedNodeId()).isZero();
         assertThat(mappedAccount.declineReward()).isFalse();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isZero();
         assertThat(mappedAccount.autoRenewAccountNumber()).isZero();

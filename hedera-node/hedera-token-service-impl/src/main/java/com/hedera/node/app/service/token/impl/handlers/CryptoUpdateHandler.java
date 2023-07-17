@@ -177,8 +177,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         if (op.hasDeclineReward()) {
             builder.declineReward(op.declineReward().booleanValue());
         }
-        if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            builder.stakedNumber(getStakedId(op.stakedId().kind().toString(), op.stakedNodeId(), op.stakedAccountId()));
+        if (op.hasStakedAccountId()) {
+            if (AccountID.newBuilder().accountNum(0).build().equals(op.stakedAccountId())) {
+                builder.stakedAccountId((AccountID) null);
+            } else {
+                builder.stakedAccountId(op.stakedAccountId());
+            }
+        } else if (op.hasStakedNodeId()) {
+            builder.stakedNodeId(op.stakedNodeId());
         }
         return builder;
     }
