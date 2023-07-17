@@ -547,7 +547,7 @@ class HandleWorkflowTest extends AppTestBase {
     }
 
     @Test
-    @DisplayName("Test when there is the same transaction in the cache")
+    @DisplayName("Test with same transaction in the cache")
     void testExistingTransactionInCache() {
         // pre-check
         final var transactionId = TransactionID.newBuilder()
