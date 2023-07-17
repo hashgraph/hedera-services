@@ -96,7 +96,7 @@ class IterableStorageUtilsTest {
                                 nextKey + " -> " + CommonUtils.hex(nextValue.getValue())))
                 + "]";
 
-        assertEquals(expected, IterableStorageUtils.joinedStorageMappings(rootKey, storage));
+        assertEquals(expected, IterableStorageUtils.joinedStorageMappings(rootKey, VirtualMapLike.from(storage)));
     }
 
     @Test
@@ -110,7 +110,7 @@ class IterableStorageUtilsTest {
 
     @Test
     void canListNoStorageValues() {
-        assertEquals("[]", IterableStorageUtils.joinedStorageMappings(null, storage));
+        assertEquals("[]", IterableStorageUtils.joinedStorageMappings(null, VirtualMapLike.from(storage)));
     }
 
     @Test

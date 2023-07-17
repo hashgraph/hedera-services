@@ -43,5 +43,5 @@ public interface ScaffoldingComponent {
 
     ContractCreateHandler contractCreateHandler();
 
-    Function<TransactionBody, HandleContext> handleContextCreator();
+    Function<TransactionBody, HandleContext> contextForTransaction();
 }

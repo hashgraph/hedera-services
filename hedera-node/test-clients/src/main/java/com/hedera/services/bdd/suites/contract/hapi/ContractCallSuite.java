@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -33,6 +34,8 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -104,7 +107,11 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
+
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -226,6 +233,7 @@ public class ContractCallSuite extends HapiSuite {
                 sendHbarsToOuterContractFromDifferentAddresses(),
                 sendHbarsToCallerFromDifferentAddresses(),
                 bitcarbonTestStillPasses(),
+                reportErc721Operations(),
                 whitelistingAliasedContract(),
                 cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
                 exchangeRatePrecompileWorks(),
@@ -724,6 +732,104 @@ public class ContractCallSuite extends HapiSuite {
                                         "Peter",
                                         nyJurisCode.get())
                                 .gas(1_000_000)));
+    }
+
+    @SuppressWarnings("java:S5669")
+    private HapiSpec reportErc721Operations() {
+        final AtomicReference<Address> eddsaPartyAddress = new AtomicReference<>();
+        final AtomicReference<Address> ecdsaCounterpartyAddress = new AtomicReference<>();
+        final AtomicReference<Address> ecdsaOperatorAddress = new AtomicReference<>();
+        final AtomicReference<Address> ecdsaTreasuryAddress = new AtomicReference<>();
+        final var erc721 = "ERC721Full";
+        final var ecdsaTreasury = "ecdsaTreasury";
+        final var eddsaParty = "eddsaParty";
+        final var ecdsaCounterparty = "ecdsaCounterparty";
+        final var ecdsaOperator = "ecdsaOperator";
+        final var aEcKey = "aEcKey";
+        final var bEcKey = "bEcKey";
+        final var cEcKey = "cEcKey";
+        final var aEdKey = "aEdKey";
+
+        return onlyDefaultHapiSpec("ReportErc721Operations")
+                .given(
+                        newKeyNamed(aEcKey).shape(SigControl.SECP256K1_ON),
+                        newKeyNamed(bEcKey).shape(SigControl.SECP256K1_ON),
+                        newKeyNamed(cEcKey).shape(SigControl.SECP256K1_ON),
+                        newKeyNamed(aEdKey).shape(SigControl.ED25519_ON),
+                        cryptoCreate(ecdsaTreasury)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .key(aEcKey).advertisingCreation().withMatchingEvmAddress()
+                                .exposingEvmAddressTo(address -> {
+                                    ecdsaTreasuryAddress.set(address);
+                                    System.out.println("  ➡️  " + address);
+                                }),
+                        getAccountInfo(ecdsaTreasury).logged(),
+                        cryptoCreate(ecdsaCounterparty).key(bEcKey).advertisingCreation().withMatchingEvmAddress()
+                                .exposingEvmAddressTo(address -> {
+                                    ecdsaCounterpartyAddress.set(address);
+                                    System.out.println("  ➡️  " + address);
+                                }),
+                        cryptoCreate(ecdsaOperator).key(cEcKey).advertisingCreation().withMatchingEvmAddress()
+                                .exposingEvmAddressTo(address -> {
+                                    ecdsaOperatorAddress.set(address);
+                                    System.out.println("  ➡️  " + address);
+                                }),
+                        cryptoCreate(eddsaParty).key(aEdKey).advertisingCreation()
+                                .exposingCreatedIdTo(id -> {
+                                    eddsaPartyAddress.set(idAsHeadlongAddress(id));
+                                    System.out.println("  ➡️  " + asHexedSolidityAddress(id));
+                                }),
+                        uploadInitCode(erc721),
+                        // Mints NFT's with serial numbers 2, 3, 5, 8, 13
+                        contractCreate(erc721)
+                                .advertisingCreation()
+                                .gas(GAS_TO_OFFER)
+                                .payingWith(ecdsaTreasury))
+                .when(
+                        // Approve the eddsaParty to transfer the NFT's with serial number 2 and 3
+                        sourcing(() ->
+                                contractCall(erc721, "approve", eddsaPartyAddress.get(), BigInteger.valueOf(2))
+                                        .payingWith(ecdsaTreasury)),
+                        sourcing(() ->
+                                contractCall(erc721, "approve", eddsaPartyAddress.get(), BigInteger.valueOf(3))
+                                        .payingWith(ecdsaTreasury)),
+                        // Approve the ecdsaOperator to transfer all NFT's
+                        sourcing(() ->
+                                contractCall(erc721, "setApprovalForAll", ecdsaOperatorAddress.get(), true)
+                                        .payingWith(ecdsaTreasury)
+                                        .via("operatorApproval")),
+                        getTxnRecord("operatorApproval").andAllChildRecords().logged(),
+                        sourcing(() -> contractCallLocal(erc721, "isApprovedForAll", ecdsaTreasuryAddress.get(), ecdsaOperatorAddress.get())
+                                .has(resultWith()
+                                        .resultThruAbi(
+                                                getABIFor(FUNCTION, "isApprovedForAll", erc721),
+                                                isLiteralResult(new Object[] {Boolean.TRUE})))),
+                        // Transfer NFT with serial number 13 from ecdsaTreasury to ecdsaCounterparty via operator approval
+                        sourcing(() ->
+                                contractCall(erc721, "safeTransferFrom", ecdsaTreasuryAddress.get(), ecdsaCounterpartyAddress.get(), BigInteger.valueOf(13))
+                                        .payingWith(ecdsaOperator)),
+                        // Transfer NFT with serial number 3 from ecdsaTreasury to ecdsaCounterparty via specific approval
+                        sourcing(() ->
+                                contractCall(erc721, "safeTransferFrom", ecdsaTreasuryAddress.get(), ecdsaCounterpartyAddress.get(), BigInteger.valueOf(3))
+                                        .payingWith(eddsaParty)),
+                        // Directly transfer NFT with serial number 8 from ecdsaTreasury to eddsaPartyAddress
+                        sourcing(() ->
+                                contractCall(erc721, "safeTransferFrom", ecdsaTreasuryAddress.get(), eddsaPartyAddress.get(), BigInteger.valueOf(8))
+                                        .payingWith(ecdsaTreasury)),
+                        // Finally, transfer NFT with serial number 3 from ecdsaCounterparty to eddsaPartyAddress
+                        sourcing(() ->
+                                contractCall(erc721, "safeTransferFrom", ecdsaCounterpartyAddress.get(), eddsaPartyAddress.get(), BigInteger.valueOf(3))
+                                        .payingWith(ecdsaCounterparty))
+                )
+                .then(
+                        getContractBytecode(erc721).exposingBytecodeTo(bytes -> {
+                            try {
+                                Files.write(Paths.get("Erc721Full.bin"), bytes);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                );
     }
 
     private HapiSpec exchangeRatePrecompileWorks() {
@@ -2110,7 +2216,7 @@ public class ContractCallSuite extends HapiSuite {
     }
 
     private String getNestedContractAddress(final String contract, final HapiSpec spec) {
-        return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(contract));
+        return asHexedSolidityAddress(spec.registry().getContractId(contract));
     }
 
     @Override
