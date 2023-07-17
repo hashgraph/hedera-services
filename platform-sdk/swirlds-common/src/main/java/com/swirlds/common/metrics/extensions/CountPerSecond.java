@@ -143,7 +143,7 @@ public class CountPerSecond {
          * @param name     a short name for the metric
          */
         public Config(final String category, final String name) {
-            this(category, name, name, "1/s", FORMAT_10_2);
+            this(category, name, name, "Hz", FORMAT_10_2);
         }
 
         private Config(
