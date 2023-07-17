@@ -36,6 +36,9 @@ import java.time.ZoneOffset;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * This class manages the current stake period and the previous stake period.
+ */
 public class StakePeriodManager {
     // Sentinel value for a field that wasn't applicable to this transaction
     public static final long NA = Long.MIN_VALUE;
