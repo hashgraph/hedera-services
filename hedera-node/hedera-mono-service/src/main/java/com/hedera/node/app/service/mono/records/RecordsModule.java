@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.stream.RecordStreamManager.effectiveLogDir;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.google.common.cache.Cache;
 import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.utility.Units;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -79,7 +79,7 @@ public interface RecordsModule {
             // The RecordStreamManager only needs a RecoveryRecordsWriter during event stream recovery
             final RecoveryRecordsWriter recoveryRecordsWriter;
             if (initTrigger == InitTrigger.EVENT_STREAM_RECOVERY) {
-                final var blockPeriodMs = nodeLocalProperties.recordLogPeriod() * Units.SECONDS_TO_MILLISECONDS;
+                final var blockPeriodMs = nodeLocalProperties.recordLogPeriod() * SECONDS_TO_MILLISECONDS;
                 final var onDiskRecordsLoc = effectiveLogDir(nodeLocalProperties.recordLogDir(), accountMemo);
                 recoveryRecordsWriter = new RecoveryRecordsWriter(blockPeriodMs, onDiskRecordsLoc);
             } else {
