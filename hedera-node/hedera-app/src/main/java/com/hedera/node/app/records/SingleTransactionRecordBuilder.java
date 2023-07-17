@@ -239,8 +239,7 @@ public class SingleTransactionRecordBuilder
     }
 
     @NonNull
-    public SingleTransactionRecordBuilder tokenTransferLists(
-            @NonNull List<TokenTransferList> tokenTransferLists) {
+    public SingleTransactionRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
         this.tokenTransferLists = tokenTransferLists;
         return this;
     }
@@ -456,14 +455,12 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
-    public SingleTransactionRecordBuilder addContractAction(
-            ContractActions contractAction, boolean isMigration) {
+    public SingleTransactionRecordBuilder addContractAction(ContractActions contractAction, boolean isMigration) {
         contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
         return this;
     }
 
-    public SingleTransactionRecordBuilder addContractBytecode(
-            ContractBytecode contractBytecode, boolean isMigration) {
+    public SingleTransactionRecordBuilder addContractBytecode(ContractBytecode contractBytecode, boolean isMigration) {
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
         return this;
     }
