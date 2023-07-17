@@ -213,7 +213,7 @@ public class HandleWorkflow {
         recordManager.endUserTransaction(recordListResult.recordStream());
 
         // Verify if the transaction is a duplicate and add it to the cache
-        if (preHandleResult != null) { // this should always be true, but just in case
+        if (preHandleResult != null) { // this should always be true, checking just in case
             try {
                 checkDuplicatesAndIncludeInCache(
                         preHandleResult,
