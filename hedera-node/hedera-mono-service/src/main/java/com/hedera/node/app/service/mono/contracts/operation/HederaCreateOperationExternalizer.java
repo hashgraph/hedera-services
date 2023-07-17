@@ -87,9 +87,7 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
 
         // if a hollow account exists at the alias address, finalize it to a contract
         if (hollowAccountID != null) {
-            final var contractNonce =
-                    updater.get(childFrame.getContractAddress()).getNonce();
-            finalizeHollowAccountIntoContract(hollowAccountID, updater, contractNonce);
+            finalizeHollowAccountIntoContract(hollowAccountID, updater, childFrame.getContractAddress());
             createdContractId = EntityIdUtils.asContract(hollowAccountID);
         } else {
             createdContractId = updater.idOfLastNewAddress();
@@ -143,7 +141,7 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
     }
 
     private void finalizeHollowAccountIntoContract(
-            AccountID hollowAccountID, HederaStackedWorldStateUpdater updater, long contractNonce) {
+            AccountID hollowAccountID, HederaStackedWorldStateUpdater updater, Address contractAddress) {
         // We cannot reclaim the id reserved for a new contract here, even though it will not be used
         // (since in fact this creation is just finalizing a hollow account). The reason is that it is
         // possible there were child contracts created by the CONTRACT_CREATION message; and their ids
@@ -157,6 +155,7 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         updater.trackingAccounts().set(hollowAccountID, KEY, STANDIN_CONTRACT_ID_KEY);
 
         // set initial contract nonce to be the same as the nonce of the created account
+        final var contractNonce = updater.get(contractAddress).getNonce();
         updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, contractNonce);
     }
 }
