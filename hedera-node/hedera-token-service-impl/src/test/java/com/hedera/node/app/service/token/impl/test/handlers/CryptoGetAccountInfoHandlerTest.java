@@ -86,7 +86,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private QueryContext context;
 
     @Mock
-    private Token token1, token2, token3;
+    private Token token1, token2;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
 
@@ -139,7 +139,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("Empty account failed during validate")
-    void validatesQueryIfEmptyAccount() throws Throwable {
+    void validatesQueryIfEmptyAccount() {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
@@ -157,7 +157,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("Account Id is needed during validate")
-    void validatesQueryIfInvalidAccount() throws Throwable {
+    void validatesQueryIfInvalidAccount() {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
@@ -174,7 +174,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("deleted account is not valid")
-    void validatesQueryIfDeletedAccount() throws Throwable {
+    void validatesQueryIfDeletedAccount() {
         deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(deleteAccountId, deleteAccount)

@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,9 +50,8 @@ public class AssessmentResult {
     public AssessmentResult(
             final List<TokenTransferList> inputTokenTransfers, final List<AccountAmount> inputHbarTransfers) {
         mutableInputTokenAdjustments = buildFungibleTokenTransferMap(inputTokenTransfers);
-        immutableInputTokenAdjustments = mutableInputTokenAdjustments.entrySet().stream()
-                .collect(Collectors.collectingAndThen(
-                        Collectors.toMap(Map.Entry::getKey, entry -> Map.copyOf(entry.getValue())), Map::copyOf));
+        immutableInputTokenAdjustments = Collections.unmodifiableMap(mutableInputTokenAdjustments.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> Map.copyOf(entry.getValue()))));
 
         inputHbarAdjustments = buildHbarTransferMap(inputHbarTransfers);
 
