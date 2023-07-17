@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package smartcontract;
+package contract;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;

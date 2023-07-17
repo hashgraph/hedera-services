@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package smartcontract;
+package contract;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 

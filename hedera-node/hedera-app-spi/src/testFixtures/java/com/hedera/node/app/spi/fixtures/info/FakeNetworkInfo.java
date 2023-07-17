@@ -24,6 +24,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
+/**
+ * Holds fake network information for testing.
+ */
 public class FakeNetworkInfo implements NetworkInfo {
     private static final Bytes DEV_LEDGER_ID = Bytes.wrap(new byte[] {0x03});
 

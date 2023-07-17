@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package smartcontract;
+package contract;
 
 import actualintegrationtestsforoncethankgod.DaggerScaffoldingComponent;
 import com.hedera.hapi.node.base.FileID;
@@ -34,8 +34,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * <p><b>GIVEN</b>
+ * <ol>
+ *     <li>A {@link com.hedera.node.app.fixtures.state.FakeHederaState} that contains initcode for an
+ *     ERC-721 contract; and,</li>
+ *     <li>Several well-known accounts with and without EVM addresses.</li>
+ * </ol>
+ *
+ * <p><b>WHEN</b>
+ * <ol>
+ *     <li>A {@code ContractCreate} operation creates an ERC-721 contract.</li>
+ *     <li>Several NFT's are minted and transferred.</li>
+ * </ol>
+ *
+ * <p><b>THEN</b>
+ * <ol>
+ *     <li>The created contract exists at the expected id, with the expected bytecode.</li>
+ *     <li>The contract's storage has the expected slots.</li>
+ * </ol>
+ */
 @ExtendWith(MockitoExtension.class)
-class Erc721Test {
+class Erc721OperationsTest {
     private static final FileID ERC721_INITCODE_FILE_ID = new FileID(0, 0, 1001);
 
     @Mock
@@ -49,17 +69,14 @@ class Erc721Test {
     }
 
     @Test
-    void erc721OperationsAsExpected() {
-        // given:
-        addErc721InitcodeToState();
-        final var context = scaffoldingComponent.handleContextCreator().apply(synthCreateTxn());
+    void erc721OperationsResultInExpectedState() {
+        givenErc721InitcodeAndWellKnownAccounts();
         final var subject = scaffoldingComponent.contractCreateHandler();
 
-        // when:
+        final var context = scaffoldingComponent.handleContextCreator().apply(synthCreateTxn());
         subject.handle(context);
-        commitStateChanges();
 
-        // then:
+        commitStateChanges();
         assertContractExists();
     }
 
@@ -75,7 +92,7 @@ class Erc721Test {
         // TODO - assert that the contract exists in the state (and has the correct bytecode)
     }
 
-    private void addErc721InitcodeToState() {
+    private void givenErc721InitcodeAndWellKnownAccounts() {
         final WritableKVState<FileID, File> files = scaffoldingComponent
                 .hederaState()
                 .createWritableStates(FileServiceImpl.NAME)

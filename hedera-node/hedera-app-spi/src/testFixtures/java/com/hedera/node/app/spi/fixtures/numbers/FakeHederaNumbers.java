@@ -18,6 +18,9 @@ package com.hedera.node.app.spi.fixtures.numbers;
 
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 
+/**
+ * Provides a fake implementation of {@link HederaAccountNumbers} for use in tests.
+ */
 public class FakeHederaNumbers implements HederaAccountNumbers {
     @Override
     public long treasury() {
