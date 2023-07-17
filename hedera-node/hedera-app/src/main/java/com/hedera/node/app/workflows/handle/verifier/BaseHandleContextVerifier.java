@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.verifier;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
@@ -42,42 +43,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper class that contains all functionality for verifying signatures during handle.
+ * Base implementation of {@link HandleContextVerifier}
  */
-public class HandleContextVerifier {
+public class BaseHandleContextVerifier implements HandleContextVerifier {
 
-    private static final Logger logger = LoggerFactory.getLogger(HandleContextVerifier.class);
+    private static final Logger logger = LoggerFactory.getLogger(BaseHandleContextVerifier.class);
 
     private final long timeout;
     private final Map<Key, SignatureVerificationFuture> keyVerifications;
 
     /**
-     * Creates a {@link HandleContextVerifier}
+     * Creates a {@link BaseHandleContextVerifier}
      *
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
-    public HandleContextVerifier(
+    public BaseHandleContextVerifier(
             @NonNull final HederaConfig config, @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
         this.timeout = requireNonNull(config, "config must not be null").workflowVerificationTimeoutMS();
         this.keyVerifications = requireNonNull(keyVerifications, "keyVerifications must not be null");
     }
 
-    /**
-     * Get a {@link SignatureVerification} for the given key.
-     *
-     * <p>If the key is a cryptographic key (i.e. a basic key like ED25519 or ECDSA_SECP256K1), and the cryptographic
-     * key was in the signature map of the transaction, then a {@link SignatureVerification} will be for that key.
-     * If there was no such cryptographic key in the signature map, {@code null} is returned.
-     *
-     * <p>If the key is a key list, then a {@link SignatureVerification} will be returned that aggregates the results
-     * of each key in the key list, possibly nested.
-     *
-     * <p>If the key is a threshold key, then a {@link SignatureVerification} will be returned that aggregates the
-     * results of each key in the threshold key, possibly nested, based on the threshold for that key.
-     *
-     * @param key The key to check on the verification results for.
-     * @return A {@link SignatureVerification} for the given key, if available, {@code null} otherwise.
-     */
+    @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull final Key key) {
         requireNonNull(key, "key must not be null");
@@ -85,21 +71,13 @@ public class HandleContextVerifier {
         return resolveFuture(verificationFutureFor(key), () -> failedVerification(key));
     }
 
-    /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
-     * Additionally, the VerificationAssistant provided may modify the result for "primitive", "Contract ID", or
-     * "Delegatable Contract ID" keys, and will be called to observe and reply for each such key as it is processed.
-     *
-     * @param key the key to get the verification for
-     * @param callback a VerificationAssistant callback function that will observe each "primitive", "Contract ID", or
-     * "Delegatable Contract ID" key and return a boolean indicating if the given key should be considered valid.
-     * @return the verification for the given key, or {@code null} if no such key was provided during pre-handle
-     */
+    @Override
     @NonNull
     public SignatureVerification verificationFor(
             @NonNull final Key key, @NonNull final VerificationAssistant callback) {
+        requireNonNull(key, "key must not be null");
+        requireNonNull(callback, "callback must not be null");
+
         return switch (key.key().kind()) {
             case ED25519, ECDSA_SECP256K1 -> {
                 final var result = resolveFuture(keyVerifications.get(key), () -> failedVerification(key));
@@ -133,11 +111,8 @@ public class HandleContextVerifier {
             }
         };
     }
-    /**
-     * Look for a {@link SignatureVerification} that applies to the given hollow account.
-     * @param evmAlias The evm alias to lookup verification for.
-     * @return The {@link SignatureVerification} for the given hollow account.
-     */
+
+    @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
         requireNonNull(evmAlias, "evmAlias must not be null");

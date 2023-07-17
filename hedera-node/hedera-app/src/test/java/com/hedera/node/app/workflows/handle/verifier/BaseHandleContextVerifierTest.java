@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.verifier;
 
 import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
 import static com.hedera.node.app.spi.fixtures.Scenarios.BOB;
@@ -72,7 +73,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HandleContextVerifierTest {
+class BaseHandleContextVerifierTest {
 
     private static final HederaConfig HEDERA_CONFIG =
             HederaTestConfigBuilder.createConfig().getConfigData(HederaConfig.class);
@@ -89,9 +90,9 @@ class HandleContextVerifierTest {
         final var key = ALICE.keyInfo().publicKey();
 
         // then
-        assertThatThrownBy(() -> new HandleContextVerifier(null, keyVerifications))
+        assertThatThrownBy(() -> new BaseHandleContextVerifier(null, keyVerifications))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleContextVerifier(HEDERA_CONFIG, null))
+        assertThatThrownBy(() -> new BaseHandleContextVerifier(HEDERA_CONFIG, null))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> verifier.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
@@ -1259,9 +1260,8 @@ class HandleContextVerifierTest {
         }
     }
 
-    /** A simple utility method for creating a "SO_FAR_SO_GOOD" PreHandleResult */
     private HandleContextVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
-        return new HandleContextVerifier(HEDERA_CONFIG, map);
+        return new BaseHandleContextVerifier(HEDERA_CONFIG, map);
     }
 
     /** Convenience method for creating a key list */

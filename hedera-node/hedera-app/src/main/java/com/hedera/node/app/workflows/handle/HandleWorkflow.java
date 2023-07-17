@@ -39,6 +39,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -164,7 +165,7 @@ public class HandleWorkflow {
             // Setup context
             final var txBody = preHandleResult.txInfo().txBody();
             final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                     txBody,
                     preHandleResult.payer(),
