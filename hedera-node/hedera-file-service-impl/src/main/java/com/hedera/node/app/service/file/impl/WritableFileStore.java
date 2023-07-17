@@ -34,16 +34,16 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail. This
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableFileStoreImpl extends ReadableFileStoreImpl {
+public class WritableFileStore extends ReadableFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableKVState<FileID, File> filesState;
 
     /**
-     * Create a new {@link WritableFileStoreImpl} instance.
+     * Create a new {@link WritableFileStore} instance.
      *
      * @param states The state to use.
      */
-    public WritableFileStoreImpl(@NonNull final WritableStates states) {
+    public WritableFileStore(@NonNull final WritableStates states) {
         super(states);
         this.filesState = requireNonNull(states.get(BLOBS_KEY));
     }

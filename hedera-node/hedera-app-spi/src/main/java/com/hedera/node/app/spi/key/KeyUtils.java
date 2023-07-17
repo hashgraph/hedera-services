@@ -39,7 +39,6 @@ public class KeyUtils {
      * For a KeyList type checks if the list is empty.
      * For a ThresholdKey type checks if the list is empty.
      * For an Ed25519 or EcdsaSecp256k1 type checks if there are zero bytes.
-     * TODO: This method need to be updated for other key types.
      * @param pbjKey the key to check
      * @return true if the key is empty, false otherwise
      */

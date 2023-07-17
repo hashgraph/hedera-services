@@ -216,13 +216,15 @@ public class HandleWorkflow {
         if (preHandleResult != null) { // this should always be true, checking just in case
             try {
                 checkDuplicatesAndIncludeInCache(
-                        preHandleResult,
-                        recordListResult.mainRecord().recordStreamItem().record(),
-                        consensusNow);
+                    preHandleResult,
+                    recordListResult.mainRecord().recordStreamItem().record(),
+                    consensusNow);
             } catch (final PreCheckException e) {
                 recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
             }
         }
+
+        // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks
     }
