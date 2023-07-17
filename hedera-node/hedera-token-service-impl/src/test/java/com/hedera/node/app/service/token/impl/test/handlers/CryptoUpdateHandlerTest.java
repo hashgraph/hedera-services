@@ -37,6 +37,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -217,11 +218,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                 new CryptoUpdateBuilder().withStakedAccountId(id.accountNum()).build();
         givenTxnWith(txn);
 
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedAccountId());
 
         subject.handle(handleContext);
 
-        assertEquals(id.accountNum(), writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(id, writableStore.get(updateAccountId).stakedAccountId());
     }
 
     @Test
@@ -230,11 +231,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withStakedNodeId(0).build();
         givenTxnWith(txn);
 
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedNodeId());
 
         subject.handle(handleContext);
 
-        assertEquals(-1, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(0, writableStore.get(updateAccountId).stakedNodeId());
     }
 
     @Test
@@ -263,9 +264,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withStakedAccountId(3).build();
         givenTxnWith(txn);
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedAccountId());
         subject.handle(handleContext);
-        assertEquals(3, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(3, writableStore.get(updateAccountId).stakedAccountId().accountNum());
     }
 
     @Test
@@ -276,9 +277,9 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         givenTxnWith(txn);
         given(networkInfo.nodeInfo(3)).willReturn(mock(NodeInfo.class));
 
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedNodeId());
         subject.handle(handleContext);
-        assertEquals(-4, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(3, writableStore.get(updateAccountId).stakedNodeId());
     }
 
     @Test
@@ -288,19 +289,19 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withStakedAccountId(3).build();
         givenTxnWith(txn);
         subject.handle(handleContext);
-        assertEquals(3, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(3, writableStore.get(updateAccountId).stakedAccountId().accountNum());
 
         final var txn1 = new CryptoUpdateBuilder().withStakedAccountId(0).build();
         givenTxnWith(txn1);
         subject.handle(handleContext);
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedAccountId());
 
         final var txn2 = new CryptoUpdateBuilder().withStakedAccountId(-2).build();
         givenTxnWith(txn2);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_STAKING_ID));
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedAccountId());
     }
 
     @Test
@@ -310,19 +311,19 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withStakedAccountId(3).build();
         givenTxnWith(txn);
         subject.handle(handleContext);
-        assertEquals(3, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(3, writableStore.get(updateAccountId).stakedAccountId().accountNum());
 
         final var txn1 = new CryptoUpdateBuilder().withStakedNodeId(-1).build();
         givenTxnWith(txn1);
         subject.handle(handleContext);
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(-1, writableStore.get(updateAccountId).stakedNodeId());
 
         final var txn2 = new CryptoUpdateBuilder().withStakedNodeId(-2).build();
         givenTxnWith(txn2);
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_STAKING_ID));
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertEquals(-1, writableStore.get(updateAccountId).stakedNodeId());
     }
 
     @Test
@@ -337,7 +338,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(STAKING_NOT_ENABLED));
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedNodeId());
     }
 
     @Test
@@ -353,7 +354,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(STAKING_NOT_ENABLED));
-        assertEquals(0, writableStore.get(updateAccountId).stakedNumber());
+        assertNull(writableStore.get(updateAccountId).stakedNodeId());
     }
 
     @Test
