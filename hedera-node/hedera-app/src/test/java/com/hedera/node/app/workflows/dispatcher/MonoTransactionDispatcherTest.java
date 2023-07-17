@@ -88,7 +88,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
@@ -494,7 +494,7 @@ class MonoTransactionDispatcherTest {
         given(handleContext.body()).willReturn(txnBody);
 
         final var topicID = TopicID.newBuilder().topicNum(666L).build();
-        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
         given(recordBuilder.topicID()).willReturn(topicID);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
 
@@ -534,7 +534,7 @@ class MonoTransactionDispatcherTest {
         given(handleContext.body()).willReturn(txnBody);
 
         final var newRunningHash = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
         given(recordBuilder.topicRunningHash()).willReturn(Bytes.wrap(newRunningHash));
         given(recordBuilder.topicSequenceNumber()).willReturn(2L);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
@@ -693,7 +693,7 @@ class MonoTransactionDispatcherTest {
         given(handleContext.body()).willReturn(txnBody);
 
         final var accountID = AccountID.newBuilder().accountNum(666L).build();
-        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
         given(recordBuilder.accountID()).willReturn(accountID);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
@@ -824,7 +824,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
         final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, Bytes.wrap("test".getBytes()));
         given(recordBuilder.entropy()).willReturn(entropy);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);
@@ -842,7 +842,7 @@ class MonoTransactionDispatcherTest {
                 .build();
         given(handleContext.body()).willReturn(txnBody);
 
-        final var recordBuilder = mock(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
         final var entropy = new OneOf<>(EntropyOneOfType.PRNG_NUMBER, 123);
         given(recordBuilder.entropy()).willReturn(entropy);
         given(handleContext.recordBuilder(any())).willReturn(recordBuilder);

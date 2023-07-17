@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.meta.MonoHandleContext;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
@@ -83,7 +83,7 @@ public class AdaptedMonoTransitionRunner extends TransitionRunner {
         if (functionsToDispatch.contains(function)) {
             final var txBody = PbjConverter.toPbj(accessor.getTxn());
             final var readableStoreFactory = new ReadableStoreFactory(mutableState.get());
-            final var recordBuilder = new SingleTransactionRecordBuilder(txnCtx.consensusTime());
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl(txnCtx.consensusTime());
             final var context = new MonoHandleContext(
                     txBody, ids, expiryValidator, attributeValidator, txnCtx, readableStoreFactory, recordBuilder);
             try {

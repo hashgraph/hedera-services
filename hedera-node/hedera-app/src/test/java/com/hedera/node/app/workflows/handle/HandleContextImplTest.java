@@ -34,7 +34,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -44,6 +44,7 @@ import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
+import com.hedera.node.app.spi.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -82,7 +83,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
-    private SingleTransactionRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
 
     @Mock(strictness = LENIENT)
     private SavepointStackImpl stack;
@@ -548,7 +549,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilder childRecordBuilder) {
+        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(TransactionBody.DEFAULT);
@@ -561,7 +562,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilder childRecordBuilder) {
+        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(TransactionBody.DEFAULT);
@@ -594,7 +595,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HederaState baseState;
 
         @Mock(strictness = LENIENT)
-        private SingleTransactionRecordBuilder childRecordBuilder;
+        private SingleTransactionRecordBuilderImpl childRecordBuilder;
 
         private SavepointStackImpl stack;
 

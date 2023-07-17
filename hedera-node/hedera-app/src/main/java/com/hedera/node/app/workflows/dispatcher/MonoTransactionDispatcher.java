@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
@@ -119,7 +119,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
 
     private void finishConsensusCreateTopic(@NonNull final HandleContext handleContext) {
         // Adapt the record builder outcome for mono-service
-        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilderImpl.class);
         txnCtx.setCreated(PbjConverter.fromPbj(recordBuilder.topicID()));
         // Adapt the metric impact for mono-service
         usageLimits.refreshTopics();
@@ -157,7 +157,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
 
     private void finishConsensusSubmitMessage(@NonNull final HandleContext handleContext) {
         // Adapt the record builder outcome for mono-service
-        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilderImpl.class);
         txnCtx.setTopicRunningHash(
                 PbjConverter.asBytes(recordBuilder.topicRunningHash()), recordBuilder.topicSequenceNumber());
     }
@@ -174,7 +174,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
             throw new HandleException(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         }
         // Adapt the record builder outcome for mono-service
-        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilderImpl.class);
         txnCtx.setCreated(PbjConverter.fromPbj(recordBuilder.accountID()));
     }
 
@@ -235,7 +235,7 @@ public class MonoTransactionDispatcher extends TransactionDispatcher {
     }
 
     private void finishUtilPrng(@NonNull final HandleContext handleContext) {
-        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilder.class);
+        final var recordBuilder = handleContext.recordBuilder(SingleTransactionRecordBuilderImpl.class);
         final var entropy = recordBuilder.entropy();
         if (entropy.kind() == TransactionRecord.EntropyOneOfType.PRNG_NUMBER) {
             sideEffectsTracker.trackRandomNumber((Integer) entropy.value());

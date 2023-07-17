@@ -35,7 +35,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -97,12 +97,12 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected CryptoTransferTransactionBody body;
     protected TransactionBody txn;
     protected TransferContextImpl transferContext;
-    protected SingleTransactionRecordBuilder recordBuilder;
+    protected SingleTransactionRecordBuilderImpl recordBuilder;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
-        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
         attributeValidator = new StandardizedAttributeValidator(consensusSecondNow, compositeProps, dynamicProperties);
         expiryValidator = new StandardizedExpiryValidator(
                 System.out::println, attributeValidator, consensusSecondNow, hederaNumbers, configProvider);

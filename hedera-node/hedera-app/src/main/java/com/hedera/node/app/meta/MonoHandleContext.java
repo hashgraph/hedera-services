@@ -19,7 +19,7 @@ package com.hedera.node.app.meta;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -53,7 +53,7 @@ public class MonoHandleContext implements HandleContext {
     private final TransactionContext txnCtx;
     private final AttributeValidator attributeValidator;
     private final ReadableStoreFactory readableStoreFactory;
-    private final SingleTransactionRecordBuilder recordBuilder;
+    private final SingleTransactionRecordBuilderImpl recordBuilder;
 
     public MonoHandleContext(
             @NonNull final TransactionBody txBody,
@@ -62,7 +62,7 @@ public class MonoHandleContext implements HandleContext {
             @NonNull final AttributeValidator attributeValidator,
             @NonNull final TransactionContext txnCtx,
             @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         this.txBody = Objects.requireNonNull(txBody);
         this.nums = Objects.requireNonNull(ids)::newAccountNumber;
         this.txnCtx = Objects.requireNonNull(txnCtx);

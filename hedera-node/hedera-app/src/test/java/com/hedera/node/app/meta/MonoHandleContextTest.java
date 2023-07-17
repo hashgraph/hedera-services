@@ -21,7 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
@@ -55,7 +55,7 @@ class MonoHandleContextTest {
     private ReadableStoreFactory readableStoreFactory;
 
     @Mock
-    private SingleTransactionRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
 
     private MonoHandleContext subject;
 

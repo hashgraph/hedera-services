@@ -63,7 +63,7 @@ import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
@@ -126,7 +126,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);

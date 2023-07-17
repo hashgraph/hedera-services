@@ -33,7 +33,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
@@ -58,7 +58,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     private final Bytes metadata1 = Bytes.wrap("memo".getBytes());
     private final Bytes metadata2 = Bytes.wrap("memo2".getBytes());
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
-    private SingleTransactionRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
     private TokenMintHandler subject;
 
     @BeforeEach
@@ -67,7 +67,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
     }
 
     @Test

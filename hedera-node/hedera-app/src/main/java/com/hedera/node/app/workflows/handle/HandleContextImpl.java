@@ -25,8 +25,9 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -59,7 +60,7 @@ public class HandleContextImpl implements HandleContext {
     private final AccountID payer;
     private final Key payerKey;
     private final TransactionCategory category;
-    private final SingleTransactionRecordBuilder recordBuilder;
+    private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
     private final HandleContextVerifier verifier;
     private final RecordListBuilder recordListBuilder;
@@ -79,7 +80,7 @@ public class HandleContextImpl implements HandleContext {
      * @param payer The {@link AccountID} of the payer
      * @param payerKey The {@link Key} of the payer
      * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder The main {@link SingleTransactionRecordBuilder}
+     * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
      * @param stack The {@link SavepointStackImpl} used to manage savepoints
      * @param verifier The {@link HandleContextVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
@@ -92,7 +93,7 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final AccountID payer,
             @NonNull final Key payerKey,
             @NonNull final TransactionCategory category,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
             @NonNull final HandleContextVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
@@ -287,7 +288,7 @@ public class HandleContextImpl implements HandleContext {
     @NonNull
     private <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
-            @NonNull final SingleTransactionRecordBuilder childRecordBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @NonNull final Class<T> recordBuilderClass) {
         if (category == PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
@@ -310,7 +311,7 @@ public class HandleContextImpl implements HandleContext {
     private void dispatch(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
-            @NonNull final SingleTransactionRecordBuilder childRecordBuilder) {
+            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
         try {
             checker.checkTransactionBody(txBody);
             dispatcher.dispatchPureChecks(txBody);

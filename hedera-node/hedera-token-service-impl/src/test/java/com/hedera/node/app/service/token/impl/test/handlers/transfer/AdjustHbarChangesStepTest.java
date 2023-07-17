@@ -30,7 +30,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustHbarChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
@@ -46,7 +46,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
         givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token

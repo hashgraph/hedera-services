@@ -40,10 +40,10 @@ import java.util.stream.Stream;
  */
 public class RecordListBuilder {
 
-    private final List<SingleTransactionRecordBuilder> recordBuilders = new ArrayList<>();
+    private final List<SingleTransactionRecordBuilderImpl> recordBuilders = new ArrayList<>();
 
-    private List<SingleTransactionRecordBuilder> precedingRecordBuilders;
-    private Set<SingleTransactionRecordBuilder> removableChildRecordBuilders;
+    private List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders;
+    private Set<SingleTransactionRecordBuilderImpl> removableChildRecordBuilders;
 
     /**
      * Creates a new instance with a single record builder for the user transaction.
@@ -51,7 +51,7 @@ public class RecordListBuilder {
      * @param recordBuilder the record builder for the user transaction
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
-    public RecordListBuilder(@NonNull final SingleTransactionRecordBuilder recordBuilder) {
+    public RecordListBuilder(@NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
         recordBuilders.add(recordBuilder);
     }
@@ -64,7 +64,7 @@ public class RecordListBuilder {
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more preceding slots are available
      */
-    public SingleTransactionRecordBuilder addPreceding(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
         requireNonNull(configuration, "configuration must not be null");
         if (precedingRecordBuilders == null) {
             precedingRecordBuilders = new ArrayList<>();
@@ -79,7 +79,7 @@ public class RecordListBuilder {
         final var consensusNow = precedingCount == 0
                 ? recordBuilders.get(0).consensusNow().minusNanos(maxRecords)
                 : precedingRecordBuilders.get(precedingCount - 1).consensusNow().plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
 
         precedingRecordBuilders.add(recordBuilder);
         return recordBuilder;
@@ -96,7 +96,7 @@ public class RecordListBuilder {
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
-    public SingleTransactionRecordBuilder addChild(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, "configuration must not be null");
 
         return doAddChild(configuration);
@@ -114,7 +114,7 @@ public class RecordListBuilder {
      * @throws NullPointerException if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
-    public SingleTransactionRecordBuilder addRemovableChild(@NonNull final Configuration configuration) {
+    public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
         requireNonNull(configuration, "configuration must not be null");
 
         final var recordBuilder = doAddChild(configuration);
@@ -126,7 +126,7 @@ public class RecordListBuilder {
         return recordBuilder;
     }
 
-    private SingleTransactionRecordBuilder doAddChild(@NonNull final Configuration configuration) {
+    private SingleTransactionRecordBuilderImpl doAddChild(@NonNull final Configuration configuration) {
         final int childCount = recordBuilders.size();
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         if (childCount > consensusConfig.handleMaxFollowingRecords()) {
@@ -135,7 +135,7 @@ public class RecordListBuilder {
 
         final var consensusNow =
                 recordBuilders.get(childCount - 1).consensusNow().plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
 
         recordBuilders.add(recordBuilder);
         return recordBuilder;
@@ -147,7 +147,7 @@ public class RecordListBuilder {
      *
      * @param recordBuilder the record builder which children need to be reverted
      */
-    public void revertChildRecordBuilders(@NonNull final SingleTransactionRecordBuilder recordBuilder) {
+    public void revertChildRecordBuilders(@NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         requireNonNull(recordBuilder, "recordBuilder must not be null");
         final int index = recordBuilders.indexOf(recordBuilder);
         if (index < 0) {
@@ -155,7 +155,7 @@ public class RecordListBuilder {
         }
         final var children = recordBuilders.subList(index + 1, recordBuilders.size());
         for (final var it = children.iterator(); it.hasNext(); ) {
-            final SingleTransactionRecordBuilder childRecordBuilder = it.next();
+            final SingleTransactionRecordBuilderImpl childRecordBuilder = it.next();
             if (removableChildRecordBuilders != null && removableChildRecordBuilders.contains(childRecordBuilder)) {
                 it.remove();
                 removableChildRecordBuilders.remove(childRecordBuilder);
@@ -176,14 +176,14 @@ public class RecordListBuilder {
         final var stream = precedingRecordBuilders == null
                 ? recordBuilders.stream()
                 : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
-        return stream.map(SingleTransactionRecordBuilder::build);
+        return stream.map(SingleTransactionRecordBuilderImpl::build);
     }
 
     /*
      * This method is only used for testing. Unfortunately, building records does not work yet.
      * Added this method temporarily to check the content of this object.
      */
-    Stream<SingleTransactionRecordBuilder> builders() {
+    Stream<SingleTransactionRecordBuilderImpl> builders() {
         return precedingRecordBuilders == null
                 ? recordBuilders.stream()
                 : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());

@@ -23,7 +23,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -129,7 +129,7 @@ public class HandleWorkflow {
 
         // Setup record builder list
         recordManager.startUserTransaction(consensusNow);
-        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
         try {
@@ -211,7 +211,7 @@ public class HandleWorkflow {
 
     private void recordFailedTransaction(
             @NonNull final ResponseCodeEnum status,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final RecordListBuilder recordListBuilder) {
         recordBuilder.status(status);
         recordListBuilder.revertChildRecordBuilders(recordBuilder);
