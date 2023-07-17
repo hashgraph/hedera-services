@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -58,7 +59,9 @@ public class WritableStoreFactory {
             FreezeService.NAME,
             Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
             FileService.NAME,
-            Map.of(WritableFileStore.class, WritableFileStore::new));
+            Map.of(WritableFileStore.class, WritableFileStore::new),
+            ContractService.NAME,
+            Map.of());
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

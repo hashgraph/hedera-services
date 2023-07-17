@@ -103,8 +103,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
@@ -175,7 +173,6 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -234,16 +231,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
-
-    @Test
-    void hmm() throws TextFormat.InvalidEscapeSequenceException {
-        final var encoded = "\\003#5\\r\\227\\177\\006\\222n\\247R,\\0059-s\\275\\231N\\332\\205\\002%\\b\\214\\036\\017F\\314.\\354j\\270";
-        final var raw = TextFormat.unescapeBytes(encoded);
-        final var hexed = com.swirlds.common.utility.CommonUtils.hex(raw.toByteArray());
-        System.out.println(hexed);
-        System.out.println(new BigInteger(raw.toByteArray()));
-    }
-
     @Test
     void canGetSynthAccessor() {
         final var synth = MiscUtils.synthAccessorFor(TransactionBody.newBuilder()

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.mono.txns;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -43,20 +42,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.context.AppsManager;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -131,21 +123,6 @@ public class TransitionRunner implements TransactionLastStep {
                 transition.doStateTransition();
                 if (opsWithDefaultSuccessStatus.contains(function)) {
                     txnCtx.setStatus(SUCCESS);
-                }
-                if (function == ContractCall) {
-                    final var app = AppsManager.APPS.get(new NodeId(0));
-                    final var accounts = app.backingAccounts();
-                    final var orderedIds = new TreeSet<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
-                    orderedIds.addAll(accounts.idSet());
-                    orderedIds.forEach(id -> {
-                        final var account = accounts.getRef(id);
-                        if (account.isSmartContract()) {
-                            final var storage = app.workingState().contractStorage();
-                            final var firstKey = account.getFirstContractStorageKey();
-                            System.out.println("Contract storage for 0.0." + id.getAccountNum() + ":");
-                            System.out.println(IterableStorageUtils.joinedStorageMappings(firstKey, storage));
-                        }
-                    });
                 }
             } catch (final InvalidTransactionException e) {
                 resolveFailure(e.getResponseCode(), accessor, e);
