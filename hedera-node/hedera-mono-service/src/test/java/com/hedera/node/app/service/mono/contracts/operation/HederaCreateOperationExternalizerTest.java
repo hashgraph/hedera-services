@@ -276,7 +276,7 @@ class HederaCreateOperationExternalizerTest {
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
         given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
         final var newContractMock = mock(Account.class);
-        given(newContractMock.getNonce()).willReturn(1L);
+        given(newContractMock.getNonce()).willReturn(2L);
         given(updater.get(PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
 
         // when:
@@ -287,7 +287,7 @@ class HederaCreateOperationExternalizerTest {
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
-        verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
+        verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 2L);
         verify(updater).manageInProgressRecord(recordsHistorian, liveRecord, mockCreation, Collections.emptyList());
         // and:
         final var tracker = trackerCaptor.getValue();
