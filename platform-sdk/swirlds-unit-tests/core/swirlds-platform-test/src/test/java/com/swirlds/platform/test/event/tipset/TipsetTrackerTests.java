@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -67,7 +68,7 @@ class TipsetTrackerTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
 
-        final TipsetTracker tracker = new TipsetTracker(addressBook);
+        final TipsetTracker tracker = new TipsetTracker(Time.getCurrent(), addressBook);
 
         for (int eventIndex = 0; eventIndex < 1000; eventIndex++) {
 
@@ -139,6 +140,7 @@ class TipsetTrackerTests {
         while (tracker.size() > 0) {
             minimumGenerationNonAncient += random.nextInt(1, 5);
             tracker.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
+            assertEquals(minimumGenerationNonAncient, tracker.getMinimumGenerationNonAncient());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
                 if (fingerprint.getGeneration() < minimumGenerationNonAncient) {
                     assertNull(tracker.getTipset(fingerprint));

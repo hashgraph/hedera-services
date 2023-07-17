@@ -33,7 +33,7 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -113,7 +113,7 @@ public class FileTestBase {
     protected MapWritableKVState<FileID, File> writableFileState;
 
     protected ReadableFileStoreImpl readableStore;
-    protected WritableFileStoreImpl writableStore;
+    protected WritableFileStore writableStore;
 
     @BeforeEach
     void commonSetUp() {
@@ -127,8 +127,8 @@ public class FileTestBase {
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
-        writableStore = new WritableFileStoreImpl(writableStates);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        writableStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
@@ -137,8 +137,8 @@ public class FileTestBase {
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         readableStore = new ReadableFileStoreImpl(readableStates);
-        writableStore = new WritableFileStoreImpl(writableStates);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        writableStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
     }
 
     @NonNull
@@ -151,6 +151,13 @@ public class FileTestBase {
         return MapWritableKVState.<FileID, File>builder(FILES)
                 .value(fileId, file)
                 .value(fileSystemfileId, fileSystem)
+                .build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<FileID, File> writableFileStateWithoutKey(File fileWithouthKey) {
+        return MapWritableKVState.<FileID, File>builder(FILES)
+                .value(fileId, fileWithouthKey)
                 .build();
     }
 

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.grpc;
 
+import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import dagger.Binds;
 import dagger.Module;
 
@@ -23,5 +24,5 @@ import dagger.Module;
 @Module
 public interface GrpcInjectionModule {
     @Binds
-    GrpcServerManager provideGrpcServerManager(HelidonGrpcServerManager serverManager);
+    GrpcServerManager provideGrpcServerManager(NettyGrpcServerManager serverManager);
 }

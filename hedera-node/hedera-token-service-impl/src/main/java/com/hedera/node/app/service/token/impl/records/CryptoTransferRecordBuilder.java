@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -46,4 +47,7 @@ public interface CryptoTransferRecordBuilder {
      */
     @NonNull
     CryptoTransferRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
+
+    @NonNull
+    CryptoTransferRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees);
 }
