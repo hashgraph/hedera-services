@@ -91,6 +91,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -164,6 +165,9 @@ class AdapterUtils {
     // !!!!!!!!!!🔥🔥🔥 It should be deleted once we find where to keep it. 🔥🔥🔥!!!!!!!!!!!
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final ScheduleVirtualValue schedule = mock(ScheduleVirtualValue.class);
+
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
     @SuppressWarnings("unchecked")
     private static final ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById =
@@ -332,7 +336,7 @@ class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    0L,
+                    UNSET_STAKED_ID,
                     false,
                     receiverSigRequired,
                     3L,
