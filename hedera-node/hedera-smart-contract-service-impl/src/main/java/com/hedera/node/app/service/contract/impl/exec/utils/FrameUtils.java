@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
@@ -40,6 +41,19 @@ public class FrameUtils {
 
     public static @NonNull ContractsConfig contractsConfigOf(@NonNull final MessageFrame frame) {
         return configOf(frame).getConfigData(ContractsConfig.class);
+    }
+
+    public static boolean hasActionSidecarsEnabled(@NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).sidecars().contains(CONTRACT_ACTION);
+    }
+
+    public static boolean hasActionValidationEnabled(@NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).sidecarValidationEnabled();
+    }
+
+    public static boolean hasValidatedActionSidecarsEnabled(@NonNull final MessageFrame frame) {
+        final var contractsConfig = contractsConfigOf(frame);
+        return contractsConfig.sidecars().contains(CONTRACT_ACTION) && contractsConfig.sidecarValidationEnabled();
     }
 
     public static @Nullable StorageAccessTracker accessTrackerFor(@NonNull final MessageFrame frame) {

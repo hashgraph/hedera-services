@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.exec.utils;
+package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
@@ -24,12 +24,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.hevm.HederaTracer;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -58,7 +58,7 @@ class FrameRunnerTest {
     private MessageFrame childFrame;
 
     @Mock
-    private HederaTracer tracer;
+    private ActionSidecarContentTracer tracer;
 
     @Mock
     private CustomMessageCallProcessor messageCallProcessor;
@@ -87,10 +87,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).initProcess(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).finalizeProcess(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertTrue(result.isSuccess());
         assertEquals(expectedGasUsed(frame), result.gasUsed());
@@ -110,10 +110,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).initProcess(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).finalizeProcess(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertSuccessExpectationsWith(
                 NON_SYSTEM_CONTRACT_ID, asEvmContractId(NON_SYSTEM_LONG_ZERO_ADDRESS), frame, result);
@@ -129,10 +129,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).initProcess(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).finalizeProcess(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(tuweniToPbjBytes(SOME_REVERT_REASON), result.revertReason());
@@ -149,10 +149,10 @@ class FrameRunnerTest {
         final var result =
                 subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
-        inOrder.verify(tracer).initProcess(frame);
+        inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
         inOrder.verify(messageCallProcessor).process(childFrame, tracer);
-        inOrder.verify(tracer).finalizeProcess(frame);
+        inOrder.verify(tracer).sanitizeTracedActions(frame);
 
         assertFailureExpectationsWith(frame, result);
         assertEquals(TOO_MANY_CHILD_RECORDS.toString(), result.haltReason());

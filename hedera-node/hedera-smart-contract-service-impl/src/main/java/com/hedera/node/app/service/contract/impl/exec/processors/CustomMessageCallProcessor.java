@@ -59,6 +59,11 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private final PrecompileContractRegistry precompiles;
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
 
+    private enum ForLazyCreation {
+        YES,
+        NO,
+    }
+
     public CustomMessageCallProcessor(
             @NonNull final EVM evm,
             @NonNull final FeatureFlags featureFlags,
@@ -140,10 +145,10 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private void doTransferValueOrHalt(
             @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
         final var proxyWorldUpdater = (ProxyWorldUpdater) frame.getWorldUpdater();
-        // Lazy-create the recipient address if it doesn't exist
+        // Try to lazy-create the recipient address if it doesn't exist
         if (!addressChecks.isPresent(frame.getRecipientAddress(), frame)) {
             final var maybeReasonToHalt = proxyWorldUpdater.tryLazyCreation(frame.getRecipientAddress(), frame);
-            maybeReasonToHalt.ifPresent(reason -> doHalt(frame, reason, operationTracer));
+            maybeReasonToHalt.ifPresent(reason -> doHaltOnFailedLazyCreation(frame, reason, operationTracer));
         }
         if (!alreadyHalted(frame)) {
             final var maybeReasonToHalt = proxyWorldUpdater.tryTransferFromContract(
@@ -166,18 +171,41 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         }
     }
 
-    private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
-        doHalt(frame, reason, null);
+    private void doHaltOnFailedLazyCreation(
+            @NonNull final MessageFrame frame,
+            @NonNull final ExceptionalHaltReason reason,
+            @NonNull final OperationTracer tracer) {
+        doHalt(frame, reason, tracer, ForLazyCreation.YES);
     }
 
     private void doHalt(
             @NonNull final MessageFrame frame,
             @NonNull final ExceptionalHaltReason reason,
-            @Nullable final OperationTracer operationTracer) {
+            @NonNull final OperationTracer tracer) {
+        doHalt(frame, reason, tracer, ForLazyCreation.NO);
+    }
+
+    private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
+        doHalt(frame, reason, null, ForLazyCreation.NO);
+    }
+
+    private void doHalt(
+            @NonNull final MessageFrame frame,
+            @NonNull final ExceptionalHaltReason reason,
+            @Nullable final OperationTracer operationTracer,
+            @NonNull final ForLazyCreation forLazyCreation) {
         frame.setState(EXCEPTIONAL_HALT);
         frame.setExceptionalHaltReason(Optional.of(reason));
+        if (forLazyCreation == ForLazyCreation.YES) {
+            frame.decrementRemainingGas(frame.getRemainingGas());
+        }
         if (operationTracer != null) {
-            operationTracer.tracePostExecution(frame, new Operation.OperationResult(frame.getRemainingGas(), reason));
+            if (forLazyCreation == ForLazyCreation.YES) {
+                operationTracer.traceAccountCreationResult(frame, Optional.of(reason));
+            } else {
+                operationTracer.tracePostExecution(
+                        frame, new Operation.OperationResult(frame.getRemainingGas(), reason));
+            }
         }
     }
 }

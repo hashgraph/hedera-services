@@ -47,7 +47,7 @@ class HederaEvmTransactionProcessorTest {
     private Supplier<HederaWorldUpdater> feesOnlyUpdater;
 
     @Mock
-    private HederaTracer tracer;
+    private ActionSidecarContentTracer tracer;
 
     @Mock
     private Configuration config;

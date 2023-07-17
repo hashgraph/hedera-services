@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.exec.utils;
+package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.failureFrom;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.successFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.hevm.HederaTracer;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -63,7 +65,7 @@ public class FrameRunner {
     public HederaEvmTransactionResult runToCompletion(
             final long gasLimit,
             @NonNull final MessageFrame frame,
-            @NonNull final HederaTracer tracer,
+            @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         requireNonNull(frame);
@@ -77,13 +79,13 @@ public class FrameRunner {
         final var recipientId = resolvedHederaId(frame, recipientAddress);
 
         // Now run the transaction implied by the frame
-        tracer.initProcess(frame);
+        tracer.traceOriginAction(frame);
         final var stack = frame.getMessageFrameStack();
         stack.addFirst(frame);
         while (!stack.isEmpty()) {
             runToCompletion(stack.peekFirst(), tracer, messageCall, contractCreation);
         }
-        tracer.finalizeProcess(frame);
+        tracer.sanitizeTracedActions(frame);
 
         // And package up its result
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
@@ -102,7 +104,7 @@ public class FrameRunner {
 
     private void runToCompletion(
             @NonNull final MessageFrame frame,
-            @NonNull final HederaTracer tracer,
+            @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final CustomMessageCallProcessor messageCall,
             @NonNull final ContractCreationProcessor contractCreation) {
         final var executor =

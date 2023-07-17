@@ -39,6 +39,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
+/**
+ * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
+ */
 public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
     public static final long MISSING_ENTITY_NUMBER = -1L;
@@ -109,18 +112,48 @@ public class ConversionUtils {
     }
 
     /**
+     * Given a {@link MessageFrame}, returns the long-zero address of its {@code contract} address.
+     *
+     * @param frame the {@link MessageFrame}
+     * @return the long-zero address of the {@code contract} address
+     */
+    public static long hederaIdNumOfContractIn(@NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        return hederaIdNumberIn(frame, frame.getContractAddress());
+    }
+
+    /**
+     * Given a {@link MessageFrame}, returns the long-zero address of its {@code originator} address.
+     *
+     * @param frame the {@link MessageFrame}
+     * @return the long-zero address of the {@code originator} address
+     */
+    public static long hederaIdNumOfOriginatorIn(@NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        return hederaIdNumberIn(frame, frame.getOriginatorAddress());
+    }
+
+    /**
+     * Given a {@link MessageFrame}, returns the id number of the given address's Hedera id.
+     *
+     * @param frame the {@link MessageFrame}
+     * @param address the address to get the id number of
+     * @return the id number of the given address's Hedera id
+     */
+    public static long hederaIdNumberIn(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        return isLongZero(address)
+                ? numberOfLongZero(address)
+                : proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow();
+    }
+
+    /**
      * Given a {@link MessageFrame}, returns the long-zero address of its {@code recipient} address.
      *
      * @param frame the {@link MessageFrame}
      * @return the long-zero address of the {@code recipient} address
      */
     public static Address longZeroAddressOfRecipient(@NonNull final MessageFrame frame) {
-        final var receiverAddress = frame.getRecipientAddress();
-        return isLongZero(receiverAddress)
-                ? receiverAddress
-                : asLongZeroAddress(proxyUpdaterFor(frame)
-                        .getHederaContractId(receiverAddress)
-                        .contractNumOrThrow());
+        return longZeroAddressIn(frame, frame.getRecipientAddress());
     }
 
     /**
@@ -201,11 +234,26 @@ public class ConversionUtils {
         return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(requireNonNull(bytes).toArrayUnsafe());
     }
 
+    /**
+     * Converts an EVM address to a PBJ {@link ContractID} with alias instead of id number.
+     *
+     * @param address the EVM address
+     * @return the PBJ {@link ContractID}
+     */
     public static ContractID asEvmContractId(@NonNull final Address address) {
         return ContractID.newBuilder().evmAddress(tuweniToPbjBytes(address)).build();
     }
 
+    /**
+     * Converts a long-zero address to a PBJ {@link ContractID} with id number instead of alias.
+     *
+     * @param address the EVM address
+     * @return the PBJ {@link ContractID}
+     */
     public static ContractID asNumberedContractId(@NonNull final Address address) {
+        if (!isLongZero(address)) {
+            throw new IllegalArgumentException("Cannot extract id number from address " + address);
+        }
         return ContractID.newBuilder().contractNum(numberOfLongZero(address)).build();
     }
 
@@ -324,5 +372,12 @@ public class ConversionUtils {
     private static com.hedera.pbj.runtime.io.buffer.Bytes bloomFor(@NonNull final Log log) {
         return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                 LogsBloomFilter.builder().insertLog(log).build().toArray());
+    }
+
+    private static Address longZeroAddressIn(@NonNull final MessageFrame frame, @NonNull final Address address) {
+        return isLongZero(address)
+                ? address
+                : asLongZeroAddress(
+                        proxyUpdaterFor(frame).getHederaContractId(address).contractNumOrThrow());
     }
 }
