@@ -110,7 +110,7 @@ class EventFlowTests {
     protected SystemTransactionTracker systemTransactionTracker;
 
     protected SwirldStateManager swirldStateManager;
-    protected PreConsensusEventHandler preConsensusEventHandler;
+    protected PreConsensusEventHandler preconsensusEventHandler;
     protected ConsensusRoundHandler consensusEventHandler;
 
     protected static Stream<Arguments> postConsHandleParams() {
@@ -137,7 +137,7 @@ class EventFlowTests {
     @AfterEach
     void cleanup() {
         consensusEventHandler.clear();
-        preConsensusEventHandler.clear();
+        preconsensusEventHandler.clear();
         swirldStateManager.clear();
         while (!signedStateTracker.isEmpty()) {
             signedStateTracker.poll().close();
@@ -168,7 +168,7 @@ class EventFlowTests {
         // Give the threads some time to process the transactions
         assertEventuallyEquals(
                 0,
-                () -> preConsensusEventHandler.getQueueSize(),
+                () -> preconsensusEventHandler.getQueueSize(),
                 Duration.ofSeconds(1),
                 "Pre-consensus event queue not drained");
 
@@ -606,9 +606,9 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(1000);
 
-        final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager =
+        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
                 new PreconsensusSystemTransactionManager();
-        preConsensusSystemTransactionManager.addHandler(
+        preconsensusSystemTransactionManager.addHandler(
                 SystemTransactionPing.class, systemTransactionTracker::handlePreConsensusSystemTransaction);
 
         final ConsensusSystemTransactionManager consensusSystemTransactionManager =
@@ -620,7 +620,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().build(),
                 addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
@@ -633,7 +633,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().withConfiguration(config).build();
         final ThreadConfig threadConfig = config.getConfigData(ThreadConfig.class);
 
-        preConsensusEventHandler = new PreConsensusEventHandler(
+        preconsensusEventHandler = new PreConsensusEventHandler(
                 new NoOpMetrics(),
                 getStaticThreadManager(),
                 selfId,
@@ -687,7 +687,7 @@ class EventFlowTests {
             @NonNull final Random random, @NonNull final AddressBook addressBook) {
         // arguments are checked for null in the constructor.
         return new EventFlowWrapper(
-                random, addressBook, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
+                random, addressBook, preconsensusEventHandler, consensusEventHandler, swirldStateManager);
     }
 
     /**

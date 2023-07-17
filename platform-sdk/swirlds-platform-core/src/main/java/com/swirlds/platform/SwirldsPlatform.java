@@ -388,9 +388,9 @@ public class SwirldsPlatform implements Platform, Startable {
         final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
         final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
 
-        final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager =
+        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
                 new PreconsensusSystemTransactionManager();
-        preConsensusSystemTransactionManager.addHandler(
+        preconsensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
 
         final ConsensusSystemTransactionManager consensusSystemTransactionManager =
@@ -434,7 +434,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 platformContext,
                 initialAddressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
                 metrics,
                 transactionConfig,

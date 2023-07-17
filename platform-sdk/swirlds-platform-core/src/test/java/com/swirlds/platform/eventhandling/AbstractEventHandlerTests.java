@@ -47,7 +47,7 @@ public abstract class AbstractEventHandlerTests {
     protected SwirldStateMetrics ssStats;
     protected ConsensusMetrics consensusMetrics;
     protected ConsensusHandlingMetrics consensusHandlingMetrics;
-    protected PreconsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    protected PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
     protected ConsensusSystemTransactionManager consensusSystemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
     protected Random random;
@@ -59,7 +59,7 @@ public abstract class AbstractEventHandlerTests {
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        preConsensusSystemTransactionManager = mock(PreconsensusSystemTransactionManager.class);
+        preconsensusSystemTransactionManager = mock(PreconsensusSystemTransactionManager.class);
         consensusSystemTransactionManager = mock(ConsensusSystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
         random = ThreadLocalRandom.current();

@@ -151,22 +151,22 @@ public final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param platformContext                       the platform context
-     * @param addressBook                           the address book
-     * @param selfId                                this node's id
-     * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
-     * @param consensusSystemTransactionManager the manager which handles system transactions post-consensus
-     * @param metrics                               reference to the metrics-system
-     * @param transactionConfig                     the transaction configuration
-     * @param initialState                          the initial state
-     * @param softwareVersion                       the software version
+     * @param platformContext                      the platform context
+     * @param addressBook                          the address book
+     * @param selfId                               this node's id
+     * @param preconsensusSystemTransactionManager the manager which handles system transactions pre-consensus
+     * @param consensusSystemTransactionManager    the manager which handles system transactions post-consensus
+     * @param metrics                              reference to the metrics-system
+     * @param transactionConfig                    the transaction configuration
+     * @param initialState                         the initial state
+     * @param softwareVersion                      the software version
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
             @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final Metrics metrics,
             @NonNull final TransactionConfig transactionConfig,
@@ -177,7 +177,7 @@ public final class PlatformConstructor {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        Objects.requireNonNull(preConsensusSystemTransactionManager);
+        Objects.requireNonNull(preconsensusSystemTransactionManager);
         Objects.requireNonNull(consensusSystemTransactionManager);
         Objects.requireNonNull(metrics);
         Objects.requireNonNull(transactionConfig);
@@ -189,7 +189,7 @@ public final class PlatformConstructor {
                 platformContext,
                 addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
                 new SwirldStateMetrics(metrics),
                 transactionConfig,

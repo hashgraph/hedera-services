@@ -80,7 +80,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Handles system transactions pre-consensus
      */
-    private final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
 
     /**
      * Handles system transactions post-consensus
@@ -96,7 +96,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public SwirldStateManagerImpl() {
         stats = null;
         transactionPool = null;
-        preConsensusSystemTransactionManager = null;
+        preconsensusSystemTransactionManager = null;
         consensusSystemTransactionManager = null;
         transactionHandler = null;
         uptimeTracker = null;
@@ -106,22 +106,22 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Creates a new instance with the provided state.
      *
-     * @param platformContext                       the platform context
-     * @param addressBook                           the address book
-     * @param selfId                                this node's id
-     * @param preConsensusSystemTransactionManager  the manager for pre-consensus system transactions
-     * @param consensusSystemTransactionManager the manager for post-consensus system transactions
-     * @param swirldStateMetrics                    metrics related to SwirldState
-     * @param transactionConfig                     the transaction configuration
-     * @param inFreeze                              indicates if the system is currently in a freeze
-     * @param state                                 the genesis state
-     * @param softwareVersion                       the current software version
+     * @param platformContext                      the platform context
+     * @param addressBook                          the address book
+     * @param selfId                               this node's id
+     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
+     * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
+     * @param swirldStateMetrics                   metrics related to SwirldState
+     * @param transactionConfig                    the transaction configuration
+     * @param inFreeze                             indicates if the system is currently in a freeze
+     * @param state                                the genesis state
+     * @param softwareVersion                      the current software version
      */
     public SwirldStateManagerImpl(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreconsensusSystemTransactionManager preConsensusSystemTransactionManager,
+            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
             @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final TransactionConfig transactionConfig,
@@ -132,7 +132,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.preConsensusSystemTransactionManager = Objects.requireNonNull(preConsensusSystemTransactionManager);
+        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
         this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(transactionConfig);
@@ -178,7 +178,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public void handlePreConsensusEvent(final EventImpl event) {
         final long startTime = System.nanoTime();
 
-        preConsensusSystemTransactionManager.handleEvent(event);
+        preconsensusSystemTransactionManager.handleEvent(event);
 
         stats.preConsensusHandleTime(startTime, System.nanoTime());
     }

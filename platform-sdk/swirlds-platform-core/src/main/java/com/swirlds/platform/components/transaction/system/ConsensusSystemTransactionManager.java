@@ -33,7 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Routs consensus system transactions to the appropriate handlers.
+ * Routes consensus system transactions to the appropriate handlers.
  */
 public class ConsensusSystemTransactionManager {
 
@@ -56,6 +56,9 @@ public class ConsensusSystemTransactionManager {
     @SuppressWarnings("unchecked")
     public <T extends SystemTransaction> void addHandler(
             @NonNull final Class<T> clazz, @NonNull final ConsensusSystemTransactionHandler<T> handler) {
+
+        Objects.requireNonNull(clazz);
+        Objects.requireNonNull(handler);
 
         handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
                 .add((ConsensusSystemTransactionHandler<SystemTransaction>) handler);
