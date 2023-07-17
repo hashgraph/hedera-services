@@ -21,24 +21,21 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static com.swirlds.common.utility.Units.MINUTES_TO_SECONDS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
-
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class manages the current stake period and the previous stake period.
  */
+@Singleton
 public class StakePeriodManager {
     // Sentinel value for a field that wasn't applicable to this transaction
     public static final long NA = Long.MIN_VALUE;
@@ -47,15 +44,12 @@ public class StakePeriodManager {
 
     private final int numStoredPeriods;
     private final long stakingPeriodMins;
-    private final ReadableNetworkStakingRewardsStore networkRewards;
-    private final HandleContext handleCtx;
     private long currentStakePeriod;
     private long prevConsensusSecs;
 
-    public StakePeriodManager(@NonNull final HandleContext context) {
-        handleCtx = context;
-        networkRewards = context.readableStore(ReadableNetworkStakingRewardsStore.class);
-        final var config = context.configuration().getConfigData(StakingConfig.class);
+    @Inject
+    public StakePeriodManager(@NonNull final ConfigProvider configProvider) {
+        final var config = configProvider.getConfiguration().getConfigData(StakingConfig.class);
         numStoredPeriods = config.rewardHistoryNumStoredPeriods();
         stakingPeriodMins = config.periodMins();
     }
@@ -68,14 +62,13 @@ public class StakePeriodManager {
         }
     }
 
-    public long currentStakePeriod() {
-        final var now = handleCtx.consensusNow();
-        final var currentConsensusSecs = now.getEpochSecond();
+    public long currentStakePeriod(@NonNull final Instant consensusNow) {
+        final var currentConsensusSecs = consensusNow.getEpochSecond();
         if (prevConsensusSecs != currentConsensusSecs) {
             if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
-                currentStakePeriod = LocalDate.ofInstant(now, ZONE_UTC).toEpochDay();
+                currentStakePeriod = LocalDate.ofInstant(consensusNow, ZONE_UTC).toEpochDay();
             } else {
-                currentStakePeriod = getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
+                currentStakePeriod = getPeriod(consensusNow, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
             }
             prevConsensusSecs = currentConsensusSecs;
         }
@@ -91,23 +84,30 @@ public class StakePeriodManager {
         }
     }
 
-    public long firstNonRewardableStakePeriod() {
+    public long firstNonRewardableStakePeriod(
+            @NonNull final ReadableNetworkStakingRewardsStore networkRewards, @NonNull final Instant consensusNow) {
+
         // The earliest period by which an account can have started staking, _without_ becoming
         // eligible for a reward; if staking is not active, this will return Long.MIN_VALUE so
         // no account can ever be eligible.
-        return networkRewards.isStakingRewardsActivated() ? currentStakePeriod() - 1 : Long.MIN_VALUE;
+        return networkRewards.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
     }
 
-    public boolean isRewardable(final long stakePeriodStart) {
-        return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod();
+    public boolean isRewardable(
+            final long stakePeriodStart,
+            @NonNull final ReadableNetworkStakingRewardsStore networkRewards,
+            @NonNull final Instant consensusNow) {
+        return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod(networkRewards, consensusNow);
     }
 
-    public long estimatedFirstNonRewardableStakePeriod() {
+    public long estimatedFirstNonRewardableStakePeriod(
+            @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
         return networkRewards.isStakingRewardsActivated() ? estimatedCurrentStakePeriod() - 1 : Long.MIN_VALUE;
     }
 
-    public boolean isEstimatedRewardable(final long stakePeriodStart) {
-        return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod();
+    public boolean isEstimatedRewardable(
+            final long stakePeriodStart, @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
+        return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod(networkRewards);
     }
 
     public long effectivePeriod(final long stakePeriodStart) {
@@ -133,15 +133,19 @@ public class StakePeriodManager {
      * @return either NA for no new stakePeriodStart, or the new value
      */
     public long startUpdateFor(
-            final long curStakedId, final long newStakedId, final boolean rewarded, final boolean stakeMetaChanged) {
+            final long curStakedId,
+            final long newStakedId,
+            final boolean rewarded,
+            final boolean stakeMetaChanged,
+            final Instant consensusNow) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (newStakedId < 0) {
             if (curStakedId >= 0 || stakeMetaChanged) {
                 // We just started staking to a node today
-                return currentStakePeriod();
+                return currentStakePeriod(consensusNow);
             } else if (rewarded) {
                 // If we were just rewarded, stake period start is yesterday
-                return currentStakePeriod() - 1;
+                return currentStakePeriod(consensusNow) - 1;
             }
         }
         return NA;
