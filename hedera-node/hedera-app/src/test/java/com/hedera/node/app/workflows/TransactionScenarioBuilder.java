@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -111,6 +112,7 @@ public class TransactionScenarioBuilder implements Scenarios {
         final var tx = Transaction.newBuilder()
                 .body(body)
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
+                .body(body)
                 .build();
         return new TransactionInfo(tx, body, SignatureMap.DEFAULT, signedbytes, function);
     }
@@ -139,6 +141,7 @@ public class TransactionScenarioBuilder implements Scenarios {
                 .transactionFee(1L)
                 .transactionValidDuration(Duration.newBuilder().seconds(60).build())
                 .nodeAccountID(ALICE.accountID())
+                .utilPrng(UtilPrngTransactionBody.newBuilder().range(10).build())
                 .build();
     }
 }

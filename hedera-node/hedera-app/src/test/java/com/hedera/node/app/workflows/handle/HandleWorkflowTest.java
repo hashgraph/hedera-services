@@ -25,12 +25,15 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.node.transaction.TransactionRecord.BodyOneOfType;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
@@ -38,6 +41,8 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -49,7 +54,11 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -68,10 +77,12 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -152,6 +163,12 @@ class HandleWorkflowTest extends AppTestBase {
   @Mock(strictness = LENIENT)
   private HederaRecordCache hederaRecordCache;
 
+  @Mock
+  private DeduplicationCache deduplicationCache;
+
+  @Mock
+  private WorkingStateAccessor workingStateAccessor;
+
   @BeforeEach
   void setup(@Mock final InstantSource instantSource) {
     setupStandardStates();
@@ -174,14 +191,20 @@ class HandleWorkflowTest extends AppTestBase {
     when(configProvider.getConfiguration()).thenReturn(config);
 
     doAnswer(invocation -> {
-                    final var context = invocation.getArgument(0, HandleContext.class);
-                    context.writableStore(WritableAccountStore.class)
-                            .putAlias(Bytes.wrap(ALICE_ALIAS), ALICE.accountID());
-                    return null;
-                })
-                .when(dispatcher)
-                .dispatchHandle(any());
+      final var context = invocation.getArgument(0, HandleContext.class);
+      context.writableStore(WritableAccountStore.class)
+          .putAlias(Bytes.wrap(ALICE_ALIAS), ALICE.accountID());
+      return null;
+    })
+        .when(dispatcher)
+        .dispatchHandle(any());
 
+    final var fakeHederaState = new FakeHederaState();
+    fakeHederaState.addService(
+        RecordCacheService.NAME, Map.of(RecordCacheService.TXN_RECORD_QUEUE, new LinkedList<>()));
+    when(workingStateAccessor.getHederaState()).thenReturn(fakeHederaState);
+
+    hederaRecordCache = spy(new RecordCacheImpl(deduplicationCache, workingStateAccessor, configProvider));
 
     workflow = new HandleWorkflow(
         networkInfo,
@@ -195,60 +218,60 @@ class HandleWorkflowTest extends AppTestBase {
         configProvider,
         instantSource,
         hederaRecordCache);
-    }
+  }
 
-    @Test
-    void testContructorWithInvalidArguments() {
-        final var instantSource = InstantSource.system();
-        assertThatThrownBy(() -> new HandleWorkflow(
-            null,
-            preHandleWorkflow,
-            dispatcher,
-            blockRecordManager,
-            signatureExpander,
-            signatureVerifier,
-            checker,
-            serviceLookup,
-            configProvider,
-            instantSource,
-            hederaRecordCache))
-            .isInstanceOf(NullPointerException.class);
-      assertThatThrownBy(() -> new HandleWorkflow(
-          networkInfo,
-          null,
-          dispatcher,
-          blockRecordManager,
-          signatureExpander,
-          signatureVerifier,
-          checker,
-          serviceLookup,
-          configProvider,
-          instantSource,
-          hederaRecordCache))
-          .isInstanceOf(NullPointerException.class);
-      assertThatThrownBy(() -> new HandleWorkflow(
-          networkInfo,
-          preHandleWorkflow,
-          null,
-          blockRecordManager,
-          signatureExpander,
-          signatureVerifier,
-          checker,
-          serviceLookup,
-          configProvider,
-          instantSource,
-          hederaRecordCache))
-          .isInstanceOf(NullPointerException.class);
-      assertThatThrownBy(() -> new HandleWorkflow(
-          networkInfo,
-          preHandleWorkflow,
-          dispatcher,
-          null,
-          signatureExpander,
-          signatureVerifier,
-          checker,
-          serviceLookup,
-          configProvider,
+  @Test
+  void testConstructorWithInvalidArguments() {
+    final var instantSource = InstantSource.system();
+    assertThatThrownBy(() -> new HandleWorkflow(
+        null,
+        preHandleWorkflow,
+        dispatcher,
+        blockRecordManager,
+        signatureExpander,
+        signatureVerifier,
+        checker,
+        serviceLookup,
+        configProvider,
+        instantSource,
+        hederaRecordCache))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new HandleWorkflow(
+        networkInfo,
+        null,
+        dispatcher,
+        blockRecordManager,
+        signatureExpander,
+        signatureVerifier,
+        checker,
+        serviceLookup,
+        configProvider,
+        instantSource,
+        hederaRecordCache))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new HandleWorkflow(
+        networkInfo,
+        preHandleWorkflow,
+        null,
+        blockRecordManager,
+        signatureExpander,
+        signatureVerifier,
+        checker,
+        serviceLookup,
+        configProvider,
+        instantSource,
+        hederaRecordCache))
+        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> new HandleWorkflow(
+        networkInfo,
+        preHandleWorkflow,
+        dispatcher,
+        null,
+        signatureExpander,
+        signatureVerifier,
+        checker,
+        serviceLookup,
+        configProvider,
           instantSource,
           hederaRecordCache))
           .isInstanceOf(NullPointerException.class);
@@ -579,472 +602,473 @@ class HandleWorkflowTest extends AppTestBase {
           .when(signatureExpander)
           .expand(eq(Set.of(bobsKey)), any(), any());
 
-            // when
-            workflow.handleRound(state, round);
+      // when
+      workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isTrue();
-        }
+      // then
+      final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+      verify(dispatcher).dispatchHandle(argCapture.capture());
+      final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+      assertThat(alicesVerification).isNotNull();
+      assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+      assertThat(alicesVerification.evmAlias()).isNull();
+      assertThat(alicesVerification.passed()).isTrue();
+      final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+      assertThat(bobsVerification).isNotNull();
+      assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+      assertThat(bobsVerification.evmAlias()).isNull();
+      assertThat(bobsVerification.passed()).isTrue();
+    }
 
         @Test
         @DisplayName("Add failing verification result, if a key was handled in preHandle")
         void testRequiredExistingKeyWithFailingSignature() throws PreCheckException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
-                    bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            final var preHandleResult = new PreHandleResult(
-                    ALICE.accountID(),
-                    alicesKey,
-                    Status.SO_FAR_SO_GOOD,
-                    ResponseCodeEnum.OK,
-                    new TransactionScenarioBuilder().txInfo(),
-                    Set.of(bobsKey),
-                    verificationResults,
-                    null,
-                    CONFIG_VERSION);
-            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
+              bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
+          final var preHandleResult = new PreHandleResult(
+              ALICE.accountID(),
+              alicesKey,
+              Status.SO_FAR_SO_GOOD,
+              ResponseCodeEnum.OK,
+              new TransactionScenarioBuilder().txInfo(),
+              Set.of(bobsKey),
+              verificationResults,
+              null,
+              CONFIG_VERSION);
+          when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.requireKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            verify(dispatcher, never()).dispatchHandle(any());
+          // then
+          verify(dispatcher, never()).dispatchHandle(any());
         }
 
         @Test
         @DisplayName("Trigger passing verification, if new key was found")
         void testRequiredNewKeyWithPassingSignature() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
-            when(signatureVerifier.verify(
-                            any(),
-                            argThat(set -> set.size() == 1
-                                    && bobsKey.equals(set.iterator().next().key()))))
-                    .thenReturn(verificationResults);
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.requireKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
+          when(signatureVerifier.verify(
+              any(),
+              argThat(set -> set.size() == 1
+                  && bobsKey.equals(set.iterator().next().key()))))
+              .thenReturn(verificationResults);
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isTrue();
+          // then
+          final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+          verify(dispatcher).dispatchHandle(argCapture.capture());
+          final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+          assertThat(alicesVerification).isNotNull();
+          assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+          assertThat(alicesVerification.evmAlias()).isNull();
+          assertThat(alicesVerification.passed()).isTrue();
+          final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+          assertThat(bobsVerification).isNotNull();
+          assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+          assertThat(bobsVerification.evmAlias()).isNull();
+          assertThat(bobsVerification.passed()).isTrue();
         }
 
         @Test
         @DisplayName("Trigger failing verification, if new key was found")
         void testRequiredNewKeyWithFailingSignature() throws PreCheckException {
-            // given
-            final var bobsKey = BOB.account().keyOrThrow();
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            when(signatureVerifier.verify(
-                            any(),
-                            argThat(set -> set.size() == 1
-                                    && bobsKey.equals(set.iterator().next().key()))))
-                    .thenReturn(verificationResults);
+          // given
+          final var bobsKey = BOB.account().keyOrThrow();
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.requireKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
+          when(signatureVerifier.verify(
+              any(),
+              argThat(set -> set.size() == 1
+                  && bobsKey.equals(set.iterator().next().key()))))
+              .thenReturn(verificationResults);
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            verify(dispatcher, never()).dispatchHandle(any());
+          // then
+          verify(dispatcher, never()).dispatchHandle(any());
         }
 
         @Test
         @DisplayName("Add passing verification result, if a key was handled in preHandle")
         void testOptionalExistingKeyWithPassingSignature() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
-                    bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
-            final var preHandleResult = new PreHandleResult(
-                    ALICE.accountID(),
-                    alicesKey,
-                    Status.SO_FAR_SO_GOOD,
-                    ResponseCodeEnum.OK,
-                    new TransactionScenarioBuilder().txInfo(),
-                    Set.of(),
-                    verificationResults,
-                    null,
-                    CONFIG_VERSION);
-            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.optionalKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
+              bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
+          final var preHandleResult = new PreHandleResult(
+              ALICE.accountID(),
+              alicesKey,
+              Status.SO_FAR_SO_GOOD,
+              ResponseCodeEnum.OK,
+              new TransactionScenarioBuilder().txInfo(),
+              Set.of(),
+              verificationResults,
+              null,
+              CONFIG_VERSION);
+          when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.optionalKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isTrue();
+          // then
+          final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+          verify(dispatcher).dispatchHandle(argCapture.capture());
+          final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+          assertThat(alicesVerification).isNotNull();
+          assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+          assertThat(alicesVerification.evmAlias()).isNull();
+          assertThat(alicesVerification.passed()).isTrue();
+          final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+          assertThat(bobsVerification).isNotNull();
+          assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+          assertThat(bobsVerification.evmAlias()).isNull();
+          assertThat(bobsVerification.passed()).isTrue();
         }
 
         @Test
         @DisplayName("Add failing verification result, if a key was handled in preHandle")
         void testOptionalExistingKeyWithFailingSignature() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
-                    bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            final var preHandleResult = new PreHandleResult(
-                    ALICE.accountID(),
-                    alicesKey,
-                    Status.SO_FAR_SO_GOOD,
-                    ResponseCodeEnum.OK,
-                    new TransactionScenarioBuilder().txInfo(),
-                    Set.of(),
-                    verificationResults,
-                    null,
-                    CONFIG_VERSION);
-            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.optionalKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
+              bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
+          final var preHandleResult = new PreHandleResult(
+              ALICE.accountID(),
+              alicesKey,
+              Status.SO_FAR_SO_GOOD,
+              ResponseCodeEnum.OK,
+              new TransactionScenarioBuilder().txInfo(),
+              Set.of(),
+              verificationResults,
+              null,
+              CONFIG_VERSION);
+          when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.optionalKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isFalse();
+          // then
+          final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+          verify(dispatcher).dispatchHandle(argCapture.capture());
+          final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+          assertThat(alicesVerification).isNotNull();
+          assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+          assertThat(alicesVerification.evmAlias()).isNull();
+          assertThat(alicesVerification.passed()).isTrue();
+          final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+          assertThat(bobsVerification).isNotNull();
+          assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+          assertThat(bobsVerification.evmAlias()).isNull();
+          assertThat(bobsVerification.passed()).isFalse();
         }
 
         @Test
         @DisplayName("Trigger passing verification, if new key was found")
         void testOptionalNewKeyWithPassingSignature() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.optionalKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
-            when(signatureVerifier.verify(
-                            any(),
-                            argThat(set -> set.size() == 1
-                                    && bobsKey.equals(set.iterator().next().key()))))
-                    .thenReturn(verificationResults);
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey));
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.optionalKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
+          when(signatureVerifier.verify(
+              any(),
+              argThat(set -> set.size() == 1
+                  && bobsKey.equals(set.iterator().next().key()))))
+              .thenReturn(verificationResults);
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isTrue();
+          // then
+          final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+          verify(dispatcher).dispatchHandle(argCapture.capture());
+          final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+          assertThat(alicesVerification).isNotNull();
+          assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+          assertThat(alicesVerification.evmAlias()).isNull();
+          assertThat(alicesVerification.passed()).isTrue();
+          final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+          assertThat(bobsVerification).isNotNull();
+          assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+          assertThat(bobsVerification.evmAlias()).isNull();
+          assertThat(bobsVerification.passed()).isTrue();
         }
 
         @Test
         @DisplayName("Trigger failing verification, if new key was found")
         void testOptionalNewKeyWithFailingSignature() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.optionalKey(bobsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
-            when(signatureVerifier.verify(
-                            any(),
-                            argThat(set -> set.size() == 1
-                                    && bobsKey.equals(set.iterator().next().key()))))
-                    .thenReturn(verificationResults);
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.optionalKey(bobsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              bobsKey, FakeSignatureVerificationFuture.badFuture(bobsKey));
+          when(signatureVerifier.verify(
+              any(),
+              argThat(set -> set.size() == 1
+                  && bobsKey.equals(set.iterator().next().key()))))
+              .thenReturn(verificationResults);
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isFalse();
+          // then
+          final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+          verify(dispatcher).dispatchHandle(argCapture.capture());
+          final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+          assertThat(alicesVerification).isNotNull();
+          assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+          assertThat(alicesVerification.evmAlias()).isNull();
+          assertThat(alicesVerification.passed()).isTrue();
+          final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+          assertThat(bobsVerification).isNotNull();
+          assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+          assertThat(bobsVerification.evmAlias()).isNull();
+          assertThat(bobsVerification.passed()).isFalse();
         }
 
         @Test
         void testComplexCase() throws PreCheckException, TimeoutException {
-            // given
-            final var alicesKey = ALICE.account().keyOrThrow();
-            final var bobsKey = BOB.account().keyOrThrow();
-            final var carolsKey = CAROL.account().keyOrThrow();
-            final var erinsKey = ERIN.account().keyOrThrow();
-            final var preHandleVerificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
-                    bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey),
-                    erinsKey, FakeSignatureVerificationFuture.goodFuture(erinsKey));
-            final var preHandleResult = new PreHandleResult(
-                    ALICE.accountID(),
-                    alicesKey,
-                    Status.SO_FAR_SO_GOOD,
-                    ResponseCodeEnum.OK,
-                    new TransactionScenarioBuilder().txInfo(),
-                    Set.of(erinsKey),
-                    preHandleVerificationResults,
-                    null,
-                    CONFIG_VERSION);
-            when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            doAnswer(invocation -> {
-                        final var context = invocation.getArgument(0, PreHandleContext.class);
-                        context.requireKey(bobsKey);
-                        context.optionalKey(carolsKey);
-                        return null;
-                    })
-                    .when(dispatcher)
-                    .dispatchPreHandle(any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(bobsKey)), any(), any());
-            doAnswer(invocation -> {
-                        final var expanded = invocation.getArgument(2, Set.class);
-                        expanded.add(ExpandedSignaturePairFactory.ecdsaPair(carolsKey));
-                        return null;
-                    })
-                    .when(signatureExpander)
-                    .expand(eq(Set.of(carolsKey)), any(), any());
-            final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
-                    carolsKey, FakeSignatureVerificationFuture.goodFuture(carolsKey));
-            when(signatureVerifier.verify(
-                            any(),
-                            argThat(set -> set.size() == 1
-                                    && carolsKey.equals(set.iterator().next().key()))))
-                    .thenReturn(verificationResults);
+          // given
+          final var alicesKey = ALICE.account().keyOrThrow();
+          final var bobsKey = BOB.account().keyOrThrow();
+          final var carolsKey = CAROL.account().keyOrThrow();
+          final var erinsKey = ERIN.account().keyOrThrow();
+          final var preHandleVerificationResults = Map.<Key, SignatureVerificationFuture>of(
+              alicesKey, FakeSignatureVerificationFuture.goodFuture(alicesKey),
+              bobsKey, FakeSignatureVerificationFuture.goodFuture(bobsKey),
+              erinsKey, FakeSignatureVerificationFuture.goodFuture(erinsKey));
+          final var preHandleResult = new PreHandleResult(
+              ALICE.accountID(),
+              alicesKey,
+              Status.SO_FAR_SO_GOOD,
+              ResponseCodeEnum.OK,
+              new TransactionScenarioBuilder().txInfo(),
+              Set.of(erinsKey),
+              preHandleVerificationResults,
+              null,
+              CONFIG_VERSION);
+          when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+          doAnswer(invocation -> {
+            final var context = invocation.getArgument(0, PreHandleContext.class);
+            context.requireKey(bobsKey);
+            context.optionalKey(carolsKey);
+            return null;
+          })
+              .when(dispatcher)
+              .dispatchPreHandle(any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ed25519Pair(bobsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(bobsKey)), any(), any());
+          doAnswer(invocation -> {
+            final var expanded = invocation.getArgument(2, Set.class);
+            expanded.add(ExpandedSignaturePairFactory.ecdsaPair(carolsKey));
+            return null;
+          })
+              .when(signatureExpander)
+              .expand(eq(Set.of(carolsKey)), any(), any());
+          final var verificationResults = Map.<Key, SignatureVerificationFuture>of(
+              carolsKey, FakeSignatureVerificationFuture.goodFuture(carolsKey));
+          when(signatureVerifier.verify(
+              any(),
+              argThat(set -> set.size() == 1
+                  && carolsKey.equals(set.iterator().next().key()))))
+              .thenReturn(verificationResults);
 
-            // when
-            workflow.handleRound(state, round);
+          // when
+          workflow.handleRound(state, round);
 
-            // then
-            final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
-            verify(dispatcher).dispatchHandle(argCapture.capture());
-            final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
-            assertThat(alicesVerification).isNotNull();
-            assertThat(alicesVerification.key()).isEqualTo(alicesKey);
-            assertThat(alicesVerification.evmAlias()).isNull();
-            assertThat(alicesVerification.passed()).isTrue();
-            final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
-            assertThat(bobsVerification).isNotNull();
-            assertThat(bobsVerification.key()).isEqualTo(bobsKey);
-            assertThat(bobsVerification.evmAlias()).isNull();
-            assertThat(bobsVerification.passed()).isTrue();
-            final var carolsVerification = argCapture.getValue().verificationFor(carolsKey);
-            assertThat(carolsVerification).isNotNull();
-            assertThat(carolsVerification.key()).isEqualTo(carolsKey);
-            assertThat(carolsVerification.evmAlias()).isNull();
-            assertThat(carolsVerification.passed()).isTrue();
-            final var erinsVerification = argCapture.getValue().verificationFor(erinsKey);
-            assertThat(erinsVerification).isNotNull();
-            assertThat(erinsVerification.key()).isEqualTo(erinsKey);
-            assertThat(erinsVerification.evmAlias()).isNull();
-            assertThat(erinsVerification.passed()).isFalse();
+          // then
+          final var argCapture = ArgumentCaptor.forClass(HandleContext.class);
+          verify(dispatcher).dispatchHandle(argCapture.capture());
+          final var alicesVerification = argCapture.getValue().verificationFor(alicesKey);
+          assertThat(alicesVerification).isNotNull();
+          assertThat(alicesVerification.key()).isEqualTo(alicesKey);
+          assertThat(alicesVerification.evmAlias()).isNull();
+          assertThat(alicesVerification.passed()).isTrue();
+          final var bobsVerification = argCapture.getValue().verificationFor(bobsKey);
+          assertThat(bobsVerification).isNotNull();
+          assertThat(bobsVerification.key()).isEqualTo(bobsKey);
+          assertThat(bobsVerification.evmAlias()).isNull();
+          assertThat(bobsVerification.passed()).isTrue();
+          final var carolsVerification = argCapture.getValue().verificationFor(carolsKey);
+          assertThat(carolsVerification).isNotNull();
+          assertThat(carolsVerification.key()).isEqualTo(carolsKey);
+          assertThat(carolsVerification.evmAlias()).isNull();
+          assertThat(carolsVerification.passed()).isTrue();
+          final var erinsVerification = argCapture.getValue().verificationFor(erinsKey);
+          assertThat(erinsVerification).isNotNull();
+          assertThat(erinsVerification.key()).isEqualTo(erinsKey);
+          assertThat(erinsVerification.evmAlias()).isNull();
+          assertThat(erinsVerification.passed()).isFalse();
         }
+  }
+
+  @Nested
+  @DisplayName("Tests for special cases during transaction dispatching")
+  final class DispatchTest {
+
+    @Test
+    @DisplayName("Charge user, but do not change state otherwise, if transaction causes a HandleException")
+    void testHandleException() {
+      // when
+      doThrow(new HandleException(ResponseCodeEnum.INVALID_SIGNATURE))
+          .when(dispatcher)
+          .dispatchHandle(any());
+      workflow.handleRound(state, round);
+
+      // then
+      assertThat(aliasesState.isModified()).isFalse();
+      // TODO: Check that record was created
     }
 
-    @Nested
-    @DisplayName("Tests for special cases during transaction dispatching")
-    final class DispatchTest {
-        @Test
-        @DisplayName("Charge user, but do not change state otherwise, if transaction causes a HandleException")
-        void testHandleException() {
-            // when
-            doThrow(new HandleException(ResponseCodeEnum.INVALID_SIGNATURE))
-                    .when(dispatcher)
-                    .dispatchHandle(any());
-            workflow.handleRound(state, round);
+    @Test
+    @DisplayName("Update receipt, but charge no one, if transaction causes an unexepected exception")
+    void testUnknownFailure() {
+      // when
+      doThrow(new ArrayIndexOutOfBoundsException()).when(dispatcher).dispatchHandle(any());
+      workflow.handleRound(state, round);
 
-            // then
-            assertThat(aliasesState.isModified()).isFalse();
-            // TODO: Check that record was created
-        }
-
-        @Test
-        @DisplayName("Update receipt, but charge no one, if transaction causes an unexepected exception")
-        void testUnknownFailure() {
-            // when
-            doThrow(new ArrayIndexOutOfBoundsException()).when(dispatcher).dispatchHandle(any());
-            workflow.handleRound(state, round);
-
-            // then
-            assertThat(accountsState.isModified()).isFalse();
-            assertThat(aliasesState.isModified()).isFalse();
-            // TODO: Check receipt
-        }
+      // then
+      assertThat(accountsState.isModified()).isFalse();
+      assertThat(aliasesState.isModified()).isFalse();
+      // TODO: Check receipt
     }
+  }
 
-    @Nested
-    @DisplayName("Tests for checking the interaction with the record manager")
-    final class RecordManagerInteractionTest {
+  @Nested
+  @DisplayName("Tests for checking the interaction with the record manager")
+  final class RecordManagerInteractionTest {
 
-        // TODO: Add more tests to make sure we produce the right input for the recordManger (once it is implemented)
-        // https://github.com/hashgraph/hedera-services/issues/6746
+    // TODO: Add more tests to make sure we produce the right input for the recordManger (once it is implemented)
+    // https://github.com/hashgraph/hedera-services/issues/6746
 
-        @Test
-        void testSimpleRun() {
-            // when
-            workflow.handleRound(state, round);
+    @Test
+    void testSimpleRun() {
+      // when
+      workflow.handleRound(state, round);
 
-            // then
-            verify(blockRecordManager).startUserTransaction(eq(CONSENSUS_NOW), eq(state));
-            verify(blockRecordManager).endUserTransaction(any(), eq(state));
-            verify(blockRecordManager).endRound(eq(state));
-        }
+      // then
+      verify(blockRecordManager).startUserTransaction(eq(CONSENSUS_NOW), eq(state));
+      verify(blockRecordManager).endUserTransaction(any(), eq(state));
+      verify(blockRecordManager).endRound(eq(state));
     }
+  }
 }

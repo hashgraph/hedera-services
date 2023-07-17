@@ -268,7 +268,7 @@ public class HandleWorkflow {
       }
 
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
-      
+
     }
 
   private void checkDuplicatesAndIncludeInCache(
@@ -276,7 +276,7 @@ public class HandleWorkflow {
       @NonNull final TransactionRecord transactionRecord,
       @NonNull final Instant consensusNow)
       throws PreCheckException {
-    final var transactionID = preHandleResult.txInfo().txBody().transactionIDOrThrow();
+    final var transactionID = transactionRecord.transactionIDOrThrow();
     final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
 
     addTransactionToCache(preHandleResult, transactionRecord, consensusNow);
@@ -308,6 +308,15 @@ public class HandleWorkflow {
   private void recordFailedTransaction(
       @NonNull final ResponseCodeEnum status,
       @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+      @NonNull final RecordListBuilder recordListBuilder) {
+    recordBuilder.status(status);
+    recordListBuilder.revertChildRecordBuilders(recordBuilder);
+    // TODO: Finalize failed transaction with the help of token-service and commit required state changes
+  }
+
+  public void recordFailedTransaction(
+      @NonNull final ResponseCodeEnum status,
+      @NonNull final SingleTransactionRecordBuilder recordBuilder,
       @NonNull final RecordListBuilder recordListBuilder) {
     recordBuilder.status(status);
     recordListBuilder.revertChildRecordBuilders(recordBuilder);
@@ -346,53 +355,53 @@ public class HandleWorkflow {
       }
     }
 
-        // If we reach this point, either pre-handle was not run or it failed but may succeed now.
-        // Therefore, we simply rerun pre-handle.
-        final var storeFactory = new ReadableStoreFactory(state);
-        final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
-        final var creator = networkInfo.nodeInfo(platformEvent.getCreatorId().id());
-        final var creatorId = creator == null ? null : creator.accountId();
-        return preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
+    // If we reach this point, either pre-handle was not run or it failed but may succeed now.
+    // Therefore, we simply rerun pre-handle.
+    final var storeFactory = new ReadableStoreFactory(state);
+    final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+    final var creator = networkInfo.nodeInfo(platformEvent.getCreatorId().id());
+    final var creatorId = creator == null ? null : creator.accountId();
+    return preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
+  }
+
+  @NonNull
+  private PreHandleResult createPenaltyPayment() {
+    // TODO: Implement createPenaltyPayment() - https://github.com/hashgraph/hedera-services/issues/6811
+    throw new UnsupportedOperationException("Not implemented yet");
+  }
+
+  private boolean preHandleStillValid(
+      @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
+    if (metadata instanceof final PreHandleResult preHandleResult) {
+      return preHandleResult.configVersion() == configuration.getVersion();
     }
+    return false;
+  }
 
-    @NonNull
-    private PreHandleResult createPenaltyPayment() {
-        // TODO: Implement createPenaltyPayment() - https://github.com/hashgraph/hedera-services/issues/6811
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
+  /*
+   * This method is called when a previous run of pre-handle was successful. We gather the keys again and check if
+   * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
+   * results.
+   */
+  @NonNull
+  private PreHandleResult addMissingSignatures(
+      @NonNull final HederaState state,
+      @NonNull final PreHandleResult previousResult,
+      @NonNull final Configuration configuration)
+      throws PreCheckException {
+    final var txInfo = previousResult.txInfo();
+    final var txBody = txInfo.txBody();
+    final var sigPairs = txInfo.signatureMap().sigPairOrElse(emptyList());
+    final var signedBytes = txInfo.signedBytes();
 
-    private boolean preHandleStillValid(
-            @NonNull final VersionedConfiguration configuration, @Nullable final Object metadata) {
-        if (metadata instanceof final PreHandleResult preHandleResult) {
-            return preHandleResult.configVersion() == configuration.getVersion();
-        }
-        return false;
-    }
+    // extract keys and hollow accounts again
+    final var storeFactory = new ReadableStoreFactory(state);
+    final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
+    dispatcher.dispatchPreHandle(context);
 
-    /*
-     * This method is called when a previous run of pre-handle was successful. We gather the keys again and check if
-     * any keys need to be added. If so, we trigger the signature verification for the new keys and collect all
-     * results.
-     */
-    @NonNull
-    private PreHandleResult addMissingSignatures(
-            @NonNull final HederaState state,
-            @NonNull final PreHandleResult previousResult,
-            @NonNull final Configuration configuration)
-            throws PreCheckException {
-        final var txInfo = previousResult.txInfo();
-        final var txBody = txInfo.txBody();
-        final var sigPairs = txInfo.signatureMap().sigPairOrElse(emptyList());
-        final var signedBytes = txInfo.signedBytes();
-
-        // extract keys and hollow accounts again
-        final var storeFactory = new ReadableStoreFactory(state);
-        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
-        dispatcher.dispatchPreHandle(context);
-
-        // prepare signature verification
-        final var verifications = new HashMap<Key, SignatureVerificationFuture>();
-        final var payerKey = previousResult.payerKey();
+    // prepare signature verification
+    final var verifications = new HashMap<Key, SignatureVerificationFuture>();
+    final var payerKey = previousResult.payerKey();
         verifications.put(payerKey, previousResult.verificationResults().get(payerKey));
 
         // expand all keys
