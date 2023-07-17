@@ -19,7 +19,7 @@ package com.swirlds.platform.test.eventflow;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;

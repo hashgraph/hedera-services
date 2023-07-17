@@ -16,6 +16,9 @@
 
 package com.swirlds.common.utility;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+
 /**
  * Describes various mathematically important thresholds.
  */
@@ -23,15 +26,44 @@ public enum Threshold {
     /**
      * In order to meet this threshold, the part must be &ge;1/3 of the whole.
      */
-    STRONG_MINORITY,
+    STRONG_MINORITY(Threshold::isStrongMinority),
     /**
      * In order to meet this threshold, the part must be &gt;1/2 of the whole.
      */
-    MAJORITY,
+    MAJORITY(Threshold::isMajority),
     /**
      * In order to meet this threshold, the part must be &gt;2/3 of the whole.
      */
-    SUPER_MAJORITY;
+    SUPER_MAJORITY(Threshold::isSuperMajority);
+
+    /**
+     * A method that evaluates a threshold.
+     */
+    @FunctionalInterface
+    private interface ThresholdEvaluator {
+        /**
+         * Check if a threshold is satisfied by a given ratio.
+         *
+         * @param part  the numerator
+         * @param whole the denominator
+         * @return true if the threshold is satisfied by the provided ratio
+         */
+        boolean isSatisfiedBy(long part, long whole);
+    }
+
+    /**
+     * The method that evaluates this threshold.
+     */
+    private final ThresholdEvaluator evaluator;
+
+    /**
+     * Constructor
+     *
+     * @param evaluator the method that evaluates this threshold
+     */
+    Threshold(@NonNull final ThresholdEvaluator evaluator) {
+        this.evaluator = Objects.requireNonNull(evaluator);
+    }
 
     /**
      * Check if a threshold is satisfied by a given ratio.
@@ -39,15 +71,9 @@ public enum Threshold {
      * @param part  the numerator
      * @param whole the denominator
      * @return true if the threshold is satisfied by the provided ratio
-     * @throws IllegalArgumentException if part is negative or whole is non-positive or zero, or if part is greater than
-     *                                  whole
      */
     public boolean isSatisfiedBy(final long part, final long whole) {
-        return switch (this) {
-            case STRONG_MINORITY -> isStrongMinority(part, whole);
-            case MAJORITY -> isMajority(part, whole);
-            case SUPER_MAJORITY -> isSuperMajority(part, whole);
-        };
+        return evaluator.isSatisfiedBy(part, whole);
     }
 
     /**

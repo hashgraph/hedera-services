@@ -201,8 +201,6 @@ public class HandleWorkflow {
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
-        // TODO update receipt
-
         // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks
@@ -301,7 +299,7 @@ public class HandleWorkflow {
 
         // extract keys and hollow accounts again
         final var storeFactory = new ReadableStoreFactory(state);
-        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration);
+        final var context = new PreHandleContextImpl(storeFactory, txBody, configuration, dispatcher);
         dispatcher.dispatchPreHandle(context);
 
         // prepare signature verification

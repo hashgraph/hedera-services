@@ -16,7 +16,10 @@
 
 package com.swirlds.common.test.utility;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToInt;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToShort;
@@ -24,9 +27,6 @@ import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 import static com.swirlds.common.utility.ByteUtils.reverseByteArray;
 import static com.swirlds.common.utility.ByteUtils.shortToByteArray;
-import static com.swirlds.common.utility.Units.BYTES_PER_INT;
-import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
-import static com.swirlds.common.utility.Units.BYTES_PER_SHORT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 

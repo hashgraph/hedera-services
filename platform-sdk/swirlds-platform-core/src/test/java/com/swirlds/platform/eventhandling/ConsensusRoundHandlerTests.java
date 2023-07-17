@@ -33,7 +33,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;

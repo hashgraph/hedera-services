@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -39,7 +39,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     @BeforeEach
     public void setUp() {
         writableNftState = emptyWritableNftStateBuilder().build();
-        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
     }
 
@@ -48,6 +48,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
         assertThrows(NullPointerException.class, () -> new WritableNftStore(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.put(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null));
+        assertThrows(NullPointerException.class, () -> writableNftStore.get(null, 0));
     }
 
     @Test
@@ -58,40 +59,39 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getReturnsImmutableToken() {
-        final var id = UniqueTokenId.newBuilder()
-                .tokenId(fungibleTokenId)
-                .serialNumber(1)
-                .build();
+        final var id =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         final var nft = givenNft(id);
         writableNftStore.put(nft);
 
         final var readToken = writableNftStore.get(id);
-
         assertEquals(nft, readToken);
+
+        final var readToken2 = writableNftStore.get(fungibleTokenId, 1);
+        assertEquals(nft, readToken2);
     }
 
     @Test
     void getForModifyReturnsImmutableToken() {
-        final var id = UniqueTokenId.newBuilder()
-                .tokenId(fungibleTokenId)
-                .serialNumber(1)
-                .build();
+        final var id =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         final var nft = givenNft(id);
 
         writableNftStore.put(nft);
 
         final var readToken = writableNftStore.getForModify(id);
-
         assertThat(readToken).isNotNull();
         assertEquals(nft, readToken);
+
+        final var readToken2 = writableNftStore.getForModify(fungibleTokenId, 1);
+        assertThat(readToken2).isNotNull();
+        assertEquals(nft, readToken2);
     }
 
     @Test
     void putsTokenChangesToStateInModifications() {
-        final var id = UniqueTokenId.newBuilder()
-                .tokenId(fungibleTokenId)
-                .serialNumber(1)
-                .build();
+        final var id =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         final var nft = givenNft(id);
 
         assertFalse(writableNftState.contains(id));
@@ -106,10 +106,8 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getsSizeOfState() {
-        final var id = UniqueTokenId.newBuilder()
-                .tokenId(fungibleTokenId)
-                .serialNumber(1)
-                .build();
+        final var id =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         final var nft = givenNft(id);
 
         assertEquals(0, writableNftStore.sizeOfState());
@@ -121,21 +119,19 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void removesByUniqueTokenId() {
+    void removesByNftID() {
         // Set up the NFT state with an existing NFT
 
         final var ownerId = AccountID.newBuilder().accountNum(12345).build();
-        final var nftToRemove = UniqueTokenId.newBuilder()
-                .tokenId(fungibleTokenId)
-                .serialNumber(1)
-                .build();
+        final var nftToRemove =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         writableNftState = emptyWritableNftStateBuilder()
                 .value(
                         nftToRemove,
                         Nft.newBuilder().id(nftToRemove).ownerId(ownerId).build())
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
-        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
         assertNotNull(writableNftStore.get(nftToRemove));
 
@@ -143,15 +139,14 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
         // Assert the NFT is removed
         assertNull(writableNftStore.get(nftToRemove));
+        assertNull(writableNftStore.get(fungibleTokenId, 1));
     }
 
     @Test
     void removesByTokenIdAndSerialNum() {
         // Set up the NFT state with an existing NFT
-        final var nftToRemove = UniqueTokenId.newBuilder()
-                .tokenId(fungibleTokenId)
-                .serialNumber(1)
-                .build();
+        final var nftToRemove =
+                NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         final var ownerId = asAccount(12345);
         writableNftState = emptyWritableNftStateBuilder()
                 .value(
@@ -159,7 +154,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
                         Nft.newBuilder().id(nftToRemove).ownerId(ownerId).build())
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
-        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
         assertNotNull(writableNftStore.get(nftToRemove));
 

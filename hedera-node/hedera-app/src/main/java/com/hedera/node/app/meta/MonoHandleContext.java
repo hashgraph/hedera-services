@@ -26,6 +26,8 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -132,6 +134,13 @@ public class MonoHandleContext implements HandleContext {
     @NonNull
     public ExpiryValidator expiryValidator() {
         return expiryValidator;
+    }
+
+    @NonNull
+    @Override
+    public TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     /**

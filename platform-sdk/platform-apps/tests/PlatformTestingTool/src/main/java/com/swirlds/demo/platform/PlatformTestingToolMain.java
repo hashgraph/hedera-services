@@ -58,8 +58,8 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.Units;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -1220,7 +1220,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void queryInState() {
         // time in nanoseconds between successive queries
-        final long periodInNanos = Units.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
+        final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(

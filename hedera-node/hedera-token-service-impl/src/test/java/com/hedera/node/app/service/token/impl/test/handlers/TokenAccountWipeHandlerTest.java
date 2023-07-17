@@ -29,6 +29,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAccounts;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithNfts;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
@@ -48,10 +52,10 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
@@ -241,7 +245,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         @Test
         void accountDoesntExist() {
-
             // Both stores are intentionally empty
             writableAccountStore = newWritableStoreWithAccounts();
             writableTokenStore = newWritableStoreWithTokens();
@@ -602,10 +605,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             writableTokenStore = newWritableStoreWithTokens(newNftToken531(10));
             writableTokenRelStore = newWritableStoreWithTokenRels(newAccount4680Token531Rel(0));
             writableNftStore = newWritableStoreWithNfts(Nft.newBuilder()
-                    .id(UniqueTokenId.newBuilder()
-                            .tokenId(TOKEN_531)
-                            .serialNumber(1)
-                            .build())
+                    .id(NftID.newBuilder().tokenId(TOKEN_531).serialNumber(1).build())
                     .ownerId(TREASURY_ACCOUNT_9876)
                     .build());
 
@@ -693,28 +693,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(1)
                                     .build())
                             // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(2)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(3)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(4)
                                     .build())
@@ -739,15 +739,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var tokenRel = writableTokenRelStore.get(ACCOUNT_4680, TOKEN_531);
             Assertions.assertThat(tokenRel.balance()).isEqualTo(1);
             // Verify the treasury's NFT wasn't removed
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 1)))
-                    .isNotNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 1))).isNotNull();
             // Verify that two of the account's NFTs were removed, and that the final one remains
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 2)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 3)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 4)))
-                    .isNotNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 2))).isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 3))).isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 4))).isNotNull();
         }
 
         @Test
@@ -772,28 +768,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(1)
                                     .build())
                             // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(2)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(3)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(4)
                                     .build())
@@ -818,15 +814,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var tokenRel = writableTokenRelStore.get(ACCOUNT_4680, TOKEN_531);
             Assertions.assertThat(tokenRel.balance()).isZero();
             // Verify the treasury's NFT wasn't removed
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 1)))
-                    .isNotNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 1))).isNotNull();
             // Verify that the account's NFTs were removed
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 2)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 3)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 4)))
-                    .isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 2))).isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 3))).isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 4))).isNull();
         }
 
         @Test
@@ -852,28 +844,28 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                     newWritableStoreWithTokenRels(newAccount4680Token531Rel(3), newTreasuryToken531Rel(1));
             writableNftStore = newWritableStoreWithNfts(
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(1)
                                     .build())
                             // do not set ownerId - default to null, meaning treasury owns this NFT
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(2)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(3)
                                     .build())
                             .ownerId(ACCOUNT_4680)
                             .build(),
                     Nft.newBuilder()
-                            .id(UniqueTokenId.newBuilder()
+                            .id(NftID.newBuilder()
                                     .tokenId(TOKEN_531)
                                     .serialNumber(4)
                                     .build())
@@ -898,15 +890,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             final var tokenRel = writableTokenRelStore.get(ACCOUNT_4680, TOKEN_531);
             Assertions.assertThat(tokenRel.balance()).isZero();
             // Verify the treasury's NFT wasn't removed
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 1)))
-                    .isNotNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 1))).isNotNull();
             // Verify that the account's NFTs were removed
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 2)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 3)))
-                    .isNull();
-            Assertions.assertThat(writableNftStore.get(new UniqueTokenId(TOKEN_531, 4)))
-                    .isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 2))).isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 3))).isNull();
+            Assertions.assertThat(writableNftStore.get(new NftID(TOKEN_531, 4))).isNull();
         }
 
         private Token newFungibleToken531(final long totalSupply) {

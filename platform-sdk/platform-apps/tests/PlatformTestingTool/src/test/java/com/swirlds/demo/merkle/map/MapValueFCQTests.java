@@ -36,7 +36,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.expiration.ExpirationUtils;
 import com.swirlds.merkle.map.MerkleMap;

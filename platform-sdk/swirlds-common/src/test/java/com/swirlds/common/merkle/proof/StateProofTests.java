@@ -16,9 +16,9 @@
 
 package com.swirlds.common.merkle.proof;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTree;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildLessSimpleTreeExtended;
 import static com.swirlds.common.test.merkle.util.MerkleTestUtils.buildSizeOneTree;
@@ -48,7 +48,7 @@ import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.utility.Threshold;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;

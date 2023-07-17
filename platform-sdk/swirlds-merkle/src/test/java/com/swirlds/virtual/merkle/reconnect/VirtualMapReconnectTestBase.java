@@ -40,6 +40,7 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
@@ -113,8 +114,8 @@ public abstract class VirtualMapReconnectTestBase {
         new TestConfigBuilder()
                 .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue("reconnect.asyncStreamTimeoutMilliseconds", "5000")
-                .withValue("reconnect.maxAckDelayMilliseconds", "1000")
+                .withValue("reconnect.asyncStreamTimeout", "5000ms")
+                .withValue("reconnect.maxAckDelay", "1000ms")
                 .getOrCreateConfig();
     }
 
@@ -166,6 +167,8 @@ public abstract class VirtualMapReconnectTestBase {
                             learnerTree, failureExpected ? brokenTeacherTree : teacherTree, requestTeacherToStop);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");
+                    final VirtualRoot root = learnerMap.getRight();
+                    assertTrue(root.isHashed(), "Learner root node must be hashed");
                 } catch (Exception e) {
                     assertTrue(failureExpected, "We did not expect an exception on this reconnect attempt! " + e);
                 }

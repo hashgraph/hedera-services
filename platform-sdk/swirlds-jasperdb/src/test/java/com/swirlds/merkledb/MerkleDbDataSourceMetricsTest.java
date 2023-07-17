@@ -16,8 +16,8 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.merkledb.MerkleDbTestUtils.createMetrics;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getMetric;
 import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
@@ -30,7 +30,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -116,7 +116,7 @@ class MerkleDbDataSourceMetricsTest {
         final int expectedHashesListSize = (int) (expectedHashListBuckets
                 * hashListBucketSize
                 * DigestType.SHA_384.digestLength()
-                * Units.BYTES_TO_MEBIBYTES);
+                * UnitConstants.BYTES_TO_MEBIBYTES);
         assertMetricValue("ds_offheap_hashesListMb_" + TABLE_NAME, expectedHashesListSize);
         assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, expectedHashesIndexSize + expectedHashesListSize);
         assertNoMemoryForLeafAndKeyToPathLists();

@@ -21,6 +21,7 @@ import com.swirlds.common.merkle.MerkleNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.ObjIntConsumer;
 
 /**
@@ -45,6 +46,7 @@ public class PostOrderedDepthFirstAlgorithm implements MerkleIterationAlgorithm 
      */
     @Override
     public void push(@NonNull final MerkleNode node) {
+        Objects.requireNonNull(node);
         stack.add(node);
     }
 

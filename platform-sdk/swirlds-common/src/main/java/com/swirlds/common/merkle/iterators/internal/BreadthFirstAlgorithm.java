@@ -20,6 +20,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.function.ObjIntConsumer;
 
@@ -36,6 +37,7 @@ public class BreadthFirstAlgorithm implements MerkleIterationAlgorithm {
      */
     @Override
     public void push(@NonNull final MerkleNode node) {
+        Objects.requireNonNull(node);
         queue.add(node);
     }
 

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomInstant;
-import static com.swirlds.common.test.io.FileManipulation.writeRandomBytes;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
+import static com.swirlds.common.test.fixtures.io.FileManipulation.writeRandomBytes;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.EVENT_FILE_SEPARATOR;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MAXIMUM_GENERATION_PREFIX;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventFile.MINIMUM_GENERATION_PREFIX;
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.test.framework.config.TestConfigBuilder;

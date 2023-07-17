@@ -30,6 +30,7 @@ import com.swirlds.platform.state.signed.SignedStateFinder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -41,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 public class EmergencyReconnectTeacher {
     private static final Logger logger = LogManager.getLogger(EmergencyReconnectTeacher.class);
     private final SignedStateFinder stateFinder;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
 
@@ -58,7 +59,7 @@ public class EmergencyReconnectTeacher {
     public EmergencyReconnectTeacher(
             final ThreadManager threadManager,
             final SignedStateFinder stateFinder,
-            final int reconnectSocketTimeout,
+            final Duration reconnectSocketTimeout,
             @Nullable final BooleanSupplier requestToStopTeaching,
             final ReconnectMetrics reconnectMetrics) {
         this.threadManager = threadManager;

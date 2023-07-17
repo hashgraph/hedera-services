@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.CATASTROPHIC_ISS;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.DECIDED;
@@ -68,12 +68,9 @@ class ConsensusHashFinderTests {
     /**
      * Generate a list of nodes for a given partition
      *
-     * @param random
-     * 		a source of randomness
-     * @param firstNodeId
-     * 		the first node ID. Node IDs are generated sequentially starting with this node ID.
-     * @param partition
-     * 		a description of the partition
+     * @param random      a source of randomness
+     * @param firstNodeId the first node ID. Node IDs are generated sequentially starting with this node ID.
+     * @param partition   a description of the partition
      */
     private List<NodeToAdd> getPartitionNodes(
             final Random random,
@@ -102,14 +99,10 @@ class ConsensusHashFinderTests {
     /**
      * Given a list of partitions, return a list of nodes from those partitions.
      *
-     * @param random
-     * 		a source of randomness
-     * @param averageWeight
-     * 		the average weight per node
-     * @param standardDeviationWeight
-     * 		the standard deviation of the weight per node
-     * @param partitions
-     * 		a list of partitions
+     * @param random                  a source of randomness
+     * @param averageWeight           the average weight per node
+     * @param standardDeviationWeight the standard deviation of the weight per node
+     * @param partitions              a list of partitions
      */
     private List<NodeToAdd> getNodes(
             final Random random,

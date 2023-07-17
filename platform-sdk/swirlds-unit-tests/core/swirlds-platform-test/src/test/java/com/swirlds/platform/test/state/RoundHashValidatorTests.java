@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -62,12 +62,9 @@ class RoundHashValidatorTests {
     /**
      * Based on the desired network status, generate hashes for all nodes.
      *
-     * @param random
-     * 		a source of randomness
-     * @param addressBook
-     * 		the address book for the round
-     * @param desiredValidityStatus
-     * 		the desired validity status
+     * @param random                a source of randomness
+     * @param addressBook           the address book for the round
+     * @param desiredValidityStatus the desired validity status
      * @return a list of node IDs in the order they should be added to the hash validator
      */
     static HashGenerationData generateNodeHashes(

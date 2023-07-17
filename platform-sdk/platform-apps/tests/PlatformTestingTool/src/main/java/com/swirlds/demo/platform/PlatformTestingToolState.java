@@ -18,9 +18,9 @@ package com.swirlds.demo.platform;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_0;
+import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.common.utility.Units.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.demo.platform.fs.stresstest.proto.TestTransaction.BodyCase.FCMTRANSACTION;
 import static com.swirlds.logging.LogMarker.DEMO_INFO;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -38,7 +38,6 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
@@ -164,8 +163,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has init() been called on this copy
-     * or an ancestor copy of this object?
+     * Has init() been called on this copy or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -252,17 +250,12 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.initialized.set(sourceState.initialized.get());
         this.platform = sourceState.platform;
 
-        setConfig(sourceState.getConfig().copy());
+        if (sourceState.getConfig() != null) {
+            setConfig(sourceState.getConfig().copy());
+        }
 
-        if (platform != null && sourceState.getNextSeqCons() != null) {
+        if (sourceState.getNextSeqCons() != null) {
             setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-
-            // If nextSeqCons is shorter than the address book then add 0s until the sizes match
-            for (int index = getNextSeqCons().size();
-                    index < platform.getAddressBook().getSize();
-                    index++) {
-                getNextSeqCons().add(new SerializableLong(0));
-            }
         }
 
         if (sourceState.getFcmFamily() != null) {
@@ -304,29 +297,29 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.progressCfg = sourceState.progressCfg;
         this.roundCounter = sourceState.roundCounter;
 
-        if (platform != null && sourceState.getTransactionCounter() != null) {
-            setTransactionCounter(
-                    new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int id = 0; id < platform.getAddressBook().getSize(); id++) {
-                if (id < sourceState.getTransactionCounter().size()) {
-                    getTransactionCounter()
-                            .add(id, sourceState.getTransactionCounter().get(id).copy());
-                } else {
-                    // when loading signed state from a smaller network, sourceState has a smaller address book size
-                    // and fewer number of transaction counters
-                    getTransactionCounter().add(id, new TransactionCounter());
-                }
+        if (sourceState.getTransactionCounter() != null) {
+            final int size = sourceState.getTransactionCounter().size();
+            setTransactionCounter(new TransactionCounterList(size));
+            for (int index = 0; index < size; index++) {
+                getTransactionCounter()
+                        .add(
+                                index,
+                                sourceState.getTransactionCounter().get(index).copy());
             }
         }
 
-        setIssLeaf(sourceState.getIssLeaf().copy());
+        if (sourceState.getIssLeaf() != null) {
+            setIssLeaf(sourceState.getIssLeaf().copy());
+        }
 
         if (sourceState.getNftLedger() != null) {
             setNftLedger(sourceState.getNftLedger().copy());
         }
 
         // set the current value of QuorumResult from source state
-        setQuorumResult(sourceState.getQuorumResult().copy());
+        if (sourceState.getQuorumResult() != null) {
+            setQuorumResult(sourceState.getQuorumResult().copy());
+        }
         if (controlQuorum != null) {
             controlQuorum.setQuorumResult(getQuorumResult().copy());
         }
@@ -1097,6 +1090,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         if (getTransactionCounter() == null
                 || getTransactionCounter().size() != platform.getAddressBook().getSize()) {
             setNextSeqCons(new NextSeqConsList(platform.getAddressBook().getSize()));
+
+            logger.info(DEMO_INFO.getMarker(), "resetting transaction counters");
 
             setTransactionCounter(
                     new TransactionCounterList(platform.getAddressBook().getSize()));

@@ -17,8 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
 import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.exec.operations.utils.OpUtils.maybeTrackReadIn;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.streams.SidecarType;
@@ -27,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.SLoadOperation;
 
 /**
@@ -35,68 +33,29 @@ import org.hyperledger.besu.evm.operation.SLoadOperation;
  * {@link FeatureFlags#isSidecarEnabled(MessageFrame, SidecarType)} returns true for the
  * {@link SidecarType#CONTRACT_STATE_CHANGE} type.
  */
-public class CustomSLoadOperation implements Operation {
+public class CustomSLoadOperation extends DelegatingOperation {
     private final FeatureFlags featureFlags;
-    private final SLoadOperation delegate;
 
     public CustomSLoadOperation(@NonNull final FeatureFlags featureFlags, @NonNull final SLoadOperation delegate) {
+        super(delegate);
         this.featureFlags = requireNonNull(featureFlags);
-        this.delegate = requireNonNull(delegate);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         requireNonNull(evm);
         requireNonNull(frame);
 
         final var key = frame.getStackItem(0);
-        final var result = delegate.execute(frame, evm);
+        final var result = super.execute(frame, evm);
         if (result.getHaltReason() == null && featureFlags.isSidecarEnabled(frame, CONTRACT_STATE_CHANGE)) {
             // The base SLOAD operation returns its read value on the stack
             final var value = frame.getStackItem(0);
-            trackAccessIn(frame, UInt256.fromBytes(key), UInt256.fromBytes(value));
+            maybeTrackReadIn(frame, UInt256.fromBytes(key), UInt256.fromBytes(value));
         }
         return result;
-    }
-
-    private void trackAccessIn(@NonNull final MessageFrame frame, @NonNull UInt256 key, @NonNull UInt256 value) {
-        final var accessTracker = accessTrackerFor(frame);
-        if (accessTracker != null) {
-            final var worldUpdater = proxyUpdaterFor(frame);
-            final var contractId = worldUpdater.getHederaContractId(frame.getRecipientAddress());
-            accessTracker.trackIfFirstRead(contractId.contractNumOrThrow(), key, value);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getOpcode() {
-        return delegate.getOpcode();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getName() {
-        return delegate.getName();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getStackItemsConsumed() {
-        return delegate.getStackItemsConsumed();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getStackItemsProduced() {
-        return delegate.getStackItemsProduced();
     }
 }
