@@ -52,9 +52,9 @@ public class WritableStoreFactory {
             TokenService.NAME,
             Map.of(
                     WritableAccountStore.class, WritableAccountStore::new,
-                    WritableNftStore.class, WritableNftStore::new,
                     WritableTokenStore.class, WritableTokenStore::new,
-                    WritableTokenRelationStore.class, WritableTokenRelationStore::new),
+                    WritableTokenRelationStore.class, WritableTokenRelationStore::new,
+                    WritableNftStore.class, WritableNftStore::new),
             FreezeService.NAME,
             Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
             FileService.NAME,

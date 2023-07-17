@@ -41,7 +41,9 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -88,8 +90,10 @@ public class TokenServiceImpl implements TokenService {
             public void migrate(@NonNull MigrationContext ctx) {
                 // TBD Verify this is correct. We need to preload all the special accounts
                 final var accounts = ctx.newStates().get(ACCOUNTS_KEY);
+                final var accountsConfig = ctx.configuration().getConfigData(AccountsConfig.class);
                 final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
                 final var ledgerConfig = ctx.configuration().getConfigData(LedgerConfig.class);
+                final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
                 final var superUserKeyBytes = bootstrapConfig.genesisPublicKey();
                 if (superUserKeyBytes.length() != 32) {
                     throw new IllegalStateException("'" + superUserKeyBytes + "' is not a possible Ed25519 public key");
@@ -97,26 +101,37 @@ public class TokenServiceImpl implements TokenService {
                 final var superUserKey =
                         Key.newBuilder().ed25519(superUserKeyBytes).build();
 
-                long remainingBalance = ledgerConfig.totalTinyBarFloat();
-                try {
+                final var numSystemAccounts = ledgerConfig.numSystemAccounts();
+                final var expiry = bootstrapConfig.systemEntityExpiry();
+                final var tinyBarFloat = ledgerConfig.totalTinyBarFloat();
+
+                for (long num = 1; num <= numSystemAccounts; num++) {
+                    final var id = AccountID.newBuilder()
+                            .shardNum(hederaConfig.shard())
+                            .realmNum(hederaConfig.realm())
+                            .accountNum(num)
+                            .build();
+
+                    if (accounts.contains(id)) {
+                        continue;
+                    }
+
+                    final var accountTinyBars = num == accountsConfig.treasury() ? tinyBarFloat : 0L;
+                    assert accountTinyBars >= 0L : "Negative account balance!";
                     accounts.put(
-                            AccountID.newBuilder().accountNum(2).build(),
+                            id,
                             Account.newBuilder()
-                                    .accountNumber(2)
-                                    .tinybarBalance(remainingBalance - 100_000_000_000L)
+                                    .receiverSigRequired(false)
+                                    .deleted(false)
+                                    .expiry(expiry)
+                                    .memo("")
+                                    .smartContract(false)
                                     .key(superUserKey)
-                                    .declineReward(true)
+                                    .autoRenewSecs(expiry) // TODO is this right?
+                                    .accountNumber(id.accountNumOrThrow())
+                                    .tinybarBalance(accountTinyBars)
+//                                    .declineReward(true)
                                     .build());
-                    accounts.put(
-                            AccountID.newBuilder().accountNum(3).build(),
-                            Account.newBuilder()
-                                    .accountNumber(3)
-                                    .tinybarBalance(100_000_000_000L)
-                                    .key(superUserKey)
-                                    .declineReward(true)
-                                    .build());
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to create account 0.0.2");
                 }
             }
         };

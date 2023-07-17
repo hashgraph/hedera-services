@@ -16,14 +16,15 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("hedera")
 public record HederaConfig(
-        @ConfigProperty(defaultValue = "1001") long firstUserEntity,
-        @ConfigProperty(defaultValue = "0") long realm,
-        @ConfigProperty(defaultValue = "0") long shard,
+        @ConfigProperty(defaultValue = "1001") @NetworkProperty long firstUserEntity,
+        @ConfigProperty(defaultValue = "0") @NetworkProperty long realm,
+        @ConfigProperty(defaultValue = "0") @NetworkProperty long shard,
         @ConfigProperty(value = "recordStream.sidecarMaxSizeMb", defaultValue = "256") int recordStreamSidecarMaxSizeMb,
         @ConfigProperty(value = "transaction.maxMemoUtf8Bytes", defaultValue = "100") int transactionMaxMemoUtf8Bytes,
         @ConfigProperty(value = "transaction.maxValidDuration", defaultValue = "180") long transactionMaxValidDuration,

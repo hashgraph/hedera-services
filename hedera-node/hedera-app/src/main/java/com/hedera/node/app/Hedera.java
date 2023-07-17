@@ -113,6 +113,7 @@ public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
+    private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
     // This should come from configuration, NOT be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
@@ -291,12 +292,17 @@ public final class Hedera implements SwirldMain {
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
-        switch (trigger) {
-            case GENESIS -> genesis(state, dualState);
-            case RESTART -> restart(state, dualState, deserializedVersion);
-            case RECONNECT -> reconnect();
+        try {
+            switch (trigger) {
+                case GENESIS -> genesis(state, dualState);
+                case RESTART -> restart(state, dualState, deserializedVersion);
+                case RECONNECT -> reconnect();
                 // We exited from this method early if we were recovering from an event stream.
-            case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+                case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+            }
+        } catch (final Throwable th) {
+            logger.fatal("Critical failure during initialization", th);
+            System.exit(CRITICAL_FAILURE_EXIT_CODE);
         }
 
         // This field has to be set by the time we get here. It will be set by both the genesis and restart code
