@@ -16,13 +16,21 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
-import static com.hedera.hapi.streams.CallOperationType.*;
+import static com.hedera.hapi.streams.CallOperationType.OP_CALL;
+import static com.hedera.hapi.streams.CallOperationType.OP_CREATE;
 import static com.hedera.hapi.streams.ContractActionType.CALL;
 import static com.hedera.hapi.streams.ContractActionType.CREATE;
+import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfOriginatorIn;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumberIn;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 
@@ -31,13 +39,18 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
@@ -47,13 +60,41 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Encapsulates a stack of contract actions.
  */
 public class ActionStack {
+    private static final Logger log = LogManager.getLogger(ActionStack.class);
+
     private final ActionsHelper helper;
-    private final List<Wrapper<ContractAction>> allActions;
-    private final Deque<Wrapper<ContractAction>> actionsStack;
-    private final List<Wrapper<ContractAction>> invalidActions;
+    private final List<ActionWrapper> allActions;
+    private final Deque<ActionWrapper> actionsStack;
+    private final List<ActionWrapper> invalidActions;
+
+    /**
+     * Controls whether the stack should validate the next action it is finalizing.
+     */
+    public enum Validation {
+        ON,
+        OFF
+    }
+
+    /**
+     * Controls whether the action being finalized should be popped from the top of the stack; or
+     * read from the end of the full list of actions that have been created up to this point. (The
+     * exact rationale for this pattern is hard to articulate, but was presumably derived through
+     * bitter experience with the mono-service tracer implementation...)
+     */
+    public enum Source {
+        /**
+         * The action being finalized should be popped from the stack.
+         */
+        POPPED_FROM_STACK,
+
+        /**
+         * The action being finalized should be read from the end of the full list of actions.
+         */
+        READ_FROM_LIST_END
+    }
 
     public ActionStack() {
-        this(new ActionsHelper(), new ArrayList<>(), new ArrayList<>(), new ArrayDeque<>());
+        this(new ActionsHelper(), new ArrayList<>(), new ArrayDeque<>(), new ArrayList<>());
     }
 
     /**
@@ -61,14 +102,14 @@ public class ActionStack {
      *
      * @param helper         the helper to use for action creation
      * @param allActions     the container to use for all tracked actions
-     * @param invalidActions the container to use for invalid actions
      * @param actionsStack   the stack to use for actions
+     * @param invalidActions the container to use for invalid actions
      */
     public ActionStack(
             @NonNull final ActionsHelper helper,
-            @NonNull final List<Wrapper<ContractAction>> invalidActions,
-            @NonNull final List<Wrapper<ContractAction>> allActions,
-            @NonNull final Deque<Wrapper<ContractAction>> actionsStack) {
+            @NonNull final List<ActionWrapper> allActions,
+            @NonNull final Deque<ActionWrapper> actionsStack,
+            @NonNull final List<ActionWrapper> invalidActions) {
         this.helper = helper;
         this.invalidActions = invalidActions;
         this.allActions = allActions;
@@ -93,27 +134,124 @@ public class ActionStack {
      *     also constructs a synthetic action to represent the invalid call.
      * </ul>
      *
-     * @param frame    the frame to use for finalization context
-     * @param validate whether to validate the final action
+     * @param source     the source of the action to finalize
+     * @param frame      the frame to use for finalization context
+     * @param validation whether to validate the final action
      */
-    public void finalizeLastActionIn(@NonNull final MessageFrame frame, final boolean validate) {
-        internalFinalize(validate, frame, UnaryOperator.identity());
+    public void finalizeLastAction(
+            @NonNull final Source source, @NonNull final MessageFrame frame, @NonNull final Validation validation) {
+        internalFinalize(source, validation, frame);
     }
 
     /**
-     * Does the same work as {@link #finalizeLastActionIn(MessageFrame, boolean)}, but takes a couple
+     * Does the same work as {@link #finalizeLastAction(Source, MessageFrame, Validation)}, but takes a couple
      * extra steps to ensure the final action is customized for the given precompile type.
      *
-     * @param frame the frame to use for finalization context
-     * @param type  the finalized action's precompile type
-     * @param validate whether to validate the final action
+     * @param frame      the frame to use for finalization context
+     * @param type       the finalized action's precompile type
+     * @param validation whether to validate the final action
      */
-    public void finalizeLastActionAsPrecompileIn(
-            @NonNull final MessageFrame frame, @NonNull final ContractActionType type, final boolean validate) {
-        internalFinalize(validate, frame, action -> action.copyBuilder()
-                .recipientContract(asNumberedContractId(frame.getContractAddress()))
-                .callType(type)
-                .build());
+    public void finalizeLastStackActionAsPrecompile(
+            @NonNull final MessageFrame frame,
+            @NonNull final ContractActionType type,
+            @NonNull final Validation validation) {
+        if (!isAlreadyFinalized(frame, type)) {
+            internalFinalize(Source.POPPED_FROM_STACK, validation, frame, action -> action.copyBuilder()
+                    .recipientContract(asNumberedContractId(frame.getContractAddress()))
+                    .callType(type)
+                    .build());
+        }
+    }
+
+    private void internalFinalize(
+            @NonNull final Source source, @NonNull final Validation validateAction, @NonNull final MessageFrame frame) {
+        internalFinalize(source, validateAction, frame, null);
+    }
+
+    private void internalFinalize(
+            @NonNull final Source source,
+            @NonNull final Validation validateAction,
+            @NonNull final MessageFrame frame,
+            @Nullable final UnaryOperator<ContractAction> transform) {
+        requireNonNull(frame);
+        requireNonNull(source);
+
+        // Try to get the action from the stack or the list as requested; warn and return if not found
+        final ActionWrapper lastWrappedAction;
+        if (source == Source.POPPED_FROM_STACK) {
+            if (actionsStack.isEmpty()) {
+                log.warn("Action stack prematurely empty ({})", () -> formatFrameContextForLog(frame));
+                return;
+            } else {
+                lastWrappedAction = actionsStack.pop();
+            }
+        } else {
+            if (allActions.isEmpty()) {
+                log.warn("Action list prematurely empty ({})", () -> formatFrameContextForLog(frame));
+                return;
+            } else {
+                lastWrappedAction = allActions.get(allActions.size() - 1);
+            }
+        }
+
+        // Swap in the final form of the action
+        final var finalAction = finalFormOf(lastWrappedAction.get(), frame);
+        lastWrappedAction.set(transform == null ? finalAction : transform.apply(finalAction));
+
+        // Validate and track problems if applicable
+        if (validateAction == Validation.ON && !helper.isValid(lastWrappedAction.get())) {
+            invalidActions.add(lastWrappedAction);
+        }
+    }
+
+    private ContractAction finalFormOf(@NonNull final ContractAction action, @NonNull final MessageFrame frame) {
+        return switch (frame.getState()) {
+            case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED -> action;
+            case CODE_SUCCESS, COMPLETED_SUCCESS -> {
+                final var builder = action.copyBuilder();
+                builder.gasUsed(action.gas() - frame.getRemainingGas());
+                if (action.callType() == CREATE) {
+                    builder.output(Bytes.EMPTY);
+                } else {
+                    builder.output(tuweniToPbjBytes(frame.getOutputData()));
+                    if (action.targetedAddress() != null) {
+                        final var lazyCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
+                        builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
+                    }
+                }
+                yield builder.build();
+            }
+            case REVERT -> {
+                final var builder = action.copyBuilder();
+                builder.gasUsed(action.gas() - frame.getRemainingGas());
+                frame.getRevertReason()
+                        .ifPresentOrElse(
+                                reason -> builder.revertReason(tuweniToPbjBytes(reason)),
+                                () -> builder.revertReason(Bytes.EMPTY));
+                if (frame.getType() == CONTRACT_CREATION) {
+                    builder.recipientContract((ContractID) null);
+                }
+                yield builder.build();
+            }
+            case EXCEPTIONAL_HALT, COMPLETED_FAILED -> {
+                final var builder = action.copyBuilder();
+                builder.gasUsed(action.gas());
+                final var maybeHaltReason = frame.getExceptionalHaltReason();
+                if (maybeHaltReason.isPresent()) {
+                    final var haltReason = maybeHaltReason.get();
+                    builder.error(Bytes.wrap(haltReason.name().getBytes(UTF_8)));
+                    if (CALL.equals(action.callType()) && MISSING_ADDRESS.equals(haltReason)) {
+                        allActions.add(new ActionWrapper(helper.createSynthActionForMissingAddressIn(frame)));
+                    }
+                } else {
+                    builder.error(Bytes.EMPTY);
+                }
+                if (frame.getType() == CONTRACT_CREATION) {
+                    builder.recipientContract((ContractID) null);
+                }
+                yield builder.build();
+            }
+        };
     }
 
     /**
@@ -146,10 +284,31 @@ public class ActionStack {
      */
     public void pushActionOfIntermediate(@NonNull final MessageFrame frame) {
         final var builder = ContractAction.newBuilder()
-                .callOperationType(ConversionUtils.asCallOperationType(
+                .callOperationType(OpcodeUtils.asCallOperationType(
                         frame.getCurrentOperation().getOpcode()))
                 .callingContract(contractIdWith(hederaIdNumOfContractIn(frame)));
         completePush(builder, requireNonNull(frame.getMessageFrameStack().peek()));
+    }
+
+    private void completePush(@NonNull ContractAction.Builder builder, @NonNull final MessageFrame frame) {
+        builder.callType(asActionType(frame.getType()))
+                .gas(frame.getRemainingGas())
+                .input(tuweniToPbjBytes(frame.getInputData()))
+                .value(frame.getValue().toLong())
+                .callDepth(frame.getMessageStackDepth());
+        // If this call "targets" a missing address, we can't decide yet whether to use a contract id or an
+        // account id for the recipient; only later when we know whether the call attempted a lazy creation
+        // can we decide to either leave this address (on failure) or replace it with the created account id
+        if (targetsMissingAddress(frame)) {
+            builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
+        } else if (CodeV0.EMPTY_CODE.equals(frame.getCode())) {
+            builder.recipientAccount(accountIdWith(hederaIdNumOfContractIn(frame)));
+        } else {
+            builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
+        }
+        final var wrappedAction = new ActionWrapper(builder.build());
+        allActions.add(wrappedAction);
+        actionsStack.push(wrappedAction);
     }
 
     /**
@@ -177,91 +336,8 @@ public class ActionStack {
         }
     }
 
-    private void completePush(@NonNull ContractAction.Builder builder, @NonNull final MessageFrame frame) {
-        builder.callType(asActionType(frame.getType()))
-                .gas(frame.getRemainingGas())
-                .input(tuweniToPbjBytes(frame.getInputData()))
-                .value(frame.getValue().toLong())
-                .callDepth(frame.getMessageStackDepth());
-        if (frame.getType() == MESSAGE_CALL && isMissing(frame, frame.getContractAddress())) {
-            builder.targetedAddress(tuweniToPbjBytes(frame.getContractAddress()));
-        } else if (CodeV0.EMPTY_CODE.equals(frame.getCode())) {
-            builder.recipientAccount(accountIdWith(hederaIdNumOfContractIn(frame)));
-        } else {
-            builder.recipientContract(contractIdWith(hederaIdNumOfContractIn(frame)));
-        }
-        final var wrappedAction = new Wrapper<>(builder.build());
-        allActions.add(wrappedAction);
-        actionsStack.push(wrappedAction);
-    }
-
-    private void internalFinalize(
-            final boolean validate,
-            @NonNull final MessageFrame frame,
-            @NonNull final UnaryOperator<ContractAction> transform) {
-        requireNonNull(frame);
-        requireNonNull(transform);
-        final var lastWrappedAction = requireNonNull(allActions.get(allActions.size() - 1));
-        // Intentional use of referential equality here, only pop if this exact wrapper is on the stack
-        if (lastWrappedAction == actionsStack.peek()) {
-            actionsStack.pop();
-        }
-        // Swap in the final form of the last action
-        lastWrappedAction.set(transform.apply(finalFormOf(lastWrappedAction.get(), frame)));
-        if (validate && !helper.isValid(lastWrappedAction.get())) {
-            invalidActions.add(lastWrappedAction);
-        }
-    }
-
-    private ContractAction finalFormOf(@NonNull final ContractAction action, @NonNull final MessageFrame frame) {
-        return switch (frame.getState()) {
-            case NOT_STARTED, CODE_EXECUTING, CODE_SUSPENDED -> action;
-            case CODE_SUCCESS, COMPLETED_SUCCESS -> {
-                final var builder = action.copyBuilder();
-                builder.gasUsed(action.gas() - frame.getRemainingGas());
-                if (action.callType() == CREATE) {
-                    builder.output(Bytes.EMPTY);
-                } else {
-                    builder.output(tuweniToPbjBytes(frame.getOutputData()));
-                    if (action.targetedAddress() != null) {
-                        builder.targetedAddress(null);
-                        final var lazyCreatedAddress = pbjToBesuAddress(action.targetedAddressOrThrow());
-                        builder.recipientAccount(accountIdWith(hederaIdNumberIn(frame, lazyCreatedAddress)));
-                    }
-                }
-                yield builder.build();
-            }
-            case REVERT -> {
-                final var builder = action.copyBuilder();
-                builder.gasUsed(action.gas() - frame.getRemainingGas());
-                frame.getRevertReason()
-                        .ifPresentOrElse(
-                                reason -> builder.revertReason(tuweniToPbjBytes(reason)),
-                                () -> builder.revertReason(Bytes.EMPTY));
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
-            }
-            case EXCEPTIONAL_HALT, COMPLETED_FAILED -> {
-                final var builder = action.copyBuilder();
-                builder.gasUsed(action.gas());
-                final var maybeHaltReason = frame.getExceptionalHaltReason();
-                if (maybeHaltReason.isPresent()) {
-                    final var haltReason = maybeHaltReason.get();
-                    builder.error(Bytes.wrap(haltReason.name().getBytes(UTF_8)));
-                    if (CALL.equals(action.callType()) && MISSING_ADDRESS.equals(haltReason)) {
-                        allActions.add(new Wrapper<>(helper.createSynthActionForMissingAddressIn(frame)));
-                    }
-                } else {
-                    builder.error(Bytes.EMPTY);
-                }
-                if (frame.getType() == CONTRACT_CREATION) {
-                    builder.recipientContract((ContractID) null);
-                }
-                yield builder.build();
-            }
-        };
+    private boolean isAlreadyFinalized(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
+        return PRECOMPILE == type && EXCEPTIONAL_HALT == frame.getState();
     }
 
     private ContractActionType asActionType(final MessageFrame.Type type) {
@@ -285,6 +361,10 @@ public class ActionStack {
 
     private ContractID contractIdWith(final long num) {
         return ContractID.newBuilder().contractNum(num).build();
+    }
+
+    private boolean targetsMissingAddress(@NonNull final MessageFrame frame) {
+        return frame.getType() == MESSAGE_CALL && isMissing(frame, frame.getContractAddress());
     }
 
     private String formatAnomaliesAtFinalizationForLog() {

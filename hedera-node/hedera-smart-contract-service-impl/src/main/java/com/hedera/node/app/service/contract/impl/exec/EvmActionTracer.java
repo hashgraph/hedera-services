@@ -16,16 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
+import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.POPPED_FROM_STACK;
+import static com.hedera.node.app.service.contract.impl.exec.utils.ActionStack.Source.READ_FROM_LIST_END;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionSidecarsEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasActionValidationEnabled;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.hasValidatedActionSidecarsEnabled;
 import static java.util.Objects.requireNonNull;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.*;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTracer;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.logging.log4j.Level;
@@ -39,7 +41,7 @@ import org.hyperledger.besu.evm.operation.Operation;
  * Tracer implementation that chooses an appropriate {@link ActionStack} method to call based on the
  * {@link MessageFrame} state and system configuration.
  */
-public class EvmActionTracer implements HederaEvmTracer {
+public class EvmActionTracer implements ActionSidecarContentTracer {
     private static final Logger log = LogManager.getLogger(EvmActionTracer.class);
 
     private final ActionStack actionStack;
@@ -52,7 +54,7 @@ public class EvmActionTracer implements HederaEvmTracer {
      * {@inheritDoc}
      */
     @Override
-    public void customInit(@NonNull final MessageFrame frame) {
+    public void traceOriginAction(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
         if (hasActionSidecarsEnabled(frame)) {
             actionStack.pushActionOfTopLevel(frame);
@@ -63,7 +65,7 @@ public class EvmActionTracer implements HederaEvmTracer {
      * {@inheritDoc}
      */
     @Override
-    public void customFinalize(@NonNull final MessageFrame frame) {
+    public void sanitizeTracedActions(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
         if (hasValidatedActionSidecarsEnabled(frame)) {
             actionStack.sanitizeFinalActionsAndLogAnomalies(frame, log, Level.WARN);
@@ -85,7 +87,7 @@ public class EvmActionTracer implements HederaEvmTracer {
         if (state == CODE_SUSPENDED) {
             actionStack.pushActionOfIntermediate(frame);
         } else if (state != CODE_EXECUTING) {
-            actionStack.finalizeLastActionIn(frame, hasActionValidationEnabled(frame));
+            actionStack.finalizeLastAction(POPPED_FROM_STACK, frame, stackValidationChoice(frame));
         }
     }
 
@@ -93,11 +95,11 @@ public class EvmActionTracer implements HederaEvmTracer {
      * {@inheritDoc}
      */
     @Override
-    public void customTracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
+    public void tracePrecompileResult(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
         requireNonNull(type);
         requireNonNull(frame);
-        if (hasActionSidecarsEnabled(frame) && !isAlreadyFinalized(frame, type)) {
-            actionStack.finalizeLastActionAsPrecompileIn(frame, type, hasActionValidationEnabled(frame));
+        if (hasActionSidecarsEnabled(frame)) {
+            actionStack.finalizeLastStackActionAsPrecompile(frame, type, stackValidationChoice(frame));
         }
     }
 
@@ -110,11 +112,12 @@ public class EvmActionTracer implements HederaEvmTracer {
         requireNonNull(frame);
         requireNonNull(haltReason);
         if (hasActionSidecarsEnabled(frame)) {
-            actionStack.finalizeLastActionIn(frame, hasActionValidationEnabled(frame));
+            actionStack.finalizeLastAction(READ_FROM_LIST_END, frame, stackValidationChoice(frame));
         }
     }
 
-    private boolean isAlreadyFinalized(@NonNull MessageFrame frame, @NonNull ContractActionType type) {
-        return PRECOMPILE.equals(type) && EXCEPTIONAL_HALT.equals(frame.getState());
+    private ActionStack.Validation stackValidationChoice(@NonNull final MessageFrame frame) {
+        requireNonNull(frame);
+        return hasActionValidationEnabled(frame) ? ActionStack.Validation.ON : ActionStack.Validation.OFF;
     }
 }

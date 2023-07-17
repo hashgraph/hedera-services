@@ -16,9 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.test.utils;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TOPIC;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asNumberedContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -62,6 +72,11 @@ class ConversionUtilsTest {
     })
     void convertsOpcodesToCallOpsAsExpected(final int opCode, @NonNull final CallOperationType type) {
         assertEquals(type, asCallOperationType(opCode));
+    }
+
+    @Test
+    void numberedIdsRequireLongZeroAddress() {
+        assertThrows(IllegalArgumentException.class, () -> asNumberedContractId(EIP_1014_ADDRESS));
     }
 
     @Test

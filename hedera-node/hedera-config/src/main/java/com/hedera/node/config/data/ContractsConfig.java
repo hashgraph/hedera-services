@@ -44,6 +44,8 @@ public record ContractsConfig(
         @ConfigProperty(value = "maxKvPairs.aggregate", defaultValue = "500000000") long maxKvPairsAggregate,
         @ConfigProperty(value = "maxKvPairs.individual", defaultValue = "163840") int maxKvPairsIndividual,
         @ConfigProperty(defaultValue = "5000000") long maxNumber,
+        // CHAINID returns 295 (0x0127) for mainnet, 296 (0x0128) for testnet, and 297 (0x0129) for previewnet;
+        // c.f. https://hips.hedera.com/hip/hip-26 for reference
         @ConfigProperty(defaultValue = "295") int chainId,
         @ConfigProperty(defaultValue = "CONTRACT_STATE_CHANGE,CONTRACT_BYTECODE,CONTRACT_ACTION")
                 Set<SidecarType> sidecars,

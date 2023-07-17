@@ -57,7 +57,7 @@ class EvmActionTracerTest {
     void customInitIsNoopWithoutActionSidecars() {
         givenNoActionSidecars();
 
-        subject.customInit(frame);
+        subject.traceOriginAction(frame);
 
         verifyNoInteractions(actionStack);
     }
@@ -66,7 +66,7 @@ class EvmActionTracerTest {
     void customInitTracksTopLevel() {
         givenSidecarsOnly();
 
-        subject.customInit(frame);
+        subject.traceOriginAction(frame);
 
         verify(actionStack).pushActionOfTopLevel(frame);
     }
@@ -75,7 +75,7 @@ class EvmActionTracerTest {
     void customFinalizeNoopIfNoActionSidecars() {
         givenNoActionSidecars();
 
-        subject.customFinalize(frame);
+        subject.sanitizeTracedActions(frame);
 
         verifyNoInteractions(actionStack);
     }
@@ -84,7 +84,7 @@ class EvmActionTracerTest {
     void customFinalizeNoopIfNotValidatingActions() {
         givenSidecarsOnly();
 
-        subject.customFinalize(frame);
+        subject.sanitizeTracedActions(frame);
 
         verifyNoInteractions(actionStack);
     }
@@ -93,7 +93,7 @@ class EvmActionTracerTest {
     void customFinalizeSanitizesActionsIfValidating() {
         givenActionSidecarsAndValidation();
 
-        subject.customFinalize(frame);
+        subject.sanitizeTracedActions(frame);
 
         verify(actionStack).sanitizeFinalActionsAndLogAnomalies(eq(frame), any(Logger.class), eq(Level.WARN));
     }
@@ -134,45 +134,26 @@ class EvmActionTracerTest {
 
         subject.tracePostExecution(frame, new Operation.OperationResult(123, null));
 
-        verify(actionStack).finalizeLastActionIn(frame, true);
+        verify(actionStack).finalizeLastAction(ActionStack.Source.POPPED_FROM_STACK, frame, ActionStack.Validation.ON);
     }
 
     @Test
     void precompileTraceIsNoopIfNoSidecars() {
         givenNoActionSidecars();
 
-        subject.customTracePrecompileResult(frame, ContractActionType.SYSTEM);
+        subject.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
         verifyNoInteractions(actionStack);
-    }
-
-    @Test
-    void precompileTraceIsNoopIfHaltedHederaPrecompile() {
-        givenActionSidecarsAndValidation();
-        given(frame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
-
-        subject.customTracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-
-        verifyNoInteractions(actionStack);
-    }
-
-    @Test
-    void precompileTraceIsTrackedIfNotHalted() {
-        givenSidecarsOnly();
-        given(frame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
-
-        subject.customTracePrecompileResult(frame, ContractActionType.PRECOMPILE);
-
-        verify(actionStack).finalizeLastActionAsPrecompileIn(frame, ContractActionType.PRECOMPILE, false);
     }
 
     @Test
     void systemPrecompileTraceIsStillTrackedEvenIfHalted() {
         givenSidecarsOnly();
 
-        subject.customTracePrecompileResult(frame, ContractActionType.SYSTEM);
+        subject.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
-        verify(actionStack).finalizeLastActionAsPrecompileIn(frame, ContractActionType.SYSTEM, false);
+        verify(actionStack)
+                .finalizeLastStackActionAsPrecompile(frame, ContractActionType.SYSTEM, ActionStack.Validation.OFF);
     }
 
     @Test
@@ -190,7 +171,7 @@ class EvmActionTracerTest {
 
         subject.traceAccountCreationResult(frame, Optional.empty());
 
-        verify(actionStack).finalizeLastActionIn(frame, true);
+        verify(actionStack).finalizeLastAction(ActionStack.Source.READ_FROM_LIST_END, frame, ActionStack.Validation.ON);
     }
 
     private void givenNoActionSidecars() {

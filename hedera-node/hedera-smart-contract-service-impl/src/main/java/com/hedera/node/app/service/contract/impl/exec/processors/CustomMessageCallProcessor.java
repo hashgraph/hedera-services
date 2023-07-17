@@ -59,6 +59,11 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private final PrecompileContractRegistry precompiles;
     private final Map<Address, PrecompiledContract> hederaPrecompiles;
 
+    private enum ForLazyCreation {
+        YES,
+        NO,
+    }
+
     public CustomMessageCallProcessor(
             @NonNull final EVM evm,
             @NonNull final FeatureFlags featureFlags,
@@ -170,34 +175,36 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final MessageFrame frame,
             @NonNull final ExceptionalHaltReason reason,
             @NonNull final OperationTracer tracer) {
-        doHalt(frame, reason, tracer, true);
+        doHalt(frame, reason, tracer, ForLazyCreation.YES);
     }
 
     private void doHalt(
             @NonNull final MessageFrame frame,
             @NonNull final ExceptionalHaltReason reason,
             @NonNull final OperationTracer tracer) {
-        doHalt(frame, reason, tracer, false);
+        doHalt(frame, reason, tracer, ForLazyCreation.NO);
     }
 
     private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
-        doHalt(frame, reason, null, false);
+        doHalt(frame, reason, null, ForLazyCreation.NO);
     }
 
     private void doHalt(
             @NonNull final MessageFrame frame,
             @NonNull final ExceptionalHaltReason reason,
             @Nullable final OperationTracer operationTracer,
-            final boolean forLazyCreation) {
+            @NonNull final ForLazyCreation forLazyCreation) {
         frame.setState(EXCEPTIONAL_HALT);
         frame.setExceptionalHaltReason(Optional.of(reason));
+        if (forLazyCreation == ForLazyCreation.YES) {
+            frame.decrementRemainingGas(frame.getRemainingGas());
+        }
         if (operationTracer != null) {
-            if (!forLazyCreation) {
+            if (forLazyCreation == ForLazyCreation.YES) {
+                operationTracer.traceAccountCreationResult(frame, Optional.of(reason));
+            } else {
                 operationTracer.tracePostExecution(
                         frame, new Operation.OperationResult(frame.getRemainingGas(), reason));
-            } else {
-                frame.decrementRemainingGas(frame.getRemainingGas());
-                operationTracer.traceAccountCreationResult(frame, Optional.of(reason));
             }
         }
     }
