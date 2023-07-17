@@ -662,6 +662,8 @@ public class Create2OperationSuite extends HapiSuite {
                                 .andAllChildRecords()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))))
                 .then(
+                        getContractInfo(contract)
+                                .has(ContractInfoAsserts.contractWith().balance(0L)),
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
                                 .payingWith(GENESIS)
                                 .gas(4_000_000L)
@@ -674,6 +676,8 @@ public class Create2OperationSuite extends HapiSuite {
                                 mergedAliasAddr),
                         sourcing(() -> getContractInfo(mergedMirrorAddr.get())
                                 .has(ContractInfoAsserts.contractWith().isDeleted())),
+                        getContractInfo(contract)
+                                .has(ContractInfoAsserts.contractWith().balance(ONE_HBAR + tcValue)),
                         /* Can repeat CREATE2 with same args because the previous contract was destroyed in the constructor*/
                         sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
                                 .payingWith(GENESIS)
