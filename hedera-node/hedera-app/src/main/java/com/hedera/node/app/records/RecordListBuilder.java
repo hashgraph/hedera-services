@@ -181,13 +181,6 @@ public class RecordListBuilder {
                 : Stream.concat(
                         precedingRecordBuilders.stream().map(SingleTransactionRecordBuilder::build), mainRecordStream);
         return new Result(mainRecord, recordStream);
-
-        //        public Stream<SingleTransactionRecord> build() {
-        //            final var stream = precedingRecordBuilders == null
-        //                    ? recordBuilders.stream()
-        //                    : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
-        //            return stream.map(SingleTransactionRecordBuilder::build);
-
     }
 
     /*
