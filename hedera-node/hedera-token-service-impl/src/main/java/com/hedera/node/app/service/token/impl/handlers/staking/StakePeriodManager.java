@@ -54,6 +54,13 @@ public class StakePeriodManager {
         stakingPeriodMins = config.periodMins();
     }
 
+    /**
+     * Returns the epoch second at the start of the given stake period. It is used in
+     * {@link com.hedera.node.app.service.token.impl.utils.RewardCalculator} to set the stakePeriodStart
+     * on each {@link com.hedera.hapi.node.state.token.StakingNodeInfo} object
+     * @param stakePeriod the stake period
+     * @return the epoch second at the start of the given stake period
+     */
     public long epochSecondAtStartOfPeriod(final long stakePeriod) {
         if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
             return LocalDate.ofEpochDay(stakePeriod).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
@@ -62,6 +69,13 @@ public class StakePeriodManager {
         }
     }
 
+    /**
+     * Returns the current stake period, based on the current consensus time.
+     * Current staking period is very important to calculate rewards.
+     * Since any account is rewarded only once per a stake period.
+     * @param consensusNow the current consensus time
+     * @return the current stake period
+     */
     public long currentStakePeriod(@NonNull final Instant consensusNow) {
         final var currentConsensusSecs = consensusNow.getEpochSecond();
         if (prevConsensusSecs != currentConsensusSecs) {
@@ -75,15 +89,28 @@ public class StakePeriodManager {
         return currentStakePeriod;
     }
 
-    public long estimatedCurrentStakePeriod() {
-        final var now = Instant.now();
-        if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
-            return LocalDate.ofInstant(now, ZONE_UTC).toEpochDay();
-        } else {
-            return getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
-        }
+    /**
+     * Based on the stake period start, returns if the current consensus time is
+     * rewardable or not.
+     * @param stakePeriodStart the stake period start
+     * @param networkRewards the network rewards
+     * @param consensusNow the current consensus time
+     * @return true if the current consensus time is rewardable, false otherwise
+     */
+    public boolean isRewardable(
+            final long stakePeriodStart,
+            @NonNull final ReadableNetworkStakingRewardsStore networkRewards,
+            @NonNull final Instant consensusNow) {
+        return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod(networkRewards, consensusNow);
     }
 
+    /**
+     * Returns the first stake period that is not rewardable. This is used to determine
+     * if an account is eligible for a reward, as soon as staking rewards are activated.
+     * @param networkRewards the network rewards
+     * @param consensusNow the current consensus time
+     * @return the first stake period that is not rewardable
+     */
     public long firstNonRewardableStakePeriod(
             @NonNull final ReadableNetworkStakingRewardsStore networkRewards, @NonNull final Instant consensusNow) {
 
@@ -93,23 +120,12 @@ public class StakePeriodManager {
         return networkRewards.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
     }
 
-    public boolean isRewardable(
-            final long stakePeriodStart,
-            @NonNull final ReadableNetworkStakingRewardsStore networkRewards,
-            @NonNull final Instant consensusNow) {
-        return stakePeriodStart > -1 && stakePeriodStart < firstNonRewardableStakePeriod(networkRewards, consensusNow);
-    }
-
-    public long estimatedFirstNonRewardableStakePeriod(
-            @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
-        return networkRewards.isStakingRewardsActivated() ? estimatedCurrentStakePeriod() - 1 : Long.MIN_VALUE;
-    }
-
-    public boolean isEstimatedRewardable(
-            final long stakePeriodStart, @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
-        return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod(networkRewards);
-    }
-
+    /**
+     * Returns the effective stake period start, based on the current stake period and the
+     * number of stored periods.
+     * @param stakePeriodStart the stake period start
+     * @return the effective stake period start
+     */
     public long effectivePeriod(final long stakePeriodStart) {
         if (stakePeriodStart > -1 && stakePeriodStart < currentStakePeriod - numStoredPeriods) {
             return currentStakePeriod - numStoredPeriods;
@@ -117,42 +133,50 @@ public class StakePeriodManager {
         return stakePeriodStart;
     }
 
+    /* ----------------------- estimated stake periods ----------------------- */
     /**
-     * Given the current and new staked ids for an account, as well as if it received a reward in
-     * this transaction, returns the new {@code stakePeriodStart} for this account:
-     *
-     * <ol>
-     *   <li>NA if the {@code stakePeriodStart} doesn't need to change; or,
-     *   <li>The value to which the {@code stakePeriodStart} should be changed.
-     * </ol>
-     *
-     * @param curStakedId the id the account was staked to at the beginning of the transaction
-     * @param newStakedId the id the account was staked to at the end of the transaction
-     * @param rewarded whether the account was rewarded during the transaction
-     * @param stakeMetaChanged whether the account's stake metadata changed
-     * @return either NA for no new stakePeriodStart, or the new value
+     * Returns the estimated current stake period, based on the current wall-clock time.
+     * We use wall-clock time here, because this method is called in two places:
+     * 1. When we get the first stakePeriod after staking rewards are activated, to see
+     *    if any rewards can be triggered.
+     * 2. When we do upgrade, if we need to migrate any staking rewards.
+     * The default staking period is 1 day, so this will return the current day.
+     * For testing we use a shorter staking period, so we can estimate staking period for
+     * a shorter period.
+     * @return the estimated current stake period
      */
-    public long startUpdateFor(
-            final long curStakedId,
-            final long newStakedId,
-            final boolean rewarded,
-            final boolean stakeMetaChanged,
-            final Instant consensusNow) {
-        // Only worthwhile to update stakedPeriodStart for an account staking to a node
-        if (newStakedId < 0) {
-            if (curStakedId >= 0 || stakeMetaChanged) {
-                // We just started staking to a node today
-                return currentStakePeriod(consensusNow);
-            } else if (rewarded) {
-                // If we were just rewarded, stake period start is yesterday
-                return currentStakePeriod(consensusNow) - 1;
-            }
+    public long estimatedCurrentStakePeriod() {
+        final var now = Instant.now();
+        if (stakingPeriodMins == DEFAULT_STAKING_PERIOD_MINS) {
+            return LocalDate.ofInstant(now, ZONE_UTC).toEpochDay();
+        } else {
+            return getPeriod(now, stakingPeriodMins * MINUTES_TO_MILLISECONDS);
         }
-        return NA;
+    }
+
+    /**
+     * Returns the estimated first stake period that is not rewardable.
+     * @param networkRewards the network rewards
+     * @return the estimated first stake period that is not rewardable
+     */
+    public long estimatedFirstNonRewardableStakePeriod(
+            @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
+        return networkRewards.isStakingRewardsActivated() ? estimatedCurrentStakePeriod() - 1 : Long.MIN_VALUE;
+    }
+
+    /**
+     * Returns if the estimated stake period is rewardable or not.
+     * @param stakePeriodStart the stake period start
+     * @param networkRewards the network rewards
+     * @return true if the estimated stake period is rewardable, false otherwise
+     */
+    public boolean isEstimatedRewardable(
+            final long stakePeriodStart, @NonNull final ReadableNetworkStakingRewardsStore networkRewards) {
+        return stakePeriodStart > -1 && stakePeriodStart < estimatedFirstNonRewardableStakePeriod(networkRewards);
     }
 
     @VisibleForTesting
-    long getPrevConsensusSecs() {
+    public long getPrevConsensusSecs() {
         return prevConsensusSecs;
     }
 }
