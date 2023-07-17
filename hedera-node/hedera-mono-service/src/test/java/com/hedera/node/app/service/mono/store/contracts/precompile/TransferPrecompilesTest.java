@@ -43,6 +43,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.balanceChangesForLazyCreateFailing;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.balanceChangesForLazyCreateHappyPath;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.balanceChangesForLazyCreateNFT;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.feeCollector;
@@ -1250,7 +1251,7 @@ class TransferPrecompilesTest {
                 .willReturn(transferLogic);
         given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges()).willReturn(balanceChangesForLazyCreateHappyPath);
+        given(impliedTransfers.getAllBalanceChanges()).willReturn(balanceChangesForLazyCreateNFT);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1262,9 +1263,11 @@ class TransferPrecompilesTest {
         final var recordSubmissions = mock(RecordSubmissions.class);
         given(infrastructureFactory.newRecordSubmissionsScopedTo(worldUpdater)).willReturn(recordSubmissions);
         final var lazyCreationFee = 500L;
-        when(autoCreationLogic.create(
-                        balanceChangesForLazyCreateHappyPath.get(0), accounts, balanceChangesForLazyCreateHappyPath))
-                .then(invocation -> Pair.of(OK, lazyCreationFee));
+        when(autoCreationLogic.create(balanceChangesForLazyCreateNFT.get(0), accounts, balanceChangesForLazyCreateNFT))
+                .then(invocation -> {
+                    balanceChangesForLazyCreateNFT.get(0).replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
+                    return Pair.of(OK, lazyCreationFee);
+                });
         doThrow(ResourceLimitException.class).when(autoCreationLogic).submitRecords(recordSubmissions);
 
         // when:
@@ -1274,9 +1277,9 @@ class TransferPrecompilesTest {
         assertThrows(ResourceLimitException.class, () -> subject.computeInternal(frame));
 
         verify(autoCreationLogic)
-                .create(balanceChangesForLazyCreateHappyPath.get(0), accounts, balanceChangesForLazyCreateHappyPath);
+                .create(balanceChangesForLazyCreateNFT.get(0), accounts, balanceChangesForLazyCreateNFT);
         verify(autoCreationLogic, never())
-                .create(balanceChangesForLazyCreateHappyPath.get(1), accounts, balanceChangesForLazyCreateHappyPath);
+                .create(balanceChangesForLazyCreateNFT.get(1), accounts, balanceChangesForLazyCreateNFT);
         verify(transferLogic, never()).doZeroSum(any());
         verify(wrappedLedgers, never()).commit();
         verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
