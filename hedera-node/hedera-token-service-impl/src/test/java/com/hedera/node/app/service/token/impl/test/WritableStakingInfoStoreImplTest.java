@@ -20,7 +20,7 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
-import com.hedera.node.app.service.token.impl.WritableStakingInfoStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class WritableStakingInfoStoreImplTest {
     private static final long NODE_ID_1 = 1;
 
-    private WritableStakingInfoStoreImpl subject;
+    private WritableStakingInfoStore subject;
 
     @BeforeEach
     void setUp() {
@@ -46,20 +46,20 @@ class WritableStakingInfoStoreImplTest {
                                 .unclaimedStakeRewardStart(5)
                                 .build())
                 .build();
-        subject = new WritableStakingInfoStoreImpl(
+        subject = new WritableStakingInfoStore(
                 new MapWritableStates(Map.of(TokenServiceImpl.STAKING_INFO_KEY, wrappedState)));
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void constructorWithNullArg() {
-        Assertions.assertThatThrownBy(() -> new WritableStakingInfoStoreImpl(null))
+        Assertions.assertThatThrownBy(() -> new WritableStakingInfoStore(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void constructorWithNonNullArg() {
-        Assertions.assertThatCode(() -> new WritableStakingInfoStoreImpl(mock(WritableStates.class)))
+        Assertions.assertThatCode(() -> new WritableStakingInfoStore(mock(WritableStates.class)))
                 .doesNotThrowAnyException();
     }
 

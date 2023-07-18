@@ -32,18 +32,18 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class WritableStakingInfoStoreImpl extends ReadableStakingInfoStoreImpl {
-    private static final Logger log = LogManager.getLogger(WritableStakingInfoStoreImpl.class);
+public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
+    private static final Logger log = LogManager.getLogger(WritableStakingInfoStore.class);
 
     /** The underlying data storage class that holds the staking data. */
     private final WritableKVState<Long, StakingNodeInfo> stakingInfoState;
 
     /**
-     * Create a new {@link WritableStakingInfoStoreImpl} instance
+     * Create a new {@link WritableStakingInfoStore} instance
      *
      * @param states The state to use
      */
-    public WritableStakingInfoStoreImpl(@NonNull final WritableStates states) {
+    public WritableStakingInfoStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
 

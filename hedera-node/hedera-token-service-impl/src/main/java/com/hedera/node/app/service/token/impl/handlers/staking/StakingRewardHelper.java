@@ -121,4 +121,8 @@ public class StakingRewardHelper {
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
     }
+
+    public static long totalStake(@NonNull Account account) {
+        return account.tinybarBalance() + account.stakedToMe();
+    }
 }
