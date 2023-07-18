@@ -117,14 +117,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public @NonNull UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key) {
+    public @NonNull UInt256 getOriginalStorageValue(final long number, @NonNull final UInt256 key) {
         // TODO - when WritableKVState supports getting the original value, use that here
         throw new AssertionError("Not implemented");
     }
 
-    @NonNull
     @Override
-    public List<StorageAccesses> getStorageChanges() {
+    public @NonNull List<StorageAccesses> getStorageChanges() {
         // TODO - when WritableKVState supports getting the original value, use that here
         throw new AssertionError("Not implemented");
     }
@@ -135,7 +134,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public RentFactors getRentFactorsFor(final long number) {
+    public @NonNull RentFactors getRentFactorsFor(final long number) {
         throw new AssertionError("Not implemented");
     }
 

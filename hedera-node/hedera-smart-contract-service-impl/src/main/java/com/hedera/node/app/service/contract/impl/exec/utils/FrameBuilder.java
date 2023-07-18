@@ -16,14 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.streams.SidecarType.CONTRACT_STATE_CHANGE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.CONFIG_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.TRACKER_CONTEXT_VARIABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -36,6 +40,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -59,12 +64,12 @@ public class FrameBuilder {
     /**
      * Builds the initial {@link MessageFrame} instance for a transaction.
      *
-     * @param transaction the transaction
+     * @param transaction  the transaction
      * @param worldUpdater the world updater for the transaction
-     * @param context the Hedera EVM context (gas price, block values, etc.)
-     * @param config the active Hedera configuration
-     * @param from the sender of the transaction
-     * @param to the recipient of the transaction
+     * @param context      the Hedera EVM context (gas price, block values, etc.)
+     * @param config       the active Hedera configuration
+     * @param from         the sender of the transaction
+     * @param to           the recipient of the transaction
      * @param intrinsicGas the intrinsic gas cost, needed to calculate remaining gas
      * @return the initial frame
      */
@@ -80,10 +85,7 @@ public class FrameBuilder {
         final var value = transaction.weiValue();
         final var ledgerConfig = config.getConfigData(LedgerConfig.class);
         final var nominalCoinbase = asLongZeroAddress(ledgerConfig.fundingAccount());
-        // TODO - contract.sidecars does not seem to be available yet; we do not
-        // need create the tracker here if STATE_CHANGES sidecar is disabled
-        final var contextVariables =
-                Map.of(CONFIG_CONTEXT_VARIABLE, config, TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker());
+        final var contextVariables = contextVariablesFrom(config);
         final var builder = MessageFrame.builder()
                 .messageFrameStack(new ArrayDeque<>())
                 .maxStackSize(MAX_STACK_SIZE)
@@ -104,8 +106,16 @@ public class FrameBuilder {
         if (transaction.isCreate()) {
             return finishedAsCreate(to, builder, transaction);
         } else {
-            return finishedAsCall(to, builder, context, transaction);
+            return finishedAsCall(to, worldUpdater, builder, transaction);
         }
+    }
+
+    private Map<String, Object> contextVariablesFrom(@NonNull final Configuration config) {
+        final var contractsConfig = config.getConfigData(ContractsConfig.class);
+        final var needsStorageTracker = contractsConfig.sidecars().contains(CONTRACT_STATE_CHANGE);
+        return needsStorageTracker
+                ? Map.of(CONFIG_CONTEXT_VARIABLE, config, TRACKER_CONTEXT_VARIABLE, new StorageAccessTracker())
+                : Map.of(CONFIG_CONTEXT_VARIABLE, config);
     }
 
     private MessageFrame finishedAsCreate(
@@ -122,14 +132,15 @@ public class FrameBuilder {
 
     private MessageFrame finishedAsCall(
             @NonNull final Address to,
+            @NonNull final HederaWorldUpdater worldUpdater,
             @NonNull final MessageFrame.Builder builder,
-            @NonNull final HederaEvmContext context,
             @NonNull final HederaEvmTransaction transaction) {
-        final Code code;
-        if (transaction.permitsMissingContract()) {
-            code = context.loadIfPresent(to);
+        final var account = worldUpdater.getHederaAccount(to);
+        Code code = CodeV0.EMPTY_CODE;
+        if (account == null) {
+            validateTrue(transaction.permitsMissingContract(), INVALID_ETHEREUM_TRANSACTION);
         } else {
-            code = context.load(to);
+            code = account.getEvmCode();
         }
         return builder.type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)

@@ -232,14 +232,13 @@ public class TestHelpers {
                 maxGasAllowance);
     }
 
-    public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmCode code, @NonNull final HederaEvmBlocks blocks) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, code, blocks);
+    public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks);
     }
 
     public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmCode code, @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, code, blocks);
+            @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks);
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {

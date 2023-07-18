@@ -318,8 +318,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * Returns the accounts that have been touched (i.e., created or maybe mutated but <i>not</i> deleted)
      * within the scope of this updater.
      *
-     * <p>TODO - we may not need this; only used in Besu by
-     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to just deal
+     * <p>We may not actually need this, as Besu only uses it in
+     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to deal
      * with side-effects of an Ethereum consensus bug.
      *
      * @return the accounts that have been touched
