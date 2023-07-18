@@ -153,7 +153,7 @@ public class RewardCalculator {
     }
 
     private static long calculateNodeAddressId(long stakedNodeId) {
-        return (int) -stakedNodeId - 1L;
+        return -stakedNodeId - 1L;
     }
 
     private static long calculateTotalStake(@NonNull final Account account) {
