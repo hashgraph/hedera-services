@@ -64,4 +64,9 @@ public class ReadableNetworkStakingRewardsStoreImpl implements ReadableNetworkSt
     public long pendingRewards() {
         return requireNonNull(stakingRewardsState.get()).pendingRewards();
     }
+
+    @Override
+    public NetworkStakingRewards get() {
+        return requireNonNull(stakingRewardsState.get());
+    }
 }

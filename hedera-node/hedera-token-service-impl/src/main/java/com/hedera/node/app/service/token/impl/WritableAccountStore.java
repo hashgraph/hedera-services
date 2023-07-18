@@ -169,4 +169,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public Set<String> modifiedAliasesInState() {
         return aliases.modifiedKeys();
     }
+
+    public Set<AccountID> readKeysInState() {
+        return accountState.readKeys();
+    }
 }

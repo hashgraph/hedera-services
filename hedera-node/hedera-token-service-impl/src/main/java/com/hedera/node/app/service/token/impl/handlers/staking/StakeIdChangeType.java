@@ -16,75 +16,77 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import com.hedera.hapi.node.state.token.Account;
-
-import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.UNSET;
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_ACCOUNT_ID;
 import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.STAKED_NODE_ID;
+import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.UNSET;
+
+import com.hedera.hapi.node.state.token.Account;
 
 /**
- *
+ * If there is a stakedId change in current transaction provides the type of change.
+ * This scenario type is used to determine if the change could trigger reward if an account is
+ * staked to an account, which is staked to a node.
  */
-public enum StakeChangeScenario {
-    /* ---  Cases ending with staking to a node ---*/
-   FROM_ABSENT_TO_NODE {
-       @Override
-       boolean awardsToNode() {
-           return true;
-       }
-   },
-   FROM_ACCOUNT_TO_NODE {
-       @Override
-       boolean withdrawsFromAccount() {
-           return true;
-       }
+public enum StakeIdChangeType {
+    /* ---  Cases ending with staking to a node */
+    FROM_ABSENT_TO_NODE {
+        @Override
+        boolean awardsToNode() {
+            return true;
+        }
+    },
+    FROM_ACCOUNT_TO_NODE {
+        @Override
+        boolean withdrawsFromAccount() {
+            return true;
+        }
 
-       @Override
-       boolean awardsToNode() {
-           return true;
-       }
-   },
-   FROM_NODE_TO_NODE {
-       @Override
-       boolean withdrawsFromNode() {
-           return true;
-       }
+        @Override
+        boolean awardsToNode() {
+            return true;
+        }
+    },
+    FROM_NODE_TO_NODE {
+        @Override
+        boolean withdrawsFromNode() {
+            return true;
+        }
 
-       @Override
-       boolean awardsToNode() {
-           return true;
-       }
-   },
-   /* --- Cases ending with staking to an account ---*/
-   FROM_ABSENT_TO_ACCOUNT {
-       @Override
-       boolean awardsToAccount() {
-           return true;
-       }
-   },
-   FROM_NODE_TO_ACCOUNT {
-       @Override
-       boolean withdrawsFromNode() {
-           return true;
-       }
+        @Override
+        boolean awardsToNode() {
+            return true;
+        }
+    },
+    /* --- Cases ending with staking to an account */
+    FROM_ABSENT_TO_ACCOUNT {
+        @Override
+        boolean awardsToAccount() {
+            return true;
+        }
+    },
+    FROM_NODE_TO_ACCOUNT {
+        @Override
+        boolean withdrawsFromNode() {
+            return true;
+        }
 
-       @Override
-       boolean awardsToAccount() {
-           return true;
-       }
-   },
-   FROM_ACCOUNT_TO_ACCOUNT {
-       @Override
-       boolean withdrawsFromAccount() {
-           return true;
-       }
+        @Override
+        boolean awardsToAccount() {
+            return true;
+        }
+    },
+    FROM_ACCOUNT_TO_ACCOUNT {
+        @Override
+        boolean withdrawsFromAccount() {
+            return true;
+        }
 
-       @Override
-       boolean awardsToAccount() {
-           return true;
-       }
-   },
-   /* --- Cases ending with absent staking ---*/
+        @Override
+        boolean awardsToAccount() {
+            return true;
+        }
+    },
+    /* --- Cases ending with absent staking */
     FROM_ABSENT_TO_ABSENT {},
     FROM_ACCOUNT_TO_ABSENT {
         @Override
@@ -99,10 +101,11 @@ public enum StakeChangeScenario {
         }
     };
 
-    public static StakeChangeScenario forCase(final Account.StakedIdOneOfType curStakedIdCase, final Account.StakedIdOneOfType newStakedIdCase) {
+    public static StakeIdChangeType forCase(
+            final Account.StakedIdOneOfType curStakedIdCase, final Account.StakedIdOneOfType newStakedIdCase) {
         // Ends with staking to a node
         if (newStakedIdCase.equals(STAKED_NODE_ID)) {
-            if (curStakedIdCase == null || curStakedIdCase.equals(UNSET)) {
+            if (curStakedIdCase.equals(UNSET)) {
                 return FROM_ABSENT_TO_NODE;
             } else if (curStakedIdCase.equals(STAKED_ACCOUNT_ID)) {
                 return FROM_ACCOUNT_TO_NODE;
@@ -112,7 +115,7 @@ public enum StakeChangeScenario {
                 return FROM_NODE_TO_NODE;
             }
         } else if (newStakedIdCase.equals(STAKED_ACCOUNT_ID)) {
-            if (curStakedIdCase == null || curStakedIdCase.equals(STAKED_ACCOUNT_ID)) {
+            if (curStakedIdCase.equals(UNSET)) {
                 return FROM_ABSENT_TO_ACCOUNT;
             } else if (curStakedIdCase.equals(STAKED_ACCOUNT_ID)) {
                 return FROM_ACCOUNT_TO_ACCOUNT;
@@ -120,9 +123,9 @@ public enum StakeChangeScenario {
                 return FROM_NODE_TO_ACCOUNT;
             }
         } else {
-            if (curStakedIdCase == null || curStakedIdCase.equals(UNSET)) {
+            if (curStakedIdCase.equals(UNSET)) {
                 return FROM_ABSENT_TO_ABSENT;
-            } else if (curStakedIdCase.equals(Account.StakedIdOneOfType.STAKED_ACCOUNT_ID)) {
+            } else if (curStakedIdCase.equals(STAKED_ACCOUNT_ID)) {
                 return FROM_ACCOUNT_TO_ABSENT;
             } else {
                 return FROM_NODE_TO_ABSENT;

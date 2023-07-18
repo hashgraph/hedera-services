@@ -25,4 +25,6 @@ public interface RewardCalculator {
     long epochSecondAtStartOfPeriod(final long stakePeriod);
 
     long estimatePendingRewards(final Account account, @Nullable final StakingNodeInfo stakingNodeInfo);
+
+    long computePendingReward(final Account account);
 }

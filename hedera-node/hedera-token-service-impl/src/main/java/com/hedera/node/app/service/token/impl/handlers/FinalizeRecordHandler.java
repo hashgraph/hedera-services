@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.token.impl.comparator.TokenComparators
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -32,13 +31,13 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsFinalizer;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -48,8 +47,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,11 +60,16 @@ import javax.inject.Singleton;
 @Singleton
 public class FinalizeRecordHandler implements TransactionHandler {
     final StakingRewardsFinalizer stakingRewardsFinalizer;
+    final StakingRewardHelper stakingRewardHelper;
 
     @Inject
-    public FinalizeRecordHandler(@NonNull final StakingRewardsFinalizer stakingRewardsFinalizer) {
+    public FinalizeRecordHandler(
+            @NonNull final StakingRewardsFinalizer stakingRewardsFinalizer,
+            @NonNull final StakingRewardHelper stakingRewardHelper) {
         this.stakingRewardsFinalizer = stakingRewardsFinalizer;
+        this.stakingRewardHelper = stakingRewardHelper;
     }
+
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         // Intentionally empty. There are no pre-checks to do before finalizing the transfer lists
@@ -88,10 +90,13 @@ public class FinalizeRecordHandler implements TransactionHandler {
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
 
-        // staking rewards are triggered for any balance changes to account's that are staked to a node
-        // They are also triggered if staking related fields are modified
-        // Calculate staking rewards and add them also to hbarChanges here
-        applyStakingRewards(writableAccountStore);
+        if (stakingConfig.isEnabled()) {
+            // staking rewards are triggered for any balance changes to account's that are staked to
+            // a node
+            // They are also triggered if staking related fields are modified
+            // Calculate staking rewards and add them also to hbarChanges here
+            stakingRewardsFinalizer.applyStakingRewards(context);
+        }
 
         /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
         final var hbarChanges = hbarChangesWithStakingRewards(writableAccountStore, readableAccountStore);
@@ -119,45 +124,6 @@ public class FinalizeRecordHandler implements TransactionHandler {
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
-    }
-
-    private void applyStakingRewards(final WritableAccountStore writableAccountStore, final ReadableAccountStore readableAccountStore) {
-        stakingRewardsFinalizer.applyStakedToMeUpdates(writableAccountStore, readableAccountStore);
-        final var rewardReceivers = getPossibleRewardReceivers(writableAccountStore, readableAccountStore);
-    }
-
-    private List<AccountID> getPossibleRewardReceivers(final WritableAccountStore writableAccountStore,
-                                           final ReadableAccountStore readableAccountStore) {
-        final var possibleRewardReceivers = new ArrayList<AccountID>();
-        for (final AccountID modifiedId : writableAccountStore.modifiedAccountsInState()) {
-            final var modifiedAcct = writableAccountStore.get(modifiedId);
-            final var originalAcct = readableAccountStore.getAccountById(modifiedId);
-            // It is possible that original account is null if the account was created in this transaction
-            // In that case it is not a reward situation
-            // If the account existed before this transaction and is staked to a node,
-            // and the current transaction modified the stakedToMe field or declineReward or
-            // the stakedId field, then it is a reward situation
-            if (isRewardSituation(modifiedAcct, originalAcct)) {
-                possibleRewardReceivers.add(modifiedId);
-            }
-        }
-        return possibleRewardReceivers;
-    }
-
-    private boolean isRewardSituation(@NonNull final Account modifiedAccount,
-                                      @Nullable final Account originalAccount) {
-        requireNonNull(modifiedAccount);
-        if(originalAccount == null) {
-            return false;
-        }
-        final var hasStakedToMeUpdate = modifiedAccount.stakedToMe() != originalAccount.stakedToMe();
-        final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
-        final var hasStakeMetaChanges = (modifiedAccount.declineReward() != originalAccount.declineReward())
-                || (modifiedAccount.stakedId() != originalAccount.stakedId());
-        final var isStakedToNode = originalAccount.stakedNodeId() != null && originalAccount.stakedNodeId() >= 0L;
-        // Look for all read keys if they are smart contracts
-        return modifiedAccount.smartContract() ||
-                (isStakedToNode && (hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges));
     }
 
     @NonNull

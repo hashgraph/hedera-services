@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token;
 
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
+
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
  * working with network staking rewards.
@@ -45,4 +47,10 @@ public interface ReadableNetworkStakingRewardsStore {
      * @return total reward
      */
     long pendingRewards();
+
+    /**
+     * Returns the {link NetworkStakingRewards} in state
+     * @return the {link NetworkStakingRewards} in state
+     */
+    NetworkStakingRewards get();
 }

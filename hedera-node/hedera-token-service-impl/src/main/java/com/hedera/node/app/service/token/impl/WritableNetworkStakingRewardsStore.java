@@ -25,18 +25,18 @@ import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Default implementation of {@link WritableNetworkStakingRewardsStoreImpl}
+ * Default implementation of {@link WritableNetworkStakingRewardsStore}
  */
-public class WritableNetworkStakingRewardsStoreImpl extends ReadableNetworkStakingRewardsStoreImpl {
+public class WritableNetworkStakingRewardsStore extends ReadableNetworkStakingRewardsStoreImpl {
 
     /** The underlying data storage class that holds staking reward data for all nodes. */
     private final WritableSingletonState<NetworkStakingRewards> stakingRewardsState;
     /**
-     * Create a new {@link WritableNetworkStakingRewardsStoreImpl} instance.
+     * Create a new {@link WritableNetworkStakingRewardsStore} instance.
      *
      * @param states The state to use.
      */
-    public WritableNetworkStakingRewardsStoreImpl(@NonNull final WritableStates states) {
+    public WritableNetworkStakingRewardsStore(@NonNull final WritableStates states) {
         super(states);
         this.stakingRewardsState = requireNonNull(states).getSingleton(STAKING_REWARDS_KEY);
     }
