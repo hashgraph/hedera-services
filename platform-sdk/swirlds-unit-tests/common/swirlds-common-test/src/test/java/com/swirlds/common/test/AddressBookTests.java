@@ -484,12 +484,12 @@ class AddressBookTests {
             assertEquals(address.getSelfName(), parsedAddress.getSelfName(), "self name matches");
             assertEquals(address.getNickname(), parsedAddress.getNickname(), "nickname matches");
             assertEquals(address.getWeight(), parsedAddress.getWeight(), "weight matches");
-            assertArrayEquals(
-                    address.getAddressInternalIpv4(), parsedAddress.getAddressInternalIpv4(), "internal ipv4 matches");
-            assertEquals(address.getPortInternalIpv4(), parsedAddress.getPortInternalIpv4(), "internal port matches");
-            assertArrayEquals(
-                    address.getAddressExternalIpv4(), parsedAddress.getAddressExternalIpv4(), "external ipv4 matches");
-            assertEquals(address.getPortExternalIpv4(), parsedAddress.getPortExternalIpv4(), "external port matches");
+            assertEquals(
+                    address.getHostnameInternal(), parsedAddress.getHostnameInternal(), "internal hostname matches");
+            assertEquals(address.getPortInternal(), parsedAddress.getPortInternal(), "internal port matches");
+            assertEquals(
+                    address.getHostnameExternal(), parsedAddress.getHostnameExternal(), "external hostname matches");
+            assertEquals(address.getPortExternal(), parsedAddress.getPortExternal(), "external port matches");
             assertEquals(address.getMemo(), parsedAddress.getMemo(), "memo matches");
         }
     }

@@ -68,9 +68,9 @@ public class CryptoArgsProvider {
         for (int i = 0; i < addresses.getSize(); i++) {
             final NodeId nodeId = addresses.getNodeId(i);
             addresses.add(
-                    addresses.getAddress(nodeId).copySetSelfName(memberName(i)).copySetAddressInternalIpv4(new byte[] {
-                        127, 0, 0, 1
-                    }));
+                    addresses.getAddress(nodeId).copySetSelfName(memberName(i)).copySetHostnameInternal(
+                        "127.0.0.1"
+                    ));
         }
 
         return addresses;

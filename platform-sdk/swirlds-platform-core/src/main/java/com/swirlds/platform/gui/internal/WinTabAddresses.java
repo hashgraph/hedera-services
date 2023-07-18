@@ -54,10 +54,10 @@ class WinTabAddresses extends PrePaintableJPanel {
                 final Address address = p.getSelfAddress();
                 s += "\n" + address.getNodeId().id() + "   " + address.getNickname()
                         + "   " + address.getSelfName()
-                        + "   " + Arrays.toString(address.getAddressInternalIpv4())
-                        + "   " + address.getPortInternalIpv4()
-                        + "   " + Arrays.toString(address.getAddressExternalIpv4())
-                        + "   " + address.getPortExternalIpv4();
+                        + "   " + address.getHostnameInternal()
+                        + "   " + address.getPortInternal()
+                        + "   " + address.getHostnameExternal()
+                        + "   " + address.getPortExternal();
             }
         }
         s += wrap(
@@ -65,7 +65,7 @@ class WinTabAddresses extends PrePaintableJPanel {
                 "\n\n"
                         + "The above are all the member addresses. "
                         + "Each address includes the nickname, name, "
-                        + "internal IP address/port and external IP address/port.");
+                        + "internal hostname/port and external hostname/port.");
 
         text.setText(s);
     }
