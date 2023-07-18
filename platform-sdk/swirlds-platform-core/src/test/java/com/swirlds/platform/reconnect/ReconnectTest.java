@@ -32,6 +32,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.merkle.util.PairedStreams;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.SocketConnection;
@@ -41,6 +42,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.security.PublicKey;
@@ -67,6 +69,7 @@ import org.junit.jupiter.api.Test;
 final class ReconnectTest {
 
     private static final Duration RECONNECT_SOCKET_TIMEOUT = Duration.of(1_000, ChronoUnit.MILLIS);
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
@@ -170,7 +173,8 @@ final class ReconnectTest {
                 otherId,
                 lastRoundReceived,
                 () -> false,
-                reconnectMetrics);
+                reconnectMetrics,
+                configuration);
     }
 
     private ReconnectLearner buildReceiver(

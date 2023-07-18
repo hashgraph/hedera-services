@@ -40,6 +40,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
@@ -57,6 +58,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
@@ -88,6 +90,7 @@ public class EmergencyReconnectTests {
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
     private EmergencyReconnectProtocol learnerProtocol;
     private EmergencyReconnectProtocol teacherProtocol;
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
     @BeforeEach
     public void setup() throws ExecutionException, InterruptedException, ConstructableRegistryException {
@@ -274,7 +277,8 @@ public class EmergencyReconnectTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class));
+                mock(FallenBehindManager.class),
+                configuration);
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -294,7 +298,8 @@ public class EmergencyReconnectTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class));
+                mock(FallenBehindManager.class),
+                configuration);
     }
 
     private void mockTeacherHasCompatibleState(

@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -39,7 +40,7 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
     private static final Logger logger = LogManager.getLogger(ReconnectProtocolResponder.class);
 
     private final LatestSignedStateProvider latestSignedStateProvider;
-    private final ReconnectConfig config;
+    private final Configuration configuration;
     /**
      * This object is responsible for limiting the frequency of reconnect attempts (in the role of the sender)
      */
@@ -56,21 +57,21 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
      * @param latestSignedStateProvider a function that provides the latest signed state, either strongly or weakly
      *                                  reserved. The caller is responsible for releasing the reservation when
      *                                  finished.
-     * @param config                    reconnect config
+     * @param configuration             platform configuration
      * @param reconnectThrottle         limits when reconnect may start
      * @param stats                     reconnect metrics
      */
     public ReconnectProtocolResponder(
             @NonNull final ThreadManager threadManager,
             @NonNull final LatestSignedStateProvider latestSignedStateProvider,
-            @NonNull final ReconnectConfig config,
+            @NonNull final Configuration configuration,
             @NonNull final ReconnectThrottle reconnectThrottle,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final ReconnectMetrics stats) {
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.latestSignedStateProvider =
                 Objects.requireNonNull(latestSignedStateProvider, "latestSignedStateProvider must not be null");
-        this.config = Objects.requireNonNull(config, "config must not be null");
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
         this.reconnectThrottle = Objects.requireNonNull(reconnectThrottle, "reconnectThrottle must not be null");
         this.stats = Objects.requireNonNull(stats, "stats must not be null");
@@ -115,16 +116,18 @@ public class ReconnectProtocolResponder implements NetworkProtocolResponder {
             }
 
             try {
+                final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
                 ReconnectUtils.confirmReconnect(connection);
                 new ReconnectTeacher(
                                 threadManager,
                                 connection,
-                                config.asyncStreamTimeout(),
+                                reconnectConfig.asyncStreamTimeout(),
                                 connection.getSelfId(),
                                 connection.getOtherId(),
                                 state.get().getRound(),
                                 fallenBehindManager::hasFallenBehind,
-                                stats)
+                                stats,
+                                configuration)
                         .execute(state.get());
             } finally {
                 reconnectThrottle.reconnectAttemptFinished();

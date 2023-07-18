@@ -56,7 +56,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Tests for the {@link ReconnectProtocol}
  */
 public class ReconnectProtocolTests {
-
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
@@ -136,7 +136,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertEquals(params.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -171,7 +172,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertEquals(params.shouldAccept(), protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -194,7 +196,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -239,7 +242,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
@@ -256,7 +260,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         // pretend we have fallen behind
         when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
@@ -295,7 +300,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertTrue(protocol.shouldInitiate());
         protocol.initiateFailed();
@@ -334,7 +340,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertTrue(protocol.shouldAccept());
         protocol.acceptFailed();
@@ -366,7 +373,8 @@ public class ReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertFalse(protocol.shouldAccept());
     }

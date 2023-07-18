@@ -26,11 +26,13 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
@@ -73,6 +75,8 @@ public abstract class VirtualMapReconnectTestBase {
     protected static final TestValue FOX = new TestValue("FOX");
     protected static final TestValue GOOSE = new TestValue("GOOSE");
 
+    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
     protected VirtualMap<TestKey, TestValue> teacherMap;
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
@@ -164,7 +168,10 @@ public abstract class VirtualMapReconnectTestBase {
 
                 try {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
-                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree, requestTeacherToStop);
+                            learnerTree,
+                            failureExpected ? brokenTeacherTree : teacherTree,
+                            requestTeacherToStop,
+                            reconnectConfig);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");
                     final VirtualRoot root = learnerMap.getRight();

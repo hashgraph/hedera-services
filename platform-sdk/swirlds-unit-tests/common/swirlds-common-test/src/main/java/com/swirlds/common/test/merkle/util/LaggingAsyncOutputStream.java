@@ -18,6 +18,7 @@ package com.swirlds.common.test.merkle.util;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
@@ -35,8 +36,11 @@ public class LaggingAsyncOutputStream<T extends SelfSerializable> extends AsyncO
     private final long latencyMilliseconds;
 
     public LaggingAsyncOutputStream(
-            final SerializableDataOutputStream out, final StandardWorkGroup workGroup, final long latencyMilliseconds) {
-        super(out, workGroup);
+            final SerializableDataOutputStream out,
+            final StandardWorkGroup workGroup,
+            final long latencyMilliseconds,
+            final ReconnectConfig reconnectConfig) {
+        super(out, workGroup, reconnectConfig);
         this.messageTimes = new LinkedBlockingQueue<>();
         this.latencyMilliseconds = latencyMilliseconds;
     }

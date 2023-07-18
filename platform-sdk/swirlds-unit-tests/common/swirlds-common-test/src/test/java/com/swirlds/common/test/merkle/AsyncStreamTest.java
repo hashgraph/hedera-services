@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
@@ -33,6 +34,7 @@ import com.swirlds.common.test.merkle.dummy.BlockingOutputStream;
 import com.swirlds.common.test.merkle.util.PairedStreams;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -46,14 +48,12 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("Async Stream Test")
 class AsyncStreamTest {
-
-    private void configureAsyncStreamSettings() {
-        new TestConfigBuilder()
-                .withValue("reconnect.asyncOutputStream", 10000)
-                .withValue("reconnect.asyncStreamBufferSize", 100)
-                .withValue("reconnect.asyncOutputStreamFlush", "50ms")
-                .getOrCreateConfig();
-    }
+    private final Configuration configuration = new TestConfigBuilder()
+            .withValue("reconnect.asyncOutputStream", 10000)
+            .withValue("reconnect.asyncStreamBufferSize", 100)
+            .withValue("reconnect.asyncOutputStreamFlush", "50ms")
+            .getOrCreateConfig();
+    private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -64,11 +64,11 @@ class AsyncStreamTest {
         try (final PairedStreams streams = new PairedStreams()) {
             final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
-            final AsyncInputStream<SerializableLong> in =
-                    new AsyncInputStream<>(streams.getTeacherInput(), workGroup, SerializableLong::new);
+            final AsyncInputStream<SerializableLong> in = new AsyncInputStream<>(
+                    streams.getTeacherInput(), workGroup, SerializableLong::new, reconnectConfig);
 
             final AsyncOutputStream<SerializableLong> out =
-                    new AsyncOutputStream<>(streams.getLearnerOutput(), workGroup);
+                    new AsyncOutputStream<>(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
             in.start();
             out.start();
@@ -97,11 +97,11 @@ class AsyncStreamTest {
         try (final PairedStreams streams = new PairedStreams()) {
             final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
-            final AsyncInputStream<SerializableLong> in =
-                    new AsyncInputStream<>(streams.getTeacherInput(), workGroup, SerializableLong::new);
+            final AsyncInputStream<SerializableLong> in = new AsyncInputStream<>(
+                    streams.getTeacherInput(), workGroup, SerializableLong::new, reconnectConfig);
 
             final AsyncOutputStream<SerializableLong> out =
-                    new AsyncOutputStream<>(streams.getLearnerOutput(), workGroup);
+                    new AsyncOutputStream<>(streams.getLearnerOutput(), workGroup, reconnectConfig);
 
             in.start();
             out.start();
@@ -132,8 +132,6 @@ class AsyncStreamTest {
     void maxOutputQueueSize() throws InterruptedException, IOException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings();
-
         final int count = 1_000;
 
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
@@ -145,7 +143,7 @@ class AsyncStreamTest {
         blockingOut.lock();
 
         final AsyncOutputStream<SerializableLong> out =
-                new AsyncOutputStream<>(new SerializableDataOutputStream(blockingOut), workGroup);
+                new AsyncOutputStream<>(new SerializableDataOutputStream(blockingOut), workGroup, reconnectConfig);
 
         out.start();
 
@@ -199,8 +197,6 @@ class AsyncStreamTest {
     void maxInputQueueSize() throws IOException, InterruptedException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings();
-
         final int count = 1_000;
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
 
@@ -216,8 +212,8 @@ class AsyncStreamTest {
 
         final BlockingInputStream blockingIn = new BlockingInputStream(new ByteArrayInputStream(data));
 
-        final AsyncInputStream<SerializableLong> in =
-                new AsyncInputStream<>(new SerializableDataInputStream(blockingIn), workGroup, SerializableLong::new);
+        final AsyncInputStream<SerializableLong> in = new AsyncInputStream<>(
+                new SerializableDataInputStream(blockingIn), workGroup, SerializableLong::new, reconnectConfig);
         in.start();
 
         for (int i = 0; i < count; i++) {
@@ -280,10 +276,10 @@ class AsyncStreamTest {
                     new StandardWorkGroup(getStaticThreadManager(), "input-stream-abort-deadlock", null);
 
             final AsyncOutputStream<ExplodingSelfSerializable> teacherOut =
-                    new AsyncOutputStream<>(pairedStreams.getTeacherOutput(), workGroup);
+                    new AsyncOutputStream<>(pairedStreams.getTeacherOutput(), workGroup, reconnectConfig);
 
-            final AsyncInputStream<ExplodingSelfSerializable> learnerIn =
-                    new AsyncInputStream<>(pairedStreams.getLearnerInput(), workGroup, ExplodingSelfSerializable::new);
+            final AsyncInputStream<ExplodingSelfSerializable> learnerIn = new AsyncInputStream<>(
+                    pairedStreams.getLearnerInput(), workGroup, ExplodingSelfSerializable::new, reconnectConfig);
 
             learnerIn.start();
             teacherOut.start();

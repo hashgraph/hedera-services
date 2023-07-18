@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.merkle.synchronization.internal.TeacherReceivingThread;
@@ -33,8 +34,10 @@ import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationEx
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -80,6 +83,8 @@ public class TeachingSynchronizer {
      */
     private final ThreadManager threadManager;
 
+    protected final ReconnectConfig reconnectConfig;
+
     /**
      * A mechanism to check if teaching should be stopped, e.g. when the teacher itself has
      * fallen behind network.
@@ -108,22 +113,24 @@ public class TeachingSynchronizer {
      *      a function to check periodically if teaching should be stopped
      */
     public TeachingSynchronizer(
-            final ThreadManager threadManager,
-            final MerkleDataInputStream in,
-            final MerkleDataOutputStream out,
-            final MerkleNode root,
-            final Runnable breakConnection,
-            @Nullable final BooleanSupplier requestToStopTeaching) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final MerkleDataInputStream in,
+            @NonNull final MerkleDataOutputStream out,
+            @NonNull final MerkleNode root,
+            @Nullable final Runnable breakConnection,
+            @Nullable final BooleanSupplier requestToStopTeaching,
+            @NonNull final ReconnectConfig reconnectConfig) {
 
-        this.threadManager = threadManager;
-        inputStream = in;
-        outputStream = out;
+        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
+        inputStream = Objects.requireNonNull(in, "in must not be null");
+        outputStream = Objects.requireNonNull(out, "out must not be null");
 
         subtrees = new LinkedList<>();
         subtrees.add(new TeacherSubtree(root));
 
         this.breakConnection = breakConnection;
         this.requestToStopTeaching = requestToStopTeaching;
+        this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig must not be null");
     }
 
     /**
@@ -158,7 +165,8 @@ public class TeachingSynchronizer {
         // A future improvement might be to reuse threads between subtrees.
         final StandardWorkGroup workGroup = new StandardWorkGroup(threadManager, WORK_GROUP_NAME, breakConnection);
 
-        final AsyncInputStream<QueryResponse> in = new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new);
+        final AsyncInputStream<QueryResponse> in =
+                new AsyncInputStream<>(inputStream, workGroup, QueryResponse::new, reconnectConfig);
         final AsyncOutputStream<Lesson<T>> out = buildOutputStream(workGroup, outputStream);
 
         in.start();
@@ -184,6 +192,6 @@ public class TeachingSynchronizer {
      */
     protected <T> AsyncOutputStream<Lesson<T>> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new AsyncOutputStream<>(out, workGroup);
+        return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }
 }

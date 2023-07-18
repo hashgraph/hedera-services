@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectException;
@@ -31,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -45,6 +47,7 @@ public class EmergencyReconnectTeacher {
     private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ThreadManager threadManager;
+    private final Configuration configuration;
 
     @Nullable
     private final BooleanSupplier requestToStopTeaching;
@@ -57,16 +60,19 @@ public class EmergencyReconnectTeacher {
      * @param reconnectMetrics       tracks reconnect metrics
      */
     public EmergencyReconnectTeacher(
-            final ThreadManager threadManager,
-            final SignedStateFinder stateFinder,
-            final Duration reconnectSocketTimeout,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final SignedStateFinder stateFinder,
+            @NonNull final Duration reconnectSocketTimeout,
             @Nullable final BooleanSupplier requestToStopTeaching,
-            final ReconnectMetrics reconnectMetrics) {
-        this.threadManager = threadManager;
-        this.stateFinder = stateFinder;
-        this.reconnectSocketTimeout = reconnectSocketTimeout;
+            @NonNull final ReconnectMetrics reconnectMetrics,
+            @NonNull final Configuration configuration) {
+        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
+        this.stateFinder = Objects.requireNonNull(stateFinder, "stateFinder must not be null");
+        this.reconnectSocketTimeout =
+                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
         this.requestToStopTeaching = requestToStopTeaching;
-        this.reconnectMetrics = reconnectMetrics;
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
     /**
@@ -114,7 +120,8 @@ public class EmergencyReconnectTeacher {
                                     connection.getOtherId(),
                                     reservedState.get().getRound(),
                                     requestToStopTeaching,
-                                    reconnectMetrics)
+                                    reconnectMetrics,
+                                    configuration)
                             .execute(reservedState.get());
                 } else {
                     writeHasState(connection, false);
