@@ -34,6 +34,8 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -143,7 +145,8 @@ public class MerkleHashBuilder {
         } else {
             final FutureMerkleHash result = new FutureMerkleHash();
             threadPool.submit(new NodeTask(root,
-                    () -> result.set(root.getHash())));
+                    () -> result.set(root.getHash()),
+                    result::cancelWithException));
             return result;
         }
     }
@@ -168,11 +171,13 @@ public class MerkleHashBuilder {
 
     class NodeTask extends ForkJoinTask<Void> {
         MerkleNode node;
-        Runnable done;
+        Runnable onComplete;
+        Consumer<Throwable> onError;
 
-        NodeTask(final MerkleNode node, final Runnable done) {
+        NodeTask(final MerkleNode node, final Runnable onComplete, final Consumer<Throwable> onError) {
             this.node = node;
-            this.done = done;
+            this.onComplete = onComplete;
+            this.onError = onError;
         }
 
         @Override
@@ -188,7 +193,7 @@ public class MerkleHashBuilder {
         public boolean exec() {
             try {
                 if (node == null || node.getHash() != null) {
-                    done.run();
+                    onComplete.run();
                 } else if (node.isLeaf()) {
                     complete();
                 } else {
@@ -202,19 +207,20 @@ public class MerkleHashBuilder {
                             MerkleNode child = internal.getChild(childIndex);
                             new NodeTask(child, () -> {
                                 if (subTasks.decrementAndGet() == 0) complete();
-                            }).fork();
+                            }, onError).fork();
                         }
                     }
                 }
             } catch (Throwable t) {
-                t.printStackTrace();
+                onError.accept(t);
+                return false;
             }
             return true;
         }
 
         void complete() {
             merkleCryptography.digestSync(node, MERKLE_DIGEST_TYPE);
-            done.run();
+            onComplete.run();
         }
     }
 
