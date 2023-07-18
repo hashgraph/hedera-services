@@ -150,6 +150,7 @@ public class EventStreamManager<T extends StreamAligned & Timestamped & RunningH
                 .setNodeId(selfId)
                 .setComponent("event-stream")
                 .setThreadName("hash-queue")
+                .setCapacity(eventStreamQueueCapacity)
                 .setForwardTo(hashCalculator)
                 .build();
         hashQueueThread.start();
