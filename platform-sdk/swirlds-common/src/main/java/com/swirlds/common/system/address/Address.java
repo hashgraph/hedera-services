@@ -194,7 +194,7 @@ public class Address implements SelfSerializable {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
+        return ClassVersion.ADD_DNS_SUPPORT;
     }
 
     /**

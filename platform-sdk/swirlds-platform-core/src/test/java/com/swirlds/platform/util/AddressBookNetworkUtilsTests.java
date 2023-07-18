@@ -60,7 +60,7 @@ class AddressBookNetworkUtilsTests {
                         .getHostAddress());
         assertFalse(AddressBookNetworkUtils.isLocal(notLocalAddress));
 
-        final Address badLocalAddress = address.copySetHostnameInternal("8.8.8");
+        final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");
         assertThrows(IllegalStateException.class, () -> AddressBookNetworkUtils.isLocal(badLocalAddress));
     }
 }
