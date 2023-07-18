@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
@@ -243,6 +244,12 @@ public class TestHelpers {
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
         final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
+    }
+
+    public static void assertExhaustsResourceLimit(
+            @NonNull final Runnable something, @NonNull final ResponseCodeEnum status) {
+        final var ex = assertThrows(ResourceExhaustedException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 }

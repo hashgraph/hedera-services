@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.state;
+package com.hedera.node.app.service.contract.impl.test.state;
 
-public record StorageSizeChange(long contractNumber, int numRemovals, int numInsertions) {
-    public int numAdded() {
-        return Math.max(0, numInsertions - numRemovals);
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import org.junit.jupiter.api.Test;
+
+class StorageSizeChangeTest {
+    @Test
+    void neverAddsNegativeNumberOfSlots() {
+        final var changes = new StorageSizeChange(1L, 5, 2);
+        assertEquals(0, changes.numAdded());
     }
 }

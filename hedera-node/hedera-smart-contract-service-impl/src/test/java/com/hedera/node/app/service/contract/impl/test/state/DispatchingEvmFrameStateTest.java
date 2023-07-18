@@ -55,12 +55,18 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.RentFactors;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
 import com.hedera.node.app.spi.meta.bni.ActiveContractVerificationStrategy;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
 import com.hedera.node.app.spi.meta.bni.VerificationStrategy;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.LinkedHashSet;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -78,6 +84,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DispatchingEvmFrameStateTest {
     private static final int REDIRECT_CODE_FIXED_PREFIX_LEN =
             "6080604052348015600f57600080fd5b506000610167905077618dc65e".length();
+    private static final int NUM_KV_SLOTS = 42;
+    private static final long EXPIRY = 1_234_567L;
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
     private static final long BENEFICIARY_NUM = 0xdefdefL;
     private static final long TOKEN_NUM = 0xffffffffffffL;
@@ -152,6 +160,58 @@ class DispatchingEvmFrameStateTest {
         final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
 
         assertEquals(expectedWord, actualWord);
+    }
+
+    @Test
+    void getsOriginalStorageValues() {
+        given(storage.getOriginalValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
+
+        final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
+        final var actualWord = subject.getOriginalStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
+
+        assertEquals(expectedWord, actualWord);
+    }
+
+    @Test
+    void summarizesModificationsAsExpected() {
+        final List<StorageAccesses> expected = List.of(
+                new StorageAccesses(
+                        1L,
+                        List.of(
+                                StorageAccess.newWrite(UInt256.ONE, UInt256.ONE, UInt256.MAX_VALUE),
+                                StorageAccess.newWrite(UInt256.MAX_VALUE, UInt256.MIN_VALUE, UInt256.ONE))),
+                new StorageAccesses(
+                        2L,
+                        List.of(
+                                StorageAccess.newWrite(UInt256.MAX_VALUE, UInt256.MIN_VALUE, UInt256.ONE),
+                                StorageAccess.newWrite(UInt256.ONE, UInt256.ONE, UInt256.MAX_VALUE))));
+
+        final var modifiedKeys = List.of(
+                new SlotKey(1L, tuweniToPbjBytes(UInt256.ONE)),
+                new SlotKey(1L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
+                new SlotKey(2L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
+                new SlotKey(2L, tuweniToPbjBytes(UInt256.ONE)));
+        given(storage.modifiedKeys()).willReturn(new LinkedHashSet<>(modifiedKeys));
+        final var iter = modifiedKeys.iterator();
+        givenOrigAndNewValues(iter.next(), UInt256.ONE, UInt256.MAX_VALUE);
+        givenOrigAndNewValues(iter.next(), UInt256.MIN_VALUE, UInt256.ONE);
+        givenOrigAndNewValues(iter.next(), UInt256.MIN_VALUE, UInt256.ONE);
+        givenOrigAndNewValues(iter.next(), UInt256.ONE, UInt256.MAX_VALUE);
+
+        final var actual = subject.getStorageChanges();
+
+        assertEquals(expected, actual);
+    }
+
+    private void givenOrigAndNewValues(
+            @NonNull final SlotKey key, @NonNull final UInt256 origValue, @NonNull final UInt256 newValue) {
+        given(storage.getOriginalValue(key))
+                .willReturn(SlotValue.newBuilder()
+                        .value(tuweniToPbjBytes(origValue))
+                        .build());
+        given(storage.get(key))
+                .willReturn(
+                        SlotValue.newBuilder().value(tuweniToPbjBytes(newValue)).build());
     }
 
     @Test
@@ -267,6 +327,13 @@ class DispatchingEvmFrameStateTest {
     void returnsLongZeroAddressWithoutAnAlias() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         assertEquals(LONG_ZERO_ADDRESS, subject.getAddress(ACCOUNT_NUM));
+    }
+
+    @Test
+    void returnsExpectedRentFactors() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM));
+        final var expected = new RentFactors(NUM_KV_SLOTS, EXPIRY);
+        assertEquals(expected, subject.getRentFactorsFor(ACCOUNT_NUM));
     }
 
     @Test
@@ -659,6 +726,6 @@ class DispatchingEvmFrameStateTest {
     }
 
     private Account.Builder accountWith(final long num) {
-        return Account.newBuilder().accountNumber(num);
+        return Account.newBuilder().accountNumber(num).expiry(EXPIRY).contractKvPairsNumber(NUM_KV_SLOTS);
     }
 }
