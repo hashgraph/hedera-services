@@ -43,7 +43,7 @@ concurrency:
 #   "configs/suites/daily/4N/GCP-Daily-FCM-4N.json"     ----            215m *39  ^50
 #   "configs/suites/daily/4N/GCP-Daily-Misc-4N.json"    ----             25m *12  ^55
 #   "configs/suites/daily/4N/GCP-Daily-Hotspot-4N.json" ----             64m *20  ^53
-#   TOTAL RUN TIME:             404 minutes, 6.7.06 hours
+#   TOTAL RUN TIME:             404 minutes, 6.7 hours
 jobs:
   basic:
     name: Basic
