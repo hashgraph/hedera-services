@@ -26,7 +26,6 @@ import static org.mockito.Mockito.verify;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
@@ -56,12 +55,12 @@ class EventValidatorTests {
     private static final GossipEventValidator VALID = (e) -> true;
     private static final GossipEventValidator INVALID = (e) -> false;
 
-    private static BaseEvent eventWithParents(
+    private static GossipEvent eventWithParents(
             final long selfParentGen,
             final long otherParentGen,
             final Hash selfParentHash,
             final Hash otherParentHash) {
-        final BaseEvent event = mock(BaseEvent.class);
+        final GossipEvent event = mock(GossipEvent.class);
         final long creatorId = 0;
         final Instant timeCreated = Instant.now();
         final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[0];
@@ -153,33 +152,62 @@ class EventValidatorTests {
         final Hash hash2 = RandomUtils.randomHash();
         final Hash nullHash = null;
 
+        final GossipEventValidator validator = StaticValidators.isParentDataValid(10);
+
         // has generation but no hash
-        assertFalse(StaticValidators.isParentDataValid(
-                eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
-        assertFalse(StaticValidators.isParentDataValid(
-                eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
+        assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
+        assertFalse(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
 
         // has hash but no generation
-        assertFalse(StaticValidators.isParentDataValid(
-                eventWithParents(undefinedGeneration, undefinedGeneration, hash1, nullHash)));
-        assertFalse(StaticValidators.isParentDataValid(
-                eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, hash2)));
+        assertFalse(
+                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, hash1, nullHash)));
+        assertFalse(
+                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, hash2)));
 
         // both parents same hash
-        assertFalse(
-                StaticValidators.isParentDataValid(eventWithParents(validGeneration, validGeneration, hash1, hash1)));
+        assertFalse(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash1)));
 
         // no parents
-        assertTrue(StaticValidators.isParentDataValid(
-                eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, nullHash)));
+        assertTrue(
+                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, nullHash)));
 
         // valid parents
-        assertTrue(StaticValidators.isParentDataValid(
-                eventWithParents(validGeneration, undefinedGeneration, hash1, nullHash)));
-        assertTrue(StaticValidators.isParentDataValid(
-                eventWithParents(undefinedGeneration, validGeneration, nullHash, hash2)));
+        assertTrue(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, hash1, nullHash)));
+        assertTrue(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, hash2)));
+        assertTrue(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash2)));
+    }
+
+    @Test
+    void parentValiditySizeOneNetwork() {
+        final long undefinedGeneration = EventConstants.GENERATION_UNDEFINED;
+        final long validGeneration = 10;
+        final Hash hash1 = RandomUtils.randomHash();
+        final Hash hash2 = RandomUtils.randomHash();
+        final Hash nullHash = null;
+
+        final GossipEventValidator validator = StaticValidators.isParentDataValid(1);
+
+        // has generation but no hash
+        assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
+        assertFalse(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, nullHash)));
+
+        // has hash but no generation
+        assertFalse(
+                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, hash1, nullHash)));
+        assertFalse(
+                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, hash2)));
+
+        // both parents same hash
+        assertTrue(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash1)));
+
+        // no parents
         assertTrue(
-                StaticValidators.isParentDataValid(eventWithParents(validGeneration, validGeneration, hash1, hash2)));
+                validator.isEventValid(eventWithParents(undefinedGeneration, undefinedGeneration, nullHash, nullHash)));
+
+        // valid parents
+        assertTrue(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, hash1, nullHash)));
+        assertTrue(validator.isEventValid(eventWithParents(undefinedGeneration, validGeneration, nullHash, hash2)));
+        assertTrue(validator.isEventValid(eventWithParents(validGeneration, validGeneration, hash1, hash2)));
     }
 
     @Test
