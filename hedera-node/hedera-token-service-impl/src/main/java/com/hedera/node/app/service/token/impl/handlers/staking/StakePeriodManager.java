@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
-import static com.swirlds.common.utility.Units.MINUTES_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
