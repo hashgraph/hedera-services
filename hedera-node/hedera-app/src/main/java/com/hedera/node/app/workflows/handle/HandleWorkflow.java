@@ -143,11 +143,6 @@ public class HandleWorkflow {
                     preHandleResult.txInfo().transaction(),
                     preHandleResult.txInfo().signedBytes());
 
-            recordBuilder.transactionFee(preHandleResult.txInfo().transaction().body().transactionFee());
-
-            recordBuilder.exchangeRate();
-            recordBuilder.parentConsensusTimestamp(consensusNow);
-
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
             final var maxMillis = instantSource.millis() + timeout;
