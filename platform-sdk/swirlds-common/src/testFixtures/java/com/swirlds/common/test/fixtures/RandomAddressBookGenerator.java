@@ -186,10 +186,6 @@ public class RandomAddressBookGenerator {
             throw new RuntimeException(e);
         }
         final int portExternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-        final byte[] addressInternalIpv6 = null;
-        final int portInternalIpv6 = -1;
-        final byte[] addressExternalIpv6 = null;
-        final int portExternalIpv6 = -1;
 
         final String memo = RandomUtils.randomString(random, 10);
 
@@ -202,10 +198,6 @@ public class RandomAddressBookGenerator {
                 portInternalIpv4,
                 addressExternalIpv4,
                 portExternalIpv4,
-                addressInternalIpv6,
-                portInternalIpv6,
-                addressExternalIpv6,
-                portExternalIpv6,
                 sigPublicKey,
                 encPublicKey,
                 agreePublicKey,
