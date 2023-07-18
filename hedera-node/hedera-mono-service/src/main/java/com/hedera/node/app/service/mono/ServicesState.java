@@ -306,7 +306,6 @@ public class ServicesState extends PartialNaryMerkleInternal
 
     @Override
     public void handleConsensusRound(final Round round, final SwirldDualState dualState) {
-        log.info("handleConsensusRound({})", round);
         throwIfImmutable();
 
         final var app = metadata.app();
