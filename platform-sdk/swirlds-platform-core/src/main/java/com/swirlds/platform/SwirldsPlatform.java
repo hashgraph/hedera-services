@@ -487,7 +487,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(isDuplicateChecks);
+        eventLinker = buildEventLinker(time, isDuplicateChecks);
 
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
@@ -927,7 +927,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the event linker.
      */
     @NonNull
-    private EventLinker buildEventLinker(@NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+    private EventLinker buildEventLinker(
+            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -950,6 +951,7 @@ public class SwirldsPlatform implements Platform, Startable {
             return orphanBuffer;
         } else {
             return new InOrderLinker(
+                    time,
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
                     eventMapper::getMostRecentEvent);

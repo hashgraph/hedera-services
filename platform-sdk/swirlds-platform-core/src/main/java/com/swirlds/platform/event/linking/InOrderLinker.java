@@ -18,13 +18,16 @@ package com.swirlds.platform.event.linking;
 
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -42,13 +45,22 @@ public class InOrderLinker extends AbstractEventLinker {
 
     private EventImpl linkedEvent = null;
 
+    private final RateLimitedLogger unprocessedEventLogger;
+    private final RateLimitedLogger missingParentsLogger;
+
     public InOrderLinker(
+            @NonNull final Time time,
             @NonNull final ConsensusConfig config,
             @NonNull final ParentFinder parentFinder,
             @NonNull final Function<NodeId, EventImpl> mostRecentEvent) {
+
         super(config);
         this.parentFinder = Objects.requireNonNull(parentFinder, "parentFinder must not be null");
         this.mostRecentEvent = Objects.requireNonNull(mostRecentEvent, "mostRecentEvent must not be null");
+        Objects.requireNonNull(time);
+
+        unprocessedEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        missingParentsLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /** {@inheritDoc} */
@@ -61,10 +73,10 @@ public class InOrderLinker extends AbstractEventLinker {
             return;
         }
         if (linkedEvent != null) {
-            logger.error(
+            unprocessedEventLogger.error(
                     LogMarker.EXCEPTION.getMarker(),
                     "Unprocessed linked event: {}",
-                    () -> EventStrings.toMediumString(linkedEvent));
+                    EventStrings.toMediumString(linkedEvent));
             linkedEvent.clear();
         }
         linkedEvent = childEvent.getChild();
@@ -86,17 +98,17 @@ public class InOrderLinker extends AbstractEventLinker {
 
     private void logMissingParents(final ChildEvent event) {
         final GossipEvent e = event.getChild().getBaseEvent();
-        logger.error(
+        missingParentsLogger.error(
                 INVALID_EVENT_ERROR.getMarker(),
                 "Invalid event! {} missing for {} min gen:{}\n"
                         + "most recent event by missing self parent creator:{}\n"
                         + "most recent event by missing self parent creator:{}",
-                event::missingParentsString,
-                () -> EventStrings.toMediumString(e),
-                this::getMinGenerationNonAncient,
-                () -> EventStrings.toShortString(
+                event.missingParentsString(),
+                EventStrings.toMediumString(e),
+                getMinGenerationNonAncient(),
+                EventStrings.toShortString(
                         mostRecentEvent.apply(e.getHashedData().getCreatorId())),
-                () -> EventStrings.toShortString(
+                EventStrings.toShortString(
                         mostRecentEvent.apply(e.getUnhashedData().getOtherId())));
     }
 }
