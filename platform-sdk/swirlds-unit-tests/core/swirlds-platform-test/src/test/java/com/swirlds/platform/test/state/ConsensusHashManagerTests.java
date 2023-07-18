@@ -18,8 +18,8 @@ package com.swirlds.platform.test.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.Utilities.isMajority;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateCatastrophicNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateNodeHashes;
@@ -39,12 +39,12 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -278,8 +278,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that
-     * any particular node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
+     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that any particular
+     * node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
      */
     private static RoundHashValidatorTests.HashGenerationData generateDataWithSelfIss(
             final Random random, final AddressBook addressBook, final NodeId selfId, final long targetRound) {
@@ -461,7 +461,7 @@ class ConsensusHashManagerTests {
         long submittedWeight = 0;
         for (final RoundHashValidatorTests.NodeHashInfo info : data.nodeList()) {
             final long weight = addressBook.getAddress(info.nodeId()).getWeight();
-            if (isMajority(submittedWeight + weight, addressBook.getTotalWeight())) {
+            if (MAJORITY.isSatisfiedBy(submittedWeight + weight, addressBook.getTotalWeight())) {
                 // If we add less than a majority then we won't be able to detect the ISS no matter what
                 break;
             }
@@ -477,8 +477,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum
-     * to meet &ge;2/3 has been met.
+     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum to meet
+     * &ge;2/3 has been met.
      */
     @SuppressWarnings("SameParameterValue")
     private static List<RoundHashValidatorTests.NodeHashInfo> generateCatastrophicTimeoutIss(
@@ -494,7 +494,7 @@ class ConsensusHashManagerTests {
         final Hash almostConsensusHash = randomHash(random);
         long almostConsensusWeight = 0;
         for (final Address address : addressBook) {
-            if (isMajority(almostConsensusWeight + address.getWeight(), addressBook.getTotalWeight())) {
+            if (MAJORITY.isSatisfiedBy(almostConsensusWeight + address.getWeight(), addressBook.getTotalWeight())) {
                 data.add(new RoundHashValidatorTests.NodeHashInfo(address.getNodeId(), randomHash(), targetRound));
             } else {
                 almostConsensusWeight += address.getWeight();
@@ -556,7 +556,7 @@ class ConsensusHashManagerTests {
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
             submittedWeight += weight;
-            if (isSuperMajority(submittedWeight, addressBook.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight, addressBook.getTotalWeight())) {
                 break;
             }
         }
@@ -618,7 +618,7 @@ class ConsensusHashManagerTests {
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
             submittedWeight += weight;
-            if (isSuperMajority(submittedWeight, addressBook.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight, addressBook.getTotalWeight())) {
                 break;
             }
         }

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.swirlds.common.config.sources.PropertyFileConfigSource;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;

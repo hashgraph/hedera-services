@@ -207,8 +207,6 @@ public class HandleWorkflow {
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
-        // TODO update receipt
-
         // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks

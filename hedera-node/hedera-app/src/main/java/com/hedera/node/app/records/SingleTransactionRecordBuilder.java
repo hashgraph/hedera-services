@@ -240,6 +240,8 @@ public class SingleTransactionRecordBuilder
         return this;
     }
 
+    @NonNull
+    @Override
     public SingleTransactionRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees) {
         this.assessedCustomFees = assessedCustomFees;
         return this;
