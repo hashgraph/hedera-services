@@ -323,4 +323,23 @@ public class TipsetWeightCalculator {
 
         return bullyScore;
     }
+
+    @NonNull
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Total weight: ").append(totalWeight).append("\n");
+        sb.append("Maximum possible advancement weight: ")
+                .append(maximumPossibleAdvancementWeight)
+                .append("\n");
+        sb.append("Self weight: ").append(selfWeight).append("\n");
+        sb.append("Previous advancement weight: ")
+                .append(previousAdvancementWeight)
+                .append("\n");
+        sb.append("Latest self event tipset: ").append(latestSelfEventTipset).append("\n");
+        sb.append("Snapshot history: ").append("\n");
+        for (final Tipset tipset : snapshotHistory) {
+            sb.append("  - ").append(tipset).append("\n");
+        }
+        return sb.toString();
+    }
 }
