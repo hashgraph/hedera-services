@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -202,6 +203,8 @@ class TipsetEventCreatorImplTests {
 
         // We should see the expected transactions
         assertArrayEquals(expectedTransactions, newEvent.getHashedData().getTransactions());
+
+        assertDoesNotThrow(() -> simulatedNode.tipsetEventCreator.toString());
     }
 
     /**
