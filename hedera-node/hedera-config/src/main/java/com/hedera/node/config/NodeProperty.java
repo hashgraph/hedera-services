@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.hedera.node.config;
 
-import com.hedera.node.config.NetworkProperty;
-import com.swirlds.config.api.ConfigData;
+import static java.lang.annotation.ElementType.RECORD_COMPONENT;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 import com.swirlds.config.api.ConfigProperty;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-@ConfigData("consensus")
-public record ConsensusConfig(
-        @ConfigProperty(value = "message.maxBytesAllowed", defaultValue = "1024") @NetworkProperty
-                int messageMaxBytesAllowed,
-        @ConfigProperty(value = "message.maxPrecedingRecords", defaultValue = "3") @NetworkProperty
-                long handleMaxPrecedingRecords,
-        @ConfigProperty(value = "message.maxFollowingRecords", defaultValue = "50") @NetworkProperty
-                long handleMaxFollowingRecords) {}
+/**
+ * Annotates a specific configuration property (annotated with {@link ConfigProperty}) as being a property specific
+ * to the node itself. Such properties can have (and almost certainly do have) different values for each node in the
+ * network. This annotation is mutually exclusive with {@link NetworkProperty}.
+ */
+@Retention(RUNTIME)
+@Target(RECORD_COMPONENT)
+public @interface NodeProperty {}

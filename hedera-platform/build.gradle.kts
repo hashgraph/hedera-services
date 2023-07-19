@@ -51,7 +51,7 @@ dependencies.constraints {
         api(gav("com.google.protobuf", protobufVersion))
         api(gav("com.google.protobuf.util", protobufVersion))
         api(gav("com.hedera.hashgraph.protobuf.java.api", "0.40.0-blocks-state-SNAPSHOT")) // TODO removed through other PR
-        api(gav("com.hedera.pbj.runtime", "0.7.0"))
+        api(gav("com.hedera.pbj.runtime", "0.7.1"))
         api(gav("com.sun.jna", "5.12.1"))
         api(gav("com.swirlds.base", swirldsVersion))
         api(gav("com.swirlds.cli", swirldsVersion))

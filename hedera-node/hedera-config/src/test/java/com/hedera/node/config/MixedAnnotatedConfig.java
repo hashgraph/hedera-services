@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.hedera.node.config;
 
-import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
-@ConfigData("consensus")
-public record ConsensusConfig(
-        @ConfigProperty(value = "message.maxBytesAllowed", defaultValue = "1024") @NetworkProperty
-                int messageMaxBytesAllowed,
-        @ConfigProperty(value = "message.maxPrecedingRecords", defaultValue = "3") @NetworkProperty
-                long handleMaxPrecedingRecords,
-        @ConfigProperty(value = "message.maxFollowingRecords", defaultValue = "50") @NetworkProperty
-                long handleMaxFollowingRecords) {}
+@ConfigData
+public record MixedAnnotatedConfig(
+        @ConfigProperty(defaultValue = "true") boolean notSureProperty,
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean nodeProperty,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean networkProperty) {}
