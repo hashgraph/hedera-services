@@ -182,7 +182,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         when(dispatcher.getHandler(query)).thenReturn(handler);
         when(handler.findResponse(any(), eq(responseHeader))).thenReturn(response);
 
-        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(false), DEFAULT_CONFIG_VERSION);
+        final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);
 
         workflow = new QueryWorkflowImpl(

@@ -21,9 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.RecordManager;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -40,6 +38,8 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -111,15 +111,29 @@ public class HandleWorkflow {
     this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
   }
 
-    /**
+  /**
      * Handles the next {@link Round}
      *
      * @param state the writable {@link HederaState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
-        // handle each transaction in the round
-        round.forEachEventTransaction((event, txn) -> handlePlatformTransaction(state, event, txn));
+      // handle each transaction in the round
+      round.forEachEventTransaction((event, txn) -> {
+        try {
+          handlePlatformTransaction(state, event, txn);
+        } catch (final Throwable e) {
+          logger.fatal(
+              "A fatal unhandled exception occurred during transaction handling. "
+                  + "While this node may not die right away, it is in a bad way, most likely fatally.",
+              e);
+        }
+      });
+      // inform BlockRecordManager that the round is complete, so it can update running-hashes in state
+      // that have been being computed in background threads. The running hash has to be included in
+      // state, but we want to synchronize with background threads as infrequently as possible. So once per
+      // round is the minimum we can do.
+      blockRecordManager.endRound(state);
     }
 
     private void handlePlatformTransaction(
@@ -135,7 +149,7 @@ public class HandleWorkflow {
         final var consensusNow = platformTxn.getConsensusTimestamp();
 
         // Setup record builder list
-        recordManager.startUserTransaction(consensusNow);
+      blockRecordManager.startUserTransaction(consensusNow, state);
         final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
@@ -263,7 +277,8 @@ public class HandleWorkflow {
                 recordListBuilder,
                 checker,
                 dispatcher,
-                serviceScopeLookup);
+                serviceScopeLookup,
+                blockRecordManager);
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
@@ -307,9 +322,11 @@ public class HandleWorkflow {
 
       // TODO: handle long scheduled transactions
 
-      recordManager.endUserTransaction(recordListResult.recordStream());
+      // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
+      // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
 
-      // TODO: handle system tasks
+      // store all records at once
+      blockRecordManager.endUserTransaction(recordListBuilder.build(), state);
     }
 
     public void recordFailedTransaction(

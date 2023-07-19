@@ -38,10 +38,12 @@ import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.ApiPermissionConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ContractsConfig;
@@ -57,6 +59,7 @@ import com.hedera.node.config.data.IssConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
+import com.hedera.node.config.data.NetworkAdminServiceConfig;
 import com.hedera.node.config.data.QueriesConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
@@ -164,10 +167,12 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withSource(SystemPropertiesConfigSource.getInstance())
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(AccountsConfig.class)
+                .withConfigDataType(ApiPermissionConfig.class)
                 .withConfigDataType(AutoCreationConfig.class)
                 .withConfigDataType(AutoRenew2Config.class)
                 .withConfigDataType(AutoRenewConfig.class)
                 .withConfigDataType(BalancesConfig.class)
+                .withConfigDataType(BlockRecordStreamConfig.class)
                 .withConfigDataType(BootstrapConfig.class)
                 .withConfigDataType(CacheConfig.class)
                 .withConfigDataType(ConsensusConfig.class)
@@ -184,6 +189,7 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(LazyCreationConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .withConfigDataType(NettyConfig.class)
+                .withConfigDataType(NetworkAdminServiceConfig.class)
                 .withConfigDataType(QueriesConfig.class)
                 .withConfigDataType(RatesConfig.class)
                 .withConfigDataType(SchedulingConfig.class)
