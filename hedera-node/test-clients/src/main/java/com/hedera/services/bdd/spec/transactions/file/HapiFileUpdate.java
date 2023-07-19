@@ -347,15 +347,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
                         .getFileContents()
                         .getContents()
                         .toByteArray();
-
-                try {
-                    return ServicesConfigurationList.parseFrom(bytes);
-                } catch (Exception ee) {
-                    File f = new File("badBytes.bin");
-                    System.err.println("Failed to parse bytes. writing to " + f.getAbsolutePath());
-                    Files.write(bytes, f);
-                    throw ee;
-                }
+                return ServicesConfigurationList.parseFrom(bytes);
             } catch (Exception e) {
                 LOG.error("No available defaults for {} --- aborting!", file, e);
                 throw new IllegalStateException("Property overrides via fileUpdate must have available defaults!");
