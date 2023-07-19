@@ -466,10 +466,10 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 (ssw, path, success) -> {},
                 x -> {
-                    assertTrue(x > minimumGenerationNonAncientSetByCallback.get(),
-                            "current mingen is %d, new mingen is %d".formatted(
-                                    minimumGenerationNonAncientSetByCallback.get(), x
-                            ));
+                    assertTrue(
+                            x > minimumGenerationNonAncientSetByCallback.get(),
+                            "current mingen is %d, new mingen is %d"
+                                    .formatted(minimumGenerationNonAncientSetByCallback.get(), x));
                     minimumGenerationNonAncientSetByCallback.set(x);
                 });
         manager.start();
