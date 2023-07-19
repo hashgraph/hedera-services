@@ -33,7 +33,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
@@ -179,7 +178,6 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
-                mock(StatusActionSubmitter.class),
                 minimumGenerationNonAncient);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());

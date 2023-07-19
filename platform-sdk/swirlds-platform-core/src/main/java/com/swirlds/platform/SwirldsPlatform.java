@@ -1043,10 +1043,13 @@ public class SwirldsPlatform implements Platform, Startable {
      * If configured to do so, replay preconsensus events.
      */
     private void replayPreconsensusEvents() {
+        platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
+
         final boolean enableReplay = platformContext
                 .getConfiguration()
                 .getConfigData(PreconsensusEventStreamConfig.class)
                 .enableReplay();
+
         if (enableReplay) {
             PreconsensusEventReplayWorkflow.replayPreconsensusEvents(
                     platformContext,
@@ -1059,14 +1062,11 @@ public class SwirldsPlatform implements Platform, Startable {
                     consensusRoundHandler,
                     stateHashSignQueue,
                     stateManagementComponent,
-                    platformStatusManager,
                     initialMinimumGenerationNonAncient);
-        } else {
-            // if preconsensus events aren't being replayed, advance through that part of the state machine anyway
-            platformStatusManager.submitStatusAction(new StartedReplayingEventsAction());
-            platformStatusManager.submitStatusAction(
-                    new DoneReplayingEventsAction(Time.getCurrent().now()));
         }
+
+        platformStatusManager.submitStatusAction(
+                new DoneReplayingEventsAction(Time.getCurrent().now()));
     }
 
     /**

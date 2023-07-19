@@ -74,10 +74,11 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
         this.stateMachine = new PlatformStatusStateMachine(time, config, notificationEngine);
 
         this.queue = new QueueThreadConfiguration<PlatformStatusAction>(threadManager)
-                .setComponent("platform-status")
-                .setThreadName("platform-status-state-machine")
+                .setComponent("platform")
+                .setThreadName("status-state-machine")
                 .setHandler(this::processStatusAction)
                 .setIdleCallback(this::triggerTimeElapsed)
+                .setBatchHandledCallback(this::triggerTimeElapsed)
                 .setWaitForWorkDuration(config.waitForWorkDuration())
                 .setCapacity(config.statusActionQueueCapacity())
                 .setMetricsConfiguration(
@@ -131,8 +132,8 @@ public class PlatformStatusManager implements PlatformStatusGetter, StatusAction
     /**
      * Trigger a time elapsed action
      * <p>
-     * This is the idle callback of the handle thread. It will be called when the handle thread isn't handling other
-     * actions.
+     * This is both the idle and batch-handled callback of the handle thread. It will be called when the handle thread
+     * isn't handling other actions, and after a batch of actions has been handled.
      */
     private void triggerTimeElapsed() {
         stateMachine.processStatusAction(new TimeElapsedAction(time.now()));
