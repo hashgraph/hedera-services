@@ -29,8 +29,7 @@ import java.time.Duration;
  *                           SwirldState.
  * @param testScenario       The string value of the test scenario being run for validation. This must match an
  *                           enumerated value in {@link AddressBookTestScenario}.
- * @param freezeAfterGenesis if not 0, describes a moment in time, relative to genesis, when a freeze is scheduled
- *                           {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
+ * @param freezeAfterGenesis if not 0, describes a moment in time, relative to genesis, when a freeze is scheduled.
  */
 @ConfigData("addressBookTestingTool")
 public record AddressBookTestingToolConfig(
