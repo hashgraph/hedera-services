@@ -16,41 +16,35 @@
 
 package com.hedera.node.app.service.token.impl.staking;
 
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class RewardCalculator {
     private final StakePeriodManager stakePeriodManager;
-    private final ReadableStakingInfoStore stakingInfoStore;
     private long rewardsPaid;
 
     @Inject
-    public RewardCalculator(
-            @NonNull final StakePeriodManager stakePeriodManager,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
+    public RewardCalculator(@NonNull final StakePeriodManager stakePeriodManager) {
         this.stakePeriodManager = stakePeriodManager;
-        this.stakingInfoStore = stakingInfoStore;
     }
 
     public void reset() {
         rewardsPaid = 0;
     }
 
-    public long computePendingReward(@NonNull final Account account) {
+    public long computePendingReward(
+            @NonNull final Account account, @NonNull final ReadableStakingInfoStore stakingInfoStore) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
         if (!stakePeriodManager.isRewardable(effectiveStart)) {
             return 0;
@@ -61,31 +55,6 @@ public class RewardCalculator {
         final var rewardOffered =
                 computeRewardFromDetails(account, stakingInfo, stakePeriodManager.currentStakePeriod(), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
-    }
-
-    public boolean applyReward(
-            final long reward, @Nullable final Account account, @NonNull final Map<AccountProperty, Object> changes) {
-        if (reward > 0) {
-            final var isDeclined = (account != null)
-                    ? account.declineReward()
-                    : (boolean) changes.getOrDefault(AccountProperty.DECLINE_REWARD, false);
-            if (isDeclined) {
-                return false;
-            }
-            final var balance = finalBalanceGiven(account, changes);
-            changes.put(BALANCE, balance + reward);
-            rewardsPaid += reward;
-        }
-        return true;
-    }
-
-    private static long finalBalanceGiven(
-            @Nullable final Account account, @NonNull final Map<AccountProperty, Object> changes) {
-        if (changes.containsKey(BALANCE)) {
-            return (long) changes.get(BALANCE);
-        } else {
-            return (account == null) ? 0 : account.tinybarBalance();
-        }
     }
 
     public long rewardsPaidInThisTxn() {

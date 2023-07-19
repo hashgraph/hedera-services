@@ -89,7 +89,7 @@ class ReadableStakingInfoStoreImplTest {
     @Test
     void getAllReturnsEmptyKeys() {
         final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
-                .build();  // Intentionally empty
+                .build(); // Intentionally empty
         given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
         subject = new ReadableStakingInfoStoreImpl(states);
 

@@ -17,9 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
@@ -27,18 +25,13 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.Units;
 import com.hedera.node.app.service.token.impl.staking.RewardCalculator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +65,7 @@ class RewardCalculatorTest {
     @BeforeEach
     void setUp() {
         rewardHistory = newRewardHistory();
-        subject = new RewardCalculator(stakePeriodManager, stakingInfoStore);
+        subject = new RewardCalculator(stakePeriodManager);
     }
 
     @Test
@@ -85,72 +78,6 @@ class RewardCalculatorTest {
     void delegatesEpochSecondAtStartOfPeriod() {
         given(stakePeriodManager.epochSecondAtStartOfPeriod(123)).willReturn(456L);
         assertEquals(456L, subject.epochSecondAtStartOfPeriod(123));
-    }
-
-    @Test
-    void updatesRewardsAsExpected() {
-        final var changes = new HashMap<AccountProperty, Object>();
-        setUpMocks();
-        given(stakingInfoStore.get(0L)).willReturn(stakingNodeInfo);
-        given(stakePeriodManager.currentStakePeriod()).willReturn(TODAY_NUMBER);
-        given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
-        given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 2);
-        given(account.stakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
-        // Staked node ID of -1 will return a node ID address of 0
-        given(account.stakedNodeId()).willReturn(-1L);
-        given(account.declineReward()).willReturn(false);
-        given(account.tinybarBalance()).willReturn(50 * Units.HBARS_TO_TINYBARS);
-        given(account.stakedToMe()).willReturn(50 * Units.HBARS_TO_TINYBARS);
-
-        subject.setRewardsPaidInThisTxn(100L);
-        final var reward = subject.computePendingReward(account);
-        subject.applyReward(reward, account, changes);
-
-        assertEquals(500, reward);
-        assertEquals(account.tinybarBalance() + reward, changes.get(AccountProperty.BALANCE));
-        assertEquals(100 + reward, subject.rewardsPaidInThisTxn());
-
-        // resets all fields
-        subject.reset();
-        assertEquals(0, subject.rewardsPaidInThisTxn());
-    }
-
-    @Test
-    void returnsZeroRewardsIfRewardSumHistoryIsEmpty() {
-        final var changes = new HashMap<AccountProperty, Object>();
-
-        setUpMocks();
-        given(stakePeriodManager.currentStakePeriod()).willReturn(TODAY_NUMBER);
-        given(stakingInfoStore.get(0L)).willReturn(stakingNodeInfo);
-        given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
-        given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 1);
-        // Staked node ID of -1 will return a node ID address of 0
-        given(account.stakedNodeId()).willReturn(-1L);
-
-        subject.setRewardsPaidInThisTxn(100L);
-        final var reward = subject.computePendingReward(account);
-        subject.applyReward(reward, account, changes);
-
-        assertEquals(0, reward);
-        assertFalse(changes.containsKey(AccountProperty.BALANCE));
-        assertEquals(100, subject.rewardsPaidInThisTxn());
-    }
-
-    @Test
-    void doesntComputeRewardReturnsZeroIfNotInRange() {
-        final var changes = new HashMap<AccountProperty, Object>();
-
-        given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(TODAY_NUMBER - 1);
-        given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 1);
-        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
-
-        final var reward = subject.computePendingReward(account);
-        subject.applyReward(reward, account, changes);
-
-        assertEquals(0, reward);
-
-        assertFalse(changes.containsKey(AccountProperty.BALANCE));
-        assertEquals(0, subject.rewardsPaidInThisTxn());
     }
 
     @Test
@@ -171,64 +98,21 @@ class RewardCalculatorTest {
 
         given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 4);
         // (98+2) * (6-1) + 90 * (1-0) = 590;
-        var reward = subject.computePendingReward(account);
+        var reward = subject.computePendingReward(account, stakingInfoStore);
 
         assertEquals(590, reward);
 
         given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 3);
         // (98+2) * (6-3) + 90 * (3-1) = 480;
-        reward = subject.computePendingReward(account);
+        reward = subject.computePendingReward(account, stakingInfoStore);
 
         assertEquals(480, reward);
 
         given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 2);
         // (98+2) * (6-6) + 90 * (6-3) = 270;
-        reward = subject.computePendingReward(account);
+        reward = subject.computePendingReward(account, stakingInfoStore);
 
         assertEquals(270, reward);
-    }
-
-    @Test
-    void adjustsEffectiveStartIfBeforeAnYear() {
-        setUpMocks();
-        final var changes = new HashMap<AccountProperty, Object>();
-
-        final var expectedStakePeriodStart = 19365L;
-
-        final var account = Account.newBuilder()
-                .stakePeriodStart(expectedStakePeriodStart - 500)
-                // Staked node ID of -3 will return a node ID address of 2
-                .stakedNodeId(-3L)
-                .tinybarBalance(100 * Units.HBARS_TO_TINYBARS)
-                .stakedToMe(100 * Units.HBARS_TO_TINYBARS)
-                .build();
-
-        given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
-        given(stakePeriodManager.currentStakePeriod()).willReturn(expectedStakePeriodStart);
-        given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(expectedStakePeriodStart - 365);
-        given(stakingInfoStore.get(2L)).willReturn(stakingNodeInfo);
-
-        final var reward = subject.computePendingReward(account);
-        subject.applyReward(reward, account, changes);
-
-        assertEquals(1000, reward);
-        assertEquals(account.tinybarBalance() + reward, changes.get(AccountProperty.BALANCE));
-        assertEquals(reward, subject.rewardsPaidInThisTxn());
-    }
-
-    @Test
-    void onlyAppliesRewardIfNotDeclined() {
-        given(account.declineReward()).willReturn(true);
-
-        assertDoesNotThrow(() -> subject.applyReward(123, account, Collections.emptyMap()));
-    }
-
-    @Test
-    void doesntApplyRedirectedRewardToNewlyCreatedAccountWithExpectedDecline() {
-        final Map<AccountProperty, Object> changes = new EnumMap<>(AccountProperty.class);
-        changes.put(AccountProperty.DECLINE_REWARD, Boolean.TRUE);
-        subject.applyReward(123, null, changes);
-        assertEquals(1, changes.size());
     }
 
     @Test

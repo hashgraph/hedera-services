@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collection;
+import java.util.Set;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -45,8 +45,8 @@ public interface ReadableStakingInfoStore {
      * without careful consideration!
      * ⚠️⚠️
      *
-     * @return a collection of all registered {@link StakingNodeInfo} objects
+     * @return a set of all registered {@link StakingNodeInfo} objects
      */
     @NonNull
-    Collection<StakingNodeInfo> getAll();
+    Set<StakingNodeInfo> getAll();
 }
