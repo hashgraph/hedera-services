@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction.system.internal;
+package com.swirlds.platform.components.transaction.system;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -34,41 +31,36 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implementation of {@link PreConsensusSystemTransactionManager}
+ * Routs preconsensus system transactions to the appropriate handlers.
  */
-public class PreConsensusSystemTransactionManagerImpl implements PreConsensusSystemTransactionManager {
+public class PreconsensusSystemTransactionManager {
 
     /**
      * Class logger
      */
-    private static final Logger logger = LogManager.getLogger(PreConsensusSystemTransactionManagerImpl.class);
+    private static final Logger logger = LogManager.getLogger(PreconsensusSystemTransactionManager.class);
 
     /**
      * The pre-consensus handle methods that have been registered
      */
-    private final Map<Class<? extends SystemTransaction>, List<PreConsensusSystemTransactionHandler<SystemTransaction>>>
-            handlers = new HashMap<>();
+    private final Map<Class<?>, List<PreconsensusSystemTransactionHandler<SystemTransaction>>> handlers =
+            new HashMap<>();
 
     /**
      * Add a handle method
      *
-     * @param handler the new handler being tracked
+     * @param clazz   the class of the transaction being handled
+     * @param handler a method to handle this transaction type
      */
     @SuppressWarnings("unchecked")
-    private void addHandler(final PreConsensusSystemTransactionTypedHandler<?> handler) {
-        handlers.computeIfAbsent(handler.transactionClass(), k -> new ArrayList<>())
-                .add((PreConsensusSystemTransactionHandler<SystemTransaction>) handler.handleMethod());
-    }
+    public <T extends SystemTransaction> void addHandler(
+            @NonNull final Class<T> clazz, @NonNull final PreconsensusSystemTransactionHandler<T> handler) {
 
-    /**
-     * Constructor
-     *
-     * @param handlers the consumers that this manager will keep track of and pass system transactions into
-     */
-    public PreConsensusSystemTransactionManagerImpl(
-            final List<PreConsensusSystemTransactionTypedHandler<? extends SystemTransaction>> handlers) {
+        Objects.requireNonNull(clazz);
+        Objects.requireNonNull(handler);
 
-        handlers.forEach(this::addHandler);
+        handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
+                .add((PreconsensusSystemTransactionHandler<SystemTransaction>) handler);
     }
 
     /**
@@ -80,7 +72,8 @@ public class PreConsensusSystemTransactionManagerImpl implements PreConsensusSys
     private void handleTransaction(@NonNull final NodeId creatorId, @NonNull final SystemTransaction transaction) {
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         Objects.requireNonNull(transaction, "transaction must not be null");
-        final List<PreConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
+
+        final List<PreconsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
                 handlers.get(transaction.getClass());
 
         if (relevantHandlers == null) {
@@ -88,13 +81,13 @@ public class PreConsensusSystemTransactionManagerImpl implements PreConsensusSys
             return;
         }
 
-        for (final PreConsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
+        for (final PreconsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
             try {
                 handler.handle(creatorId, transaction);
             } catch (final RuntimeException e) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Error while handling system transaction pre-consensus: handler: {}, id: {}, transaction: {}, error: {}",
+                        "Error while handling system transaction preconsensus: handler: {}, id: {}, transaction: {}, error: {}",
                         handler,
                         creatorId,
                         transaction,
@@ -104,10 +97,11 @@ public class PreConsensusSystemTransactionManagerImpl implements PreConsensusSys
     }
 
     /**
-     * {@inheritDoc}
+     * Handle a pre-consensus event by passing each included system transaction to the registered handlers
+     *
+     * @param event the pre-consensus event
      */
-    @Override
-    public void handleEvent(final EventImpl event) {
+    public void handleEvent(@NonNull final EventImpl event) {
         // no pre-consensus handling methods have been registered
         if (handlers.isEmpty()) {
             return;

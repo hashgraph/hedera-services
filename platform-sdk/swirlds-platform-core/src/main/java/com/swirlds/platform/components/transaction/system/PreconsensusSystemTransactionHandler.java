@@ -16,19 +16,23 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.state.State;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Keeps track of system transaction post-consensus handling methods
+ * Handles system transactions pre-consensus
+ *
+ * @param <T> the system transaction type
  */
 @FunctionalInterface
-public interface PostConsensusSystemTransactionManager {
+public interface PreconsensusSystemTransactionHandler<T extends SystemTransaction> {
+
     /**
-     * Handle a post-consensus round by passing each included system transaction to the registered handlers
+     * Execute the pre-consensus system transaction handler
      *
-     * @param state a mutable state
-     * @param round the post-consensus round
+     * @param nodeId      the id of the node which created the transaction
+     * @param transaction the transaction being handled
      */
-    void handleRound(State state, ConsensusRound round);
+    void handle(@NonNull NodeId nodeId, @NonNull T transaction);
 }

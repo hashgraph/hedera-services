@@ -16,30 +16,33 @@
 
 package com.swirlds.platform.test.components;
 
-import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyEvent;
+import static com.swirlds.platform.test.components.TransactionHandlingTestUtils.newDummyRound;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.test.fixtures.DummySystemTransaction;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionHandler;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.state.State;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-class PreConsensusSystemTransactionManagerTests {
+class ConsensusSystemTransactionManagerTests {
 
     @Test
     @DisplayName("tests that exceptions are handled gracefully")
     void testHandleExceptions() {
-        PreconsensusSystemTransactionHandler<DummySystemTransaction> consumer = (dummySystemTransaction, aLong) -> {
+        ConsensusSystemTransactionHandler<DummySystemTransaction> consumer = (state, dummySystemTransaction, aLong) -> {
             throw new IllegalStateException("this is intentionally thrown");
         };
 
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager();
+        final ConsensusSystemTransactionManager manager = new ConsensusSystemTransactionManager();
         manager.addHandler(DummySystemTransaction.class, consumer);
 
-        assertDoesNotThrow(() -> manager.handleEvent(newDummyEvent(1)));
+        assertDoesNotThrow(() -> manager.handleRound(mock(State.class), newDummyRound(List.of(1))));
     }
 
     @Test
@@ -47,24 +50,25 @@ class PreConsensusSystemTransactionManagerTests {
     void testHandle() {
         final AtomicInteger handleCount = new AtomicInteger(0);
 
-        PreconsensusSystemTransactionHandler<DummySystemTransaction> consumer =
-                (dummySystemTransaction, aLong) -> handleCount.getAndIncrement();
+        ConsensusSystemTransactionHandler<DummySystemTransaction> consumer =
+                (state, dummySystemTransaction, aLong) -> handleCount.getAndIncrement();
 
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager();
+        final ConsensusSystemTransactionManager manager = new ConsensusSystemTransactionManager();
         manager.addHandler(DummySystemTransaction.class, consumer);
 
-        manager.handleEvent(newDummyEvent(0));
-        manager.handleEvent(newDummyEvent(1));
-        manager.handleEvent(newDummyEvent(2));
+        manager.handleRound(mock(State.class), newDummyRound(List.of(0)));
+        manager.handleRound(mock(State.class), newDummyRound(List.of(2)));
+        manager.handleRound(mock(State.class), newDummyRound(List.of(0, 1, 3)));
 
-        assertEquals(3, handleCount.get(), "incorrect number of handle calls");
+        assertEquals(6, handleCount.get(), "incorrect number of post-handle calls");
     }
 
     @Test
     @DisplayName("tests handling system transactions, where no handle method has been defined")
     void testNoHandleMethod() {
-        final PreconsensusSystemTransactionManager manager = new PreconsensusSystemTransactionManager();
+        final ConsensusSystemTransactionManager manager = new ConsensusSystemTransactionManager();
 
-        assertDoesNotThrow(() -> manager.handleEvent(newDummyEvent(1)), "should not throw");
+        assertDoesNotThrow(
+                () -> manager.handleRound(mock(State.class), newDummyRound(List.of(1))), "should not throw ");
     }
 }

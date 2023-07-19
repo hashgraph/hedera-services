@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction.system.internal;
+package com.swirlds.platform.components.transaction.system;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionHandler;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.State;
@@ -36,42 +33,35 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Implementation of {@link PostConsensusSystemTransactionManager}
+ * Routes consensus system transactions to the appropriate handlers.
  */
-public class PostConsensusSystemTransactionManagerImpl implements PostConsensusSystemTransactionManager {
+public class ConsensusSystemTransactionManager {
 
     /**
      * Class logger
      */
-    private static final Logger logger = LogManager.getLogger(PostConsensusSystemTransactionManagerImpl.class);
+    private static final Logger logger = LogManager.getLogger(ConsensusSystemTransactionManager.class);
 
     /**
      * The post-consensus handle methods that have been registered
      */
-    private final Map<
-                    Class<? extends SystemTransaction>, List<PostConsensusSystemTransactionHandler<SystemTransaction>>>
-            handlers = new HashMap<>();
+    private final Map<Class<?>, List<ConsensusSystemTransactionHandler<SystemTransaction>>> handlers = new HashMap<>();
 
     /**
      * Add a handle method
      *
-     * @param handler the new handler being tracked
+     * @param clazz   the class of the transaction being handled
+     * @param handler a method to handle this transaction type
      */
     @SuppressWarnings("unchecked")
-    private void addHandler(final PostConsensusSystemTransactionTypedHandler<?> handler) {
-        handlers.computeIfAbsent(handler.transactionClass(), k -> new ArrayList<>())
-                .add((PostConsensusSystemTransactionHandler<SystemTransaction>) handler.handleMethod());
-    }
+    public <T extends SystemTransaction> void addHandler(
+            @NonNull final Class<T> clazz, @NonNull final ConsensusSystemTransactionHandler<T> handler) {
 
-    /**
-     * Constructor
-     *
-     * @param handlers the consumers that this manager will keep track of and pass system transactions into
-     */
-    public PostConsensusSystemTransactionManagerImpl(
-            final List<PostConsensusSystemTransactionTypedHandler<?>> handlers) {
+        Objects.requireNonNull(clazz);
+        Objects.requireNonNull(handler);
 
-        handlers.forEach(this::addHandler);
+        handlers.computeIfAbsent(clazz, k -> new ArrayList<>())
+                .add((ConsensusSystemTransactionHandler<SystemTransaction>) handler);
     }
 
     /**
@@ -83,11 +73,10 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
      */
     private void handleTransaction(
             @NonNull final State state, @NonNull final NodeId creatorId, @NonNull final SystemTransaction transaction) {
-        Objects.requireNonNull(state, "state must not be null");
         Objects.requireNonNull(creatorId, "creatorId must not be null");
         Objects.requireNonNull(transaction, "transaction must not be null");
 
-        final List<PostConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
+        final List<ConsensusSystemTransactionHandler<SystemTransaction>> relevantHandlers =
                 handlers.get(transaction.getClass());
 
         if (relevantHandlers == null) {
@@ -95,13 +84,14 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
             return;
         }
 
-        for (final PostConsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
+        for (final ConsensusSystemTransactionHandler<SystemTransaction> handler : relevantHandlers) {
             try {
                 handler.handle(state, creatorId, transaction);
             } catch (final RuntimeException e) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Error while handling system transaction post consensus: handler: {}, id: {}, transaction: {}, error: {}",
+                        "Error while handling system transaction post consensus: "
+                                + "handler: {}, id: {}, transaction: {}, error: {}",
                         handler,
                         creatorId,
                         transaction,
@@ -111,14 +101,18 @@ public class PostConsensusSystemTransactionManagerImpl implements PostConsensusS
     }
 
     /**
-     * {@inheritDoc}
+     * Handle a post-consensus round by passing each included system transaction to the registered handlers
+     *
+     * @param state a mutable state
+     * @param round the post-consensus round
      */
-    @Override
-    public void handleRound(final State state, final ConsensusRound round) {
+    public void handleRound(@NonNull final State state, @NonNull final ConsensusRound round) {
         // no post-consensus handling methods have been registered
         if (handlers.isEmpty()) {
             return;
         }
+
+        Objects.requireNonNull(state);
 
         for (final EventImpl event : round.getConsensusEvents()) {
             event.systemTransactionIterator()
