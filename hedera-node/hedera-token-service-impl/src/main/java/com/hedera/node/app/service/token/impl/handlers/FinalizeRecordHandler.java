@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsFinalizer;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -59,12 +59,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FinalizeRecordHandler implements TransactionHandler {
-    final StakingRewardsFinalizer stakingRewardsFinalizer;
+    final StakingRewardsHandlerImpl stakingRewardsFinalizer;
     final StakingRewardHelper stakingRewardHelper;
 
     @Inject
     public FinalizeRecordHandler(
-            @NonNull final StakingRewardsFinalizer stakingRewardsFinalizer,
+            @NonNull final StakingRewardsHandlerImpl stakingRewardsFinalizer,
             @NonNull final StakingRewardHelper stakingRewardHelper) {
         this.stakingRewardsFinalizer = stakingRewardsFinalizer;
         this.stakingRewardHelper = stakingRewardHelper;

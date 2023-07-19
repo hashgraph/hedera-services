@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components.transaction.system;
+package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import com.swirlds.platform.internal.EventImpl;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import java.util.Map;
 
-/**
- * Keeps track of system transaction pre-consensus handling methods
- */
-@FunctionalInterface
-public interface PreConsensusSystemTransactionManager {
-    /**
-     * Handle a pre-consensus event by passing each included system transaction to the registered handlers
-     *
-     * @param event the pre-consensus event
-     */
-    void handleEvent(EventImpl event);
+public interface StakingRewardsHandler {
+    Map<AccountID, Long> applyStakingRewards(final HandleContext context);
 }

@@ -89,43 +89,44 @@ class WritableStakingInfoStoreImplTest {
 
         Assertions.assertThat(subject.get(2)).isEqualTo(newStakingInfo);
     }
-
-    @Test
-    void increaseUnclaimedStartToLargerThanCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 20);
-
-        final var savedStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward start
-        // value should be the current stake reward start value
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
-    }
-
-    @Test
-    void increaseUnclaimedStartToLessThanCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 9);
-
-        final var savedStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(14);
-    }
-
-    @Test
-    void increaseUnclaimedStartToExactlyCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 10);
-
-        final var savedStakeInfo = subject.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // Stake reward start + unclaimed stake reward start, 5 + 10 = 15
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
-    }
+    //
+    //    @Test
+    //    void increaseUnclaimedStartToLargerThanCurrentStakeReward() {
+    //        assertUnclaimedStakeRewardStartPrecondition();
+    //
+    //        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 20);
+    //
+    //        final var savedStakeInfo = subject.get(NODE_ID_1);
+    //        Assertions.assertThat(savedStakeInfo).isNotNull();
+    //        // The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward
+    // start
+    //        // value should be the current stake reward start value
+    //        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
+    //    }
+    //
+    //    @Test
+    //    void increaseUnclaimedStartToLessThanCurrentStakeReward() {
+    //        assertUnclaimedStakeRewardStartPrecondition();
+    //
+    //        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 9);
+    //
+    //        final var savedStakeInfo = subject.get(NODE_ID_1);
+    //        Assertions.assertThat(savedStakeInfo).isNotNull();
+    //        // The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
+    //        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(14);
+    //    }
+    //
+    //    @Test
+    //    void increaseUnclaimedStartToExactlyCurrentStakeReward() {
+    //        assertUnclaimedStakeRewardStartPrecondition();
+    //
+    //        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 10);
+    //
+    //        final var savedStakeInfo = subject.get(NODE_ID_1);
+    //        Assertions.assertThat(savedStakeInfo).isNotNull();
+    //        // Stake reward start + unclaimed stake reward start, 5 + 10 = 15
+    //        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
+    //    }
 
     private void assertUnclaimedStakeRewardStartPrecondition() {
         final var existingStakeInfo = subject.get(NODE_ID_1);

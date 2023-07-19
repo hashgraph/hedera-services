@@ -22,8 +22,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
-import com.hedera.node.app.service.token.impl.utils.RewardCalculator;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -32,11 +33,12 @@ import javax.inject.Singleton;
 @Singleton
 public class RewardsPayer {
     private StakingRewardHelper stakingRewardHelper;
-    private RewardCalculator rewardCalculator;
+    private StakeRewardCalculatorImpl rewardCalculator;
 
     @Inject
     public RewardsPayer(
-            @NonNull final StakingRewardHelper stakingRewardHelper, @NonNull final RewardCalculator rewardCalculator) {
+            @NonNull final StakingRewardHelper stakingRewardHelper,
+            @NonNull final StakeRewardCalculatorImpl rewardCalculator) {
         this.stakingRewardHelper = stakingRewardHelper;
         this.rewardCalculator = rewardCalculator;
     }
@@ -45,11 +47,14 @@ public class RewardsPayer {
             @NonNull final Set<AccountID> possibleRewardReceivers,
             @NonNull final WritableAccountStore writableStore,
             @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
-            @NonNull final Map<AccountID, Long> rewardsPaid) {
+            @NonNull final WritableStakingInfoStore stakingInfoStore,
+            @NonNull final Map<AccountID, Long> rewardsPaid,
+            @NonNull final Instant consensusNow) {
         requireNonNull(possibleRewardReceivers);
         for (final var receiver : possibleRewardReceivers) {
             var receiverAccount = writableStore.get(receiver);
-            final var reward = rewardCalculator.computePendingReward(receiverAccount);
+            final var reward = rewardCalculator.computePendingReward(
+                    receiverAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
             rewardsPaid.merge(receiver, reward, Long::sum);
 
             if (reward <= 0) {

@@ -43,14 +43,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class StakingRewardsFinalizer {
+public class StakingRewardsHandlerImpl {
     private final RewardsPayer rewardsPayer;
     private final StakingRewardHelper stakingRewardHelper;
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
-    public StakingRewardsFinalizer(
+    public StakingRewardsHandlerImpl(
             @NonNull final RewardsPayer rewardsPayer,
             @NonNull final StakingRewardHelper stakingRewardHelper,
             @NonNull final StakePeriodManager stakePeriodManager,
@@ -78,7 +78,8 @@ public class StakingRewardsFinalizer {
         // Get list of possible reward receivers and pay rewards to them
         final var rewardReceivers = stakingRewardHelper.getPossibleRewardReceivers(writableStore, readableStore);
         // Pay rewards to all possible reward receivers
-        rewardsPayer.payRewardsIfPending(rewardReceivers, writableStore, stakingRewardsStore, rewardsPaid);
+        rewardsPayer.payRewardsIfPending(
+                rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, rewardsPaid, consensusNow);
         // Adjust stakes for nodes
         adjustStakeMetadata(
                 writableStore, readableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
@@ -369,7 +370,7 @@ public class StakingRewardsFinalizer {
         writableStore.put(copy);
     }
 
-    public boolean hasBeenRewardedSinceLastStakeMetaChange(Account account) {
+    private boolean hasBeenRewardedSinceLastStakeMetaChange(Account account) {
         return account.stakeAtStartOfLastRewardedPeriod() != -1L;
     }
 }

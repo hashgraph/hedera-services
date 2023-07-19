@@ -61,11 +61,14 @@ import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -90,6 +93,9 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
 
+    @Mock
+    private ConfigProvider configProvider;
+
     private CryptoGetAccountInfoHandler subject;
 
     @Mock
@@ -98,7 +104,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new CryptoGetAccountInfoHandler();
+        subject =
+                new CryptoGetAccountInfoHandler(new StakeRewardCalculatorImpl(new StakePeriodManager(configProvider)));
     }
 
     @Test

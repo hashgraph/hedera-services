@@ -41,6 +41,8 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
@@ -84,11 +86,14 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private ReadableNftStore readableNftStore;
     private WritableNftStore writableNftStore;
 
+    @Mock
+    private StakingRewardsHandlerImpl stakingRewardsFinalizer;
+
     private FinalizeRecordHandler subject;
 
     @BeforeEach
     public void setUp() {
-        subject = new FinalizeRecordHandler();
+        subject = new FinalizeRecordHandler(stakingRewardsFinalizer, new StakingRewardHelper());
     }
 
     @Test

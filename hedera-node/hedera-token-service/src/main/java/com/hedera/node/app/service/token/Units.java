@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.utils;
+package com.hedera.node.app.service.token;
 
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import edu.umd.cs.findbugs.annotations.Nullable;
+public final class Units {
+    private Units() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
 
-public interface RewardCalculator {
-    // those are functions from mono RewardCalculator
-    long epochSecondAtStartOfPeriod(final long stakePeriod);
-
-    long estimatePendingRewards(final Account account, @Nullable final StakingNodeInfo stakingNodeInfo);
-
-    long computePendingReward(final Account account);
+    /** Conversion factor from hbar to tinybar */
+    public static final long HBARS_TO_TINYBARS = 100_000_000L;
 }

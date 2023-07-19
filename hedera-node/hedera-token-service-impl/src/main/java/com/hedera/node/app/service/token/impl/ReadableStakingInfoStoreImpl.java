@@ -24,8 +24,9 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Default implementation of {@link ReadableStakingInfoStore}
@@ -49,12 +50,19 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
         return stakingInfoState.get(nodeId);
     }
 
-    public List<Long> getStakingNodeIds() {
-        final var nodeIds = new ArrayList<Long>();
-        final var keys = stakingInfoState.keys();
-        while (keys.hasNext()) {
-            nodeIds.add(keys.next());
+    @NonNull
+    @Override
+    public Set<Long> getAll() {
+        // For entity types that have many instances this code would be a bad idea, but for node staking info there
+        // should only be a limited number of staking nodes in state. Iterating over all of them should not be expensive
+        final var keysIter = stakingInfoState.keys();
+        if (!keysIter.hasNext()) return Collections.emptySet();
+
+        final var nodeIds = new HashSet<Long>();
+        while (keysIter.hasNext()) {
+            nodeIds.add(keysIter.next());
         }
+
         return nodeIds;
     }
 }

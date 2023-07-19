@@ -62,6 +62,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,9 +81,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private static final String DEBUG = "debug";
 
     /** the suffix for the test address book */
-    private static AddressBookTestingToolConfig testingToolConfig;
+    private AddressBookTestingToolConfig testingToolConfig;
     /** the address book configuration */
-    private static AddressBookConfig addressBookConfig;
+    private AddressBookConfig addressBookConfig;
     /** flag indicating if weighting behavior has been logged. */
     private static final AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
 
@@ -106,6 +107,24 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private long runningSum = 0;
 
+    /**
+     * The number of rounds handled by this app. Is incremented each time
+     * {@link #handleConsensusRound(Round, SwirldDualState)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, SwirldDualState)} for rounds with no events.
+     *
+     * <p>
+     * Affects the hash of this node.
+     */
+    private long roundsHandled = 0;
+
+    /**
+     * If not zero and we are handling the first round after genesis, configure a freeze this duration later.
+     * <p>
+     * Does not affect the hash of this node (although actions may be taken based on this info that DO affect the
+     * hash).
+     */
+    private Duration freezeAfterGenesis = null;
+
     public AddressBookTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
@@ -116,11 +135,15 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private AddressBookTestingToolState(@NonNull final AddressBookTestingToolState that) {
         super(that);
         Objects.requireNonNull(that, "the address book testing tool state to copy cannot be null");
+        this.testingToolConfig = that.testingToolConfig;
+        this.addressBookConfig = that.addressBookConfig;
         this.runningSum = that.runningSum;
         this.selfId = that.selfId;
         this.platform = that.platform;
         this.context = that.context;
         this.validationPerformed.set(that.validationPerformed.get());
+        this.roundsHandled = that.roundsHandled;
+        this.freezeAfterGenesis = that.freezeAfterGenesis;
     }
 
     /**
@@ -146,6 +169,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
         addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
         testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
+        this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
         this.platform = platform;
         this.context = platform.getContext();
@@ -164,6 +188,17 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
         throwIfImmutable();
+
+        if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
+            // This is the first round after genesis.
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Setting freeze time to {} seconds after genesis.",
+                    freezeAfterGenesis.getSeconds());
+            swirldDualState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
+        }
+
+        roundsHandled++;
 
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -199,6 +234,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out, "the serializable data output stream cannot be null");
         out.writeLong(runningSum);
+        out.writeLong(roundsHandled);
     }
 
     /**
@@ -208,6 +244,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         Objects.requireNonNull(in, "the serializable data input stream cannot be null");
         runningSum = in.readLong();
+        roundsHandled = in.readLong();
     }
 
     /**

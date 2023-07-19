@@ -57,7 +57,7 @@ public class StakePeriodManager {
 
     /**
      * Returns the epoch second at the start of the given stake period. It is used in
-     * {@link com.hedera.node.app.service.token.impl.utils.RewardCalculator} to set the stakePeriodStart
+     * {@link StakeRewardCalculatorImpl} to set the stakePeriodStart
      * on each {@link com.hedera.hapi.node.state.token.StakingNodeInfo} object
      * @param stakePeriod the stake period
      * @return the epoch second at the start of the given stake period
