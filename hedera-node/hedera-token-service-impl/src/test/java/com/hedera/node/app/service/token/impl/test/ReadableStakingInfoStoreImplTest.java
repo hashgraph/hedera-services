@@ -74,16 +74,15 @@ class ReadableStakingInfoStoreImplTest {
 
     @Test
     void getAllReturnsAllKeys() {
-        final var node20StakingInfo = mock(StakingNodeInfo.class);
         final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
                 .value(NODE_ID_10, stakingNodeInfo)
-                .value(NODE_ID_20, node20StakingInfo)
+                .value(NODE_ID_20, mock(StakingNodeInfo.class))
                 .build();
         given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
         subject = new ReadableStakingInfoStoreImpl(states);
 
         final var result = subject.getAll();
-        Assertions.assertThat(result).containsExactlyInAnyOrder(stakingNodeInfo, node20StakingInfo);
+        Assertions.assertThat(result).containsExactlyInAnyOrder(NODE_ID_10, NODE_ID_20);
     }
 
     @Test
