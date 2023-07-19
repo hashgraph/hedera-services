@@ -24,10 +24,8 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Default implementation of {@link ReadableStakingInfoStore}
@@ -54,7 +52,7 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
     public List<Long> getStakingNodeIds() {
         final var nodeIds = new ArrayList<Long>();
         final var keys = stakingInfoState.keys();
-        while(keys.hasNext()) {
+        while (keys.hasNext()) {
             nodeIds.add(keys.next());
         }
         return nodeIds;

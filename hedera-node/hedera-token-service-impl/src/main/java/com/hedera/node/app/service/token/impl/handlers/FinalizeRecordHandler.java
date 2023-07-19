@@ -95,7 +95,8 @@ public class FinalizeRecordHandler implements TransactionHandler {
             // a node
             // They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here
-            stakingRewardsFinalizer.applyStakingRewards(context);
+            final var rewardsPaid = stakingRewardsFinalizer.applyStakingRewards(context);
+            recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
         }
 
         /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
@@ -124,6 +125,17 @@ public class FinalizeRecordHandler implements TransactionHandler {
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
+    }
+
+    private List<AccountAmount> asAccountAmounts(final Map<AccountID, Long> rewardsPaid) {
+        final var accountAmounts = new ArrayList<AccountAmount>();
+        for (final var entry : rewardsPaid.entrySet()) {
+            accountAmounts.add(AccountAmount.newBuilder()
+                    .accountID(entry.getKey())
+                    .amount(entry.getValue())
+                    .build());
+        }
+        return accountAmounts;
     }
 
     @NonNull

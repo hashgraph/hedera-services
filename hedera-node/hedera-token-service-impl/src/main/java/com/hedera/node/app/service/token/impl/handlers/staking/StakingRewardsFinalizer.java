@@ -16,117 +16,285 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.hapi.node.state.token.Account.StakedIdOneOfType.UNSET;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper.totalStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.roundedToHbar;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.impl.utils.RewardCalculator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class StakingRewardsFinalizer {
-    private final RewardCalculator rewardCalculator;
+    private final RewardsPayer rewardsPayer;
     private final StakingRewardHelper stakingRewardHelper;
+    private final StakePeriodManager stakePeriodManager;
+    private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
     public StakingRewardsFinalizer(
-            @NonNull final RewardCalculator rewardCalculator, @NonNull final StakingRewardHelper stakingRewardHelper) {
-        this.rewardCalculator = requireNonNull(rewardCalculator);
+            @NonNull final RewardsPayer rewardsPayer,
+            @NonNull final StakingRewardHelper stakingRewardHelper,
+            @NonNull final StakePeriodManager stakePeriodManager,
+            @NonNull final StakeInfoHelper stakeInfoHelper) {
+        this.rewardsPayer = requireNonNull(rewardsPayer);
         this.stakingRewardHelper = requireNonNull(stakingRewardHelper);
+        this.stakePeriodManager = requireNonNull(stakePeriodManager);
+        this.stakeInfoHelper = requireNonNull(stakeInfoHelper);
     }
 
-    public void applyStakingRewards(final HandleContext context) {
+    public Map<AccountID, Long> applyStakingRewards(final HandleContext context) {
         final var readableStore = context.readableStore(ReadableAccountStore.class);
         final var writableStore = context.writableStore(WritableAccountStore.class);
         final var stakingRewardsStore = context.writableStore(WritableNetworkStakingRewardsStore.class);
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
         final var accountsConfig = context.configuration().getConfigData(AccountsConfig.class);
-        final var stakingRewardAccount = accountsConfig.stakingRewardAccount();
+        final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
+        final var consensusNow = context.consensusNow();
+        // Map of account to rewards paid. This is needed to construct record
+        final Map<AccountID, Long> rewardsPaid = new HashMap<>();
 
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
         adjustStakedToMeForAccountStakees(writableStore, readableStore);
         // Get list of possible reward receivers and pay rewards to them
-        final var possibleRewardReceivers =
-                stakingRewardHelper.getPossibleRewardReceivers(writableStore, readableStore);
-        final var totalPaidRewards = payRewardsIfPending(possibleRewardReceivers, writableStore, stakingRewardsStore);
+        final var rewardReceivers = stakingRewardHelper.getPossibleRewardReceivers(writableStore, readableStore);
+        // Pay rewards to all possible reward receivers
+        rewardsPayer.payRewardsIfPending(rewardReceivers, writableStore, stakingRewardsStore, rewardsPaid);
         // Adjust stakes for nodes
-        adjustNodeStakes(writableStore, readableStore, stakingInfoStore);
+        adjustStakeMetadata(
+                writableStore, readableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
         // Decrease staking reward account balance by rewardPaid amount
-        decreaseStakingRewardAccountBalance(totalPaidRewards, stakingRewardAccount, writableStore);
+        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
+        return rewardsPaid;
+
+        // TODO: Confirm if we need logic for activating staking ?
     }
 
-    private void adjustNodeStakes(
+    private void adjustStakeMetadata(
             final WritableAccountStore writableStore,
             final ReadableAccountStore readableStore,
-            final WritableStakingInfoStore stakingInfoStore) {
+            final WritableStakingInfoStore stakingInfoStore,
+            final WritableNetworkStakingRewardsStore stakingRewardStore,
+            final Instant consensusNow,
+            final Map<AccountID, Long> paidRewards) {
         for (final var id : writableStore.modifiedAccountsInState()) {
             final var originalAccount = readableStore.getAccountById(id);
             final var modifiedAccount = writableStore.get(id);
 
-            final var scenario = StakeIdChangeType.forCase(
-                    originalAccount.stakedId().kind(),
-                    modifiedAccount.stakedId().kind());
+            // It is possible that the account did not exist before transaction
+            final var curStakedId =
+                    originalAccount == null ? UNSET : originalAccount.stakedId().kind();
+            final var newStakedId = modifiedAccount.stakedId().kind();
 
+            final var scenario = StakeIdChangeType.forCase(curStakedId, newStakedId);
+            final var containStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
+
+            // If this scenario is changing StakedId from a node or to a node, change stake of those nodes
             if (scenario.withdrawsFromNode() || scenario.awardsToNode()) {
-                final var originalAccountStakedNodeId = originalAccount != null ? originalAccount.stakedNodeId() : null;
-                final var modifiedAccountStakedNodeId = modifiedAccount.stakedNodeId();
+                adjustNodeStakes(
+                        scenario,
+                        originalAccount,
+                        modifiedAccount,
+                        stakingInfoStore,
+                        stakingRewardStore,
+                        containStakeMetaChanges,
+                        consensusNow);
+            }
 
-                if (scenario.withdrawsFromNode()) {
-                    withdrawStake(originalAccountStakedNodeId, originalAccount, stakingInfoStore);
-                } else if (scenario.awardsToNode()) {
-                    awardStake(modifiedAccountStakedNodeId, modifiedAccount, stakingInfoStore);
-                }
+            final var isRewarded = paidRewards.containsKey(id);
+            final var reward = paidRewards.getOrDefault(id, 0L);
+
+            // If account chose to change decline reward field or stakeId field, we don't need
+            // to update stakeAtStartOfLastRewardedPeriod because it is not rewarded for that period
+            // Check if the stakeAtStartOfLastRewardedPeriod needs to be updated
+            if (!containStakeMetaChanges
+                    && shouldUpdateStakeStart(originalAccount, isRewarded, reward, stakingRewardStore, consensusNow)) {
+                final var copy = modifiedAccount.copyBuilder();
+                copy.stakeAtStartOfLastRewardedPeriod(roundedToHbar(totalStake(originalAccount)));
+                writableStore.put(copy.build());
+            }
+
+            // Update stakePeriodStart if account is rewarded
+            final var wasRewarded = isRewarded
+                    && (reward > 0
+                            || (reward == 0
+                                    && earnedZeroRewardsBecauseOfZeroStake(
+                                            originalAccount, stakingRewardStore, consensusNow)));
+            final var stakePeriodStart = stakePeriodManager.startUpdateFor(
+                    originalAccount, modifiedAccount, wasRewarded, containStakeMetaChanges, consensusNow);
+            if (stakePeriodStart != -1) {
+                final var copy = modifiedAccount.copyBuilder();
+                copy.stakePeriodStart(stakePeriodStart);
+                writableStore.put(copy.build());
             }
         }
     }
 
-    private void awardStake(final Long nodeId, final Account account, final WritableStakingInfoStore stakingInfoStore) {
-        final var stakeToAward = roundedToHbar(totalStake(account));
-        final var isDeclineReward = account.declineReward();
+    /**
+     * Given an existing account that was in a reward situation and earned zero rewards, checks if
+     * this was because the account had effective stake of zero whole hbars during the rewardable
+     * periods. (The alternative is that it had zero rewardable periods; i.e., it started staking
+     * this period, or the last.)
+     *
+     * <p>This distinction matters because in the case of zero stake, we still want to update the
+     * account's {@code stakePeriodStart} and {@code stakeAtStartOfLastRewardedPeriod}. Otherwise,
+     * we don't want to update {@code stakePeriodStart}; and only want to update {@code
+     * stakeAtStartOfLastRewardedPeriod} if the account began staking in exactly the last period.
+     *
+     * @param account an account presumed to have just earned zero rewards
+     * @return whether the zero rewards were due to having zero stake
+     */
+    private boolean earnedZeroRewardsBecauseOfZeroStake(
+            @NonNull final Account account,
+            @NonNull final ReadableNetworkStakingRewardsStore stakingRewardStore,
+            @NonNull final Instant consensusNow) {
+        return Objects.requireNonNull(account).stakePeriodStart()
+                < stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardStore, consensusNow);
+    }
 
-        final var stakingInfo = stakingInfoStore.get(nodeId);
-        final var copy = stakingInfo.copyBuilder();
-        if (isDeclineReward) {
-            copy.stakeToNotReward(stakingInfo.stakeToNotReward() + stakeToAward);
-        } else {
-            copy.stakeToReward(stakingInfo.stakeToReward() + stakeToAward);
+    private void adjustNodeStakes(
+            final StakeIdChangeType scenario,
+            final Account originalAccount,
+            final Account modifiedAccount,
+            final WritableStakingInfoStore stakingInfoStore,
+            final WritableNetworkStakingRewardsStore stakingRewardStore,
+            final boolean containStakeMetaChanges,
+            final Instant consensusNow) {
+        if (scenario.withdrawsFromNode()) {
+            final var currentStakedNodeId = originalAccount.stakedNodeId();
+
+            stakeInfoHelper.withdrawStake(currentStakedNodeId, originalAccount, stakingInfoStore);
+            if (containStakeMetaChanges) {
+                // Pending rewards are calculated midnight each day for every account.
+                // If this account has changed to a different stakeId or choose to decline reward
+                // in mid of the day, it will not receive rewards for that day.
+                // So, it will be leaving some rewards from its current node unclaimed.
+                // We need to record that, so we don't include them in the pendingRewards
+                // calculation later
+                final var effectiveStakeRewardStart = rewardableStakeStartFor(
+                        stakingRewardStore.isStakingRewardsActivated(), originalAccount, consensusNow);
+                stakeInfoHelper.increaseUnclaimedStakeRewards(
+                        currentStakedNodeId, effectiveStakeRewardStart, stakingInfoStore);
+            }
+        }
+        // If account chose to
+        if (scenario.awardsToNode() && !modifiedAccount.deleted()) {
+            final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
+            // We need the latest updates to balance and stakedToMe for the account in modifications also
+            // to be reflected in stake awarded. So use the modifiedAccount instead of originalAccount
+            stakeInfoHelper.awardStake(modifiedStakedNodeId, modifiedAccount, stakingInfoStore);
         }
     }
 
-    private void withdrawStake(
-            final Long nodeId, final Account account, final WritableStakingInfoStore stakingInfoStore) {
-        final var stakeToWithdraw = roundedToHbar(totalStake(account));
-        final var isDeclineReward = account.declineReward();
-
-        final var stakingInfo = stakingInfoStore.get(nodeId);
-        final var copy = stakingInfo.copyBuilder();
-        if (isDeclineReward) {
-            copy.stakeToNotReward(stakingInfo.stakeToNotReward() - stakeToWithdraw);
+    private boolean shouldUpdateStakeStart(
+            @Nullable final Account account,
+            final boolean isRewarded,
+            final long reward,
+            @NonNull final ReadableNetworkStakingRewardsStore stakingRewardStore,
+            @NonNull final Instant consensusNow) {
+        if (account == null || account.hasStakedAccountId() || account.declineReward()) {
+            // If the account is created in this transaction, or it is not staking to a node,
+            // or it has chosen to decline reward, we don't need to remember stakeStart,
+            // because it can't receive reward today
+            return false;
+        }
+        if (!isRewarded) {
+            // If the account is not rewarded in current transaction, it mean stake of node will not be changed
+            return false;
+        } else if (reward > 0) {
+            // Alice earned a reward without changing her stake metadata, so she is still eligible
+            // for a reward today; since her total stake will change this txn, we remember its
+            // current value to reward her correctly for today no matter what happens later on
+            return true;
         } else {
-            copy.stakeToReward(stakingInfo.stakeToReward() - stakeToWithdraw);
+            // At this point, Alice is an account staking to a node, accepting rewards, and in
+            // a reward situation---who nonetheless received zero rewards. There are essentially
+            // four scenarios:
+            //   1. Alice's stakePeriodStart is before the first non-rewardable period, but
+            //   she was either staking zero whole hbars during those periods (or the reward rate
+            //   was zero).
+            //   2. Alice's stakePeriodStart is the first non-rewardable period because she
+            //   was already rewarded earlier today.
+            //   3. Alice's stakePeriodStart is the first non-rewardable period, but she was not
+            //   rewarded today.
+            //   4. Alice's stakePeriodStart is the current period.
+            // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
+            // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
+            // preserve an already-recorded memory of her stake at the beginning of this period;
+            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            if (earnedZeroRewardsBecauseOfZeroStake(account, stakingRewardStore, consensusNow)) {
+                return true;
+            }
+            if (account.stakeAtStartOfLastRewardedPeriod() != NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE) {
+                // Alice was in a reward situation, but did not earn anything because she already
+                // received a reward earlier today; we preserve our memory of her stake from then
+                return false;
+            }
+            // Alice was in a reward situation for the first time today, but received nothing---
+            // either because she is staking < 1 hbar, or because she started staking only
+            // today or yesterday; we don't care about the exact reason, we just remember
+            // her total stake as long as she didn't begin staking today exactly
+            return account.stakePeriodStart() < stakePeriodManager.currentStakePeriod(consensusNow);
         }
     }
 
-    private void decreaseStakingRewardAccountBalance(
-            final long totalPaidRewards,
-            final long stakingRewardAccountNum,
+    private long rewardableStakeStartFor(
+            final boolean rewardsActivated, final Account account, final Instant consensusNow) {
+        if (!rewardsActivated || account.declineReward()) {
+            return 0;
+        }
+        final var startPeriod = account.stakePeriodStart();
+        final var currentPeriod = stakePeriodManager.currentStakePeriod(consensusNow);
+        if (startPeriod >= currentPeriod) {
+            return 0;
+        } else {
+            if (hasBeenRewardedSinceLastStakeMetaChange(account) && (startPeriod == currentPeriod - 1)) {
+                // Special case---this account was already rewarded today, so its current stake
+                // has almost certainly changed from what it was at the start of the day
+                return account.stakeAtStartOfLastRewardedPeriod();
+            } else {
+                return roundedToHbar(totalStake(account));
+            }
+        }
+    }
+
+    private boolean hasStakeMetaChanges(final Account originalAccount, final Account modifiedAccount) {
+        final var differDeclineReward = originalAccount.declineReward() != modifiedAccount.declineReward();
+        final var differStakedNodeId =
+                !originalAccount.stakedNodeIdOrElse(0L).equals(modifiedAccount.stakedNodeIdOrElse(0L));
+        final var differStakeAccountId = originalAccount
+                .stakedAccountIdOrElse(AccountID.DEFAULT)
+                .equals(modifiedAccount.stakedAccountIdOrElse(AccountID.DEFAULT));
+        return differDeclineReward || differStakedNodeId || differStakeAccountId;
+    }
+
+    private void decreaseStakeRewardAccountBalance(
+            final Map<AccountID, Long> rewardsPaid,
+            final AccountID stakingRewardAccountId,
             final WritableAccountStore writableAccountStore) {
-        if (totalPaidRewards > 0) {
-            final var stakingRewardAccount = writableAccountStore.get(asAccount(stakingRewardAccountNum));
+        if (!rewardsPaid.isEmpty()) {
+            final var totalPaidRewards =
+                    rewardsPaid.values().stream().mapToLong(Long::longValue).sum();
+            final var stakingRewardAccount = writableAccountStore.get(stakingRewardAccountId);
             final var finalBalance = stakingRewardAccount.tinybarBalance() - totalPaidRewards;
             // At this place it is not possible for the staking reward account balance to be less than total rewards
             // paid.
@@ -201,49 +369,7 @@ public class StakingRewardsFinalizer {
         writableStore.put(copy);
     }
 
-    private long roundedToHbar(final long value) {
-        return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
-    }
-
-    public long payRewardsIfPending(
-            @NonNull final Set<AccountID> possibleRewardReceivers,
-            @NonNull final WritableAccountStore writableStore,
-            final WritableNetworkStakingRewardsStore stakingRewardsStore) {
-        requireNonNull(possibleRewardReceivers);
-        var totalRewardPaid = 0;
-        for (final var receiver : possibleRewardReceivers) {
-            var receiverAccount = writableStore.get(receiver);
-            final var reward = rewardCalculator.computePendingReward(receiverAccount);
-            if (reward <= 0) {
-                continue;
-            }
-            stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
-            if (receiverAccount.deleted()) {
-                // TODO: If the account is deleted transfer reward to beneficiary.
-                // Will be a loop for ContractCalls. Need to check if it is a contract call.
-            }
-            if (!receiverAccount.declineReward()) {
-                applyReward(reward, receiverAccount, writableStore);
-                totalRewardPaid += reward;
-            }
-        }
-        return totalRewardPaid;
-    }
-
-    private void decreaseNewFundingBalanceBy(
-            final int totalRewardPaid, final WritableAccountStore writableAccountStore) {
-        final var newFundingAccount = writableAccountStore.get(newFundingAccount());
-        final var newFundingAccountCopy = newFundingAccount
-                .copyBuilder()
-                .tinybarBalance(newFundingAccount.tinybarBalance() - totalRewardPaid)
-                .build();
-        writableAccountStore.put(newFundingAccountCopy);
-    }
-
-    private void applyReward(final long reward, final Account receiver, final WritableAccountStore writableStore) {
-        final var finalBalance = receiver.tinybarBalance() + reward;
-        final var copy = receiver.copyBuilder();
-        copy.tinybarBalance(finalBalance);
-        writableStore.put(copy.build());
+    public boolean hasBeenRewardedSinceLastStakeMetaChange(Account account) {
+        return account.stakeAtStartOfLastRewardedPeriod() != -1L;
     }
 }

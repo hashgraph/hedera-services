@@ -94,7 +94,7 @@ class WritableStakingInfoStoreImplTest {
     void increaseUnclaimedStartToLargerThanCurrentStakeReward() {
         assertUnclaimedStakeRewardStartPrecondition();
 
-        subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 20);
+        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 20);
 
         final var savedStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();
@@ -107,7 +107,7 @@ class WritableStakingInfoStoreImplTest {
     void increaseUnclaimedStartToLessThanCurrentStakeReward() {
         assertUnclaimedStakeRewardStartPrecondition();
 
-        subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 9);
+        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 9);
 
         final var savedStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();
@@ -119,7 +119,7 @@ class WritableStakingInfoStoreImplTest {
     void increaseUnclaimedStartToExactlyCurrentStakeReward() {
         assertUnclaimedStakeRewardStartPrecondition();
 
-        subject.increaseUnclaimedStakeRewardStart(NODE_ID_1, 10);
+        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 10);
 
         final var savedStakeInfo = subject.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();

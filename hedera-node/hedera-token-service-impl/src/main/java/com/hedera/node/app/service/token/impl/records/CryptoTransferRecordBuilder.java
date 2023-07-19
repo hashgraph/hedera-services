@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.records;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
@@ -48,6 +49,18 @@ public interface CryptoTransferRecordBuilder {
     @NonNull
     CryptoTransferRecordBuilder tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists);
 
+    /**
+     * Tracks the total custom fees assessed in the transaction
+     * @param assessedCustomFees the total custom fees assessed in the transaction
+     * @return this builder
+     */
     @NonNull
     CryptoTransferRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees);
+
+    /**
+     * Tracks the total amount of hbars paid as staking rewards in the transaction
+     * @param paidStakingRewards the total amount of hbars paid as staking rewards
+     * @return this builder
+     */
+    CryptoTransferRecordBuilder paidStakingRewards(List<AccountAmount> paidStakingRewards);
 }
