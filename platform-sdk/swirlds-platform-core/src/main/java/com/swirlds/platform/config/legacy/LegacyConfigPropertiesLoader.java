@@ -145,7 +145,7 @@ public final class LegacyConfigPropertiesLoader {
             }
             if (!nextNodeIdParsed) {
                 onError(ERROR_NO_PARAMETER.formatted(NEXT_NODE_ID_PROPERTY_NAME));
-                throw new ConfigurationException("config.txt did not have a `nextnodeid` property.");
+                throw new ConfigurationException("config.txt did not have a `nextNodeId` property. (Case Sensitive)");
             }
             if (addressBook.getSize() > 0) {
                 configurationProperties.setAddressBook(addressBook);
