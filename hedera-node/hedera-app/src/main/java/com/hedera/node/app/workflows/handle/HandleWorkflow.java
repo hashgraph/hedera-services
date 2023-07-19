@@ -146,14 +146,18 @@ public class HandleWorkflow {
 
             preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             recordBuilder.transaction(
-                    preHandleResult.txInfo().transaction(),
-                    preHandleResult.txInfo().signedBytes());
+                preHandleResult.txInfo().transaction(),
+                preHandleResult.txInfo().signedBytes());
+
+            // If the transaction was executed before we will have a record here
+            final var foundTransactionRecord = hederaRecordCache.getRecord(
+                preHandleResult.txInfo().txBody().transactionID());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
             final var maxMillis = instantSource.millis() + timeout;
             final var payerKeyVerification =
-                    preHandleResult.verificationResults().get(preHandleResult.payerKey());
+                preHandleResult.verificationResults().get(preHandleResult.payerKey());
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
@@ -168,11 +172,16 @@ public class HandleWorkflow {
                 }
             }
 
-            // Setup context
-            final var txBody = preHandleResult.txInfo().txBody();
-            final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
-            final var context = new HandleContextImpl(
+            if (foundTransactionRecord != null) {
+                recordBuilder.status(DUPLICATE_TRANSACTION);
+                preHandleResult = createPenaltyPayment();
+                // TODO: do we want to throw an error?
+            } else {
+                // Setup context
+                final var txBody = preHandleResult.txInfo().txBody();
+                final var stack = new SavepointStackImpl(state, configuration);
+                final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+                final var context = new HandleContextImpl(
                     txBody,
                     preHandleResult.payer(),
                     preHandleResult.payerKey(),
@@ -185,13 +194,14 @@ public class HandleWorkflow {
                     dispatcher,
                     serviceScopeLookup);
 
-            // Dispatch the transaction to the handler
-            dispatcher.dispatchHandle(context);
+                // Dispatch the transaction to the handler
+                dispatcher.dispatchHandle(context);
 
-            // TODO: Finalize transaction with the help of the token service
+                // TODO: Finalize transaction with the help of the token service
 
-            // commit state
-            stack.commit();
+                // commit state
+                stack.commit();
+            }
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
@@ -212,36 +222,19 @@ public class HandleWorkflow {
         final var recordListResult = recordListBuilder.build();
         recordManager.endUserTransaction(recordListResult.recordStream());
 
-        // Verify if the transaction is a duplicate and add it to the cache
-        if (preHandleResult != null) { // this should always be true, checking just in case
-            try {
-                checkDuplicatesAndIncludeInCache(
-                    preHandleResult,
-                    recordListResult.mainRecord().recordStreamItem().record(),
-                    consensusNow);
-            } catch (final PreCheckException e) {
-                recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
-            }
+        // add the transaction to the cache
+        if (preHandleResult != null) {
+            addTransactionToCache(
+                preHandleResult,
+                recordListResult.mainRecord().recordStreamItem().record(),
+                consensusNow);
+        } else {
+            // TODO: implement
         }
 
         // TODO: handle long scheduled transactions
 
         // TODO: handle system tasks
-    }
-
-    private void checkDuplicatesAndIncludeInCache(
-            @NonNull final PreHandleResult preHandleResult,
-            @NonNull final TransactionRecord transactionRecord,
-            @NonNull final Instant consensusNow)
-            throws PreCheckException {
-        final var transactionID = transactionRecord.transactionIDOrThrow();
-        final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
-
-        addTransactionToCache(preHandleResult, transactionRecord, consensusNow);
-
-        if (foundTransactionRecord != null) {
-            throw new PreCheckException(DUPLICATE_TRANSACTION);
-        }
     }
 
     private void addTransactionToCache(

@@ -34,7 +34,7 @@ public class RecordCacheService implements Service {
     /** The record cache service name */
     public static final String NAME = "RecordCache";
     /** The name of the queue that stores the transaction records */
-    public static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
+    static final String TXN_RECORD_QUEUE = "TransactionRecordQueue";
 
     private static final SemanticVersion GENESIS_VERSION = SemanticVersion.DEFAULT;
 
