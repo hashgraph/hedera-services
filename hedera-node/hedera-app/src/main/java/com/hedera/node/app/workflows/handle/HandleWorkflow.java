@@ -140,69 +140,55 @@ public class HandleWorkflow {
 
         PreHandleResult preHandleResult = null;
         try {
-            // Setup configuration
-            final var configuration = configProvider.getConfiguration();
-            final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+          // Setup configuration
+          final var configuration = configProvider.getConfiguration();
+          final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
-            preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
-            recordBuilder.transaction(
-                preHandleResult.txInfo().transaction(),
-                preHandleResult.txInfo().signedBytes());
+          preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
+          recordBuilder.transaction(
+              preHandleResult.txInfo().transaction(),
+              preHandleResult.txInfo().signedBytes());
 
-            // If the transaction was executed before we will have a record here
-            final var foundTransactionRecord = hederaRecordCache.getRecord(
-                preHandleResult.txInfo().txBody().transactionID());
+          // Check the payer signature. Whether this is a duplicate transaction or not, we need to have the payer
+          // information to proceed. Also perform a solvency check on the account to make sure the account has not
+          // been deleted, it does exist, and it has sufficient funds to pay for the transaction. If any of those
+          // things is not true, then we will charge the node instead.
+          final var timeout = hederaConfig.workflowVerificationTimeoutMS();
+          final var maxMillis = instantSource.millis() + timeout;
+          final var payerKeyVerification =
+              preHandleResult.verificationResults().get(preHandleResult.payerKey());
+          if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
+            throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
+          }
 
-            // Check all signature verifications. This will also wait, if validation is still ongoing.
-            final var timeout = hederaConfig.workflowVerificationTimeoutMS();
-            final var maxMillis = instantSource.millis() + timeout;
-            final var payerKeyVerification =
-                preHandleResult.verificationResults().get(preHandleResult.payerKey());
-            if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
-                throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
-            }
+          // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+          // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+          // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+          // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+          // and create an appropriate record to save in state and send to the record stream.
+          final var foundTransactionRecord = hederaRecordCache.getRecord(
+              preHandleResult.txInfo().txBody().transactionID());
+
+          if (foundTransactionRecord != null) {
+            // Duplicate code path:
+            // 1. Compute the node+network fees
+            // 2. Create a transaction record
+          } else {
             for (final var key : preHandleResult.requiredKeys()) {
-                final var remainingMillis = maxMillis - instantSource.millis();
-                if (remainingMillis <= 0) {
-                    throw new TimeoutException("Verification of signatures timed out");
-                }
-                final var verification = preHandleResult.verificationResults().get(key);
-                if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
-                    throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
-                }
+              final var remainingMillis = maxMillis - instantSource.millis();
+              if (remainingMillis <= 0) {
+                throw new TimeoutException("Verification of signatures timed out");
+              }
+              final var verification = preHandleResult.verificationResults().get(key);
+              if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
+                throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
+              }
             }
 
             if (foundTransactionRecord != null) {
-                recordBuilder.status(DUPLICATE_TRANSACTION);
-                preHandleResult = createPenaltyPayment();
-                // TODO: do we want to throw an error?
-            } else {
-                // Setup context
-                final var txBody = preHandleResult.txInfo().txBody();
-                final var stack = new SavepointStackImpl(state, configuration);
-                final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
-                final var context = new HandleContextImpl(
-                    txBody,
-                    preHandleResult.payer(),
-                    preHandleResult.payerKey(),
-                    TransactionCategory.USER,
-                    recordBuilder,
-                    stack,
-                    verifier,
-                    recordListBuilder,
-                    checker,
-                    dispatcher,
-                    serviceScopeLookup);
-
-                // Dispatch the transaction to the handler
-                dispatcher.dispatchHandle(context);
-
-                // TODO: Finalize transaction with the help of the token service
-
-                // commit state
-                stack.commit();
+              recordBuilder.status(DUPLICATE_TRANSACTION);
+              preHandleResult = createPenaltyPayment();
             }
-
             // Setup context
             final var txBody = preHandleResult.txInfo().txBody();
             final var stack = new SavepointStackImpl(state, configuration);
@@ -222,7 +208,7 @@ public class HandleWorkflow {
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
-
+          }
             // TODO: Finalize transaction with the help of the token service
 
             // commit state
@@ -233,33 +219,34 @@ public class HandleWorkflow {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
         } catch (final InterruptedException e) {
             logger.error("Interrupted while waiting for signature verification", e);
-            Thread.currentThread().interrupt();
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          Thread.currentThread().interrupt();
+          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (final TimeoutException e) {
-            logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
+          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (final Throwable e) {
-            logger.error("An unexpected exception was thrown during handle", e);
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          logger.error("An unexpected exception was thrown during handle", e);
+          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }
 
-        // store all records at once
-        final var recordListResult = recordListBuilder.build();
-        recordManager.endUserTransaction(recordListResult.recordStream());
+      // store all records at once
+      final var recordListResult = recordListBuilder.build();
 
-        // add the transaction to the cache
-        if (preHandleResult != null) {
-            addTransactionToCache(
-                preHandleResult,
-                recordListResult.mainRecord().recordStreamItem().record(),
-                consensusNow);
-        } else {
-            // TODO: implement
-        }
+      // add the transaction to the cache
+      if (preHandleResult != null) {
+        addTransactionToCache(
+            preHandleResult,
+            recordListResult.mainRecord().recordStreamItem().record(),
+            consensusNow);
+      } else {
+        // TODO: implement
+      }
 
-        // TODO: handle long scheduled transactions
+      // TODO: handle long scheduled transactions
 
-        // TODO: handle system tasks
+      recordManager.endUserTransaction(recordListResult.recordStream());
+
+      // TODO: handle system tasks
     }
 
     private void addTransactionToCache(
