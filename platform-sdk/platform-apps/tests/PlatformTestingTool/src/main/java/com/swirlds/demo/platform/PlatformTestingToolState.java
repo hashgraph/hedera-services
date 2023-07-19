@@ -439,7 +439,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             case ChildIndices.CONFIG:
                 return childClassId == PayloadCfgSimple.CLASS_ID;
             case ChildIndices.NEXT_SEQUENCE_CONSENSUS:
-                return childClassId == NextSeqConsList.CLASS_ID;
+                return childClassId == NextSeqConsList.CLASS_ID || childClassId == NULL_CLASS_ID;
             case ChildIndices.FCM_FAMILY:
                 return childClassId == FCMFamily.CLASS_ID || childClassId == NULL_CLASS_ID;
             case ChildIndices.TRANSACTION_COUNTER:
