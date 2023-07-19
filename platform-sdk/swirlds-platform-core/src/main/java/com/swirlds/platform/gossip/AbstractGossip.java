@@ -181,7 +181,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         final ConnectionServer connectionServer = new ConnectionServer(
                 threadManager,
                 address.getListenAddressIpv4(),
-                address.getListenPortIpv4(),
+                address.getListenPort(),
                 socketFactory,
                 inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)

@@ -27,8 +27,8 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -80,12 +80,12 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Handles system transactions pre-consensus
      */
-    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
 
     /**
      * Handles system transactions post-consensus
      */
-    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
+    private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
 
     /**
      * The current software version.
@@ -96,8 +96,8 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public SwirldStateManagerImpl() {
         stats = null;
         transactionPool = null;
-        preConsensusSystemTransactionManager = null;
-        postConsensusSystemTransactionManager = null;
+        preconsensusSystemTransactionManager = null;
+        consensusSystemTransactionManager = null;
         transactionHandler = null;
         uptimeTracker = null;
         softwareVersion = null;
@@ -106,23 +106,23 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Creates a new instance with the provided state.
      *
-     * @param platformContext                       the platform context
-     * @param addressBook                           the address book
-     * @param selfId                                this node's id
-     * @param preConsensusSystemTransactionManager  the manager for pre-consensus system transactions
-     * @param postConsensusSystemTransactionManager the manager for post-consensus system transactions
-     * @param swirldStateMetrics                    metrics related to SwirldState
-     * @param transactionConfig                     the transaction configuration
-     * @param inFreeze                              indicates if the system is currently in a freeze
-     * @param state                                 the genesis state
-     * @param softwareVersion                       the current software version
+     * @param platformContext                      the platform context
+     * @param addressBook                          the address book
+     * @param selfId                               this node's id
+     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
+     * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
+     * @param swirldStateMetrics                   metrics related to SwirldState
+     * @param transactionConfig                    the transaction configuration
+     * @param inFreeze                             indicates if the system is currently in a freeze
+     * @param state                                the genesis state
+     * @param softwareVersion                      the current software version
      */
     public SwirldStateManagerImpl(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
+            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
             @NonNull final TransactionConfig transactionConfig,
             @NonNull final BooleanSupplier inFreeze,
@@ -132,8 +132,8 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.preConsensusSystemTransactionManager = Objects.requireNonNull(preConsensusSystemTransactionManager);
-        this.postConsensusSystemTransactionManager = Objects.requireNonNull(postConsensusSystemTransactionManager);
+        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
+        this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
         Objects.requireNonNull(transactionConfig);
         Objects.requireNonNull(inFreeze);
@@ -178,7 +178,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public void handlePreConsensusEvent(final EventImpl event) {
         final long startTime = System.nanoTime();
 
-        preConsensusSystemTransactionManager.handleEvent(event);
+        preconsensusSystemTransactionManager.handleEvent(event);
 
         stats.preConsensusHandleTime(startTime, System.nanoTime());
     }
@@ -195,7 +195,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
                 state.getPlatformDualState().getMutableUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        postConsensusSystemTransactionManager.handleRound(state, round);
+        consensusSystemTransactionManager.handleRound(state, round);
         updateEpoch();
     }
 
