@@ -61,7 +61,7 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "0") int randomEventProbability,
         @ConfigProperty(defaultValue = "5") int staleEventPreventionThreshold,
         @ConfigProperty(defaultValue = "10") int rescueChildlessInverseProbability,
-        @ConfigProperty(defaultValue = "500") int eventStreamQueueCapacity,
+        @ConfigProperty(defaultValue = "5000") int eventStreamQueueCapacity,
         @ConfigProperty(defaultValue = "5") long eventsLogPeriod,
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming) {}
