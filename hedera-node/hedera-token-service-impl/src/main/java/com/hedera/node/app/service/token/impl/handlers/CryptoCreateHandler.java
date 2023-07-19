@@ -260,10 +260,10 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             builder.key(op.keyOrThrow()).alias(op.alias());
         }
 
-        if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            final var stakeNumber =
-                    getStakedId(op.stakedId().kind().toString(), op.stakedNodeId(), op.stakedAccountId());
-            builder.stakedNumber(stakeNumber);
+        if (op.hasStakedAccountId()) {
+            builder.stakedAccountId(op.stakedAccountId());
+        } else if (op.hasStakedNodeId()) {
+            builder.stakedNodeId(op.stakedNodeId());
         }
         // set the new account number
         builder.accountNumber(handleContext.newEntityNum());
