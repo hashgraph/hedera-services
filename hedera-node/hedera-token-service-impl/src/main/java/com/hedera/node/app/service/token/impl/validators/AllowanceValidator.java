@@ -138,7 +138,7 @@ public class AllowanceValidator {
             @Nullable final AccountID owner,
             @NonNull final Account payer,
             @NonNull final ReadableAccountStore accountStore) {
-        if (owner == null || owner.accountNumOrElse(0L) == 0L || owner == payer.accountId()) {
+        if (owner == null || owner.accountNumOrElse(0L) == 0L || owner.equals(payer.accountId())) {
             return payer;
         } else {
             // If owner is in modifications get the modified account from state

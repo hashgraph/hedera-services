@@ -98,7 +98,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             final var spenderAccount = accountStore.getAccountById(spender);
             validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
             validateTrue(allowance.amount() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
-            validateFalse(effectiveOwner.accountId() == spender, SPENDER_ACCOUNT_SAME_AS_OWNER);
+            validateFalse(spender.equals(effectiveOwner.accountId()), SPENDER_ACCOUNT_SAME_AS_OWNER);
         }
     }
 
@@ -121,13 +121,13 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
             // validate spender account
             final var spenderAccount = accountStore.getAccountById(spender);
             validateTrue(spenderAccount != null, INVALID_ALLOWANCE_SPENDER_ID);
-            validateTrue(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
+            validateTrue(token.tokenType() == TokenType.FUNGIBLE_COMMON, NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES);
 
             // validate token amount
             final var amount = allowance.amount();
             validateTrue(amount >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
             validateFalse(
-                    token.supplyType().equals(TokenSupplyType.FINITE) && amount > token.maxSupply(),
+                    token.supplyType() == TokenSupplyType.FINITE && amount > token.maxSupply(),
                     AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY);
             // validate
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
@@ -156,7 +156,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
 
             final var token = tokenStore.get(tokenId);
             validateTrue(token != null, INVALID_TOKEN_ID);
-            validateFalse(token.tokenType().equals(TokenType.FUNGIBLE_COMMON), FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
+            validateFalse(token.tokenType() == TokenType.FUNGIBLE_COMMON, FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES);
 
             final var effectiveOwner = getEffectiveOwner(owner, payer, accountStore);
             validateTokenBasics(effectiveOwner, spender, token, tokenRelStore);
@@ -206,7 +206,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         final var tokenId = token.tokenId();
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
-                !token.tokenType().equals(TokenType.FUNGIBLE_COMMON) && owner.accountId() == spender,
+                token.tokenType() != TokenType.FUNGIBLE_COMMON && owner.accountId().equals(spender),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
         validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

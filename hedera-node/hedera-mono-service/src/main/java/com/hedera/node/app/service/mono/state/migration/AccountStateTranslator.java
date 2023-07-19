@@ -118,7 +118,7 @@ public class AccountStateTranslator {
                                 .orElse(0L))
                         .realmNum(StaticProperties.getRealm())
                         .shardNum(StaticProperties.getShard()))
-                .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval())
+                .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval());
 
         if (stakedAccountId != null) acntBuilder.stakedAccountId(stakedAccountId);
         else if (stakedNodeId != -1) acntBuilder.stakedNodeId(stakedNodeId);
