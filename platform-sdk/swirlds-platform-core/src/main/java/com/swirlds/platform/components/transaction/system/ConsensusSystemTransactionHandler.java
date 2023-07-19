@@ -16,18 +16,25 @@
 
 package com.swirlds.platform.components.transaction.system;
 
-import java.util.List;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.transaction.internal.SystemTransaction;
+import com.swirlds.platform.state.State;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Should be implemented by objects that wish to handle system transactions pre-consensus
+ * Handles system transactions post-consensus
+ *
+ * @param <T> the system transaction type
  */
 @FunctionalInterface
-public interface PreConsensusSystemTransactionConsumer {
+public interface ConsensusSystemTransactionHandler<T extends SystemTransaction> {
+
     /**
-     * Reports which pre-consensus system transactions the implementing class wishes to consume, and the methods it
-     * wishes to consume them with
+     * Execute the post-consensus system transaction handler
      *
-     * @return a list of {@link PreConsensusSystemTransactionTypedHandler}s
+     * @param state       a mutable state
+     * @param nodeId      the id of the node which created the transaction
+     * @param transaction the transaction being handled
      */
-    List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods();
+    void handle(@NonNull State state, @NonNull NodeId nodeId, @NonNull T transaction);
 }
