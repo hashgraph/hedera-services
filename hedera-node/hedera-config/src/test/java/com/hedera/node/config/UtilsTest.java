@@ -32,6 +32,6 @@ final class UtilsTest {
                 .getOrCreateConfig();
 
         final var propertyNames = Utils.networkProperties(config);
-        assertThat(propertyNames).containsExactly("networkProperty");
+        assertThat(propertyNames).containsOnlyKeys("networkProperty");
     }
 }
