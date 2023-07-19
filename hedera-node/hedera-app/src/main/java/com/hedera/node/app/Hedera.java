@@ -26,6 +26,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
+import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -189,7 +191,8 @@ public final class Hedera implements SwirldMain {
                 new ScheduleServiceImpl(),
                 new TokenServiceImpl(),
                 new UtilServiceImpl(),
-                new RecordCacheService()));
+                new RecordCacheService(),
+                new BlockRecordService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
@@ -507,6 +510,17 @@ public final class Hedera implements SwirldMain {
     @Override
     public void run() {
         startGrpcServer();
+    }
+
+    /**
+     * Called for an orderly shutdown.
+     */
+    public void shutdown() {
+        shutdownGrpcServer();
+
+        if (daggerApp != null) {
+            daggerApp.blockRecordManager().close();
+        }
     }
 
     /**
@@ -868,13 +882,12 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .staticAccountMemo(nodeAddress.getMemo())
+                    .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
                     .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
-                    .selfId(nodeSelfAccount)
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())

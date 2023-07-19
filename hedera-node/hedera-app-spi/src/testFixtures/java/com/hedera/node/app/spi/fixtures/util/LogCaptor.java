@@ -38,7 +38,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
  * will be the only copy.
  */
 public class LogCaptor {
-    private static final Pattern EVENT_PATTERN = Pattern.compile("(DEBUG|INFO|WARN|ERROR|$)");
+    private static final Pattern EVENT_PATTERN = Pattern.compile("(DEBUG|INFO|WARN|ERROR|FATAL|$)");
 
     private static final String MINIMAL_PATTERN = "%-5level %msg";
 
@@ -74,8 +74,16 @@ public class LogCaptor {
         return eventsAt(Level.INFO);
     }
 
+    public List<String> warnLogs() {
+        return eventsAt(Level.WARN);
+    }
+
     public List<String> errorLogs() {
         return eventsAt(Level.ERROR);
+    }
+
+    public List<String> fatalLogs() {
+        return eventsAt(Level.FATAL);
     }
 
     /**

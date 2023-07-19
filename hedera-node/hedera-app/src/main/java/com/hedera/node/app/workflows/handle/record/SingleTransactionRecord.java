@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.records;
+package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.streams.RecordStreamItem;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
- * A record of a single transaction, including the record stream item and the sidecar records.
+ * A record of a single transaction, including the transaction, record and the sidecar records.
  */
 public record SingleTransactionRecord(
-        @NonNull RecordStreamItem recordStreamItem, @NonNull List<TransactionSidecarRecord> transactionSidecarRecords) {
+        @NonNull Transaction transaction,
+        @NonNull TransactionRecord record,
+        @NonNull List<TransactionSidecarRecord> transactionSidecarRecords) {
     public SingleTransactionRecord {
-        requireNonNull(recordStreamItem, "recordStreamItem must not be null");
+        requireNonNull(transaction, "transaction must not be null");
+        requireNonNull(record, "record must not be null");
         requireNonNull(transactionSidecarRecords, "transactionSidecarRecords must not be null");
     }
 }

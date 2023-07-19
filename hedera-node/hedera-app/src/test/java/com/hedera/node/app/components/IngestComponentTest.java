@@ -22,10 +22,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -53,6 +57,7 @@ class IngestComponentTest {
     private Cryptography cryptography;
 
     private HederaInjectionComponent app;
+    private SelfNodeInfo selfNodeInfo;
 
     @BeforeEach
     void setUp() {
@@ -61,16 +66,23 @@ class IngestComponentTest {
         when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
-        final var selfNodeId = new NodeId(666L);
+        final var selfNodeId = new NodeId(1L);
+        selfNodeInfo = new SelfNodeInfoImpl(
+                1L,
+                AccountID.newBuilder().accountNum(1001).build(),
+                false,
+                "memo",
+                new HederaSoftwareVersion(
+                        SemanticVersion.newBuilder().major(1).build(),
+                        SemanticVersion.newBuilder().major(2).build()));
 
         app = DaggerHederaInjectionComponent.builder()
                 .initTrigger(InitTrigger.GENESIS)
                 .platform(platform)
                 .crypto(CryptographyHolder.get())
-                .staticAccountMemo("memo")
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(new ConfigProviderImpl(false))
-                .selfId(AccountID.newBuilder().accountNum(selfNodeId.id() + 3).build())
+                .self(selfNodeInfo)
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
