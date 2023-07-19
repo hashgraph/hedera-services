@@ -229,6 +229,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // 6. Submit the expanded SignaturePairs to the cryptography engine for verification
         final var results = signatureVerifier.verify(txInfo.signedBytes(), expanded);
 
+        // TODO: get the nodeId and set it here?
         // 7. Create and return TransactionMetadata
         return new PreHandleResult(
                 payer,

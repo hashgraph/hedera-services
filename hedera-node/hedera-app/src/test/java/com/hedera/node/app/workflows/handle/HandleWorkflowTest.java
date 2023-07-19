@@ -200,8 +200,7 @@ class HandleWorkflowTest extends AppTestBase {
         .dispatchHandle(any());
 
     final var fakeHederaState = new FakeHederaState();
-    fakeHederaState.addService(
-        RecordCacheService.NAME, Map.of(RecordCacheService.TXN_RECORD_QUEUE, new LinkedList<>()));
+    fakeHederaState.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new LinkedList<>()));
     when(workingStateAccessor.getHederaState()).thenReturn(fakeHederaState);
 
     hederaRecordCache = spy(new RecordCacheImpl(deduplicationCache, workingStateAccessor, configProvider));

@@ -180,10 +180,10 @@ public class HandleWorkflow {
             case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
             default -> throw new PreCheckException(preHandleResult.responseCode());
           }
-          
-          // Verify if the transaction is a duplicate and add it to the cache
-          checkDuplicatesAndIncludeInCache(
-              preHandleResult, recordBuilder.build().recordStreamItem().record(), consensusNow);
+
+          // If the transaction was executed before we will have a record here
+          final var foundTransactionRecord = hederaRecordCache.getRecord(
+              preHandleResult.txInfo().txBody().transactionID());
 
           // Check all signature verifications. This will also wait, if validation is still ongoing.
           final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -204,33 +204,39 @@ public class HandleWorkflow {
             }
           }
 
-          // Setup context
-          final var stack = new SavepointStackImpl(state, configuration);
-          final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
-          final var context = new HandleContextImpl(
-              txBody,
-              preHandleResult.payer(),
-              preHandleResult.payerKey(),
-              TransactionCategory.USER,
-              recordBuilder,
-              stack,
-              verifier,
-              recordListBuilder,
-              checker,
-              dispatcher,
-              serviceScopeLookup,
-              blockRecordManager,
-              hederaRecordCache);
+          if (foundTransactionRecord != null) {
+            recordBuilder.status(DUPLICATE_TRANSACTION);
+            preHandleResult = createPenaltyPayment();
+            // TODO: do we want to throw an error?
+          } else {
+            // Setup context
+            final var stack = new SavepointStackImpl(state, configuration);
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var context = new HandleContextImpl(
+                txBody,
+                preHandleResult.payer(),
+                preHandleResult.payerKey(),
+                TransactionCategory.USER,
+                recordBuilder,
+                stack,
+                verifier,
+                recordListBuilder,
+                checker,
+                dispatcher,
+                serviceScopeLookup,
+                blockRecordManager,
+                hederaRecordCache);
 
-          // Dispatch the transaction to the handler
-          dispatcher.dispatchHandle(context);
+            // Dispatch the transaction to the handler
+            dispatcher.dispatchHandle(context);
 
-          // TODO: Finalize transaction with the help of the token service
+            // TODO: Finalize transaction with the help of the token service
 
-          recordBuilder.status(SUCCESS);
+            recordBuilder.status(SUCCESS);
 
-          // commit state
-          stack.commit();
+            // commit state
+            stack.commit();
+          }
         } catch (final PreCheckException e) {
           recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
@@ -255,35 +261,18 @@ public class HandleWorkflow {
       // store all records at once
       final var recordListResult = recordListBuilder.build();
 
-      // Verify if the transaction is a duplicate and add it to the cache
-      if (preHandleResult != null) { // this should always be true, but just in case
-        try {
-          checkDuplicatesAndIncludeInCache(
-              preHandleResult,
-              recordListBuilder.build().mainRecord().recordStreamItem().record(),
-              consensusNow);
-        } catch (final PreCheckException e) {
-          recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
-        }
+      // add the transaction to the cache
+      if (preHandleResult != null) {
+        addTransactionToCache(
+            preHandleResult,
+            recordListResult.mainRecord().recordStreamItem().record(),
+            consensusNow);
+      } else {
+        // TODO: implement
       }
 
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
     }
-
-  private void checkDuplicatesAndIncludeInCache(
-      @NonNull final PreHandleResult preHandleResult,
-      @NonNull final TransactionRecord transactionRecord,
-      @NonNull final Instant consensusNow)
-      throws PreCheckException {
-    final var transactionID = transactionRecord.transactionIDOrThrow();
-    final var foundTransactionRecord = hederaRecordCache.getRecord(transactionID);
-
-    addTransactionToCache(preHandleResult, transactionRecord, consensusNow);
-
-    if (foundTransactionRecord != null) {
-      throw new PreCheckException(DUPLICATE_TRANSACTION);
-    }
-  }
 
   private void addTransactionToCache(
       @NonNull final PreHandleResult preHandleResult,
@@ -297,25 +286,7 @@ public class HandleWorkflow {
 
   private void recordFailedTransaction(
       @NonNull final ResponseCodeEnum status,
-      @NonNull final SingleTransactionRecordBuilder recordBuilder,
-      @NonNull final RecordListBuilder recordListBuilder) {
-    recordBuilder.status(status);
-    recordListBuilder.revertChildRecordBuilders(recordBuilder);
-    // TODO: Finalize failed transaction with the help of token-service and commit required state changes
-  }
-
-  private void recordFailedTransaction(
-      @NonNull final ResponseCodeEnum status,
       @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-      @NonNull final RecordListBuilder recordListBuilder) {
-    recordBuilder.status(status);
-    recordListBuilder.revertChildRecordBuilders(recordBuilder);
-    // TODO: Finalize failed transaction with the help of token-service and commit required state changes
-  }
-
-  public void recordFailedTransaction(
-      @NonNull final ResponseCodeEnum status,
-      @NonNull final SingleTransactionRecordBuilder recordBuilder,
       @NonNull final RecordListBuilder recordListBuilder) {
     recordBuilder.status(status);
     recordListBuilder.revertChildRecordBuilders(recordBuilder);
