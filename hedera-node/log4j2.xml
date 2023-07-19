@@ -65,6 +65,7 @@
 
         <!-- Exceptions -->
         <MarkerFilter marker="EXCEPTION"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="ERROR"                  onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="TESTING_EXCEPTIONS"     onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="SOCKET_EXCEPTIONS"      onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="TCP_CONNECT_EXCEPTIONS" onMatch="DENY"   onMismatch="NEUTRAL"/>
