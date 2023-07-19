@@ -130,7 +130,7 @@ public class TokenServiceImpl implements TokenService {
                                     .autoRenewSecs(expiry) // TODO is this right?
                                     .accountNumber(id.accountNumOrThrow())
                                     .tinybarBalance(accountTinyBars)
-//                                    .declineReward(true)
+                                    //                                    .declineReward(true)
                                     .build());
                 }
             }

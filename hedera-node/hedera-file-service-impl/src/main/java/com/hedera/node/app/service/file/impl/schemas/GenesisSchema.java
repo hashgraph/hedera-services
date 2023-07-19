@@ -285,14 +285,18 @@ public class GenesisSchema extends Schema {
         // Get the set of network properties from configuration, and generate the file content to store in state.
         List<Setting> settings = new ArrayList<>();
         Utils.networkProperties(configuration)
-                .forEach((propertyName, propertyValue) ->
-            settings.add(Setting.newBuilder().name(propertyName).value(propertyValue.toString()).build()));
+                .forEach((propertyName, propertyValue) -> settings.add(Setting.newBuilder()
+                        .name(propertyName)
+                        .value(propertyValue.toString())
+                        .build()));
 
-        final var servicesConfigList = ServicesConfigurationList.newBuilder().nameValue(settings).build();
+        final var servicesConfigList =
+                ServicesConfigurationList.newBuilder().nameValue(settings).build();
         final var fileNum = filesConfig.networkProperties();
         // default to shard=0, realm=0. Should get from config
         final var fileId = FileID.newBuilder().fileNum(fileNum).build();
-        final var masterKey = Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         files.put(
                 fileId,
                 File.newBuilder()
@@ -302,7 +306,6 @@ public class GenesisSchema extends Schema {
                         .expirationTime(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
-
 
     // ================================================================================================================
     // Creates and loads the HAPI Permissions into state

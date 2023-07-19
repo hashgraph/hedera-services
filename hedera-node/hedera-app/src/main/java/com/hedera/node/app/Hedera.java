@@ -297,7 +297,7 @@ public final class Hedera implements SwirldMain {
                 case GENESIS -> genesis(state, dualState);
                 case RESTART -> restart(state, dualState, deserializedVersion);
                 case RECONNECT -> reconnect();
-                // We exited from this method early if we were recovering from an event stream.
+                    // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
         } catch (final Throwable th) {
