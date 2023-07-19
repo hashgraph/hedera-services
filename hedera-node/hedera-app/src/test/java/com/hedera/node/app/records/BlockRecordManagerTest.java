@@ -41,6 +41,7 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerConcurrent;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -84,7 +85,6 @@ final class BlockRecordManagerTest extends AppTestBase {
 
         // Configure the application configuration and state we want to test with
         app = appBuilder()
-                .withConfigDataType(BlockRecordStreamConfig.class)
                 .withConfigValue("hedera.recordStream.enabled", true)
                 .withConfigValue("hedera.recordStream.logDir", tempDir.toString())
                 .withConfigValue("hedera.recordStream.sidecarDir", "sidecar")

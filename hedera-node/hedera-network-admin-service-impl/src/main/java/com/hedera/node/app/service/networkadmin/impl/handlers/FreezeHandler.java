@@ -32,7 +32,7 @@ import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
-import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
+import com.hedera.node.config.data.NetworkAdminServiceConfig;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;

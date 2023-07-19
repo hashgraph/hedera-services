@@ -18,7 +18,7 @@ package com.hedera.node.app.records.impl.producers.formats;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.records.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordWriterV6;

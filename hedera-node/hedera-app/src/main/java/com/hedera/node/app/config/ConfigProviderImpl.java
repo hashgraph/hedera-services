@@ -18,7 +18,7 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.records.BlockRecordStreamConfig;
+import com.hedera.node.config.data.NetworkAdminServiceConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
@@ -39,10 +39,12 @@ import com.hedera.node.config.converter.ScaleFactorConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
 import com.hedera.node.config.converter.SidecarTypeConverter;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.ApiPermissionConfig;
 import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ContractsConfig;
@@ -165,6 +167,7 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withSource(SystemPropertiesConfigSource.getInstance())
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
                 .withConfigDataType(AccountsConfig.class)
+                .withConfigDataType(ApiPermissionConfig.class)
                 .withConfigDataType(AutoCreationConfig.class)
                 .withConfigDataType(AutoRenew2Config.class)
                 .withConfigDataType(AutoRenewConfig.class)
@@ -186,6 +189,7 @@ public class ConfigProviderImpl implements ConfigProvider {
                 .withConfigDataType(LazyCreationConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .withConfigDataType(NettyConfig.class)
+                .withConfigDataType(NetworkAdminServiceConfig.class)
                 .withConfigDataType(QueriesConfig.class)
                 .withConfigDataType(RatesConfig.class)
                 .withConfigDataType(SchedulingConfig.class)

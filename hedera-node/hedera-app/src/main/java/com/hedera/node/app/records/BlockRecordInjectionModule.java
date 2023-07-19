@@ -27,6 +27,7 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.records.impl.producers.formats.v7.BlockRecordFormatV7;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

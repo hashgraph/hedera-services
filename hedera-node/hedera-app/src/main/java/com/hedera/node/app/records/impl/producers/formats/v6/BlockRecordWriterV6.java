@@ -36,7 +36,7 @@ import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.hapi.streams.RecordStreamItem;
 import com.hedera.hapi.streams.SidecarMetadata;
-import com.hedera.node.app.records.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.app.records.impl.producers.BlockRecordWriter;
 import com.hedera.node.app.records.impl.producers.SerializedSingleTransactionRecord;
 import com.hedera.node.app.spi.info.NodeInfo;

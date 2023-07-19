@@ -42,8 +42,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.converter.BytesConverter;
-import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.Counter;
@@ -61,9 +60,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.converter.ConfigConverter;
 import com.swirlds.config.api.source.ConfigSource;
-import com.swirlds.config.api.validation.ConfigValidator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -154,9 +151,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     protected final Metrics metrics;
 
     public AppTestBase() {
-        final Configuration configuration = new TestConfigBuilder(false)
-                .withConfigDataType(MetricsConfig.class)
-                .getOrCreateConfig();
+        final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         this.metrics = new DefaultMetrics(
                 nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
@@ -226,13 +221,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         private SemanticVersion softwareVersion = SemanticVersion.DEFAULT;
         private SemanticVersion hapiVersion = SemanticVersion.DEFAULT;
         private Set<Service> services = new LinkedHashSet<>();
-        private TestConfigBuilder configBuilder = new TestConfigBuilder(false);
+        private TestConfigBuilder configBuilder = HederaTestConfigBuilder.create();
         private NodeInfo selfNodeInfo = null;
         private Set<NodeInfo> nodes = new LinkedHashSet<>();
 
         private TestAppBuilder() {
-            configBuilder.withConfigDataType(LedgerConfig.class);
-            configBuilder.withConverter(new BytesConverter());
         }
 
         /**
@@ -254,21 +247,6 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
 
         public TestAppBuilder withSoftwareVersion(@NonNull final SemanticVersion version) {
             this.softwareVersion = version;
-            return this;
-        }
-
-        public <T extends Record> TestAppBuilder withConfigDataType(@NonNull final Class<T> type) {
-            configBuilder.withConfigDataType(type);
-            return this;
-        }
-
-        public <T extends Record> TestAppBuilder withConfigConverter(@NonNull final ConfigConverter<T> converter) {
-            configBuilder.withConverter(converter);
-            return this;
-        }
-
-        public TestAppBuilder withConfigValidator(@NonNull final ConfigValidator validator) {
-            configBuilder.withValidator(validator);
             return this;
         }
 

@@ -19,7 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl.handlers;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
-import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
+import com.hedera.node.config.data.NetworkAdminServiceConfig;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

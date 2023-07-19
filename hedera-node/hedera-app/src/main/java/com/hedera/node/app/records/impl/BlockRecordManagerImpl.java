@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.records.BlockRecordStreamConfig;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
