@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper.totalStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsFinalizer.roundedToHbar;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -95,5 +98,33 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
         }
 
         stakingInfoState.put(nodeId, newStakingInfo.build());
+    }
+
+    public void awardStake(final Long nodeId, final Account account) {
+        final var stakeToAward = roundedToHbar(totalStake(account));
+        final var isDeclineReward = account.declineReward();
+
+        final var stakingInfo = get(nodeId);
+        final var copy = stakingInfo.copyBuilder();
+        if (isDeclineReward) {
+            copy.stakeToNotReward(stakingInfo.stakeToNotReward() + stakeToAward);
+        } else {
+            copy.stakeToReward(stakingInfo.stakeToReward() + stakeToAward);
+        }
+        stakingInfoState.put(nodeId, copy.build());
+    }
+
+    public void withdrawStake(final Long nodeId, final Account account) {
+        final var stakeToWithdraw = roundedToHbar(totalStake(account));
+        final var isDeclineReward = account.declineReward();
+
+        final var stakingInfo = get(nodeId);
+        final var copy = stakingInfo.copyBuilder();
+        if (isDeclineReward) {
+            copy.stakeToNotReward(stakingInfo.stakeToNotReward() - stakeToWithdraw);
+        } else {
+            copy.stakeToReward(stakingInfo.stakeToReward() - stakeToWithdraw);
+        }
+        stakingInfoState.put(nodeId, copy.build());
     }
 }
