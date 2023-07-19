@@ -94,7 +94,7 @@ import java.time.Duration;
 @ConfigData("event.preconsensus")
 public record PreconsensusEventStreamConfig(
         @ConfigProperty(defaultValue = "1000") int writeQueueCapacity,
-        @ConfigProperty(defaultValue = "1s") Duration minimumRetentionPeriod, // TODO
+        @ConfigProperty(defaultValue = "1h") Duration minimumRetentionPeriod,
         @ConfigProperty(defaultValue = "10") int preferredFileSizeMegabytes,
         @ConfigProperty(defaultValue = "50") int bootstrapGenerationalSpan,
         @ConfigProperty(defaultValue = "5") int generationalUtilizationSpanRunningAverageLength,
