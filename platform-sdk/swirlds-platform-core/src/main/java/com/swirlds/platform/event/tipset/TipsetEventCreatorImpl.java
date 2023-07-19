@@ -287,9 +287,10 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                     // an advancement score of zero.
                     zeroAdvancementWeightLogger.error(
                             EXCEPTION.getMarker(),
-                            "bully score is {} but advancement score is zero for {}",
+                            "bully score is {} but advancement score is zero for {}.\n{}",
                             bullyScore,
-                            possibleNerd);
+                            possibleNerd,
+                            this);
                 }
             }
         }
@@ -432,5 +433,16 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         } else {
             return descriptor.getCreator();
         }
+    }
+
+    @NonNull
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Minimum generation non-ancient: ")
+                .append(tipsetTracker.getMinimumGenerationNonAncient())
+                .append("\n");
+        sb.append(childlessOtherEventTracker);
+        sb.append(tipsetWeightCalculator);
+        return sb.toString();
     }
 }

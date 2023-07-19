@@ -166,26 +166,22 @@ public class RandomAddressBookGenerator {
 
         final int maxPort = 65535;
         final int minPort = 2000;
-        final byte[] addressInternalIpv4;
+        final String addressInternalHostname;
         try {
-            addressInternalIpv4 =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getAddress();
+            addressInternalHostname =
+                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
         } catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
         final int portInternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-        final byte[] addressExternalIpv4;
+        final String addressExternalHostname;
         try {
-            addressExternalIpv4 =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getAddress();
+            addressExternalHostname =
+                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
         } catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
         final int portExternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-        final byte[] addressInternalIpv6 = null;
-        final int portInternalIpv6 = -1;
-        final byte[] addressExternalIpv6 = null;
-        final int portExternalIpv6 = -1;
 
         final String memo = RandomUtils.randomString(random, 10);
 
@@ -194,14 +190,10 @@ public class RandomAddressBookGenerator {
                 nickname,
                 selfName,
                 weight,
-                addressInternalIpv4,
+                addressInternalHostname,
                 portInternalIpv4,
-                addressExternalIpv4,
+                addressExternalHostname,
                 portExternalIpv4,
-                addressInternalIpv6,
-                portInternalIpv6,
-                addressExternalIpv6,
-                portExternalIpv6,
                 sigPublicKey,
                 encPublicKey,
                 agreePublicKey,
