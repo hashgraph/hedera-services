@@ -342,8 +342,8 @@ public class Browser {
                                     // interfaces)
                                     // (should probably use ports >50000, this is considered the dynamic
                                     // range)
-                                    address.getPortInternalIpv4(),
-                                    address.getPortExternalIpv4(), // internal port
+                                    address.getPortInternal(),
+                                    address.getPortExternal(), // internal port
                                     PortForwarder.Protocol.TCP // transport protocol
                                     );
                             portsToBeMapped.add(pm);

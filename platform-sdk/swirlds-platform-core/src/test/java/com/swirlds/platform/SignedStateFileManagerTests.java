@@ -459,7 +459,7 @@ class SignedStateFileManagerTests {
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
-        final AtomicLong minimumGenerationNonAncientSetByCallback = new AtomicLong();
+        final AtomicLong minimumGenerationNonAncientSetByCallback = new AtomicLong(-1);
 
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context,
@@ -471,7 +471,10 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 (ssw, path, success) -> {},
                 x -> {
-                    assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
+                    assertTrue(
+                            x > minimumGenerationNonAncientSetByCallback.get(),
+                            "current mingen is %d, new mingen is %d"
+                                    .formatted(minimumGenerationNonAncientSetByCallback.get(), x));
                     minimumGenerationNonAncientSetByCallback.set(x);
                 },
                 mock(StatusActionSubmitter.class));

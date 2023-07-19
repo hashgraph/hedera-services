@@ -61,6 +61,7 @@ import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -78,10 +79,8 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -137,8 +136,10 @@ import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
@@ -394,15 +395,19 @@ public class SwirldsPlatform implements Platform, Startable {
                 platformStatusManager::submitStatusAction);
         wiring.registerComponents(components);
 
-        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManagerFactory()
-                        .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
-                        .build();
+        final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
+        final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
 
-        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManagerFactory()
-                        .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
-                        .build();
+        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
+                new PreconsensusSystemTransactionManager();
+        preconsensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
+
+        final ConsensusSystemTransactionManager consensusSystemTransactionManager =
+                new ConsensusSystemTransactionManager();
+        consensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class,
+                (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -439,8 +444,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 platformContext,
                 initialAddressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 platformStatusManager,
                 freezeManager::isFreezeStarted,
                 initialState.getState(),
@@ -497,7 +502,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(isDuplicateChecks);
+        eventLinker = buildEventLinker(time, isDuplicateChecks);
 
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
@@ -938,7 +943,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the event linker.
      */
     @NonNull
-    private EventLinker buildEventLinker(@NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+    private EventLinker buildEventLinker(
+            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -961,6 +967,7 @@ public class SwirldsPlatform implements Platform, Startable {
             return orphanBuffer;
         } else {
             return new InOrderLinker(
+                    time,
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
                     eventMapper::getMostRecentEvent);
