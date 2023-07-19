@@ -268,8 +268,8 @@ public interface Scenarios extends TransactionFactory {
                 null)
     };
 
-    AccountID account3 = AccountID.newBuilder().accountNum(3L).build();
-    TestNode NODE_1 = new TestNode(
+    final AccountID account3 = AccountID.newBuilder().accountNum(3L).build();
+    final TestNode NODE_1 = new TestNode(
             0L,
             account3,
             Account.newBuilder()
@@ -279,8 +279,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_KEY_INFOS[0]);
 
-    AccountID account4 = AccountID.newBuilder().accountNum(4L).build();
-    TestNode NODE_2 = new TestNode(
+    final AccountID account4 = AccountID.newBuilder().accountNum(4L).build();
+    final TestNode NODE_2 = new TestNode(
             0L,
             account4,
             Account.newBuilder()
@@ -290,12 +290,12 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ED25519_KEY_INFOS[0]);
 
-    AccountID account800 = AccountID.newBuilder().accountNum(800L).build();
-    TestUser STAKING_REWARD_ACCOUNT =
+    final AccountID account800 = AccountID.newBuilder().accountNum(800L).build();
+    final TestUser STAKING_REWARD_ACCOUNT =
             new TestUser(account800, Account.newBuilder().accountId(account800).build(), null);
 
-    AccountID account1002 = AccountID.newBuilder().accountNum(1002L).build();
-    TestUser ALICE = new TestUser(
+    final AccountID account1002 = AccountID.newBuilder().accountNum(1002L).build();
+    final TestUser ALICE = new TestUser(
             account1002,
             Account.newBuilder()
                     .accountId(account1002)
@@ -303,8 +303,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_KEY_INFOS[2]);
 
-    AccountID account1003 = AccountID.newBuilder().accountNum(1003L).build();
-    TestUser BOB = new TestUser(
+    final AccountID account1003 = AccountID.newBuilder().accountNum(1003L).build();
+    final TestUser BOB = new TestUser(
             account1003,
             Account.newBuilder()
                     .accountId(account1003)
@@ -312,8 +312,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ED25519_KEY_INFOS[1]);
 
-    AccountID account1004 = AccountID.newBuilder().accountNum(1004L).build();
-    TestUser CAROL = new TestUser(
+    final AccountID account1004 = AccountID.newBuilder().accountNum(1004L).build();
+    final TestUser CAROL = new TestUser(
             account1004,
             Account.newBuilder()
                     .accountId(account1004)
@@ -322,8 +322,8 @@ public interface Scenarios extends TransactionFactory {
                     .build(),
             FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]);
 
-    AccountID account1006 = AccountID.newBuilder().accountNum(1006L).build();
-    TestUser ERIN = new TestUser(
+    final AccountID account1006 = AccountID.newBuilder().accountNum(1006L).build();
+    final TestUser ERIN = new TestUser(
             account1006,
             Account.newBuilder()
                     .accountId(account1006)

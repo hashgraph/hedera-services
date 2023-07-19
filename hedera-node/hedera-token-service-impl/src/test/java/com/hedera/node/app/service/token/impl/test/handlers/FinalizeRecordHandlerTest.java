@@ -56,18 +56,19 @@ import org.mockito.BDDMockito;
 import org.mockito.Mock;
 
 class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
-    private final AccountID ACCOUNT_1212_ID = AccountID.newBuilder().accountNum(1212).build();
-    private final Account ACCOUNT_1212 = givenValidAccount()
-            .copyBuilder()
-            .accountId(ACCOUNT_1212_ID)
-            .build();
-    private final AccountID ACCOUNT_3434_ID = AccountID.newBuilder().accountNum(3434).build();
+    private final AccountID ACCOUNT_1212_ID =
+            AccountID.newBuilder().accountNum(1212).build();
+    private final Account ACCOUNT_1212 =
+            givenValidAccount().copyBuilder().accountId(ACCOUNT_1212_ID).build();
+    private final AccountID ACCOUNT_3434_ID =
+            AccountID.newBuilder().accountNum(3434).build();
     private final Account ACCOUNT_3434 = givenValidAccount()
             .copyBuilder()
             .accountId(ACCOUNT_3434_ID)
             .tinybarBalance(500)
             .build();
-    private final AccountID ACCOUNT_5656_ID = AccountID.newBuilder().accountNum(5656).build();
+    private final AccountID ACCOUNT_5656_ID =
+            AccountID.newBuilder().accountNum(5656).build();
     private final Account ACCOUNT_5656 = givenValidAccount()
             .copyBuilder()
             .accountId(ACCOUNT_5656_ID)

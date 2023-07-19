@@ -250,7 +250,7 @@ public class AccountStateTranslator {
         merkleAccount.setEthereumNonce(account.ethereumNonce());
         merkleAccount.setNumAssociations(account.numberAssociations());
         merkleAccount.setNumPositiveBalances(account.numberPositiveBalances());
-        merkleAccount.setHeadTokenId(account.headTokenId().tokenNum());
+        merkleAccount.setHeadTokenId(account.headTokenIdOrElse(TokenID.DEFAULT).tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         merkleAccount.setBalanceUnchecked(account.tinybarBalance());
         merkleAccount.setReceiverSigRequired(account.receiverSigRequired());
@@ -270,14 +270,16 @@ public class AccountStateTranslator {
         merkleAccount.setStakedToMe(account.stakedToMe());
         merkleAccount.setStakePeriodStart(account.stakePeriodStart());
         merkleAccount.setStakedId(stakedId);
-        merkleAccount.setAutoRenewAccount(
-                new EntityId(0, 0, account.autoRenewAccountId().accountNum()));
+        merkleAccount.setAutoRenewAccount(new EntityId(
+                0, 0, account.autoRenewAccountIdOrElse(AccountID.DEFAULT).accountNum()));
         merkleAccount.setExpiredAndPendingRemoval(account.expiredAndPendingRemoval());
-        merkleAccount.setHeadNftId(account.headNftId().tokenId().tokenNum());
+        merkleAccount.setHeadNftId(account.headNftIdOrElse(NftID.DEFAULT)
+                .tokenIdOrElse(TokenID.DEFAULT)
+                .tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         if (account.firstContractStorageKey() != null)
             merkleAccount.setFirstUint256StorageKey(new ContractKey(
-                            account.accountId().accountNum(),
+                            account.accountIdOrElse(AccountID.DEFAULT).accountNum(),
                             account.firstContractStorageKey().toByteArray())
                     .getKey());
         return merkleAccount;
@@ -289,7 +291,10 @@ public class AccountStateTranslator {
         final var allowances = account.cryptoAllowances();
         if (allowances != null) {
             for (var allowance : allowances) {
-                cryptoAllowances.put(EntityNum.fromLong(allowance.spenderId().accountNum()), allowance.amount());
+                cryptoAllowances.put(
+                        EntityNum.fromLong(
+                                allowance.spenderIdOrElse(AccountID.DEFAULT).accountNum()),
+                        allowance.amount());
             }
         }
 
@@ -303,8 +308,10 @@ public class AccountStateTranslator {
         if (allowances != null) {
             for (var allowance : allowances) {
                 fcTokenAllowanceIdSet.add(new FcTokenAllowanceId(
-                        EntityNum.fromLong(allowance.tokenId().tokenNum()),
-                        EntityNum.fromLong(allowance.spenderId().accountNum())));
+                        EntityNum.fromLong(
+                                allowance.tokenIdOrElse(TokenID.DEFAULT).tokenNum()),
+                        EntityNum.fromLong(
+                                allowance.spenderIdOrElse(AccountID.DEFAULT).accountNum())));
             }
         }
         return fcTokenAllowanceIdSet;
@@ -318,8 +325,11 @@ public class AccountStateTranslator {
             for (var allowance : allowances) {
                 fungibleAllowances.put(
                         new FcTokenAllowanceId(
-                                EntityNum.fromLong(allowance.tokenId().tokenNum()),
-                                EntityNum.fromLong(allowance.spenderId().accountNum())),
+                                EntityNum.fromLong(
+                                        allowance.tokenIdOrElse(TokenID.DEFAULT).tokenNum()),
+                                EntityNum.fromLong(allowance
+                                        .spenderIdOrElse(AccountID.DEFAULT)
+                                        .accountNum())),
                         allowance.amount());
             }
         }

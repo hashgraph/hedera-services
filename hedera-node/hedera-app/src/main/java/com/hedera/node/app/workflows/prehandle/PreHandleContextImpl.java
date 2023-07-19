@@ -184,7 +184,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @Override
     public PreHandleContext optionalSignatureForHollowAccount(@NonNull final Account hollowAccount) {
         requireNonNull(hollowAccount);
-        AccountID id = hollowAccount.accountId();
+        final AccountID id = hollowAccount.accountId();
         if (!isHollow(hollowAccount)) {
             throw new IllegalArgumentException("Account %d.%d.%d is not a hollow account"
                     .formatted(id.shardNum(), id.realmNum(), id.accountNum()));
@@ -347,7 +347,7 @@ public class PreHandleContextImpl implements PreHandleContext {
     @NonNull
     public PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount) {
         requireNonNull(hollowAccount);
-        AccountID id = hollowAccount.accountId();
+        final AccountID id = hollowAccount.accountId();
         if (!isHollow(hollowAccount)) {
             throw new IllegalArgumentException("Account %d.%d.%d is not a hollow account"
                     .formatted(id.shardNum(), id.realmNum(), id.accountNum()));
