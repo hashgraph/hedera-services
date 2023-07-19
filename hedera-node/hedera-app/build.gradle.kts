@@ -23,6 +23,8 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
+    itestImplementation(testFixtures(project(":app")))
+
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
@@ -45,6 +47,7 @@ dependencies {
         testImplementation(gav("uk.org.webcompere.systemstubs.core"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
 
+        itestAnnotationProcessor(gav("dagger.compiler"))
         itestImplementation(project(":app"))
         itestImplementation(project(":app-spi"))
         itestImplementation(project(":config"))
@@ -61,6 +64,8 @@ dependencies {
         itestImplementation(gav("org.bouncycastle.provider"))
         itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.junit.jupiter.params"))
+        itestImplementation(gav("org.mockito"))
+        itestImplementation(gav("org.mockito.junit.jupiter"))
         itestImplementation(gav("io.netty.transport.classes.epoll"))
         itestImplementation(gav("io.netty.transport.epoll"))
 
