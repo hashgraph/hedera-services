@@ -636,9 +636,22 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     String getTextAfterHeader(@NonNull final String fileContents, @NonNull final String header) {
         Objects.requireNonNull(fileContents, "fileContents must not be null");
         Objects.requireNonNull(header, "header must not be null");
+        final int configABHeaderStart = fileContents.indexOf(CONFIG_ADDRESS_BOOK_HEADER);
+        final int stateABHEaderStart = fileContents.indexOf(STATE_ADDRESS_BOOK_HEADER);
+        final int usedABHeaderStart = fileContents.indexOf(USED_ADDRESS_BOOK_HEADER);
+
         final int headerStartIndex = fileContents.indexOf(header);
         final int addressBookStartIndex = headerStartIndex + header.length();
-        final int addressBookEndIndex = fileContents.indexOf("\n\n", addressBookStartIndex);
+
+        final int addressBookEndIndex;
+        if (headerStartIndex == configABHeaderStart) {
+            addressBookEndIndex = stateABHEaderStart;
+        } else if (headerStartIndex == stateABHEaderStart) {
+            addressBookEndIndex = usedABHeaderStart;
+        } else {
+            addressBookEndIndex = fileContents.length();
+        }
+
         return fileContents
                 .substring(addressBookStartIndex, addressBookEndIndex)
                 .trim();
