@@ -23,10 +23,11 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.config.data.BlockRecordStreamConfig;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -59,11 +60,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      */
     private final int numBlockHashesToKeepBytes;
     /**
-     * The number of milliseconds of consensus time in a block period, from configuration. This is computed based on the
-     * {@link BlockRecordStreamConfig#logPeriod()} setting, multiplied by 1000 to convert from seconds to milliseconds.
-     * This setting is computed once at startup and used throughout.
+     * The number of secibds of consensus time in a block period, from configuration. This is computed based on the
+     * {@link BlockRecordStreamConfig#logPeriod()} setting. This setting is computed once at startup and used
+     * throughout.
      */
-    private final long blockPeriodInMilliSeconds;
+    private final long blockPeriodInSeconds;
     /**
      * The stream file producer we are using. This is set once during startup, and used throughout the execution of the
      * node. It would be nice to allow this to be a dynamic property, but it just isn't convenient to do so at this
@@ -109,7 +110,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
 
         // Get static configuration that is assumed not to change while the node is running
         final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
-        this.blockPeriodInMilliSeconds = recordStreamConfig.logPeriod() * 1000L;
+        this.blockPeriodInSeconds = recordStreamConfig.logPeriod();
         this.numBlockHashesToKeepBytes = recordStreamConfig.numOfBlockHashesInState() * HASH_SIZE;
 
         // Initialize the last block info and provisional block info.
@@ -154,17 +155,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     public void startUserTransaction(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
         // Is this the very first transaction since the node was started?
         final var restarted = provisionalCurrentBlockFirstTransactionTime == null;
-        // Check to see if we are in Genesis. If we are, then we need to create a new provisional first block.
-        if (lastBlockInfo.lastBlockNumber() == 0 && restarted) {
-            // we are in genesis, so create a new block 1
-            streamFileProducer.switchBlocks(0, 1, consensusTime);
-            // set this transaction as the first transaction in the current block
-            provisionalCurrentBlockFirstTransactionTime = consensusTime;
-            // set block number as first block
-            provisionalCurrentBlockNumber = 1;
-        } else if (restarted) {
-            // We are NOT in genesis, but we did just restart. So we will need to create a new block, but we don't
-            // need to close out the old one.
+        // We did just restart. So we will need to create a new block, but we don't need to close out the old one.
+        // This also works for genesis, since the state was prepopulated with a lastBlockInfo.
+        if (restarted) {
             final var lastBlockNo = lastBlockInfo.lastBlockNumber();
             provisionalCurrentBlockNumber = lastBlockNo + 1;
             provisionalCurrentBlockFirstTransactionTime = consensusTime;
@@ -238,6 +231,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 existingRunningHashes.runningHash(),
                 existingRunningHashes.nMinus1RunningHash(),
                 existingRunningHashes.nMinus2RunningHash()));
+        // Commit the changes to the merkle tree.
+        ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
     }
 
     // ========================================================================================================
@@ -316,9 +311,14 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     public Bytes blockHashByBlockNumber(final long blockNo) {
         final Bytes blockHashes = lastBlockInfo.blockHashes();
         final long blocksAvailable = blockHashes.length() / HASH_SIZE;
+
+        // Smart contracts (and other services) call this API. Should a smart contract call this, we don't really
+        // want to throw an exception. So we will just return null, which is also valid. Basically, if the block
+        // doesn't exist, you get null.
         if (blockNo < 0) {
             return null;
         }
+
         final long lastBlockNo = lastBlockInfo.lastBlockNumber();
         final long firstAvailableBlockNo = lastBlockNo - blocksAvailable + 1;
         // If blocksAvailable == 0, then firstAvailable == blockNo; and all numbers are
@@ -339,12 +339,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@link LinkedObjectStreamUtilities#getPeriod(Instant, long)} but updated to work on {@link Instant}.
      *
      * @param consensusTimestamp The consensus timestamp
-     * @return The block period from epoc the consensus timestamp is in
+     * @return The block period from epoch the consensus timestamp is in
      */
     private long getBlockPeriod(@Nullable final Instant consensusTimestamp) {
         if (consensusTimestamp == null) return 0;
-        final long nanos = consensusTimestamp.getEpochSecond() * 1_000_000_000L + consensusTimestamp.getNano();
-        return nanos / 1_000_000L / blockPeriodInMilliSeconds;
+        return consensusTimestamp.getEpochSecond() / blockPeriodInSeconds;
     }
 
     /**

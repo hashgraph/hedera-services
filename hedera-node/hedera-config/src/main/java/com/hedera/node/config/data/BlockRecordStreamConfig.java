@@ -32,7 +32,6 @@ import com.swirlds.config.api.validation.annotation.Min;
  * @param sidecarMaxSizeMb the maximum size of a sidecar file in MB before rolling over to a new file
  * @param recordFileVersion the format version number for record files
  * @param signatureFileVersion the format version number for signature files
- * @param enableTraceabilityMigration ??
  * @param compressFilesOnCreation when true record and sidecar files are compressed with GZip when created
  * @param numOfBlockHashesInState the number of block hashes to keep in state for block history
  * @param streamFileProducer the type of stream file producer to use. Currently only "concurrent" is supported
@@ -47,7 +46,6 @@ public record BlockRecordStreamConfig(
         @ConfigProperty(defaultValue = "256") @Min(1) @Max(1024) int sidecarMaxSizeMb, // NETWORK PROPERTY
         @ConfigProperty(defaultValue = "6") @Min(1) int recordFileVersion, // NETWORK PROPERTY
         @ConfigProperty(defaultValue = "6") @Min(1) int signatureFileVersion, // NETWORK PROPERTY
-        @ConfigProperty(defaultValue = "true") boolean enableTraceabilityMigration, // ??
         @ConfigProperty(defaultValue = "true") boolean compressFilesOnCreation, // NOT SURE
         @ConfigProperty(defaultValue = "256") @Min(1) @Max(4096) int numOfBlockHashesInState, // NETWORK PROPERTY
         @ConfigProperty(defaultValue = "concurrent")

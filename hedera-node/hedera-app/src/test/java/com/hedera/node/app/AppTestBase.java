@@ -225,8 +225,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         private NodeInfo selfNodeInfo = null;
         private Set<NodeInfo> nodes = new LinkedHashSet<>();
 
-        private TestAppBuilder() {
-        }
+        private TestAppBuilder() {}
 
         /**
          * Specify a service to include in this test application configuration. The schemas for this service will be

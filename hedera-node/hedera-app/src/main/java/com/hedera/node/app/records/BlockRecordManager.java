@@ -75,8 +75,9 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only
      * be called after the user transaction has been committed to state and is 100% done. It must include the record of
-     * the user transaction along with all preceding child transactions and any child or system transactions after.
-     * IE. all transactions in the user transaction's 1000ns window.
+     * the user transaction along with all preceding child transactions and any child or transactions after. System
+     * transactions are treated as though they were user transactions, calling
+     * {@link #startUserTransaction(Instant, HederaState)} and {@link #endUserTransaction(Stream, HederaState)}.
      *
      * @param recordStreamItems Stream of records produced while handling the user transaction
      * @param state             The state to read {@link BlockInfo} from

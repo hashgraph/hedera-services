@@ -61,9 +61,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
     @BeforeEach
     void setUp() {
-        config = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.createConfig(),
-                1);
+        config = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
     }
 
     @Test

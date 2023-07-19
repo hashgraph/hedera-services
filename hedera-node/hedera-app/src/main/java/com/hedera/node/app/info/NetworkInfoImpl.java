@@ -30,13 +30,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class NetworkInfoImpl implements NetworkInfo {
+    private static final Logger logger = LogManager.getLogger(NetworkInfoImpl.class);
     private final Bytes ledgerId;
     private final SelfNodeInfo selfNode;
     private final Platform platform;
@@ -76,7 +78,7 @@ public class NetworkInfoImpl implements NetworkInfo {
         final var platformAddressBook = platform.getAddressBook();
         return StreamSupport.stream(platformAddressBook.spliterator(), false)
                 .map(NodeInfoImpl::fromAddress)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Nullable
@@ -99,6 +101,10 @@ public class NetworkInfoImpl implements NetworkInfo {
             return NodeInfoImpl.fromAddress(address);
         } catch (NoSuchElementException e) {
             // The node ID is not in the address book
+            logger.warn("Unable to find node with id {} in the platform address book", nodeId, e);
+            return null;
+        } catch (IllegalArgumentException e) {
+            logger.warn("Unable to parse memo of node with id {} in the platform address book", nodeId, e);
             return null;
         }
     }

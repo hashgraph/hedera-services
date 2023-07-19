@@ -42,7 +42,7 @@ public interface BlockRecordStreamProducer extends AutoCloseable {
      * Get the current running hash of record stream items. This is called on the handle transaction thread. It will
      * block if a background thread is still hashing. It will always return the running hash after the last user
      * transaction was added. Hence, any pre-transactions or others not yet committed via
-     * {@link BlockRecordStreamProducer#writeRecordStreamItems(long, Instant, Stream)} will not be included.
+     * {@link BlockRecordStreamProducer#writeRecordStreamItems(Stream)} will not be included.
      *
      * @return The current running hash upto and including the last record stream item sent in writeRecordStreamItems().
      */

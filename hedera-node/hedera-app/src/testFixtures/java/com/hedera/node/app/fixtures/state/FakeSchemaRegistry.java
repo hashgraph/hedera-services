@@ -19,12 +19,12 @@ package com.hedera.node.app.fixtures.state;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.state.ObjectWritableSingletonState;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -57,7 +57,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                     dataSources.put(sd.stateKey(), dataSource);
                     writables.put(
                             sd.stateKey(),
-                            new ObjectWritableSingletonState<>(sd.stateKey(), dataSource::get, dataSource::set));
+                            new WritableSingletonStateBase<>(sd.stateKey(), dataSource::get, dataSource::set));
                 } else {
                     final var dataSource = new HashMap<String, Object>();
                     dataSources.put(sd.stateKey(), dataSource);
@@ -94,7 +94,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                     listState.commit();
                 } else if (s instanceof MapWritableKVState mapState) {
                     mapState.commit();
-                } else if (s instanceof ObjectWritableSingletonState singletonState) {
+                } else if (s instanceof WritableSingletonStateBase singletonState) {
                     singletonState.commit();
                 } else {
                     throw new RuntimeException("Not yet supported here");

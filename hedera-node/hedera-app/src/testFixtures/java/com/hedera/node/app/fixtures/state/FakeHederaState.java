@@ -22,10 +22,10 @@ import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.state.ObjectReadableSingletonState;
-import com.hedera.node.app.spi.fixtures.state.ObjectWritableSingletonState;
 import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,7 +58,7 @@ public class FakeHederaState implements HederaState {
             } else if (state instanceof Map map) {
                 data.put(stateName, new MapReadableKVState(stateName, map));
             } else if (state instanceof AtomicReference ref) {
-                data.put(stateName, new ObjectReadableSingletonState(stateName, ref::get));
+                data.put(stateName, new ReadableSingletonStateBase(stateName, ref::get));
             }
         }
         return new MapReadableStates(data);
@@ -77,7 +77,7 @@ public class FakeHederaState implements HederaState {
             } else if (state instanceof Map map) {
                 data.put(stateName, new MapWritableKVState(stateName, map));
             } else if (state instanceof AtomicReference ref) {
-                data.put(stateName, new ObjectWritableSingletonState(stateName, ref::get, ref::set));
+                data.put(stateName, new WritableSingletonStateBase(stateName, ref::get, ref::set));
             }
         }
         return new MapWritableStates(data);

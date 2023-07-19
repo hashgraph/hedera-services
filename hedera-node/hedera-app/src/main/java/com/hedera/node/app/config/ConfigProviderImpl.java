@@ -18,7 +18,6 @@ package com.hedera.node.app.config;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.config.data.NetworkAdminServiceConfig;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.AccountIDConverter;
@@ -60,6 +59,7 @@ import com.hedera.node.config.data.IssConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
+import com.hedera.node.config.data.NetworkAdminServiceConfig;
 import com.hedera.node.config.data.QueriesConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;

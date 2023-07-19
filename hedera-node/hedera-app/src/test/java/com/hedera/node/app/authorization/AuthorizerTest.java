@@ -36,9 +36,7 @@ final class AuthorizerTest {
 
     @BeforeEach
     void setUp() {
-        configProvider = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.createConfig(),
-                1);
+        configProvider = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
         accountID = AccountID.newBuilder().build();
         hapiFunction = CONSENSUS_CREATE_TOPIC;

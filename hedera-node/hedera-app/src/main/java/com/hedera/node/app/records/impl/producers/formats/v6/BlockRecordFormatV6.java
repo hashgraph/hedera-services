@@ -138,8 +138,9 @@ public final class BlockRecordFormatV6 implements BlockRecordFormat {
             byte[] previousHash = startRunningHash.toByteArray();
             final MessageDigest messageDigest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
             // use for-i loop as it is faster
+            final var count = serializedItems.size();
             //noinspection ForLoopReplaceableByForEach
-            for (int i = 0; i < serializedItems.size(); i++) {
+            for (int i = 0; i < count; i++) {
                 final var serializedItem = serializedItems.get(i);
                 // first hash the item
                 serializedItem.hashSerializedRecordStreamItem().writeTo(messageDigest);
