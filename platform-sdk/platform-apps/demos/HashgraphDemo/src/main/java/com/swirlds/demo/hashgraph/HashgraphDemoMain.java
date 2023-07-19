@@ -245,12 +245,12 @@ public class HashgraphDemoMain implements SwirldMain {
             print(g, "%5.3f sec, create to consensus", createCons);
             print(g, "%5.3f sec, receive to consensus", recCons);
             final Address address = platform.getAddressBook().getAddress(platform.getSelfId());
-            print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternalIpv4(), 0);
+            print(g, "Internal: " + Network.getInternalIPAddress() + " : " + address.getPortInternal(), 0);
 
             final ExternalIpAddress ipAddress = Network.getExternalIpAddress();
             String externalIpAddress = ipAddress.toString();
             if (ipAddress.getStatus() == IpAddressStatus.IP_FOUND) {
-                externalIpAddress += " : " + address.getPortExternalIpv4();
+                externalIpAddress += " : " + address.getPortExternal();
             }
 
             print(g, "External: " + externalIpAddress, 0);

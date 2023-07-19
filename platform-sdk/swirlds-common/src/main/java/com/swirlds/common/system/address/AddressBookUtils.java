@@ -16,8 +16,6 @@
 
 package com.swirlds.common.system.address;
 
-import static com.swirlds.common.system.address.Address.ipString;
-
 import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,18 +60,18 @@ public class AddressBookUtils {
         for (final Address address : addressBook) {
             final String memo = address.getMemo();
             final boolean hasMemo = !memo.trim().isEmpty();
-            final boolean hasInternalIpv4 = address.getAddressInternalIpv4() != null;
-            final boolean hasExternalIpv4 = address.getAddressExternalIpv4() != null;
+            final boolean hasInternalIpv4 = address.getHostnameInternal() != null;
+            final boolean hasExternalIpv4 = address.getHostnameExternal() != null;
             table.addRow(
                     "address,",
                     address.getNodeId() + ",",
                     address.getNickname() + ",",
                     address.getSelfName() + ",",
                     address.getWeight() + ",",
-                    (hasInternalIpv4 ? ipString(address.getAddressInternalIpv4()) : "") + ",",
-                    address.getPortInternalIpv4() + ",",
-                    (hasExternalIpv4 ? ipString(address.getAddressExternalIpv4()) : "") + ",",
-                    address.getPortExternalIpv4() + (hasMemo ? "," : ""),
+                    (hasInternalIpv4 ? address.getHostnameInternal() : "") + ",",
+                    address.getPortInternal() + ",",
+                    (hasExternalIpv4 ? address.getHostnameExternal() : "") + ",",
+                    address.getPortExternal() + (hasMemo ? "," : ""),
                     memo);
         }
         return table.render();
@@ -175,9 +173,9 @@ public class AddressBookUtils {
                 nickname,
                 selfname,
                 weight,
-                internalIp.getAddress(),
+                internalIp.getHostAddress(),
                 internalPort,
-                externalIp.getAddress(),
+                externalIp.getHostAddress(),
                 externalPort,
                 memoToUse);
     }
