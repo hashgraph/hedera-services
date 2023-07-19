@@ -37,16 +37,17 @@ public interface ReadableStakingInfoStore {
     StakingNodeInfo get(final long nodeId);
 
     /**
-     * Fetches all {@link StakingNodeInfo} objects from state. If no nodes exist, returns an empty collection.
+     * Fetches all node IDs from state. If no nodes exist, returns an empty collection.
      *
+     * <p>
      * ⚠️⚠️
      * WARNING:
      * This method only exists because staking state is small. Don't follow this pattern in other stores
      * without careful consideration!
      * ⚠️⚠️
      *
-     * @return a set of all registered {@link StakingNodeInfo} objects
+     * @return a set of all registered node IDs
      */
     @NonNull
-    Set<StakingNodeInfo> getAll();
+    Set<Long> getAll();
 }

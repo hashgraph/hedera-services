@@ -52,7 +52,7 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
     @NonNull
     @Override
-    public Set<StakingNodeInfo> getAll() {
+    public Set<Long> getAll() {
         // For entity types that have many instances this code would be a bad idea, but for node staking info there
         // should only be a limited number of staking nodes in state. Iterating over all of them should not be expensive
         final var keysIter = stakingInfoState.keys();
@@ -63,11 +63,6 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
             nodeIds.add(keysIter.next());
         }
 
-        final var infos = new HashSet<StakingNodeInfo>(nodeIds.size());
-        for (final long key : nodeIds) {
-            infos.add(stakingInfoState.get(key));
-        }
-
-        return infos;
+        return nodeIds;
     }
 }
