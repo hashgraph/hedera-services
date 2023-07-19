@@ -602,6 +602,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
+                syncMetrics,
                 eventLinker,
                 platformStatusManager,
                 this::loadReconnectState,

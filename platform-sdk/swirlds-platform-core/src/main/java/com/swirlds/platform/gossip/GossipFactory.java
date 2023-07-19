@@ -44,6 +44,7 @@ import com.swirlds.platform.gossip.sync.SingleNodeSyncGossip;
 import com.swirlds.platform.gossip.sync.SyncGossip;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
@@ -89,6 +90,7 @@ public final class GossipFactory {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
+     * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
@@ -117,6 +119,7 @@ public final class GossipFactory {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
@@ -142,6 +145,7 @@ public final class GossipFactory {
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
+        Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(eventLinker);
         Objects.requireNonNull(statusActionSubmitter);
         Objects.requireNonNull(loadReconnectState);
@@ -174,6 +178,7 @@ public final class GossipFactory {
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
+                    syncMetrics,
                     eventLinker,
                     statusActionSubmitter,
                     loadReconnectState,
@@ -198,6 +203,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
+                        syncMetrics,
                         statusActionSubmitter,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
@@ -224,6 +230,7 @@ public final class GossipFactory {
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
+                        syncMetrics,
                         statusActionSubmitter,
                         loadReconnectState,
                         clearAllPipelinesForReconnect);
@@ -248,6 +255,7 @@ public final class GossipFactory {
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
+                    syncMetrics,
                     statusActionSubmitter,
                     loadReconnectState,
                     clearAllPipelinesForReconnect);
