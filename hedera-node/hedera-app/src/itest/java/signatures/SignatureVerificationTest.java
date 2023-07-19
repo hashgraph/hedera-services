@@ -30,7 +30,7 @@ import com.hedera.node.app.signature.impl.SignatureVerifierImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TestKeyInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
+import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -92,7 +92,7 @@ class SignatureVerificationTest implements Scenarios {
 
         // Finally, assert that the verification results are as expected
         final var hederaConfig = CONFIGURATION.getConfigData(HederaConfig.class);
-        final var handleContextVerifier = new HandleContextVerifier(hederaConfig, verificationResults);
+        final var handleContextVerifier = new BaseHandleContextVerifier(hederaConfig, verificationResults);
         assertThat(handleContextVerifier.verificationFor(ERIN.account().alias()))
                 .isNotNull()
                 .extracting(SignatureVerification::passed)
@@ -120,7 +120,7 @@ class SignatureVerificationTest implements Scenarios {
 
         // Finally, assert that the verification results are as expected
         final var hederaConfig = CONFIGURATION.getConfigData(HederaConfig.class);
-        final var handleContextVerifier = new HandleContextVerifier(hederaConfig, verificationResults);
+        final var handleContextVerifier = new BaseHandleContextVerifier(hederaConfig, verificationResults);
         assertThat(handleContextVerifier.verificationFor(keyToVerify))
                 .isNotNull()
                 .extracting(SignatureVerification::passed)
