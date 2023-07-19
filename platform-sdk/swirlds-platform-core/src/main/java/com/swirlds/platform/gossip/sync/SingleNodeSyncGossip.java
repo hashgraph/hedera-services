@@ -45,6 +45,7 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
@@ -92,6 +93,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
+     * @param syncMetrics                   metrics for sync
      * @param updatePlatformStatus          a method that updates the platform status, when called
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
@@ -113,6 +115,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final SyncMetrics syncMetrics,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
@@ -130,6 +133,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 stateManagementComponent,
                 eventMapper,
                 eventIntakeMetrics,
+                syncMetrics,
                 eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState,
