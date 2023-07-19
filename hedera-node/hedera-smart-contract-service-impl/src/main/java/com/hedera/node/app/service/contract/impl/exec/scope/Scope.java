@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta.bni;
+package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
 import com.hedera.node.app.spi.state.WritableStates;
 
 /**
@@ -32,7 +33,7 @@ public interface Scope {
      *
      * @return the contract state reflecting all changes made up to this {@link Scope}
      */
-    WritableStates writableContractState();
+    WritableContractsStore writableContractStore();
 
     /**
      * Returns a {@link Dispatch} that reflects all changes made up to, and within, this

@@ -16,27 +16,23 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.service.contract.impl.exec.scope.Fees;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.Fees;
-import com.hedera.node.app.spi.meta.bni.Scope;
+import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
-import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +41,10 @@ import org.mockito.BDDMockito;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class BaseProxyWorldUpdaterTest {
@@ -84,7 +84,7 @@ class BaseProxyWorldUpdaterTest {
     private Dispatch dispatch;
 
     @Mock
-    private WritableStates writableStates;
+    private WritableContractsStore writableContractStore;
 
     @Mock
     private WritableKVState<SlotKey, SlotValue> storage;
@@ -121,8 +121,8 @@ class BaseProxyWorldUpdaterTest {
         given(scope.dispatch()).willReturn(dispatch);
         given(fees.costInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
-        given(scope.writableContractState()).willReturn(writableStates);
-        given(writableStates.<SlotKey, SlotValue>get(ContractSchema.STORAGE_KEY))
+        given(scope.writableContractStore()).willReturn(writableContractStore);
+        given(writableContractStore.storage())
                 .willReturn(storage);
 
         subject.commit();

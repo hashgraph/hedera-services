@@ -16,18 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
-import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @ExtendWith(MockitoExtension.class)
 class LegibleStorageManagerTest {

@@ -16,6 +16,33 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.spi.state.WritableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -39,33 +66,6 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.spi.meta.bni.ActiveContractVerificationStrategy;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.Scope;
-import com.hedera.node.app.spi.state.WritableKVState;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.code.CodeFactory;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage

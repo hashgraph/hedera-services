@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.*;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
@@ -31,12 +23,15 @@ import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedE
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.hevm.*;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -45,6 +40,46 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Set;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHARGING_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.INVALID_CONTRACT_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MAINNET_CHAIN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MAX_GAS_ALLOWANCE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK_GAS_PRICE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NO_ALLOWANCE_CHARGING_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.USER_OFFERED_GAS_PRICE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALUE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownContextWith;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCall;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCreate;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCall;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownRelayedHapiCreate;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessorTest {
@@ -365,6 +400,7 @@ class TransactionProcessorTest {
         givenSenderAccount();
         givenRelayerAccount();
         givenReceiverAccount();
+        givenFeeOnlyParties();
 
         final var context = wellKnownContextWith(blocks);
         final var transaction = wellKnownRelayedHapiCall(0);

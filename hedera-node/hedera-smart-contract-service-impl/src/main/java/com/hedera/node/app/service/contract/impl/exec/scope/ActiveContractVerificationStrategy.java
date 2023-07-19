@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta.bni;
+package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
 
 /**

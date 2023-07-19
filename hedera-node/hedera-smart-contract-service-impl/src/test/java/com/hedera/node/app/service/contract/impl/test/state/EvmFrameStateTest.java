@@ -16,24 +16,23 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.state.ContractSchema;
+import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.Scope;
+import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class EvmFrameStateTest {
@@ -41,7 +40,7 @@ class EvmFrameStateTest {
     private Scope scope;
 
     @Mock
-    private WritableStates writableStates;
+    private WritableContractsStore writableContractStore;
 
     @Mock
     private Dispatch dispatch;
@@ -54,11 +53,9 @@ class EvmFrameStateTest {
 
     @Test
     void constructsDispatchingEvmFrameStateFromScope() {
-        given(writableStates.<SlotKey, SlotValue>get(ContractSchema.STORAGE_KEY))
-                .willReturn(storage);
-        given(writableStates.<EntityNumber, Bytecode>get(ContractSchema.BYTECODE_KEY))
-                .willReturn(bytecode);
-        given(scope.writableContractState()).willReturn(writableStates);
+        given(writableContractStore.storage()).willReturn(storage);
+        given(writableContractStore.bytecode()).willReturn(bytecode);
+        given(scope.writableContractStore()).willReturn(writableContractStore);
         given(scope.dispatch()).willReturn(dispatch);
 
         final var frameState = EvmFrameState.from(scope);

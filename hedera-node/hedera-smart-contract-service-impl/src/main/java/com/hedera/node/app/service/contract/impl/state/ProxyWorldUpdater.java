@@ -16,20 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
-import static java.util.Objects.requireNonNull;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.spi.meta.bni.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -38,6 +30,22 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 /**
  * A {@link WorldUpdater} that delegates to a given {@link Scope} for state management.

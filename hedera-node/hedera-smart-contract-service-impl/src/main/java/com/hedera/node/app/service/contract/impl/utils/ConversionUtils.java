@@ -16,20 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
+import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -38,6 +33,12 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.

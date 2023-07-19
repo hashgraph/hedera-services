@@ -17,11 +17,9 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
-import com.hedera.node.app.spi.meta.bni.Scope;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -30,6 +28,9 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
@@ -52,8 +53,8 @@ public interface EvmFrameState {
     static EvmFrameState from(@NonNull final Scope scope) {
         return new DispatchingEvmFrameState(
                 scope.dispatch(),
-                scope.writableContractState().get(ContractSchema.STORAGE_KEY),
-                scope.writableContractState().get(ContractSchema.BYTECODE_KEY));
+                scope.writableContractStore().storage(),
+                scope.writableContractStore().bytecode());
     }
 
     /**

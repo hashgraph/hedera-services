@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta.bni;
+package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 
 /**

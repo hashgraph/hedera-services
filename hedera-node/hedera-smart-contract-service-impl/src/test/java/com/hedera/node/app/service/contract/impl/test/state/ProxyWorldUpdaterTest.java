@@ -16,29 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.hyperledger.besu.datatypes.Address.ZERO;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.state.*;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.Fees;
-import com.hedera.node.app.spi.meta.bni.Scope;
-import java.util.List;
-import java.util.Optional;
+import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.service.contract.impl.exec.scope.Fees;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -52,6 +40,35 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
+import static org.hyperledger.besu.datatypes.Address.ZERO;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ProxyWorldUpdaterTest {

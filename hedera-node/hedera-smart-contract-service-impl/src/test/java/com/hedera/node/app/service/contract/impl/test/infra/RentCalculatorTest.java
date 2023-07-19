@@ -16,16 +16,16 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class RentCalculatorTest {
@@ -35,7 +35,7 @@ class RentCalculatorTest {
 
     @BeforeEach
     void setUp() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig().getConfigData(ContractsConfig.class);
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         subject = new RentCalculator(NOW, config);
     }
 

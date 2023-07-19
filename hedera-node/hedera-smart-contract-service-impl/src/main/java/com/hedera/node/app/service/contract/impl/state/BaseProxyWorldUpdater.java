@@ -16,20 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.state.ContractSchema.STORAGE_KEY;
-
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
-import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
@@ -112,6 +111,6 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
     }
 
     private WritableKVState<SlotKey, SlotValue> scopedStorage() {
-        return scope.writableContractState().get(STORAGE_KEY);
+        return scope.writableContractStore().storage();
     }
 }

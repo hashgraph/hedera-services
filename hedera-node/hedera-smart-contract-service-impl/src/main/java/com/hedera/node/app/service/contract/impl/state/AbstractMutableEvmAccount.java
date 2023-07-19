@@ -17,11 +17,9 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Hash;
@@ -30,6 +28,9 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+
+import java.util.Map;
+import java.util.NavigableMap;
 
 /**
  * Provides implementation support for Hedera accounts by overriding the unsupported Besu API methods

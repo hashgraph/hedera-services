@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta.bni;
+package com.hedera.node.app.service.contract.impl.exec.scope;
 
 /**
  * Provides distributed transaction management for smart contract execution.

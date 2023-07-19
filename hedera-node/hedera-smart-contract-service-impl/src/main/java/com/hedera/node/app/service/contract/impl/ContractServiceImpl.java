@@ -17,27 +17,16 @@
 package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Standard implementation of the {@link ContractService}.
+ * Implementation of the {@link ContractService}.
  */
 public final class ContractServiceImpl implements ContractService {
-    private final HederaEvmTransactionProcessor transactionProcessor;
-
-    public ContractServiceImpl() {
-        transactionProcessor = DaggerServiceComponent.create().transactionProcessor();
-    }
-
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new ContractSchema());
-    }
-
-    public HederaEvmTransactionProcessor transactionProcessor() {
-        return transactionProcessor;
     }
 }

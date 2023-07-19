@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.meta.bni;
+package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 
 /**
  * A strategy interface to allow a dispatcher to optionally set the verification status of a
- * "simple" {@link com.hedera.hapi.node.base.Key.KeyOneOfType#CONTRACT_ID},
- * {@link com.hedera.hapi.node.base.Key.KeyOneOfType#DELEGATABLE_CONTRACT_ID}, or
+ * "simple" {@link Key.KeyOneOfType#CONTRACT_ID},
+ * {@link Key.KeyOneOfType#DELEGATABLE_CONTRACT_ID}, or
  * even cryptographic key.
  *
  * <p>The strategy has the option to delegate back to the cryptographic verifications
