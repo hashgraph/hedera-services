@@ -202,6 +202,31 @@ public class HandleWorkflow {
                 // commit state
                 stack.commit();
             }
+
+            // Setup context
+            final var txBody = preHandleResult.txInfo().txBody();
+            final var stack = new SavepointStackImpl(state, configuration);
+            final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var context = new HandleContextImpl(
+                txBody,
+                preHandleResult.payer(),
+                preHandleResult.payerKey(),
+                TransactionCategory.USER,
+                recordBuilder,
+                stack,
+                verifier,
+                recordListBuilder,
+                checker,
+                dispatcher,
+                serviceScopeLookup);
+
+            // Dispatch the transaction to the handler
+            dispatcher.dispatchHandle(context);
+
+            // TODO: Finalize transaction with the help of the token service
+
+            // commit state
+            stack.commit();
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
