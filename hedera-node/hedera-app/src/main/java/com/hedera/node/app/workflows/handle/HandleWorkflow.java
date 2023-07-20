@@ -16,13 +16,11 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.records.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
 import com.hedera.node.app.records.SingleTransactionRecordBuilder;
@@ -32,6 +30,7 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -55,7 +54,6 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,43 +70,46 @@ public class HandleWorkflow {
 
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
-    private final NetworkInfo networkInfo;
-    private final PreHandleWorkflow preHandleWorkflow;
-    private final TransactionDispatcher dispatcher;
-    private final RecordManager recordManager;
-    private final SignatureExpander signatureExpander;
-    private final SignatureVerifier signatureVerifier;
-    private final TransactionChecker checker;
-    private final ServiceScopeLookup serviceScopeLookup;
-    private final ConfigProvider configProvider;
-    private final InstantSource instantSource;
-    private final HederaRecordCache hederaRecordCache;
+  private final NetworkInfo networkInfo;
+  private final PreHandleWorkflow preHandleWorkflow;
+  private final TransactionDispatcher dispatcher;
+  private final RecordManager recordManager;
+  private final SignatureExpander signatureExpander;
+  private final SignatureVerifier signatureVerifier;
+  private final TransactionChecker checker;
+  private final ServiceScopeLookup serviceScopeLookup;
+  private final ConfigProvider configProvider;
+  private final InstantSource instantSource;
+  private final HederaRecordCache hederaRecordCache;
+  private final SolvencyPreCheck solvencyPreCheck;
 
-    @Inject
-    public HandleWorkflow(
-            @NonNull final NetworkInfo networkInfo,
-            @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final RecordManager recordManager,
-            @NonNull final SignatureExpander signatureExpander,
-            @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final TransactionChecker checker,
-            @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final InstantSource instantSource,
-            @NonNull final HederaRecordCache hederaRecordCache) {
-        this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
-        this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
-        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
-        this.recordManager = requireNonNull(recordManager, "recordManager must not be null");
-        this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
-        this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
-        this.checker = requireNonNull(checker, "checker must not be null");
-        this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
-        this.hederaRecordCache = requireNonNull(hederaRecordCache, "hederaRecordCache must not be null");
-    }
+  @Inject
+  public HandleWorkflow(
+      @NonNull final NetworkInfo networkInfo,
+      @NonNull final PreHandleWorkflow preHandleWorkflow,
+      @NonNull final TransactionDispatcher dispatcher,
+      @NonNull final RecordManager recordManager,
+      @NonNull final SignatureExpander signatureExpander,
+      @NonNull final SignatureVerifier signatureVerifier,
+      @NonNull final TransactionChecker checker,
+      @NonNull final ServiceScopeLookup serviceScopeLookup,
+      @NonNull final ConfigProvider configProvider,
+      @NonNull final InstantSource instantSource,
+      @NonNull final HederaRecordCache hederaRecordCache,
+      @NonNull final SolvencyPreCheck solvencyPreCheck) {
+    this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
+    this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
+    this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
+    this.recordManager = requireNonNull(recordManager, "recordManager must not be null");
+    this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
+    this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
+    this.checker = requireNonNull(checker, "checker must not be null");
+    this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
+    this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
+    this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
+    this.hederaRecordCache = requireNonNull(hederaRecordCache, "hederaRecordCache must not be null");
+    this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
+  }
 
     /**
      * Handles the next {@link Round}
@@ -184,10 +185,68 @@ public class HandleWorkflow {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
               }
             }
+            boolean chargeNode = false;
+            try {
+              solvencyPreCheck.checkPayerAccountStatus(state, preHandleResult.payer());
+              solvencyPreCheck.checkSolvencyOfVerifiedPayer(
+                  state, preHandleResult.txInfo().transaction());
+            } catch (PreCheckException e) {
+              // If the account is not valid, or it doesn't have sufficient funds - we charge the node
+              chargeNode = true;
+            }
+
+            final var stack = new SavepointStackImpl(state, configuration);
 
             if (foundTransactionRecord != null) {
-              recordBuilder.status(DUPLICATE_TRANSACTION);
-              preHandleResult = createPenaltyPayment();
+              // TODO: 1. Compute the node+network fees(not implement yet)
+
+              // 2. Charge the payer or the node - depends on https://github.com/hashgraph/hedera-services/issues/6811
+              // TODO: we need to decide how we are going to charge the user - should we create a crypto transfer or
+              // should we directly from the state(?) Probably we will do it as do it when we have
+              // NODE_DUE_DILIGENCE_FAILURE
+              // and call the createPenaltyPayment(). If we choose to generate PreHandleResult and should let the flow
+              // continue(remove the else statement) so we can execute it. We should use chargeNode boolean to decide
+              // should we charge the node or the account.
+
+              // 3. TODO: Create a transaction record
+              // When createPenaltyPayment is implemented it will produce PreHandleResult. Using this result we can
+              // set it to the record as we do above:
+                /*
+                recordBuilder.transaction(
+                    preHandleResult.txInfo().transaction(),
+                    preHandleResult.txInfo().signedBytes());
+                 */
+            } else {
+              for (final var key : preHandleResult.requiredKeys()) {
+                final var remainingMillis = maxMillis - instantSource.millis();
+                if (remainingMillis <= 0) {
+                  throw new TimeoutException("Verification of signatures timed out");
+                }
+                final var verification =
+                    preHandleResult.verificationResults().get(key);
+                if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
+                  throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
+                }
+              }
+
+              // Setup context
+              final var txBody = preHandleResult.txInfo().txBody();
+              final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+              final var context = new HandleContextImpl(
+                  txBody,
+                  preHandleResult.payer(),
+                  preHandleResult.payerKey(),
+                  TransactionCategory.USER,
+                  recordBuilder,
+                  stack,
+                  verifier,
+                  recordListBuilder,
+                  checker,
+                  dispatcher,
+                  serviceScopeLookup);
+
+              // Dispatch the transaction to the handler
+              dispatcher.dispatchHandle(context);
             }
             // Setup context
             final var txBody = preHandleResult.txInfo().txBody();
@@ -234,12 +293,16 @@ public class HandleWorkflow {
 
       // add the transaction to the cache
       if (preHandleResult != null) {
-        addTransactionToCache(
-            preHandleResult,
+        hederaRecordCache.add(
+            platformEvent.getCreatorId().id(),
+            preHandleResult.payer(),
             recordListResult.mainRecord().recordStreamItem().record(),
             consensusNow);
       } else {
-        // TODO: implement
+        // The only reason the preHandleResult might be null is if there is an exception in the try-catch
+        // block above. If that happens the recordBuilder's status will be updated by the catch blocks so there
+        // is no need to override it here. Logging should be enough. // TODO: is that true?
+        logger.warn("The transaction was not saved in the cache");
       }
 
       // TODO: handle long scheduled transactions
@@ -247,16 +310,6 @@ public class HandleWorkflow {
       recordManager.endUserTransaction(recordListResult.recordStream());
 
       // TODO: handle system tasks
-    }
-
-    private void addTransactionToCache(
-            @NonNull final PreHandleResult preHandleResult,
-            @NonNull final TransactionRecord transactionRecord,
-            @NonNull final Instant consensusNow) {
-        final var txBody = preHandleResult.txInfo().txBody();
-        final var nodeId = txBody.nodeAccountID().accountNum();
-        final var payerAccountId = preHandleResult.payer();
-        hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
     }
 
     public void recordFailedTransaction(
