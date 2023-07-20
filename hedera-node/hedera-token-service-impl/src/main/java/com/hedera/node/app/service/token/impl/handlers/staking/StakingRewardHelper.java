@@ -34,7 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Helper class for staking reward
+ * Helper class for staking reward calculations
  */
 @Singleton
 public class StakingRewardHelper {
@@ -42,7 +42,9 @@ public class StakingRewardHelper {
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 
     @Inject
-    public StakingRewardHelper() {}
+    public StakingRewardHelper() {
+        // Exists for Dagger injection
+    }
 
     /**
      * Looks through all the accounts modified in state and returns a list of accounts which are staked to a node

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -30,5 +31,21 @@ public class StakingUtils {
 
     public static long totalStake(@NonNull Account account) {
         return account.tinybarBalance() + account.stakedToMe();
+    }
+
+    /**
+     * Checks if the account has any changes that modified the staking metadata, which is stakedId or declineReward field.
+     * @param originalAccount the original account before the transaction
+     * @param modifiedAccount the modified account after the transaction
+     * @return true if the account has any changes that modified the staking metadata, false otherwise
+     */
+    public static boolean hasStakeMetaChanges(final Account originalAccount, final Account modifiedAccount) {
+        final var differDeclineReward = originalAccount.declineReward() != modifiedAccount.declineReward();
+        final var differStakedNodeId =
+                !originalAccount.stakedNodeIdOrElse(0L).equals(modifiedAccount.stakedNodeIdOrElse(0L));
+        final var differStakeAccountId = originalAccount
+                .stakedAccountIdOrElse(AccountID.DEFAULT)
+                .equals(modifiedAccount.stakedAccountIdOrElse(AccountID.DEFAULT));
+        return differDeclineReward || differStakedNodeId || differStakeAccountId;
     }
 }

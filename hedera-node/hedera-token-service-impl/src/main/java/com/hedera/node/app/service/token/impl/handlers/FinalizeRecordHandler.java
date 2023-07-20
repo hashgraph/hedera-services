@@ -38,7 +38,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -59,14 +59,14 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FinalizeRecordHandler implements TransactionHandler {
-    final StakingRewardsHandlerImpl stakingRewardsFinalizer;
+    final StakingRewardsHandler stakingRewardsHandler;
     final StakingRewardHelper stakingRewardHelper;
 
     @Inject
     public FinalizeRecordHandler(
-            @NonNull final StakingRewardsHandlerImpl stakingRewardsFinalizer,
+            @NonNull final StakingRewardsHandler stakingRewardsHandler,
             @NonNull final StakingRewardHelper stakingRewardHelper) {
-        this.stakingRewardsFinalizer = stakingRewardsFinalizer;
+        this.stakingRewardsHandler = stakingRewardsHandler;
         this.stakingRewardHelper = stakingRewardHelper;
     }
 
@@ -95,7 +95,7 @@ public class FinalizeRecordHandler implements TransactionHandler {
             // a node
             // They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here
-            final var rewardsPaid = stakingRewardsFinalizer.applyStakingRewards(context);
+            final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
             recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
         }
 

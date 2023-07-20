@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;
@@ -39,6 +40,7 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         this.stakePeriodManager = stakePeriodManager;
     }
 
+    /** {@inheritDoc} */
     @Override
     public long computePendingReward(
             @NonNull final Account account,
@@ -50,13 +52,14 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
             return 0;
         }
 
-        final var addressBookId = calculateNodeAddressId(account.stakedNodeId());
-        final var stakingInfo = stakingInfoStore.get(addressBookId);
+        final var nodeId = account.stakedNodeId();
+        final var stakingInfo = stakingInfoStore.get(nodeId);
         final var rewardOffered = computeRewardFromDetails(
                 account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
     }
 
+    /** {@inheritDoc} */
     @Override
     public long estimatePendingRewards(
             @NonNull final Account account,
@@ -71,6 +74,7 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         return account.declineReward() ? 0 : rewardOffered;
     }
 
+    /** {@inheritDoc} */
     @Override
     public long epochSecondAtStartOfPeriod(final long stakePeriod) {
         return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
@@ -110,17 +114,9 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
                             / HBARS_TO_TINYBARS
                             * (rewardFromMinus1Sum - rewardFromSum)
                     // ...and second, the reward for all following periods
-                    + calculateTotalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromMinus1Sum);
+                    + totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromMinus1Sum);
         } else {
-            return calculateTotalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
+            return totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
         }
-    }
-
-    private static long calculateNodeAddressId(long stakedNodeId) {
-        return -stakedNodeId - 1L;
-    }
-
-    private static long calculateTotalStake(@NonNull final Account account) {
-        return account.stakedToMe() + account.tinybarBalance();
     }
 }

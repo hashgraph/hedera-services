@@ -16,10 +16,38 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.Map;
 
+/**
+ * On each transaction, before finalizing the state to a transaction record, goes through all the modified accounts
+ * and pays out the staking rewards if any.
+ * Staking rewards are assessed when an account that is staked to a node or if the account is staked to another
+ * account that is staked to a node, has one of following conditions met:
+ * 1. The account's balance changes
+ * 2. The account's stakedId changes
+ * 3. The account's declineReward field changes
+ * 4. If stakedToMe field of the node to which the account is staked changes
+ */
 public interface StakingRewardsHandler {
+    /**
+     * Goes through all the modified accounts and pays out the staking rewards if any and returns the map of account id
+     * to the amount of rewards paid out.
+     * @param context the context of the transaction
+     * @return a map of account id to the amount of rewards paid out
+     */
     Map<AccountID, Long> applyStakingRewards(final HandleContext context);
+
+    /**
+     * Checks if the account has been rewarded since the last staking metadata change.
+     * @param account the account to check
+     * @return true if the account has been rewarded since the last staking metadata change, false otherwise
+     */
+    default boolean isRewardedSinceLastStakeMetaChange(Account account) {
+        return account.stakeAtStartOfLastRewardedPeriod() != NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+    }
 }

@@ -23,12 +23,19 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Helper class for mutating staking info in the {@link WritableStakingInfoStore}
+ */
+@Singleton
 public class StakeInfoHelper {
     private static final Logger log = LogManager.getLogger(StakeInfoHelper.class);
 
+    @Inject
     public StakeInfoHelper() {}
 
     /**
@@ -61,6 +68,13 @@ public class StakeInfoHelper {
         stakingInfoStore.put(nodeId, newStakingInfo.build());
     }
 
+    /**
+     * Awards the stake to the node's stakeToReward or stakeToNotReward depending on the account's decline reward.
+     * If declineReward is true, the stake is awarded to stakeToNotReward, otherwise it is awarded to stakeToReward.
+     * @param nodeId the node's numeric ID
+     * @param account the account stake to be awarded to the node
+     * @param stakingInfoStore the store for the staking info
+     */
     public void awardStake(
             @NonNull final Long nodeId,
             @NonNull final Account account,
@@ -82,6 +96,14 @@ public class StakeInfoHelper {
         stakingInfoStore.put(nodeId, copy.build());
     }
 
+    /**
+     * Withdraws the stake from the node's stakeToReward or stakeToNotReward depending on the account's decline reward.
+     * If declineReward is true, the stake is withdrawn from stakeToNotReward, otherwise it is withdrawn from
+     * stakeToReward.
+     * @param nodeId the node's numeric ID
+     * @param account the account 's stake to be withdrawn from node
+     * @param stakingInfoStore the store for the staking info
+     */
     public void withdrawStake(
             @NonNull final Long nodeId,
             @NonNull final Account account,

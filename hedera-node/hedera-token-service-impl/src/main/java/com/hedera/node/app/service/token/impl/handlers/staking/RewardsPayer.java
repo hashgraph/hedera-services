@@ -25,11 +25,15 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * Helper class for paying out staking rewards.
+ */
 @Singleton
 public class RewardsPayer {
     private StakingRewardHelper stakingRewardHelper;
@@ -43,14 +47,15 @@ public class RewardsPayer {
         this.rewardCalculator = rewardCalculator;
     }
 
-    public void payRewardsIfPending(
+    public Map<AccountID, Long> payRewardsIfPending(
             @NonNull final Set<AccountID> possibleRewardReceivers,
             @NonNull final WritableAccountStore writableStore,
             @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
             @NonNull final WritableStakingInfoStore stakingInfoStore,
-            @NonNull final Map<AccountID, Long> rewardsPaid,
             @NonNull final Instant consensusNow) {
         requireNonNull(possibleRewardReceivers);
+
+        final Map<AccountID, Long> rewardsPaid = new HashMap<>();
         for (final var receiver : possibleRewardReceivers) {
             var receiverAccount = writableStore.get(receiver);
             final var reward = rewardCalculator.computePendingReward(
@@ -69,8 +74,15 @@ public class RewardsPayer {
                 applyReward(reward, receiverAccount, writableStore);
             }
         }
+        return rewardsPaid;
     }
 
+    /**
+     * Applies the reward to the receiver. This is done by updating the receiver's balance.
+     * @param reward The reward to apply.
+     * @param receiver The account that will receive the reward.
+     * @param writableStore The store to update the receiver's balance in.
+     */
     private void applyReward(final long reward, final Account receiver, final WritableAccountStore writableStore) {
         final var finalBalance = receiver.tinybarBalance() + reward;
         final var copy = receiver.copyBuilder();
