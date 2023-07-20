@@ -21,7 +21,6 @@ import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.node.app.service.mono.txns.TransactionLastStep;
 import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -51,10 +50,6 @@ public interface HandleWorkflowInjectionModule {
     static Function<TxnAccessor, TxnScopedPlatformSigFactory> provideScopedFactoryProvider() {
         return ReusableBodySigningFactory::new;
     }
-
-    @Binds
-    @Singleton
-    TransactionLastStep bindLastStep(AdaptedMonoTransitionRunner adaptedTransitionRunner);
 
     @Binds
     @Singleton

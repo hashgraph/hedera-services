@@ -16,15 +16,19 @@
 
 package com.hedera.node.app.spi.fixtures.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableQueueState;
+import com.hedera.node.app.spi.state.WritableQueueStateBase;
 import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -38,14 +42,14 @@ public class MapWritableStates implements WritableStates {
     private final Map<String, ?> states;
 
     public MapWritableStates(@NonNull final Map<String, ?> states) {
-        this.states = Objects.requireNonNull(states);
+        this.states = requireNonNull(states);
     }
 
     @SuppressWarnings("unchecked")
     @NonNull
     @Override
     public <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
-        final var state = states.get(Objects.requireNonNull(stateKey));
+        final var state = states.get(requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown k/v state key " + stateKey);
         }
@@ -57,7 +61,7 @@ public class MapWritableStates implements WritableStates {
     @NonNull
     @Override
     public <T> WritableSingletonState<T> getSingleton(@NonNull final String stateKey) {
-        final var state = states.get(Objects.requireNonNull(stateKey));
+        final var state = states.get(requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown singleton state key " + stateKey);
         }
@@ -69,7 +73,7 @@ public class MapWritableStates implements WritableStates {
     @NonNull
     @Override
     public <E> WritableQueueState<E> getQueue(@NonNull final String stateKey) {
-        final var state = states.get(Objects.requireNonNull(stateKey));
+        final var state = states.get(requireNonNull(stateKey));
         if (state == null) {
             throw new IllegalArgumentException("Unknown queue state key " + stateKey);
         }
@@ -91,6 +95,21 @@ public class MapWritableStates implements WritableStates {
     @Override
     public int size() {
         return states.size();
+    }
+
+    public void commit() {
+        states.values().forEach(state -> {
+            if (state instanceof WritableKVStateBase kv) {
+                kv.commit();
+            } else if (state instanceof WritableSingletonStateBase singleton) {
+                singleton.commit();
+            } else if (state instanceof WritableQueueStateBase queue) {
+                queue.commit();
+            } else {
+                throw new IllegalStateException(
+                        "Unknown state type " + state.getClass().getName());
+            }
+        });
     }
 
     /**

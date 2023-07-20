@@ -85,7 +85,7 @@ import org.apache.logging.log4j.Logger;
  * that already required event stream recovery); then this exceptional bad luck would require
  * some manual steps to gather signatures on the problem block.
  */
-class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
+public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
@@ -441,7 +441,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     }
                     currentSidecarFileSize += sidecarSizeInBytes;
                     sidecarFileBuilder.addSidecarRecords(sidecar);
-                } else {
+                } else { // TODO this error should be the same
                     LOG.warn("A sidecar record without an actual sidecar has been received");
                 }
             }

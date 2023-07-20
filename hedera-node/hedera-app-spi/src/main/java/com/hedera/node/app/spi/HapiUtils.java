@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.spi;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -29,10 +27,13 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Utility class for working with the HAPI. We might move this to the HAPI project.
@@ -89,7 +90,8 @@ public class HapiUtils {
      */
     public static boolean isHollow(@NonNull final Account account) {
         requireNonNull(account);
-        return (account.accountNumber() > 1000
+        requireNonNull(account.accountId());
+        return (account.accountIdOrThrow().accountNum() > 1000
                 && account.keyOrElse(EMPTY_KEY_LIST).equals(EMPTY_KEY_LIST)
                 && account.alias() != null
                 && account.alias().length() == EVM_ADDRESS_ALIAS_LENGTH);

@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -132,15 +133,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         accountStore.put(accountCreated);
 
         // set newly created account number in the record builder
-        final var createdAccountNum = accountCreated.accountNumber();
-        final var createdAccountID =
-                AccountID.newBuilder().accountNum(createdAccountNum).build();
+        final var createdAccountID = accountCreated.accountId();
         final var recordBuilder = handleContext.recordBuilder(CryptoCreateRecordBuilder.class);
         recordBuilder.accountID(createdAccountID);
 
         // put if any new alias is associated with the account into account store
         if (op.alias() != Bytes.EMPTY) {
-            accountStore.putAlias(op.alias().toString(), createdAccountNum);
+            accountStore.putAlias(op.alias().toString(), createdAccountID);
         }
     }
 
@@ -265,8 +264,14 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         } else if (op.hasStakedNodeId()) {
             builder.stakedNodeId(op.stakedNodeId());
         }
+
         // set the new account number
-        builder.accountNumber(handleContext.newEntityNum());
+        final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
+        builder.accountId(AccountID.newBuilder()
+                .accountNum(handleContext.newEntityNum())
+                .realmNum(hederaConfig.realm())
+                .shardNum(hederaConfig.shard())
+                .build());
         return builder.build();
     }
 

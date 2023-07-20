@@ -27,6 +27,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
+import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
@@ -113,6 +115,7 @@ public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
+    private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
     // This should come from configuration, NOT be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
@@ -188,7 +191,8 @@ public final class Hedera implements SwirldMain {
                 new ScheduleServiceImpl(),
                 new TokenServiceImpl(),
                 new UtilServiceImpl(),
-                new RecordCacheService()));
+                new RecordCacheService(),
+                new BlockRecordService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
@@ -291,12 +295,17 @@ public final class Hedera implements SwirldMain {
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
-        switch (trigger) {
-            case GENESIS -> genesis(state, dualState);
-            case RESTART -> restart(state, dualState, deserializedVersion);
-            case RECONNECT -> reconnect();
-                // We exited from this method early if we were recovering from an event stream.
-            case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+        try {
+            switch (trigger) {
+                case GENESIS -> genesis(state, dualState);
+                case RESTART -> restart(state, dualState, deserializedVersion);
+                case RECONNECT -> reconnect();
+                    // We exited from this method early if we were recovering from an event stream.
+                case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+            }
+        } catch (final Throwable th) {
+            logger.fatal("Critical failure during initialization", th);
+            System.exit(CRITICAL_FAILURE_EXIT_CODE);
         }
 
         // This field has to be set by the time we get here. It will be set by both the genesis and restart code
@@ -501,6 +510,17 @@ public final class Hedera implements SwirldMain {
     @Override
     public void run() {
         startGrpcServer();
+    }
+
+    /**
+     * Called for an orderly shutdown.
+     */
+    public void shutdown() {
+        shutdownGrpcServer();
+
+        if (daggerApp != null) {
+            daggerApp.blockRecordManager().close();
+        }
     }
 
     /**
@@ -862,13 +882,12 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .staticAccountMemo(nodeAddress.getMemo())
+                    .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
                     .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
-                    .selfId(nodeSelfAccount)
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())
