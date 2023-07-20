@@ -16,23 +16,24 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("accounts")
 public record AccountsConfig(
-        @ConfigProperty(defaultValue = "55") long addressBookAdmin,
-        @ConfigProperty(defaultValue = "57") long exchangeRatesAdmin,
-        @ConfigProperty(defaultValue = "56") long feeSchedulesAdmin,
-        @ConfigProperty(defaultValue = "58") long freezeAdmin,
-        @ConfigProperty(defaultValue = "100") long lastThrottleExempt,
-        @ConfigProperty(defaultValue = "801") long nodeRewardAccount,
-        @ConfigProperty(defaultValue = "800") long stakingRewardAccount,
-        @ConfigProperty(defaultValue = "50") long systemAdmin,
-        @ConfigProperty(defaultValue = "59") long systemDeleteAdmin,
-        @ConfigProperty(defaultValue = "60") long systemUndeleteAdmin,
-        @ConfigProperty(defaultValue = "2") long treasury,
-        @ConfigProperty(defaultValue = "false") boolean storeOnDisk,
-        @ConfigProperty(defaultValue = "5000000") long maxNumber,
-        @ConfigProperty(value = "blocklist.enabled", defaultValue = "false") boolean blocklistEnabled,
-        @ConfigProperty(value = "blocklist.resource", defaultValue = "") String blocklistResource) {}
+        @ConfigProperty(defaultValue = "55") @NetworkProperty long addressBookAdmin,
+        @ConfigProperty(defaultValue = "57") @NetworkProperty long exchangeRatesAdmin,
+        @ConfigProperty(defaultValue = "56") @NetworkProperty long feeSchedulesAdmin,
+        @ConfigProperty(defaultValue = "58") @NetworkProperty long freezeAdmin,
+        @ConfigProperty(defaultValue = "100") @NetworkProperty long lastThrottleExempt,
+        @ConfigProperty(defaultValue = "801") @NetworkProperty long nodeRewardAccount,
+        @ConfigProperty(defaultValue = "800") @NetworkProperty long stakingRewardAccount,
+        @ConfigProperty(defaultValue = "50") @NetworkProperty long systemAdmin,
+        @ConfigProperty(defaultValue = "59") @NetworkProperty long systemDeleteAdmin,
+        @ConfigProperty(defaultValue = "60") @NetworkProperty long systemUndeleteAdmin,
+        @ConfigProperty(defaultValue = "2") @NetworkProperty long treasury,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean storeOnDisk,
+        @ConfigProperty(defaultValue = "5000000") @NetworkProperty long maxNumber,
+        @ConfigProperty(value = "blocklist.enabled", defaultValue = "false") @NetworkProperty boolean blocklistEnabled,
+        @ConfigProperty(value = "blocklist.resource", defaultValue = "") @NetworkProperty String blocklistResource) {}

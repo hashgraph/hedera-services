@@ -43,7 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SavepointStackImplTest extends StateTestBase {
 
-    private static final Configuration BASE_CONFIGURATION = HederaTestConfigBuilder.createConfig(false);
+    private static final Configuration BASE_CONFIGURATION = HederaTestConfigBuilder.createConfig();
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
     private static final Map<String, String> BASE_DATA = Map.of(
@@ -118,7 +118,7 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig = HederaTestConfigBuilder.createConfig();
 
         // when
         stack.createSavepoint();
@@ -152,7 +152,7 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
         final var newConfig2 = HederaTestConfigBuilder.createConfig();
 
         // when
@@ -197,7 +197,7 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -229,8 +229,8 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig2 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -272,8 +272,8 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig2 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -316,9 +316,9 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig2 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig3 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
+        final var newConfig3 = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -437,7 +437,7 @@ class SavepointStackImplTest extends StateTestBase {
     void testStackAfterCommit() {
         // given
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
-        final var newConfig = HederaTestConfigBuilder.create(false).getOrCreateConfig();
+        final var newConfig = HederaTestConfigBuilder.createConfig();
 
         // when
         stack.commit();

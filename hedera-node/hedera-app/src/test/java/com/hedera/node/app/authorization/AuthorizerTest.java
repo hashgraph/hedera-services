@@ -24,8 +24,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.AccountsConfig;
-import com.hedera.node.config.data.ApiPermissionConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,12 +36,7 @@ final class AuthorizerTest {
 
     @BeforeEach
     void setUp() {
-        configProvider = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.create(false)
-                        .withConfigDataType(ApiPermissionConfig.class)
-                        .withConfigDataType(AccountsConfig.class)
-                        .getOrCreateConfig(),
-                1);
+        configProvider = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
 
         accountID = AccountID.newBuilder().build();
         hapiFunction = CONSENSUS_CREATE_TOPIC;
@@ -76,9 +69,7 @@ final class AuthorizerTest {
     void accountIsNotPermitted() {
         // given:
         configProvider = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.create(false)
-                        .withConfigDataType(ApiPermissionConfig.class)
-                        .withConfigDataType(AccountsConfig.class)
+                HederaTestConfigBuilder.create()
                         .withValue("createTopic", "1-1000")
                         .getOrCreateConfig(),
                 1);
@@ -96,9 +87,7 @@ final class AuthorizerTest {
     void accountIsPermitted() {
         // given:
         configProvider = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.create(false)
-                        .withConfigDataType(ApiPermissionConfig.class)
-                        .withConfigDataType(AccountsConfig.class)
+                HederaTestConfigBuilder.create()
                         .withValue("createTopic", "1-1234")
                         .getOrCreateConfig(),
                 1);
