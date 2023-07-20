@@ -30,7 +30,6 @@ import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -40,8 +39,6 @@ import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsum
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
@@ -52,7 +49,6 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.metrics.IssMetrics;
 import com.swirlds.platform.state.SignatureTransmitter;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.IssHandler;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -381,37 +377,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     }
 
     /**
-     * Do pre consensus handling for a state signature transaction
-     *
-     * @param creatorId                 the id of the transaction creator
-     * @param stateSignatureTransaction the pre-consensus state signature transaction
-     */
-    public void handleStateSignatureTransactionPreConsensus(
-            @NonNull final NodeId creatorId, @NonNull final StateSignatureTransaction stateSignatureTransaction) {
-        Objects.requireNonNull(creatorId, "creatorId must not be null");
-        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
-
-        signedStateManager.preConsensusSignatureObserver(
-                stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateSignature());
-    }
-
-    /**
-     * Do post-consensus handling for a state signature transaction
-     * <p>
-     * The {@code state} parameter isn't used in this function, since a signature transaction doesn't modify the state
-     */
-    public void handleStateSignatureTransactionPostConsensus(
-            @Nullable final State state,
-            @NonNull final NodeId creatorId,
-            @NonNull final StateSignatureTransaction stateSignatureTransaction) {
-        Objects.requireNonNull(creatorId, "creatorId must not be null");
-        Objects.requireNonNull(stateSignatureTransaction, "stateSignatureTransaction must not be null");
-
-        consensusHashManager.postConsensusSignatureObserver(
-                stateSignatureTransaction.getRound(), creatorId, stateSignatureTransaction.getStateHash());
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -567,24 +532,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
-    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
-        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
-                StateSignatureTransaction.class, this::handleStateSignatureTransactionPreConsensus));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
-        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
-                StateSignatureTransaction.class, this::handleStateSignatureTransactionPostConsensus));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @Nullable
     public Instant getFirstStateTimestamp() {
         return signedStateManager.getFirstStateTimestamp();
@@ -596,5 +543,31 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     @Override
     public long getFirstStateRound() {
         return signedStateManager.getFirstStateRound();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getLatestSavedStateRound() {
+        return signedStateFileManager.getLatestSavedStateRound();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public SignedStateManager getSignedStateManager() {
+        return signedStateManager;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @NonNull
+    @Override
+    public ConsensusHashManager getConsensusHashManager() {
+        return consensusHashManager;
     }
 }

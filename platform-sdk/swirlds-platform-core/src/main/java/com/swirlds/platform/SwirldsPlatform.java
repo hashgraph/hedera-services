@@ -19,6 +19,7 @@ package com.swirlds.platform;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
 import static com.swirlds.common.system.SoftwareVersion.NO_VERSION;
+import static com.swirlds.common.system.UptimeData.NO_ROUND;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
@@ -59,6 +60,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -77,10 +79,8 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.appcomm.AppCommunicationComponent;
 import com.swirlds.platform.components.state.StateManagementComponent;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -136,8 +136,10 @@ import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
+import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
 import com.swirlds.platform.stats.StatConstructor;
 import com.swirlds.platform.system.Shutdown;
@@ -154,6 +156,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
@@ -278,6 +281,12 @@ public class SwirldsPlatform implements Platform, Startable {
     private final TipsetEventCreationManager tipsetEventCreator;
 
     /**
+     * The round of the most recent reconnect state received, or {@link com.swirlds.common.system.UptimeData#NO_ROUND}
+     * if no reconnect state has been received since startup.
+     */
+    private final AtomicLong latestReconnectRound = new AtomicLong(NO_ROUND);
+
+    /**
      * the browser gives the Platform what app to run. There can be multiple Platforms on one computer.
      *
      * @param platformContext          the context for this platform
@@ -376,15 +385,19 @@ public class SwirldsPlatform implements Platform, Startable {
                 currentPlatformStatus::get);
         wiring.registerComponents(components);
 
-        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManagerFactory()
-                        .addHandlers(stateManagementComponent.getPreConsensusHandleMethods())
-                        .build();
+        final SignedStateManager signedStateManager = stateManagementComponent.getSignedStateManager();
+        final ConsensusHashManager consensusHashManager = stateManagementComponent.getConsensusHashManager();
 
-        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManagerFactory()
-                        .addHandlers(stateManagementComponent.getPostConsensusHandleMethods())
-                        .build();
+        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
+                new PreconsensusSystemTransactionManager();
+        preconsensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class, signedStateManager::handlePreconsensusSignatureTransaction);
+
+        final ConsensusSystemTransactionManager consensusSystemTransactionManager =
+                new ConsensusSystemTransactionManager();
+        consensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class,
+                (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
@@ -421,8 +434,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 platformContext,
                 initialAddressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 metrics,
                 transactionConfig,
                 freezeManager::isFreezeStarted,
@@ -479,7 +492,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
         isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
 
-        eventLinker = buildEventLinker(isDuplicateChecks);
+        eventLinker = buildEventLinker(time, isDuplicateChecks);
 
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
@@ -545,7 +558,9 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeQueue,
                 eventObserverDispatcher,
                 currentPlatformStatus::get,
-                startUpEventFrozenManager);
+                startUpEventFrozenManager,
+                latestReconnectRound::get,
+                stateManagementComponent::getLatestSavedStateRound);
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 currentPlatformStatus::get,
@@ -577,6 +592,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
+                syncMetrics,
                 eventLinker,
                 this::checkPlatformStatus,
                 this::loadReconnectState,
@@ -685,29 +701,32 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         final State initialState = signedState.getState();
-        final Hash initialHash = initialState.getSwirldState().getHash();
+
+        // Although the state from disk / genesis state is initially hashed, we are actually dealing with a copy
+        // of that state here. That copy should have caused the hash to be cleared.
+        if (initialState.getHash() != null) {
+            throw new IllegalStateException("Expected initial state to be unhashed");
+        }
+        if (initialState.getSwirldState().getHash() != null) {
+            throw new IllegalStateException("Expected initial swirld state to be unhashed");
+        }
 
         initialState.getSwirldState().init(this, initialState.getSwirldDualState(), trigger, previousSoftwareVersion);
 
-        final Hash currentHash = initialState.getSwirldState().getHash();
+        abortAndThrowIfInterrupted(
+                () -> {
+                    try {
+                        MerkleCryptoFactory.getInstance()
+                                .digestTreeAsync(initialState)
+                                .get();
+                    } catch (final ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                "interrupted while attempting to hash the state");
 
-        // If the current hash is null, we must hash the state
-        // It's also possible that the application modified the state and hashed itself in init(), if so we need to
-        // rehash the state as a whole.
-        if (currentHash == null || !Objects.equals(initialHash, currentHash)) {
-            initialState.invalidateHash();
-            abortAndThrowIfInterrupted(
-                    () -> {
-                        try {
-                            MerkleCryptoFactory.getInstance()
-                                    .digestTreeAsync(initialState)
-                                    .get();
-                        } catch (final ExecutionException e) {
-                            throw new RuntimeException(e);
-                        }
-                    },
-                    "interrupted while attempting to hash the state");
-        }
+        // If our hash changes as a result of the new address book then our old signatures may become invalid.
+        signedState.pruneInvalidSignatures();
 
         final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         logger.info(
@@ -829,6 +848,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             swirldStateManager.loadFromSignedState(signedState);
 
+            latestReconnectRound.set(signedState.getRound());
             stateManagementComponent.stateToLoad(signedState, SourceOfSignedState.RECONNECT);
 
             loadStateIntoConsensusAndEventMapper(signedState);
@@ -913,7 +933,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the event linker.
      */
     @NonNull
-    private EventLinker buildEventLinker(@NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
+    private EventLinker buildEventLinker(
+            @NonNull final Time time, @NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
         Objects.requireNonNull(isDuplicateChecks);
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -936,6 +957,7 @@ public class SwirldsPlatform implements Platform, Startable {
             return orphanBuffer;
         } else {
             return new InOrderLinker(
+                    time,
                     platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
                     parentFinder,
                     eventMapper::getMostRecentEvent);
@@ -1057,12 +1079,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Checks the status of the platform and notifies the SwirldMain if there is a change in status
      */
     private void checkPlatformStatus() {
-        final int numNodes = initialAddressBook.getSize();
-
         synchronized (currentPlatformStatus) {
-            if (numNodes > 1 && gossip.activeConnectionNumber() == 0) {
-                setPlatformStatus(PlatformStatus.DISCONNECTED);
-            } else if (gossip.hasFallenBehind()) {
+            if (gossip.hasFallenBehind()) {
                 setPlatformStatus(PlatformStatus.BEHIND);
             } else if (freezeManager.isFreezeStarted()) {
                 setPlatformStatus(PlatformStatus.FREEZING);

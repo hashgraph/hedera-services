@@ -34,6 +34,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -117,7 +118,7 @@ class FileAppendTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[1048577])))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
     }
@@ -131,7 +132,7 @@ class FileAppendTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[0])))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         // expect:
         subject.handle(handleContext);
@@ -153,7 +154,7 @@ class FileAppendTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(bytesNewContent))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -170,7 +171,7 @@ class FileAppendTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 

@@ -34,6 +34,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventUtils;
@@ -41,6 +42,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,6 +94,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
      */
     private int lastSelfEventTransactionCount;
 
+    private final RateLimitedLogger zeroAdvancementWeightLogger;
+    private final RateLimitedLogger noParentFoundLogger;
+
     /**
      * Create a new tipset event creator.
      *
@@ -129,10 +134,13 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         cryptography = platformContext.getCryptography();
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        tipsetTracker = new TipsetTracker(addressBook);
+        tipsetTracker = new TipsetTracker(time, addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+                platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+
+        zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /**
@@ -277,11 +285,12 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                     // for the advancement score to be zero. But in the interest in extreme caution,
                     // we check anyway, since it is very important never to create events with
                     // an advancement score of zero.
-                    logger.error(
+                    zeroAdvancementWeightLogger.error(
                             EXCEPTION.getMarker(),
-                            "bully score is {} but advancement score is zero for {}",
+                            "bully score is {} but advancement score is zero for {}.\n{}",
                             bullyScore,
-                            possibleNerd);
+                            possibleNerd,
+                            this);
                 }
             }
         }
@@ -290,7 +299,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             // Note: this should be impossible, since we will not enter this method in the first
             // place if there are no nerds. But better to be safe than sorry, and returning null
             // is an acceptable way of saying "I can't create an event right now".
-            logger.error(EXCEPTION.getMarker(), "failed to locate eligible nerd to use as a parent");
+            noParentFoundLogger.error(EXCEPTION.getMarker(), "failed to locate eligible nerd to use as a parent");
             return null;
         }
 
@@ -424,5 +433,16 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         } else {
             return descriptor.getCreator();
         }
+    }
+
+    @NonNull
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Minimum generation non-ancient: ")
+                .append(tipsetTracker.getMinimumGenerationNonAncient())
+                .append("\n");
+        sb.append(childlessOtherEventTracker);
+        sb.append(tipsetWeightCalculator);
+        return sb.toString();
     }
 }

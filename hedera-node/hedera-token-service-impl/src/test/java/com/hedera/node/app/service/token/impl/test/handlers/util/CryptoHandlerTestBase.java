@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
@@ -29,6 +30,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
@@ -134,14 +136,14 @@ public class CryptoHandlerTestBase {
         account = givenValidAccount(accountNum);
         deleteAccount = givenValidAccount(deleteAccountNum)
                 .copyBuilder()
-                .accountNumber(deleteAccountNum)
+                .accountId(deleteAccountId)
                 .key(accountKey)
                 .numberPositiveBalances(0)
                 .numberTreasuryTitles(0)
                 .build();
         transferAccount = givenValidAccount(transferAccountNum)
                 .copyBuilder()
-                .accountNumber(transferAccountNum)
+                .accountId(transferAccountId)
                 .key(key)
                 .build();
         refreshStoresWithCurrentTokenOnlyInReadable();
@@ -244,7 +246,7 @@ public class CryptoHandlerTestBase {
 
     protected Account givenValidAccount(final long accountNum) {
         return new Account(
-                accountNum,
+                AccountID.newBuilder().accountNum(accountNum).build(),
                 alias.alias(),
                 key,
                 1_234_567L,
@@ -253,11 +255,11 @@ public class CryptoHandlerTestBase {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                UNSET_STAKED_ID,
                 true,
                 true,
-                3,
-                2,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1,
                 2,
                 10,
@@ -267,7 +269,7 @@ public class CryptoHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),
@@ -280,7 +282,7 @@ public class CryptoHandlerTestBase {
 
     protected void givenValidContract() {
         account = new Account(
-                accountNum,
+                AccountID.newBuilder().accountNum(accountNum).build(),
                 alias.alias(),
                 key,
                 1_234_567L,
@@ -289,11 +291,11 @@ public class CryptoHandlerTestBase {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                UNSET_STAKED_ID,
                 true,
                 true,
-                3,
-                2,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1,
                 2,
                 10,
@@ -303,7 +305,7 @@ public class CryptoHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),

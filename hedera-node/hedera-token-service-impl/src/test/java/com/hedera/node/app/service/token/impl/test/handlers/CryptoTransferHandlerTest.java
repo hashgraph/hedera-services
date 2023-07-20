@@ -48,6 +48,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -58,10 +59,14 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
+    @Mock
+    private CryptoTransferRecordBuilder transferRecordBuilder;
+
     private static final TokenID TOKEN_1357 = asToken(1357);
     private static final TokenID TOKEN_9191 = asToken(9191);
     private Configuration config;
@@ -70,6 +75,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     public void setUp() {
         super.setUp();
         subject = new CryptoTransferHandler(validator);
+        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -230,14 +236,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));
@@ -259,14 +265,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));
@@ -274,22 +280,33 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         final var initialSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
+        final var initialFeeCollectorBalance =
+                writableAccountStore.get(feeCollectorId).tinybarBalance();
 
         subject.handle(handleContext);
 
         assertThat(writableAccountStore.modifiedAliasesInState()).hasSize(2);
-        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(3);
+        assertThat(writableAccountStore.modifiedAccountsInState()).hasSize(4); // includes fee collector for custom fees
         assertThat(writableAccountStore.modifiedAccountsInState())
                 .contains(ownerId, asAccount(hbarReceiver), asAccount(tokenReceiver));
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(4);
 
         assertThat(writableAccountStore.get(asAccount(hbarReceiver))).isNotNull();
         assertThat(writableAccountStore.get(asAccount(tokenReceiver))).isNotNull();
-        assertThat(writableAliases.get(ecKeyAlias).accountNum()).isEqualTo(hbarReceiver);
-        assertThat(writableAliases.get(edKeyAlias).accountNum()).isEqualTo(tokenReceiver);
+        assertThat(writableAliases.get(ecKeyAlias)).isEqualTo(hbarReceiverId);
+        assertThat(writableAliases.get(edKeyAlias)).isEqualTo(tokenReceiverId);
 
         final var endSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
-        assertThat(endSenderBalance).isEqualTo(initialSenderBalance - 1_000);
+        // 1_000 for custom fee, 1_000 for transfer
+        assertThat(endSenderBalance).isEqualTo(initialSenderBalance - 1_000 - 1_000);
+
+        final var feeCollectorBalance = writableAccountStore.get(feeCollectorId).tinybarBalance();
+        assertThat(feeCollectorBalance)
+                .isEqualTo(
+                        initialFeeCollectorBalance
+                                + 1_000 // fixed custom fee
+                                + 1_000 // hbar fallback royalty fee
+                        );
     }
 
     @Test
@@ -318,14 +335,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));
@@ -363,14 +380,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));

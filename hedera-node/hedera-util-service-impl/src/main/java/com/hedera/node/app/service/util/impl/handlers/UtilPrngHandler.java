@@ -21,13 +21,8 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.math.IntMath;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.*;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
@@ -84,22 +79,20 @@ public class UtilPrngHandler implements TransactionHandler {
         }
         // get the n-3 running hash. If the running hash is not available, will throw a
         // HandleException
-        final var runningHashStore = context.readableStore(ReadableRunningHashLeafStore.class);
-        final var nMinusThreeRunningHash = runningHashStore.getNMinusThreeRunningHash();
-        final byte[] pseudoRandomBytes = getNMinus3RunningHashBytes(nMinusThreeRunningHash);
+        final Bytes pseudoRandomBytes = context.blockRecordInfo().getNMinus3RunningHash();
 
         // If no bytes are available then return
-        if (pseudoRandomBytes == null || pseudoRandomBytes.length == 0) {
+        if (pseudoRandomBytes == null || pseudoRandomBytes.length() == 0) {
             return;
         }
         // If range is provided then generate a random number in the given range
         // from the pseudoRandomBytes
         final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
         if (range > 0) {
-            final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
+            final int pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes.toByteArray(), range);
             recordBuilder.entropyNumber(pseudoRandomNumber);
         } else {
-            recordBuilder.entropyBytes(Bytes.wrap(pseudoRandomBytes));
+            recordBuilder.entropyBytes(pseudoRandomBytes);
         }
     }
 

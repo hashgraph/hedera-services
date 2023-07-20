@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -80,7 +80,7 @@ public class FileUpdateHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
 
-        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
+        final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final var fileUpdate = handleContext.body().fileUpdateOrThrow();
         final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT));
 

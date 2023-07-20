@@ -25,6 +25,7 @@ import com.swirlds.common.merkle.iterators.internal.NullNode;
 import com.swirlds.common.merkle.iterators.internal.PostOrderedDepthFirstAlgorithm;
 import com.swirlds.common.merkle.iterators.internal.PostOrderedDepthFirstRandomAlgorithm;
 import com.swirlds.common.merkle.iterators.internal.PreOrderedDepthFirstAlgorithm;
+import com.swirlds.common.merkle.iterators.internal.ReversePostOrderedDepthFirstAlgorithm;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import java.io.IOException;
@@ -279,6 +280,7 @@ public class MerkleIterator<T extends MerkleNode> implements Iterator<T> {
         if (algorithm == null) {
             switch (order) {
                 case POST_ORDERED_DEPTH_FIRST -> algorithm = new PostOrderedDepthFirstAlgorithm();
+                case REVERSE_POST_ORDERED_DEPTH_FIRST -> algorithm = new ReversePostOrderedDepthFirstAlgorithm();
                 case POST_ORDERED_DEPTH_FIRST_RANDOM -> algorithm = new PostOrderedDepthFirstRandomAlgorithm();
                 case PRE_ORDERED_DEPTH_FIRST -> algorithm = new PreOrderedDepthFirstAlgorithm();
                 case BREADTH_FIRST -> algorithm = new BreadthFirstAlgorithm();

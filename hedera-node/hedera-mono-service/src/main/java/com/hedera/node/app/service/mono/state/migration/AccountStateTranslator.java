@@ -21,10 +21,13 @@ import static java.util.Objects.requireNonNull;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -62,8 +65,15 @@ public class AccountStateTranslator {
                 : Bytes.wrap(account.getFirstContractStorageKey()
                         .getKeyAsBigInteger()
                         .toByteArray());
-        return Account.newBuilder()
-                .accountNumber(account.getKey().longValue())
+        final var stakedAccountId = account.getStakedId() > 0
+                ? AccountID.newBuilder().accountNum(account.getStakedId()).build()
+                : null;
+        final var stakedNodeId = account.getStakedId() < 0 ? -account.getStakedId() - 1 : -1;
+        final var acntBuilder = Account.newBuilder()
+                .accountId(AccountID.newBuilder()
+                        .accountNum(account.getKey().longValue())
+                        .realmNum(StaticProperties.getRealm())
+                        .shardNum(StaticProperties.getShard()))
                 .numberOwnedNfts(account.getNftsOwned())
                 .numberTreasuryTitles(account.getNumTreasuryTitles())
                 .memo(account.getMemo())
@@ -72,7 +82,10 @@ public class AccountStateTranslator {
                 .ethereumNonce(account.getEthereumNonce())
                 .numberAssociations(account.getNumAssociations())
                 .numberPositiveBalances(account.getNumPositiveBalances())
-                .headTokenNumber(account.getHeadTokenId())
+                .headTokenId(TokenID.newBuilder()
+                        .tokenNum(account.getHeadTokenId())
+                        .realmNum(StaticProperties.getRealm())
+                        .shardNum(StaticProperties.getShard()))
                 .headNftSerialNumber(account.getHeadNftSerialNum())
                 .tinybarBalance(account.getBalance())
                 .receiverSigRequired(account.isReceiverSigRequired())
@@ -90,15 +103,27 @@ public class AccountStateTranslator {
                 .stakeAtStartOfLastRewardedPeriod(account.totalStakeAtStartOfLastRewardedPeriod())
                 .stakedToMe(account.getStakedToMe())
                 .stakePeriodStart(account.getStakePeriodStart())
-                .stakedNumber(account.getStakedId())
+                .stakedAccountId(stakedAccountId)
+                .stakedNodeId(stakedNodeId)
                 .firstContractStorageKey(firstContractStorageKey)
-                .headNftId(account.getHeadNftTokenNum())
-                .headNftSerialNumber(account.getHeadNftSerialNum())
-                .autoRenewAccountNumber(Optional.ofNullable(account.getAutoRenewAccount())
-                        .map(EntityId::num)
-                        .orElse(0L))
-                .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval())
-                .build();
+                .headNftId(NftID.newBuilder()
+                        .tokenId(TokenID.newBuilder()
+                                .tokenNum(account.getHeadNftTokenNum())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
+                        .serialNumber(account.getHeadNftSerialNum()))
+                .autoRenewAccountId(AccountID.newBuilder()
+                        .accountNum(Optional.ofNullable(account.getAutoRenewAccount())
+                                .map(EntityId::num)
+                                .orElse(0L))
+                        .realmNum(StaticProperties.getRealm())
+                        .shardNum(StaticProperties.getShard()))
+                .expiredAndPendingRemoval(account.isExpiredAndPendingRemoval());
+
+        if (stakedAccountId != null) acntBuilder.stakedAccountId(stakedAccountId);
+        else if (stakedNodeId != -1) acntBuilder.stakedNodeId(stakedNodeId);
+
+        return acntBuilder.build();
     }
 
     @Nullable
@@ -106,8 +131,14 @@ public class AccountStateTranslator {
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
         return orderedOperatorApprovals(account.getApproveForAllNfts().stream()
                 .map(a -> AccountApprovalForAllAllowance.newBuilder()
-                        .spenderNum(a.getSpenderNum().longValue())
-                        .tokenNum(a.getTokenNum().longValue())
+                        .spenderId(AccountID.newBuilder()
+                                .accountNum(a.getSpenderNum().longValue())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
+                        .tokenId(TokenID.newBuilder()
+                                .tokenNum(a.getTokenNum().longValue())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
                         .build())
                 .toList());
     }
@@ -117,7 +148,10 @@ public class AccountStateTranslator {
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
         return orderedHbarAllowances(account.getCryptoAllowances().entrySet().stream()
                 .map(e -> AccountCryptoAllowance.newBuilder()
-                        .spenderNum(e.getKey().longValue())
+                        .spenderId(AccountID.newBuilder()
+                                .accountNum(e.getKey().longValue())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
                         .amount(e.getValue())
                         .build())
                 .toList());
@@ -128,8 +162,14 @@ public class AccountStateTranslator {
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleAccount account) {
         return orderedFungibleAllowances(account.getFungibleTokenAllowances().entrySet().stream()
                 .map(e -> AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(e.getKey().getTokenNum().longValue())
-                        .spenderNum(e.getKey().getSpenderNum().longValue())
+                        .tokenId(TokenID.newBuilder()
+                                .tokenNum(e.getKey().getTokenNum().longValue())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
+                        .spenderId(AccountID.newBuilder()
+                                .accountNum(e.getKey().getSpenderNum().longValue())
+                                .realmNum(StaticProperties.getRealm())
+                                .shardNum(StaticProperties.getShard()))
                         .amount(e.getValue())
                         .build())
                 .toList());
@@ -138,10 +178,15 @@ public class AccountStateTranslator {
     @Nullable
     static List<AccountApprovalForAllAllowance> orderedOperatorApprovals(
             @NonNull final List<AccountApprovalForAllAllowance> approvals) {
-        return approvals.stream()
-                .sorted(Comparator.comparingLong(AccountApprovalForAllAllowance::spenderNum)
-                        .thenComparingLong(AccountApprovalForAllAllowance::tokenNum))
-                .toList();
+
+        Comparator<AccountApprovalForAllAllowance> comp = Comparator.comparingLong((AccountApprovalForAllAllowance a) ->
+                        a.spenderIdOrThrow().shardNum())
+                .thenComparingLong(a -> a.spenderIdOrThrow().realmNum())
+                .thenComparingLong(a -> a.spenderIdOrThrow().accountNum())
+                .thenComparingLong(a -> a.tokenIdOrThrow().shardNum())
+                .thenComparingLong(a -> a.tokenIdOrThrow().realmNum())
+                .thenComparingLong(a -> a.tokenIdOrThrow().tokenNum());
+        return approvals.stream().sorted(comp).toList();
     }
 
     @Nullable
@@ -154,10 +199,12 @@ public class AccountStateTranslator {
     @Nullable
     static List<AccountFungibleTokenAllowance> orderedFungibleAllowances(
             final List<AccountFungibleTokenAllowance> allowances) {
-        return allowances.stream()
-                .sorted(Comparator.comparingLong(AccountFungibleTokenAllowance::tokenNum)
-                        .thenComparingLong(AccountFungibleTokenAllowance::amount))
-                .toList();
+        Comparator<AccountFungibleTokenAllowance> comp = Comparator.comparingLong(
+                        (AccountFungibleTokenAllowance a) -> a.tokenIdOrThrow().shardNum())
+                .thenComparingLong(a -> a.tokenIdOrThrow().realmNum())
+                .thenComparingLong(a -> a.tokenIdOrThrow().tokenNum())
+                .thenComparingLong(a -> a.amount());
+        return allowances.stream().sorted(comp).toList();
     }
 
     @NonNull
@@ -189,7 +236,12 @@ public class AccountStateTranslator {
         requireNonNull(account);
         com.hedera.node.app.service.mono.state.merkle.MerkleAccount merkleAccount =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleAccount();
-        merkleAccount.setKey(EntityNum.fromLong(account.accountNumber()));
+        final var stakedId = (account.hasStakedNodeId() && account.stakedNodeId() != -1)
+                ? -1 - account.stakedNodeId()
+                : (account.hasStakedAccountId() ? account.stakedAccountId().accountNum() : 0);
+
+        merkleAccount.setKey(
+                EntityNum.fromLong(account.accountIdOrElse(AccountID.DEFAULT).accountNum()));
         merkleAccount.setNftsOwned(account.numberOwnedNfts());
         merkleAccount.setNumTreasuryTitles(account.numberTreasuryTitles());
         merkleAccount.setMemo(account.memo());
@@ -198,7 +250,7 @@ public class AccountStateTranslator {
         merkleAccount.setEthereumNonce(account.ethereumNonce());
         merkleAccount.setNumAssociations(account.numberAssociations());
         merkleAccount.setNumPositiveBalances(account.numberPositiveBalances());
-        merkleAccount.setHeadTokenId(account.headTokenNumber());
+        merkleAccount.setHeadTokenId(account.headTokenIdOrElse(TokenID.DEFAULT).tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         merkleAccount.setBalanceUnchecked(account.tinybarBalance());
         merkleAccount.setReceiverSigRequired(account.receiverSigRequired());
@@ -217,14 +269,17 @@ public class AccountStateTranslator {
         merkleAccount.setStakeAtStartOfLastRewardedPeriod(account.stakeAtStartOfLastRewardedPeriod());
         merkleAccount.setStakedToMe(account.stakedToMe());
         merkleAccount.setStakePeriodStart(account.stakePeriodStart());
-        merkleAccount.setStakedId(account.stakedNumber());
-        merkleAccount.setAutoRenewAccount(new EntityId(0, 0, account.autoRenewAccountNumber()));
+        merkleAccount.setStakedId(stakedId);
+        merkleAccount.setAutoRenewAccount(new EntityId(
+                0, 0, account.autoRenewAccountIdOrElse(AccountID.DEFAULT).accountNum()));
         merkleAccount.setExpiredAndPendingRemoval(account.expiredAndPendingRemoval());
-        merkleAccount.setHeadNftId(account.headNftId());
+        merkleAccount.setHeadNftId(account.headNftIdOrElse(NftID.DEFAULT)
+                .tokenIdOrElse(TokenID.DEFAULT)
+                .tokenNum());
         merkleAccount.setHeadNftSerialNum(account.headNftSerialNumber());
         if (account.firstContractStorageKey() != null)
             merkleAccount.setFirstUint256StorageKey(new ContractKey(
-                            account.accountNumber(),
+                            account.accountIdOrElse(AccountID.DEFAULT).accountNum(),
                             account.firstContractStorageKey().toByteArray())
                     .getKey());
         return merkleAccount;
@@ -236,7 +291,10 @@ public class AccountStateTranslator {
         final var allowances = account.cryptoAllowances();
         if (allowances != null) {
             for (var allowance : allowances) {
-                cryptoAllowances.put(EntityNum.fromLong(allowance.spenderNum()), allowance.amount());
+                cryptoAllowances.put(
+                        EntityNum.fromLong(
+                                allowance.spenderIdOrElse(AccountID.DEFAULT).accountNum()),
+                        allowance.amount());
             }
         }
 
@@ -250,7 +308,10 @@ public class AccountStateTranslator {
         if (allowances != null) {
             for (var allowance : allowances) {
                 fcTokenAllowanceIdSet.add(new FcTokenAllowanceId(
-                        EntityNum.fromLong(allowance.tokenNum()), EntityNum.fromLong(allowance.spenderNum())));
+                        EntityNum.fromLong(
+                                allowance.tokenIdOrElse(TokenID.DEFAULT).tokenNum()),
+                        EntityNum.fromLong(
+                                allowance.spenderIdOrElse(AccountID.DEFAULT).accountNum())));
             }
         }
         return fcTokenAllowanceIdSet;
@@ -264,7 +325,11 @@ public class AccountStateTranslator {
             for (var allowance : allowances) {
                 fungibleAllowances.put(
                         new FcTokenAllowanceId(
-                                EntityNum.fromLong(allowance.tokenNum()), EntityNum.fromLong(allowance.spenderNum())),
+                                EntityNum.fromLong(
+                                        allowance.tokenIdOrElse(TokenID.DEFAULT).tokenNum()),
+                                EntityNum.fromLong(allowance
+                                        .spenderIdOrElse(AccountID.DEFAULT)
+                                        .accountNum())),
                         allowance.amount());
             }
         }

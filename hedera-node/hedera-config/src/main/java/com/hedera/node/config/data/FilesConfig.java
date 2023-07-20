@@ -16,19 +16,20 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("files")
 public record FilesConfig(
-        @ConfigProperty(defaultValue = "101") long addressBook,
-        @ConfigProperty(defaultValue = "121") long networkProperties,
-        @ConfigProperty(defaultValue = "112") long exchangeRates,
-        @ConfigProperty(defaultValue = "111") long feeSchedules,
-        @ConfigProperty(defaultValue = "122") long hapiPermissions,
-        @ConfigProperty(defaultValue = "102") long nodeDetails,
+        @ConfigProperty(defaultValue = "101") @NetworkProperty long addressBook,
+        @ConfigProperty(defaultValue = "121") @NetworkProperty long networkProperties,
+        @ConfigProperty(defaultValue = "112") @NetworkProperty long exchangeRates,
+        @ConfigProperty(defaultValue = "111") @NetworkProperty long feeSchedules,
+        @ConfigProperty(defaultValue = "122") @NetworkProperty long hapiPermissions,
+        @ConfigProperty(defaultValue = "102") @NetworkProperty long nodeDetails,
         // @ConfigProperty(defaultValue = "150-159") Pair<Long, Long> softwareUpdateRange,
-        @ConfigProperty(defaultValue = "123") long throttleDefinitions,
-        @ConfigProperty(defaultValue = "1000000") long maxNumber,
-        @ConfigProperty(defaultValue = "1024") int maxSizeKb,
-        @ConfigProperty(defaultValue = "150") long upgradeFileNumber) {}
+        @ConfigProperty(defaultValue = "123") @NetworkProperty long throttleDefinitions,
+        @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
+        @ConfigProperty(defaultValue = "1024") @NetworkProperty int maxSizeKb,
+        @ConfigProperty(defaultValue = "150") @NetworkProperty long upgradeFileNumber) {}

@@ -44,15 +44,13 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
+import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManagerFactory;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManagerFactory;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
@@ -71,6 +69,7 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.stats.CycleTimingStat;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
@@ -111,7 +110,7 @@ class EventFlowTests {
     protected SystemTransactionTracker systemTransactionTracker;
 
     protected SwirldStateManager swirldStateManager;
-    protected PreConsensusEventHandler preConsensusEventHandler;
+    protected PreConsensusEventHandler preconsensusEventHandler;
     protected ConsensusRoundHandler consensusEventHandler;
 
     protected static Stream<Arguments> postConsHandleParams() {
@@ -138,7 +137,7 @@ class EventFlowTests {
     @AfterEach
     void cleanup() {
         consensusEventHandler.clear();
-        preConsensusEventHandler.clear();
+        preconsensusEventHandler.clear();
         swirldStateManager.clear();
         while (!signedStateTracker.isEmpty()) {
             signedStateTracker.poll().close();
@@ -169,7 +168,7 @@ class EventFlowTests {
         // Give the threads some time to process the transactions
         assertEventuallyEquals(
                 0,
-                () -> preConsensusEventHandler.getQueueSize(),
+                () -> preconsensusEventHandler.getQueueSize(),
                 Duration.ofSeconds(1),
                 "Pre-consensus event queue not drained");
 
@@ -607,22 +606,22 @@ class EventFlowTests {
         systemTransactionTracker = new SystemTransactionTracker();
         signedStateTracker = new ArrayBlockingQueue<>(1000);
 
-        final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager =
-                new PreConsensusSystemTransactionManagerFactory()
-                        .addHandlers(systemTransactionTracker.getPreConsensusHandleMethods())
-                        .build();
+        final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager =
+                new PreconsensusSystemTransactionManager();
+        preconsensusSystemTransactionManager.addHandler(
+                SystemTransactionPing.class, systemTransactionTracker::handlePreConsensusSystemTransaction);
 
-        final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager =
-                new PostConsensusSystemTransactionManagerFactory()
-                        .addHandlers(systemTransactionTracker.getPostConsensusHandleMethods())
-                        .build();
+        final ConsensusSystemTransactionManager consensusSystemTransactionManager =
+                new ConsensusSystemTransactionManager();
+        consensusSystemTransactionManager.addHandler(
+                SystemTransactionPing.class, systemTransactionTracker::handlePostconsensusSystemTransaction);
 
         swirldStateManager = new SwirldStateManagerImpl(
                 TestPlatformContextBuilder.create().build(),
                 addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,
@@ -634,7 +633,7 @@ class EventFlowTests {
                 TestPlatformContextBuilder.create().withConfiguration(config).build();
         final ThreadConfig threadConfig = config.getConfigData(ThreadConfig.class);
 
-        preConsensusEventHandler = new PreConsensusEventHandler(
+        preconsensusEventHandler = new PreConsensusEventHandler(
                 new NoOpMetrics(),
                 getStaticThreadManager(),
                 selfId,
@@ -688,7 +687,7 @@ class EventFlowTests {
             @NonNull final Random random, @NonNull final AddressBook addressBook) {
         // arguments are checked for null in the constructor.
         return new EventFlowWrapper(
-                random, addressBook, preConsensusEventHandler, consensusEventHandler, swirldStateManager);
+                random, addressBook, preconsensusEventHandler, consensusEventHandler, swirldStateManager);
     }
 
     /**

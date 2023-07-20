@@ -44,9 +44,11 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.StringReader;
@@ -54,6 +56,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -96,7 +99,7 @@ public class GenesisSchema extends Schema {
         createGenesisNodeDetails(bootstrapConfig, filesConfig, files);
         createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
         createGenesisExchangeRate(bootstrapConfig, filesConfig, files);
-        createGenesisNetworkProperties(bootstrapConfig, filesConfig, files);
+        createGenesisNetworkProperties(bootstrapConfig, filesConfig, files, ctx.configuration());
         createGenesisHapiPermissions(bootstrapConfig, filesConfig, files);
         createGenesisThrottleDefinitions(bootstrapConfig, filesConfig, files);
         createGenesisSoftwareUpdateZip(bootstrapConfig, filesConfig, files);
@@ -276,11 +279,35 @@ public class GenesisSchema extends Schema {
     // Creates and loads the network properties into state
 
     private void createGenesisNetworkProperties(
-            @NonNull final BootstrapConfig v,
+            @NonNull final BootstrapConfig bootstrapConfig,
             @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
+            @NonNull final WritableKVState<FileID, File> files,
+            @NonNull final Configuration configuration) {
         logger.debug("Creating genesis network properties file");
-        // TBD Implement this method
+
+        // Get the set of network properties from configuration, and generate the file content to store in state.
+        List<Setting> settings = new ArrayList<>();
+        Utils.networkProperties(configuration)
+                .forEach((propertyName, propertyValue) -> settings.add(Setting.newBuilder()
+                        .name(propertyName)
+                        .value(propertyValue.toString())
+                        .build()));
+
+        final var servicesConfigList =
+                ServicesConfigurationList.newBuilder().nameValue(settings).build();
+        final var fileNum = filesConfig.networkProperties();
+        // default to shard=0, realm=0. Should get from config
+        final var fileId = FileID.newBuilder().fileNum(fileNum).build();
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        files.put(
+                fileId,
+                File.newBuilder()
+                        .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
+                        .fileId(fileId)
+                        .keys(KeyList.newBuilder().keys(masterKey))
+                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .build());
     }
 
     // ================================================================================================================

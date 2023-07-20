@@ -39,7 +39,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
@@ -50,6 +49,7 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -214,8 +214,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 platformContext,
                 addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
                 transactionConfig,
                 () -> false,

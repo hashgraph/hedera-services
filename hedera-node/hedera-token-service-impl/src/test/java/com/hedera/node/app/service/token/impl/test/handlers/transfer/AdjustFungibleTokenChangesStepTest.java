@@ -30,13 +30,13 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +72,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isEqualTo(0L);
+        assertThat(receiverRelBefore.balance()).isZero();
 
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
@@ -112,7 +112,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isEqualTo(0L);
+        assertThat(receiverRelBefore.balance()).isZero();
 
         assertThat(senderAccountBefore.tokenAllowances()).hasSize(1);
 

@@ -20,6 +20,7 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -123,11 +124,11 @@ class TipsetEventCreatorImplTests {
             final TipsetEventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
@@ -202,6 +203,8 @@ class TipsetEventCreatorImplTests {
 
         // We should see the expected transactions
         assertArrayEquals(expectedTransactions, newEvent.getHashedData().getTransactions());
+
+        assertDoesNotThrow(() -> simulatedNode.tipsetEventCreator.toString());
     }
 
     /**

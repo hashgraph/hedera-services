@@ -18,8 +18,8 @@ package com.swirlds.platform.test.state;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.Utilities.isMajority;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateCatastrophicNodeHashes;
 import static com.swirlds.platform.test.state.RoundHashValidatorTests.generateNodeHashes;
@@ -30,21 +30,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.config.api.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -103,7 +106,8 @@ class ConsensusHashManagerTests {
             }
 
             for (final Address address : addressBook) {
-                manager.postConsensusSignatureObserver(round, address.getNodeId(), roundHash);
+                manager.handlePostconsensusSignatureTransaction(
+                        address.getNodeId(), new StateSignatureTransaction(round, mock(Signature.class), roundHash));
             }
         }
 
@@ -261,7 +265,11 @@ class ConsensusHashManagerTests {
 
         for (final RoundHashValidatorTests.NodeHashInfo nodeHashInfo : operations) {
             final NodeId nodeId = nodeHashInfo.nodeId();
-            manager.postConsensusSignatureObserver(nodeHashInfo.round(), nodeId, nodeHashInfo.nodeStateHash());
+
+            manager.handlePostconsensusSignatureTransaction(
+                    nodeId,
+                    new StateSignatureTransaction(
+                            nodeHashInfo.round(), mock(Signature.class), nodeHashInfo.nodeStateHash()));
         }
 
         // Shifting after completion should have no side effects
@@ -278,8 +286,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that
-     * any particular node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
+     * The method generateNodeHashes() doesn't account for self ID, and therefore doesn't guarantee that any particular
+     * node will have an ISS. Regenerate data until we find a data set that results in a self ISS.
      */
     private static RoundHashValidatorTests.HashGenerationData generateDataWithSelfIss(
             final Random random, final AddressBook addressBook, final NodeId selfId, final long targetRound) {
@@ -348,7 +356,9 @@ class ConsensusHashManagerTests {
                         () -> manager.stateHashedObserver(targetRound, info.nodeStateHash()),
                         "should not be able to add hash for round not being tracked");
             }
-            manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
+            manager.handlePostconsensusSignatureTransaction(
+                    info.nodeId(),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -362,7 +372,9 @@ class ConsensusHashManagerTests {
             if (info.nodeId() == selfId) {
                 manager.stateHashedObserver(targetRound, info.nodeStateHash());
             }
-            manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
+            manager.handlePostconsensusSignatureTransaction(
+                    info.nodeId(),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
         }
 
         assertEquals(1, issCount.get(), "data should not have been ignored");
@@ -411,7 +423,9 @@ class ConsensusHashManagerTests {
                         () -> manager.stateHashedObserver(targetRound, info.nodeStateHash()),
                         "should not be able to add hash for round not being tracked");
             }
-            manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
+            manager.handlePostconsensusSignatureTransaction(
+                    info.nodeId(),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
         }
 
         assertEquals(0, issCount.get(), "all data should have been ignored");
@@ -461,13 +475,15 @@ class ConsensusHashManagerTests {
         long submittedWeight = 0;
         for (final RoundHashValidatorTests.NodeHashInfo info : data.nodeList()) {
             final long weight = addressBook.getAddress(info.nodeId()).getWeight();
-            if (isMajority(submittedWeight + weight, addressBook.getTotalWeight())) {
+            if (MAJORITY.isSatisfiedBy(submittedWeight + weight, addressBook.getTotalWeight())) {
                 // If we add less than a majority then we won't be able to detect the ISS no matter what
                 break;
             }
             submittedWeight += weight;
 
-            manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
+            manager.handlePostconsensusSignatureTransaction(
+                    info.nodeId(),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
         }
 
         // Shift the window even though we have not added enough data for a decision
@@ -477,8 +493,8 @@ class ConsensusHashManagerTests {
     }
 
     /**
-     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum
-     * to meet &ge;2/3 has been met.
+     * Generate data in an order that will cause a catastrophic ISS after the timeout, assuming the bare minimum to meet
+     * &ge;2/3 has been met.
      */
     @SuppressWarnings("SameParameterValue")
     private static List<RoundHashValidatorTests.NodeHashInfo> generateCatastrophicTimeoutIss(
@@ -494,7 +510,7 @@ class ConsensusHashManagerTests {
         final Hash almostConsensusHash = randomHash(random);
         long almostConsensusWeight = 0;
         for (final Address address : addressBook) {
-            if (isMajority(almostConsensusWeight + address.getWeight(), addressBook.getTotalWeight())) {
+            if (MAJORITY.isSatisfiedBy(almostConsensusWeight + address.getWeight(), addressBook.getTotalWeight())) {
                 data.add(new RoundHashValidatorTests.NodeHashInfo(address.getNodeId(), randomHash(), targetRound));
             } else {
                 almostConsensusWeight += address.getWeight();
@@ -551,12 +567,14 @@ class ConsensusHashManagerTests {
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
             final long weight = addressBook.getAddress(info.nodeId()).getWeight();
 
-            manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
+            manager.handlePostconsensusSignatureTransaction(
+                    info.nodeId(),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
             submittedWeight += weight;
-            if (isSuperMajority(submittedWeight, addressBook.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight, addressBook.getTotalWeight())) {
                 break;
             }
         }
@@ -613,12 +631,14 @@ class ConsensusHashManagerTests {
         for (final RoundHashValidatorTests.NodeHashInfo info : data) {
             final long weight = addressBook.getAddress(info.nodeId()).getWeight();
 
-            manager.postConsensusSignatureObserver(targetRound, info.nodeId(), info.nodeStateHash());
+            manager.handlePostconsensusSignatureTransaction(
+                    info.nodeId(),
+                    new StateSignatureTransaction(targetRound, mock(Signature.class), info.nodeStateHash()));
 
             // Stop once we have added >2/3. We should not have decided yet, but will
             // have gathered enough to declare a catastrophic ISS
             submittedWeight += weight;
-            if (isSuperMajority(submittedWeight, addressBook.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(submittedWeight, addressBook.getTotalWeight())) {
                 break;
             }
         }

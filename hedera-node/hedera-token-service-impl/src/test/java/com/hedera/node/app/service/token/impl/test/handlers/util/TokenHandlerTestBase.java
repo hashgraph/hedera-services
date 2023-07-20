@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.protoToPbj;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
@@ -29,6 +30,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
@@ -250,7 +252,7 @@ public class TokenHandlerTestBase {
 
     protected Account newPayerAccount() {
         return new Account(
-                2L,
+                AccountID.newBuilder().accountNum(2L).build(),
                 null,
                 payerKey,
                 1_234_567L,
@@ -259,11 +261,11 @@ public class TokenHandlerTestBase {
                 false,
                 1_234L,
                 1_234_568L,
-                0,
+                UNSET_STAKED_ID,
                 true,
                 true,
-                3,
-                2,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1,
                 2,
                 10,
@@ -273,7 +275,7 @@ public class TokenHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 Collections.emptyList(),

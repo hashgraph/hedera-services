@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class OutboundConnectionCreator {
     private static final Logger logger = LogManager.getLogger(OutboundConnectionCreator.class);
-    private static final byte[] LOCALHOST = new byte[] {127, 0, 0, 1};
+    private static final String LOCALHOST = "127.0.0.1";
     private final NodeId selfId;
     private final SocketConfig socketConfig;
     private final ConnectionTracker connectionTracker;
@@ -86,16 +86,15 @@ public class OutboundConnectionCreator {
     public Connection createConnection(final NodeId otherId) {
         final Address other = addressBook.getAddress(otherId);
         final Address ownAddress = addressBook.getAddress(selfId);
-        final int port = other.getConnectPortIpv4(ownAddress);
-        final byte[] ip = getConnectAddressIpv4(ownAddress, other);
-        final String ipAddress = Address.ipString(ip);
+        final int port = other.getConnectPort(ownAddress);
+        final String hostname = getConnectHostname(ownAddress, other);
 
         Socket clientSocket = null;
         SyncOutputStream dos = null;
         SyncInputStream dis = null;
 
         try {
-            clientSocket = socketFactory.createClientSocket(ipAddress, port);
+            clientSocket = socketFactory.createClientSocket(hostname, port);
 
             dos = SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
             dis = SyncInputStream.createSyncInputStream(clientSocket.getInputStream(), socketConfig.bufferSize());
@@ -156,15 +155,15 @@ public class OutboundConnectionCreator {
      * @param to   the address to connect to
      * @return the IP address to connect to
      */
-    private byte[] getConnectAddressIpv4(final Address from, final Address to) {
+    private String getConnectHostname(final Address from, final Address to) {
         final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
         final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
         if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
-            return to.getAddressInternalIpv4();
+            return to.getHostnameInternal();
         } else {
-            return to.getAddressExternalIpv4();
+            return to.getHostnameExternal();
         }
     }
 }

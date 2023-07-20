@@ -29,8 +29,8 @@ event.creation.useTipsetAlgorithm,        true
                                           #############################
 
 event.enableEventStreaming,               false
-event.preconsensus.enableReplay,          false
-event.preconsensus.enableStorage,         false
+event.preconsensus.enableReplay,          true
+event.preconsensus.enableStorage,         true
 
                                           #############################
                                           #          Metrics          #
@@ -42,8 +42,8 @@ metrics.csvFileName,                      PlatformTesting
                                           #           State           #
                                           #############################
 
-state.saveReconnectStateToDisk,           false
-state.saveStatePeriod,                    0
+state.saveReconnectStateToDisk,           true
+state.saveStatePeriod,                    60
 
                                           #############################
                                           #           Misc.           #

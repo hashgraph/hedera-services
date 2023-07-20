@@ -151,8 +151,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             return Optional.empty();
         } else {
             final var info = AccountDetails.newBuilder();
-            info.accountId(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build());
+            info.accountId(account.accountId());
             info.contractAccountId(NetworkAdminServiceUtil.asHexedEvmAddress(accountID));
             info.deleted(account.deleted());
             info.key(account.key());
@@ -193,12 +192,11 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             ReadableTokenStore readableTokenStore,
             ReadableTokenRelationStore tokenRelationStore) {
         final var tokenRelationshipList = new ArrayList<TokenRelationship>();
-        var tokenId = TokenID.newBuilder().tokenNum(account.headTokenNumber()).build();
+        var tokenId = account.headTokenId();
         int count = 0;
 
         while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count <= maxRelsPerInfoQuery) {
-            final var tokenRelation = tokenRelationStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(), tokenId);
+            final var tokenRelation = tokenRelationStore.get(account.accountId(), tokenId);
             if (tokenRelation != null) {
                 final TokenMetadata token = readableTokenStore.getTokenMeta(tokenId);
                 if (token != null) {
@@ -236,10 +234,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
             for (var a : account.approveForAllNftAllowances()) {
                 final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
-                approveForAllNftsAllowance.tokenId(
-                        TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                approveForAllNftsAllowance.spender(
-                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                approveForAllNftsAllowance.tokenId(a.tokenId());
+                approveForAllNftsAllowance.spender(a.spenderId());
                 nftAllowances.add(approveForAllNftsAllowance.build());
             }
             return nftAllowances;
@@ -257,10 +253,8 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
             final var tokenAllowance = GrantedTokenAllowance.newBuilder();
             for (var a : account.tokenAllowances()) {
-                tokenAllowance.tokenId(
-                        TokenID.newBuilder().tokenNum(a.tokenNum()).build());
-                tokenAllowance.spender(
-                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                tokenAllowance.tokenId(a.tokenId());
+                tokenAllowance.spender(a.spenderId());
                 tokenAllowance.amount(a.amount());
                 tokenAllowances.add(tokenAllowance.build());
             }
@@ -279,8 +273,7 @@ public class NetworkGetAccountDetailsHandler extends PaidQueryHandler {
             List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
             final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
             for (var a : account.cryptoAllowances()) {
-                cryptoAllowance.spender(
-                        AccountID.newBuilder().accountNum(a.spenderNum()).build());
+                cryptoAllowance.spender(a.spenderId());
                 cryptoAllowance.amount(a.amount());
                 cryptoAllowances.add(cryptoAllowance.build());
             }

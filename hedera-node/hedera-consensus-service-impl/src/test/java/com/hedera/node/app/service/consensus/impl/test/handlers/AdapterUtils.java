@@ -68,6 +68,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -76,6 +78,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.utils.TestFixturesKeyLookup;
 import java.util.HashMap;
@@ -88,6 +91,9 @@ import org.mockito.Mockito;
 public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
+
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
 
     public static final AccountID PARITY_CUSTOM_PAYER =
             AccountID.newBuilder().accountNum(1216).build();
@@ -134,19 +140,19 @@ public class AdapterUtils {
         private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
         private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-                .spenderNum(DEFAULT_PAYER.getAccountNum())
+                .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                 .amount(500L)
                 .build();
         private static AccountFungibleTokenAllowance fungibleTokenAllowances =
                 AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                        .spenderNum(DEFAULT_PAYER.getAccountNum())
+                        .tokenId(TokenID.newBuilder().tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum()))
+                        .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                         .amount(10_000L)
                         .build();
 
         private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
-                .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-                .spenderNum(DEFAULT_PAYER.getAccountNum())
+                .tokenId(TokenID.newBuilder().tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum()))
+                .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                 .build();
 
         private static ReadableKVState<AccountID, Account> wellKnownAccountsState() {
@@ -251,7 +257,7 @@ public class AdapterUtils {
                 List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
                 List<AccountApprovalForAllAllowance> nftTokenAllowances) {
             return new Account(
-                    number,
+                    AccountID.newBuilder().accountNum(number).build(),
                     Bytes.EMPTY,
                     key,
                     10_000L,
@@ -260,11 +266,13 @@ public class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    0L,
+                    UNSET_STAKED_ID,
                     false,
                     receiverSigRequired,
-                    3L,
-                    2L,
+                    TokenID.newBuilder().tokenNum(3L).build(),
+                    NftID.newBuilder()
+                            .tokenId(TokenID.newBuilder().tokenNum(2L))
+                            .build(),
                     1L,
                     2,
                     3,
@@ -274,7 +282,7 @@ public class AdapterUtils {
                     3,
                     0,
                     1_234_5678L,
-                    2,
+                    AccountID.newBuilder().accountNum(2L).build(),
                     76_000L,
                     0,
                     cryptoAllowances,
