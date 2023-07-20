@@ -118,6 +118,7 @@ public class TokenServiceImpl implements TokenService {
 
                     final var accountTinyBars = num == accountsConfig.treasury() ? tinyBarFloat : 0L;
                     assert accountTinyBars >= 0L : "Negative account balance!";
+
                     accounts.put(
                             id,
                             Account.newBuilder()
@@ -128,7 +129,7 @@ public class TokenServiceImpl implements TokenService {
                                     .smartContract(false)
                                     .key(superUserKey)
                                     .autoRenewSecs(expiry) // TODO is this right?
-                                    .accountNumber(id.accountNumOrThrow())
+                                    .accountId(id)
                                     .tinybarBalance(accountTinyBars)
                                     //                                    .declineReward(true)
                                     .build());

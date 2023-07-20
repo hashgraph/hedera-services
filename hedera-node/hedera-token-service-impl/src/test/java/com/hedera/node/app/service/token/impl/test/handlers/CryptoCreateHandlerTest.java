@@ -34,6 +34,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -275,7 +276,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         // validate fields on created account
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(1000L, createdAccount.accountNumber());
+        assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
         assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
@@ -288,8 +289,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(0L, createdAccount.headTokenNumber());
-        assertEquals(0L, createdAccount.headNftId());
+        assertNull(createdAccount.headTokenId());
+        assertNull(createdAccount.headNftId());
         assertEquals(0L, createdAccount.headNftSerialNumber());
         assertEquals(0L, createdAccount.numberOwnedNfts());
         assertEquals(0, createdAccount.maxAutoAssociations());
@@ -299,7 +300,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(0L, createdAccount.autoRenewAccountNumber());
+        assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
@@ -343,7 +344,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         // validate fields on created account
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(1000L, createdAccount.accountNumber());
+        assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
         assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
@@ -356,8 +357,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(0L, createdAccount.headTokenNumber());
-        assertEquals(0L, createdAccount.headNftId());
+        assertNull(createdAccount.headTokenId());
+        assertNull(createdAccount.headNftId());
         assertEquals(0L, createdAccount.headNftSerialNumber());
         assertEquals(0L, createdAccount.numberOwnedNfts());
         assertEquals(0, createdAccount.maxAutoAssociations());
@@ -367,7 +368,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(0L, createdAccount.autoRenewAccountNumber());
+        assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());

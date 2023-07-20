@@ -164,8 +164,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);
-                    context.writableStore(WritableAccountStore.class)
-                            .putAlias(ALICE_ALIAS, ALICE.accountID().accountNumOrThrow());
+                    context.writableStore(WritableAccountStore.class).putAlias(ALICE_ALIAS, ALICE.accountID());
                     return null;
                 })
                 .when(dispatcher)
@@ -335,7 +334,7 @@ class HandleWorkflowTest extends AppTestBase {
         // then
         final var alice = aliasesState.get(ALICE_ALIAS);
         assertThat(alice).isNotNull();
-        assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
+        assertThat(alice).isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
     }
 
@@ -429,7 +428,7 @@ class HandleWorkflowTest extends AppTestBase {
             // then
             final var alice = aliasesState.get(ALICE_ALIAS);
             assertThat(alice).isNotNull();
-            assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
+            assertThat(alice).isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
         }
 

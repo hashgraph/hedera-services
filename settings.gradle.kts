@@ -104,7 +104,7 @@ gradleEnterprise {
 // name from the hedera-protobufs GIT repo.
 val hapiProtoVersion = "0.40.0-blocks-state-SNAPSHOT"
 // val hapiProtoBranchOrTag = "add-pbj-types-for-state" // hapiProtoVersion
-val hapiProtoBranchOrTag = "add-pbj-types-for-state" // hapiProtoVersion
+val hapiProtoBranchOrTag = "7243-update-account-ids" // hapiProtoVersion
 
 gitRepositories {
     checkoutsDirectory.set(File(rootDir, "hedera-node/hapi"))

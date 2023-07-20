@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeri
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
-import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils.UNSET_STAKED_ID;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
@@ -90,7 +89,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -683,37 +681,33 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         spenderAccount = givenValidAccount()
                 .copyBuilder()
                 .key(spenderKey)
-                .accountNumber(spenderId.accountNum())
+                .accountId(spenderId)
                 .build();
         ownerAccount = givenValidAccount()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
-                        .spenderNum(spenderId.accountNum())
+                        .spenderId(spenderId)
                         .amount(1000)
                         .build())
                 .tokenAllowances(AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(fungibleTokenId.tokenNum())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(fungibleTokenId)
+                        .spenderId(spenderId)
                         .amount(1000)
                         .build())
                 .approveForAllNftAllowances(AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(nonFungibleTokenId.tokenNum())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(nonFungibleTokenId)
+                        .spenderId(spenderId)
                         .build())
                 .key(ownerKey)
                 .build();
-        delegatingSpenderAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(delegatingSpenderId.accountNum())
-                .build();
-        transferAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(transferAccountId.accountNum())
-                .build();
+        delegatingSpenderAccount =
+                givenValidAccount().copyBuilder().accountId(delegatingSpenderId).build();
+        transferAccount =
+                givenValidAccount().copyBuilder().accountId(transferAccountId).build();
         treasuryAccount = givenValidAccount()
                 .copyBuilder()
-                .accountNumber(treasuryId.accountNum())
+                .accountId(treasuryId)
                 .key(treasuryKey)
                 .build();
     }
@@ -773,19 +767,24 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     protected Account givenValidAccount() {
         return Account.newBuilder()
-                .accountNumber(accountNum)
+                .accountId(payerId)
+                .tinybarBalance(payerBalance)
                 .alias(alias.alias())
                 .key(key)
                 .expiry(1_234_567L)
                 .memo("testAccount")
                 .deleted(false)
                 .stakedToMe(1_234L)
-                .stakePeriodStart(LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay() - 1)
+                .stakePeriodStart(LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC)
+                                .toEpochDay()
+                        - 1)
                 .stakedNodeId(0L)
                 .declineReward(true)
                 .receiverSigRequired(true)
-                .headTokenNumber(3L)
-                .headNftId(2L)
+                .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
+                .headNftId(NftID.newBuilder()
+                        .tokenId(TokenID.newBuilder().tokenNum(2L))
+                        .build())
                 .headNftSerialNumber(1L)
                 .numberOwnedNfts(2L)
                 .maxAutoAssociations(10)
@@ -795,7 +794,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .numberPositiveBalances(2)
                 .ethereumNonce(0L)
                 .stakeAtStartOfLastRewardedPeriod(1000L)
-                .autoRenewAccountNumber(0L)
+                .autoRenewAccountId(AccountID.DEFAULT)
                 .autoRenewSecs(72000L)
                 .contractKvPairsNumber(0)
                 .cryptoAllowances(emptyList())

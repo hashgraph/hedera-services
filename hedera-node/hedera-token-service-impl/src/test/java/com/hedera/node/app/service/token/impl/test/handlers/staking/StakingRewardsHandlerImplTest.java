@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -32,8 +31,6 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
-import java.time.Instant;
-import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,30 +90,28 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(stakeAtStartOfLastRewardedPeriodAfter).isEqualTo(stakeAtStartOfLastRewardedPeriodBefore);
     }
 
-        @Test
-        void rewardsWhenStakingFieldsModified() {
-            final var stakedToMeBefore = account.stakedToMe();
-            final var stakePeriodStartBefore = account.stakePeriodStart();
-            final var stakeAtStartOfLastRewardedPeriodBefore = account.stakeAtStartOfLastRewardedPeriod();
-            assertThat(stakedToMeBefore).isEqualTo(1234L);
+    @Test
+    void rewardsWhenStakingFieldsModified() {
+        final var stakedToMeBefore = account.stakedToMe();
+        final var stakePeriodStartBefore = account.stakePeriodStart();
+        final var stakeAtStartOfLastRewardedPeriodBefore = account.stakeAtStartOfLastRewardedPeriod();
+        assertThat(stakedToMeBefore).isEqualTo(1234L);
 
-            writableAccountStore.put(account.copyBuilder()
-                    .declineReward(true)
-                    .build());
-            given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        writableAccountStore.put(account.copyBuilder().declineReward(true).build());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
-            final var rewards = subject.applyStakingRewards(handleContext);
+        final var rewards = subject.applyStakingRewards(handleContext);
 
-            assertThat(rewards).isEmpty();
-            final var modifiedAccount = writableAccountStore.get(payerId);
-            final var stakedToMeAfter = modifiedAccount.stakedToMe();
-            final var stakePeriodStartAfter = modifiedAccount.stakePeriodStart();
-            final var stakeAtStartOfLastRewardedPeriodAfter = modifiedAccount.stakeAtStartOfLastRewardedPeriod();
+        assertThat(rewards).isEmpty();
+        final var modifiedAccount = writableAccountStore.get(payerId);
+        final var stakedToMeAfter = modifiedAccount.stakedToMe();
+        final var stakePeriodStartAfter = modifiedAccount.stakePeriodStart();
+        final var stakeAtStartOfLastRewardedPeriodAfter = modifiedAccount.stakeAtStartOfLastRewardedPeriod();
 
-            assertThat(stakedToMeAfter).isEqualTo(stakedToMeBefore);
-            assertThat(stakePeriodStartAfter).isEqualTo(stakePeriodStartBefore);
-            assertThat(stakeAtStartOfLastRewardedPeriodAfter).isEqualTo(stakeAtStartOfLastRewardedPeriodBefore);
-        }
+        assertThat(stakedToMeAfter).isEqualTo(stakedToMeBefore);
+        assertThat(stakePeriodStartAfter).isEqualTo(stakePeriodStartBefore);
+        assertThat(stakeAtStartOfLastRewardedPeriodAfter).isEqualTo(stakeAtStartOfLastRewardedPeriodBefore);
+    }
     //
     //    @Test
     //    void changingKeyOnlyIsNotRewardSituation() {

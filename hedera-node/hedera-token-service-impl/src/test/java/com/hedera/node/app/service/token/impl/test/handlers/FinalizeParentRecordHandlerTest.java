@@ -63,21 +63,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
+    private final AccountID ACCOUNT_1212_ID =
+            AccountID.newBuilder().accountNum(1212).build();
     private final Account ACCOUNT_1212 =
-            givenValidAccount().copyBuilder().accountNumber(1212).build();
-    private final AccountID ACCOUNT_1212_ID = asAccountId(ACCOUNT_1212);
+            givenValidAccount().copyBuilder().accountId(ACCOUNT_1212_ID).build();
+    private final AccountID ACCOUNT_3434_ID =
+            AccountID.newBuilder().accountNum(3434).build();
     private final Account ACCOUNT_3434 = givenValidAccount()
             .copyBuilder()
-            .accountNumber(3434)
+            .accountId(ACCOUNT_3434_ID)
             .tinybarBalance(500)
             .build();
-    private final AccountID ACCOUNT_3434_ID = asAccountId(ACCOUNT_3434);
+    private final AccountID ACCOUNT_5656_ID =
+            AccountID.newBuilder().accountNum(5656).build();
     private final Account ACCOUNT_5656 = givenValidAccount()
             .copyBuilder()
-            .accountNumber(5656)
+            .accountId(ACCOUNT_5656_ID)
             .tinybarBalance(10000)
             .build();
-    private final AccountID ACCOUNT_5656_ID = asAccountId(ACCOUNT_5656);
     private static final TokenID TOKEN_321 = asToken(321);
 
     @Mock(strictness = LENIENT)
@@ -700,13 +703,5 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
 
         return context;
-    }
-
-    private static AccountID asAccountId(final Account acct) {
-        return AccountID.newBuilder()
-                .shardNum(0)
-                .realmNum(0)
-                .accountNum(acct.accountNumber())
-                .build();
     }
 }

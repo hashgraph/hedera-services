@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /**
  * Provides static methods for translating between {@link TokenRelation} and {@link  com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus} both ways.
  */
-public final class TokeRelationStateTranslator {
+public final class TokenRelationStateTranslator {
 
     @NonNull
     /**
