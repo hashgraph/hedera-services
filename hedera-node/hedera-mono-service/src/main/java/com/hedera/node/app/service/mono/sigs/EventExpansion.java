@@ -52,10 +52,12 @@ public class EventExpansion {
     }
 
     public void expandAllSigs(final Event event, final StateChildrenProvider provider) {
-        event.forEachTransaction(txn -> expandSingle(txn, provider));
+        final var eventSigReqsManager = sigReqsManagerProvider.get();
+        event.forEachTransaction(txn -> expandSingle(txn, eventSigReqsManager, provider));
     }
 
-    public void expandSingle(final Transaction txn, final StateChildrenProvider provider) {
+    public void expandSingle(
+            final Transaction txn, final SigReqsManager sigReqsManager, final StateChildrenProvider provider) {
         try {
             final var accessor = expandHandleSpan.track(txn);
             // Submit the transaction for any pre-handle processing that can be
@@ -63,7 +65,7 @@ public class EventExpansion {
             // example, pre-fetching of contract bytecode; should start before
             // synchronous signature expansion
             prefetchProcessor.submit(accessor);
-            sigReqsManagerProvider.get().expandSigs(provider, accessor);
+            sigReqsManager.expandSigs(provider, accessor);
             engine.verifyAsync(accessor.getCryptoSigs());
         } catch (final InvalidProtocolBufferException e) {
             log.warn("Event contained a non-GRPC transaction", e);
