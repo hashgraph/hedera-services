@@ -152,9 +152,13 @@ public class HandleWorkflow {
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
             final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
-            recordBuilder.transaction(
-                    preHandleResult.txInfo().transaction(),
-                    preHandleResult.txInfo().signedBytes());
+            final var transactionInfo = preHandleResult.txInfo();
+            final var txBody = transactionInfo.txBody();
+            recordBuilder
+                    .transaction(transactionInfo.transaction())
+                    .transactionBytes(transactionInfo.signedBytes())
+                    .transactionID(txBody.transactionID())
+                    .memo(txBody.memo());
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -176,7 +180,6 @@ public class HandleWorkflow {
             }
 
             // Setup context
-            final var txBody = preHandleResult.txInfo().txBody();
             final var stack = new SavepointStackImpl(state, configuration);
             final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
@@ -222,7 +225,10 @@ public class HandleWorkflow {
         // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
 
         // store all records at once
-        blockRecordManager.endUserTransaction(recordListBuilder.build(), state);
+        final var recordListResult = recordListBuilder.build();
+        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
+
+        // TODO: handle system tasks
     }
 
     private void recordFailedTransaction(
