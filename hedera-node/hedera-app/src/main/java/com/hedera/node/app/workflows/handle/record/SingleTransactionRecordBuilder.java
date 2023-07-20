@@ -105,7 +105,7 @@ public final class SingleTransactionRecordBuilder
     private Bytes alias;
     private Bytes ethereumHash;
     private List<AccountAmount> paidStakingRewards;
-    private OneOf<TransactionRecord.EntropyOneOfType> entropy;
+    private OneOf<TransactionRecord.EntropyOneOfType> entropy = new OneOf<>(EntropyOneOfType.UNSET, null);
     private Bytes evmAddress;
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
