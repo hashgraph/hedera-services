@@ -34,6 +34,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.PlatformConstructor;
@@ -162,11 +163,19 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
+        final Configuration configuration = platformContext.getConfiguration();
         final SocketFactory socketFactory =
                 PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                selfId, socketConfig, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion);
+                selfId,
+                socketConfig,
+                this,
+                socketFactory,
+                addressBook,
+                shouldDoVersionCheck(),
+                appVersion,
+                configuration);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 this,
@@ -175,7 +184,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 connectionManagers::newConnection,
                 socketConfig,
                 shouldDoVersionCheck(),
-                appVersion);
+                appVersion,
+                configuration);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(

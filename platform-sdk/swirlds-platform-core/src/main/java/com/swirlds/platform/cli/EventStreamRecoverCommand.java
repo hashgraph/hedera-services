@@ -22,8 +22,8 @@ import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.config.ConfigUtils;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -31,6 +31,8 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.platform.config.internal.ConfigMappings;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -140,11 +142,13 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
             System.out.printf("Loading configuration from %s%n", configurationPath);
             configurationBuilder.withSource(new LegacyFileConfigSource(configurationPath));
         }
+        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
+        final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
+        configurationBuilder.withSource(mappedSettingsConfigSource);
+        configurationBuilder.withSource(threadCountPropertyConfigSource);
 
-        final Configuration configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-
-        return configuration;
+        return configurationBuilder.build();
     }
 
     @Override

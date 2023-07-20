@@ -42,7 +42,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -160,7 +159,8 @@ class SignedStateFileReadWriteTest {
         final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test", configuration);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
@@ -353,10 +353,8 @@ class SignedStateFileReadWriteTest {
     }
 
     private Configuration changeConfigAndConfigHolder(String directory) {
-        final Configuration config = new TestConfigBuilder()
+        return new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", directory)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(config);
-        return config;
     }
 }

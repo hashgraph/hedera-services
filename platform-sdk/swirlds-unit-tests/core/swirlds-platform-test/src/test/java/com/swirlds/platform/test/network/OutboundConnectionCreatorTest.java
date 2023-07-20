@@ -99,8 +99,8 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SocketConfig socketConfig = getSocketConfig();
-
+        final SocketConfig socketConfig = getConfig().getConfigData(SocketConfig.class);
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
                 socketConfig,
@@ -108,7 +108,8 @@ class OutboundConnectionCreatorTest {
                 socketFactory,
                 addressBook,
                 true,
-                new BasicSoftwareVersion(1));
+                new BasicSoftwareVersion(1),
+                configuration);
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -195,7 +196,7 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SocketConfig socketConfig = getSocketConfig();
+        final SocketConfig socketConfig = getConfig().getConfigData(SocketConfig.class);
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
@@ -204,7 +205,8 @@ class OutboundConnectionCreatorTest {
                 socketFactory,
                 addressBook,
                 true,
-                new BasicSoftwareVersion(2));
+                new BasicSoftwareVersion(2),
+                getConfig());
 
         Connection connection = occ.createConnection(otherNode);
 
@@ -253,7 +255,7 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SocketConfig socketConfig = getSocketConfig();
+        final SocketConfig socketConfig = getConfig().getConfigData(SocketConfig.class);
 
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
@@ -262,7 +264,8 @@ class OutboundConnectionCreatorTest {
                 socketFactory,
                 addressBook,
                 false,
-                new BasicSoftwareVersion(2));
+                new BasicSoftwareVersion(2),
+                getConfig());
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -274,9 +277,9 @@ class OutboundConnectionCreatorTest {
     }
 
     @NonNull
-    private static SocketConfig getSocketConfig() {
+    private static Configuration getConfig() {
         final Configuration configuration =
                 new TestConfigBuilder().withValue("socket.bufferSize", "100").getOrCreateConfig();
-        return configuration.getConfigData(SocketConfig.class);
+        return configuration;
     }
 }

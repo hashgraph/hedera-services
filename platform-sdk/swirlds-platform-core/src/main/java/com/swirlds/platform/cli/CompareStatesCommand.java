@@ -19,12 +19,17 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.config.ConfigUtils;
+import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -34,6 +39,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -154,8 +160,17 @@ public final class CompareStatesCommand extends AbstractCommand {
         BootstrapUtils.loadConfiguration(configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
+        final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
+
+        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                .withSource(mappedSettingsConfigSource)
+                .withSource(threadCountPropertyConfigSource);
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
+
+        final PlatformContext platformContext =
+                new DefaultPlatformContext(configurationBuilder.build(), new NoOpMetrics(), CryptographyHolder.get());
 
         try (final ReservedSignedState stateA = loadAndHashState(platformContext, stateAPath)) {
             try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {

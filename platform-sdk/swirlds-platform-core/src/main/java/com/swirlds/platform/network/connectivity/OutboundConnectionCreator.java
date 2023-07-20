@@ -26,6 +26,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -58,6 +59,7 @@ public class OutboundConnectionCreator {
     private final AddressBook addressBook;
     private final boolean doVersionCheck;
     private final SoftwareVersion softwareVersion;
+    private final Configuration configuration;
 
     public OutboundConnectionCreator(
             @NonNull final NodeId selfId,
@@ -66,7 +68,8 @@ public class OutboundConnectionCreator {
             @NonNull final SocketFactory socketFactory,
             @NonNull final AddressBook addressBook,
             final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion) {
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Configuration configuration) {
         this.selfId = Objects.requireNonNull(selfId);
         this.socketConfig = Objects.requireNonNull(socketConfig);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
@@ -74,6 +77,7 @@ public class OutboundConnectionCreator {
         this.addressBook = Objects.requireNonNull(addressBook);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     /**
@@ -122,7 +126,8 @@ public class OutboundConnectionCreator {
             }
             logger.debug(NETWORK.getMarker(), "`connect` : finished, {} connected to {}", selfId, otherId);
 
-            return SocketConnection.create(selfId, otherId, connectionTracker, true, clientSocket, dis, dos);
+            return SocketConnection.create(
+                    selfId, otherId, connectionTracker, true, clientSocket, dis, dos, configuration);
         } catch (final SocketTimeoutException | SocketException e) {
             NetworkUtils.close(clientSocket, dis, dos);
             logger.debug(

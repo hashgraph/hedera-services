@@ -22,12 +22,19 @@ import static com.swirlds.platform.state.signed.SavedStateMetadata.NO_NODE_ID;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateFilesToDirectory;
 
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.config.ConfigUtils;
+import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.platform.config.internal.ConfigMappings;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import picocli.CommandLine;
 
@@ -60,8 +67,18 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
+            final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
+            final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
+            final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
+
+            final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
+                    .withSource(mappedSettingsConfigSource)
+                    .withSource(threadCountPropertyConfigSource);
+            ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
+
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
-                writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get());
+                writeSignedStateFilesToDirectory(
+                        NO_NODE_ID, directory, signedState.get(), configurationBuilder.build());
             }
 
         } catch (final IOException e) {

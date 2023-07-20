@@ -35,6 +35,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
 import com.swirlds.platform.config.ThreadConfig;
@@ -92,7 +93,7 @@ public class SignedStateFileManager implements Startable {
      */
     private final SignedStateMetrics metrics;
 
-    private final StateConfig stateConfig;
+    private final Configuration configuration;
 
     /**
      * Provides system time
@@ -140,12 +141,13 @@ public class SignedStateFileManager implements Startable {
         this.mainClassName = mainClassName;
         this.swirldName = swirldName;
         this.stateToDiskAttemptConsumer = stateToDiskAttemptConsumer;
-        this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
+        this.configuration = Objects.requireNonNull(context).getConfiguration();
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
 
-        final ThreadConfig threadConfig = context.getConfiguration().getConfigData(ThreadConfig.class);
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
 
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         this.taskQueue = new QueueThreadConfiguration<Runnable>(threadManager)
                 .setCapacity(stateConfig.stateSavingQueueSize())
                 .setMaxBufferSize(1)
@@ -214,10 +216,12 @@ public class SignedStateFileManager implements Startable {
             @NonNull SignedState signedState,
             @NonNull final Path directory,
             @NonNull final String taskDescription,
-            @Nullable final Consumer<Boolean> finishedCallback) {
+            @Nullable final Consumer<Boolean> finishedCallback,
+            @NonNull final Configuration configuration) {
 
         Objects.requireNonNull(directory);
         Objects.requireNonNull(taskDescription);
+        Objects.requireNonNull(configuration);
 
         final ReservedSignedState reservedSignedState =
                 signedState.reserve("SignedStateFileManager.saveSignedStateToDisk()");
@@ -228,7 +232,8 @@ public class SignedStateFileManager implements Startable {
             final long round = reservedSignedState.get().getRound();
             try (reservedSignedState) {
                 try {
-                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), taskDescription);
+                    writeSignedStateToDisk(
+                            selfId, directory, reservedSignedState.get(), taskDescription, configuration);
                     if (round > latestSavedStateRound.get()) {
                         latestSavedStateRound.set(round);
                     }
@@ -276,11 +281,15 @@ public class SignedStateFileManager implements Startable {
      */
     public boolean saveSignedStateToDisk(final SignedState signedState) {
         return saveSignedStateToDisk(
-                signedState, getSignedStateDir(signedState.getRound()), "periodic snapshot", success -> {
+                signedState,
+                getSignedStateDir(signedState.getRound()),
+                "periodic snapshot",
+                success -> {
                     if (success) {
                         deleteOldStates();
                     }
-                });
+                },
+                configuration);
     }
 
     /**
@@ -301,7 +310,8 @@ public class SignedStateFileManager implements Startable {
                         .resolve(reason)
                         .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())),
                 reason,
-                success -> latch.countDown());
+                success -> latch.countDown(),
+                configuration);
 
         if (blocking) {
             Uninterruptable.abortAndLogIfInterrupted(
@@ -340,6 +350,7 @@ public class SignedStateFileManager implements Startable {
             return true;
         }
 
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final int saveStatePeriod = stateConfig.saveStatePeriod();
         if (saveStatePeriod <= 0) {
             // state saving is disabled
@@ -399,6 +410,7 @@ public class SignedStateFileManager implements Startable {
 
         // States are returned newest to oldest. So delete from the end of the list to delete the oldest states.
         int index = savedStates.length - 1;
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         for (; index >= stateConfig.signedStateDisk(); index--) {
 
             final SavedStateInfo savedStateInfo = savedStates[index];

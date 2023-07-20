@@ -33,6 +33,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
@@ -132,19 +133,24 @@ public final class SignedStateFileWriter {
      * @param selfId        the id of the platform
      * @param directory     the directory where all files should be placed
      * @param signedState   the signed state being written to disk
+     * @param configuration the configuration used
      */
     public static void writeSignedStateFilesToDirectory(
-            @Nullable NodeId selfId, @NonNull final Path directory, @NonNull final SignedState signedState)
+            @Nullable NodeId selfId,
+            @NonNull final Path directory,
+            @NonNull final SignedState signedState,
+            @NonNull final Configuration configuration)
             throws IOException {
         Objects.requireNonNull(directory, "directory must not be null");
         Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
-        writeSettingsUsed(directory);
+        writeSettingsUsed(directory, configuration);
     }
 
     /**
@@ -175,11 +181,13 @@ public final class SignedStateFileWriter {
             @Nullable final NodeId selfId,
             @NonNull final Path savedStateDirectory,
             @NonNull final SignedState signedState,
-            @NonNull final String taskDescription)
+            @NonNull final String taskDescription,
+            @NonNull final Configuration configuration)
             throws IOException {
         Objects.requireNonNull(savedStateDirectory, "savedStateDirectory must not be null");
         Objects.requireNonNull(signedState, "signedState must not be null");
         Objects.requireNonNull(taskDescription, "taskDescription must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
 
         try {
             logger.info(
@@ -190,7 +198,8 @@ public final class SignedStateFileWriter {
                     savedStateDirectory);
 
             executeAndRename(
-                    savedStateDirectory, directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState));
+                    savedStateDirectory,
+                    directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState, configuration));
 
             logger.info(
                     STATE_TO_DISK.getMarker(),
