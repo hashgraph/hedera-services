@@ -271,7 +271,7 @@ public class EmergencyReconnectTests {
                 getStaticThreadManager(),
                 notificationEngine,
                 teacherId,
-                null,
+                mock(EmergencyRecoveryManager.class),
                 reconnectThrottle,
                 signedStateManager,
                 Duration.of(100, ChronoUnit.MILLIS),
