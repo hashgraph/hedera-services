@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.workflows;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -90,6 +91,14 @@ public interface HandleContext {
      */
     @NonNull
     Configuration configuration();
+
+    /**
+     * Returns information on current block and record file
+     *
+     * @return current BlockRecordInfo
+     */
+    @NonNull
+    BlockRecordInfo blockRecordInfo();
 
     /**
      * Getter for the payer key

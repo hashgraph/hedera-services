@@ -21,11 +21,11 @@ import com.swirlds.platform.components.common.output.NewSignedStateFromTransacti
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
+import com.swirlds.platform.state.iss.ConsensusHashManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.state.signed.SignedStateManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -48,9 +48,7 @@ public interface StateManagementComponent
                 RoundAppliedToStateConsumer,
                 SignedStateToLoadConsumer,
                 NewSignedStateFromTransactionsConsumer,
-                LatestSignedStateProvider,
-                PreConsensusSystemTransactionConsumer,
-                PostConsensusSystemTransactionConsumer {
+                LatestSignedStateProvider {
 
     /**
      * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required
@@ -105,4 +103,16 @@ public interface StateManagementComponent
      * @return the latest saved state round
      */
     long getLatestSavedStateRound();
+
+    /**
+     * Get the signed state manager.
+     */
+    @NonNull
+    SignedStateManager getSignedStateManager();
+
+    /**
+     * Get the consensus hash manager.
+     */
+    @NonNull
+    ConsensusHashManager getConsensusHashManager();
 }
