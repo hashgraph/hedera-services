@@ -57,8 +57,8 @@ class TokenRelListCalculatorTest {
     private static final AccountID ACCT_2300_ID =
             AccountID.newBuilder().accountNum(2300L).build();
     private static final Account ACCT_2300 = Account.newBuilder()
-            .accountNumber(ACCT_2300_ID.accountNumOrThrow())
-            .headTokenNumber(TOKEN_ID_1.tokenNum())
+            .accountId(ACCT_2300_ID)
+            .headTokenId(TOKEN_ID_1)
             .numberAssociations(5)
             .build();
 
@@ -156,7 +156,7 @@ class TokenRelListCalculatorTest {
         final var evenLocalTokenRels = List.of(LOCAL_TOKEN_REL_2, LOCAL_TOKEN_REL_4);
         final var result = subject.removeTokenRels(ACCT_2300, evenLocalTokenRels);
         // The account's head token number shouldn't have changed because it's an odd-numbered token
-        Assertions.assertThat(result.updatedHeadTokenId().tokenNum()).isEqualTo(ACCT_2300.headTokenNumber());
+        Assertions.assertThat(result.updatedHeadTokenId()).isEqualTo(ACCT_2300.headTokenId());
         Assertions.assertThat(result.updatedTokenRelsStillInChain())
                 .containsExactlyInAnyOrder(
                         LOCAL_TOKEN_REL_1.copyBuilder().nextToken(TOKEN_ID_3).build(),
@@ -195,7 +195,7 @@ class TokenRelListCalculatorTest {
     void removeTokenRels_removesConsecutiveTokenRels() {
         final var consecutiveLocalTokenRels = List.of(LOCAL_TOKEN_REL_2, LOCAL_TOKEN_REL_3, LOCAL_TOKEN_REL_4);
         final var result = subject.removeTokenRels(ACCT_2300, consecutiveLocalTokenRels);
-        Assertions.assertThat(result.updatedHeadTokenId().tokenNum()).isEqualTo(ACCT_2300.headTokenNumber());
+        Assertions.assertThat(result.updatedHeadTokenId()).isEqualTo(ACCT_2300.headTokenId());
         Assertions.assertThat(result.updatedTokenRelsStillInChain())
                 .containsExactlyInAnyOrder(
                         LOCAL_TOKEN_REL_1.copyBuilder().nextToken(TOKEN_ID_5).build(),
@@ -242,7 +242,7 @@ class TokenRelListCalculatorTest {
         // Results should be identical to the _removesEvenTokenRels case
 
         // The account's head token number shouldn't have changed because it's an odd-numbered token
-        Assertions.assertThat(result.updatedHeadTokenId().tokenNum()).isEqualTo(ACCT_2300.headTokenNumber());
+        Assertions.assertThat(result.updatedHeadTokenId()).isEqualTo(ACCT_2300.headTokenId());
         Assertions.assertThat(result.updatedTokenRelsStillInChain())
                 .containsExactlyInAnyOrder(
                         LOCAL_TOKEN_REL_1.copyBuilder().nextToken(TOKEN_ID_3).build(),
