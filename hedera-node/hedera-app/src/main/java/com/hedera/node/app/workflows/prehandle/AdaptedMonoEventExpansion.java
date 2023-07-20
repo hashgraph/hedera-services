@@ -22,6 +22,7 @@ import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
+import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,15 +44,18 @@ public class AdaptedMonoEventExpansion {
     private final EventExpansion eventExpansion;
     private final PreHandleWorkflow preHandleWorkflow;
     private final GlobalStaticProperties staticProperties;
+    private final Provider<SigReqsManager> sigReqsManagerProvider;
 
     @Inject
     public AdaptedMonoEventExpansion(
             @NonNull final EventExpansion eventExpansion,
             @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final GlobalStaticProperties staticProperties) {
+            @NonNull final GlobalStaticProperties staticProperties,
+            @NonNull final Provider<SigReqsManager> sigReqsManagerProvider) {
         this.eventExpansion = Objects.requireNonNull(eventExpansion);
         this.preHandleWorkflow = Objects.requireNonNull(preHandleWorkflow);
         this.staticProperties = Objects.requireNonNull(staticProperties);
+        this.sigReqsManagerProvider = sigReqsManagerProvider;
     }
 
     public void expand(final Event event, final HederaState state, final NodeInfo nodeInfo) {
@@ -62,7 +67,7 @@ public class AdaptedMonoEventExpansion {
                 if (typesForWorkflows.contains(accessor.getFunction())) {
                     forWorkflows.add(txn);
                 } else {
-                    eventExpansion.expandSingle(txn, (StateChildrenProvider) state);
+                    eventExpansion.expandSingle(txn, sigReqsManagerProvider.get(), (StateChildrenProvider) state);
                 }
             } catch (final InvalidProtocolBufferException e) {
                 log.warn("Unable to parse preHandle transaction", e);
