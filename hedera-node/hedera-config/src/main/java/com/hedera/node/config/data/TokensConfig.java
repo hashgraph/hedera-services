@@ -36,8 +36,7 @@ public record TokensConfig(
                 int nftsMaxMetadataBytes,
         @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeBurn,
         @ConfigProperty(value = "nfts.maxBatchSizeWipe", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeWipe,
-        @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") @NetworkProperty
-                int nftsMaxBatchSizeMint,
+        @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeMint,
         @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "5000000") @NetworkProperty
                 long nftsMaxAllowedMints,
         @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") @NetworkProperty long nftsMaxQueryRange,
