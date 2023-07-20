@@ -34,6 +34,7 @@ import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.gossip.chatter.ChatterGossip;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
@@ -83,8 +84,7 @@ public final class GossipFactory {
      * @param swirldStateManager            manages the mutable state
      * @param startedFromGenesis            true if this node started from a genesis state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param eventIntakeHandler            new events are passed here
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
@@ -112,7 +112,7 @@ public final class GossipFactory {
             @NonNull final SwirldStateManager swirldStateManager,
             final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> eventIntakeHandler,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
@@ -137,7 +137,7 @@ public final class GossipFactory {
         Objects.requireNonNull(startUpEventFrozenManager);
         Objects.requireNonNull(swirldStateManager);
         Objects.requireNonNull(stateManagementComponent);
-        Objects.requireNonNull(eventIntakeLambda);
+        Objects.requireNonNull(eventIntakeHandler);
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(eventMapper);
         Objects.requireNonNull(eventIntakeMetrics);
@@ -169,7 +169,7 @@ public final class GossipFactory {
                     swirldStateManager,
                     startedFromGenesis,
                     stateManagementComponent,
-                    eventIntakeLambda,
+                    eventIntakeHandler,
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,
@@ -193,7 +193,7 @@ public final class GossipFactory {
                         startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventIntakeLambda,
+                        eventIntakeHandler,
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
@@ -219,7 +219,7 @@ public final class GossipFactory {
                         startUpEventFrozenManager,
                         swirldStateManager,
                         stateManagementComponent,
-                        eventIntakeLambda,
+                        eventIntakeHandler,
                         eventObserverDispatcher,
                         eventMapper,
                         eventIntakeMetrics,
@@ -243,7 +243,7 @@ public final class GossipFactory {
                     startUpEventFrozenManager,
                     swirldStateManager,
                     stateManagementComponent,
-                    eventIntakeLambda,
+                    eventIntakeHandler,
                     eventObserverDispatcher,
                     eventMapper,
                     eventIntakeMetrics,

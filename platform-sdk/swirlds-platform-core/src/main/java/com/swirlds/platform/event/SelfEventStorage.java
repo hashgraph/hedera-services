@@ -16,9 +16,6 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.platform.internal.EventImpl;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 /**
  * Used for storing the latest event created by me
  */

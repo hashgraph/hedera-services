@@ -79,9 +79,9 @@ public class EventTaskDispatcher {
         cycleStats.startedIntake();
         final long start = time.nanoTime();
 
-        if (eventIntakeTask instanceof GossipEvent task) {
+        if (eventIntakeTask instanceof GossipEvent event) {
             try {
-                intakeHandler.accept(task);
+                intakeHandler.accept(event);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("interrupted while trying to ingest event", e);

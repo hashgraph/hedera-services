@@ -49,6 +49,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -73,7 +74,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -89,7 +89,6 @@ public class SyncGossip extends AbstractGossip {
     private final SyncPermitProvider syncPermitProvider;
     protected final SyncConfig syncConfig;
     protected final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
-    private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
 
     /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
@@ -120,8 +119,7 @@ public class SyncGossip extends AbstractGossip {
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param newEventHandler               handles new events
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
@@ -146,7 +144,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventHandler,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
@@ -170,10 +168,10 @@ public class SyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState,
-                clearAllPipelinesForReconnect);
+                clearAllPipelinesForReconnect,
+                newEventHandler);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
-        this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -340,15 +338,6 @@ public class SyncGossip extends AbstractGossip {
     @Override
     public void loadFromSignedState(@NonNull SignedState signedState) {
         // intentional no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
-        return eventIntakeLambda;
     }
 
     /**

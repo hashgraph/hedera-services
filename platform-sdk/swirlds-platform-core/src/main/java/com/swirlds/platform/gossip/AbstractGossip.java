@@ -33,6 +33,7 @@ import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
@@ -45,6 +46,7 @@ import com.swirlds.platform.components.EventTaskCreator;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -126,6 +128,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param updatePlatformStatus          a method that updates the platform status, when called
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param newEventHandler               a method that should be called when a new event is received/created
      */
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
@@ -144,7 +147,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventHandler) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
@@ -212,6 +216,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 selfId,
                 eventIntakeMetrics,
                 intakeQueue,
+                newEventHandler,
                 platformContext.getConfiguration().getConfigData(EventConfig.class),
                 syncManager,
                 ThreadLocalRandom::current);

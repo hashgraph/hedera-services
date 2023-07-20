@@ -25,6 +25,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
@@ -41,8 +42,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Responsible for creating and enqueuing event tasks. Event tasks can either be {@link GossipEvent} or {@link
- * CreateEventTask}
+ * Responsible for creating and enqueuing event tasks. Event tasks can either be {@link GossipEvent} or
+ * {@link CreateEventTask}
  */
 public class EventTaskCreator {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
@@ -63,6 +64,8 @@ public class EventTaskCreator {
     /** A {@link QueueThread} that handles event intake */
     private final BlockingQueue<EventIntakeTask> eventIntakeQueue;
 
+    private final InterruptableConsumer<GossipEvent> newEventHandler;
+
     /** provides access to configuration */
     private final EventConfig config;
 
@@ -73,25 +76,17 @@ public class EventTaskCreator {
     private final SyncManager syncManager;
 
     /**
-     * constructor that is given the platform using the hashgraph, and the initial addressBook (which can
-     * change)
+     * constructor that is given the platform using the hashgraph, and the initial addressBook (which can change)
      *
-     * @param eventMapper
-     * 		event mapper
-     * @param addressBook
-     * 		the addressBook
-     * @param selfId
-     * 		the ID of the platform this hashgraph is running on
-     * @param eventIntakeMetrics
-     * 		tracks metrics
-     * @param eventIntakeQueue
-     * 		the queue add tasks to
-     * @param config
-     * 		provides access to configuration
-     * @param syncManager
-     * 		decides if an event should be created
-     * @param random
-     * 		supplies the random instance to use
+     * @param eventMapper        event mapper
+     * @param addressBook        the addressBook
+     * @param selfId             the ID of the platform this hashgraph is running on
+     * @param eventIntakeMetrics tracks metrics
+     * @param eventIntakeQueue   the queue add tasks to
+     * @param newEventHandler    handles new events
+     * @param config             provides access to configuration
+     * @param syncManager        decides if an event should be created
+     * @param random             supplies the random instance to use
      */
     public EventTaskCreator(
             final EventMapper eventMapper,
@@ -99,6 +94,7 @@ public class EventTaskCreator {
             final NodeId selfId,
             final EventIntakeMetrics eventIntakeMetrics,
             final BlockingQueue<EventIntakeTask> eventIntakeQueue,
+            @Nullable final InterruptableConsumer<GossipEvent> newEventHandler,
             final EventConfig config,
             final SyncManager syncManager,
             final Supplier<Random> random) {
@@ -108,6 +104,7 @@ public class EventTaskCreator {
         this.addressBook = addressBook.copy();
         this.addressBook.seal();
         this.eventIntakeQueue = eventIntakeQueue;
+        this.newEventHandler = Objects.requireNonNull(newEventHandler);
         this.config = config;
         this.syncManager = syncManager;
         this.random = random;
@@ -118,8 +115,7 @@ public class EventTaskCreator {
      * the rules in {@link SyncManager#shouldCreateEvent(SyncResult)}, a self event with an other-parent of the node we
      * just synced with is added to the intake queue. An additional event may be created with a different other-parent.
      *
-     * @param result
-     * 		information about the sync that just finished successfully
+     * @param result information about the sync that just finished successfully
      */
     public void syncDone(final SyncResult result) {
         final boolean shouldCreateEvent = syncManager.shouldCreateEvent(result);
@@ -153,9 +149,9 @@ public class EventTaskCreator {
     }
 
     /**
-     * If an event on this node has no children, then generate a new child event
-     * for it, based on a probability value defined by {@code Settings.rescueChildlessInverseProbability}.
-     *
+     * If an event on this node has no children, then generate a new child event for it, based on a probability value
+     * defined by {@code Settings.rescueChildlessInverseProbability}.
+     * <p>
      * This functionality may be deprecated in future.
      */
     public void rescueChildlessEvents() {
@@ -191,11 +187,10 @@ public class EventTaskCreator {
     }
 
     /**
-     * Insert an event task to create a self-event into the hashgraph intake queue. The created event
-     * will have other-parent specified by the given node ID
+     * Insert an event task to create a self-event into the hashgraph intake queue. The created event will have
+     * other-parent specified by the given node ID
      *
-     * @param otherId
-     * 		the ID of the other-parent of the event to be created
+     * @param otherId the ID of the other-parent of the event to be created
      */
     public void createEvent(@Nullable final NodeId otherId) {
         addEvent(new CreateEventTask(otherId));
@@ -205,12 +200,17 @@ public class EventTaskCreator {
      * Add an event task to the queue to be instantiated by other threads in parallel. The instantiated event will
      * eventually be added to the hashgraph by the pollIntakeQueue method.
      *
-     * @param intakeTask
-     * 		a task whose event is to be added to the hashgraph
+     * @param intakeTask a task whose event is to be added to the hashgraph
      */
     public void addEvent(final EventIntakeTask intakeTask) {
         try {
-            eventIntakeQueue.put(intakeTask);
+            if (intakeTask instanceof final GossipEvent event) {
+                newEventHandler.accept(event);
+            } else {
+                // This is an event creation request
+                eventIntakeQueue.put(intakeTask);
+            }
+
         } catch (InterruptedException e) {
             // should never happen, and we don't have a simple way of recovering from it
             logger.error(
@@ -222,8 +222,7 @@ public class EventTaskCreator {
     /**
      * Add a newly created event to the intake queue
      *
-     * @param event
-     * 		the newly created event
+     * @param event the newly created event
      */
     public void createdEvent(final GossipEvent event) {
         addEvent(event);

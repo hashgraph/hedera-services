@@ -44,6 +44,7 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -78,7 +79,6 @@ public class LegacySyncGossip extends AbstractGossip {
     private final SharedConnectionLocks sharedConnectionLocks;
     private final SimultaneousSyncThrottle simultaneousSyncThrottle;
     private final ShadowGraphSynchronizer syncShadowgraphSynchronizer;
-    private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final ThreadManager threadManager;
     private final ThreadConfig threadConfig;
 
@@ -103,8 +103,7 @@ public class LegacySyncGossip extends AbstractGossip {
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param newEventHandler               a method that is called when a new event is created
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
@@ -126,7 +125,7 @@ public class LegacySyncGossip extends AbstractGossip {
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventHandler,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
@@ -150,10 +149,10 @@ public class LegacySyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState,
-                clearAllPipelinesForReconnect);
+                clearAllPipelinesForReconnect,
+                newEventHandler);
 
         this.threadManager = Objects.requireNonNull(threadManager);
-        this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
@@ -317,15 +316,6 @@ public class LegacySyncGossip extends AbstractGossip {
     @Override
     public void loadFromSignedState(@NonNull SignedState signedState) {
         // intentional no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
-        return eventIntakeLambda;
     }
 
     /**

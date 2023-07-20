@@ -102,7 +102,7 @@ public class ChatterGossip extends AbstractGossip {
     private final ChatterCore<GossipEvent> chatterCore;
     private final List<StoppableThread> chatterThreads = new LinkedList<>();
     private final ChatterEventMapper chatterEventMapper = new ChatterEventMapper();
-    private final SequenceCycle<EventIntakeTask> intakeCycle;
+    private final SequenceCycle<GossipEvent> intakeCycle;
 
     /**
      * Holds a list of objects that need to be cleared when {@link #clear()} is called on this object.
@@ -129,8 +129,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param swirldStateManager            manages the mutable state
      * @param startedFromGenesis            true if this node started from a genesis state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param newEventHandler               new events are passed here
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
@@ -157,7 +156,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final SwirldStateManager swirldStateManager,
             final boolean startedFromGenesis,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventHandler,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
@@ -182,7 +181,8 @@ public class ChatterGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState,
-                clearAllPipelinesForReconnect);
+                clearAllPipelinesForReconnect,
+                newEventHandler);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
@@ -209,7 +209,7 @@ public class ChatterGossip extends AbstractGossip {
             thingsToStart.add(0, reconnectController::start);
         }
 
-        intakeCycle = new SequenceCycle<>(eventIntakeLambda);
+        intakeCycle = new SequenceCycle<>(newEventHandler);
 
         final ParallelExecutor parallelExecutor = new CachedPoolParallelExecutor(threadManager, "chatter");
         parallelExecutor.start();
@@ -399,15 +399,6 @@ public class ChatterGossip extends AbstractGossip {
     public void loadFromSignedState(@NonNull SignedState signedState) {
         chatterEventMapper.loadFromSignedState(signedState);
         chatterCore.loadFromSignedState(signedState);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
-        return intakeCycle;
     }
 
     /**

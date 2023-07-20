@@ -43,7 +43,6 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.platform.DefaultDoubleAccumulator;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
@@ -88,12 +87,10 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
-import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
@@ -109,9 +106,9 @@ import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplicator;
-import com.swirlds.platform.event.validation.IncomingEventProcessor;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
+import com.swirlds.platform.event.validation.IncomingEventProcessor;
 import com.swirlds.platform.event.validation.SignatureValidator;
 import com.swirlds.platform.event.validation.StaticValidators;
 import com.swirlds.platform.event.validation.TransactionSizeValidator;
@@ -472,7 +469,8 @@ public class SwirldsPlatform implements Platform, Startable {
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
-                    final long minimumGenerationNonAncient = round.getGenerations().getMinGenerationNonAncient();
+                    final long minimumGenerationNonAncient =
+                            round.getGenerations().getMinGenerationNonAncient();
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::setMinimumGenerationNonAncient,
                             minimumGenerationNonAncient,
@@ -483,7 +481,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::requestFlush,
                             "Interrupted while requesting preconsensus event flush");
-
                 });
 
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
@@ -547,10 +544,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
                 .setThreadName("event-intake")
-                // There is a circular dependency between the intake queue and gossip,
-                // which the handler lambda sidesteps (since the lambda is not invoked
-                // until after all things have been constructed).
-                .setHandler(e -> getGossip().getEventIntakeLambda().accept(e))
+                .setHandler(e -> getEventTaskDispatcher().dispatchTask(e))
                 .setCapacity(eventConfig.eventIntakeQueueSize())
                 .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
@@ -560,20 +554,12 @@ public class SwirldsPlatform implements Platform, Startable {
 
         // TODO do we need to flush this on PCES/reconnect?
         final IncomingEventProcessor incomingEventProcessor = components.add(new IncomingEventProcessor(
-                platformContext,
-                threadManager,
-                deduplicator,
-                eventValidators,
-                intakeQueue::put));
+                platformContext, threadManager, deduplicator, eventValidators, intakeQueue::put));
 
         final EventCreator eventCreator = buildEventCreator(incomingEventProcessor);
 
         eventTaskDispatcher = new EventTaskDispatcher(
-                time,
-                eventCreator,
-                eventIntake::addUnlinkedEvent,
-                eventIntakeMetrics,
-                intakeCycleStats);
+                time, eventCreator, eventIntake::addUnlinkedEvent, eventIntakeMetrics, intakeCycleStats);
 
         tipsetEventCreator = buildTipsetEventCreationManager(
                 platformContext,
@@ -616,13 +602,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 swirldStateManager,
                 startedFromGenesis,
                 stateManagementComponent,
-                task -> {
-                    if (task instanceof final GossipEvent event) {
-                        incomingEventProcessor.ingestEvent(event);
-                    } else {
-                        intakeQueue.put(task);
-                    }
-                },
+                incomingEventProcessor::ingestEvent,
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
@@ -693,6 +673,13 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     private Gossip getGossip() {
         return gossip;
+    }
+
+    /**
+     * Get the event task dispatcher. This method exists to break a circular dependency.
+     */
+    private EventTaskDispatcher getEventTaskDispatcher() {
+        return eventTaskDispatcher;
     }
 
     /**

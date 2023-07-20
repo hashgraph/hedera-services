@@ -40,6 +40,7 @@ import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -51,7 +52,6 @@ import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -64,7 +64,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
 
     private static final Logger logger = LogManager.getLogger(SingleNodeSyncGossip.class);
 
-    private final InterruptableConsumer<EventIntakeTask> eventIntakeLambda;
     private final StoppableThread syncProtocolThread;
 
     /**
@@ -87,8 +86,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
      * @param stateManagementComponent      manages the lifecycle of the state
-     * @param eventIntakeLambda             a method that is called when something needs to be added to the event intake
-     *                                      queue
+     * @param newEventHandler               new events are passed here
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
@@ -109,7 +107,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final StateManagementComponent stateManagementComponent,
-            @NonNull final InterruptableConsumer<EventIntakeTask> eventIntakeLambda,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventHandler,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
@@ -133,9 +131,8 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 updatePlatformStatus,
                 loadReconnectState,
-                clearAllPipelinesForReconnect);
-
-        this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
+                clearAllPipelinesForReconnect,
+                newEventHandler);
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -212,15 +209,6 @@ public class SingleNodeSyncGossip extends AbstractGossip {
     @Override
     public void loadFromSignedState(@NonNull final SignedState signedState) {
         // intentional no-op
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
-    public InterruptableConsumer<EventIntakeTask> getEventIntakeLambda() {
-        return eventIntakeLambda;
     }
 
     /**
