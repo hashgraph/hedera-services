@@ -63,7 +63,7 @@ import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;

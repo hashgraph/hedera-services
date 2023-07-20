@@ -19,7 +19,7 @@ package com.hedera.node.app.meta;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.spi.signatures.SignatureVerification;

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;

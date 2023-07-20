@@ -21,9 +21,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.records.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.records.RecordManager;
-import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;

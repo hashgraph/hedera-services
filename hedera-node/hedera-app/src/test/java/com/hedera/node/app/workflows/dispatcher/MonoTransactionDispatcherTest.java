@@ -88,7 +88,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;

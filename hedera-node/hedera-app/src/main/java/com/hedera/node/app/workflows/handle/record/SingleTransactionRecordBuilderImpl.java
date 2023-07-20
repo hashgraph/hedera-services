@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.hedera.node.app.records;
+package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
@@ -52,8 +53,7 @@ import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.records.SingleTransactionRecord;
-import com.hedera.node.app.spi.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;

@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.meta.MonoHandleContext;
-import com.hedera.node.app.records.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
