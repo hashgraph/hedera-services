@@ -405,10 +405,6 @@ public final class Hedera implements SwirldMain {
                         logger.info("Hederanode#{} is BEHIND", nodeId);
                         shutdownGrpcServer();
                     }
-                    case DISCONNECTED -> {
-                        logger.info("Hederanode#{} is DISCONNECTED", nodeId);
-                        shutdownGrpcServer();
-                    }
                     case FREEZE_COMPLETE -> {
                         logger.info("Hederanode#{} is in FREEZE_COMPLETE", nodeId);
                         shutdownGrpcServer();
