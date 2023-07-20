@@ -414,10 +414,7 @@ class CryptoGetAccountBalanceHandlerTest extends CryptoHandlerTestBase {
     }
 
     private Account getExpectedInfo() {
-        return Account.newBuilder()
-                .accountNumber(accountNum)
-                .tinybarBalance(payerBalance)
-                .build();
+        return Account.newBuilder().accountId(id).tinybarBalance(payerBalance).build();
     }
 
     private List<TokenBalance> getExpectedTokenBalance(long tokenNum) {
