@@ -88,10 +88,12 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
+import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
@@ -489,6 +491,35 @@ public class SwirldsPlatform implements Platform, Startable {
 
         eventLinker = buildEventLinker(isDuplicateChecks);
 
+        // Pre-tipset event intake flow:
+        //
+        //    |-----(event creation request)-------|
+        //    |                                    |
+        //    |                                    v
+        // gossip -> incomingEventProcessor -> intakeQueue -> eventTaskDispatcher -> eventIntake -> shadowgraph
+        //    ^               ^                                          |                              |   |
+        //    |               |                                          |                              |   |
+        //    |    pre-tipset event creator <--(event creation request)--|                              |   |
+        //    |               ^                                                                         |   |
+        //    |               |                                                                         |   |
+        //    |               |------------------(other parents)----------------------------------------|   |
+        //    |                                                                                             |
+        //    |---------------------------------------------------------------------------------------------|
+        //
+        //
+        //
+        // Tipset event intake flow:
+        //
+        // gossip -> incomingEventProcessor -> intakeQueue -> eventTaskDispatcher -> eventIntake -> shadowgraph
+        //    ^               ^                                                           |             |
+        //    |               |                                                           |             |
+        //    |      tipset event creator                                                 |             |
+        //    |               ^                                                           |             |
+        //    |               |                                                           |             |
+        //    |               |------------------(other parents)--------------------------|             |
+        //    |                                                                                         |
+        //    |-----------------------------------------------------------------------------------------|
+
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
         final EventIntake eventIntake = new EventIntake(
@@ -500,32 +531,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeCycleStats,
                 shadowGraph);
 
-        final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-
-        // TODO this is wrong... we should feed from gossip directly into the incoming event processor
-
-        // - events from gossip (and new tipset events) are put onto the intakeQueue. Pre-tipset, event creation
-        //   requests are also put onto the intakeQueue. This queue thread takes these tasks and passes them one at a
-        //   time to eventTaskDispatcher.
-        // - the eventTaskDispatcher multiplexes new events with event creation requests. Event
-        //   creation requests are (pre-tipset only) handled differently depending on gossip flavor. Events
-        //   are passed to the incomingEventProcessor.
-        // - the incomingEventProcessor hashes, deduplicates, and validates events. It passes valid events
-        //   to the eventIntake object via addUnlinkedEvent().
-        // - eventIntake is responsible for all following phases in the intake process.
-        //
-        // In summary, preconsensus events flow as follows:
-        //
-        //      tipset event creation <--------------------------------------------------|
-        //                |                                                              |
-        //                v                                                              |
-        // gossip -> intakeQueue -> eventTaskDispatcher -> incomingEventProcessor -> eventIntake -> shadowgraph
-        //    ^                             |                                            ^               |
-        //    |                             v                                            |               |
-        //    |                    pre-tipset event creation ----------------------------|               |
-        //    |                             ^                                                            |
-        //    |-----------------------------|------------------------------------------------------------|
 
         // TODO extract into helper method maybe
         final List<GossipEventValidator> validators = new ArrayList<>();
@@ -537,7 +543,6 @@ public class SwirldsPlatform implements Platform, Startable {
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
-        // TODO can we kill this queue? It's not really necessary any more
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -559,12 +564,14 @@ public class SwirldsPlatform implements Platform, Startable {
                 threadManager,
                 deduplicator,
                 eventValidators,
-                eventIntake::addUnlinkedEvent));
+                intakeQueue::put));
+
+        final EventCreator eventCreator = buildEventCreator(incomingEventProcessor);
 
         eventTaskDispatcher = new EventTaskDispatcher(
                 time,
                 eventCreator,
-                incomingEventProcessor::ingestEvent,
+                eventIntake::addUnlinkedEvent,
                 eventIntakeMetrics,
                 intakeCycleStats);
 
@@ -577,7 +584,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 selfId,
                 appVersion,
                 swirldStateManager.getTransactionPool(),
-                intakeQueue,
+                intakeQueue::size,
+                incomingEventProcessor::ingestEvent,
                 eventObserverDispatcher,
                 currentPlatformStatus::get,
                 startUpEventFrozenManager);
@@ -608,7 +616,13 @@ public class SwirldsPlatform implements Platform, Startable {
                 swirldStateManager,
                 startedFromGenesis,
                 stateManagementComponent,
-                eventTaskDispatcher::dispatchTask,
+                task -> {
+                    if (task instanceof final GossipEvent event) {
+                        incomingEventProcessor.ingestEvent(event);
+                    } else {
+                        intakeQueue.put(task);
+                    }
+                },
                 eventObserverDispatcher,
                 eventMapper,
                 eventIntakeMetrics,
@@ -925,8 +939,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the event creator.
      */
     @Nullable
-    private EventCreator buildEventCreator(@NonNull final EventIntake eventIntake) {
-        Objects.requireNonNull(eventIntake);
+    private EventCreator buildEventCreator(@NonNull final IncomingEventProcessor incomingEventProcessor) {
+        Objects.requireNonNull(incomingEventProcessor);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         if (chatterConfig.useChatter()) {
             // chatter has a separate event creator in a different thread. having 2 event creators creates the risk
@@ -940,7 +954,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     PlatformConstructor.platformSigner(crypto.getKeysAndCerts()),
                     consensusRef::get,
                     swirldStateManager.getTransactionPool(),
-                    eventIntake::addEvent,
+                    incomingEventProcessor::ingestEvent,
                     eventMapper,
                     eventMapper,
                     swirldStateManager.getTransactionPool(),

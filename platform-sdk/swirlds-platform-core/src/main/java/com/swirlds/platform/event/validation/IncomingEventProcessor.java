@@ -5,6 +5,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -14,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 // TODO rename
 
@@ -29,14 +29,14 @@ public class IncomingEventProcessor implements Startable {
     private final QueueThread<Future<GossipEvent>> finalizer;
     private final EventDeduplicator deduplicator;
     private final GossipEventValidators validators;
-    private final Consumer<GossipEvent> validEventConsumer;
+    private final InterruptableConsumer<GossipEvent> validEventConsumer;
 
     public IncomingEventProcessor(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final EventDeduplicator deduplicator,
             @NonNull final GossipEventValidators validators,
-            @NonNull final Consumer<GossipEvent> validEventConsumer) {
+            @NonNull final InterruptableConsumer<GossipEvent> validEventConsumer) {
 
         Objects.requireNonNull(threadManager);
         this.cryptography = platformContext.getCryptography();
@@ -77,9 +77,11 @@ public class IncomingEventProcessor implements Startable {
     @NonNull
     private Callable<GossipEvent> buildProcessingTask(@NonNull final GossipEvent gossipEvent) {
         return () -> {
-            cryptography.digestSync(gossipEvent.getHashedData());
+            if (gossipEvent.getHashedData().getHash() == null) {
+                cryptography.digestSync(gossipEvent.getHashedData());
+            }
 
-            final boolean isDuplicate = deduplicator.isEventADuplicate(gossipEvent);
+            final boolean isDuplicate = deduplicator.isDuplicate(gossipEvent);
             if (isDuplicate) {
                 return null;
             }
@@ -112,6 +114,7 @@ public class IncomingEventProcessor implements Startable {
             throw new RuntimeException(e);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
+            // TODO log error
         }
     }
 

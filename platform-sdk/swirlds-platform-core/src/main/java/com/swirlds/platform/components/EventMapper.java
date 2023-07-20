@@ -23,6 +23,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
@@ -119,16 +120,14 @@ public class EventMapper implements EventAddedObserver, SelfEventStorage, Cleara
      */
     @Override
     @Nullable
-    public synchronized EventImpl getMostRecentSelfEvent() {
-        return getMostRecentEvent(selfId);
-    }
+    public synchronized GossipEvent getMostRecentSelfEvent() {
+        final EventImpl event = getMostRecentEvent(selfId);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void setMostRecentSelfEvent(final EventImpl selfEvent) {
-        // does nothing, self events will be added through the eventAdded() method
+        if (event == null) {
+            return null;
+        }
+
+        return new GossipEvent(event.getHashedData(), event.getUnhashedData());
     }
 
     /**

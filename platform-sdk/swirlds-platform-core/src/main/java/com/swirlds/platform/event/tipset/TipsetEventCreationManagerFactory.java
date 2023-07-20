@@ -25,10 +25,9 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatus;
-import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
@@ -39,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -59,7 +59,8 @@ public final class TipsetEventCreationManagerFactory {
      * @param selfId                    the ID of this node
      * @param appVersion                the current application version
      * @param transactionPool           provides transactions to be added to new events
-     * @param eventIntakeQueue          the queue to which new events should be added
+     * @param intakeQueueSizeSupplier   provides the current size of the event intake queue
+     * @param newEventConsumer          handles new events
      * @param eventObserverDispatcher   wires together event intake logic
      * @param platformStatusSupplier    provides the current platform status
      * @param startUpEventFrozenManager manages the start-up event frozen state
@@ -75,7 +76,8 @@ public final class TipsetEventCreationManagerFactory {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final EventTransactionPool transactionPool,
-            @NonNull final QueueThread<EventIntakeTask> eventIntakeQueue,
+            @NonNull final IntSupplier intakeQueueSizeSupplier,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventConsumer,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager) {
@@ -88,7 +90,8 @@ public final class TipsetEventCreationManagerFactory {
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(appVersion);
         Objects.requireNonNull(transactionPool);
-        Objects.requireNonNull(eventIntakeQueue);
+        Objects.requireNonNull(intakeQueueSizeSupplier);
+        Objects.requireNonNull(newEventConsumer);
         Objects.requireNonNull(eventObserverDispatcher);
         Objects.requireNonNull(platformStatusSupplier);
         Objects.requireNonNull(startUpEventFrozenManager);
@@ -102,8 +105,14 @@ public final class TipsetEventCreationManagerFactory {
             return null;
         }
 
-        final Consumer<GossipEvent> newEventHandler =
-                event -> abortAndThrowIfInterrupted(eventIntakeQueue::put, event, "intakeQueue.put() interrupted");
+        final Consumer<GossipEvent> newEventHandler = event -> {
+            try {
+                newEventConsumer.accept(event);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted while ingesting new event", e);
+            }
+        };
 
         final TipsetEventCreationManager manager = new TipsetEventCreationManager(
                 platformContext,
@@ -116,7 +125,7 @@ public final class TipsetEventCreationManagerFactory {
                 appVersion,
                 transactionPool,
                 newEventHandler,
-                eventIntakeQueue::size,
+                intakeQueueSizeSupplier,
                 platformStatusSupplier,
                 startUpEventFrozenManager);
 

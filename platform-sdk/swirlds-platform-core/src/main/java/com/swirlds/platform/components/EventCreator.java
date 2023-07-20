@@ -26,10 +26,12 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
@@ -64,7 +66,7 @@ public class EventCreator {
     private final TransactionSupplier transactionSupplier;
 
     /** An implementor of {@link EventHandler} */
-    private final EventHandler newEventHandler;
+    private final InterruptableConsumer<GossipEvent> newEventHandler;
 
     /** This hashgraph's {@link EventMapper} */
     private final EventMapper eventMapper;
@@ -110,7 +112,7 @@ public class EventCreator {
             @NonNull final Signer signer,
             @NonNull final Supplier<GraphGenerations> graphGenerationsSupplier,
             @NonNull final TransactionSupplier transactionSupplier,
-            @NonNull final EventHandler newEventHandler,
+            @NonNull final InterruptableConsumer<GossipEvent> newEventHandler,
             @NonNull final EventMapper eventMapper,
             @NonNull final SelfEventStorage selfEventStorage,
             @NonNull final TransactionPool transactionPool,
@@ -158,7 +160,7 @@ public class EventCreator {
         }
 
         final EventImpl otherParent = eventMapper.getMostRecentEvent(otherId);
-        final EventImpl selfParent = selfEventStorage.getMostRecentSelfEvent();
+        final GossipEvent selfParent = selfEventStorage.getMostRecentSelfEvent();
 
         if (eventCreationRules.shouldCreateEvent(selfParent, otherParent) == EventCreationRuleResponse.DONT_CREATE) {
             return false;
@@ -166,11 +168,6 @@ public class EventCreator {
 
         // Don't create an event if both parents are old.
         if (ancientParentsCheck.areBothParentsAncient(selfParent, otherParent)) {
-            logger.debug(
-                    CREATE_EVENT.getMarker(),
-                    "Both parents are ancient, selfParent: {}, otherParent: {}",
-                    () -> EventUtils.toShortString(selfParent),
-                    () -> EventUtils.toShortString(otherParent));
             return false;
         }
 
@@ -178,16 +175,19 @@ public class EventCreator {
         return true;
     }
 
-    private void handleNewEvent(final EventImpl event) {
-        logEventCreation(event);
-        selfEventStorage.setMostRecentSelfEvent(event);
-        newEventHandler.handleEvent(event);
+    private void handleNewEvent(@NonNull final GossipEvent event) {
+        try {
+            newEventHandler.accept(event);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("interrupted while ingesting event", e);
+        }
     }
 
     /**
      * Construct an event object.
      */
-    protected EventImpl buildEvent(final EventImpl selfParent, final EventImpl otherParent) {
+    protected GossipEvent buildEvent(final GossipEvent selfParent, final EventImpl otherParent) {
 
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 softwareVersion,
@@ -204,7 +204,7 @@ public class EventCreator {
                 EventUtils.getCreatorId(otherParent),
                 signer.sign(hashedData.getHash().getValue()).getSignatureBytes());
 
-        return new EventImpl(hashedData, unhashedData, selfParent, otherParent);
+        return new GossipEvent(hashedData, unhashedData);
     }
 
     /**
@@ -222,14 +222,5 @@ public class EventCreator {
      */
     protected boolean hasSignatureTransactionsWhileFrozen() {
         return transactionPool.numSignatureTransEvent() > 0 && inFreeze.getAsBoolean();
-    }
-
-    /**
-     * Write to the log (if configured) every time an event is created.
-     *
-     * @param event the created event to be logged
-     */
-    protected void logEventCreation(final EventImpl event) {
-        logger.debug(CREATE_EVENT.getMarker(), "Creating {}", event::toMediumString);
     }
 }

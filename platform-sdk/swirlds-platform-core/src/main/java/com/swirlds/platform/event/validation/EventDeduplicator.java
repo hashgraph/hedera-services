@@ -29,7 +29,7 @@ public class EventDeduplicator {
      * @param event the event to check
      * @return true if the event is a duplicate or ancient, false otherwise
      */
-    public synchronized boolean isEventADuplicate(@NonNull final GossipEvent event) throws InterruptedException {
+    public synchronized boolean isDuplicate(@NonNull final GossipEvent event) throws InterruptedException {
         final RecentEvent recentEvent = RecentEvent.of(event);
         final boolean added = recentEvents.add(recentEvent);
 

@@ -17,6 +17,7 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Used for storing the latest event created by me
@@ -25,13 +26,5 @@ public interface SelfEventStorage {
     /**
      * @return the most recent event created by me, or null if no such event exists.
      */
-    EventImpl getMostRecentSelfEvent();
-
-    /**
-     * Sets the most recent self event to the supplied value
-     *
-     * @param selfEvent
-     * 		the value to set
-     */
-    void setMostRecentSelfEvent(final EventImpl selfEvent);
+    GossipEvent getMostRecentSelfEvent();
 }
