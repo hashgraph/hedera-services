@@ -34,12 +34,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getUpdated121;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
-import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
@@ -139,6 +139,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -378,17 +379,11 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation overriding(String property, String value) {
-        return fileUpdate(APP_PROPERTIES)
-                .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(Map.of(property, "" + value));
-    }
-
-    public static HapiSpecOperation overridingAllOf(Map<String, String> explicit) {
-        return fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).overridingProps(explicit);
+        return overridingAllOf(Map.of(property, value));
     }
 
     public static HapiSpecOperation overridingAllOfDeferred(Supplier<Map<String, String>> explicit) {
-        return fileUpdate(APP_PROPERTIES).payingWith(ADDRESS_BOOK_CONTROL).overridingProps(explicit.get());
+        return sourcing(() -> overridingAllOf(explicit.get()));
     }
 
     public static HapiSpecOperation resetToDefault(String... properties) {
@@ -398,35 +393,26 @@ public class UtilVerbs {
             final var defaultValue = defaultNodeProps.get(prop);
             defaultValues.put(prop, defaultValue);
         }
-        return fileUpdate(APP_PROPERTIES)
-                .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(defaultValues)
-                .alertingPost(status -> {
-                    if (status == SUCCESS) {
-                        log.info("Reset {} default values", defaultValues);
-                    }
-                });
+        return overridingAllOf(defaultValues);
     }
 
     public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles() {
-        return blockingOrder(
-                overridingAllOf(FeatureFlags.FEATURE_FLAGS.allEnabled()),
-                overridingThree(
-                        "contracts.throttle.throttleByGas",
-                        FALSE_VALUE,
-                        "contracts.enforceCreationThrottle",
-                        FALSE_VALUE,
-                        SIDECARS_PROP,
-                        "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
+        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled());
+        allOverrides.putAll(Map.of(
+                "contracts.throttle.throttleByGas",
+                FALSE_VALUE,
+                "contracts.enforceCreationThrottle",
+                FALSE_VALUE,
+                SIDECARS_PROP,
+                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
+        return overridingAllOf(allOverrides);
     }
 
     public static HapiSpecOperation overridingTwo(
             final String aProperty, final String aValue, final String bProperty, final String bValue) {
-        return fileUpdate(APP_PROPERTIES)
-                .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(Map.of(
-                        aProperty, aValue,
-                        bProperty, bValue));
+        return overridingAllOf(Map.of(
+                aProperty, aValue,
+                bProperty, bValue));
     }
 
     public static HapiSpecOperation overridingThree(
@@ -436,12 +422,18 @@ public class UtilVerbs {
             final String bValue,
             final String cProperty,
             final String cValue) {
-        return fileUpdate(APP_PROPERTIES)
-                .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(Map.of(
-                        aProperty, aValue,
-                        bProperty, bValue,
-                        cProperty, cValue));
+        return overridingAllOf(Map.of(
+                aProperty, aValue,
+                bProperty, bValue,
+                cProperty, cValue));
+    }
+
+    public static HapiSpecOperation overridingAllOf(@NonNull final Map<String, String> explicit) {
+        return withOpContext((spec, opLog) -> {
+            final var updated121 = getUpdated121(spec, explicit);
+            final var multiStepUpdate = updateLargeFile(GENESIS, APP_PROPERTIES, ByteString.copyFrom(updated121));
+            allRunFor(spec, multiStepUpdate);
+        });
     }
 
     public static HapiSpecOperation remembering(final Map<String, String> props, final String... ofInterest) {
