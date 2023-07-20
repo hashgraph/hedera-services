@@ -55,14 +55,26 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This is a special handler that is used to "finalize" hbar and token transfers, most importantly by writing the results of a transaction to record files. Finalization in this context means summing the net changes to make to each account's hbar balance and token balances, and assigning the final owner of an nft after an arbitrary number of ownership changes
+ * This is a special handler that is used to "finalize" hbar and token transfers for the parent transaction record.
+ * Finalization in this context means summing the net changes to make to each account's hbar balance and token
+ * balances, and assigning the final owner of an nft after an arbitrary number of ownership changes.
+ *
+ * In this finalizer, we will:
+ * 1.If staking is enabled, iterate through all modifications in writableAccountStore and compare with the corresponding entity in readableAccountStore
+ * 2. Comparing the changes, we look for balance/declineReward/stakedToMe/stakedId fields have been modified,
+ * if an account is staking to a node. Construct a list of possibleRewardReceivers
+ * 3. Pay staking rewards to any account who has pending rewards
+ * 4. Now again, iterate through all modifications in writableAccountStore, writableTokenRelationStore.
+ * 5. For each modification we look at the same entity in the respective readableStore
+ * 6. Calculate the difference between the two, and then construct a TransferList and TokenTransferList
+ * for the parent record
  */
 @Singleton
-public class FinalizeRecordHandler implements TransactionHandler {
+public class FinalizeParentRecordHandler implements TransactionHandler {
     private final StakingRewardsHandler stakingRewardsHandler;
 
     @Inject
-    public FinalizeRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
+    public FinalizeParentRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
         this.stakingRewardsHandler = stakingRewardsHandler;
     }
 

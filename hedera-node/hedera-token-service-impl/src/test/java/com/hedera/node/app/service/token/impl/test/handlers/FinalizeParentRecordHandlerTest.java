@@ -42,7 +42,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -62,7 +62,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
+class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private final Account ACCOUNT_1212 =
             givenValidAccount().copyBuilder().accountNumber(1212).build();
     private final AccountID ACCOUNT_1212_ID = asAccountId(ACCOUNT_1212);
@@ -94,11 +94,11 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Mock
     private StakingRewardsHandlerImpl stakingRewardsHandler;
 
-    private FinalizeRecordHandler subject;
+    private FinalizeParentRecordHandler subject;
 
     @BeforeEach
     public void setUp() {
-        subject = new FinalizeRecordHandler(stakingRewardsHandler);
+        subject = new FinalizeParentRecordHandler(stakingRewardsHandler);
     }
 
     @Test
