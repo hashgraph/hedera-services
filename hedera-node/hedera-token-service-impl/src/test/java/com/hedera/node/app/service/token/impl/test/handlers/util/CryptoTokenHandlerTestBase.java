@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
@@ -23,6 +24,7 @@ import static com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtil
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -87,6 +89,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -769,39 +772,39 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Account givenValidAccount() {
-        return new Account(
-                accountNum,
-                alias.alias(),
-                key,
-                1_234_567L,
-                payerBalance,
-                "testAccount",
-                false,
-                1_234L,
-                1_234_568L,
-                UNSET_STAKED_ID,
-                true,
-                true,
-                3,
-                2,
-                1,
-                2,
-                10,
-                1,
-                3,
-                false,
-                2,
-                0,
-                1000L,
-                0,
-                72000,
-                0,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                2,
-                false,
-                null);
+        return Account.newBuilder()
+                .accountNumber(accountNum)
+                .alias(alias.alias())
+                .key(key)
+                .expiry(1_234_567L)
+                .memo("testAccount")
+                .deleted(false)
+                .stakedToMe(1_234L)
+                .stakePeriodStart(LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay() - 1)
+                .stakedNodeId(0L)
+                .declineReward(true)
+                .receiverSigRequired(true)
+                .headTokenNumber(3L)
+                .headNftId(2L)
+                .headNftSerialNumber(1L)
+                .numberOwnedNfts(2L)
+                .maxAutoAssociations(10)
+                .usedAutoAssociations(1)
+                .numberAssociations(3)
+                .smartContract(false)
+                .numberPositiveBalances(2)
+                .ethereumNonce(0L)
+                .stakeAtStartOfLastRewardedPeriod(1000L)
+                .autoRenewAccountNumber(0L)
+                .autoRenewSecs(72000L)
+                .contractKvPairsNumber(0)
+                .cryptoAllowances(emptyList())
+                .tokenAllowances(emptyList())
+                .approveForAllNftAllowances(emptyList())
+                .numberTreasuryTitles(2)
+                .expiredAndPendingRemoval(false)
+                .firstContractStorageKey(null)
+                .build();
     }
 
     protected TokenRelation givenFungibleTokenRelation() {
