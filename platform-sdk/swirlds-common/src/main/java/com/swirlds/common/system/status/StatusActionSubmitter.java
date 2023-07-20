@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.components;
+package com.swirlds.common.system.status;
+
+import com.swirlds.common.system.status.actions.PlatformStatusAction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Keeps track of the status of the platform
+ * A functional interface for submitting status actions
  */
-public interface PlatformStatusManager {
+@FunctionalInterface
+public interface StatusActionSubmitter {
     /**
-     * Checks the status of the platform and notifies the {@code SwirldMain} if there is a change in status
+     * Submit a status action, which will be processed in the order received
+     *
+     * @param action the action to submit
      */
-    void checkPlatformStatus();
+    void submitStatusAction(@NonNull final PlatformStatusAction action);
 }

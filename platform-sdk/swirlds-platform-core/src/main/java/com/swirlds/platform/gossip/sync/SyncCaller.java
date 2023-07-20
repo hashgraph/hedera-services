@@ -69,7 +69,6 @@ public class SyncCaller implements Runnable {
     private final SyncManagerImpl syncManager;
     private final SharedConnectionLocks sharedConnectionLocks;
     private final EventTaskCreator eventTaskCreator;
-    private final Runnable updatePlatformStatus;
     private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final SyncConfig syncConfig;
 
@@ -93,7 +92,6 @@ public class SyncCaller implements Runnable {
      * @param syncManager                 the sync manager
      * @param sharedConnectionLocks       the shared connection locks
      * @param eventTaskCreator            responsible for scheduling the creation of events
-     * @param updatePlatformStatus        calling this method causes the platform to re-evaluate its status
      * @param syncShadowgraphSynchronizer the shadowgraph synchronizer
      */
     public SyncCaller(
@@ -107,7 +105,6 @@ public class SyncCaller implements Runnable {
             @NonNull final SyncManagerImpl syncManager,
             @NonNull final SharedConnectionLocks sharedConnectionLocks,
             @NonNull final EventTaskCreator eventTaskCreator,
-            @NonNull final Runnable updatePlatformStatus,
             @NonNull final ShadowGraphSynchronizer syncShadowgraphSynchronizer) {
         Objects.requireNonNull(platformContext);
 
@@ -120,7 +117,6 @@ public class SyncCaller implements Runnable {
         this.syncManager = Objects.requireNonNull(syncManager);
         this.sharedConnectionLocks = Objects.requireNonNull(sharedConnectionLocks);
         this.eventTaskCreator = Objects.requireNonNull(eventTaskCreator);
-        this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
         this.syncShadowgraphSynchronizer = Objects.requireNonNull(syncShadowgraphSynchronizer);
 
         sleep1perSecond = platformContext.getMetrics().getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
@@ -200,7 +196,6 @@ public class SyncCaller implements Runnable {
             }
 
             if (addressBook.getSize() == 1 && callerNumber == 0) {
-                updatePlatformStatus.run();
                 // Only one member exists (self), so create an event and add it to the hashgraph.
                 // Only one caller is allowed to do this (caller number 0).
                 // This is like syncing with self, and then creating an event with otherParent being self.
