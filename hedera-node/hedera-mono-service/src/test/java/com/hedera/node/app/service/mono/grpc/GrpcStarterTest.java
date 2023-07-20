@@ -165,7 +165,7 @@ class GrpcStarterTest {
         given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeAddress.getMemo()).willReturn("0.0.4");
-        given(nodeAddress.getPortExternalIpv4()).willReturn(50666);
+        given(nodeAddress.getPortExternal()).willReturn(50666);
         given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
 
         // when:

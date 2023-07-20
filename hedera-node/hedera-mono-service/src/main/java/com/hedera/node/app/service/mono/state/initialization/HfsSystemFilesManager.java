@@ -30,7 +30,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
-import static com.swirlds.common.system.address.Address.ipString;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -411,14 +410,14 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
     static NodeAddress.Builder basicBioEntryFrom(final Address address) {
         final var builder = NodeAddress.newBuilder()
-                .setIpAddress(ByteString.copyFromUtf8(ipString(address.getAddressExternalIpv4())))
+                .setIpAddress(ByteString.copyFromUtf8(address.getHostnameExternal()))
                 .setRSAPubKey(CommonUtils.hex(address.getSigPublicKey().getEncoded()))
                 .setNodeId(address.getNodeId().id())
                 .setStake(address.getWeight())
                 .setMemo(ByteString.copyFromUtf8(address.getMemo()));
         final var serviceEndpoint = ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))
-                .setPort(address.getPortExternalIpv4());
+                .setIpAddressV4(ByteString.copyFromUtf8(address.getHostnameExternal()))
+                .setPort(address.getPortExternal());
         builder.addServiceEndpoint(serviceEndpoint);
         try {
             builder.setNodeAccountId(parseAccount(address.getMemo()));
