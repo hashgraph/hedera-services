@@ -110,6 +110,7 @@ public class TransactionScenarioBuilder implements Scenarios {
         final var signedTx =
                 SignedTransaction.newBuilder().bodyBytes(signedbytes).build();
         final var tx = Transaction.newBuilder()
+                .body(body)
                 .signedTransactionBytes(asBytes(SignedTransaction.PROTOBUF, signedTx))
                 .body(body)
                 .build();
