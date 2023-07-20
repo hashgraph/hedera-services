@@ -23,22 +23,22 @@ app,		HederaNode.jar
 # app, 		PlatformTestingDemo.jar, FCM1KFreeze.json
 # ** END REMOVE FROM SDK RELEASES **
 
- address,  0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
-# address,  B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
+ address,   0, A, Alice,    1, 127.0.0.1, 50204, 127.0.0.1, 50204, 0.0.3
+# address,  1, B, Bob,      1, 127.0.0.1, 50205, 127.0.0.1, 50205, 0.0.4
 
-# address,  C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
-# address,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
+# address,  2, C, Carol,    1, 127.0.0.1, 50206, 127.0.0.1, 50206, 0.0.5
+# address,  3,  D, Dave,     1, 127.0.0.1, 50207, 127.0.0.1, 50207, 0.0.6
 
-# address,  E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208
-# address,  F, Fred,     1, 127.0.0.1, 50209, 127.0.0.1, 50209
-# address,  G, Gina,     1, 127.0.0.1, 50210, 127.0.0.1, 50210
-# address,  H, Hank,     1, 127.0.0.1, 50211, 127.0.0.1, 50211
-# address,  I, Iris,     1, 127.0.0.1, 50212, 127.0.0.1, 50212
-# address,  J, Judy,     1, 127.0.0.1, 50213, 127.0.0.1, 50213
-# address,  K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214
-# address,  L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215
+# address,   4, E, Eric,     1, 127.0.0.1, 50208, 127.0.0.1, 50208
+# address,   5,  F, Fred,     1, 127.0.0.1, 50209, 127.0.0.1, 50209
+# address,   6, G, Gina,     1, 127.0.0.1, 50210, 127.0.0.1, 50210
+# address,   7, H, Hank,     1, 127.0.0.1, 50211, 127.0.0.1, 50211
+# address,   8, I, Iris,     1, 127.0.0.1, 50212, 127.0.0.1, 50212
+# address,   9, J, Judy,     1, 127.0.0.1, 50213, 127.0.0.1, 50213
+# address,   10, K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214
+# address,   11, L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215
 
-nextNodeId, 4
+nextNodeId, 1
 
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.

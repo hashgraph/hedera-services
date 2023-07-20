@@ -8,6 +8,8 @@ address, 1, B, Bob, 1, node_1, 50204, node_1, 50204, 0.0.4
 address, 2, C, Carol, 1, node_2, 50204, node_2, 50204, 0.0.5
 #address, 3, D, Dave, 1, 172.20.0.0, 50207, 70.240.247.13, 50207, 0.0.6
 
+nextNodeId, 3
+
 ###############################################################################################
 # The first line can be “swirld, “ and then a name for this swirld (shared world / ledger),
 # where the name is any string without commas, line breaks, or leading/trailing whitespace.
@@ -18,15 +20,22 @@ address, 2, C, Carol, 1, node_2, 50204, node_2, 50204, 0.0.5
 #
 # Then list one member per line. For each member, list these, separated by commas
 # (after the word "address" at the start):
+#         node id             - a nonnegative integer that uniquely identifies a node
+#                               (From top to bottom, the ids must be in ascending order but can skip numbers.)
 #         nickname            - a short version of the member's name
 #         full name           - the member's name
-#         1                   - currently ignored
+#         weight              - a nonnegative integer that weights the consensus voting
+#                               (normally all are 1, can be others, but can't all be 0)
 #         internal IP address - four numbers, each in the range 0-255, separated by dots
 #                               (Only use 127.0.0.1 if ALL the members are on the same machine)
 #         internal port       - in range 50000-65535
 #         external IP address - four numbers, each in the range 0-255, separated by dots
 #                               (Only use 127.0.0.1 if ALL the members are on the same machine)
 #         external port       - in range 50000-65535
+#
+#         stream IP address   - (optioanl) four numbers, each in the range 0-255, separated by dots
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
+#         stream port         - (optioanl) in range 50000-65535
 #
 #
 # Each member should be listed only once, on a single line. If all the members are on the same
@@ -63,4 +72,8 @@ address, 2, C, Carol, 1, node_2, 50204, node_2, 50204, 0.0.5
 # or quotation marks.
 # Boolean parameters can be any of on/1/true/yes/t/y for true,
 # and any of off/0/false/no/f/n for false, where capitalization doesn’t matter.
+#
+# The `nextNodeId` field must be a higher integer than all node ids of uncommented addresses.
+# When adding new addresses and starting from a saved state, the new addresses must have
+# node ids greater than or equal to the nextNodeId value of the address book in the saved state.
 ###############################################################################################
