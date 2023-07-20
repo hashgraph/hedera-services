@@ -154,7 +154,8 @@ public class HandleWorkflow {
             final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             final var transactionInfo = preHandleResult.txInfo();
             final var txBody = transactionInfo.txBody();
-            recordBuilder.transaction(transactionInfo.transaction())
+            recordBuilder
+                    .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionInfo.signedBytes())
                     .transactionID(txBody.transactionID())
                     .memo(txBody.memo());
