@@ -44,8 +44,8 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public class RecordStreamObject extends AbstractSerializableHashable
         implements Timestamped, RunningHashable, SerializableHashable, StreamAligned {
-    private static final long CLASS_ID = 0xe370929ba5429d8bL;
-    static final int CLASS_VERSION = 1;
+    public static final long CLASS_ID = 0xe370929ba5429d8bL;
+    public static final int CLASS_VERSION = 1;
 
     private static final int MAX_RECORD_LENGTH = 64 * 1024;
     private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
