@@ -34,7 +34,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -248,7 +247,8 @@ public class HandleContextImpl implements HandleContext {
     }
 
     private static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
