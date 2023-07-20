@@ -178,7 +178,8 @@ public class RecordListBuilder {
         final var recordStream = precedingRecordBuilders == null
                 ? mainRecordStream
                 : Stream.concat(
-                        precedingRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build), mainRecordStream);
+                        precedingRecordBuilders.stream().map(SingleTransactionRecordBuilderImpl::build),
+                        mainRecordStream);
         return new Result(mainRecord, recordStream);
     }
 
