@@ -24,6 +24,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -158,9 +160,16 @@ public class HandleContextImpl implements HandleContext {
         return blockRecordInfo;
     }
 
+    /**
+     * Create a new entity id number. This will be incremented by one for each new entity created. It is based on the
+     * current WritableStoreFactory so will roll back if the transaction fails.
+     *
+     * @return new entity id number
+     */
     @Override
     public long newEntityNum() {
-        return current().newEntityNum();
+        final var writableStoreFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        return writableStoreFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
     @Override

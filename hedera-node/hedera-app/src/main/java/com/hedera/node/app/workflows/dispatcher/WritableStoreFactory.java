@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
@@ -58,7 +60,9 @@ public class WritableStoreFactory {
             FreezeService.NAME,
             Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
             FileService.NAME,
-            Map.of(WritableFileStore.class, WritableFileStore::new));
+            Map.of(WritableFileStore.class, WritableFileStore::new),
+            EntityIdService.NAME,
+            Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new));
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

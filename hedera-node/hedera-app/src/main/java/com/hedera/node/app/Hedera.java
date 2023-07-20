@@ -25,6 +25,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
@@ -192,7 +193,8 @@ public final class Hedera implements SwirldMain {
                 new TokenServiceImpl(),
                 new UtilServiceImpl(),
                 new RecordCacheService(),
-                new BlockRecordService()));
+                new BlockRecordService(),
+                new EntityIdService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
