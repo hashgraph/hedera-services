@@ -29,6 +29,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -127,7 +128,7 @@ public class SyncGossip extends AbstractGossip {
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -153,7 +154,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
@@ -172,7 +173,7 @@ public class SyncGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
-                updatePlatformStatus,
+                statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -333,7 +334,7 @@ public class SyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                updatePlatformStatus,
+                statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }

@@ -29,7 +29,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -42,6 +41,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
@@ -577,7 +577,6 @@ class EventFlowTests {
                 .withValue("transaction.throttleTransactionQueueSize", THROTTLE_TRANSACTION_QUEUE_SIZE)
                 .withValue("transaction.maxTransactionBytesPerEvent", 2048)
                 .getOrCreateConfig();
-        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final ConsensusHandlingMetrics consStats = mock(ConsensusHandlingMetrics.class);
         when(consStats.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
@@ -623,7 +622,7 @@ class EventFlowTests {
                 preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                transactionConfig,
+                mock(StatusActionSubmitter.class),
                 () -> false,
                 state,
                 new BasicSoftwareVersion(1));
@@ -651,6 +650,7 @@ class EventFlowTests {
                 signedStateTracker,
                 e -> {},
                 () -> {},
+                mock(StatusActionSubmitter.class),
                 (round) -> {},
                 SoftwareVersion.NO_VERSION);
     }

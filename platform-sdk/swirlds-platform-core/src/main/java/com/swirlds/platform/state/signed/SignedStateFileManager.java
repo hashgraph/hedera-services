@@ -31,6 +31,8 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.Uninterruptable;
@@ -100,6 +102,11 @@ public class SignedStateFileManager implements Startable {
     private final Time time;
 
     /**
+     * Enables submitting platform status actions
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
+
+    /**
      * The minimum generation of non-ancient events for the oldest state snapshot on disk.
      */
     private long minimumGenerationNonAncientForOldestState = -1;
@@ -118,10 +125,11 @@ public class SignedStateFileManager implements Startable {
     /**
      * Creates a new instance.
      *
-     * @param threadManager responsible for creating and managing threads
-     * @param mainClassName the main class name of this node
-     * @param selfId        the ID of this node
-     * @param swirldName    the name of the swirld
+     * @param threadManager         responsible for creating and managing threads
+     * @param mainClassName         the main class name of this node
+     * @param selfId                the ID of this node
+     * @param swirldName            the name of the swirld
+     * @param statusActionSubmitter enables submitting platform status actions
      */
     public SignedStateFileManager(
             @NonNull final PlatformContext context,
@@ -132,7 +140,8 @@ public class SignedStateFileManager implements Startable {
             @NonNull final NodeId selfId,
             @NonNull final String swirldName,
             @NonNull final StateToDiskAttemptConsumer stateToDiskAttemptConsumer,
-            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer) {
+            @NonNull final MinimumGenerationNonAncientConsumer minimumGenerationNonAncientConsumer,
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
 
         this.metrics = Objects.requireNonNull(metrics, "metrics must not be null");
         this.time = time;
@@ -143,6 +152,7 @@ public class SignedStateFileManager implements Startable {
         this.stateConfig = context.getConfiguration().getConfigData(StateConfig.class);
         this.minimumGenerationNonAncientConsumer = Objects.requireNonNull(
                 minimumGenerationNonAncientConsumer, "minimumGenerationNonAncientConsumer must not be null");
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
 
         final ThreadConfig threadConfig = context.getConfiguration().getConfigData(ThreadConfig.class);
 
@@ -235,6 +245,7 @@ public class SignedStateFileManager implements Startable {
                     metrics.getWriteStateToDiskTimeMetric()
                             .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
+                    statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
                     stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
 
                     success = true;

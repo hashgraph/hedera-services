@@ -38,6 +38,8 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -73,7 +75,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable, Startable {
 
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
+    /**
+     * use this for all logging, as controlled by the optional data/log4j2.xml file
+     */
     private static final Logger logger = LogManager.getLogger(ConsensusRoundHandler.class);
 
     /**
@@ -81,12 +85,16 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     private final SwirldStateManager swirldStateManager;
 
-    /** Stores consensus events and round generations that need to be saved in state */
+    /**
+     * Stores consensus events and round generations that need to be saved in state
+     */
     private final SignedStateEventsAndGenerations eventsAndGenerations;
 
     private final ConsensusHandlingMetrics consensusHandlingMetrics;
 
-    /** The queue thread that stores consensus rounds and feeds them to this class for handling. */
+    /**
+     * The queue thread that stores consensus rounds and feeds them to this class for handling.
+     */
     private final QueueThread<ConsensusRound> queueThread;
 
     /**
@@ -100,7 +108,9 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      */
     private boolean savedStateInFreeze = false;
 
-    /** number of events that have had their transactions handled by stateCons so far. */
+    /**
+     * number of events that have had their transactions handled by stateCons so far.
+     */
     private final AtomicLong numEventsCons = new AtomicLong(0);
 
     /**
@@ -110,11 +120,20 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
     private RunningHash eventsConsRunningHash =
             new RunningHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
-    /** A queue that accepts signed states for hashing and signature collection. */
+    /**
+     * A queue that accepts signed states for hashing and signature collection.
+     */
     private final BlockingQueue<ReservedSignedState> stateHashSignQueue;
 
-    /** puts the system in a freeze state when executed */
+    /**
+     * puts the system in a freeze state when executed
+     */
     private final Runnable enterFreezePeriod;
+
+    /**
+     * Enables submitting platform status actions.
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
 
     private boolean addedFirstRoundInFreeze = false;
 
@@ -158,6 +177,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
      *                                 self-signed states
      * @param waitForEventDurability   a method that blocks until an event becomes durable.
      * @param enterFreezePeriod        puts the system in a freeze state when executed
+     * @param statusActionSubmitter    enables submitting of platform status actions
      * @param softwareVersion          the current version of the software
      */
     public ConsensusRoundHandler(
@@ -170,6 +190,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -180,6 +201,8 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         this.consensusHandlingMetrics = consensusHandlingMetrics;
         this.eventStreamManager = eventStreamManager;
         this.stateHashSignQueue = stateHashSignQueue;
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+
         this.softwareVersion = softwareVersion;
         this.enterFreezePeriod = enterFreezePeriod;
 
@@ -324,6 +347,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
         if (!addedFirstRoundInFreeze && isRoundInFreezePeriod(consensusRound)) {
             addedFirstRoundInFreeze = true;
             enterFreezePeriod.run();
+            statusActionSubmitter.submitStatusAction(new FreezePeriodEnteredAction(consensusRound.getRoundNum()));
         }
 
         addConsensusRound(consensusRound);

@@ -141,7 +141,7 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
 
-        lastWallClockTimeSelfEventReachedConsensus = action.instant();
+        lastWallClockTimeSelfEventReachedConsensus = action.wallClockTime();
         return this;
     }
 

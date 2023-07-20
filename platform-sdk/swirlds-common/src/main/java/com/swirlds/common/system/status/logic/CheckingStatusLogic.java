@@ -124,7 +124,7 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
 
-        return new ActiveStatusLogic(action.instant(), config);
+        return new ActiveStatusLogic(action.wallClockTime(), config);
     }
 
     /**
