@@ -27,8 +27,9 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
+
 import javax.inject.Inject;
+import java.util.Objects;
 
 /**
  * Provides the "extended" scope a Hedera system contract needs to perform its operations.
@@ -38,11 +39,11 @@ import javax.inject.Inject;
  * {@code WritableStates}.
  */
 @TransactionScope
-public class SystemContractScope {
+public class HandleSystemContractScope {
     private final HandleContext context;
 
     @Inject
-    public SystemContractScope(@NonNull final HandleContext context) {
+    public HandleSystemContractScope(@NonNull final HandleContext context) {
         this.context = Objects.requireNonNull(context);
     }
 
@@ -114,7 +115,7 @@ public class SystemContractScope {
 
     /**
      * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
-     * {@link ExtWorldScope}, performing signature verification with priority given to the included
+     * {@link HandleExtWorldScope}, performing signature verification with priority given to the included
      * {@code VerificationStrategy}.
      *
      * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record

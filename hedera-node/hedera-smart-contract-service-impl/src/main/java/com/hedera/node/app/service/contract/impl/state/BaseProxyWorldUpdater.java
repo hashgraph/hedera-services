@@ -20,19 +20,20 @@ import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
- * making the final commit in the "base" {@link ExtWorldScope}. These include validating storage size
+ * making the final commit in the "base" {@link HandleExtWorldScope}. These include validating storage size
  * limits, calculating and charging rent, and preserving per-contract linked lists. See the
  * {@link #commit()} implementation for more details.
  */
@@ -44,7 +45,7 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
 
     @Inject
     public BaseProxyWorldUpdater(
-            @NonNull final ExtWorldScope scope,
+            @NonNull final HandleExtWorldScope scope,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final LegibleStorageManager storageManager,
@@ -113,6 +114,6 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
     }
 
     private WritableKVState<SlotKey, SlotValue> scopedStorage() {
-        return extWorldScope.writableContractStore().storage();
+        return extWorldScope.getStore().storage();
     }
 }

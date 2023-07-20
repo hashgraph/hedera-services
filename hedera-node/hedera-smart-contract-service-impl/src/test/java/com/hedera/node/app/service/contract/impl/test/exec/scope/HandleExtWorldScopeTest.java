@@ -16,15 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
-import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,8 +25,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
-class ExtWorldScopeTest {
+class HandleExtWorldScopeTest {
     @Mock
     private HandleContext.SavepointStack savepointStack;
 
@@ -41,20 +41,20 @@ class ExtWorldScopeTest {
     private HandleContext context;
 
     @Mock
-    private WritableContractsStore writableContractsStore;
+    private ContractStateStore writableContractsStore;
 
-    private ExtWorldScope subject;
+    private HandleExtWorldScope subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ExtWorldScope(context);
+        subject = new HandleExtWorldScope(context);
     }
 
     @Test
     void returnsContextualStore() {
-        given(context.writableStore(WritableContractsStore.class)).willReturn(writableContractsStore);
+        given(context.writableStore(ContractStateStore.class)).willReturn(writableContractsStore);
 
-        assertSame(writableContractsStore, subject.writableContractStore());
+        assertSame(writableContractsStore, subject.getStore());
     }
 
     @Test

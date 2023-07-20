@@ -28,7 +28,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,11 +46,11 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
- * A {@link WorldUpdater} that delegates to a given {@link ExtWorldScope} for state management.
+ * A {@link WorldUpdater} that delegates to a given {@link HandleExtWorldScope} for state management.
  *
  * <p>For convenience, creates a {@link EvmFrameState} to manage the contract storage and
  * bytecode in the EVM frame via Besu types. <b>Important:</b> however, the {@link EvmFrameState}
- * does not itself provide any transactional semantics. The {@link ExtWorldScope} alone has the
+ * does not itself provide any transactional semantics. The {@link HandleExtWorldScope} alone has the
  * responsibility to {@code commit()} and {@code revert()} changes across all forms of
  * state as a transaction unit.
  *
@@ -78,7 +78,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * The scope in which this {@code ProxyWorldUpdater} operates; stored in case we need to
      * create a "stacked" updater in a child scope via {@link #updater()}.
      */
-    protected final ExtWorldScope extWorldScope;
+    protected final HandleExtWorldScope extWorldScope;
 
     /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
@@ -103,7 +103,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     private PendingCreation pendingCreation;
 
     public ProxyWorldUpdater(
-            @NonNull final ExtWorldScope extWorldScope,
+            @NonNull final HandleExtWorldScope extWorldScope,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @Nullable final WorldUpdater parent) {
         this.parent = parent;

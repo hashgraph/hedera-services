@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -69,7 +69,7 @@ public abstract class AbstractMutableEvmAccount implements MutableAccount, EvmAc
     /**
      * Besu uses this method to do zero-sum balance changes, but since the {@link ContractService} neither
      * owns account state nor is aware of receiver signature requirements, it's more sensible to require
-     * message call processors to use {@link ExtFrameScope#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+     * message call processors to use {@link HandleExtFrameScope#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
      *
      * @param value the amount to set
      * @throws UnsupportedOperationException always

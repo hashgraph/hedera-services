@@ -17,11 +17,12 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+
 import javax.inject.Inject;
+import java.util.Objects;
 
 /**
  * A factory for {@link EvmFrameState} instances that are scoped to the current state of the world in
@@ -29,11 +30,11 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class InScopeFrameStateFactory implements EvmFrameStateFactory {
-    private final ExtWorldScope scope;
-    private final ExtFrameScope extFrameScope;
+    private final HandleExtWorldScope scope;
+    private final HandleExtFrameScope extFrameScope;
 
     @Inject
-    public InScopeFrameStateFactory(@NonNull final ExtWorldScope scope, @NonNull final ExtFrameScope extFrameScope) {
+    public InScopeFrameStateFactory(@NonNull final HandleExtWorldScope scope, @NonNull final HandleExtFrameScope extFrameScope) {
         this.scope = Objects.requireNonNull(scope);
         this.extFrameScope = Objects.requireNonNull(extFrameScope);
     }
@@ -42,7 +43,8 @@ public class InScopeFrameStateFactory implements EvmFrameStateFactory {
     public EvmFrameState get() {
         return new ScopedEvmFrameState(
                 extFrameScope,
-                scope.writableContractStore().storage(),
-                scope.writableContractStore().bytecode());
+                scope.getStore(),
+                scope.getStore().storage(),
+                scope.getStore().bytecode());
     }
 }

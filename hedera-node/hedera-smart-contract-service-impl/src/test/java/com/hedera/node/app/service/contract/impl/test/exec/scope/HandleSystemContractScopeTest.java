@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.SystemContractScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,16 +28,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @ExtendWith(MockitoExtension.class)
-class SystemContractScopeTest {
+class HandleSystemContractScopeTest {
     @Mock
     private HandleContext context;
 
-    private SystemContractScope subject;
+    private HandleSystemContractScope subject;
 
     @BeforeEach
     void setUp() {
-        subject = new SystemContractScope(context);
+        subject = new HandleSystemContractScope(context);
     }
 
     @Test

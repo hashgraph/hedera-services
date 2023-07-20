@@ -16,6 +16,45 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.RentFactors;
+import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.code.CodeFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -42,43 +81,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
-import com.hedera.node.app.service.contract.impl.state.RentFactors;
-import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.StorageAccess;
-import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
-import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.LinkedHashSet;
-import java.util.List;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.code.CodeFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScopedEvmFrameStateTest {
@@ -114,7 +116,10 @@ class ScopedEvmFrameStateTest {
             .build();
 
     @Mock
-    private ExtFrameScope extFrameScope;
+    private HandleExtFrameScope extFrameScope;
+
+    @Mock
+    private ContractStateStore contractStateStore;
 
     @Mock
     private WritableKVState<SlotKey, SlotValue> storage;
@@ -126,7 +131,7 @@ class ScopedEvmFrameStateTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ScopedEvmFrameState(extFrameScope, storage, bytecode);
+        subject = new ScopedEvmFrameState(extFrameScope, contractStateStore, storage, bytecode);
     }
 
     @Test

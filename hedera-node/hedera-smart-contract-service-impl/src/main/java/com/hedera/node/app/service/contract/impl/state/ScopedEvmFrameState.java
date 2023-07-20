@@ -16,6 +16,34 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
+import com.hedera.node.app.spi.state.WritableKVState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -40,35 +68,9 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tu
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.spi.state.WritableKVState;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.code.CodeFactory;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
- * contract storage and bytecode, and a {@link ExtFrameScope} for additional influence over
+ * contract storage and bytecode, and a {@link HandleExtFrameScope} for additional influence over
  * the non-contract Hedera state in the current scope.
  *
  * <p>Almost every access requires a conversion from a PBJ type to a Besu type. At some
@@ -87,13 +89,16 @@ public class ScopedEvmFrameState implements EvmFrameState {
             "6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
     private final ExtFrameScope extFrameScope;
+    private final ContractStateStore contractStateStore;
     private final WritableKVState<SlotKey, SlotValue> storage;
     private final WritableKVState<EntityNumber, Bytecode> bytecode;
 
     public ScopedEvmFrameState(
             @NonNull final ExtFrameScope extFrameScope,
+            @NonNull final ContractStateStore contractStateStore,
             @NonNull final WritableKVState<SlotKey, SlotValue> storage,
             @NonNull final WritableKVState<EntityNumber, Bytecode> bytecode) {
+        this.contractStateStore = contractStateStore;
         this.storage = requireNonNull(storage);
         this.bytecode = requireNonNull(bytecode);
         this.extFrameScope = requireNonNull(extFrameScope);
@@ -108,6 +113,8 @@ public class ScopedEvmFrameState implements EvmFrameState {
                 tuweniToPbjBytes(requireNonNull(value)),
                 oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.previousKey(),
                 oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.nextKey());
+        // Note we intentionally do not call remove() when the new value is zero because we
+        // want to preserve the prev/next key information until the final commit
         storage.put(slotKey, slotValue);
     }
 

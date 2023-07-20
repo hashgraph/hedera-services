@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -30,7 +30,7 @@ import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.spi.state.WritableKVState;
 import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -68,10 +68,10 @@ class BaseProxyWorldUpdaterTest {
     private EvmFrameState evmFrameState;
 
     @Mock
-    private ExtWorldScope extWorldScope;
+    private HandleExtWorldScope extWorldScope;
 
     @Mock
-    private WritableContractsStore writableContractStore;
+    private ContractStateStore writableContractStore;
 
     @Mock
     private WritableKVState<SlotKey, SlotValue> storage;
@@ -104,7 +104,7 @@ class BaseProxyWorldUpdaterTest {
                 .willReturn(rentInTinycents);
         given(extWorldScope.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
-        given(extWorldScope.writableContractStore()).willReturn(writableContractStore);
+        given(extWorldScope.getStore()).willReturn(writableContractStore);
         given(writableContractStore.storage()).willReturn(storage);
 
         subject.commit();

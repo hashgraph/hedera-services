@@ -18,43 +18,44 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
+
 import javax.inject.Inject;
+import java.util.List;
 
 /**
- * A {@link ExtWorldScope} implementation based on a {@link HandleContext}.
+ * A {@link HandleExtWorldScope} implementation based on a {@link HandleContext}.
  */
 @TransactionScope
-public class ExtWorldScope {
+public class HandleExtWorldScope {
     private final HandleContext context;
 
     @Inject
-    public ExtWorldScope(@NonNull final HandleContext context) {
+    public HandleExtWorldScope(@NonNull final HandleContext context) {
         this.context = context;
     }
 
     /**
-     * Creates a new {@link ExtWorldScope} that is a child of this {@link ExtWorldScope}.
+     * Creates a new {@link HandleExtWorldScope} that is a child of this {@link HandleExtWorldScope}.
      *
-     * @return a nested {@link ExtWorldScope}
+     * @return a nested {@link HandleExtWorldScope}
      */
-    public @NonNull ExtWorldScope begin() {
+    public @NonNull HandleExtWorldScope begin() {
         context.savepointStack().createSavepoint();
         return this;
     }
 
     /**
-     * Commits all changes made within this {@link ExtWorldScope} to the parent {@link ExtWorldScope}. For
+     * Commits all changes made within this {@link HandleExtWorldScope} to the parent {@link HandleExtWorldScope}. For
      * everything except records, these changes will only affect state if every ancestor up to
-     * and including the root {@link ExtWorldScope} is also committed. Records are a bit different,
-     * as even if the root {@link ExtWorldScope} reverts, any records created within this
-     * {@link ExtWorldScope} will still appear in state; but those with status {@code SUCCESS} will
+     * and including the root {@link HandleExtWorldScope} is also committed. Records are a bit different,
+     * as even if the root {@link HandleExtWorldScope} reverts, any records created within this
+     * {@link HandleExtWorldScope} will still appear in state; but those with status {@code SUCCESS} will
      * have with their stateful effects cleared from the record and their status replaced with
      * {@code REVERTED_SUCCESS}.
      */
@@ -72,12 +73,12 @@ public class ExtWorldScope {
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
-     * its own state within this {@link ExtWorldScope}.
+     * its own state within this {@link HandleExtWorldScope}.
      *
-     * @return the contract state reflecting all changes made up to this {@link ExtWorldScope}
+     * @return the contract state reflecting all changes made up to this {@link HandleExtWorldScope}
      */
-    public WritableContractsStore writableContractStore() {
-        return context.writableStore(WritableContractsStore.class);
+    public ContractStateStore getStore() {
+        return context.writableStore(ContractStateStore.class);
     }
 
     /**

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -25,16 +23,18 @@ import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * A minimal adapter required by {@link com.hedera.node.app.spi.workflows.HandleContext}
- * to get access to the slot and bytecode {@link WritableKVState}s.
+ * An intermediary that manages access to the slot and bytecode {@link WritableKVState}s.
  */
-public class WritableContractsStore {
+public class ContractStateStore {
     private final WritableKVState<SlotKey, SlotValue> storage;
     private final WritableKVState<EntityNumber, Bytecode> bytecode;
 
-    public WritableContractsStore(@NonNull final WritableStates state) {
+    public ContractStateStore(@NonNull final WritableStates state) {
         requireNonNull(state);
         this.storage = state.get(ContractSchema.STORAGE_KEY);
         this.bytecode = state.get(ContractSchema.BYTECODE_KEY);
@@ -56,5 +56,44 @@ public class WritableContractsStore {
      */
     public WritableKVState<EntityNumber, Bytecode> bytecode() {
         return bytecode;
+    }
+
+    /**
+     * Removes the given {@link SlotKey}.
+     *
+     * @param key the {@link SlotKey} to remove
+     */
+    public void removeSlot(@NonNull final SlotKey key) {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * Puts the given {@link SlotValue} for the given {@link SlotKey}.
+     *
+     * @param key the {@link SlotKey} to put the {@link SlotValue} for
+     * @param value the {@link SlotValue} to put
+     */
+    public void putSlot(@NonNull final SlotKey key, @NonNull final SlotValue value) {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * Returns the {@link SlotValue} for the given {@link SlotKey}, or null if not found.
+     *
+     * @param key the {@link SlotKey} to get the {@link SlotValue} for
+     * @return the {@link SlotValue} for the given {@link SlotKey}, or null if not found
+     */
+    public @Nullable SlotValue getSlotValue(@NonNull final SlotKey key) {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * Returns the original {@link SlotValue} for the given {@link SlotKey}, or null if not found.
+     *
+     * @param key the {@link SlotKey} to get the {@link SlotValue} for
+     * @return the original {@link SlotValue} for the given {@link SlotKey}, or null if not found
+     */
+    public @Nullable SlotValue getOriginalSlotValue(@NonNull final SlotKey key) {
+        throw new AssertionError("Not implemented");
     }
 }

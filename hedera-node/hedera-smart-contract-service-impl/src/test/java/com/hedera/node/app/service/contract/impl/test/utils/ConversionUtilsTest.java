@@ -38,7 +38,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -55,7 +55,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConversionUtilsTest {
     @Mock
-    private ExtFrameScope extFrameScope;
+    private HandleExtFrameScope extFrameScope;
 
     @Test
     void numberedIdsRequireLongZeroAddress() {
