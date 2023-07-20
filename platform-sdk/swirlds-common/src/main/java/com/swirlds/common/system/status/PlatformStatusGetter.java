@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,20 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform;
+package com.swirlds.common.system.status;
 
-public class DummyFreezeManager extends FreezeManager {
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-    DummyFreezeManager() {
-        super(null);
-    }
+/**
+ * Functional interface for accessing the current platform status
+ */
+@FunctionalInterface
+public interface PlatformStatusGetter {
+    /**
+     * Get the current status
+     *
+     * @return the current status
+     */
+    @NonNull
+    PlatformStatus getCurrentStatus();
 }

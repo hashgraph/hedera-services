@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static com.ibm.icu.impl.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -102,9 +101,6 @@ public class SingleTransactionRecordBuilderTest {
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.UNSET) {
             return;
         }
-        when(transaction.body()).thenReturn(transactionBody);
-        when(transactionBody.memo()).thenReturn(MEMO);
-        when(transactionBody.transactionID()).thenReturn(transactionID);
 
         final List<TokenTransferList> tokenTransferLists = List.of(tokenTransfer);
         final List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee);
@@ -117,7 +113,10 @@ public class SingleTransactionRecordBuilderTest {
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
 
         singleTransactionRecordBuilder
-                .transaction(transaction, transactionBytes)
+                .transaction(transaction)
+                .transactionBytes(transactionBytes)
+                .transactionID(transactionID)
+                .memo(MEMO)
                 .transactionFee(TRANSACTION_FEE)
                 .contractCallResult(contractCallResult)
                 .contractCreateResult(contractCreateResult)
