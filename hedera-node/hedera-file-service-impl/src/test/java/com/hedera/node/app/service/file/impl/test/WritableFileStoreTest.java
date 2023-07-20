@@ -37,7 +37,7 @@ class WritableFileStoreTest extends FileTestBase {
 
     @Test
     void constructorCreatesFileState() {
-            final var store = new WritableFileStore(writableStates);
+        final var store = new WritableFileStore(writableStates);
         assertNotNull(store);
     }
 
