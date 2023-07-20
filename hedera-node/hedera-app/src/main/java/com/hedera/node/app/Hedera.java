@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.spi.HapiUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -27,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -181,7 +181,7 @@ public final class Hedera implements SwirldMain {
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(Set.of(
                 new ConsensusServiceImpl(),
-                new ContractServiceImpl(),
+                CONTRACT_SERVICE,
                 new FileServiceImpl(),
                 new FreezeServiceImpl(),
                 new NetworkServiceImpl(),

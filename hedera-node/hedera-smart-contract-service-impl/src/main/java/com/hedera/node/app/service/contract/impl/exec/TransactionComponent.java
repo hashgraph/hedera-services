@@ -23,7 +23,7 @@ import dagger.BindsInstance;
 import dagger.Subcomponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-@Subcomponent(modules = { TransactionModule.class })
+@Subcomponent(modules = {TransactionModule.class})
 @TransactionScope
 public interface TransactionComponent {
     @Subcomponent.Factory

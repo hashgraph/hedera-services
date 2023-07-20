@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -32,11 +36,6 @@ import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-import java.util.Objects;
-
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
-
 /**
  * A Hedera customization of {@link CallOperation} that, if lazy creation is enabled and
  * applies to a call, does no additional address checks. Otherwise, only allows calls to an
@@ -44,7 +43,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.is
  *
  * <p><b>IMPORTANT:</b> This operation no longer enforces for receiver signature requirements
  * when value is being transferred; that will now happen in the call the {@link MessageCallProcessor}
- * makes to {@link Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+ * makes to {@link ExtFrameScope#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
  */
 public class CustomCallOperation extends CallOperation {
     private static final Operation.OperationResult UNDERFLOW_RESPONSE =

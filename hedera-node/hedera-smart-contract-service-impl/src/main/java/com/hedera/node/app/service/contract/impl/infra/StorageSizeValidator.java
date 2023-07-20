@@ -16,19 +16,19 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
-import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
-import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.config.data.ContractsConfig;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
-import java.util.List;
-
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException.validateResource;
 import static java.util.Objects.requireNonNull;
+
+import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import javax.inject.Inject;
 
 /**
  * Validates that a set of storage size changes are valid, given the current contract service configuration.
@@ -38,27 +38,28 @@ public class StorageSizeValidator {
     private final ContractsConfig contractsConfig;
 
     @Inject
-    public StorageSizeValidator(@NonNull final ContractsConfig contractsConfig) {
-        this.contractsConfig = requireNonNull(contractsConfig);
+    public StorageSizeValidator(@NonNull final Configuration configuration) {
+        this.contractsConfig = requireNonNull(configuration).getConfigData(ContractsConfig.class);
     }
 
     /**
      * Validates that a set of storage size changes are valid, given the current contract service configuration.
      *
      * @param aggregateSlotsUsed the number of slots that would be used by all contracts combined after the transaction
-     * @param dispatch the dispatch used to create the size changes being validated
+     * @param extWorldScope the extended world scope used to create the size changes being validated
      * @param storageSizeChanges the summarized storage size changes to validate
      */
     public void assertValid(
             final long aggregateSlotsUsed,
-            @NonNull final Dispatch dispatch,
+            @NonNull final ExtWorldScope extWorldScope,
             @NonNull final List<StorageSizeChange> storageSizeChanges) {
         final var maxAggregateSlots = contractsConfig.maxKvPairsAggregate();
         validateResource(maxAggregateSlots >= aggregateSlotsUsed, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
 
         final var maxIndividualSlots = contractsConfig.maxKvPairsIndividual();
         storageSizeChanges.forEach(change -> {
-            final var contractSlotsUsed = change.numAdded() + dispatch.getOriginalSlotsUsed(change.contractNumber());
+            final var contractSlotsUsed =
+                    change.numAdded() + extWorldScope.getOriginalSlotsUsed(change.contractNumber());
             validateResource(maxIndividualSlots >= contractSlotsUsed, MAX_CONTRACT_STORAGE_EXCEEDED);
         });
     }

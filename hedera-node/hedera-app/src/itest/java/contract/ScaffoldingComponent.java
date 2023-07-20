@@ -17,8 +17,6 @@
 package contract;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
-import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -44,10 +42,6 @@ public interface ScaffoldingComponent {
     HederaState hederaState();
 
     WorkingStateAccessor workingStateAccessor();
-
-    ContractCallHandler contractCallHandler();
-
-    ContractCreateHandler contractCreateHandler();
 
     Function<TransactionBody, HandleContext> contextForTransaction();
 }

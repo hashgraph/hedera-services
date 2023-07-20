@@ -17,9 +17,10 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCallOperation;
-import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -28,9 +29,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Exposes the full Hedera state that may be read and changed <b>directly </b> from an EVM frame,
@@ -44,37 +42,6 @@ import java.util.Optional;
  * types, implementations might need to do internal caching to avoid excessive conversions.
  */
 public interface EvmFrameState {
-    /**
-     * Constructs an {@link EvmFrameState} from the given {@link Scope}.
-     *
-     * @param scope the scope
-     * @return an {@link EvmFrameState} that client code can use to manipulate scoped state via Besu data types
-     */
-    static EvmFrameState from(@NonNull final Scope scope) {
-        return new DispatchingEvmFrameState(
-                scope.dispatch(),
-                scope.writableContractStore().storage(),
-                scope.writableContractStore().bytecode());
-    }
-
-    /**
-     * Collects the given fee from the given account. The caller should have already
-     * verified that the account exists and has sufficient balance to pay the fee, so
-     * this method surfaces any problem by throwing an exception.
-     *
-     * @param payer the account to collect the fee from
-     * @param amount the amount to collect
-     * @throws IllegalArgumentException if the collection fails for any reason
-     */
-    void collectFee(@NonNull Address payer, long amount);
-
-    /**
-     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
-     *
-     * @param payer the address of the account to refund the fees to
-     * @param amount          the amount of fees to collect
-     */
-    void refundFee(@NonNull Address payer, long amount);
 
     /**
      * Tries to transfer the given amount from a sending contract to the recipient. The sender
@@ -275,6 +242,16 @@ public interface EvmFrameState {
      */
     @Nullable
     Address getAddress(long number);
+
+    /**
+     * Returns the Hedera entity number for the account or contract at the given address. Throws
+     * if there is no account with this address.
+     *
+     * @param address the address of the account or contract
+     * @return the Hedera entity number
+     * @throws IllegalArgumentException if there is no account with this address
+     */
+    long getIdNumber(@NonNull Address address);
 
     /**
      * Returns the full list of account-scoped storage changes in the current scope.

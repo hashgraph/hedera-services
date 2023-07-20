@@ -16,27 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.utils;
 
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.contract.ContractLoginfo;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.streams.ContractStateChange;
-import com.hedera.hapi.streams.ContractStateChanges;
-import com.hedera.hapi.streams.StorageChange;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
-import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.log.Log;
-import org.hyperledger.besu.evm.log.LogsBloomFilter;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -53,10 +32,30 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.streams.ContractStateChange;
+import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.hapi.streams.StorageChange;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class ConversionUtilsTest {
     @Mock
-    private Dispatch dispatch;
+    private ExtFrameScope extFrameScope;
 
     @Test
     void numberedIdsRequireLongZeroAddress() {
@@ -75,7 +74,7 @@ class ConversionUtilsTest {
     void justReturnsNumberFromSmallLongZeroAddress() {
         final var smallNumber = 0x1234L;
         final var address = Address.fromHexString("0x1234");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
         assertEquals(smallNumber, actual);
     }
 
@@ -83,22 +82,22 @@ class ConversionUtilsTest {
     void justReturnsNumberFromLargeLongZeroAddress() {
         final var largeNumber = 0x7fffffffffffffffL;
         final var address = Address.fromHexString("0x7fffffffffffffff");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
         assertEquals(largeNumber, actual);
     }
 
     @Test
     void returnsZeroIfMissingAlias() {
         final var address = Address.fromHexString("0x010000000000000000");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
         assertEquals(-1L, actual);
     }
 
     @Test
     void returnsGivenIfPresentAlias() {
-        given(dispatch.resolveAlias(any())).willReturn(new EntityNumber(0x1234L));
+        given(extFrameScope.resolveAlias(any())).willReturn(new EntityNumber(0x1234L));
         final var address = Address.fromHexString("0x010000000000000000");
-        final var actual = ConversionUtils.maybeMissingNumberOf(address, dispatch);
+        final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
         assertEquals(0x1234L, actual);
     }
 

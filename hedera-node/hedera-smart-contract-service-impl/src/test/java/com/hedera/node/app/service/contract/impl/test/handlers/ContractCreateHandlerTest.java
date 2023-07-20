@@ -26,14 +26,26 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import javax.inject.Provider;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class ContractCreateHandlerTest extends ContractHandlerTestBase {
-    private final ContractCreateHandler subject = new ContractCreateHandler();
+    @Mock
+    private Provider<TransactionComponent.Factory> provider;
+
+    private ContractCreateHandler subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new ContractCreateHandler(provider);
+    }
 
     @Test
     @DisplayName("Adds valid admin key")

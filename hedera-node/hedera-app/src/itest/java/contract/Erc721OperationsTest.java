@@ -188,9 +188,9 @@ class Erc721OperationsTest {
 
         // TODO - uncomment "WHEN:" and "THEN" below
         // WHEN:
-        //        handleAndCommit(scaffoldingComponent.contractCreateHandler(), synthCreateTxn());
+        //                handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         //        handleAndCommit(
-        //                scaffoldingComponent.contractCallHandler(),
+        //                        CONTRACT_SERVICE.handlers().contractCallHandler(),
         //                synthApproveTxn(TREASURY, PARTY_ADDRESS, 2),
         //                synthApproveTxn(TREASURY, PARTY_ADDRESS, 3),
         //                synthSetApprovalForAll(TREASURY, OPERATOR_ADDRESS, true),

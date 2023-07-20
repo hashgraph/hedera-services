@@ -16,34 +16,35 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
-import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
-import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.state.InScopeFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
 import com.hedera.node.app.spi.state.WritableKVState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
-class EvmFrameStateTest {
+class InScopeFrameStateFactoryTest {
     @Mock
-    private Scope scope;
+    private ExtWorldScope scope;
 
     @Mock
-    private WritableContractsStore writableContractStore;
+    private ExtFrameScope extFrameScope;
 
     @Mock
-    private Dispatch dispatch;
+    private WritableContractsStore writableContractsStore;
 
     @Mock
     private WritableKVState<SlotKey, SlotValue> storage;
@@ -51,15 +52,21 @@ class EvmFrameStateTest {
     @Mock
     private WritableKVState<EntityNumber, Bytecode> bytecode;
 
+    private InScopeFrameStateFactory subject;
+
+    @BeforeEach
+    void setUp() {
+        subject = new InScopeFrameStateFactory(scope, extFrameScope);
+    }
+
     @Test
-    void constructsDispatchingEvmFrameStateFromScope() {
-        given(writableContractStore.storage()).willReturn(storage);
-        given(writableContractStore.bytecode()).willReturn(bytecode);
-        given(scope.writableContractStore()).willReturn(writableContractStore);
-        given(scope.dispatch()).willReturn(dispatch);
+    void createsScopedEvmFrameStates() {
+        given(scope.writableContractStore()).willReturn(writableContractsStore);
+        given(writableContractsStore.storage()).willReturn(storage);
+        given(writableContractsStore.bytecode()).willReturn(bytecode);
 
-        final var frameState = EvmFrameState.from(scope);
+        final var nextFrame = subject.get();
 
-        assertInstanceOf(DispatchingEvmFrameState.class, frameState);
+        assertInstanceOf(ScopedEvmFrameState.class, nextFrame);
     }
 }

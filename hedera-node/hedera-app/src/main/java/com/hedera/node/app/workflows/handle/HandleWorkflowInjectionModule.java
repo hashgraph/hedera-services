@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import com.hedera.node.app.meta.MonoHandleContext;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.sigs.Expansion;
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
@@ -27,7 +26,6 @@ import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.validation.MonoExpiryValidator;
 import com.hedera.node.app.workflows.handle.validation.StandardizedAttributeValidator;
@@ -57,10 +55,6 @@ public interface HandleWorkflowInjectionModule {
     @Binds
     @Singleton
     TransactionLastStep bindLastStep(AdaptedMonoTransitionRunner adaptedTransitionRunner);
-
-    @Binds
-    @Singleton
-    HandleContext bindHandleContext(MonoHandleContext monoHandleContext);
 
     @Binds
     @Singleton

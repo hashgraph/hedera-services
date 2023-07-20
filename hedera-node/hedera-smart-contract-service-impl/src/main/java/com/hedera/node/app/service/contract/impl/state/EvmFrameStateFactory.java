@@ -16,10 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 
 @FunctionalInterface
-public interface EvmFrameStateFactory {
-    EvmFrameState createIn(@NonNull Scope scope);
-}
+public interface EvmFrameStateFactory extends Supplier<EvmFrameState> {}

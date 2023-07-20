@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.time.Instant;
-
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
 
 /**
  * Calculates the rent in tinybars that should be charged to an allocating contract, given
@@ -36,9 +35,7 @@ public class RentCalculator {
     private final ContractsConfig contractsConfig;
 
     @Inject
-    public RentCalculator(
-            @NonNull final Instant consensusNow,
-            @NonNull final Configuration config) {
+    public RentCalculator(@NonNull final Instant consensusNow, @NonNull final Configuration config) {
         this.consensusNow = requireNonNull(consensusNow);
         this.contractsConfig = requireNonNull(config).getConfigData(ContractsConfig.class);
     }

@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -28,6 +29,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -37,10 +39,11 @@ import javax.inject.Singleton;
 public class ContractCreateHandler implements TransactionHandler {
     private static final AccountID REMOVE_AUTO_RENEW_ACCOUNT_SENTINEL =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(0).build();
+    private final Provider<TransactionComponent.Factory> provider;
 
     @Inject
-    public ContractCreateHandler() {
-        // Exists for injection
+    public ContractCreateHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
+        this.provider = provider;
     }
 
     @Override

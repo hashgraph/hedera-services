@@ -27,11 +27,10 @@ import java.lang.annotation.Target;
 import javax.inject.Scope;
 
 /**
- * Scope for bindings whose lifetime consists of a single transaction. (There are enough
- * of these that it is helpful to have some DI support.)
+ * Scope for bindings whose lifetime persists throughout the entire service lifecycle.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)
 @Documented
 @Scope
-public @interface TransactionScope {}
+public @interface ContractServiceScope {}

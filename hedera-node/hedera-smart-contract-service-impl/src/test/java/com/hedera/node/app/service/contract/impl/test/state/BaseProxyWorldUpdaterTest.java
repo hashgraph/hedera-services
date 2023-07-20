@@ -16,23 +16,23 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
-import com.hedera.node.app.service.contract.impl.exec.scope.Fees;
-import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.app.service.contract.impl.state.WritableContractsStore;
 import com.hedera.node.app.spi.state.WritableKVState;
+import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,10 +41,6 @@ import org.mockito.BDDMockito;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class BaseProxyWorldUpdaterTest {
@@ -72,16 +68,7 @@ class BaseProxyWorldUpdaterTest {
     private EvmFrameState evmFrameState;
 
     @Mock
-    private EvmFrameStateFactory evmFrameStateFactory;
-
-    @Mock
-    private Fees fees;
-
-    @Mock
-    private Scope scope;
-
-    @Mock
-    private Dispatch dispatch;
+    private ExtWorldScope extWorldScope;
 
     @Mock
     private WritableContractsStore writableContractStore;
@@ -93,15 +80,13 @@ class BaseProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        given(evmFrameStateFactory.createIn(scope)).willReturn(evmFrameState);
-
         subject = new BaseProxyWorldUpdater(
-                scope, evmFrameStateFactory, rentCalculator, storageManager, storageSizeValidator);
+                extWorldScope, () -> evmFrameState, rentCalculator, storageManager, storageSizeValidator);
     }
 
     @Test
     void performsAdditionalCommitActionsInOrder() {
-        InOrder inOrder = BDDMockito.inOrder(storageSizeValidator, storageManager, rentCalculator, scope, dispatch);
+        InOrder inOrder = BDDMockito.inOrder(storageSizeValidator, storageManager, rentCalculator, extWorldScope);
 
         final var aExpiry = 1_234_567;
         final var aSlotsUsedBeforeCommit = 101;
@@ -117,20 +102,18 @@ class BaseProxyWorldUpdaterTest {
         // A contract is allocating 2 slots net
         given(rentCalculator.computeFor(sizeExcludingPendingRemovals, 2, aSlotsUsedBeforeCommit, aExpiry))
                 .willReturn(rentInTinycents);
-        given(scope.fees()).willReturn(fees);
-        given(scope.dispatch()).willReturn(dispatch);
-        given(fees.costInTinybars(rentInTinycents)).willReturn(rentInTinybars);
+        given(extWorldScope.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
-        given(scope.writableContractStore()).willReturn(writableContractStore);
-        given(writableContractStore.storage())
-                .willReturn(storage);
+        given(extWorldScope.writableContractStore()).willReturn(writableContractStore);
+        given(writableContractStore.storage()).willReturn(storage);
 
         subject.commit();
 
-        inOrder.verify(storageSizeValidator).assertValid(sizeExcludingPendingRemovals, dispatch, expectedSizeChanges());
-        inOrder.verify(dispatch).chargeStorageRent(A_NUM, rentInTinybars, true);
-        inOrder.verify(storageManager).rewrite(scope, pendingChanges(), expectedSizeChanges(), storage);
-        inOrder.verify(scope).commit();
+        inOrder.verify(storageSizeValidator)
+                .assertValid(sizeExcludingPendingRemovals, extWorldScope, expectedSizeChanges());
+        inOrder.verify(extWorldScope).chargeStorageRent(A_NUM, rentInTinybars, true);
+        inOrder.verify(storageManager).rewrite(extWorldScope, pendingChanges(), expectedSizeChanges(), storage);
+        inOrder.verify(extWorldScope).commit();
     }
 
     private List<StorageAccesses> pendingChanges() {

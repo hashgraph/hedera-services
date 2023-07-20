@@ -19,20 +19,20 @@ package com.hedera.node.app.service.contract.impl.state;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
- * making the final commit in the "base" {@link Scope}. These include validating storage size
+ * making the final commit in the "base" {@link ExtWorldScope}. These include validating storage size
  * limits, calculating and charging rent, and preserving per-contract linked lists. See the
  * {@link #commit()} implementation for more details.
  */
@@ -44,7 +44,7 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
 
     @Inject
     public BaseProxyWorldUpdater(
-            @NonNull final Scope scope,
+            @NonNull final ExtWorldScope scope,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final LegibleStorageManager storageManager,
@@ -63,6 +63,8 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
      *     <li>For each increase in storage size, calculates rent and tries to charge the allocating contract.</li>
      *     <li>"Rewrites" the pending storage changes to preserve per-contract linked lists.</li>
      * </ol>
+     *
+     * @throws ResourceExhaustedException if the storage size limit is exceeded or rent cannot be paid
      */
     @Override
     public void commit() {
@@ -71,11 +73,11 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
         final var sizeEffects = summarizeSizeEffects(changes);
 
         // Validate the effects on size are legal
-        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), scope.dispatch(), sizeEffects.sizeChanges());
+        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), extWorldScope, sizeEffects.sizeChanges());
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
-        storageManager.rewrite(scope, changes, sizeEffects.sizeChanges(), scopedStorage());
+        storageManager.rewrite(extWorldScope, changes, sizeEffects.sizeChanges(), scopedStorage());
 
         super.commit();
     }
@@ -104,13 +106,13 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
                         sizeChange.numAdded(),
                         rentFactors.numSlotsUsed(),
                         rentFactors.expiry());
-                final var rentInTinybars = scope.fees().costInTinybars(rentInTinycents);
-                scope.dispatch().chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
+                final var rentInTinybars = extWorldScope.valueInTinybars(rentInTinycents);
+                extWorldScope.chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
             }
         }
     }
 
     private WritableKVState<SlotKey, SlotValue> scopedStorage() {
-        return scope.writableContractStore().storage();
+        return extWorldScope.writableContractStore().storage();
     }
 }

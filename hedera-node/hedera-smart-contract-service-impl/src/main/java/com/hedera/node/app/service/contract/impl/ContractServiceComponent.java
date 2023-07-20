@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.infra;
+package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
-import dagger.Module;
-import dagger.Provides;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
+import dagger.Component;
 import javax.inject.Singleton;
 
-@Module
-public interface InfraModule {
-    @Provides
-    @Singleton
-    static EvmFrameStateFactory provideEvmFrameStateFactory() {
-        return EvmFrameState::from;
+@Singleton
+@Component(modules = ContractServiceModule.class)
+public interface ContractServiceComponent {
+    @Component.Factory
+    interface Factory {
+        ContractServiceComponent create();
     }
+
+    ContractHandlers handlers();
 }

@@ -16,34 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
-import com.hedera.node.app.service.contract.impl.exec.scope.Fees;
-import com.hedera.node.app.service.contract.impl.exec.scope.Scope;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
-import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
-import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.StorageAccess;
-import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
@@ -51,6 +23,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -68,7 +41,31 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
+import java.util.List;
+import java.util.Optional;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ProxyWorldUpdaterTest {
@@ -95,16 +92,10 @@ class ProxyWorldUpdaterTest {
     private ProxyEvmAccount proxyEvmAccount;
 
     @Mock
-    private Fees fees;
-
-    @Mock
     private MessageFrame frame;
 
     @Mock
-    private Scope scope;
-
-    @Mock
-    private Dispatch dispatch;
+    private ExtWorldScope extWorldScope;
 
     @Mock
     private WorldUpdater parent;
@@ -119,16 +110,15 @@ class ProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        given(evmFrameStateFactory.createIn(scope)).willReturn(evmFrameState);
-
-        subject = new ProxyWorldUpdater(scope, evmFrameStateFactory, null);
+        subject = new ProxyWorldUpdater(extWorldScope, () -> evmFrameState, null);
     }
 
     @Test
-    void collectingAndRefundingFeesNoop() {
+    void collectingAndRefundingFeesDelegate() {
         subject.collectFee(RELAYER_ID, 1L);
-        subject.refundFee(RELAYER_ID, 1L);
-        verifyNoInteractions(dispatch);
+        subject.refundFee(SENDER_ID, 1L);
+        verify(extWorldScope).collectFee(RELAYER_ID, 1L);
+        verify(extWorldScope).refundFee(SENDER_ID, 1L);
     }
 
     @Test
@@ -200,6 +190,13 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void delegatesFeeCharging() {
+        given(evmFrameState.isHollowAccount(ALTBN128_ADD)).willReturn(true);
+
+        assertTrue(subject.isHollowAccount(ALTBN128_ADD));
+    }
+
+    @Test
     void delegatesHollowFinalization() {
         subject.finalizeHollowAccount(EIP_1014_ADDRESS);
         verify(evmFrameState).finalizeHollowAccount(EIP_1014_ADDRESS);
@@ -230,8 +227,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
-        givenDispatch();
-        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupCreate(ALTBN128_ADD);
 
@@ -245,9 +241,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
-        givenDispatch();
-        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(dispatch.useNextEntityNumber()).willReturn(NEXT_NUMBER + 1);
+        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(extWorldScope.useNextEntityNumber()).willReturn(NEXT_NUMBER + 1);
 
         subject.setupCreate(ALTBN128_ADD);
 
@@ -257,20 +252,19 @@ class ProxyWorldUpdaterTest {
     @Test
     void revertDelegatesToScope() {
         subject.revert();
-        verify(scope).revert();
+        verify(extWorldScope).revert();
     }
 
     @Test
     void commitDelegatesToScope() {
         subject.commit();
-        verify(scope).commit();
+        verify(extWorldScope).commit();
     }
 
     @Test
     void usesHapiPayerIfRecipientIsZeroAddress() {
-        givenDispatch();
         givenMatchingEntityNumbers();
-        given(scope.payerAccountNumber()).willReturn(HAPI_PAYER_NUMBER);
+        given(extWorldScope.payerAccountNumber()).willReturn(HAPI_PAYER_NUMBER);
         given(evmFrameState.getMutableAccount(NEXT_LONG_ZERO_ADDRESS)).willReturn(mutableAccount);
 
         final var pendingAddress = subject.setupCreate(ZERO);
@@ -278,27 +272,27 @@ class ProxyWorldUpdaterTest {
         final var newAccount = subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);
         assertSame(mutableAccount, newAccount);
 
-        verify(dispatch).createContract(NEXT_NUMBER, HAPI_PAYER_NUMBER, 1, null);
+        verify(extWorldScope).createContract(NEXT_NUMBER, HAPI_PAYER_NUMBER, 1, null);
     }
 
     @Test
     void usesAliasIfCreate2IsSetupRecipient() {
-        givenDispatch();
         givenMatchingEntityNumbers();
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
+        given(evmFrameState.getIdNumber(ALTBN128_ADD))
+                .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
 
         subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
-        verify(dispatch)
+        verify(extWorldScope)
                 .createContract(
                         NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), 1, aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
     void canResolvePendingCreationHederaId() {
-        givenDispatch();
-        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
 
@@ -308,8 +302,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void throwsIseWithoutCorrespondingAccount() {
-        givenDispatch();
-        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
 
@@ -325,28 +318,18 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
-    void cannotSetupWithMissingParentNumber() {
-        givenDispatch();
-
-        assertThrows(IllegalStateException.class, () -> subject.setupCreate(SOME_EVM_ADDRESS));
-    }
-
-    @Test
     void dispatchesDeletingLongZeroAddressByNumber() {
-        givenDispatch();
-
         subject.deleteAccount(ALTBN128_ADD);
 
-        verify(dispatch).deleteUnaliasedContract(ALTBN128_ADD.toBigInteger().longValueExact());
+        verify(extWorldScope)
+                .deleteUnaliasedContract(ALTBN128_ADD.toBigInteger().longValueExact());
     }
 
     @Test
     void dispatchesDeletingEvmAddressByAddress() {
-        givenDispatch();
-
         subject.deleteAccount(SOME_EVM_ADDRESS);
 
-        verify(dispatch).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
+        verify(extWorldScope).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
@@ -356,14 +339,14 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void hasGivenParentIfNonNull() {
-        subject = new ProxyWorldUpdater(scope, evmFrameStateFactory, parent);
+        subject = new ProxyWorldUpdater(extWorldScope, evmFrameStateFactory, parent);
         assertTrue(subject.parentUpdater().isPresent());
         assertSame(parent, subject.parentUpdater().get());
     }
 
     @Test
     void updaterHasExpectedProperties() {
-        given(scope.begin()).willReturn(scope);
+        given(extWorldScope.begin()).willReturn(extWorldScope);
         final var updater = subject.updater();
         assertInstanceOf(ProxyWorldUpdater.class, updater);
         assertTrue(updater.parentUpdater().isPresent());
@@ -382,8 +365,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void abortsLazyCreationIfRemainingGasInsufficient() {
         final var pretendCost = 1_234L;
-        given(scope.fees()).willReturn(fees);
-        given(fees.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost - 1);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
         assertTrue(maybeHaltReason.isPresent());
@@ -393,8 +375,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesLazyCreationAndDecrementsGasCostOnSuccess() {
         final var pretendCost = 1_234L;
-        given(scope.fees()).willReturn(fees);
-        given(fees.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(Optional.empty());
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -406,8 +387,7 @@ class ProxyWorldUpdaterTest {
     void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
         final var pretendCost = 1_234L;
         final var haltReason = Optional.<ExceptionalHaltReason>of(INVALID_VALUE_TRANSFER);
-        given(scope.fees()).willReturn(fees);
-        given(fees.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -417,8 +397,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void onlyReturnsNonDeletedAccountsAsTouched() {
-        givenDispatch();
-        given(dispatch.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
+        given(extWorldScope.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
         given(evmFrameState.getAddress(NUMBER)).willReturn(asLongZeroAddress(NUMBER));
         given(evmFrameState.getAddress(NEXT_NUMBER)).willReturn(SOME_EVM_ADDRESS);
         given(evmFrameState.getAddress(NUMBER_OF_DELETED)).willReturn(null);
@@ -445,17 +424,12 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesEntropy() {
-        givenDispatch();
-        given(dispatch.entropy()).willReturn(OUTPUT_DATA);
+        given(extWorldScope.entropy()).willReturn(OUTPUT_DATA);
         assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
     }
 
-    private void givenDispatch() {
-        given(scope.dispatch()).willReturn(dispatch);
-    }
-
     private void givenMatchingEntityNumbers() {
-        given(dispatch.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(dispatch.useNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(extWorldScope.useNextEntityNumber()).willReturn(NEXT_NUMBER);
     }
 }

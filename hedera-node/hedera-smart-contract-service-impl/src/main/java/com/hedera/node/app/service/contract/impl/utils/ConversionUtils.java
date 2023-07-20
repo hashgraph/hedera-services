@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
-import com.hedera.node.app.service.contract.impl.exec.scope.Dispatch;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -33,12 +38,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
@@ -159,14 +158,15 @@ public class ConversionUtils {
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
-     * within the given {@link Dispatch}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
+     * within the given {@link ExtFrameScope}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
      * and does not correspond to a known Hedera entity.
      *
      * @param address  the EVM address
-     * @param dispatch the dispatch
+     * @param extFrameScope the {@link ExtFrameScope} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
      */
-    public static long maybeMissingNumberOf(@NonNull final Address address, @NonNull final Dispatch dispatch) {
+    public static long maybeMissingNumberOf(
+            @NonNull final Address address, @NonNull final ExtFrameScope extFrameScope) {
         final var explicit = address.toArrayUnsafe();
         if (isLongZeroAddress(explicit)) {
             return longFrom(
@@ -180,7 +180,7 @@ public class ConversionUtils {
                     explicit[19]);
         } else {
             final var alias = aliasFrom(address);
-            final var maybeNumber = dispatch.resolveAlias(alias);
+            final var maybeNumber = extFrameScope.resolveAlias(alias);
             return (maybeNumber == null) ? MISSING_ENTITY_NUMBER : maybeNumber.number();
         }
     }
