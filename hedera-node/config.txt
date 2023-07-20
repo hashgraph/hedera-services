@@ -1,5 +1,5 @@
 ###############################################################################################
-# Configuration file, for automatically running multiple instances
+# Swirlds configuration file, for automatically running multiple instances
 ###############################################################################################
 swirld, 123
 
@@ -37,6 +37,8 @@ app,		HederaNode.jar
 # address,  J, Judy,     1, 127.0.0.1, 50213, 127.0.0.1, 50213
 # address,  K, Kent,     1, 127.0.0.1, 50214, 127.0.0.1, 50214
 # address,  L, Lucy,     1, 127.0.0.1, 50215, 127.0.0.1, 50215
+
+nextNodeId, 4
 
 # The above addresses assume all are running on the same computer.
 # If multiple computers are being used, then the listed IP addresses should be changed.
@@ -99,15 +101,22 @@ app,		HederaNode.jar
 #
 # Then list one member per line. For each member, list these, separated by commas
 # (after the word "address" at the start):
+#         node id             - a nonnegative integer that uniquely identifies a node
+#                               (From top to bottom, the ids must be in ascending order but can skip numbers.)
 #         nickname            - a short version of the member's name
 #         full name           - the member's name
-#         1                   - currently ignored
+#         weight              - a nonnegative integer that weights the consensus voting
+#                               (normally all are 1, can be others, but can't all be 0)
 #         internal IP address - four numbers, each in the range 0-255, separated by dots
 #                               (Only use 127.0.0.1 if ALL the members are on the same machine)
 #         internal port       - in range 50000-65535
 #         external IP address - four numbers, each in the range 0-255, separated by dots
 #                               (Only use 127.0.0.1 if ALL the members are on the same machine)
 #         external port       - in range 50000-65535
+#
+#         stream IP address   - (optioanl) four numbers, each in the range 0-255, separated by dots
+#                               (Only use 127.0.0.1 if ALL the members are on the same machine)
+#         stream port         - (optioanl) in range 50000-65535
 #
 #
 # Each member should be listed only once, on a single line. If all the members are on the same
@@ -144,4 +153,8 @@ app,		HederaNode.jar
 # or quotation marks.
 # Boolean parameters can be any of on/1/true/yes/t/y for true,
 # and any of off/0/false/no/f/n for false, where capitalization doesn’t matter.
+#
+# The `nextNodeId` field must be a higher integer than all node ids of uncommented addresses.
+# When adding new addresses and starting from a saved state, the new addresses must have
+# node ids greater than or equal to the nextNodeId value of the address book in the saved state.
 ###############################################################################################
