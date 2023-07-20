@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -393,8 +392,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             @NonNull final Token originalToken,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        final var newTokenRelation =
-                tokenRelStore.get(asAccount(newTreasuryAccount.accountNumber()), originalToken.tokenId());
+        final var newTokenRelation = tokenRelStore.get(newTreasuryAccount.accountId(), originalToken.tokenId());
         final var newRelCopy = newTokenRelation.copyBuilder();
 
         if (originalToken.hasFreezeKey()) {

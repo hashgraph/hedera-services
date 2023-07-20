@@ -27,7 +27,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -185,7 +184,7 @@ public class BaseTokenHandler {
         final var firstOfNewTokenRels = newTokenRels.get(0);
         final var updatedAcct = account.copyBuilder()
                 // replace the head token number with the first token number of the new tokenRels
-                .headTokenNumber(firstOfNewTokenRels.tokenId().tokenNum())
+                .headTokenId(firstOfNewTokenRels.tokenId())
                 // and also update the account's total number of token associations
                 .numberAssociations(account.numberAssociations() + newTokenRels.size())
                 .build();
@@ -207,18 +206,16 @@ public class BaseTokenHandler {
             @NonNull final WritableTokenRelationStore tokenRelStore) {
         // Now all the NEW token relations are linked together, but they are not yet linked to the account. First,
         // compute where the account's current head token number should go in the linked list of tokens
-        final var currentHeadTokenNum = account.headTokenNumber();
+        final var currentHeadTokenNum = account.headTokenId();
         // NOTE: if currentHeadTokenNum is less than 1, it means the account isn't associated with any tokens yet, so
         // we'll just set the head to the first token, i.e. the first token ID list from the transaction (since the new
         // tokenRels are all linked, and in the order of the token IDs as they appeared in the original list)
-        if (isValidTokenNum(currentHeadTokenNum)) {
+        if (isValidTokenId(currentHeadTokenNum)) {
             // The account is already associated with some tokens, so we need to insert the new
             // tokenRels at the beginning of the list of existing token numbers first. We start by
             // retrieving the token rel object with the currentHeadTokenNum at the head of the
             // account
-            final var headTokenRel = tokenRelStore.get(
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build(),
-                    TokenID.newBuilder().tokenNum(currentHeadTokenNum).build());
+            final var headTokenRel = tokenRelStore.get(account.accountId(), currentHeadTokenNum);
             if (headTokenRel != null) {
                 // Recreate the current head token's tokenRel, but with its previous pointer set to
                 // the last of the new tokenRels. This links the new token rels to the rest of the
@@ -238,10 +235,16 @@ public class BaseTokenHandler {
             } else {
                 // This shouldn't happen, but if it does we'll log the error and continue with creating the token
                 // associations
+                AccountID accountId = account.accountId();
                 log.error(
-                        "Unable to get head tokenRel for account {}, token {}! Linked-list relations are likely in a bad state",
-                        account.accountNumber(),
-                        currentHeadTokenNum);
+                        "Unable to get head tokenRel for account {}.{}.{}, token {}.{}.{}! "
+                                + "Linked-list relations are likely in a bad state",
+                        accountId.shardNum(),
+                        accountId.realmNum(),
+                        accountId.accountNum(),
+                        currentHeadTokenNum.shardNum(),
+                        currentHeadTokenNum.realmNum(),
+                        currentHeadTokenNum.tokenNum());
             }
         }
     }
@@ -279,7 +282,7 @@ public class BaseTokenHandler {
             final var kycGranted = !token.hasKycKey();
             final var newTokenRel = new TokenRelation(
                     token.tokenId(),
-                    asAccount(account.accountNumber()),
+                    account.accountId(),
                     0,
                     isFrozen,
                     kycGranted,
@@ -310,7 +313,7 @@ public class BaseTokenHandler {
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
 
-        final var accountId = asAccount(account.accountNumber());
+        final var accountId = account.accountId();
         final var tokenId = token.tokenId();
         // If token is already associated, no need to associate again
         validateTrue(tokenRelStore.get(accountId, tokenId) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
@@ -336,13 +339,13 @@ public class BaseTokenHandler {
                 .kycGranted(!token.hasKycKey())
                 .frozen(token.hasFreezeKey() && token.accountsFrozenByDefault())
                 .previousToken((TokenID) null)
-                .nextToken(asToken(account.headTokenNumber()))
+                .nextToken(account.headTokenId())
                 .build();
 
         final var copyAccount = account.copyBuilder()
                 .numberAssociations(numAssociations + 1)
                 .usedAutoAssociations(usedAutoAssociations + 1)
-                .headTokenNumber(tokenId.tokenNum())
+                .headTokenId(tokenId)
                 .build();
 
         accountStore.put(copyAccount);
@@ -418,12 +421,13 @@ public class BaseTokenHandler {
     }
 
     /**
-     * Determines if a given token number is valid
+     * Determines if a given token is valid
      *
-     * @param tokenNum the token number to check
-     * @return true if the token number is valid
+     * @param tokenId the token to check
+     * @return true if the token is valid
      */
-    public static boolean isValidTokenNum(final long tokenNum) {
-        return tokenNum > 0;
+    public static boolean isValidTokenId(final TokenID tokenId) {
+        if (tokenId == null) return false;
+        return tokenId.tokenNum() > 0;
     }
 }

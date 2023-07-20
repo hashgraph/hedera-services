@@ -176,7 +176,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
 
     final long getAllowanceAmount(List<AccountCryptoAllowance> allowances, AccountID spender) {
         for (final var entry : allowances) {
-            if (entry.spenderNum() == spender.accountNum()) {
+            if (entry.spenderId().equals(spender)) {
                 return entry.amount();
             }
         }

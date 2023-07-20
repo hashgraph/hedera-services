@@ -198,8 +198,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         doAnswer(invocation -> {
                     final var context = invocation.getArgument(0, HandleContext.class);
-                    context.writableStore(WritableAccountStore.class)
-                            .putAlias(ALICE_ALIAS, ALICE.accountID().accountNumOrThrow());
+                    context.writableStore(WritableAccountStore.class).putAlias(ALICE_ALIAS, ALICE.accountID());
                     return null;
                 })
                 .when(dispatcher)
@@ -428,6 +427,7 @@ class HandleWorkflowTest extends AppTestBase {
         final var alice = aliasesState.get(ALICE_ALIAS);
         assertThat(alice).isNotNull();
         assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
+        assertThat(alice).isEqualTo(ALICE.account().accountId());
 
         final var inOrder = inOrder(recordManager, hederaRecordCache, dispatcher, recordManager);
         inOrder.verify(recordManager, times(1)).startUserTransaction(any());
@@ -435,7 +435,6 @@ class HandleWorkflowTest extends AppTestBase {
         inOrder.verify(dispatcher, times(1)).dispatchHandle(any());
         inOrder.verify(hederaRecordCache, times(1)).add(eq(0L), any(), any(), any());
         inOrder.verify(recordManager, times(1)).endUserTransaction(any());
-
         // TODO: Check that record was created
     }
 
@@ -525,7 +524,7 @@ class HandleWorkflowTest extends AppTestBase {
             // then
             final var alice = aliasesState.get(ALICE_ALIAS);
             assertThat(alice).isNotNull();
-            assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
+            assertThat(alice).isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
         }
 

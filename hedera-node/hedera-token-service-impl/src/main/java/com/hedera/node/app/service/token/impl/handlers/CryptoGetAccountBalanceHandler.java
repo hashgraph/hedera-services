@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -132,15 +131,14 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             @NonNull final ReadableTokenStore readableTokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore) {
         final var ret = new ArrayList<TokenBalance>();
-        var tokenId = asToken(account.headTokenNumber());
+        var tokenId = account.headTokenId();
         int count = 0;
         TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
         AccountID accountID; // build from accountNumber
         TokenBalance tokenBalance; // created TokenBalance object
         while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < tokenConfig.maxRelsPerInfoQuery()) {
-            accountID =
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build();
+            accountID = account.accountId();
             tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
                 token = readableTokenStore.get(tokenId);
