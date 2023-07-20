@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.chatter.network.framework;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.test.chatter.network.NoOpSimulatedEventPipeline;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 
@@ -108,7 +107,7 @@ public class NodeBuilder<T extends SimulatedChatterEvent> {
                 nodeId,
                 eventClass,
                 networkParams.time(),
-                configBuilder.getOrCreateConfig().getConfigData(ChatterConfig.class),
+                configBuilder.getOrCreateConfig(),
                 newEventCreator,
                 eventPipeline);
 

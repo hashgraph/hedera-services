@@ -51,7 +51,6 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.eventhandling.PreConsensusEventHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -589,14 +588,14 @@ class EventFlowTests {
 
         // Set up the running hash calculator, required if signed states are created
         doAnswer((Answer<Void>) invocation -> {
-                    final Object[] args = invocation.getArguments();
-                    final List<EventImpl> events = (List<EventImpl>) args[0];
+            final Object[] args = invocation.getArguments();
+            final List<EventImpl> events = (List<EventImpl>) args[0];
 
-                    // calculates and updates runningHash
-                    events.forEach(runningHashCalculator::calculateRunningHash);
+            // calculates and updates runningHash
+            events.forEach(runningHashCalculator::calculateRunningHash);
 
-                    return null;
-                })
+            return null;
+        })
                 .when(eventStreamManager)
                 .addEvents(anyList());
 
@@ -630,7 +629,6 @@ class EventFlowTests {
         ConfigurationHolder.getInstance().setConfiguration(config);
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().withConfiguration(config).build();
-        final ThreadConfig threadConfig = config.getConfigData(ThreadConfig.class);
 
         preconsensusEventHandler = new PreConsensusEventHandler(
                 new NoOpMetrics(),
@@ -638,7 +636,7 @@ class EventFlowTests {
                 selfId,
                 swirldStateManager,
                 consensusMetrics,
-                threadConfig);
+                configuration);
 
         consensusEventHandler = new ConsensusRoundHandler(
                 platformContext,
@@ -648,10 +646,13 @@ class EventFlowTests {
                 consStats,
                 eventStreamManager,
                 signedStateTracker,
-                e -> {},
-                () -> {},
+                e -> {
+                },
                 mock(StatusActionSubmitter.class),
-                (round) -> {},
+                () -> {
+                },
+                (round) -> {
+                },
                 SoftwareVersion.NO_VERSION);
     }
 

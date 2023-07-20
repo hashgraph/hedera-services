@@ -30,7 +30,6 @@ import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.TestQualifierTags;
@@ -78,10 +77,10 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
 
         // sleep for a little while to pretend to handle an event
         doAnswer((e) -> {
-                    Thread.sleep(sleepMillisPerEvent);
-                    numEventsHandled.incrementAndGet();
-                    return null;
-                })
+            Thread.sleep(sleepMillisPerEvent);
+            numEventsHandled.incrementAndGet();
+            return null;
+        })
                 .when(swirldStateManager)
                 .handlePreConsensusEvent(any(EventImpl.class));
 
@@ -94,7 +93,6 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         final Callable<Void> clear = (ThrowingRunnable) () -> preConsensusEventHandler.clear();
 
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
 
         preConsensusEventHandler = new PreConsensusEventHandler(
                 new NoOpMetrics(),
@@ -102,7 +100,7 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
                 selfId,
                 swirldStateManager,
                 consensusMetrics,
-                threadConfig);
+                configuration);
 
         final int numEvents = 1000;
         final EventImpl event = mock(EventImpl.class);
@@ -141,7 +139,6 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
 
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
 
         preConsensusEventHandler = new PreConsensusEventHandler(
                 new NoOpMetrics(),
@@ -149,7 +146,7 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
                 selfId,
                 swirldStateManager,
                 consensusMetrics,
-                threadConfig);
+                configuration);
 
         assertDoesNotThrow(
                 () -> preConsensusEventHandler.preconsensusEvent(null),

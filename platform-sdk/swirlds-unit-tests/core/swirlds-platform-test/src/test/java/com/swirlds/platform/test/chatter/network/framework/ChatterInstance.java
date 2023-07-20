@@ -20,7 +20,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.gossip.chatter.protocol.PeerMessageException;
 import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
@@ -69,7 +69,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
             final NodeId selfId,
             final Class<T> clazz,
             final Time time,
-            final ChatterConfig config,
+            final Configuration configuration,
             final SimulatedEventCreator<T> newEventCreator,
             final SimulatedEventPipeline<T> eventPipeline) {
         this.selfId = selfId;
@@ -77,7 +77,9 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         this.newEventCreator = newEventCreator;
         this.eventPipeline = eventPipeline;
 
-        core = new ChatterCore<>(time, clazz, e -> {}, config, (id, ping) -> {}, new NoOpMetrics());
+        core = new ChatterCore<>(time, clazz, e -> {
+        }, configuration, (id, ping) -> {
+        }, new NoOpMetrics());
 
         for (long peerId = 0; peerId < numNodes; peerId++) {
             // Don't create a peer instance for self

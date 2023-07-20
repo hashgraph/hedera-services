@@ -24,6 +24,7 @@ import static com.swirlds.logging.LogMarker.SYNC_START;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
@@ -72,9 +73,6 @@ public class SyncCaller implements Runnable {
     private ShadowGraphSynchronizer syncShadowgraphSynchronizer;
     private final SyncConfig syncConfig;
 
-    private static final SpeedometerMetric.Config SLEEP_1_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "sleep1/sec")
-            .withDescription("sleeps per second because caller thread had too many failed connects");
     private final SpeedometerMetric sleep1perSecond;
 
     /**
@@ -119,7 +117,11 @@ public class SyncCaller implements Runnable {
         this.eventTaskCreator = Objects.requireNonNull(eventTaskCreator);
         this.syncShadowgraphSynchronizer = Objects.requireNonNull(syncShadowgraphSynchronizer);
 
-        sleep1perSecond = platformContext.getMetrics().getOrCreate(SLEEP_1_PER_SECOND_CONFIG);
+        sleep1perSecond = platformContext.getMetrics()
+                .getOrCreate(new SpeedometerMetric.Config(platformContext.getConfiguration().getConfigData(
+                        MetricsConfig.class),
+                        INTERNAL_CATEGORY, "sleep1/sec")
+                        .withDescription("sleeps per second because caller thread had too many failed connects"));
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
     }
 

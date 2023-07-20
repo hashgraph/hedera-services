@@ -20,11 +20,16 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.intake.IntakeCycleStats;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 
 public class NoOpIntakeCycleStats extends IntakeCycleStats {
+    private static MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
+            .getConfigData(MetricsConfig.class);
+
     public NoOpIntakeCycleStats() {
-        super(Time.getCurrent(), mock(Metrics.class));
+        super(Time.getCurrent(), metricsConfig, mock(Metrics.class));
     }
 
     @Override

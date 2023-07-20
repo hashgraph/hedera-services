@@ -24,9 +24,11 @@ import static org.assertj.core.data.Offset.offset;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultRunningAverageMetric;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import org.junit.jupiter.api.Test;
@@ -39,8 +41,11 @@ class DistributionAdapterTest {
     private static final String DESCRIPTION = "DeScRiPtIoN";
     private static final String UNIT = "UnIt";
 
-    private static final String[] GLOBAL_LABEL = new String[] {"type"};
-    private static final String[] NODE_LABEL = new String[] {"node", "type"};
+    private static final String[] GLOBAL_LABEL = new String[]{"type"};
+    private static final String[] NODE_LABEL = new String[]{"node", "type"};
+    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
+            .getConfigData(MetricsConfig.class);
+
 
     private static final double EPSILON = 1e-6;
 
@@ -48,9 +53,10 @@ class DistributionAdapterTest {
     void testCreateGlobalMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME)
-                .withDescription(DESCRIPTION)
-                .withUnit(UNIT));
+        final Metric metric = new DefaultRunningAverageMetric(
+                new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
+                        .withDescription(DESCRIPTION)
+                        .withUnit(UNIT));
 
         // when
         new DistributionAdapter(registry, metric, GLOBAL);
@@ -68,9 +74,10 @@ class DistributionAdapterTest {
     void testCreatePlatformMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME)
-                .withDescription(DESCRIPTION)
-                .withUnit(UNIT));
+        final Metric metric = new DefaultRunningAverageMetric(
+                new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
+                        .withDescription(DESCRIPTION)
+                        .withUnit(UNIT));
 
         // when
         new DistributionAdapter(registry, metric, PLATFORM);
@@ -89,7 +96,8 @@ class DistributionAdapterTest {
         // given
         final String brokenName = ".- /%()";
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(new RunningAverageMetric.Config(brokenName, brokenName));
+        final Metric metric = new DefaultRunningAverageMetric(
+                new RunningAverageMetric.Config(metricsConfig, brokenName, brokenName));
 
         // when
         new DistributionAdapter(registry, metric, GLOBAL);
@@ -107,7 +115,7 @@ class DistributionAdapterTest {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
         final Metric metric = new DefaultRunningAverageMetric(
-                new RunningAverageMetric.Config(CATEGORY, NAME).withDescription(DESCRIPTION));
+                new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME).withDescription(DESCRIPTION));
 
         // then
         assertThatThrownBy(() -> new DistributionAdapter(null, metric, GLOBAL))
@@ -127,7 +135,7 @@ class DistributionAdapterTest {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
         final DefaultRunningAverageMetric metric =
-                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
+                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME));
         metric.update(Math.PI);
         final DistributionAdapter adapter = new DistributionAdapter(registry, metric, GLOBAL);
 
@@ -135,13 +143,13 @@ class DistributionAdapterTest {
         adapter.update(Snapshot.of(metric), null);
 
         // then
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"mean"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"mean"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"min"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"min"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"max"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"max"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"stddev"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"stddev"}))
                 .isCloseTo(0.0, offset(EPSILON));
     }
 
@@ -150,7 +158,7 @@ class DistributionAdapterTest {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
         final DefaultRunningAverageMetric metric =
-                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
+                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME));
         metric.update(Math.PI);
         final DistributionAdapter adapter = new DistributionAdapter(registry, metric, PLATFORM);
 
@@ -158,13 +166,13 @@ class DistributionAdapterTest {
         adapter.update(Snapshot.of(metric), new NodeId(1L));
 
         // then
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "mean"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "mean"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "min"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "min"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "max"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "max"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "stddev"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "stddev"}))
                 .isCloseTo(0.0, offset(EPSILON));
     }
 
@@ -173,7 +181,7 @@ class DistributionAdapterTest {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
         final DefaultRunningAverageMetric metric =
-                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, NAME));
+                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME));
         final DistributionAdapter adapter = new DistributionAdapter(registry, metric, PLATFORM);
         final NodeId nodeId = new NodeId(1L);
 

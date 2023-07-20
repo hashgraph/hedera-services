@@ -42,6 +42,7 @@ import com.swirlds.common.threading.utility.SequenceCycle;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
 import com.swirlds.common.utility.PlatformVersion;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
@@ -190,14 +191,15 @@ public class ChatterGossip extends AbstractGossip {
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final Configuration configuration = platformContext.getConfiguration();
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
 
         chatterCore = new ChatterCore<>(
                 time,
                 GossipEvent.class,
                 new PrepareChatterEvent(CryptographyHolder.get()),
-                chatterConfig,
+                configuration,
                 networkMetrics::recordPingTime,
                 platformContext.getMetrics());
 
@@ -229,7 +231,8 @@ public class ChatterGossip extends AbstractGossip {
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {},
+                    sr -> {
+                    },
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -242,7 +245,7 @@ public class ChatterGossip extends AbstractGossip {
                     });
 
             final ReconnectConfig reconnectConfig =
-                    platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+                    configuration.getConfigData(ReconnectConfig.class);
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)
@@ -271,7 +274,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            configuration),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -283,7 +286,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectController,
                                             new DefaultSignedStateValidator(),
                                             fallenBehindManager,
-                                            platformContext.getConfiguration()),
+                                            configuration),
                                     new ChatterSyncProtocol(
                                             otherId,
                                             chatterPeer.communicationState(),
@@ -332,7 +335,7 @@ public class ChatterGossip extends AbstractGossip {
             // ever be created without an other-parent
             chatterEventCreator.createGenesisEvent();
         }
-        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
         final EventCreatorThread eventCreatorThread = new EventCreatorThread(
                 threadManager,
                 threadConfig,

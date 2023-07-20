@@ -39,8 +39,10 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -51,6 +53,8 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("No-Op Metrics Test")
 class NoOpMetricsTest {
+    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
+            .getConfigData(MetricsConfig.class);
 
     private void testCommonMethods(final Metric metric) {
         assertNotNull(metric.get(Metric.ValueType.VALUE));
@@ -216,7 +220,8 @@ class NoOpMetricsTest {
     void runningAverageMetricTest() {
         assertDoesNotThrow(() -> {
             final Metrics metrics = new NoOpMetrics();
-            final RunningAverageMetric metric = metrics.getOrCreate(new RunningAverageMetric.Config("asdf", "asdf"));
+            final RunningAverageMetric metric = metrics.getOrCreate(
+                    new RunningAverageMetric.Config(metricsConfig, "asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
             metric.get();
@@ -231,7 +236,8 @@ class NoOpMetricsTest {
     void speedometerMetricTest() {
         assertDoesNotThrow(() -> {
             final Metrics metrics = new NoOpMetrics();
-            final SpeedometerMetric metric = metrics.getOrCreate(new SpeedometerMetric.Config("asdf", "asdf"));
+            final SpeedometerMetric metric = metrics.getOrCreate(
+                    new SpeedometerMetric.Config(metricsConfig, "asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
             metric.get();
@@ -249,7 +255,7 @@ class NoOpMetricsTest {
         assertDoesNotThrow(() -> {
             final Metrics metrics = new NoOpMetrics();
             final StatEntry metric =
-                    metrics.getOrCreate(new StatEntry.Config<>("asdf", "asdf", Integer.class, () -> 0));
+                    metrics.getOrCreate(new StatEntry.Config<>(metricsConfig, "asdf", "asdf", Integer.class, () -> 0));
 
             assertNotNull(metric.getDataType());
             assertNotNull(metric.getStatsBuffered());
@@ -387,8 +393,10 @@ class NoOpMetricsTest {
         // The following operations should not throw.
         assertDoesNotThrow(() -> {
             metrics.start();
-            metrics.addUpdater(() -> {});
-            metrics.removeUpdater(() -> {});
+            metrics.addUpdater(() -> {
+            });
+            metrics.removeUpdater(() -> {
+            });
         });
     }
 

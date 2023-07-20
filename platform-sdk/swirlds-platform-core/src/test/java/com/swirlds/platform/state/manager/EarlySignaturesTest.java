@@ -79,7 +79,7 @@ public class EarlySignaturesTest extends AbstractSignedStateManagerTest {
         final int count = 100;
         final StateConfig stateConfig = buildStateConfig();
         final int futureSignatures = stateConfig.maxAgeOfFutureStateSignatures();
-        final SignedStateManager manager = new SignedStateManagerBuilder(stateConfig)
+        final SignedStateManager manager = new SignedStateManagerBuilder(metricsConfig, stateConfig)
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

@@ -17,6 +17,7 @@
 package com.swirlds.platform.stats;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 
 /**
  * A metrics object to track an average number, without history. This class uses an {@link AtomicAverage} so it is both
@@ -28,6 +29,8 @@ public class AverageAndMax {
     private final MaxStat maxStat;
 
     /**
+     * @param metricsConfig
+     *      configuration for the metrics
      * @param metrics
      * 		reference to the metrics-system
      * @param category
@@ -40,15 +43,18 @@ public class AverageAndMax {
      * 		a string that can be passed to String.format() to format the statistic for the average number
      */
     public AverageAndMax(
+            final MetricsConfig metricsConfig,
             final Metrics metrics,
             final String category,
             final String name,
             final String desc,
             final String averageFormat) {
-        this(metrics, category, name, desc, averageFormat, AverageStat.WEIGHT_SMOOTH);
+        this(metricsConfig, metrics, category, name, desc, averageFormat, AverageStat.WEIGHT_SMOOTH);
     }
 
     /**
+     * @param metricsConfig
+     *      configuration for the metrics
      * @param metrics
      * 		reference to the metrics-system
      * @param category
@@ -62,15 +68,15 @@ public class AverageAndMax {
      * @param weight
      * 		the weight used to calculate the average
      */
-    public AverageAndMax(
+    public AverageAndMax(final MetricsConfig metricsConfig,
             final Metrics metrics,
             final String category,
             final String name,
             final String desc,
             final String averageFormat,
             final double weight) {
-        averageStat = new AverageStat(metrics, category, name, desc, averageFormat, weight);
-        maxStat = new MaxStat(metrics, category, name + "MAX", "max value of " + name, FORMAT_MAX);
+        averageStat = new AverageStat(metricsConfig, metrics, category, name, desc, averageFormat, weight);
+        maxStat = new MaxStat(metricsConfig, metrics, category, name + "MAX", "max value of " + name, FORMAT_MAX);
     }
 
     public void update(final long value) {

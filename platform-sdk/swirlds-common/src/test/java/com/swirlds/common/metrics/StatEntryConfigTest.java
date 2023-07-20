@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -30,6 +32,8 @@ import org.junit.jupiter.api.Test;
 class StatEntryConfigTest {
 
     private static final String DEFAULT_FORMAT = FloatFormats.FORMAT_11_3;
+    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
+            .getConfigData(MetricsConfig.class);
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -44,7 +48,7 @@ class StatEntryConfigTest {
         final Supplier<Object> getter = mock(Supplier.class);
 
         // when
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -68,24 +72,24 @@ class StatEntryConfigTest {
         final Supplier<Object> getter = mock(Supplier.class);
 
         // when
-        assertThatThrownBy(() -> new StatEntry.Config(null, NAME, Object.class, getter))
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, null, NAME, Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StatEntry.Config("", NAME, Object.class, getter))
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, "", NAME, Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StatEntry.Config(" \t\n", NAME, Object.class, getter))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, null, Object.class, getter))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, "", Object.class, getter))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, " \t\n", Object.class, getter))
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, " \t\n", NAME, Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, NAME, null, getter))
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, CATEGORY, null, Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, NAME, Object.class, null))
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, CATEGORY, "", Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, CATEGORY, " \t\n", Object.class, getter))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, CATEGORY, NAME, null, getter))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -97,7 +101,7 @@ class StatEntryConfigTest {
         final Consumer<Double> reset = mock(Consumer.class);
         final Supplier<Object> getter = mock(Supplier.class);
         final Supplier<Object> getAndReset = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter);
 
         // when
         final StatEntry.Config result = config.withDescription(DESCRIPTION)
@@ -139,7 +143,7 @@ class StatEntryConfigTest {
     void testSettersWithIllegalParameters() {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter);
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
@@ -155,7 +159,7 @@ class StatEntryConfigTest {
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> config.withResetStatsStringSupplier(null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -163,7 +167,7 @@ class StatEntryConfigTest {
     void testToString() {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);

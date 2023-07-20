@@ -43,7 +43,7 @@ class SpeedometerMetricConfigTest {
     @Test
     void testConstructor() {
         // when
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -57,23 +57,25 @@ class SpeedometerMetricConfigTest {
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(null, NAME)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SpeedometerMetric.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(" \t\n", NAME))
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, null, NAME)).isInstanceOf(
+                IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, "", NAME)).isInstanceOf(
+                IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, " \t\n", NAME))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, null))
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, CATEGORY, null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, ""))
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, CATEGORY, ""))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, " \t\n"))
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, CATEGORY, " \t\n"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSetters() {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
 
         // when
         final SpeedometerMetric.Config result = config.withDescription(DESCRIPTION)
@@ -100,7 +102,7 @@ class SpeedometerMetricConfigTest {
     @Test
     void testSettersWithIllegalParameters() {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
@@ -119,7 +121,7 @@ class SpeedometerMetricConfigTest {
     @Test
     void testToString() {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME)
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)

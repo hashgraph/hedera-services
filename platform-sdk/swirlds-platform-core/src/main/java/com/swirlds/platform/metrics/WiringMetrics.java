@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_3;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
 
@@ -38,8 +39,8 @@ public class WiringMetrics {
      * @param metrics
      * 		reference to the metrics-system
      */
-    public WiringMetrics(final Metrics metrics) {
-        asyncLatestCompleteStateQueueSize = new AverageAndMax(
+    public WiringMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
+        asyncLatestCompleteStateQueueSize = new AverageAndMax(metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 "asyncLatestCompleteStateQueueSize",

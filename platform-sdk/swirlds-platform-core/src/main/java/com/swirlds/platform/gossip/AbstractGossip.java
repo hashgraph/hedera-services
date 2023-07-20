@@ -28,6 +28,7 @@ import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
@@ -165,19 +166,19 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         Objects.requireNonNull(time);
+        final Configuration configuration = platformContext.getConfiguration();
 
-        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        threadConfig = configuration.getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
         eventObserverDispatcher.addObserver(criticalQuorum);
 
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final CryptoConfig cryptoConfig = platformContext.getConfiguration().getConfigData(CryptoConfig.class);
-        final SocketConfig socketConfig = platformContext.getConfiguration().getConfigData(SocketConfig.class);
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+        final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
 
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
-        final Configuration configuration = platformContext.getConfiguration();
         final SocketFactory socketFactory =
                 PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
@@ -221,7 +222,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 criticalQuorum,
                 addressBook,
                 fallenBehindManager,
-                platformContext.getConfiguration().getConfigData(EventConfig.class));
+                configuration.getConfigData(EventConfig.class));
 
         eventTaskCreator = new EventTaskCreator(
                 eventMapper,
@@ -229,15 +230,16 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 selfId,
                 eventIntakeMetrics,
                 intakeQueue,
-                platformContext.getConfiguration().getConfigData(EventConfig.class),
+                configuration.getConfigData(EventConfig.class),
                 syncManager,
                 ThreadLocalRandom::current);
 
         final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
+                configuration.getConfigData(ReconnectConfig.class);
         reconnectThrottle = new ReconnectThrottle(reconnectConfig);
 
-        networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        networkMetrics = new NetworkMetrics(metricsConfig, platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
 
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());

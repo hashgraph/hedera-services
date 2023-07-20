@@ -20,9 +20,10 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.common.utility.CommonUtils;
+import java.util.Objects;
 
 /**
  * Singleton factory for loading and registering {@link FCQueue} statistics. This is the primary entry point for all
@@ -40,33 +41,16 @@ public class FCQueueStatistics {
     /**
      * avg time taken to execute the FCQueue add method, including locks (in microseconds)
      */
-    private static final RunningAverageMetric.Config FCQ_ADD_EXECUTION_MICROS_CONFIG = new RunningAverageMetric.Config(
-                    FCQUEUE_CATEGORY, "fcqAddExecMicroSec")
-            .withDescription("avg time taken to execute the FCQueue add method, not including locks (in microseconds)")
-            .withFormat(FORMAT_9_6);
-
     private static RunningAverageMetric fcqAddExecutionMicros;
 
     /**
      * avg time taken to execute the FCQueue remove method, including locks (in microseconds)
      */
-    private static final RunningAverageMetric.Config FCQ_REMOVE_EXECUTION_MICROS_CONFIG =
-            new RunningAverageMetric.Config(FCQUEUE_CATEGORY, "fcqRemoveExecMicroSec")
-                    .withDescription(
-                            "avg time taken to execute the FCQueue remove method, not including locks (in microseconds)")
-                    .withFormat(FORMAT_9_6);
-
     private static RunningAverageMetric fcqRemoveExecutionMicros;
 
     /**
      * avg time taken to execute the FCQueue getHash method, including locks (in microseconds)
      */
-    private static final RunningAverageMetric.Config FCQ_HASH_EXECUTION_MICROS_CONFIG = new RunningAverageMetric.Config(
-                    FCQUEUE_CATEGORY, "fcqHashExecMicroSec")
-            .withDescription(
-                    "avg time taken to execute the FCQueue remove method, not including locks (in microseconds)")
-            .withFormat(FORMAT_9_6);
-
     private static RunningAverageMetric fcqHashExecutionMicros;
 
     /**
@@ -80,11 +64,23 @@ public class FCQueueStatistics {
      * @param metrics
      * 		the metrics-system
      */
-    public static void register(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
-        fcqAddExecutionMicros = metrics.getOrCreate(FCQ_ADD_EXECUTION_MICROS_CONFIG);
-        fcqRemoveExecutionMicros = metrics.getOrCreate(FCQ_REMOVE_EXECUTION_MICROS_CONFIG);
-        fcqHashExecutionMicros = metrics.getOrCreate(FCQ_HASH_EXECUTION_MICROS_CONFIG);
+    public static void register(final MetricsConfig metricsConfig, final Metrics metrics) {
+        Objects.requireNonNull(metrics, "metrics is required");
+        fcqAddExecutionMicros = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, FCQUEUE_CATEGORY, "fcqAddExecMicroSec")
+                        .withDescription(
+                                "avg time taken to execute the FCQueue add method, not including locks (in microseconds)")
+                        .withFormat(FORMAT_9_6));
+        fcqRemoveExecutionMicros = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, FCQUEUE_CATEGORY, "fcqRemoveExecMicroSec")
+                        .withDescription(
+                                "avg time taken to execute the FCQueue remove method, not including locks (in microseconds)")
+                        .withFormat(FORMAT_9_6));
+        fcqHashExecutionMicros = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, FCQUEUE_CATEGORY, "fcqHashExecMicroSec")
+                        .withDescription(
+                                "avg time taken to execute the FCQueue remove method, not including locks (in microseconds)")
+                        .withFormat(FORMAT_9_6));
 
         registered = true;
     }

@@ -45,6 +45,7 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
@@ -60,6 +61,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -208,37 +210,17 @@ public class PlatformTestingToolMain implements SwirldMain {
     private static final String ENTER_VALIDATION_THREAD_NAME = "enter-validator";
     private static final String EXIT_VALIDATION_THREAD_NAME = "exit-validator";
 
-    private static final SpeedometerMetric.Config FCM_CREATE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(FCM_CATEGORY, "fcmCreate").withDescription("FCM Creation TPS");
     private SpeedometerMetric fcmCreateSpeed;
-    private static final SpeedometerMetric.Config FCM_UPDATE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(FCM_CATEGORY, "fcmUpdate").withDescription("FCM Update TPS");
     private SpeedometerMetric fcmUpdateSpeed;
-    private static final SpeedometerMetric.Config FCM_TRANSFER_SPEED_CONFIG =
-            new SpeedometerMetric.Config(FCM_CATEGORY, "fcmTransfer").withDescription("FCM Transfer TPS");
     private SpeedometerMetric fcmTransferSpeed;
-    private static final SpeedometerMetric.Config FCM_DELETE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(FCM_CATEGORY, "fcmDelete").withDescription("FCM Delete TPS");
     private SpeedometerMetric fcmDeleteSpeed;
 
-    private static final SpeedometerMetric.Config VM_CREATE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(VM_CATEGORY, "vmCreate").withDescription("VM Creation TPS");
     private SpeedometerMetric vmCreateSpeed;
-    private static final SpeedometerMetric.Config VM_UPDATE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(VM_CATEGORY, "vmUpdate").withDescription("VM Update TPS");
     private SpeedometerMetric vmUpdateSpeed;
-    private static final SpeedometerMetric.Config VM_DELETE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(VM_CATEGORY, "vmDelete").withDescription("VM Deletion TPS");
     private SpeedometerMetric vmDeleteSpeed;
-    private static final SpeedometerMetric.Config VM_CONTRACT_CREATE_SPEED_CONFIG =
-            new SpeedometerMetric.Config(VM_CATEGORY, "vmContractCreate").withDescription("VM Contract Creation TPS");
     private SpeedometerMetric vmContractCreateSpeed;
-    private static final SpeedometerMetric.Config VM_CONTRACT_EXECUTION_SPEED_CONFIG =
-            new SpeedometerMetric.Config(VM_CATEGORY, "vmContractExecute").withDescription("VM Contract Execution TPS");
     private SpeedometerMetric vmContractExecutionSpeed;
 
-    private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
-            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
     private SpeedometerMetric transactionSubmitSpeedometer;
 
     private FCMQueryController queryController;
@@ -249,30 +231,10 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private static final double DEFAULT_HALF_LIFE = 10;
 
-    /**
-     * avg time taken to query a leaf in the latest signed state (in microseconds)
-     */
-    private static final RunningAverageMetric.Config QUERY_LEAF_TIME_COST_MICRO_SEC_CONFIG =
-            new RunningAverageMetric.Config("Query", "queryLeafTimeCostMicroSec")
-                    .withDescription("avg time taken to query a leaf in the latest signed state (in microseconds)")
-                    .withHalfLife(DEFAULT_HALF_LIFE);
-
     private RunningAverageMetric queryLeafTimeCostMicroSec;
-
-    /**
-     * how many queries have been answered per second
-     */
-    private static final SpeedometerMetric.Config QUERIES_ANSWERED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    "Query", "queriesAnsweredPerSecond")
-            .withDescription("number of queries have been answered per second")
-            .withFormat(FORMAT_9_6);
 
     private SpeedometerMetric queriesAnsweredPerSecond;
 
-    private static final RunningAverageMetric.Config EXPECTED_INVALID_SIG_RATIO_CONFIG =
-            new RunningAverageMetric.Config(FCM_CATEGORY, "expectedInvalidSigRatio")
-                    .withDescription("Expected invalid signature ratio")
-                    .withFormat(FORMAT_6_2);
     private RunningAverageMetric expectedInvalidSigRatio;
 
     /**
@@ -383,31 +345,62 @@ public class PlatformTestingToolMain implements SwirldMain {
     private void initAppStat() {
         // Add virtual merkle stats
         final Metrics metrics = platform.getContext().getMetrics();
-        vmCreateSpeed = metrics.getOrCreate(VM_CREATE_SPEED_CONFIG);
-        vmUpdateSpeed = metrics.getOrCreate(VM_UPDATE_SPEED_CONFIG);
-        vmDeleteSpeed = metrics.getOrCreate(VM_DELETE_SPEED_CONFIG);
-        vmContractCreateSpeed = metrics.getOrCreate(VM_CONTRACT_CREATE_SPEED_CONFIG);
-        vmContractExecutionSpeed = metrics.getOrCreate(VM_CONTRACT_EXECUTION_SPEED_CONFIG);
+        final Configuration configuration = platform.getContext().getConfiguration();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+
+        vmCreateSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmCreate").withDescription(
+                        "VM Creation TPS"));
+        vmUpdateSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmUpdate").withDescription("VM Update TPS"));
+        vmDeleteSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmDelete").withDescription(
+                        "VM Deletion TPS"));
+        vmContractCreateSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmContractCreate").withDescription(
+                        "VM Contract Creation TPS"));
+        vmContractExecutionSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmContractExecute").withDescription(
+                        "VM Contract Execution TPS"));
 
         // Add FCM speedometer
-        fcmCreateSpeed = metrics.getOrCreate(FCM_CREATE_SPEED_CONFIG);
-        fcmUpdateSpeed = metrics.getOrCreate(FCM_UPDATE_SPEED_CONFIG);
-        fcmTransferSpeed = metrics.getOrCreate(FCM_TRANSFER_SPEED_CONFIG);
-        fcmDeleteSpeed = metrics.getOrCreate(FCM_DELETE_SPEED_CONFIG);
+        fcmCreateSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmCreate").withDescription(
+                        "FCM Creation TPS"));
+        fcmUpdateSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmUpdate").withDescription(
+                        "FCM Update TPS"));
+        fcmTransferSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmTransfer").withDescription(
+                        "FCM Transfer TPS"));
+        fcmDeleteSpeed = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmDelete").withDescription(
+                        "FCM Delete TPS"));
 
         // Add some global information for debugging
         transactionSubmitted = metrics.getOrCreate(TRANSACTION_SUBMITTED_CONFIG);
-        transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
+        transactionSubmitSpeedometer = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, "Debug.info", "tranSubTPS").withDescription(
+                        "Transaction submitted TPS"));
 
         // add stats for time taken to query a leaf
-        queryLeafTimeCostMicroSec = metrics.getOrCreate(QUERY_LEAF_TIME_COST_MICRO_SEC_CONFIG);
+        queryLeafTimeCostMicroSec = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, "Query", "queryLeafTimeCostMicroSec")
+                        .withDescription("avg time taken to query a leaf in the latest signed state (in microseconds)")
+                        .withHalfLife(DEFAULT_HALF_LIFE));
 
-        queriesAnsweredPerSecond = metrics.getOrCreate(QUERIES_ANSWERED_PER_SECOND_CONFIG);
+        queriesAnsweredPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                "Query", "queriesAnsweredPerSecond")
+                .withDescription("number of queries have been answered per second")
+                .withFormat(FORMAT_9_6));
 
-        expectedInvalidSigRatio = metrics.getOrCreate(EXPECTED_INVALID_SIG_RATIO_CONFIG);
+        expectedInvalidSigRatio = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, FCM_CATEGORY, "expectedInvalidSigRatio")
+                        .withDescription("Expected invalid signature ratio")
+                        .withFormat(FORMAT_6_2));
 
         // Register Platform data structure statistics
-        FCQueueStatistics.register(metrics);
+        FCQueueStatistics.register(metricsConfig, metrics);
 
         // Register PTT statistics
         PlatformTestingToolState.initStatistics(platform);
@@ -877,7 +870,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         int checkPeriodSec = 20;
         if (previousTimestamp != null
                 && consensusTimestamp.getEpochSecond() / checkPeriodSec
-                        != previousTimestamp.getEpochSecond() / checkPeriodSec) {
+                != previousTimestamp.getEpochSecond() / checkPeriodSec) {
             previousTimestamp = consensusTimestamp;
             return true;
         }
@@ -1025,7 +1018,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             final AtomicLong maxSmartContractIdFromLoadedState = new AtomicLong(0);
             if (state.getVirtualMapForSmartContractsByteCode() != null) {
                 new MerkleIterator<VirtualLeafNode<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>>(
-                                state.getVirtualMapForSmartContractsByteCode())
+                        state.getVirtualMapForSmartContractsByteCode())
                         .setFilter(node -> node instanceof VirtualLeafNode)
                         .forEachRemaining(leaf -> {
                             final SmartContractByteCodeMapKey key = leaf.getKey();

@@ -28,8 +28,8 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.stats.AverageAndMax;
 import java.time.Instant;
@@ -41,66 +41,24 @@ import java.util.Objects;
  */
 public class ConsensusMetricsImpl implements ConsensusMetrics {
 
-    private static final RunningAverageMetric.Config AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG =
-            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secR2nR")
-                    .withDescription("time from first event received in one round, to first event received in the "
-                            + "next round (in seconds)")
-                    .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgFirstEventInRoundReceivedTime;
 
-    private static final RunningAverageMetric.Config NUM_COIN_ROUNDS_CONFIG = new RunningAverageMetric.Config(
-                    INTERNAL_CATEGORY, "coinR")
-            .withDescription("number of coin rounds that have occurred so far")
-            .withFormat(FORMAT_10_0);
     private final RunningAverageMetric numCoinRounds;
 
-    private static final RunningAverageMetric.Config AVG_RECEIVED_FAMOUS_TIME_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "secR2F")
-            .withDescription(
-                    "time from a round's first received event to all the famous witnesses being known (in seconds)")
-            .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgReceivedFamousTime;
 
-    private static final SpeedometerMetric.Config ROUNDS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "rounds/sec")
-            .withDescription("average number of rounds per second");
     private final SpeedometerMetric roundsPerSecond;
 
-    private static final RunningAverageMetric.Config AVG_CREATED_CONSENSUS_TIME_CONFIG =
-            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secC2C")
-                    .withDescription("time from creating an event to knowing its consensus (in seconds)")
-                    .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgCreatedConsensusTime;
 
-    private static final RunningAverageMetric.Config AVG_RECEIVED_CONSENSUS_TIME_CONFIG =
-            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secR2C")
-                    .withDescription("time from receiving an event to knowing its consensus (in seconds)")
-                    .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgReceivedConsensusTime;
 
-    private static final RunningAverageMetric.Config AVG_CREATED_RECEIVED_CONSENSUS_TIME_CONFIG =
-            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "secC2RC")
-                    .withDescription("time from another member creating an event to it being received and and knowing "
-                            + "consensus for it (in seconds)")
-                    .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgCreatedReceivedConsensusTime;
 
-    private static final RunningAverageMetric.Config AVG_SELF_CREATED_TIMESTAMP_CONFIG =
-            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "secSC2T")
-                    .withDescription("self event consensus timestamp minus time created (in seconds)")
-                    .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgSelfCreatedTimestamp;
 
-    private static final RunningAverageMetric.Config AVG_OTHER_RECEIVED_TIMESTAMP_CONFIG =
-            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "secOR2T")
-                    .withDescription("other event consensus timestamp minus time received (in seconds)")
-                    .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgOtherReceivedTimestamp;
 
-    private static final SpeedometerMetric.Config TIME_FRAC_DOT_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "timeFracDot")
-            .withDescription("fraction of each second spent on dot products")
-            .withFormat(FORMAT_9_6);
     private final SpeedometerMetric timeFracDot;
 
     private final AverageAndMax witnessesSeen;
@@ -128,26 +86,61 @@ public class ConsensusMetricsImpl implements ConsensusMetrics {
      *
      * @param selfId
      * 		the {@link NodeId} of this node
+     * @param metricsConfig
+     *      configuration for the metrics
      * @param metrics
      * 		a reference to the metrics-system
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null}
      */
-    public ConsensusMetricsImpl(final NodeId selfId, final Metrics metrics) {
-        this.selfId = CommonUtils.throwArgNull(selfId, "selfId");
-        CommonUtils.throwArgNull(metrics, "metrics");
+    public ConsensusMetricsImpl(final NodeId selfId, final MetricsConfig metricsConfig, final Metrics metrics) {
+        this.selfId = Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(metrics, "metrics");
 
-        avgFirstEventInRoundReceivedTime = metrics.getOrCreate(AVG_FIRST_EVENT_IN_ROUND_RECEIVED_TIME_CONFIG);
-        numCoinRounds = metrics.getOrCreate(NUM_COIN_ROUNDS_CONFIG);
-        avgReceivedFamousTime = metrics.getOrCreate(AVG_RECEIVED_FAMOUS_TIME_CONFIG);
-        roundsPerSecond = metrics.getOrCreate(ROUNDS_PER_SECOND_CONFIG);
-        avgCreatedConsensusTime = metrics.getOrCreate(AVG_CREATED_CONSENSUS_TIME_CONFIG);
-        avgReceivedConsensusTime = metrics.getOrCreate(AVG_RECEIVED_CONSENSUS_TIME_CONFIG);
-        avgCreatedReceivedConsensusTime = metrics.getOrCreate(AVG_CREATED_RECEIVED_CONSENSUS_TIME_CONFIG);
-        avgSelfCreatedTimestamp = metrics.getOrCreate(AVG_SELF_CREATED_TIMESTAMP_CONFIG);
-        avgOtherReceivedTimestamp = metrics.getOrCreate(AVG_OTHER_RECEIVED_TIMESTAMP_CONFIG);
-        timeFracDot = metrics.getOrCreate(TIME_FRAC_DOT_CONFIG);
-        witnessesSeen = new AverageAndMax(
+        avgFirstEventInRoundReceivedTime = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "secR2nR")
+                        .withDescription("time from first event received in one round, to first event received in the "
+                                + "next round (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        numCoinRounds = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                INTERNAL_CATEGORY, "coinR")
+                .withDescription("number of coin rounds that have occurred so far")
+                .withFormat(FORMAT_10_0));
+        avgReceivedFamousTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "secR2F")
+                .withDescription(
+                        "time from a round's first received event to all the famous witnesses being known (in seconds)")
+                .withFormat(FORMAT_10_3));
+        roundsPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "rounds/sec")
+                .withDescription("average number of rounds per second"));
+        avgCreatedConsensusTime = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "secC2C")
+                        .withDescription("time from creating an event to knowing its consensus (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        avgReceivedConsensusTime = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "secR2C")
+                        .withDescription("time from receiving an event to knowing its consensus (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        avgCreatedReceivedConsensusTime = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "secC2RC")
+                        .withDescription(
+                                "time from another member creating an event to it being received and and knowing "
+                                        + "consensus for it (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        avgSelfCreatedTimestamp = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "secSC2T")
+                        .withDescription("self event consensus timestamp minus time created (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        avgOtherReceivedTimestamp = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "secOR2T")
+                        .withDescription("other event consensus timestamp minus time received (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        timeFracDot = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                INTERNAL_CATEGORY, "timeFracDot")
+                .withDescription("fraction of each second spent on dot products")
+                .withFormat(FORMAT_9_6));
+        witnessesSeen = new AverageAndMax(metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 "witnessesSeen",

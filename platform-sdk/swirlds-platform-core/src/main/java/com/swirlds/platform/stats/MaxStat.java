@@ -18,11 +18,14 @@ package com.swirlds.platform.stats;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 
 public class MaxStat {
     private final AtomicMax max;
 
     /**
+     * @param metricsConfig
+     *      configuration for the metrics
      * @param metrics
      * 		reference to the metrics-system
      * @param category
@@ -34,10 +37,10 @@ public class MaxStat {
      * @param format
      * 		a string that can be passed to String.format() to format the statistic for the average number
      */
-    public MaxStat(
+    public MaxStat(final MetricsConfig metricsConfig,
             final Metrics metrics, final String category, final String name, final String desc, final String format) {
         max = new AtomicMax();
-        metrics.getOrCreate(new StatEntry.Config<>(category, name, Long.class, max::get)
+        metrics.getOrCreate(new StatEntry.Config<>(metricsConfig, category, name, Long.class, max::get)
                 .withDescription(desc)
                 .withFormat(format)
                 .withReset(this::resetMax)

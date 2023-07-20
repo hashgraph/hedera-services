@@ -43,7 +43,7 @@ class RunningAverageMetricConfigTest {
     @Test
     void testConstructor() {
         // when
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
 
         // then
         assertThat(config.getCategory()).isEqualTo(CATEGORY);
@@ -57,25 +57,25 @@ class RunningAverageMetricConfigTest {
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameter() {
-        assertThatThrownBy(() -> new RunningAverageMetric.Config(null, NAME))
+        assertThatThrownBy(() -> new RunningAverageMetric.Config(metricsConfig, null, NAME))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RunningAverageMetric.Config("", NAME))
+        assertThatThrownBy(() -> new RunningAverageMetric.Config(metricsConfig, "", NAME))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RunningAverageMetric.Config(" \t\n", NAME))
+        assertThatThrownBy(() -> new RunningAverageMetric.Config(metricsConfig, " \t\n", NAME))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new RunningAverageMetric.Config(CATEGORY, null))
+        assertThatThrownBy(() -> new RunningAverageMetric.Config(metricsConfig, CATEGORY, null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RunningAverageMetric.Config(CATEGORY, ""))
+        assertThatThrownBy(() -> new RunningAverageMetric.Config(metricsConfig, CATEGORY, ""))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RunningAverageMetric.Config(CATEGORY, " \t\n"))
+        assertThatThrownBy(() -> new RunningAverageMetric.Config(metricsConfig, CATEGORY, " \t\n"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void testSetters() {
         // given
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
 
         // when
         final RunningAverageMetric.Config result = config.withDescription(DESCRIPTION)
@@ -102,7 +102,7 @@ class RunningAverageMetricConfigTest {
     @Test
     void testSettersWithIllegalParameters() {
         // given
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
@@ -121,7 +121,7 @@ class RunningAverageMetricConfigTest {
     @Test
     void testToString() {
         // given
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME)
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)

@@ -23,13 +23,14 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.units.UnitConstants;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.jasperdb.collections.HashList;
 import com.swirlds.jasperdb.collections.HashListByteBuffer;
 import com.swirlds.jasperdb.collections.LongList;
@@ -128,13 +129,6 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * merges happening concurrently.
      */
     private static final int NUMBER_OF_MERGING_THREADS = 1;
-
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates configuration, and it is loaded before
-     * any application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * will have been configured by the time this static initializer runs.
-     */
-    private final JasperDbConfig config = ConfigurationHolder.getConfigData(JasperDbConfig.class);
 
     /** Label for database component used in logging, stats, etc. */
     private static final String JASPER_DB_COMPONENT = "jasper-db";
@@ -282,6 +276,11 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     private final NanoClock clock = new NanoClock();
 
     /**
+     * The configuration from the platform
+     */
+    private final Configuration configuration;
+
+    /**
      * When we register stats for the first instance, also register the global stats. If true
      * then this is the first time stats are being registered for an instance.
      */
@@ -339,6 +338,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * 		for reading with minimal ram usage.
      */
     public VirtualDataSourceJasperDB(
+            final Configuration configuration,
             final VirtualLeafRecordSerializer<K, V> virtualLeafRecordSerializer,
             final VirtualHashRecordSerializer virtualHashRecordSerializer,
             final KeySerializer<K> keySerializer,
@@ -350,9 +350,11 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             final boolean preferDiskBasedIndexes)
             throws IOException {
 
+        this.configuration = configuration;
         this.label = label;
         // updated count of open databases
 
+        final JasperDbConfig jasperDbConfig = configuration.getConfigData(JasperDbConfig.class);
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("JasperDB-" + label);
         // create scheduledThreadPool for executing merges
@@ -419,7 +421,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         }
 
         // create path to disk location index
-        final boolean forceIndexRebuilding = config.indexRebuildingEnforced();
+        final boolean forceIndexRebuilding = jasperDbConfig.indexRebuildingEnforced();
         if (preferDiskBasedIndexes) {
             this.hashPathToDiskLocation = new LongListDisk(dbPaths.pathToDiskLocationInternalNodesFile);
         } else if (Files.exists(dbPaths.pathToDiskLocationInternalNodesFile) && !forceIndexRebuilding) {
@@ -485,7 +487,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                     label + "_objectkeytopath",
                     label + ":objectKeyToPath",
                     preferDiskBasedIndexes,
-                    config);
+                    jasperDbConfig);
             objectKeyToPath.printStats();
             // we do not need callback as HalfDiskHashMap loads its own data from disk
             loadedDataCallback = null;
@@ -500,17 +502,17 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 leafPathToDiskLocation);
 
         // Leaf records cache
-        leafRecordCacheSize = config.leafRecordCacheSize();
+        leafRecordCacheSize = jasperDbConfig.leafRecordCacheSize();
         leafRecordCache = (leafRecordCacheSize > 0) ? new VirtualLeafRecord[leafRecordCacheSize] : null;
 
         // compute initial merge periods to a randomized value of now +/- 50% of merge period. So each node will do
         // medium and full merges at random times.
         lastMediumMerge = Instant.now()
-                .minus(config.mediumMergePeriod() / 2, config.mergePeriodUnit())
-                .plus((long) (config.mediumMergePeriod() * Math.random()), config.mergePeriodUnit());
+                .minus(jasperDbConfig.mediumMergePeriod() / 2, jasperDbConfig.mergePeriodUnit())
+                .plus((long) (jasperDbConfig.mediumMergePeriod() * Math.random()), jasperDbConfig.mergePeriodUnit());
         lastFullMerge = Instant.now()
-                .minus(config.fullMergePeriod() / 2, config.mergePeriodUnit())
-                .plus((long) (config.fullMergePeriod() * Math.random()), config.mergePeriodUnit());
+                .minus(jasperDbConfig.fullMergePeriod() / 2, jasperDbConfig.mergePeriodUnit())
+                .plus((long) (jasperDbConfig.fullMergePeriod() * Math.random()), jasperDbConfig.mergePeriodUnit());
         // If merging is enabled start merging service
         if (mergingEnabled) {
             startBackgroundCompaction();
@@ -537,10 +539,14 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public void startBackgroundCompaction() {
+        final JasperDbConfig jasperDbConfig = configuration.getConfigData(JasperDbConfig.class);
         synchronized (mergingExecutor) {
             if (mergingFuture == null || mergingFuture.isCancelled()) {
                 mergingFuture = mergingExecutor.scheduleAtFixedRate(
-                        this::doMerge, config.mergeActivatePeriod(), config.mergeActivatePeriod(), TimeUnit.SECONDS);
+                        this::doMerge,
+                        jasperDbConfig.mergeActivatePeriod(),
+                        jasperDbConfig.mergeActivatePeriod(),
+                        TimeUnit.SECONDS);
             }
         }
     }
@@ -568,7 +574,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         final KeySerializer<K> keySerializer =
                 isLongKeyMode ? (KeySerializer<K>) new VirtualKeySetSerializer() : objectKeyToPath.getKeySerializer();
 
-        return new HalfDiskVirtualKeySet<>(keySerializer, config);
+        return new HalfDiskVirtualKeySet<>(keySerializer, configuration.getConfigData(JasperDbConfig.class));
     }
 
     /**
@@ -744,7 +750,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
 
         // FUTURE WORK: once the reconnect key leak bug is fixed, this block should be removed
         if (!leafRecord.getKey().equals(key)) {
-            if (config.reconnectKeyLeakMitigationEnabled()) {
+            if (configuration.getConfigData(JasperDbConfig.class).reconnectKeyLeakMitigationEnabled()) {
                 logger.warn(JASPER_DB.getMarker(), "leaked key {} encountered, mitigation is enabled", key);
                 return null;
             } else {
@@ -825,7 +831,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * @param path
      * 		Node path
      * @return
-     * 		Node hash if the node was stored for the given path or null if not stored
+     *        Node hash if the node was stored for the given path or null if not stored
      * @throws IOException
      * 		If there was an I/O problem
      */
@@ -1066,7 +1072,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
         }
 
         // register instance statistics
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(configuration.getConfigData(MetricsConfig.class), metrics);
     }
 
     /**
@@ -1318,6 +1324,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             final Instant afterInternalHashStoreDiskMerge;
             final Instant afterObjectKeyToPathMerge;
             final Instant afterPathToKeyValueMerge;
+            final JasperDbConfig jasperDbConfig = configuration.getConfigData(JasperDbConfig.class);
 
             UnaryOperator<List<DataFileReader>> filesToMergeFilter;
             boolean isLargeMerge = false;
@@ -1332,12 +1339,12 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             } else if (isTimeForMediumMerge(now)) {
                 lastMediumMerge = now;
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
-                        config.mediumMergeCutoffMb(), config.maxNumberOfFilesInMerge());
+                        jasperDbConfig.mediumMergeCutoffMb(), jasperDbConfig.maxNumberOfFilesInMerge());
                 isMediumMerge = true;
                 logger.info(JASPER_DB.getMarker(), "[{}] Starting Medium Merge", label);
             } else {
                 filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
-                        config.smallMergeCutoffMb(), config.maxNumberOfFilesInMerge());
+                        jasperDbConfig.smallMergeCutoffMb(), jasperDbConfig.maxNumberOfFilesInMerge());
                 isSmallMerge = true;
                 logger.info(JASPER_DB.getMarker(), "[{}] Starting Small Merge", label);
             }
@@ -1347,7 +1354,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 // horrible hack to get around generics because file filters work on any type of DataFileReader
                 final UnaryOperator<List<DataFileReader<VirtualHashRecord>>> internalRecordFileFilter =
                         (UnaryOperator<List<DataFileReader<VirtualHashRecord>>>) ((Object) filesToMergeFilter);
-                pathToHashDisk.merge(internalRecordFileFilter, mergingPaused, config.minNumberOfFilesInMerge());
+                pathToHashDisk.merge(internalRecordFileFilter, mergingPaused, jasperDbConfig.minNumberOfFilesInMerge());
                 afterInternalHashStoreDiskMerge = Instant.now(clock);
             } else {
                 afterInternalHashStoreDiskMerge = now; // zero elapsed time
@@ -1360,7 +1367,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
                 // horrible hack to get around generics because file filters work on any type of DataFileReader
                 final UnaryOperator<List<DataFileReader<Bucket<K>>>> bucketFileFilter =
                         (UnaryOperator<List<DataFileReader<Bucket<K>>>>) ((Object) filesToMergeFilter);
-                objectKeyToPath.merge(bucketFileFilter, mergingPaused, config.minNumberOfFilesInMerge());
+                objectKeyToPath.merge(bucketFileFilter, mergingPaused, jasperDbConfig.minNumberOfFilesInMerge());
                 // set third "now"
                 afterObjectKeyToPathMerge = Instant.now(clock);
             }
@@ -1368,7 +1375,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
             // horrible hack to get around generics because file filters work on any type of DataFileReader
             final UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>> leafRecordFileFilter =
                     (UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>>) ((Object) filesToMergeFilter);
-            pathToKeyValue.merge(leafRecordFileFilter, mergingPaused, config.minNumberOfFilesInMerge());
+            pathToKeyValue.merge(leafRecordFileFilter, mergingPaused, jasperDbConfig.minNumberOfFilesInMerge());
             // set fourth "now"
             afterPathToKeyValueMerge = Instant.now(clock);
 
@@ -1429,14 +1436,16 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
     }
 
     private boolean isTimeForFullMerge(final Instant startMerge) {
+        final JasperDbConfig jasperDbConfig = configuration.getConfigData(JasperDbConfig.class);
         return startMerge
-                .minus(config.fullMergePeriod(), config.mergePeriodUnit())
+                .minus(jasperDbConfig.fullMergePeriod(), jasperDbConfig.mergePeriodUnit())
                 .isAfter(lastFullMerge);
     }
 
     private boolean isTimeForMediumMerge(final Instant startMerge) {
+        final JasperDbConfig jasperDbConfig = configuration.getConfigData(JasperDbConfig.class);
         return startMerge
-                .minus(config.mediumMergePeriod(), config.mergePeriodUnit())
+                .minus(jasperDbConfig.mediumMergePeriod(), jasperDbConfig.mergePeriodUnit())
                 .isAfter(lastMediumMerge);
     }
 

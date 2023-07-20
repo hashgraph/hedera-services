@@ -47,7 +47,7 @@ class FCQueueStatisticsTest {
         final Metrics metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
 
         // when
-        FCQueueStatistics.register(metrics);
+        FCQueueStatistics.register(metricsConfig, metrics);
 
         // then
         assertTrue(FCQueueStatistics.isRegistered(), "FCQueueStatistics should be registered");
@@ -71,6 +71,6 @@ class FCQueueStatisticsTest {
 
     @Test
     void testRegisterWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> FCQueueStatistics.register(null));
+        assertThrows(NullPointerException.class, () -> FCQueueStatistics.register(null, null));
     }
 }

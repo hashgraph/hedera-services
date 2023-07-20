@@ -20,9 +20,12 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.SpeedometerMetric.Config;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.throttle.Throttle;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.nft.config.NftConfig;
 import com.swirlds.demo.platform.nft.config.NftQueryConfig;
@@ -39,10 +42,6 @@ public class NftQueryController {
 
     private static final Logger logger = LogManager.getLogger(NftQueryController.class);
 
-    private static final SpeedometerMetric.Config NFT_QUERIES_ANSWERED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    "NFT", "nftQueriesAnsweredPerSecond")
-            .withDescription("number of NFT queries have been answered per second")
-            .withFormat(FORMAT_9_6);
     private SpeedometerMetric nftQueriesAnsweredPerSecond;
 
     private Platform platform;
@@ -77,8 +76,13 @@ public class NftQueryController {
     }
 
     private void initStats() {
+        final Configuration configuration = platform.getContext().getConfiguration();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         nftQueriesAnsweredPerSecond =
-                this.platform.getContext().getMetrics().getOrCreate(NFT_QUERIES_ANSWERED_PER_SECOND_CONFIG);
+                this.platform.getContext().getMetrics().getOrCreate(new Config(metricsConfig,
+                        "NFT", "nftQueriesAnsweredPerSecond")
+                        .withDescription("number of NFT queries have been answered per second")
+                        .withFormat(FORMAT_9_6));
 
         NftSimpleQuerier.registerStats(this.platform);
     }

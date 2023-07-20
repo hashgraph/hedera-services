@@ -19,6 +19,7 @@ package com.swirlds.platform.stats.cycle;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.simple.AccumulatedAverageTime;
 import java.util.Arrays;
@@ -39,7 +40,8 @@ public class AccumulatedCycleMetrics implements CycleMetrics {
     /** For each interval, track the average and max values. Updates as each interval finishes. */
     private final AverageAndMax[] intervalAvgMax;
 
-    public AccumulatedCycleMetrics(final Metrics metrics, final CycleDefinition definition) {
+    public AccumulatedCycleMetrics(final MetricsConfig metricsConfig, final Metrics metrics,
+            final CycleDefinition definition) {
         this.definition = definition;
         this.avgCycleTime = new AccumulatedAverageTime(
                 metrics,
@@ -56,7 +58,7 @@ public class AccumulatedCycleMetrics implements CycleMetrics {
 
         for (int i = 0; i < definition.getNumIntervals(); i++) {
             intervalFraction[i] = new IntervalPercentageMetric(metrics, definition, i);
-            intervalAvgMax[i] = new AverageAndMax(
+            intervalAvgMax[i] = new AverageAndMax(metricsConfig,
                     metrics,
                     definition.getCategory(),
                     definition.getDisplayName(i),

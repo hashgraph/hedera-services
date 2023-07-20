@@ -82,7 +82,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
     @DisplayName("Sequential Signatures After Restart Test")
     void sequentialSignaturesAfterRestartTest() throws InterruptedException {
 
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManager manager = new SignedStateManagerBuilder(metricsConfig, buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

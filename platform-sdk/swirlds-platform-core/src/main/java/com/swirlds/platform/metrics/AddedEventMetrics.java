@@ -30,13 +30,15 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventAddedObserver;
 import com.swirlds.platform.stats.AverageStat;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 /**
  * An {@link EventAddedObserver} that maintains all metrics which need to be updated on a new event
@@ -45,76 +47,29 @@ public class AddedEventMetrics implements EventAddedObserver {
 
     private final NodeId selfId;
 
-    private static final SpeedometerMetric.Config EVENTS_CREATED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "cEvents/sec")
-            .withDescription("number of events per second created by this node")
-            .withFormat(FORMAT_16_2);
     private final SpeedometerMetric eventsCreatedPerSecond;
 
-    private static final RunningAverageMetric.Config AVG_CREATED_RECEIVED_TIME_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "secC2R")
-            .withDescription("time from another member creating an event to receiving it and "
-                    + "verifying the signature (in seconds)")
-            .withFormat(FORMAT_10_3);
     private final RunningAverageMetric avgCreatedReceivedTime;
 
-    private static final SpeedometerMetric.Config EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "events/sec")
-            .withDescription("number of unique events received per second (created by self and others)")
-            .withFormat(FORMAT_16_2);
     private final SpeedometerMetric eventsPerSecond;
 
-    private static final RunningAverageMetric.Config AVG_BYTES_PER_TRANSACTION_SYS_CONFIG =
-            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "bytes/trans_sys")
-                    .withDescription("number of bytes in each system transaction")
-                    .withFormat(FORMAT_16_0);
     private final RunningAverageMetric avgBytesPerTransactionSys;
 
-    private static final RunningAverageMetric.Config AVG_BYTES_PER_TRANSACTION_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "bytes/trans")
-            .withDescription("number of bytes in each transactions")
-            .withFormat(FORMAT_16_0);
     private final RunningAverageMetric avgBytesPerTransaction;
 
-    private static final RunningAverageMetric.Config AVG_TRANSACTIONS_PER_EVENT_CONFIG =
-            new RunningAverageMetric.Config(PLATFORM_CATEGORY, "trans/event")
-                    .withDescription("number of app transactions in each event")
-                    .withFormat(FORMAT_17_1);
     private final RunningAverageMetric avgTransactionsPerEvent;
 
-    private static final RunningAverageMetric.Config AVG_TRANSACTIONS_PER_EVENT_SYS_CONFIG =
-            new RunningAverageMetric.Config(INTERNAL_CATEGORY, "trans/event_sys")
-                    .withDescription("number of system transactions in each event")
-                    .withFormat(FORMAT_17_1);
     private final RunningAverageMetric avgTransactionsPerEventSys;
 
     private static final String DETAILS = "(from unique events created by self and others)";
-    private static final SpeedometerMetric.Config BYTES_PER_SECOND_TRANS_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "bytes/sec_trans")
-            .withDescription("number of bytes in the transactions received per second " + DETAILS)
-            .withFormat(FORMAT_16_2);
     private final SpeedometerMetric bytesPerSecondTrans;
 
-    private static final SpeedometerMetric.Config BYTES_PER_SECOND_SYS_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "bytes/sec_sys")
-            .withDescription("number of bytes in the system transactions received per second " + DETAILS)
-            .withFormat(FORMAT_16_2);
     private final SpeedometerMetric bytesPerSecondSys;
 
-    private static final SpeedometerMetric.Config TRANSACTIONS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    PLATFORM_CATEGORY, "trans/sec")
-            .withDescription("number of app transactions received per second " + DETAILS)
-            .withFormat(FORMAT_13_2);
     private final SpeedometerMetric transactionsPerSecond;
 
-    private static final SpeedometerMetric.Config TRANSACTIONS_PER_SECOND_SYS_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "trans/sec_sys")
-            .withDescription("number of system transactions received per second " + DETAILS)
-            .withFormat(FORMAT_13_2);
     private final SpeedometerMetric transactionsPerSecondSys;
 
-    private static final Counter.Config NUM_TRANS_CONFIG =
-            new Counter.Config(INTERNAL_CATEGORY, "trans").withDescription("number of transactions received so far");
     private final Counter numTrans;
 
     private final AverageStat averageOtherParentAgeDiff;
@@ -122,35 +77,74 @@ public class AddedEventMetrics implements EventAddedObserver {
     /**
      * The constructor of {@code AddedEventMetrics}
      *
+     * @param metricsConfig
+     *      configuration for the metrics
      * @param selfId
      * 		the {@link NodeId} of this node
      * @param metrics
      * 		a reference to the metrics-system
      * @throws IllegalArgumentException if one of the parameters is {@code null}
      */
-    public AddedEventMetrics(final NodeId selfId, final Metrics metrics) {
-        this.selfId = CommonUtils.throwArgNull(selfId, "selfId");
-        CommonUtils.throwArgNull(metrics, "metrics");
+    public AddedEventMetrics(@NonNull final MetricsConfig metricsConfig, @NonNull final NodeId selfId,
+            @NonNull final Metrics metrics) {
+        this.selfId = Objects.requireNonNull(selfId, "selfId");
+        Objects.requireNonNull(metrics, "metrics");
 
-        eventsCreatedPerSecond = metrics.getOrCreate(EVENTS_CREATED_PER_SECOND_CONFIG);
-        averageOtherParentAgeDiff = new AverageStat(
+        eventsCreatedPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "cEvents/sec")
+                .withDescription("number of events per second created by this node")
+                .withFormat(FORMAT_16_2));
+        averageOtherParentAgeDiff = new AverageStat(metricsConfig,
                 metrics,
                 PLATFORM_CATEGORY,
                 "opAgeDiff",
                 "average age difference (in generations) between an event created by this node and its other parent",
                 FORMAT_5_3,
                 AverageStat.WEIGHT_VOLATILE);
-        avgCreatedReceivedTime = metrics.getOrCreate(AVG_CREATED_RECEIVED_TIME_CONFIG);
-        eventsPerSecond = metrics.getOrCreate(EVENTS_PER_SECOND_CONFIG);
-        avgBytesPerTransactionSys = metrics.getOrCreate(AVG_BYTES_PER_TRANSACTION_SYS_CONFIG);
-        avgBytesPerTransaction = metrics.getOrCreate(AVG_BYTES_PER_TRANSACTION_CONFIG);
-        avgTransactionsPerEvent = metrics.getOrCreate(AVG_TRANSACTIONS_PER_EVENT_CONFIG);
-        avgTransactionsPerEventSys = metrics.getOrCreate(AVG_TRANSACTIONS_PER_EVENT_SYS_CONFIG);
-        bytesPerSecondTrans = metrics.getOrCreate(BYTES_PER_SECOND_TRANS_CONFIG);
-        bytesPerSecondSys = metrics.getOrCreate(BYTES_PER_SECOND_SYS_CONFIG);
-        transactionsPerSecond = metrics.getOrCreate(TRANSACTIONS_PER_SECOND_CONFIG);
-        transactionsPerSecondSys = metrics.getOrCreate(TRANSACTIONS_PER_SECOND_SYS_CONFIG);
-        numTrans = metrics.getOrCreate(NUM_TRANS_CONFIG);
+        avgCreatedReceivedTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "secC2R")
+                .withDescription("time from another member creating an event to receiving it and "
+                        + "verifying the signature (in seconds)")
+                .withFormat(FORMAT_10_3));
+        eventsPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "events/sec")
+                .withDescription("number of unique events received per second (created by self and others)")
+                .withFormat(FORMAT_16_2));
+        avgBytesPerTransactionSys = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "bytes/trans_sys")
+                        .withDescription("number of bytes in each system transaction")
+                        .withFormat(FORMAT_16_0));
+        avgBytesPerTransaction = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "bytes/trans")
+                .withDescription("number of bytes in each transactions")
+                .withFormat(FORMAT_16_0));
+        avgTransactionsPerEvent = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "trans/event")
+                        .withDescription("number of app transactions in each event")
+                        .withFormat(FORMAT_17_1));
+        avgTransactionsPerEventSys = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "trans/event_sys")
+                        .withDescription("number of system transactions in each event")
+                        .withFormat(FORMAT_17_1));
+        bytesPerSecondTrans = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "bytes/sec_trans")
+                .withDescription("number of bytes in the transactions received per second " + DETAILS)
+                .withFormat(FORMAT_16_2));
+        bytesPerSecondSys = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                INTERNAL_CATEGORY, "bytes/sec_sys")
+                .withDescription("number of bytes in the system transactions received per second " + DETAILS)
+                .withFormat(FORMAT_16_2));
+        transactionsPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                PLATFORM_CATEGORY, "trans/sec")
+                .withDescription("number of app transactions received per second " + DETAILS)
+                .withFormat(FORMAT_13_2));
+        transactionsPerSecondSys = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
+                INTERNAL_CATEGORY, "trans/sec_sys")
+                .withDescription("number of system transactions received per second " + DETAILS)
+                .withFormat(FORMAT_13_2));
+        numTrans = metrics.getOrCreate(
+                new Counter.Config(INTERNAL_CATEGORY, "trans").withDescription(
+                        "number of transactions received so far"));
     }
 
     /**

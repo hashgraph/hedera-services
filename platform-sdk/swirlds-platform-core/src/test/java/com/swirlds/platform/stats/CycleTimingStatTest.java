@@ -20,8 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
@@ -48,8 +50,10 @@ class CycleTimingStatTest {
     @MethodSource({"validConstructorArgs", "invalidConstructorArgs"})
     void testConstructor(
             final String name, final boolean validArgs, final List<String> detailedNames, final List<String> descList) {
+        final MetricsConfig metricConfig = new TestConfigBuilder().getOrCreateConfig()
+                .getConfigData(MetricsConfig.class);
         final Metrics metrics = new NoOpMetrics();
-        final Runnable constructor = () -> new CycleTimingStat(
+        final Runnable constructor = () -> new CycleTimingStat(metricConfig,
                 metrics, ChronoUnit.MICROS, new CycleDefinition("cat", name, detailedNames, descList));
         if (validArgs) {
             assertDoesNotThrow(constructor::run);

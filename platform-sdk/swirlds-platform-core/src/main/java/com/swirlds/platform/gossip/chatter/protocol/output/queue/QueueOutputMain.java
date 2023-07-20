@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
 import com.swirlds.platform.gossip.chatter.protocol.output.MessageOutput;
 import com.swirlds.platform.gossip.chatter.protocol.output.SendCheck;
@@ -41,10 +42,11 @@ public class QueueOutputMain<T extends SelfSerializable> implements MessageOutpu
     private final List<QueueOutputPeer<T>> peerInstances;
     private final AverageAndMax stats;
 
-    public QueueOutputMain(final String queueName, final int queueCapacity, final Metrics metrics) {
+    public QueueOutputMain(final String queueName, final int queueCapacity, final MetricsConfig metricsConfig,
+            final Metrics metrics) {
         this.queueCapacity = queueCapacity;
         peerInstances = new ArrayList<>();
-        stats = new AverageAndMax(
+        stats = new AverageAndMax(metricsConfig,
                 metrics,
                 "chatter",
                 queueName + "Queue",

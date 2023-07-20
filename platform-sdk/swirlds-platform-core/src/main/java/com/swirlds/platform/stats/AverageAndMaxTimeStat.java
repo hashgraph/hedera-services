@@ -18,6 +18,7 @@ package com.swirlds.platform.stats;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -36,12 +37,13 @@ public class AverageAndMaxTimeStat {
     private final AtomicMax max;
     private final StatEntry maxEntry;
 
-    public AverageAndMaxTimeStat(
+    public AverageAndMaxTimeStat(final MetricsConfig metricsConfig,
             final Metrics metrics, final ChronoUnit unit, final String category, final String name, final String desc) {
-        this(metrics, unit, category, name, desc, AverageStat.WEIGHT_SMOOTH);
+        this(metricsConfig, metrics, unit, category, name, desc, AverageStat.WEIGHT_SMOOTH);
     }
 
     public AverageAndMaxTimeStat(
+            final MetricsConfig metricsConfig,
             final Metrics metrics,
             final ChronoUnit unit,
             final String category,
@@ -63,15 +65,16 @@ public class AverageAndMaxTimeStat {
             default:
                 format = FORMAT_DEFAULT;
         }
-        avgEntry = metrics.getOrCreate(new StatEntry.Config<>(category, name, Double.class, this::getAvg)
+        avgEntry = metrics.getOrCreate(new StatEntry.Config<>(metricsConfig, category, name, Double.class, this::getAvg)
                 .withDescription(desc)
                 .withFormat(format)
                 .withReset(this::resetAvg));
-        maxEntry = metrics.getOrCreate(new StatEntry.Config<>(category, name + "MAX", Double.class, this::getMax)
-                .withDescription("max value of " + name)
-                .withFormat(format)
-                .withReset(this::resetMax)
-                .withResetStatsStringSupplier(this::getAndResetMax));
+        maxEntry = metrics.getOrCreate(
+                new StatEntry.Config<>(metricsConfig, category, name + "MAX", Double.class, this::getMax)
+                        .withDescription("max value of " + name)
+                        .withFormat(format)
+                        .withReset(this::resetMax)
+                        .withResetStatsStringSupplier(this::getAndResetMax));
     }
 
     private double convert(final long nanos) {

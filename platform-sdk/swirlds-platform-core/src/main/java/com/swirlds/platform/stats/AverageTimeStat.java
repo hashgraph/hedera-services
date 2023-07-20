@@ -18,6 +18,7 @@ package com.swirlds.platform.stats;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import java.time.temporal.ChronoUnit;
 
 /**
@@ -33,18 +34,20 @@ public class AverageTimeStat {
     private final AtomicAverage average;
     private final StatEntry avgEntry;
 
-    public AverageTimeStat(
+    public AverageTimeStat(final MetricsConfig metricsConfig,
             final Metrics metrics, final ChronoUnit unit, final String category, final String name, final String desc) {
-        this(metrics, unit, category, name, desc, AverageStat.WEIGHT_SMOOTH);
+        this(metricsConfig, metrics, unit, category, name, desc, AverageStat.WEIGHT_SMOOTH);
     }
 
     public AverageTimeStat(
+            final MetricsConfig metricsConfig,
             final Metrics metrics,
             final ChronoUnit unit,
             final String category,
             final String name,
             final String desc,
             final double weight) {
+
         this.unit = unit;
         average = new AtomicAverage(weight);
 
@@ -59,7 +62,7 @@ public class AverageTimeStat {
             default:
                 format = FORMAT_DEFAULT;
         }
-        avgEntry = metrics.getOrCreate(new StatEntry.Config<>(category, name, Double.class, this::getAvg)
+        avgEntry = metrics.getOrCreate(new StatEntry.Config<>(metricsConfig, category, name, Double.class, this::getAvg)
                 .withDescription(desc)
                 .withFormat(format)
                 .withReset(this::resetAvg));

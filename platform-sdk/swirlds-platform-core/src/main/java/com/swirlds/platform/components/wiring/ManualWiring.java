@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -28,6 +29,7 @@ import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.payloads.FatalErrorPayload;
 import com.swirlds.platform.FreezeManager;
 import com.swirlds.platform.SwirldsPlatform;
@@ -86,9 +88,12 @@ public class ManualWiring {
         this.threadManager = threadManager;
         this.addressBook = addressBook;
         this.freezeManager = freezeManager;
-        this.wiringMetrics = new WiringMetrics(platformContext.getMetrics());
 
-        final WiringConfig wiringConfig = platformContext.getConfiguration().getConfigData(WiringConfig.class);
+        final Configuration configuration = platformContext.getConfiguration();
+        this.wiringMetrics = new WiringMetrics(configuration.getConfigData(MetricsConfig.class),
+                platformContext.getMetrics());
+
+        final WiringConfig wiringConfig = configuration.getConfigData(WiringConfig.class);
         asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)
                 .setThreadName("new-latest-complete-state-consumer-queue")
                 .setComponent("wiring")

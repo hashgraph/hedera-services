@@ -18,6 +18,7 @@ package com.swirlds.platform.stats;
 
 import com.swirlds.common.UniqueId;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -33,6 +34,8 @@ public class StatConstructor {
      * Used to create a StatEntry whose value is limited to a single enum. This stat displays the enums unique ID
      * instead of the name so that it can be tracked on a graph.
      *
+     * @param metricsConfig
+     *      configuration for the metrics
      * @param name
      * 		the name of the stat
      * @param category
@@ -46,6 +49,7 @@ public class StatConstructor {
      * @return a StatEntry that tracks an enum value
      */
     public static <T extends Enum<T> & UniqueId> StatEntry.Config<Integer> createEnumStat(
+            final MetricsConfig metricsConfig,
             final String name, final String category, final T[] enumValues, final Supplier<T> enumSupplier) {
         // check if the reserved value is being used
         if (Arrays.stream(enumValues).anyMatch((v) -> v.getId() == NO_VALUE)) {
@@ -67,7 +71,7 @@ public class StatConstructor {
             return t.getId();
         };
 
-        return new StatEntry.Config<>(category, name, Integer.class, statValueSupplier)
+        return new StatEntry.Config<>(metricsConfig, category, name, Integer.class, statValueSupplier)
                 .withDescription(desc.toString())
                 .withFormat("%d");
     }

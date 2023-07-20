@@ -19,9 +19,12 @@ package com.swirlds.demo.platform.nft;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.demo.platform.PlatformTestingToolState;
 import com.swirlds.demo.platform.nft.config.NftQueryConfig;
 import com.swirlds.merkle.map.test.pta.MapKey;
@@ -43,26 +46,27 @@ public class NftSimpleQuerier {
 
     private static final Logger logger = LogManager.getLogger(NftSimpleQuerier.class);
 
-    private static final RunningAverageMetric.Config TOKENS_PER_KEY_CONFIG = new RunningAverageMetric.Config(
-                    "NFT", "nftTokensPerKey")
-            .withDescription("avg number of tokens each key has when queried")
-            .withFormat(FORMAT_9_6)
-            .withHalfLife(10.0);
     private static RunningAverageMetric tokensPerKey;
 
-    private static final RunningAverageMetric.Config NFT_QUERIES_ANSWERED_MICRO_SEC_CONFIG =
-            new RunningAverageMetric.Config("NFT", "nftQueriesAnsweredMicroSec")
-                    .withDescription("avg time taken to answer a query through NftLedger (in microseconds)")
-                    .withFormat(FORMAT_9_6)
-                    .withHalfLife(10.0);
     private static RunningAverageMetric nftQueriesAnsweredMicroSec;
 
     private static int PAGE_SIZE = 5;
 
     protected static void registerStats(final Platform platform) {
-        tokensPerKey = platform.getContext().getMetrics().getOrCreate(TOKENS_PER_KEY_CONFIG);
+        final Metrics metrics = platform.getContext().getMetrics();
+        final Configuration configuration = platform.getContext().getConfiguration();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        tokensPerKey = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                "NFT", "nftTokensPerKey")
+                .withDescription("avg number of tokens each key has when queried")
+                .withFormat(FORMAT_9_6)
+                .withHalfLife(10.0));
         nftQueriesAnsweredMicroSec =
-                platform.getContext().getMetrics().getOrCreate(NFT_QUERIES_ANSWERED_MICRO_SEC_CONFIG);
+                metrics.getOrCreate(
+                        new RunningAverageMetric.Config(metricsConfig, "NFT", "nftQueriesAnsweredMicroSec")
+                                .withDescription("avg time taken to answer a query through NftLedger (in microseconds)")
+                                .withFormat(FORMAT_9_6)
+                                .withHalfLife(10.0));
     }
 
     protected static void setConfig(final NftQueryConfig config) {

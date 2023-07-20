@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
@@ -58,6 +59,9 @@ public class AbstractSignedStateManagerTest {
     protected final int roundsToKeepForSigning = 5;
     protected final int futureStateSignatureRounds = 16;
     protected int roundsToKeepAfterSigning = 0;
+
+    protected final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
+            .getConfigData(MetricsConfig.class);
 
     /**
      * true if an error occurs on a notification thread

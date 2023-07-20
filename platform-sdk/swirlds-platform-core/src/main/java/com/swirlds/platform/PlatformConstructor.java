@@ -23,6 +23,7 @@ import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
@@ -103,11 +104,11 @@ public final class PlatformConstructor {
         try {
             return new TlsFactory(keysAndCerts, socketConfig, cryptoConfig);
         } catch (final NoSuchAlgorithmException
-                | UnrecoverableKeyException
-                | KeyStoreException
-                | KeyManagementException
-                | CertificateException
-                | IOException e) {
+                       | UnrecoverableKeyException
+                       | KeyStoreException
+                       | KeyManagementException
+                       | CertificateException
+                       | IOException e) {
             throw new PlatformConstructionException("A problem occurred while creating the SocketFactory", e);
         }
     }
@@ -184,13 +185,14 @@ public final class PlatformConstructor {
         Objects.requireNonNull(initialState);
         Objects.requireNonNull(softwareVersion);
 
+        final MetricsConfig metricsConfig = platformContext.getConfiguration().getConfigData(MetricsConfig.class);
         return new SwirldStateManagerImpl(
                 platformContext,
                 addressBook,
                 selfId,
                 preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
-                new SwirldStateMetrics(platformContext.getMetrics()),
+                new SwirldStateMetrics(metricsConfig, platformContext.getMetrics()),
                 statusActionSubmitter,
                 inFreezeChecker,
                 initialState,

@@ -22,7 +22,6 @@ import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import java.util.EnumSet;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -106,6 +105,8 @@ public interface RunningAverageMetric extends Metric {
          *
          * The {@code halfLife} is by default set to {@code SettingsCommon.halfLife}.
          *
+         * @param metricsConfig
+         *      the metrics configuration
          * @param category
          * 		the kind of metric (stats are grouped or filtered by this)
          * @param name
@@ -113,9 +114,8 @@ public interface RunningAverageMetric extends Metric {
          * @throws IllegalArgumentException
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
-        public Config(final String category, final String name) {
+        public Config(final MetricsConfig metricsConfig, final String category, final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
-            final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
             this.halfLife = metricsConfig.halfLife();
         }
 

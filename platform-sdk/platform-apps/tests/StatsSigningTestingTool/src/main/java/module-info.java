@@ -7,4 +7,5 @@ module com.swirlds.demo.stats.signing {
     requires org.bouncycastle.pkix;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.config;
 }

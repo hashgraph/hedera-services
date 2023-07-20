@@ -24,6 +24,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.Startable;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -31,6 +32,7 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
@@ -75,7 +77,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
      * @param selfId             the ID of this node
      * @param swirldStateManager manages states
      * @param consensusMetrics   metrics relating to consensus
-     * @param threadConfig       configuration for the thread system
+     * @param configuration      configuration from the platform
      */
     public PreConsensusEventHandler(
             @NonNull final Metrics metrics,
@@ -83,10 +85,13 @@ public class PreConsensusEventHandler implements Clearable, Startable {
             @NonNull final NodeId selfId,
             @NonNull final SwirldStateManager swirldStateManager,
             @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final ThreadConfig threadConfig) {
+            @NonNull final Configuration configuration) {
         Objects.requireNonNull(metrics);
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(threadConfig);
+        Objects.requireNonNull(configuration);
+
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
         this.selfId = Objects.requireNonNull(selfId);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
@@ -105,7 +110,7 @@ public class PreConsensusEventHandler implements Clearable, Startable {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
 
-        final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(
+        final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 PlatformStatNames.PRE_CONSENSUS_QUEUE_SIZE,

@@ -18,6 +18,7 @@ package com.swirlds.merkle.map;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 
@@ -34,28 +35,12 @@ public final class MerkleMapMetrics {
      */
     private static volatile boolean registered;
 
-    // avg time taken to execute the MerkleMap get method (in microseconds)
-    private static final RunningAverageMetric.Config MMM_GET_MICRO_SEC_CONFIG = new RunningAverageMetric.Config(
-                    MM_CATEGORY, "mmGetMicroSec")
-            .withDescription("avg time taken to execute the MerkleMap get method (in microseconds)");
     private static RunningAverageMetric mmmGetMicroSec;
 
-    // avg time taken to execute the MerkleMap getForModify method (in microseconds)
-    private static final RunningAverageMetric.Config MM_GFM_MICRO_SEC_CONFIG = new RunningAverageMetric.Config(
-                    MM_CATEGORY, "mmGfmMicroSec")
-            .withDescription("avg time taken to execute the MerkleMap getForModify method (in microseconds)");
     private static RunningAverageMetric mmGfmMicroSec;
 
-    // avg time taken to execute the MerkleMap replace method (in microseconds)
-    private static final RunningAverageMetric.Config MM_REPLACE_MICRO_SEC_CONFIG = new RunningAverageMetric.Config(
-                    MM_CATEGORY, "mmReplaceMicroSec")
-            .withDescription("avg time taken to execute the MerkleMap replace method (in microseconds)");
     private static RunningAverageMetric mmReplaceMicroSec;
 
-    // avg time taken to execute the MerkleMap put method (in microseconds)
-    private static final RunningAverageMetric.Config MM_PUT_MICRO_SEC_CONFIG = new RunningAverageMetric.Config(
-                    MM_CATEGORY, "mmPutMicroSec")
-            .withDescription("avg time taken to execute the MerkleMap put method (in microseconds)");
     private static RunningAverageMetric mmPutMicroSec;
 
     /**
@@ -79,11 +64,19 @@ public final class MerkleMapMetrics {
      * @param metrics
      * 		the metrics-system
      */
-    public static void register(final Metrics metrics) {
-        mmmGetMicroSec = metrics.getOrCreate(MMM_GET_MICRO_SEC_CONFIG);
-        mmGfmMicroSec = metrics.getOrCreate(MM_GFM_MICRO_SEC_CONFIG);
-        mmReplaceMicroSec = metrics.getOrCreate(MM_REPLACE_MICRO_SEC_CONFIG);
-        mmPutMicroSec = metrics.getOrCreate(MM_PUT_MICRO_SEC_CONFIG);
+    public static void register(final MetricsConfig metricsConfig, final Metrics metrics) {
+        mmmGetMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                MM_CATEGORY, "mmGetMicroSec")
+                .withDescription("avg time taken to execute the MerkleMap get method (in microseconds)"));
+        mmGfmMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                MM_CATEGORY, "mmGfmMicroSec")
+                .withDescription("avg time taken to execute the MerkleMap getForModify method (in microseconds)"));
+        mmReplaceMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                MM_CATEGORY, "mmReplaceMicroSec")
+                .withDescription("avg time taken to execute the MerkleMap replace method (in microseconds)"));
+        mmPutMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                MM_CATEGORY, "mmPutMicroSec")
+                .withDescription("avg time taken to execute the MerkleMap put method (in microseconds)"));
 
         registered = true;
     }

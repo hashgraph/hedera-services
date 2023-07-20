@@ -26,12 +26,15 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.RunningAverageMetric.Config;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.stream.HashSigner;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
@@ -137,11 +140,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
 
     private final StateConfig stateConfig;
 
-    private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "roundSup")
-            .withDescription("latest round with state signed by a supermajority")
-            .withUnit("round");
-
     /**
      * @param platformContext                    the platform context
      * @param threadManager                      manages platform thread resources
@@ -201,15 +199,18 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         Objects.requireNonNull(platformStatusGetter);
         Objects.requireNonNull(statusActionSubmitter);
 
+        final Configuration configuration = platformContext.getConfiguration();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+
         this.signer = signer;
         this.signatureTransmitter = new SignatureTransmitter(prioritySystemTransactionSubmitter, platformStatusGetter);
-        this.signedStateMetrics = new SignedStateMetrics(platformContext.getMetrics());
+        this.signedStateMetrics = new SignedStateMetrics(metricsConfig, platformContext.getMetrics());
         this.signedStateGarbageCollector = new SignedStateGarbageCollector(threadManager, signedStateMetrics);
-        this.stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        this.stateConfig = configuration.getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
 
         dispatchBuilder =
-                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
+                new DispatchBuilder(configuration.getConfigData(DispatchConfiguration.class));
 
         hashLogger = new HashLogger(threadManager, selfId, stateConfig);
 
@@ -249,7 +250,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         };
 
         signedStateManager = new SignedStateManager(
-                platformContext.getConfiguration().getConfigData(StateConfig.class),
+                configuration.getConfigData(StateConfig.class),
                 signedStateMetrics,
                 newLatestCompleteStateConsumer,
                 combinedStateHasEnoughSignaturesConsumer,
@@ -259,7 +260,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 Time.getCurrent(),
                 dispatchBuilder,
                 addressBook,
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                configuration.getConfigData(ConsensusConfig.class),
                 stateConfig);
 
         final IssHandler issHandler = new IssHandler(
@@ -280,7 +281,10 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 .registerObservers(this);
 
         final RunningAverageMetric avgRoundSupermajority =
-                platformContext.getMetrics().getOrCreate(AVG_ROUND_SUPERMAJORITY_CONFIG);
+                platformContext.getMetrics().getOrCreate(new Config(metricsConfig,
+                        PLATFORM_CATEGORY, "roundSup")
+                        .withDescription("latest round with state signed by a supermajority")
+                        .withUnit("round"));
         platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
@@ -316,8 +320,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                     EXCEPTION.getMarker(),
                     new InsufficientSignaturesPayload(
                             ("state written to disk for round %d did not have enough signatures. "
-                                            + "Collected signatures representing %d/%d weight. "
-                                            + "Total unsigned disk states so far: %d.")
+                                    + "Collected signatures representing %d/%d weight. "
+                                    + "Total unsigned disk states so far: %d.")
                                     .formatted(
                                             signedState.getRound(),
                                             signedState.getSigningWeight(),

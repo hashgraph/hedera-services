@@ -43,6 +43,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -72,6 +73,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
@@ -318,8 +320,9 @@ public class SwirldsPlatform implements Platform, Startable {
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
         final Time time = Time.getCurrent();
 
+        final Configuration configuration = platformContext.getConfiguration();
         final DispatchBuilder dispatchBuilder =
-                new DispatchBuilder(platformContext.getConfiguration().getConfigData(DispatchConfiguration.class));
+                new DispatchBuilder(configuration.getConfigData(DispatchConfiguration.class));
 
         components = new PlatformComponents(dispatchBuilder);
 
@@ -334,7 +337,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 dispatchBuilder.getDispatcher(this, ReconnectStateLoadedTrigger.class)::dispatch;
         diskStateLoadedDispatcher = dispatchBuilder.getDispatcher(this, DiskStateLoadedTrigger.class)::dispatch;
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
         this.appVersion = appVersion;
@@ -349,7 +352,8 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.metrics = platformContext.getMetrics();
 
-        metrics.getOrCreate(StatConstructor.createEnumStat(
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        metrics.getOrCreate(StatConstructor.createEnumStat(metricsConfig,
                 "PlatformStatus",
                 Metrics.PLATFORM_CATEGORY,
                 PlatformStatus.values(),
@@ -359,11 +363,11 @@ public class SwirldsPlatform implements Platform, Startable {
 
         this.recycleBin = Objects.requireNonNull(recycleBin);
 
-        this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metrics);
+        this.consensusMetrics = new ConsensusMetricsImpl(this.selfId, metricsConfig, metrics);
 
-        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metrics, time);
-        final SyncMetrics syncMetrics = new SyncMetrics(metrics);
-        RuntimeMetrics.setup(metrics);
+        final EventIntakeMetrics eventIntakeMetrics = new EventIntakeMetrics(metricsConfig, metrics, time);
+        final SyncMetrics syncMetrics = new SyncMetrics(metricsConfig, metrics);
+        RuntimeMetrics.setup(metricsConfig, metrics);
 
         this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
 
@@ -372,7 +376,7 @@ public class SwirldsPlatform implements Platform, Startable {
         startUpEventFrozenManager = new StartUpEventFrozenManager(metrics, Instant::now);
         freezeManager = new FreezeManager();
         FreezeMetrics.registerFreezeMetrics(metrics, freezeManager, startUpEventFrozenManager);
-        EventCounter.registerEventCounterMetrics(metrics);
+        EventCounter.registerEventCounterMetrics(metricsConfig, metrics);
 
         // Manually wire components for now.
         final ManualWiring wiring = new ManualWiring(platformContext, threadManager, getAddressBook(), freezeManager);
@@ -413,7 +417,7 @@ public class SwirldsPlatform implements Platform, Startable {
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());
 
-        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+        final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
 
         final Address address = getSelfAddress();
         final String eventStreamManagerName;
@@ -438,7 +442,7 @@ public class SwirldsPlatform implements Platform, Startable {
         initializeState(initialState);
 
         final TransactionConfig transactionConfig =
-                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
+                configuration.getConfigData(TransactionConfig.class);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = PlatformConstructor.swirldStateManager(
@@ -455,15 +459,15 @@ public class SwirldsPlatform implements Platform, Startable {
         stateHashSignQueue = components.add(PlatformConstructor.stateHashSignQueue(
                 threadManager, selfId, stateManagementComponent::newSignedStateFromTransactions, metrics));
 
-        final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, configuration));
         consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                 platformContext,
                 threadManager,
                 selfId,
                 swirldStateManager,
-                new ConsensusHandlingMetrics(metrics, time),
+                new ConsensusHandlingMetrics(metricsConfig, metrics, time),
                 eventStreamManager,
                 stateHashSignQueue,
                 preconsensusEventWriter::waitUntilDurable,
@@ -472,7 +476,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 stateManagementComponent::roundAppliedToState,
                 appVersion));
 
-        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
+        final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(metricsConfig, this.selfId, metrics);
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
@@ -504,7 +508,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         eventLinker = buildEventLinker(time, isDuplicateChecks);
 
-        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
+        final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metricsConfig, metrics);
 
         final EventIntake eventIntake = new EventIntake(
                 platformContext,
@@ -520,7 +524,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 preConsensusEventHandler::preconsensusEvent);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
-        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
         // it is very important to discard ancient events, otherwise the deduplication will not work, since it
@@ -580,7 +584,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 platformStatusManager::getCurrentStatus,
                 transactionConfig,
                 swirldStateManager::submitTransaction,
-                new TransactionMetrics(metrics));
+                new TransactionMetrics(metricsConfig, metrics));
 
         final boolean startedFromGenesis = initialState.isGenesisState();
 
@@ -616,7 +620,7 @@ public class SwirldsPlatform implements Platform, Startable {
             initialMinimumGenerationNonAncient = 0;
 
             consensusRef.set(new ConsensusImpl(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    configuration.getConfigData(ConsensusConfig.class),
                     consensusMetrics,
                     consensusRoundHandler::addMinGenInfo,
                     getAddressBook()));

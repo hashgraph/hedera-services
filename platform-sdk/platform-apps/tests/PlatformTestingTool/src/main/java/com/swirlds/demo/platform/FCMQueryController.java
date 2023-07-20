@@ -20,9 +20,12 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.SpeedometerMetric.Config;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.throttle.Throttle;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.internal.ExpectedFCMFamily;
@@ -48,18 +51,19 @@ class FCMQueryController {
     private final int numberOfThreads;
     private final Throttle throttle;
 
-    private static final SpeedometerMetric.Config FCM_QUERIES_ANSWERED_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    "FCM", "fcmQueriesAnsweredPerSecond")
-            .withDescription("number of FCM queries have been answered per second")
-            .withFormat(FORMAT_9_6);
     private final SpeedometerMetric fcmQueriesAnsweredPerSecond;
 
     public FCMQueryController(final FCMConfig.FCMQueryConfig fcmQueryConfig, final Platform platform) {
         this.platform = platform;
         this.numberOfThreads = fcmQueryConfig.getNumberOfThreads();
         this.throttle = new Throttle(fcmQueryConfig.getQps());
+        final Configuration configuration = platform.getContext().getConfiguration();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         this.fcmQueriesAnsweredPerSecond =
-                platform.getContext().getMetrics().getOrCreate(FCM_QUERIES_ANSWERED_PER_SECOND_CONFIG);
+                platform.getContext().getMetrics().getOrCreate(new Config(metricsConfig,
+                        "FCM", "fcmQueriesAnsweredPerSecond")
+                        .withDescription("number of FCM queries have been answered per second")
+                        .withFormat(FORMAT_9_6));
     }
 
     public void launch() {

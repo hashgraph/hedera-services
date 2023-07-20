@@ -17,6 +17,7 @@
 package com.swirlds.platform.stats;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -54,14 +55,15 @@ public class CycleTimingStat {
      * @param definition
      * 		the definition of the cycle state
      */
-    public CycleTimingStat(final Metrics metrics, final ChronoUnit unit, final CycleDefinition definition) {
+    public CycleTimingStat(final MetricsConfig metricsConfig, final Metrics metrics, final ChronoUnit unit,
+            final CycleDefinition definition) {
 
         this.numIntervals = definition.getNumIntervals();
         t = new long[numIntervals + 1];
 
         timePointStats = new ArrayList<>(numIntervals);
         for (int i = 0; i < numIntervals; i++) {
-            timePointStats.add(new AverageTimeStat(
+            timePointStats.add(new AverageTimeStat(metricsConfig,
                     metrics,
                     unit,
                     definition.getCategory(),
@@ -70,7 +72,7 @@ public class CycleTimingStat {
                     AverageStat.WEIGHT_VOLATILE));
         }
 
-        totalCycleTimeStat = new AverageTimeStat(
+        totalCycleTimeStat = new AverageTimeStat(metricsConfig,
                 metrics,
                 unit,
                 definition.getCategory(),

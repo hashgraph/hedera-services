@@ -45,6 +45,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     private final AddressBook addressBook =
             new RandomAddressBookGenerator(random).setSize(4).build();
 
+
     /**
      * Called on each state as it gets too old without collecting enough signatures.
      * <p>
@@ -75,7 +76,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     @Test
     @DisplayName("Register States Without Signatures")
     void registerStatesWithoutSignatures() throws InterruptedException {
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManager manager = new SignedStateManagerBuilder(metricsConfig, buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

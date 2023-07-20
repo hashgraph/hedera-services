@@ -18,6 +18,7 @@ package com.swirlds.platform.stats;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 
 /**
  * A metrics object to track an average number, without history. This class uses an {@link AtomicAverage} so it is both
@@ -49,7 +50,7 @@ public class AverageStat {
      * @param weight
      * 		the weight used to calculate the average
      */
-    public AverageStat(
+    public AverageStat(final MetricsConfig metricsConfig,
             final Metrics metrics,
             final String category,
             final String name,
@@ -57,7 +58,7 @@ public class AverageStat {
             final String format,
             final double weight) {
         average = new AtomicAverage(weight);
-        metrics.getOrCreate(new StatEntry.Config<>(category, name, Double.class, average::get)
+        metrics.getOrCreate(new StatEntry.Config<>(metricsConfig, category, name, Double.class, average::get)
                 .withDescription(desc)
                 .withFormat(format)
                 .withReset(this::reset));

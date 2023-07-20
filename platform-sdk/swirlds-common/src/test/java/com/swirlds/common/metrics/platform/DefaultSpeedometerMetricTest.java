@@ -57,7 +57,7 @@ class DefaultSpeedometerMetricTest {
     @DisplayName("Constructor should store values")
     void testConstructor() {
         // when
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME)
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
@@ -84,7 +84,7 @@ class DefaultSpeedometerMetricTest {
     void testReset() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
         sendCycles(metric, time, 0, 1000, 1000);
         time.set(Duration.ofSeconds(1000));
@@ -109,7 +109,7 @@ class DefaultSpeedometerMetricTest {
     void testRegularRateOnePerSecond() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         for (int i = 0; i < 1000; i++) {
@@ -128,7 +128,7 @@ class DefaultSpeedometerMetricTest {
     void testRegularRateFivePerSecond() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -150,7 +150,7 @@ class DefaultSpeedometerMetricTest {
     void testRegularRateFivePerSecondWithUpdate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -170,7 +170,7 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForRegularRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -191,7 +191,7 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForRegularRateWithUpdates() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -215,7 +215,7 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForIncreasedRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -235,7 +235,7 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForTwiceIncreasedRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -258,7 +258,7 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForDecreasedRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -278,7 +278,7 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForTwiceDecreasedRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -299,7 +299,7 @@ class DefaultSpeedometerMetricTest {
     void testSnapshot() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -327,7 +327,7 @@ class DefaultSpeedometerMetricTest {
     @Test
     void testInvalidGets() {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config);
 
         // then
@@ -338,7 +338,7 @@ class DefaultSpeedometerMetricTest {
     @Test
     void testEquals() {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME);
         final SpeedometerMetric metric1 = new DefaultSpeedometerMetric(config);
         final SpeedometerMetric metric2 = new DefaultSpeedometerMetric(config);
         metric2.cycle();
@@ -347,15 +347,16 @@ class DefaultSpeedometerMetricTest {
         assertThat(metric1)
                 .isEqualTo(metric2)
                 .hasSameHashCodeAs(metric2)
-                .isNotEqualTo(new DefaultSpeedometerMetric(new SpeedometerMetric.Config("Other", NAME)))
-                .isNotEqualTo(new DefaultSpeedometerMetric(new SpeedometerMetric.Config(CATEGORY, "Other")))
+                .isNotEqualTo(new DefaultSpeedometerMetric(new SpeedometerMetric.Config(metricsConfig, "Other", NAME)))
+                .isNotEqualTo(
+                        new DefaultSpeedometerMetric(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "Other")))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
 
     @Test
     void testToString() {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME)
+        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(metricsConfig, CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)

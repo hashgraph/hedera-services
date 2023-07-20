@@ -692,24 +692,26 @@ class LegacyCsvWriterTest {
                 metrics.getOrCreate(
                         new DoubleGauge.Config(Metrics.PLATFORM_CATEGORY, "DoubleGauge").withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new FunctionGauge.Config<>(
-                                Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
+                        Metrics.PLATFORM_CATEGORY, "FunctionGauge", String.class, () -> "Hello FunctionGauge")
                         .withFormat("%s")),
                 metrics.getOrCreate(new IntegerAccumulator.Config(Metrics.PLATFORM_CATEGORY, "IntegerAccumulator")),
                 metrics.getOrCreate(new IntegerGauge.Config(Metrics.PLATFORM_CATEGORY, "IntegerGauge")),
                 metrics.getOrCreate(new IntegerPairAccumulator.Config<>(
-                                Metrics.PLATFORM_CATEGORY,
-                                "IntegerPairAccumulator",
-                                Double.class,
-                                IntegerPairAccumulator.AVERAGE)
+                        Metrics.PLATFORM_CATEGORY,
+                        "IntegerPairAccumulator",
+                        Double.class,
+                        IntegerPairAccumulator.AVERAGE)
                         .withFormat(FORMAT_3_1)),
                 metrics.getOrCreate(new LongAccumulator.Config(Metrics.PLATFORM_CATEGORY, "LongAccumulator")),
                 metrics.getOrCreate(new LongGauge.Config(Metrics.PLATFORM_CATEGORY, "LongGauge")),
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new SpeedometerMetric.Config(Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
-                        .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new StatEntry.Config(
-                                Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
+                metrics.getOrCreate(
+                        new SpeedometerMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
+                                .withFormat(FORMAT_3_1)),
+                metrics.getOrCreate(new StatEntry.Config(metricsConfig,
+                        Metrics.PLATFORM_CATEGORY, "StatEntry", String.class, () -> "Hello StatEntry")
                         .withFormat("%s")));
     }
 
@@ -732,14 +734,18 @@ class LegacyCsvWriterTest {
 
     private List<Metric> createListWithSecondaryValues() {
         return List.of(
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new SpeedometerMetric.Config(Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
+                metrics.getOrCreate(
+                        new SpeedometerMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY, "SpeedometerMetric")
+                                .withFormat(FORMAT_3_1)),
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.INFO_CATEGORY,
+                        "RunningAverageMetric Info")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.INFO_CATEGORY, "RunningAverageMetric Info")
-                        .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new SpeedometerMetric.Config(Metrics.INFO_CATEGORY, "SpeedometerMetric Info")
-                        .withFormat(FORMAT_3_1)));
+                metrics.getOrCreate(
+                        new SpeedometerMetric.Config(metricsConfig, Metrics.INFO_CATEGORY, "SpeedometerMetric Info")
+                                .withFormat(FORMAT_3_1)));
     }
 
     private List<Metric> createSimpleList() {
@@ -753,15 +759,20 @@ class LegacyCsvWriterTest {
 
     private List<Metric> createComplexList() {
         return List.of(
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric 1")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric 1")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric 2")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric 2")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric 3")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric 3")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric 4")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric 4")
                         .withFormat(FORMAT_3_1)),
-                metrics.getOrCreate(new RunningAverageMetric.Config(Metrics.PLATFORM_CATEGORY, "RunningAverageMetric 5")
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, Metrics.PLATFORM_CATEGORY,
+                        "RunningAverageMetric 5")
                         .withFormat(FORMAT_3_1)));
     }
 }

@@ -19,9 +19,11 @@ package com.swirlds.platform.gossip.chatter.protocol;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.common.sequence.Shiftable;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.heartbeat.HeartbeatMessage;
@@ -86,7 +88,7 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
      * @param eventClass           the class of the type of event used
      * @param prepareReceivedEvent the first handler to be called when an event is received, this should do any
      *                             preparation work that might be needed by other handlers (such as hashing)
-     * @param config               chatter config
+     * @param configuration        the configuration of the platform
      * @param pingConsumer         consumer of the reported ping time for a given peer. accepts the ID of the peer and
      *                             the number of nanoseconds it took for the peer to respond
      * @param metrics              reference to the metrics-system
@@ -95,20 +97,28 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
             @NonNull final Time time,
             @NonNull final Class<E> eventClass,
             @NonNull final MessageHandler<E> prepareReceivedEvent,
-            @NonNull final ChatterConfig config,
+            @NonNull final Configuration configuration,
             @NonNull final BiConsumer<NodeId, Long> pingConsumer,
             @NonNull final Metrics metrics) {
+        Objects.requireNonNull(configuration);
         Objects.requireNonNull(metrics);
+
+        final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
         this.time = Objects.requireNonNull(time);
         this.eventClass = Objects.requireNonNull(eventClass);
         this.prepareReceivedEvent = Objects.requireNonNull(prepareReceivedEvent);
-        this.config = Objects.requireNonNull(config);
+        this.config = Objects.requireNonNull(chatterConfig);
         this.pingConsumer = Objects.requireNonNull(pingConsumer);
 
-        this.selfEventOutput = new QueueOutputMain<>("selfEvent", config.selfEventQueueCapacity(), metrics);
-        this.otherEventOutput = new QueueOutputMain<>("otherEvent", config.otherEventQueueCapacity(), metrics);
-        this.hashOutput = new QueueOutputMain<>("descriptor", config.descriptorQueueCapacity(), metrics);
+        this.selfEventOutput = new QueueOutputMain<>("selfEvent", chatterConfig.selfEventQueueCapacity(), metricsConfig,
+                metrics);
+        this.otherEventOutput = new QueueOutputMain<>("otherEvent", chatterConfig.otherEventQueueCapacity(),
+                metricsConfig,
+                metrics);
+        this.hashOutput = new QueueOutputMain<>("descriptor", chatterConfig.descriptorQueueCapacity(), metricsConfig,
+                metrics);
         this.peerInstances = new HashMap<>();
 
         this.msgsPerSecRead = new CountPerSecond(
@@ -145,10 +155,10 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
         final MessageProvider hashPeerInstance = hashOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send hashes
-                );
+        );
         final MessageProvider selfEventPeerInstance = selfEventOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send self events
-                );
+        );
         final MessageProvider otherEventPeerInstance = otherEventOutput.createPeerInstance(
                 communicationState,
                 new VariableTimeDelay<>(

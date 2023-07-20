@@ -18,11 +18,14 @@ package com.swirlds.demo.migration;
 
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
@@ -115,8 +118,12 @@ public class MigrationTestingToolMain implements SwirldMain {
 
     private void initAppStats() {
         // Register Platform data structure statistics
-        FCQueueStatistics.register(platform.getContext().getMetrics());
-        MerkleMapMetrics.register(platform.getContext().getMetrics());
+        final Configuration configuration = platform.getContext().getConfiguration();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final Metrics metrics = platform.getContext().getMetrics();
+        
+        FCQueueStatistics.register(metricsConfig, metrics);
+        MerkleMapMetrics.register(metricsConfig, metrics);
     }
 
     private void generateEvents() {

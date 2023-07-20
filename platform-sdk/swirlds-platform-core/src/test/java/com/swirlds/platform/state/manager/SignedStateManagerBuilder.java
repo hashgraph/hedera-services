@@ -17,6 +17,7 @@
 package com.swirlds.platform.state.manager;
 
 import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
@@ -31,14 +32,17 @@ public class SignedStateManagerBuilder {
 
     private final StateConfig stateConfig;
     private final SignedStateMetrics metrics;
-    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = x -> {};
-    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {};
-    private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {};
+    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = x -> {
+    };
+    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {
+    };
+    private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {
+    };
 
-    public SignedStateManagerBuilder(final StateConfig stateConfig) {
+    public SignedStateManagerBuilder(final MetricsConfig metricsConfig, final StateConfig stateConfig) {
         this.stateConfig = stateConfig;
 
-        this.metrics = new SignedStateMetrics(new NoOpMetrics());
+        this.metrics = new SignedStateMetrics(metricsConfig, new NoOpMetrics());
     }
 
     public SignedStateManagerBuilder stateHasEnoughSignaturesConsumer(final StateHasEnoughSignaturesConsumer consumer) {

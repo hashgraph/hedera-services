@@ -55,7 +55,7 @@ class DefaultRunningAverageMetricTest {
     @DisplayName("Constructor should store values")
     void testConstructor() {
         // when
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME)
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
@@ -82,7 +82,7 @@ class DefaultRunningAverageMetricTest {
     void testReset() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
         recordValues(metric, time, 0, 1000, Math.E);
         time.set(Duration.ofSeconds(1000));
@@ -114,7 +114,7 @@ class DefaultRunningAverageMetricTest {
     void testRegularUpdates() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         for (int i = 0; i < 1000; i++) {
@@ -133,7 +133,7 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForRegularUpdates() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -153,7 +153,7 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForIncreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -173,7 +173,7 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForTwiceIncreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -198,7 +198,7 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForDecreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -218,7 +218,7 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForTwiceDecreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -243,7 +243,7 @@ class DefaultRunningAverageMetricTest {
     void testSnapshot() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final DefaultRunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -271,7 +271,7 @@ class DefaultRunningAverageMetricTest {
     @Test
     void testInvalidGets() {
         // given
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config);
 
         // then
@@ -282,7 +282,7 @@ class DefaultRunningAverageMetricTest {
     @Test
     void testEquals() {
         // given
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME);
         final RunningAverageMetric metric1 = new DefaultRunningAverageMetric(config);
         final RunningAverageMetric metric2 = new DefaultRunningAverageMetric(config);
         metric2.update(1000.0);
@@ -291,15 +291,17 @@ class DefaultRunningAverageMetricTest {
         assertThat(metric1)
                 .isEqualTo(metric2)
                 .hasSameHashCodeAs(metric2)
-                .isNotEqualTo(new DefaultRunningAverageMetric(new RunningAverageMetric.Config("Other", NAME)))
-                .isNotEqualTo(new DefaultRunningAverageMetric(new RunningAverageMetric.Config(CATEGORY, "Other")))
+                .isNotEqualTo(
+                        new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, "Other", NAME)))
+                .isNotEqualTo(new DefaultRunningAverageMetric(
+                        new RunningAverageMetric.Config(metricsConfig, CATEGORY, "Other")))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
 
     @Test
     void testToString() {
         // given
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME)
+        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)

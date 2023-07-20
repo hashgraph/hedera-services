@@ -34,6 +34,8 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.SpeedometerMetric.Config;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -42,6 +44,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.Browser;
@@ -97,9 +100,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     private static final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(1);
 
     private final StoppableThread transactionGenerator;
-
-    private static final SpeedometerMetric.Config TRAN_SUBMIT_TPS_SPEED_CONFIG =
-            new SpeedometerMetric.Config("Debug.info", "tranSubTPS").withDescription("Transaction submitted TPS");
 
     private SpeedometerMetric transactionSubmitSpeedometer;
 
@@ -185,7 +185,10 @@ public class StatsSigningTestingToolMain implements SwirldMain {
                 new X25519SigningAlgorithm());
 
         final Metrics metrics = platform.getContext().getMetrics();
-        transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
+        final Configuration configuration = platform.getContext().getConfiguration();
+        transactionSubmitSpeedometer = metrics.getOrCreate(
+                new Config(configuration.getConfigData(MetricsConfig.class), "Debug.info",
+                        "tranSubTPS").withDescription("Transaction submitted TPS"));
     }
 
     @Override

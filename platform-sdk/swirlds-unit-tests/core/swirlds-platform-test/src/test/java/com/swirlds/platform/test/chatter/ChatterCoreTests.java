@@ -27,7 +27,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.chatter.protocol.ChatterCore;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.GossipEventBuilder;
@@ -51,14 +50,17 @@ public class ChatterCoreTests {
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("chatter.futureGenerationLimit", "100")
                 .getOrCreateConfig();
-        final ChatterConfig chatterConfig = configuration.getConfigData(ChatterConfig.class);
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
-                Time.getCurrent(), GossipEvent.class, (m) -> {}, chatterConfig, (id, l) -> {}, new NoOpMetrics());
+                Time.getCurrent(), GossipEvent.class, (m) -> {
+        }, configuration, (id, l) -> {
+        }, new NoOpMetrics());
 
-        chatterCore.newPeerInstance(new NodeId(0L), e -> {});
-        chatterCore.newPeerInstance(new NodeId(1L), e -> {});
+        chatterCore.newPeerInstance(new NodeId(0L), e -> {
+        });
+        chatterCore.newPeerInstance(new NodeId(1L), e -> {
+        });
 
         final GossipEventBuilder builder = GossipEventBuilder.builder().setRandom(random);
 

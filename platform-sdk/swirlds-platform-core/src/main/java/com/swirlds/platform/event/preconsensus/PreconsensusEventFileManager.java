@@ -23,11 +23,13 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.utility.RecycleBin;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.RandomAccessDeque;
 import com.swirlds.common.utility.UnmodifiableIterator;
 import com.swirlds.common.utility.ValueReference;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -118,12 +120,14 @@ public class PreconsensusEventFileManager {
         Objects.requireNonNull(time, "time");
         Objects.requireNonNull(selfId, "selfId");
 
+        final Configuration configuration = platformContext.getConfiguration();
         final PreconsensusEventStreamConfig preconsensusEventStreamConfig =
-                platformContext.getConfiguration().getConfigData(PreconsensusEventStreamConfig.class);
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+                configuration.getConfigData(PreconsensusEventStreamConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
 
         this.time = time;
-        this.metrics = new PreconsensusEventMetrics(platformContext.getMetrics());
+        this.metrics = new PreconsensusEventMetrics(configuration.getConfigData(MetricsConfig.class),
+                platformContext.getMetrics());
 
         minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
 

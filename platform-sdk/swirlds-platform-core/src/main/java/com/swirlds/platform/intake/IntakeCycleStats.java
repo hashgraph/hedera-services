@@ -18,6 +18,7 @@ package com.swirlds.platform.intake;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.stats.cycle.AccumulatedCycleMetrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
 import com.swirlds.platform.stats.cycle.CycleTracker;
@@ -49,9 +50,9 @@ public class IntakeCycleStats {
     private final CycleTracker unlinkedEventTiming;
     private final CycleTracker eventIntakeTiming;
 
-    public IntakeCycleStats(final Time time, final Metrics metrics) {
-        unlinkedEventTiming = new CycleTracker(time, new AccumulatedCycleMetrics(metrics, unlinked));
-        eventIntakeTiming = new CycleTracker(time, new AccumulatedCycleMetrics(metrics, linked));
+    public IntakeCycleStats(final Time time, final MetricsConfig metricsConfig, final Metrics metrics) {
+        unlinkedEventTiming = new CycleTracker(time, new AccumulatedCycleMetrics(metricsConfig, metrics, unlinked));
+        eventIntakeTiming = new CycleTracker(time, new AccumulatedCycleMetrics(metricsConfig, metrics, linked));
     }
 
     public void startedIntake() {

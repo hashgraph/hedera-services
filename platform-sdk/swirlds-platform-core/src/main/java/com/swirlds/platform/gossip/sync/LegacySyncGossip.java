@@ -23,6 +23,7 @@ import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
@@ -35,6 +36,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.Crypto;
 import com.swirlds.platform.FreezeManager;
@@ -163,7 +165,9 @@ public class LegacySyncGossip extends AbstractGossip {
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
-        threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
+
+        final Configuration configuration = platformContext.getConfiguration();
+        threadConfig = configuration.getConfigData(ThreadConfig.class);
 
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
@@ -178,7 +182,8 @@ public class LegacySyncGossip extends AbstractGossip {
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {});
+                () -> {
+                });
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -189,8 +194,9 @@ public class LegacySyncGossip extends AbstractGossip {
 
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 
-        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
-        simultaneousSyncThrottle = new SimultaneousSyncThrottle(
+        final SyncConfig syncConfig = configuration.getConfigData(SyncConfig.class);
+        simultaneousSyncThrottle = new SimultaneousSyncThrottle(configuration.getConfigData(
+                MetricsConfig.class),
                 platformContext.getMetrics(), syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
 
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
@@ -206,7 +212,7 @@ public class LegacySyncGossip extends AbstractGossip {
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                platformContext.getConfiguration(),
+                                configuration,
                                 reconnectThrottle,
                                 fallenBehindManager,
                                 reconnectMetrics)),
@@ -233,7 +239,7 @@ public class LegacySyncGossip extends AbstractGossip {
                     .setThreadName("heartbeat")
                     .setOtherNodeId(otherId)
                     .setWork(new HeartbeatSender(
-                            otherId, sharedConnectionLocks, networkMetrics, platformContext.getConfiguration()))
+                            otherId, sharedConnectionLocks, networkMetrics, configuration))
                     .build());
         }
 
@@ -313,7 +319,8 @@ public class LegacySyncGossip extends AbstractGossip {
                 selfId,
                 topology.getConnectionGraph(),
                 statusActionSubmitter,
-                () -> {},
+                () -> {
+                },
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 

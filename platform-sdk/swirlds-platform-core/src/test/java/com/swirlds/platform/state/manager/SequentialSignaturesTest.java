@@ -78,7 +78,7 @@ public class SequentialSignaturesTest extends AbstractSignedStateManagerTest {
     @DisplayName("Sequential Signatures Test")
     void sequentialSignaturesTest() throws InterruptedException {
         this.roundsToKeepAfterSigning = 4;
-        final SignedStateManager manager = new SignedStateManagerBuilder(buildStateConfig())
+        final SignedStateManager manager = new SignedStateManagerBuilder(metricsConfig, buildStateConfig())
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();

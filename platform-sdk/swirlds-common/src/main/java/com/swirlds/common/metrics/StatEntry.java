@@ -23,8 +23,10 @@ import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -118,6 +120,7 @@ public interface StatEntry extends Metric {
         private final Consumer<Double> reset;
         private final Supplier<T> statsStringSupplier;
         private final Supplier<T> resetStatsStringSupplier;
+        private final double halfLife;
 
         /**
          * stores all the parameters, which can be accessed directly
@@ -134,15 +137,21 @@ public interface StatEntry extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(
-                final String category, final String name, final Class<T> type, final Supplier<T> statsStringSupplier) {
+                final MetricsConfig metricsConfig,
+                final String category,
+                final String name,
+                final Class<T> type,
+                final Supplier<T> statsStringSupplier) {
 
             super(category, name, FloatFormats.FORMAT_11_3);
-            this.type = throwArgNull(type, "type");
+            this.type = Objects.requireNonNull(type, "type must not be null");
             this.buffered = null;
             this.init = null;
             this.reset = null;
-            this.statsStringSupplier = throwArgNull(statsStringSupplier, "statsStringSupplier");
+            this.statsStringSupplier =
+                    Objects.requireNonNull(statsStringSupplier, "statsStringSupplier must not be null");
             this.resetStatsStringSupplier = statsStringSupplier;
+            this.halfLife = metricsConfig.halfLife();
         }
 
         @SuppressWarnings("java:S107")
@@ -157,14 +166,18 @@ public interface StatEntry extends Metric {
                 final Function<Double, StatsBuffered> init,
                 final Consumer<Double> reset,
                 final Supplier<T> statsStringSupplier,
-                final Supplier<T> resetStatsStringSupplier) {
+                final Supplier<T> resetStatsStringSupplier,
+                final double halfLife) {
             super(category, name, description, unit, format);
-            this.type = throwArgNull(type, "type");
+            this.type = Objects.requireNonNull(type, "type must not be null");
             this.buffered = buffered;
             this.init = init;
             this.reset = reset;
-            this.statsStringSupplier = throwArgNull(statsStringSupplier, "statsStringSupplier");
-            this.resetStatsStringSupplier = throwArgNull(resetStatsStringSupplier, "resetStatsStringSupplier");
+            this.statsStringSupplier =
+                    Objects.requireNonNull(statsStringSupplier, "statsStringSupplier must not be null");
+            this.resetStatsStringSupplier =
+                    Objects.requireNonNull(resetStatsStringSupplier, "resetStatsStringSupplier must not be null");
+            this.halfLife = halfLife;
         }
 
         /**
@@ -183,7 +196,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -202,7 +216,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -226,7 +241,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -248,6 +264,15 @@ public interface StatEntry extends Metric {
         }
 
         /**
+         * Getter of {@code halfLife}
+         *
+         * @return {@code halfLife}
+         */
+        public double getHalfLife() {
+            return halfLife;
+        }
+
+        /**
          * Fluent-style setter of {@code buffered}.
          *
          * @param buffered
@@ -266,7 +291,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -297,7 +323,8 @@ public interface StatEntry extends Metric {
                     init,
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -328,7 +355,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     reset,
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -368,7 +396,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    resetStatsStringSupplier);
+                    resetStatsStringSupplier,
+                    getHalfLife());
         }
 
         /**

@@ -68,7 +68,7 @@ class DefaultStatEntryTest {
         final Supplier<Object> getAndReset = mock(Supplier.class);
 
         // when
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
@@ -105,7 +105,7 @@ class DefaultStatEntryTest {
         final StatsBuffered buffered = mock(StatsBuffered.class);
         final Consumer<Double> reset = mock(Consumer.class);
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter)
                 .withBuffered(buffered)
                 .withReset(reset);
         final StatEntry statEntry = new DefaultStatEntry(config);
@@ -125,7 +125,7 @@ class DefaultStatEntryTest {
         final StatsBuffered buffered = mock(StatsBuffered.class);
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config =
-                new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
+                new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -140,7 +140,7 @@ class DefaultStatEntryTest {
     void testResetWithoutResetLambdaAndBuffer() {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter);
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -154,7 +154,7 @@ class DefaultStatEntryTest {
         final StatsBuffered buffered = mock(StatsBuffered.class);
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config =
-                new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
+                new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
         final DefaultStatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -185,7 +185,7 @@ class DefaultStatEntryTest {
     void testSnapshotWithoutBuffered() {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter);
         final DefaultStatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -204,7 +204,7 @@ class DefaultStatEntryTest {
         final StatsBuffered buffered = mock(StatsBuffered.class);
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config =
-                new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
+                new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // then
@@ -219,7 +219,7 @@ class DefaultStatEntryTest {
     void testInvalidGetsWithoutBuffered() {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter);
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter);
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // then
@@ -246,18 +246,20 @@ class DefaultStatEntryTest {
     void testEquals() {
         // given
         final Supplier<Object> getter1 = mock(Supplier.class);
-        final StatEntry.Config config1 = new StatEntry.Config(CATEGORY, NAME, Object.class, getter1);
+        final StatEntry.Config config1 = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter1);
         final StatEntry statEntry1 = new DefaultStatEntry(config1);
         final Supplier<Object> getter2 = mock(Supplier.class);
-        final StatEntry.Config config2 = new StatEntry.Config(CATEGORY, NAME, Object.class, getter2);
+        final StatEntry.Config config2 = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter2);
         final StatEntry statEntry2 = new DefaultStatEntry(config2);
 
         // then
         assertThat(statEntry1)
                 .isEqualTo(statEntry2)
                 .hasSameHashCodeAs(statEntry2)
-                .isNotEqualTo(new DefaultStatEntry(new StatEntry.Config("Other", NAME, Object.class, getter1)))
-                .isNotEqualTo(new DefaultStatEntry(new StatEntry.Config(CATEGORY, "Other", Object.class, getter1)))
+                .isNotEqualTo(
+                        new DefaultStatEntry(new StatEntry.Config(metricsConfig, "Other", NAME, Object.class, getter1)))
+                .isNotEqualTo(new DefaultStatEntry(
+                        new StatEntry.Config(metricsConfig, CATEGORY, "Other", Object.class, getter1)))
                 .isNotEqualTo(new DefaultIntegerGauge(new IntegerGauge.Config(CATEGORY, NAME)));
     }
 
@@ -266,7 +268,7 @@ class DefaultStatEntryTest {
     void testToString() {
         // given
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
+        final StatEntry.Config config = new StatEntry.Config(metricsConfig, CATEGORY, NAME, Object.class, getter)
                 .withDescription(DESCRIPTION)
                 .withUnit(UNIT)
                 .withFormat(FORMAT);

@@ -20,6 +20,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -32,18 +33,8 @@ import java.util.Map;
  */
 public class TipsetMetrics {
 
-    private static final RunningAverageMetric.Config TIPSET_ADVANCEMENT_CONFIG = new RunningAverageMetric.Config(
-                    "platform", "tipsetAdvancement")
-            .withDescription("The score, based on tipset advancement weight, of each new event created by this "
-                    + "node. A score of 0.0 means the an event has zero advancement weight, while a score "
-                    + "of 1.0 means that the event had the maximum possible advancement weight.");
     private final RunningAverageMetric tipsetAdvancementMetric;
 
-    private static final RunningAverageMetric.Config BULLY_SCORE_CONFIG = new RunningAverageMetric.Config(
-                    "platform", "bullyScore")
-            .withDescription("The score, based on tipset advancements, of how much of a 'bully' "
-                    + "this node is being to other nodes. Bullying is defined as refusing to use a "
-                    + "node's events as other parents.");
     private final RunningAverageMetric bullyScoreMetric;
 
     private final Map<NodeId, SpeedometerMetric> tipsetParentMetrics = new HashMap<>();
@@ -57,21 +48,30 @@ public class TipsetMetrics {
     public TipsetMetrics(@NonNull final PlatformContext platformContext, @NonNull final AddressBook addressBook) {
 
         final Metrics metrics = platformContext.getMetrics();
-        tipsetAdvancementMetric = metrics.getOrCreate(TIPSET_ADVANCEMENT_CONFIG);
-        bullyScoreMetric = metrics.getOrCreate(BULLY_SCORE_CONFIG);
+        final MetricsConfig metricsConfig = platformContext.getConfiguration().getConfigData(MetricsConfig.class);
+        tipsetAdvancementMetric = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                "platform", "tipsetAdvancement")
+                .withDescription("The score, based on tipset advancement weight, of each new event created by this "
+                        + "node. A score of 0.0 means the an event has zero advancement weight, while a score "
+                        + "of 1.0 means that the event had the maximum possible advancement weight."));
+        bullyScoreMetric = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                "platform", "bullyScore")
+                .withDescription("The score, based on tipset advancements, of how much of a 'bully' "
+                        + "this node is being to other nodes. Bullying is defined as refusing to use a "
+                        + "node's events as other parents."));
 
         for (final Address address : addressBook) {
             final NodeId nodeId = address.getNodeId();
 
-            final SpeedometerMetric.Config parentConfig = new SpeedometerMetric.Config(
-                            "platform", "tipsetParent" + nodeId.id())
+            final SpeedometerMetric.Config parentConfig = new SpeedometerMetric.Config(metricsConfig,
+                    "platform", "tipsetParent" + nodeId.id())
                     .withDescription("Cycled when an event from that node is used as a "
                             + "parent because it optimized the tipset advancement weight.");
             final SpeedometerMetric parentMetric = metrics.getOrCreate(parentConfig);
             tipsetParentMetrics.put(nodeId, parentMetric);
 
-            final SpeedometerMetric.Config pityParentConfig = new SpeedometerMetric.Config(
-                            "platform", "pityParent" + nodeId.id())
+            final SpeedometerMetric.Config pityParentConfig = new SpeedometerMetric.Config(metricsConfig,
+                    "platform", "pityParent" + nodeId.id())
                     .withDescription("Cycled when an event from that node is used as a "
                             + "parent without consideration of tipset advancement weight optimization "
                             + "(i.e. taking 'pity' on a node that isn't getting its events chosen as parents).");

@@ -21,7 +21,8 @@ plugins {
 }
 
 dependencies {
-  // JMH Dependencies
+  implementation(project(mapOf("path" to ":swirlds-unit-tests:common:swirlds-test-framework")))
+    // JMH Dependencies
   jmhImplementation(project(":swirlds-platform-core"))
   jmhImplementation(project(":swirlds-config-api"))
   jmhImplementation(project(":swirlds-config-impl"))

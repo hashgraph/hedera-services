@@ -360,6 +360,7 @@ public class JasperDbBuilder<K extends VirtualKey, V extends VirtualValue> imple
             throws IOException {
 
         return new VirtualDataSourceJasperDB<>(
+                ConfigurationHolder.getInstance().get(),
                 virtualLeafRecordSerializer,
                 virtualHashRecordSerializer,
                 keySerializer,

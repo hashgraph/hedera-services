@@ -19,6 +19,7 @@ package com.swirlds.platform.uptime;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
@@ -36,6 +37,7 @@ class UptimeMetrics {
 
     private static final String CATEGORY = "platform";
 
+    private final MetricsConfig metricsConfig;
     private final Metrics metrics;
 
     /**
@@ -48,17 +50,8 @@ class UptimeMetrics {
      */
     private final Map<NodeId, RunningAverageMetric> roundsSinceLastJudge = new HashMap<>();
 
-    private static final RunningAverageMetric.Config HEALTHY_NETWORK_FRACTION_CONFIG = new RunningAverageMetric.Config(
-                    CATEGORY, "healthyNetworkFraction")
-            .withUnit("fraction")
-            .withDescription(
-                    "The fraction (out of 1.0) of the network that is alive and healthy, weighted by consensus weight.");
     private final RunningAverageMetric healthyNetworkFraction;
 
-    private static final RunningAverageMetric.Config UPTIME_COMPUTATION_TIME = new RunningAverageMetric.Config(
-                    CATEGORY, "uptimeComputationTime")
-            .withUnit("microseconds")
-            .withDescription("The time, in microseconds, required to compute uptime information each round.");
     private final RunningAverageMetric uptimeComputationTime;
 
     private static final String ROUNDS_SINCE_LAST_CONSENSUS_EVENT = "roundsSinceLastConsensusEvent-";
@@ -72,23 +65,32 @@ class UptimeMetrics {
      * @param isDegraded  a supplier that returns true if this node is degraded, false otherwise
      */
     public UptimeMetrics(
+            @NonNull final MetricsConfig metricsConfig,
             @NonNull final Metrics metrics,
             @NonNull final AddressBook addressBook,
             @NonNull final Supplier<Boolean> isDegraded) {
 
+        this.metricsConfig = Objects.requireNonNull(metricsConfig);
         this.metrics = Objects.requireNonNull(metrics);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(isDegraded);
 
-        healthyNetworkFraction = metrics.getOrCreate(HEALTHY_NETWORK_FRACTION_CONFIG);
+        healthyNetworkFraction = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                CATEGORY, "healthyNetworkFraction")
+                .withUnit("fraction")
+                .withDescription(
+                        "The fraction (out of 1.0) of the network that is alive and healthy, weighted by consensus weight."));
 
         final FunctionGauge.Config<Boolean> degradedConfig = new FunctionGauge.Config<>(
-                        CATEGORY, "degraded", Boolean.class, isDegraded)
+                CATEGORY, "degraded", Boolean.class, isDegraded)
                 .withUnit("boolean")
                 .withDescription("False if this node is healthy, true if this node is degraded.");
         metrics.getOrCreate(degradedConfig);
 
-        uptimeComputationTime = metrics.getOrCreate(UPTIME_COMPUTATION_TIME);
+        uptimeComputationTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
+                CATEGORY, "uptimeComputationTime")
+                .withUnit("microseconds")
+                .withDescription("The time, in microseconds, required to compute uptime information each round."));
 
         for (final Address address : addressBook) {
             addMetricsForNode(address.getNodeId());
@@ -104,7 +106,7 @@ class UptimeMetrics {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         final RunningAverageMetric.Config roundsSinceLastConensusEventConfig = new RunningAverageMetric.Config(
-                        CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId)
+                metricsConfig, CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId)
                 .withUnit("rounds")
                 .withDescription(
                         "The number of rounds since the last consensus event created by this node was observed");
@@ -128,7 +130,8 @@ class UptimeMetrics {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         roundsSinceLastConsensusEvent.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId));
+        metrics.remove(
+                new RunningAverageMetric.Config(metricsConfig, CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
         // Temporarily disabled until we properly detect judges in a round
         //        roundsSinceLastJudge.remove(nodeId);

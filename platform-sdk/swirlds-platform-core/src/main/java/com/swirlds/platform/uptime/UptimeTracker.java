@@ -22,6 +22,7 @@ import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.address.Address;
@@ -30,6 +31,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.utility.CompareTo;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -78,16 +80,18 @@ public class UptimeTracker {
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final NodeId selfId,
             @NonNull final Time time) {
-
+        Objects.requireNonNull(platformContext, "platformContext must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
-        this.degradationThreshold = platformContext
-                .getConfiguration()
+        final Configuration configuration = platformContext.getConfiguration();
+
+        this.degradationThreshold = configuration
                 .getConfigData(UptimeConfig.class)
                 .degradationThreshold();
-        this.uptimeMetrics = new UptimeMetrics(platformContext.getMetrics(), addressBook, this::isSelfDegraded);
+        this.uptimeMetrics = new UptimeMetrics(configuration.getConfigData(MetricsConfig.class),
+                platformContext.getMetrics(), addressBook, this::isSelfDegraded);
     }
 
     /**

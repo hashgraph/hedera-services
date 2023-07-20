@@ -22,7 +22,7 @@ import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.stats.AverageAndMax;
@@ -32,6 +32,7 @@ import com.swirlds.platform.stats.cycle.CycleDefinition;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -50,7 +51,7 @@ public class ConsensusHandlingMetrics {
     private final LongGauge consensusTime;
 
     private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
-                    INTERNAL_CATEGORY, "consensusTimeDeviation")
+            INTERNAL_CATEGORY, "consensusTimeDeviation")
             .withDescription("The difference between the consensus time of "
                     + "the round currently being handled and this node's wall clock time. "
                     + "Positive values mean that this node's clock is behind the consensus time, "
@@ -69,11 +70,11 @@ public class ConsensusHandlingMetrics {
      * @throws IllegalArgumentException
      * 		if {@code metrics} is {@code null}
      */
-    public ConsensusHandlingMetrics(final Metrics metrics, final Time time) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+    public ConsensusHandlingMetrics(final MetricsConfig metricsConfig, final Metrics metrics, final Time time) {
+        Objects.requireNonNull(metrics, "metrics");
         this.time = time;
 
-        consensusCycleTiming = new CycleTimingStat(
+        consensusCycleTiming = new CycleTimingStat(metricsConfig,
                 metrics,
                 ChronoUnit.MILLIS,
                 new CycleDefinition(
@@ -95,7 +96,7 @@ public class ConsensusHandlingMetrics {
                                 Pair.of(
                                         "forSigCleanMillis",
                                         "average time spent expiring signed state storage events"))));
-        newSignedStateCycleTiming = new CycleTimingStat(
+        newSignedStateCycleTiming = new CycleTimingStat(metricsConfig,
                 metrics,
                 ChronoUnit.MICROS,
                 new CycleDefinition(
@@ -109,7 +110,7 @@ public class ConsensusHandlingMetrics {
                                 Pair.of(
                                         "queueAdmitMicros",
                                         "average time spent admitting the signed state to the signing queue"))));
-        avgEventsPerRound = new AverageAndMax(
+        avgEventsPerRound = new AverageAndMax(metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 "events/round",

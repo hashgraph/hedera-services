@@ -345,7 +345,7 @@ public class Browser {
                                     address.getPortInternal(),
                                     address.getPortExternal(), // internal port
                                     PortForwarder.Protocol.TCP // transport protocol
-                                    );
+                            );
                             portsToBeMapped.add(pm);
                         }
                     }
@@ -940,7 +940,8 @@ public class Browser {
         // Setup metrics system
         final DefaultMetricsProvider metricsProvider = new DefaultMetricsProvider(configuration);
         final Metrics globalMetrics = metricsProvider.createGlobalMetrics();
-        CryptoMetrics.registerMetrics(globalMetrics);
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        CryptoMetrics.registerMetrics(metricsConfig, globalMetrics);
 
         // Create all instances for all nodes that should run locally
         final Collection<SwirldsPlatform> platforms =

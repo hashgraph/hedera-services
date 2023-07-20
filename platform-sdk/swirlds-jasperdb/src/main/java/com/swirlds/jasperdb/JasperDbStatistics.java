@@ -22,7 +22,8 @@ import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import java.util.Objects;
 
 /**
  * Encapsulates statistics for an instance of a {@link VirtualDataSourceJasperDB}.
@@ -83,14 +84,14 @@ public class JasperDbStatistics {
      * @throws IllegalArgumentException if {@code label} is {@code null}
      */
     public JasperDbStatistics(final String label, final boolean isLongKeyMode) {
-        this.label = CommonUtils.throwArgNull(label, "label");
+        this.label = Objects.requireNonNull(label, "label");
         this.isLongKeyMode = isLongKeyMode;
     }
 
     private static SpeedometerMetric buildSpeedometerMetric(
-            final Metrics metrics, final String name, final String description) {
+            final MetricsConfig metricsConfig, final Metrics metrics, final String name, final String description) {
 
-        return metrics.getOrCreate(new SpeedometerMetric.Config(STAT_CATEGORY, name)
+        return metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, STAT_CATEGORY, name)
                 .withDescription(description)
                 .withFormat(FORMAT_9_6)
                 .withHalfLife(SPEEDOMETER_HALF_LIFE_IN_SECONDS));
@@ -109,18 +110,30 @@ public class JasperDbStatistics {
      * 		reference to the metrics system
      * @throws IllegalArgumentException if {@code metrics} is {@code null}
      */
-    public void registerMetrics(final Metrics metrics) {
-        CommonUtils.throwArgNull(metrics, "metrics");
+    public void registerMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
+        Objects.requireNonNull(metrics, "metrics");
         internalNodeWritesPerSecond = buildSpeedometerMetric(
-                metrics, "internalNodeWrites/s_" + label, "number of internal node writes per second for " + label);
+                metricsConfig,
+                metrics,
+                "internalNodeWrites/s_" + label,
+                "number of internal node writes per second for " + label);
         internalNodeReadsPerSecond = buildSpeedometerMetric(
-                metrics, "internalNodeReads/s_" + label, "number of internal node reads per second for " + label);
+                metricsConfig,
+                metrics,
+                "internalNodeReads/s_" + label,
+                "number of internal node reads per second for " + label);
         leafWritesPerSecond = buildSpeedometerMetric(
-                metrics, "leafWrites/s_" + label, "number of leaf writes per second for " + label);
+                metricsConfig, metrics, "leafWrites/s_" + label, "number of leaf writes per second for " + label);
         leafByKeyReadsPerSecond = buildSpeedometerMetric(
-                metrics, "leafByKeyReads/s_" + label, "number of leaf by key reads per second for " + label);
+                metricsConfig,
+                metrics,
+                "leafByKeyReads/s_" + label,
+                "number of leaf by key reads per second for " + label);
         leafByPathReadsPerSecond = buildSpeedometerMetric(
-                metrics, "leafByPathReads/s_" + label, "number of leaf by path reads per second for " + label);
+                metricsConfig,
+                metrics,
+                "leafByPathReads/s_" + label,
+                "number of leaf by path reads per second for " + label);
         pathToHashStoreFileCount =
                 metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "internalHashFileCount_" + label)
                         .withDescription(NUMBER_OF_FILES_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX));

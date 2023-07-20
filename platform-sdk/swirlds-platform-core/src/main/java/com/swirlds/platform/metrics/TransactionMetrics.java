@@ -20,6 +20,7 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_1_3;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.platform.SwirldTransactionSubmitter;
@@ -40,8 +41,8 @@ public class TransactionMetrics {
      * @throws IllegalArgumentException
      * 		if {@code metrics} is {@code null}
      */
-    public TransactionMetrics(final Metrics metrics) {
-        avgTransSubmitMicros = new AverageStat(
+    public TransactionMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
+        avgTransSubmitMicros = new AverageStat(metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 PlatformStatNames.TRANS_SUBMIT_MICROS,

@@ -56,7 +56,7 @@ class JasperDbStatisticsTest {
         metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
         statistics = new JasperDbStatistics(LABEL, false);
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(metricsConfig, metrics);
     }
 
     @Test
@@ -96,7 +96,7 @@ class JasperDbStatisticsTest {
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> new JasperDbStatistics(null, false));
+        assertThrows(NullPointerException.class, () -> new JasperDbStatistics(null, false));
     }
 
     @Test
@@ -105,7 +105,7 @@ class JasperDbStatisticsTest {
         final JasperDbStatistics statistics = new JasperDbStatistics(LABEL, false);
 
         // then
-        assertThrows(IllegalArgumentException.class, () -> statistics.registerMetrics(null));
+        assertThrows(NullPointerException.class, () -> statistics.registerMetrics(null, null));
     }
 
     @Test
@@ -200,7 +200,7 @@ class JasperDbStatisticsTest {
     void testSetLeafKeyToPathStoreFileCount() {
         // given
         statistics = new JasperDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(metricsConfig, metrics);
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathFileCount_" + LABEL);
 
         // when
@@ -214,7 +214,7 @@ class JasperDbStatisticsTest {
     void testSetLeafKeyToPathStoreTotalFileSizeInMB() {
         // given
         statistics = new JasperDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(metricsConfig, metrics);
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathFileSizeMb_" + LABEL);
 
         // when
@@ -292,7 +292,7 @@ class JasperDbStatisticsTest {
         final Metrics metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
         final JasperDbStatistics statistics = new JasperDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(metricsConfig, metrics);
 
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathSmallMergeTime_" + LABEL);
 
@@ -307,7 +307,7 @@ class JasperDbStatisticsTest {
     void testSetLeafKeyToPathStoreMediumMergeTime() {
         // given
         statistics = new JasperDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(metricsConfig, metrics);
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathMediumMergeTime_" + LABEL);
 
         // when
@@ -321,7 +321,7 @@ class JasperDbStatisticsTest {
     void testSetLeafKeyToPathStoreLargeMergeTime() {
         // given
         statistics = new JasperDbStatistics(LABEL, true);
-        statistics.registerMetrics(metrics);
+        statistics.registerMetrics(metricsConfig, metrics);
         final Metric metric = metrics.getMetric(STAT_CATEGORY, "leafKeyToPathLargeMergeTime_" + LABEL);
 
         // when
