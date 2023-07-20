@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,20 +35,20 @@ public class EventExpansion {
     private static final Logger log = LogManager.getLogger(EventExpansion.class);
 
     private final Cryptography engine;
-    private final SigReqsManager sigReqsManager;
     private final ExpandHandleSpan expandHandleSpan;
     private final PrefetchProcessor prefetchProcessor;
+    private final Provider<SigReqsManager> sigReqsManagerProvider;
 
     @Inject
     public EventExpansion(
             final Cryptography engine,
-            final SigReqsManager sigReqsManager,
             final ExpandHandleSpan expandHandleSpan,
-            final PrefetchProcessor prefetchProcessor) {
+            final PrefetchProcessor prefetchProcessor,
+            final Provider<SigReqsManager> sigReqsManagerProvider) {
         this.engine = engine;
-        this.sigReqsManager = sigReqsManager;
         this.expandHandleSpan = expandHandleSpan;
         this.prefetchProcessor = prefetchProcessor;
+        this.sigReqsManagerProvider = sigReqsManagerProvider;
     }
 
     public void expandAllSigs(final Event event, final StateChildrenProvider provider) {
@@ -62,7 +63,7 @@ public class EventExpansion {
             // example, pre-fetching of contract bytecode; should start before
             // synchronous signature expansion
             prefetchProcessor.submit(accessor);
-            sigReqsManager.expandSigs(provider, accessor);
+            sigReqsManagerProvider.get().expandSigs(provider, accessor);
             engine.verifyAsync(accessor.getCryptoSigs());
         } catch (final InvalidProtocolBufferException e) {
             log.warn("Event contained a non-GRPC transaction", e);
