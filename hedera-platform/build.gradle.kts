@@ -48,6 +48,7 @@ dependencies.constraints {
         api(gav("com.github.docker.java.api", "3.2.13"))
         api(gav("com.github.spotbugs.annotations", "4.7.3"))
         api(gav("com.google.common", "31.1-jre"))
+        api(gav("com.google.jimfs", "1.2"))
         api(gav("com.google.protobuf", protobufVersion))
         api(gav("com.google.protobuf.util", protobufVersion))
         api(gav("com.hedera.hashgraph.protobuf.java.api", "0.40.0-blocks-state-SNAPSHOT")) // TODO removed through other PR

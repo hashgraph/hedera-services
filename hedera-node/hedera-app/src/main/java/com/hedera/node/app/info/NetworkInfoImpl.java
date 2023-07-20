@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.NodeInfo;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -28,20 +29,23 @@ import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.NoSuchElementException;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class NetworkInfoImpl implements NetworkInfo {
+    private static final Logger logger = LogManager.getLogger(NetworkInfoImpl.class);
     private final Bytes ledgerId;
-    private final NodeId selfId;
+    private final SelfNodeInfo selfNode;
     private final Platform platform;
 
     @Inject
     public NetworkInfoImpl(
-            @NonNull final NodeId selfNodeId,
+            @NonNull final SelfNodeInfo selfNode,
             @NonNull final Platform platform,
             @NonNull final ConfigProvider configProvider) {
         // Load the ledger ID from configuration
@@ -52,11 +56,8 @@ public class NetworkInfoImpl implements NetworkInfo {
         // Save the platform for looking up the address book later
         this.platform = requireNonNull(platform);
 
-        // The node ID of **this** node within the address book
-        this.selfId = requireNonNull(selfNodeId);
-        if (platform.getAddressBook().getAddress(selfNodeId) == null) {
-            throw new IllegalArgumentException("Node ID " + this.selfId + " is not in the address book");
-        }
+        // The node representing **this** node within the address book
+        this.selfNode = requireNonNull(selfNode);
     }
 
     @NonNull
@@ -67,10 +68,8 @@ public class NetworkInfoImpl implements NetworkInfo {
 
     @NonNull
     @Override
-    public NodeInfo selfNodeInfo() {
-        final var self = nodeInfo(selfId);
-        if (self == null) throw new IllegalStateException("Self Node ID " + selfId + " is not in the address book!!");
-        return self;
+    public SelfNodeInfo selfNodeInfo() {
+        return selfNode;
     }
 
     @NonNull
@@ -79,7 +78,7 @@ public class NetworkInfoImpl implements NetworkInfo {
         final var platformAddressBook = platform.getAddressBook();
         return StreamSupport.stream(platformAddressBook.spliterator(), false)
                 .map(NodeInfoImpl::fromAddress)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Nullable
@@ -90,10 +89,23 @@ public class NetworkInfoImpl implements NetworkInfo {
 
     @Nullable
     private NodeInfo nodeInfo(@NonNull final NodeId nodeId) {
+        if (nodeId.id() == selfNode.nodeId()) {
+            return selfNode;
+        }
+
         final var platformAddressBook = platform.getAddressBook();
         if (platformAddressBook == null) return null;
 
-        final var address = platformAddressBook.getAddress(nodeId);
-        return address == null ? null : NodeInfoImpl.fromAddress(address);
+        try {
+            final var address = platformAddressBook.getAddress(nodeId);
+            return NodeInfoImpl.fromAddress(address);
+        } catch (NoSuchElementException e) {
+            // The node ID is not in the address book
+            logger.warn("Unable to find node with id {} in the platform address book", nodeId, e);
+            return null;
+        } catch (IllegalArgumentException e) {
+            logger.warn("Unable to parse memo of node with id {} in the platform address book", nodeId, e);
+            return null;
+        }
     }
 }
