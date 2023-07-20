@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -124,8 +123,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
             final Account owner, final AccountID spender, final TokenID tokenId, final Nft nft) {
         final var approveForAllAllowances = owner.approveForAllNftAllowances();
         final var allowance = AccountApprovalForAllAllowance.newBuilder()
-                .spenderNum(spender.accountNumOrThrow())
-                .tokenNum(tokenId.tokenNum())
+                .spenderId(spender)
+                .tokenId(tokenId)
                 .build();
         if (!approveForAllAllowances.contains(allowance)) {
             final var approvedSpender = nft.spenderId();
@@ -169,13 +168,13 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var toTokenRelBalance = receiverRel.balance();
         final var fromNumPositiveBalances = senderAccount.numberPositiveBalances();
         final var toNumPositiveBalances = receiverAccount.numberPositiveBalances();
-        final var isTreasuryReturn = treasuryId.equals(asAccount(receiverAccount.accountNumber()));
+        final var isTreasuryReturn = treasuryId.equals(receiverAccount.accountId());
 
         // If the token is being returned back to treasury set the owner to treasury
         if (isTreasuryReturn) {
             nftCopy.ownerId(AccountID.DEFAULT);
         } else {
-            nftCopy.ownerId(asAccount(receiverAccount.accountNumber()));
+            nftCopy.ownerId(receiverAccount.accountId());
         }
         // wipe the spender on this NFT
         nftCopy.spenderId(AccountID.DEFAULT);

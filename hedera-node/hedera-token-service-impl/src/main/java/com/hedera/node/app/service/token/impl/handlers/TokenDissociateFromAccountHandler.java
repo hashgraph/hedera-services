@@ -57,6 +57,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenDissociateFromAccountHandler implements TransactionHandler {
+    // a sentinel value for headTokenId to indicate that no tokens are associated with the account
+    private static final TokenID NO_ASSOCIATED_TOKENS =
+            TokenID.newBuilder().tokenNum(-1).build();
+
     @Inject
     public TokenDissociateFromAccountHandler() {
         // Exists for injection
@@ -179,7 +183,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 .usedAutoAssociations(account.usedAutoAssociations() - numAutoAssociationsToSubtract)
                 .numberAssociations(account.numberAssociations() - numAssociationsToSubtract)
                 .numberPositiveBalances(account.numberPositiveBalances() - numPositiveBalancesToSubtract)
-                .headTokenNumber(newHeadTokenId == null ? -1 : newHeadTokenId.tokenNum())
+                .headTokenId(newHeadTokenId == null ? NO_ASSOCIATED_TOKENS : newHeadTokenId)
                 .build();
 
         // Finally, update the account and the token relations via their respective stores
