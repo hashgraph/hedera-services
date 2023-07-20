@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.util.Set;
@@ -23,7 +24,7 @@ import java.util.Set;
 @ConfigData("autoRenew")
 public record AutoRenewConfig(
         //         @ConfigProperty(defaultValue = "") Set<EntityType> targetTypes
-        @ConfigProperty(defaultValue = "CONTRACT,ACCOUNT") Set<String> targetTypes) {
+        @ConfigProperty(defaultValue = "CONTRACT,ACCOUNT") @NetworkProperty Set<String> targetTypes) {
     public boolean expireContracts() {
         return targetTypes.contains("CONTRACT");
     }

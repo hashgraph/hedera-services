@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -27,5 +28,5 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("networkAdmin")
 public record NetworkAdminServiceConfig(
-        @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current")
+        @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current") @NetworkProperty
                 String upgradeArtifactsPath) {}

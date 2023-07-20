@@ -16,29 +16,36 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("tokens")
 public record TokensConfig(
-        @ConfigProperty(defaultValue = "10000000") long maxAggregateRels,
-        @ConfigProperty(defaultValue = "false") boolean storeRelsOnDisk,
-        @ConfigProperty(defaultValue = "1000000") long maxNumber,
-        @ConfigProperty(defaultValue = "1000") int maxPerAccount,
-        @ConfigProperty(defaultValue = "100") int maxSymbolUtf8Bytes,
-        @ConfigProperty(defaultValue = "100") int maxTokenNameUtf8Bytes,
-        @ConfigProperty(defaultValue = "10") int maxCustomFeesAllowed,
-        @ConfigProperty(defaultValue = "2") int maxCustomFeeDepth,
-        @ConfigProperty(defaultValue = "1000") long maxRelsPerInfoQuery,
-        @ConfigProperty(value = "nfts.areEnabled", defaultValue = "true") boolean nftsAreEnabled,
-        @ConfigProperty(value = "nfts.maxMetadataBytes", defaultValue = "100") int nftsMaxMetadataBytes,
-        @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") int nftsMaxBatchSizeBurn,
-        @ConfigProperty(value = "nfts.maxBatchSizeWipe", defaultValue = "10") int nftsMaxBatchSizeWipe,
-        @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") int nftsMaxBatchSizeMint,
-        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "5000000") long nftsMaxAllowedMints,
-        @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") long nftsMaxQueryRange,
-        @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") boolean nftsUseTreasuryWildcards,
+        @ConfigProperty(defaultValue = "10000000") @NetworkProperty long maxAggregateRels,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean storeRelsOnDisk,
+        @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
+        @ConfigProperty(defaultValue = "1000") @NetworkProperty int maxPerAccount,
+        @ConfigProperty(defaultValue = "100") @NetworkProperty int maxSymbolUtf8Bytes,
+        @ConfigProperty(defaultValue = "100") @NetworkProperty int maxTokenNameUtf8Bytes,
+        @ConfigProperty(defaultValue = "10") @NetworkProperty int maxCustomFeesAllowed,
+        @ConfigProperty(defaultValue = "2") @NetworkProperty int maxCustomFeeDepth,
+        @ConfigProperty(defaultValue = "1000") @NetworkProperty long maxRelsPerInfoQuery,
+        @ConfigProperty(value = "nfts.areEnabled", defaultValue = "true") @NetworkProperty boolean nftsAreEnabled,
+        @ConfigProperty(value = "nfts.maxMetadataBytes", defaultValue = "100") @NetworkProperty
+                int nftsMaxMetadataBytes,
+        @ConfigProperty(value = "nfts.maxBatchSizeBurn", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeBurn,
+        @ConfigProperty(value = "nfts.maxBatchSizeWipe", defaultValue = "10") @NetworkProperty int nftsMaxBatchSizeWipe,
+        @ConfigProperty(value = "nfts.maxBatchSizeMint", defaultValue = "10") @NetworkProperty
+                int nftsMaxBatchSizeMint,
+        @ConfigProperty(value = "nfts.maxAllowedMints", defaultValue = "5000000") @NetworkProperty
+                long nftsMaxAllowedMints,
+        @ConfigProperty(value = "nfts.maxQueryRange", defaultValue = "100") @NetworkProperty long nftsMaxQueryRange,
+        @ConfigProperty(value = "nfts.useTreasuryWildcards", defaultValue = "true") @NetworkProperty
+                boolean nftsUseTreasuryWildcards,
         // @ConfigProperty(value = "nfts.mintThrottleScaleFactor", defaultValue = "5:2") ScaleFactor
         // nftsMintThrottleScaleFactor,
-        @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") boolean nftsUseVirtualMerkle,
-        @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") boolean autoCreationsIsEnabled) {}
+        @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "false") @NetworkProperty
+                boolean nftsUseVirtualMerkle,
+        @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
+                boolean autoCreationsIsEnabled) {}

@@ -16,10 +16,11 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("dev")
 public record DevConfig(
-        @ConfigProperty(defaultValue = "true") boolean onlyDefaultNodeListens,
-        @ConfigProperty(defaultValue = "0.0.3") String defaultListeningNodeAccount) {}
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean onlyDefaultNodeListens,
+        @ConfigProperty(defaultValue = "0.0.3") @NodeProperty String defaultListeningNodeAccount) {}

@@ -16,8 +16,10 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("queries")
-public record QueriesConfig(@ConfigProperty(value = "blob.lookupRetries", defaultValue = "3") int blobLookupRetries) {}
+public record QueriesConfig(
+        @ConfigProperty(value = "blob.lookupRetries", defaultValue = "3") @NodeProperty int blobLookupRetries) {}

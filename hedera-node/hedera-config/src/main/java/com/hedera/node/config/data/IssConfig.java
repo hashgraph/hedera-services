@@ -16,9 +16,11 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("iss")
 public record IssConfig(
-        @ConfigProperty(defaultValue = "60") int resetPeriod, @ConfigProperty(defaultValue = "5000") int roundsToLog) {}
+        @ConfigProperty(defaultValue = "60") @NodeProperty int resetPeriod,
+        @ConfigProperty(defaultValue = "5000") @NodeProperty int roundsToLog) {}

@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -25,24 +26,32 @@ public record HederaConfig(
         @ConfigProperty(defaultValue = "1001") @NetworkProperty long firstUserEntity,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long realm,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long shard,
-        @ConfigProperty(value = "recordStream.sidecarMaxSizeMb", defaultValue = "256") int recordStreamSidecarMaxSizeMb,
-        @ConfigProperty(value = "transaction.maxMemoUtf8Bytes", defaultValue = "100") int transactionMaxMemoUtf8Bytes,
-        @ConfigProperty(value = "transaction.maxValidDuration", defaultValue = "180") long transactionMaxValidDuration,
-        @ConfigProperty(value = "transaction.minValidDuration", defaultValue = "15") long transactionMinValidDuration,
-        @ConfigProperty(value = "transaction.minValidityBufferSecs", defaultValue = "10")
+        @ConfigProperty(value = "recordStream.sidecarMaxSizeMb", defaultValue = "256") @NetworkProperty
+                int recordStreamSidecarMaxSizeMb,
+        @ConfigProperty(value = "transaction.maxMemoUtf8Bytes", defaultValue = "100") @NetworkProperty
+                int transactionMaxMemoUtf8Bytes,
+        @ConfigProperty(value = "transaction.maxValidDuration", defaultValue = "180") @NetworkProperty
+                long transactionMaxValidDuration,
+        @ConfigProperty(value = "transaction.minValidDuration", defaultValue = "15") @NetworkProperty
+                long transactionMinValidDuration,
+        @ConfigProperty(value = "transaction.minValidityBufferSecs", defaultValue = "10") @NetworkProperty
                 int transactionMinValidityBufferSecs,
-        @ConfigProperty(value = "allowances.maxTransactionLimit", defaultValue = "20")
+        @ConfigProperty(value = "allowances.maxTransactionLimit", defaultValue = "20") @NetworkProperty
                 int allowancesMaxTransactionLimit,
-        @ConfigProperty(value = "allowances.maxAccountLimit", defaultValue = "100") int allowancesMaxAccountLimit,
-        @ConfigProperty(value = "allowances.isEnabled", defaultValue = "true") boolean allowancesIsEnabled,
-        @ConfigProperty(defaultValue = "data/onboard/exportedAccount.txt") String accountsExportPath,
-        @ConfigProperty(defaultValue = "false") boolean exportAccountsOnStartup,
-        @ConfigProperty(value = "prefetch.queueCapacity", defaultValue = "70000") int prefetchQueueCapacity,
-        @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") int prefetchThreadPoolSize,
-        @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") int prefetchCodeCacheTtlSecs,
+        @ConfigProperty(value = "allowances.maxAccountLimit", defaultValue = "100") @NetworkProperty
+                int allowancesMaxAccountLimit,
+        @ConfigProperty(value = "allowances.isEnabled", defaultValue = "true") @NetworkProperty
+                boolean allowancesIsEnabled,
+        @ConfigProperty(defaultValue = "data/onboard/exportedAccount.txt") @NodeProperty String accountsExportPath,
+        @ConfigProperty(defaultValue = "false") @NodeProperty boolean exportAccountsOnStartup,
+        @ConfigProperty(value = "prefetch.queueCapacity", defaultValue = "70000") @NodeProperty
+                int prefetchQueueCapacity,
+        @ConfigProperty(value = "prefetch.threadPoolSize", defaultValue = "4") @NodeProperty int prefetchThreadPoolSize,
+        @ConfigProperty(value = "prefetch.codeCacheTtlSecs", defaultValue = "600") @NodeProperty
+                int prefetchCodeCacheTtlSecs,
         // @ConfigProperty(value = "profiles.active", defaultValue = "PROD") Profile profilesActive,
-        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") String activeProfile,
-        @ConfigProperty(value = "workflow.verificationTimeoutMS", defaultValue = "20000")
+        @ConfigProperty(value = "profiles.active", defaultValue = "PROD") @NodeProperty String activeProfile,
+        @ConfigProperty(value = "workflow.verificationTimeoutMS", defaultValue = "20000") @NetworkProperty
                 long workflowVerificationTimeoutMS,
         // FUTURE: Set<HederaFunctionality>.
-        @ConfigProperty(value = "workflows.enabled", defaultValue = "") String workflowsEnabled) {}
+        @ConfigProperty(value = "workflows.enabled", defaultValue = "") @NetworkProperty String workflowsEnabled) {}

@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -36,19 +37,22 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("netty")
 public record NettyConfig(
-        // @ConfigProperty(defaultValue = "PROD") Profile mode,
-        @ConfigProperty(value = "prod.flowControlWindow", defaultValue = "10240") int prodFlowControlWindow,
-        @ConfigProperty(value = "prod.maxConcurrentCalls", defaultValue = "10") int prodMaxConcurrentCalls,
-        @ConfigProperty(value = "prod.maxConnectionAge", defaultValue = "15") long prodMaxConnectionAge,
-        @ConfigProperty(value = "prod.maxConnectionAgeGrace", defaultValue = "5") long prodMaxConnectionAgeGrace,
-        @ConfigProperty(value = "prod.maxConnectionIdle", defaultValue = "10") long prodMaxConnectionIdle,
-        @ConfigProperty(value = "prod.keepAliveTime", defaultValue = "10") long prodKeepAliveTime,
-        @ConfigProperty(value = "prod.keepAliveTimeout", defaultValue = "3") long prodKeepAliveTimeout,
-        @ConfigProperty(defaultValue = "90") int startRetries,
-        @ConfigProperty(defaultValue = "1000") long startRetryIntervalMs,
-        @ConfigProperty(defaultValue = "5") long terminationTimeout,
-        @ConfigProperty(value = "tlsCrt.path", defaultValue = "hedera.crt") String tlsCrtPath,
-        @ConfigProperty(value = "tlsKey.path", defaultValue = "hedera.key") String tlsKeyPath) {
+        // @ConfigProperty(defaultValue = "PROD") @NodeProperty Profile mode,
+        @ConfigProperty(value = "prod.flowControlWindow", defaultValue = "10240") @NodeProperty
+                int prodFlowControlWindow,
+        @ConfigProperty(value = "prod.maxConcurrentCalls", defaultValue = "10") @NodeProperty
+                int prodMaxConcurrentCalls,
+        @ConfigProperty(value = "prod.maxConnectionAge", defaultValue = "15") @NodeProperty long prodMaxConnectionAge,
+        @ConfigProperty(value = "prod.maxConnectionAgeGrace", defaultValue = "5") @NodeProperty
+                long prodMaxConnectionAgeGrace,
+        @ConfigProperty(value = "prod.maxConnectionIdle", defaultValue = "10") @NodeProperty long prodMaxConnectionIdle,
+        @ConfigProperty(value = "prod.keepAliveTime", defaultValue = "10") @NodeProperty long prodKeepAliveTime,
+        @ConfigProperty(value = "prod.keepAliveTimeout", defaultValue = "3") @NodeProperty long prodKeepAliveTimeout,
+        @ConfigProperty(defaultValue = "90") @NodeProperty int startRetries,
+        @ConfigProperty(defaultValue = "1000") @NodeProperty long startRetryIntervalMs,
+        @ConfigProperty(defaultValue = "5") @NodeProperty long terminationTimeout,
+        @ConfigProperty(value = "tlsCrt.path", defaultValue = "hedera.crt") @NodeProperty String tlsCrtPath,
+        @ConfigProperty(value = "tlsKey.path", defaultValue = "hedera.key") @NodeProperty String tlsKeyPath) {
     public NettyConfig {
         if (startRetries < 0) {
             throw new IllegalArgumentException("startRetries must be non-negative.");

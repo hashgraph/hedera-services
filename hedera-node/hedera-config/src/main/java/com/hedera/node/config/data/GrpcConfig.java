@@ -16,6 +16,7 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Max;
@@ -33,10 +34,10 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("grpc")
 public record GrpcConfig(
-        @ConfigProperty(defaultValue = "50211") @Min(0) @Max(65535) int port,
-        @ConfigProperty(defaultValue = "50212") @Min(0) @Max(65535) int tlsPort,
-        @ConfigProperty(defaultValue = "60211") @Min(0) @Max(65535) int workflowsPort,
-        @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) int workflowsTlsPort) {
+        @ConfigProperty(defaultValue = "50211") @Min(0) @Max(65535) @NodeProperty int port,
+        @ConfigProperty(defaultValue = "50212") @Min(0) @Max(65535) @NodeProperty int tlsPort,
+        @ConfigProperty(defaultValue = "60211") @Min(0) @Max(65535) @NodeProperty int workflowsPort,
+        @ConfigProperty(defaultValue = "60212") @Min(0) @Max(65535) @NodeProperty int workflowsTlsPort) {
 
     public GrpcConfig {
         if (port == tlsPort && port != 0) {

@@ -16,11 +16,12 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("entities")
 public record EntitiesConfig(
-        @ConfigProperty(defaultValue = "3153600000") long maxLifetime,
+        @ConfigProperty(defaultValue = "3153600000") @NetworkProperty long maxLifetime,
         // @ConfigProperty(defaultValue = "FILE") Set<EntityType> systemDeletable
-        @ConfigProperty(defaultValue = "false") boolean limitTokenAssociations) {}
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean limitTokenAssociations) {}

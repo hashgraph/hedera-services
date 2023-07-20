@@ -16,6 +16,8 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.NodeProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.validation.annotation.Max;
@@ -38,15 +40,15 @@ import com.swirlds.config.api.validation.annotation.Min;
  */
 @ConfigData("hedera.recordStream")
 public record BlockRecordStreamConfig(
-        @ConfigProperty(defaultValue = "true") boolean enabled,
-        @ConfigProperty(defaultValue = "hedera-node/data/recordStreams") String logDir, // NODE LOCAL PROPERTY
-        @ConfigProperty(defaultValue = "sidecar") String sidecarDir, // NODE LOCAL PROPERTY
-        @ConfigProperty(defaultValue = "2") @Min(1) int logPeriod, // NETWORK PROPERTY
-        @ConfigProperty(defaultValue = "5000") @Min(1) int queueCapacity, // COULD BE NODE LOCAL PROPERTY
-        @ConfigProperty(defaultValue = "256") @Min(1) @Max(1024) int sidecarMaxSizeMb, // NETWORK PROPERTY
-        @ConfigProperty(defaultValue = "6") @Min(1) int recordFileVersion, // NETWORK PROPERTY
-        @ConfigProperty(defaultValue = "6") @Min(1) int signatureFileVersion, // NETWORK PROPERTY
-        @ConfigProperty(defaultValue = "true") boolean compressFilesOnCreation, // NOT SURE
-        @ConfigProperty(defaultValue = "256") @Min(1) @Max(4096) int numOfBlockHashesInState, // NETWORK PROPERTY
-        @ConfigProperty(defaultValue = "concurrent")
+        @ConfigProperty(defaultValue = "true") @NodeProperty boolean enabled,
+        @ConfigProperty(defaultValue = "hedera-node/data/recordStreams") @NodeProperty String logDir,
+        @ConfigProperty(defaultValue = "sidecar") @NodeProperty String sidecarDir,
+        @ConfigProperty(defaultValue = "2") @Min(1) @NodeProperty int logPeriod,
+        @ConfigProperty(defaultValue = "5000") @Min(1) @NodeProperty int queueCapacity,
+        @ConfigProperty(defaultValue = "256") @Min(1) @Max(1024) @NetworkProperty int sidecarMaxSizeMb,
+        @ConfigProperty(defaultValue = "6") @Min(1) @NetworkProperty int recordFileVersion,
+        @ConfigProperty(defaultValue = "6") @Min(1) @NetworkProperty int signatureFileVersion,
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation, // NOT SURE
+        @ConfigProperty(defaultValue = "256") @Min(1) @Max(4096) @NetworkProperty int numOfBlockHashesInState,
+        @ConfigProperty(defaultValue = "concurrent") @NetworkProperty
                 String streamFileProducer) {} // COULD BE NODE LOCAL PROPERTY OR NETWORK PROPERTY
