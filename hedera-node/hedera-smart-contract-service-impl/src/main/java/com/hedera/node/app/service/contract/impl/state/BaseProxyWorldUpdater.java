@@ -72,23 +72,22 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
      */
     @Override
     public void commit() {
-        // Get the pending changes and summarize their effects on size
+        // Validate the effects on size are legal
         final var changes = evmFrameState.getStorageChanges();
         final var sizeEffects = summarizeSizeEffects(changes);
-
-        // Validate the effects on size are legal
         storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), extWorldScope, sizeEffects.sizeChanges());
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
         storageManager.rewrite(extWorldScope, changes, sizeEffects.sizeChanges(), extWorldScope.getStore());
 
-        // At this point, we have a an apparently valid
+        // We now have an apparently valid change set, and want to capture some summary
+        // information for the Hedera record
         final var pendingCreatedContractIds = extWorldScope.getCreatedContractIds();
         final var pendingUpdatedContractNonces = extWorldScope.getUpdatedContractNonces();
-        // This call should only fail on an internal error; but just to be extra safe, we don't officially
-        // record this updater's created contract ids or updated contract nonces until after commit()
         super.commit();
+        // The above call should only fail on an internal error; but just to be extra safe, we don't
+        // officially record its created contract ids or updated contract nonces until after
         createdContractIds = pendingCreatedContractIds;
         updatedContractNonces = pendingUpdatedContractNonces;
     }

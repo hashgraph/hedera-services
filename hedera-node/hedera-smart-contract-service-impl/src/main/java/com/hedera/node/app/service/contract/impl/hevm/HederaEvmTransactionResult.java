@@ -16,15 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
@@ -32,11 +26,19 @@ import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
-import java.util.List;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
+
+import java.util.Collections;
+import java.util.List;
+
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static java.util.Objects.requireNonNull;
 
 public record HederaEvmTransactionResult(
         long gasUsed,
@@ -52,6 +54,10 @@ public record HederaEvmTransactionResult(
     public HederaEvmTransactionResult {
         requireNonNull(output);
         requireNonNull(logs);
+    }
+
+    public ContractFunctionResult.Builder asFunctionResultBuilder() {
+        return ContractFunctionResult.newBuilder();
     }
 
     /**
