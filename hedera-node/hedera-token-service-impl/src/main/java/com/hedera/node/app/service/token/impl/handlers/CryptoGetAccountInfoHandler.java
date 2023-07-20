@@ -58,7 +58,7 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -84,10 +84,10 @@ import org.apache.logging.log4j.Logger;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private static final int EVM_ADDRESS_SIZE = 20;
     private static final Logger log = LogManager.getLogger(CryptoGetAccountInfoHandler.class);
-    private final StakeRewardCalculatorImpl rewardCalculator;
+    private final StakeRewardCalculator rewardCalculator;
 
     @Inject
-    public CryptoGetAccountInfoHandler(@NonNull final StakeRewardCalculatorImpl rewardCalculator) {
+    public CryptoGetAccountInfoHandler(@NonNull final StakeRewardCalculator rewardCalculator) {
         this.rewardCalculator = rewardCalculator;
     }
 

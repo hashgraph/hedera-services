@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -26,7 +27,10 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -122,5 +126,16 @@ public class StakingRewardHelper {
         final var stakingRewards = stakingRewardsStore.get();
         final var copy = stakingRewards.copyBuilder();
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
+    }
+
+    public static List<AccountAmount> asAccountAmounts(final Map<AccountID, Long> rewardsPaid) {
+        final var accountAmounts = new ArrayList<AccountAmount>();
+        for (final var entry : rewardsPaid.entrySet()) {
+            accountAmounts.add(AccountAmount.newBuilder()
+                    .accountID(entry.getKey())
+                    .amount(entry.getValue())
+                    .build());
+        }
+        return accountAmounts;
     }
 }

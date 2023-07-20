@@ -50,6 +50,10 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import dagger.Binds;
 import dagger.Module;
 
@@ -61,6 +65,12 @@ public interface TokenServiceInjectionModule {
 
     @Binds
     CryptoSignatureWaivers cryptoSignatureWaivers(CryptoSignatureWaiversImpl impl);
+
+    @Binds
+    StakingRewardsHandler stakingRewardHandler(StakingRewardsHandlerImpl stakingRewardsHandler);
+
+    @Binds
+    StakeRewardCalculator stakeRewardCalculator(StakeRewardCalculatorImpl rewardCalculator);
 
     CryptoAddLiveHashHandler cryptoAddLiveHashHandler();
 

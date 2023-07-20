@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -37,7 +38,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -59,15 +59,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FinalizeRecordHandler implements TransactionHandler {
-    final StakingRewardsHandler stakingRewardsHandler;
-    final StakingRewardHelper stakingRewardHelper;
+    private final StakingRewardsHandler stakingRewardsHandler;
 
     @Inject
-    public FinalizeRecordHandler(
-            @NonNull final StakingRewardsHandler stakingRewardsHandler,
-            @NonNull final StakingRewardHelper stakingRewardHelper) {
+    public FinalizeRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
         this.stakingRewardsHandler = stakingRewardsHandler;
-        this.stakingRewardHelper = stakingRewardHelper;
     }
 
     @Override
@@ -92,9 +88,9 @@ public class FinalizeRecordHandler implements TransactionHandler {
 
         if (stakingConfig.isEnabled()) {
             // staking rewards are triggered for any balance changes to account's that are staked to
-            // a node
-            // They are also triggered if staking related fields are modified
-            // Calculate staking rewards and add them also to hbarChanges here
+            // a node. They are also triggered if staking related fields are modified
+            // Calculate staking rewards and add them also to hbarChanges here, before assessing
+            // net changes for transaction record
             final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
             recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
         }
@@ -125,17 +121,6 @@ public class FinalizeRecordHandler implements TransactionHandler {
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
-    }
-
-    private List<AccountAmount> asAccountAmounts(final Map<AccountID, Long> rewardsPaid) {
-        final var accountAmounts = new ArrayList<AccountAmount>();
-        for (final var entry : rewardsPaid.entrySet()) {
-            accountAmounts.add(AccountAmount.newBuilder()
-                    .accountID(entry.getKey())
-                    .amount(entry.getValue())
-                    .build());
-        }
-        return accountAmounts;
     }
 
     @NonNull
