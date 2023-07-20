@@ -523,7 +523,7 @@ public class SwirldsPlatform implements Platform, Startable {
         // doesn't track ancient events
         validators.add(new AncientValidator(consensusRef::get));
         validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
-        validators.add(StaticValidators::isParentDataValid);
+        validators.add(StaticValidators.buildParentValidator(initialAddressBook.getSize()));
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         if (basicConfig.verifyEventSigs()) {
             validators.add(new SignatureValidator(initialAddressBook));
