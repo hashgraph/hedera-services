@@ -65,7 +65,7 @@ public final class StaticValidators {
      * @param networkSize the size of the network
      * @return an event validator that checks if the parent data is valid
      */
-    public static GossipEventValidator isParentDataValid(final int networkSize) {
+    public static GossipEventValidator buildParentValidator(final int networkSize) {
         return event -> {
             final BaseEventHashedData hashedData = event.getHashedData();
             final Hash spHash = hashedData.getSelfParentHash();

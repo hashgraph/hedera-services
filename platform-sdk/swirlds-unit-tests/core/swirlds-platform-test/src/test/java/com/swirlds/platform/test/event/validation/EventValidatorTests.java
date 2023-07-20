@@ -152,7 +152,7 @@ class EventValidatorTests {
         final Hash hash2 = RandomUtils.randomHash();
         final Hash nullHash = null;
 
-        final GossipEventValidator validator = StaticValidators.isParentDataValid(10);
+        final GossipEventValidator validator = StaticValidators.buildParentValidator(10);
 
         // has generation but no hash
         assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
@@ -185,7 +185,7 @@ class EventValidatorTests {
         final Hash hash2 = RandomUtils.randomHash();
         final Hash nullHash = null;
 
-        final GossipEventValidator validator = StaticValidators.isParentDataValid(1);
+        final GossipEventValidator validator = StaticValidators.buildParentValidator(1);
 
         // has generation but no hash
         assertFalse(validator.isEventValid(eventWithParents(validGeneration, undefinedGeneration, nullHash, nullHash)));
