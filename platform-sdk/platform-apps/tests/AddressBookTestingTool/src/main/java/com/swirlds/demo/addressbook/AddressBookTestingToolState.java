@@ -637,7 +637,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(fileContents, "fileContents must not be null");
         Objects.requireNonNull(header, "header must not be null");
         final int configABHeaderStart = fileContents.indexOf(CONFIG_ADDRESS_BOOK_HEADER);
-        final int stateABHEaderStart = fileContents.indexOf(STATE_ADDRESS_BOOK_HEADER);
+        final int stateABHeaderStart = fileContents.indexOf(STATE_ADDRESS_BOOK_HEADER);
         final int usedABHeaderStart = fileContents.indexOf(USED_ADDRESS_BOOK_HEADER);
 
         final int headerStartIndex = fileContents.indexOf(header);
@@ -645,8 +645,8 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
         final int addressBookEndIndex;
         if (headerStartIndex == configABHeaderStart) {
-            addressBookEndIndex = stateABHEaderStart;
-        } else if (headerStartIndex == stateABHEaderStart) {
+            addressBookEndIndex = stateABHeaderStart;
+        } else if (headerStartIndex == stateABHeaderStart) {
             addressBookEndIndex = usedABHeaderStart;
         } else {
             addressBookEndIndex = fileContents.length();
