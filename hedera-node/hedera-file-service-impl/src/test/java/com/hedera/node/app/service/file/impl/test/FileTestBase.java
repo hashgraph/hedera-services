@@ -77,12 +77,12 @@ public class FileTestBase {
     protected final FileID WELL_KNOWN_FILE_ID =
             FileID.newBuilder().fileNum(1_234L).build();
     protected final FileID WELL_KNOWN_UPGRADE_FILE_ID =
-            FileID.newBuilder().fileNum(150L).build();
+            FileID.newBuilder().fileNum(150L).shardNum(50L).realmNum(50L).build();
     protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
-            FileID.newBuilder().fileNum(150L).build();
+            FileID.newBuilder().fileNum(150L).shardNum(50L).realmNum(50L).build();
     protected final FileID fileId = WELL_KNOWN_FILE_ID;
-    protected final FileID fileSystemfileId = WELL_KNOWN_SYSTEM_FILE_ID;
-    protected final FileID fileUpgradefileId = WELL_KNOWN_UPGRADE_FILE_ID;
+    protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
+    protected final FileID fileUpgradeFileId = WELL_KNOWN_UPGRADE_FILE_ID;
     protected final com.hederahashgraph.api.proto.java.FileID monoFileID =
             com.hederahashgraph.api.proto.java.FileID.newBuilder()
                     .setFileNum(1_234L)
@@ -191,7 +191,7 @@ public class FileTestBase {
     protected MapWritableKVState<FileID, File> writableFileStateWithOneKey() {
         return MapWritableKVState.<FileID, File>builder(FILES)
                 .value(fileId, file)
-                .value(fileSystemfileId, fileSystem)
+                .value(fileSystemFileId, fileSystem)
                 .build();
     }
 
@@ -241,7 +241,7 @@ public class FileTestBase {
         fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted);
         fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
         fileSystem =
-                new File(fileSystemfileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+                new File(fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
     }
 
     protected File createFile() {
@@ -257,7 +257,7 @@ public class FileTestBase {
 
     protected File createUpgradeFile() {
         return new File.Builder()
-                .fileId(fileSystemfileId)
+                .fileId(fileSystemFileId)
                 .expirationTime(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))

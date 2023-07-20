@@ -139,7 +139,7 @@ class FileSystemDeleteTest extends FileTestBase {
     void fileIsSystemFile() {
         given(handleContext.body()).willReturn(newSystemDeleteTxn());
 
-        final var existingFile = writableStore.get(fileSystemfileId);
+        final var existingFile = writableStore.get(fileSystemFileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);

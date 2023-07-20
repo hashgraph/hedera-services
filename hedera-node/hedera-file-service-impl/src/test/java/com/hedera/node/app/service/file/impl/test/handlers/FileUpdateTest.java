@@ -332,6 +332,6 @@ class FileUpdateTest extends FileTestBase {
     }
 
     private FileID wellKnowUpgradeId() {
-        return FileID.newBuilder().fileNum(fileUpgradefileId.fileNum()).build();
+        return fileUpgradeFileId;
     }
 }

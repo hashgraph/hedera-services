@@ -47,7 +47,7 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
 
         assertNotNull(file);
 
-        assertEquals(fileSystemfileId, file.fileId());
+        assertEquals(fileSystemFileId, file.fileId());
         assertEquals(keys, file.keys());
 
         assertEquals(memo, file.memo());

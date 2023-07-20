@@ -42,7 +42,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -55,7 +54,9 @@ import javax.inject.Singleton;
 public class FileGetInfoHandler extends FileQueryBase {
 
     @Inject
-    public FileGetInfoHandler() {}
+    public FileGetInfoHandler() {
+        // Exists for injection
+    }
 
     @Override
     public @NonNull QueryHeader extractHeader(@NonNull final Query query) {
@@ -113,7 +114,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * @param ledgerConfig
      * @return the information about the file
      */
-    private @Nullable Optional<FileInfo> infoForFile(
+    private static Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final LedgerConfig ledgerConfig,
@@ -123,7 +124,7 @@ public class FileGetInfoHandler extends FileQueryBase {
 
         FileMetadata meta = null;
         long contentSize = 0L;
-        // the update file always will be for the node, not a particular ledger that's why we just compare th num
+        // the update file always will be for the node, not a particular ledger that's why we just compare the num
         if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
             final var file = upgradeStore.peek();
             if (file != null) {

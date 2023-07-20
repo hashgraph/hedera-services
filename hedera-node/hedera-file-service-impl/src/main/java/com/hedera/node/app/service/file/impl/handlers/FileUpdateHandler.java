@@ -82,7 +82,6 @@ public class FileUpdateHandler implements TransactionHandler {
 
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final var fileUpdate = handleContext.body().fileUpdateOrThrow();
-        final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT));
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
@@ -90,12 +89,20 @@ public class FileUpdateHandler implements TransactionHandler {
             throw new HandleException(INVALID_FILE_ID);
         }
 
-        // the update file always will be for the node, not a particular ledger that's why we just compare th num
+        // the update file always will be for the node, not a particular ledger that's why we just compare the fileNum
+        // and ignore shard and realm
         if (fileUpdate.fileIDOrThrow().fileNum() == fileServiceConfig.upgradeFileNumber()) {
             handleUpdateUpgradeFile(fileUpdate, handleContext);
             return;
         }
 
+        // copy over just the fileNum from the update file
+        // leave shard and realm at zero
+        // this ensures that shard and realm are clamped to zero
+        FileID maybeFileId = FileID.newBuilder()
+                .fileNum(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum())
+                .build();
+        final var maybeFile = fileStore.get(maybeFileId);
         if (maybeFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
         }
@@ -119,7 +126,7 @@ public class FileUpdateHandler implements TransactionHandler {
         fileStore.put(builder.build());
     }
 
-    private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
+    private static void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
         final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
         // empty old upgrade file
         fileStore.resetFileContents();
@@ -133,7 +140,7 @@ public class FileUpdateHandler implements TransactionHandler {
         fileStore.add(file);
     }
 
-    private void resolveMutableBuilderAttributes(
+    private static void resolveMutableBuilderAttributes(
             @NonNull final FileUpdateTransactionBody op,
             @NonNull final File.Builder builder,
             @NonNull final FilesConfig fileServiceConfig,
@@ -170,7 +177,7 @@ public class FileUpdateHandler implements TransactionHandler {
         return op.hasMemo() || op.hasKeys();
     }
 
-    private void validateMaybeNewMemo(
+    private static void validateMaybeNewMemo(
             @NonNull final AttributeValidator attributeValidator, @NonNull final FileUpdateTransactionBody op) {
         if (op.hasMemo()) {
             attributeValidator.validateMemo(op.memo());

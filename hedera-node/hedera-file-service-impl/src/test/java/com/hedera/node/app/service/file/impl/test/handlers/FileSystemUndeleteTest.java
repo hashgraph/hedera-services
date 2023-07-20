@@ -188,7 +188,7 @@ class FileSystemUndeleteTest extends FileTestBase {
     void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
-        final var existingFile = writableStore.get(fileSystemfileId);
+        final var existingFile = writableStore.get(fileSystemFileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -197,7 +197,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileSystemfileId);
+        final var changedFile = writableStore.get(fileSystemFileId);
 
         assertTrue(changedFile.isPresent());
         assertFalse(changedFile.get().deleted());

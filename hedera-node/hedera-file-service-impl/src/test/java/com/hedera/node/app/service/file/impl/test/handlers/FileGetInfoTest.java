@@ -197,7 +197,7 @@ class FileGetInfoTest extends FileTestBase {
                 .build();
         final var expectedInfo = getExpectedSystemInfo();
 
-        final var query = createGetFileInfoQuery(fileSystemfileId.fileNum());
+        final var query = createGetFileInfoQuery(fileSystemFileId.fileNum());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableUpgradeStoreImpl.class)).thenReturn(readableUpgradeStore);
         final var response = subject.findResponse(context, responseHeader);
@@ -223,7 +223,7 @@ class FileGetInfoTest extends FileTestBase {
                 hex(CryptographyHolder.get().digestSync(contents).getValue());
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
-                .fileID(fileSystemfileId)
+                .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
                 .keys(keys)
                 .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
                 .ledgerId(ledgerId)
