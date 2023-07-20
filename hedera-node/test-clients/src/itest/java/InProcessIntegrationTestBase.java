@@ -167,9 +167,9 @@ public abstract class InProcessIntegrationTestBase extends TestBase {
                 "TEST0",
                 "TEST0",
                 1,
-                new byte[] {127, 0, 0, 1},
+                "127.0.0.1",
                 port,
-                new byte[] {127, 0, 0, 1},
+                "127.0.0.1",
                 port,
                 "0.0.3"));
 
