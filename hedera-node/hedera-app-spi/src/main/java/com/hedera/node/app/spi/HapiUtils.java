@@ -89,7 +89,6 @@ public class HapiUtils {
      */
     public static boolean isHollow(@NonNull final Account account) {
         requireNonNull(account);
-        requireNonNull(account.accountId());
         return (account.accountIdOrThrow().accountNum() > 1000
                 && account.keyOrElse(EMPTY_KEY_LIST).equals(EMPTY_KEY_LIST)
                 && account.alias() != null
