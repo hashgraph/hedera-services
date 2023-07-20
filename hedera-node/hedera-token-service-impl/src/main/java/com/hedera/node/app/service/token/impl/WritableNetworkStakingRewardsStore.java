@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
@@ -38,7 +38,7 @@ public class WritableNetworkStakingRewardsStore extends ReadableNetworkStakingRe
      */
     public WritableNetworkStakingRewardsStore(@NonNull final WritableStates states) {
         super(states);
-        this.stakingRewardsState = requireNonNull(states).getSingleton(STAKING_REWARDS_KEY);
+        this.stakingRewardsState = requireNonNull(states).getSingleton(STAKING_NETWORK_REWARDS_KEY);
     }
 
     /**

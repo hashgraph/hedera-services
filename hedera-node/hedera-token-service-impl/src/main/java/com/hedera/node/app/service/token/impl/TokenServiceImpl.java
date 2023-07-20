@@ -62,7 +62,7 @@ public class TokenServiceImpl implements TokenService {
     public static final String TOKEN_RELS_KEY = "TOKEN_RELS";
     public static final String PAYER_RECORDS_KEY = "PAYER_RECORDS";
     public static final String STAKING_INFO_KEY = "STAKING_INFOS";
-    public static final String STAKING_REWARDS_KEY = "STAKING_REWARDS";
+    public static final String STAKING_NETWORK_REWARDS_KEY = "STAKING_NETWORK_REWARDS";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {

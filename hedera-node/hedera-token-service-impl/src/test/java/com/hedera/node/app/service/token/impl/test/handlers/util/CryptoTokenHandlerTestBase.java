@@ -40,7 +40,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoAllowance;
@@ -52,20 +54,30 @@ import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -79,6 +91,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -263,6 +276,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
     protected MapReadableKVState<NftID, Nft> readableNftState;
     protected MapWritableKVState<NftID, Nft> writableNftState;
+    protected MapReadableKVState<Long, StakingNodeInfo> readableStakingInfoState;
+    protected MapWritableKVState<Long, StakingNodeInfo> writableStakingInfoState;
+    protected ReadableSingletonState<NetworkStakingRewards> readableRewardsState;
+    protected WritableSingletonState<NetworkStakingRewards> writableRewardsState;
 
     /* ---------- Stores */
 
@@ -275,6 +292,13 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected WritableTokenRelationStore writableTokenRelStore;
     protected ReadableNftStore readableNftStore;
     protected WritableNftStore writableNftStore;
+
+    protected ReadableNetworkStakingRewardsStore readableRewardsStore;
+    protected WritableNetworkStakingRewardsStore writableRewardsStore;
+
+    protected ReadableStakingInfoStore readableStakingInfoStore;
+    protected WritableStakingInfoStore writableStakingInfoStore;
+
     /* ---------- Tokens ---------- */
     protected Token fungibleToken;
     protected Token fungibleTokenB;
@@ -328,6 +352,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenValidTokenRelations();
         setUpAllEntities();
         refreshReadableStores();
+        refreshWritableStores();
     }
 
     private void setUpAllEntities() {
@@ -374,6 +399,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenTokensInReadableStore();
         givenReadableTokenRelsStore();
         givenReadableNftStore();
+        givenReadableStakingRewardsStore();
+        givenReadableStakingInfoStore();
     }
 
     protected void refreshWritableStores() {
@@ -381,6 +408,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenTokensInWritableStore();
         givenWritableTokenRelsStore();
         givenWritableNftStore();
+        givenWritableStakingRewardsStore();
+        givenWritableStakingInfoStore();
     }
 
     private void givenAccountsInReadableStore() {
@@ -423,6 +452,61 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         writableTokenStore = new WritableTokenStore(writableStates);
+    }
+
+    private void givenReadableStakingInfoStore() {
+        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(
+                        1L,
+                        StakingNodeInfo.newBuilder()
+                                .stake(100L)
+                                .stakeToNotReward(20L)
+                                .stakeToReward(80L)
+                                .maxStake(1000L)
+                                .minStake(10L)
+                                .weight(500)
+                                .rewardSumHistory(List.of(100L, 200L, 300L))
+                                .unclaimedStakeRewardStart(10L)
+                                .build())
+                .build();
+        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
+        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
+    }
+
+    private void givenWritableStakingInfoStore() {
+        writableStakingInfoState = MapWritableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(
+                        1L,
+                        StakingNodeInfo.newBuilder()
+                                .stake(100L)
+                                .stakeToNotReward(20L)
+                                .stakeToReward(80L)
+                                .maxStake(1000L)
+                                .minStake(10L)
+                                .weight(500)
+                                .rewardSumHistory(List.of(100L, 200L, 300L))
+                                .unclaimedStakeRewardStart(10L)
+                                .build())
+                .build();
+        given(writableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(writableStakingInfoState);
+        writableStakingInfoStore = new WritableStakingInfoStore(writableStates);
+    }
+
+    private void givenReadableStakingRewardsStore() {
+        final AtomicReference<NetworkStakingRewards> backingValue =
+                new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
+        final var stakingRewardsState = new ReadableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get);
+        given(readableStates.getSingleton(NETWORK_REWARDS)).willReturn((ReadableSingletonState) stakingRewardsState);
+        readableRewardsStore = new ReadableNetworkStakingRewardsStoreImpl(readableStates);
+    }
+
+    private void givenWritableStakingRewardsStore() {
+        final AtomicReference<NetworkStakingRewards> backingValue =
+                new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
+        final var stakingRewardsState =
+                new WritableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get, backingValue::set);
+        given(writableStates.getSingleton(NETWORK_REWARDS)).willReturn((WritableSingletonState) stakingRewardsState);
+        writableRewardsStore = new WritableNetworkStakingRewardsStore(writableStates);
     }
 
     private void givenReadableTokenRelsStore() {
@@ -787,5 +871,13 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
         given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+
+        given(handleContext.readableStore(ReadableNetworkStakingRewardsStore.class))
+                .willReturn(readableRewardsStore);
+        given(handleContext.writableStore(WritableNetworkStakingRewardsStore.class))
+                .willReturn(writableRewardsStore);
+
+        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
     }
 }

@@ -36,12 +36,12 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class RewardsPayer {
-    private StakingRewardHelper stakingRewardHelper;
+    private RewardsHelper stakingRewardHelper;
     private StakeRewardCalculatorImpl rewardCalculator;
 
     @Inject
     public RewardsPayer(
-            @NonNull final StakingRewardHelper stakingRewardHelper,
+            @NonNull final RewardsHelper stakingRewardHelper,
             @NonNull final StakeRewardCalculatorImpl rewardCalculator) {
         this.stakingRewardHelper = stakingRewardHelper;
         this.rewardCalculator = rewardCalculator;

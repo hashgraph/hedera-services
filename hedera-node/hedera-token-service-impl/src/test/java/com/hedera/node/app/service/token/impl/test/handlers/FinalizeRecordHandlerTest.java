@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -48,14 +50,18 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactor
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private final Account ACCOUNT_1212 =
             givenValidAccount().copyBuilder().accountNumber(1212).build();
@@ -500,6 +506,11 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleNftTransfersToExistingAccountSuccess() {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("staking.isEnabled", String.valueOf(false))
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+
         // This test case handles successfully transferring NFTs only
 
         // Set up NFTs for token ID 531 (serials 111, 112)
@@ -587,6 +598,9 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                                 .receiverAccountID(ACCOUNT_3434_ID)
                                                 .build())
                                 .build()));
+
+        subject.handle(context);
+        verify(stakingRewardsHandler, never()).applyStakingRewards(context);
     }
 
     @Test

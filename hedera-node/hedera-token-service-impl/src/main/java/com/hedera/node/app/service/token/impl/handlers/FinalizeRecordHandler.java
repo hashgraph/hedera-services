@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardHelper.asAccountAmounts;
+import static com.hedera.node.app.service.token.impl.handlers.staking.RewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -92,7 +92,9 @@ public class FinalizeRecordHandler implements TransactionHandler {
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
             // net changes for transaction record
             final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
-            recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
+            if (!rewardsPaid.isEmpty()) {
+                recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
+            }
         }
 
         /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */

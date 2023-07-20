@@ -44,14 +44,14 @@ import javax.inject.Singleton;
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private final RewardsPayer rewardsPayer;
-    private final StakingRewardHelper stakingRewardHelper;
+    private final RewardsHelper stakingRewardHelper;
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
     public StakingRewardsHandlerImpl(
             @NonNull final RewardsPayer rewardsPayer,
-            @NonNull final StakingRewardHelper stakingRewardHelper,
+            @NonNull final RewardsHelper stakingRewardHelper,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final StakeInfoHelper stakeInfoHelper) {
         this.rewardsPayer = requireNonNull(rewardsPayer);
