@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
@@ -335,7 +336,7 @@ public class NetworkAdminHandlerTestBase {
             @Nullable List<AccountApprovalForAllAllowance> approveForAllNftAllowances,
             @Nullable List<AccountFungibleTokenAllowance> tokenAllowances) {
         account = new Account(
-                accountNum,
+                AccountID.newBuilder().accountNum(accountNum).build(),
                 alias.alias(),
                 null, //  key,
                 1_234_567L,
@@ -347,8 +348,8 @@ public class NetworkAdminHandlerTestBase {
                 UNSET_STAKED_ID,
                 true,
                 true,
-                2,
-                2,
+                TokenID.newBuilder().tokenNum(2L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1,
                 2,
                 10,
@@ -358,7 +359,7 @@ public class NetworkAdminHandlerTestBase {
                 2,
                 0,
                 1000L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 72000,
                 0,
                 cryptoAllowances,
