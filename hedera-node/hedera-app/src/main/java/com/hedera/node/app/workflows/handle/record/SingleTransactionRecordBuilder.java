@@ -88,6 +88,8 @@ public final class SingleTransactionRecordBuilder
                 TokenCreateRecordBuilder {
     // base transaction data
     private Transaction transaction;
+    private TransactionID transactionID;
+    private String memo;
     private Bytes transactionBytes;
     // fields needed for TransactionRecord
     private final Instant consensusNow;
@@ -103,7 +105,7 @@ public final class SingleTransactionRecordBuilder
     private Bytes alias;
     private Bytes ethereumHash;
     private List<AccountAmount> paidStakingRewards;
-    private OneOf<TransactionRecord.EntropyOneOfType> entropy;
+    private OneOf<TransactionRecord.EntropyOneOfType> entropy = new OneOf<>(EntropyOneOfType.UNSET, null);
     private Bytes evmAddress;
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
@@ -187,8 +189,8 @@ public final class SingleTransactionRecordBuilder
                                 serialNumbers),
                         transactionHash,
                         consensusTimestamp,
-                        transaction.body().transactionID(),
-                        transaction.body().memo(),
+                        transactionID,
+                        memo,
                         transactionFee,
                         body,
                         transferList,
@@ -206,9 +208,23 @@ public final class SingleTransactionRecordBuilder
     }
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
-    public SingleTransactionRecordBuilder transaction(Transaction transaction, Bytes transactionBytes) {
+    public SingleTransactionRecordBuilder transaction(Transaction transaction) {
         this.transaction = transaction;
+        return this;
+    }
+
+    public SingleTransactionRecordBuilder transactionBytes(Bytes transactionBytes) {
         this.transactionBytes = transactionBytes;
+        return this;
+    }
+
+    public SingleTransactionRecordBuilder transactionID(TransactionID transactionID) {
+        this.transactionID = transactionID;
+        return this;
+    }
+
+    public SingleTransactionRecordBuilder memo(String memo) {
+        this.memo = memo;
         return this;
     }
 

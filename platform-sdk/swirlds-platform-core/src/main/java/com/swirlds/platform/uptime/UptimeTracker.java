@@ -27,6 +27,8 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -51,24 +53,36 @@ public class UptimeTracker {
     private final UptimeMetrics uptimeMetrics;
     private final Duration degradationThreshold;
 
-    private final AtomicReference<Instant> lastEventTime = new AtomicReference<>();
+    /**
+     * The last consensus time a self event was created.
+     */
+    private final AtomicReference<Instant> lastSelfEventTime = new AtomicReference<>();
+
+    /**
+     * Enables submitting platform status actions.
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
 
     /**
      * Construct a new uptime detector.
      *
-     * @param platformContext the platform context
-     * @param time            the time
-     * @param addressBook     the address book
+     * @param platformContext       the platform context
+     * @param addressBook           the address book
+     * @param statusActionSubmitter enables submitting platform status actions
+     * @param selfId                the ID of this node
+     * @param time                  a source of time
      */
     public UptimeTracker(
             @NonNull PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final NodeId selfId,
             @NonNull final Time time) {
 
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.time = Objects.requireNonNull(time);
         this.addressBook = Objects.requireNonNull(addressBook);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.degradationThreshold = platformContext
                 .getConfiguration()
                 .getConfigData(UptimeConfig.class)
@@ -141,14 +155,14 @@ public class UptimeTracker {
      * @return true if this node should consider itself to be degraded
      */
     public boolean isSelfDegraded() {
-        final Instant lastSelfEventTime = lastEventTime.get();
-        if (lastSelfEventTime == null) {
+        final Instant eventTime = lastSelfEventTime.get();
+        if (eventTime == null) {
             // Consider a node to be degraded until it has its first event reach consensus.
             return true;
         }
 
         final Instant now = time.now();
-        final Duration durationSinceLastEvent = Duration.between(lastSelfEventTime, now);
+        final Duration durationSinceLastEvent = Duration.between(eventTime, now);
         return CompareTo.isGreaterThan(durationSinceLastEvent, degradationThreshold);
     }
 
@@ -164,6 +178,10 @@ public class UptimeTracker {
             @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
             @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator) {
 
+        // capture previous self event consensus timestamp, so we can tell if the current round contains a
+        // new self event
+        final Instant previousSelfEventConsensusTimestamp = lastSelfEventTime.get();
+
         round.forEach(event -> {
             lastEventsInRoundByCreator.put(event.getCreatorId(), event);
             // Temporarily disabled until we properly detect judges in a round
@@ -174,7 +192,13 @@ public class UptimeTracker {
 
         final ConsensusEvent lastSelfEvent = lastEventsInRoundByCreator.get(selfId);
         if (lastSelfEvent != null) {
-            lastEventTime.set(lastSelfEvent.getConsensusTimestamp());
+            final Instant lastSelfEventConsensusTimestamp = lastSelfEvent.getConsensusTimestamp();
+            if (!lastSelfEventConsensusTimestamp.equals(previousSelfEventConsensusTimestamp)) {
+                lastSelfEventTime.set(lastSelfEventConsensusTimestamp);
+
+                // the action receives the wall clock time, NOT the consensus timestamp
+                statusActionSubmitter.submitStatusAction(new SelfEventReachedConsensusAction(time.now()));
+            }
         }
     }
 
