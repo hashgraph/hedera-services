@@ -18,12 +18,14 @@ package com.hedera.node.app.workflows.handle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -104,13 +106,19 @@ class HandleWorkflowTest extends AppTestBase {
 
     private static PreHandleResult createPreHandleResult(
             @NonNull final Status status, @NonNull final ResponseCodeEnum code) {
+        final var transactionId = TransactionID.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(1002L).build())
+                .build();
+
         final var key = ALICE.account().keyOrThrow();
         return new PreHandleResult(
                 ALICE.accountID(),
                 key,
                 status,
                 code,
-                new TransactionScenarioBuilder().txInfo(),
+                new TransactionScenarioBuilder()
+                        .withTransactionID(transactionId)
+                        .txInfo(),
                 Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                 null,
@@ -419,6 +427,14 @@ class HandleWorkflowTest extends AppTestBase {
         final var alice = aliasesState.get(ALICE_ALIAS);
         assertThat(alice).isNotNull();
         assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
+
+        final var inOrder = inOrder(recordManager, hederaRecordCache, dispatcher, recordManager);
+        inOrder.verify(recordManager, times(1)).startUserTransaction(any());
+        inOrder.verify(hederaRecordCache, times(1)).getRecord(any());
+        inOrder.verify(dispatcher, times(1)).dispatchHandle(any());
+        inOrder.verify(hederaRecordCache, times(1)).add(eq(0L), any(), any(), any());
+        inOrder.verify(recordManager, times(1)).endUserTransaction(any());
+
         // TODO: Check that record was created
     }
 
@@ -525,6 +541,12 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
+            verify(recordManager, times(1)).startUserTransaction(any());
+            verify(hederaRecordCache, times(0)).getRecord(any());
+            verify(dispatcher, times(0)).dispatchHandle(any());
+            verify(recordManager, times(1)).endUserTransaction(any());
+            verify(hederaRecordCache, times(0)).add(eq(0L), any(), any(), any());
+
             // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
         }
 
@@ -571,6 +593,11 @@ class HandleWorkflowTest extends AppTestBase {
 
         // then
         assertThat(aliasesState.isModified()).isFalse();
+        verify(recordManager, times(1)).startUserTransaction(any());
+        verify(hederaRecordCache, times(0)).getRecord(any());
+        verify(dispatcher, times(0)).dispatchHandle(any());
+        verify(recordManager, times(1)).endUserTransaction(any());
+        verify(hederaRecordCache, times(0)).add(eq(0L), any(), any(), any());
         // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
     }
 
@@ -578,9 +605,7 @@ class HandleWorkflowTest extends AppTestBase {
     @DisplayName("Test with same transaction in the cache")
     void testExistingTransactionInCache() {
         // pre-check
-        final var transactionId = TransactionID.newBuilder()
-                .accountID(AccountID.newBuilder().accountNum(1002L).build())
-                .build();
+        final var transactionId = OK_RESULT.txInfo().txBody().transactionID();
         Assertions.assertTrue(hederaRecordCache.getRecords(transactionId).isEmpty());
 
         // given
@@ -589,14 +614,16 @@ class HandleWorkflowTest extends AppTestBase {
         final HandleWorkflow workflowSpy = spy(workflow);
 
         workflowSpy.handleRound(state, round);
-        Assertions.assertEquals(1, hederaRecordCache.getRecords(transactionId).size());
+        assertEquals(1, hederaRecordCache.getRecords(transactionId).size());
 
         // when - we call handleRound with the same arguments
         workflowSpy.handleRound(state, round);
 
         // then
-        verify(hederaRecordCache, times(2)).getRecord(transactionId);
-        verify(workflowSpy, times(1)).recordFailedTransaction(eq(ResponseCodeEnum.DUPLICATE_TRANSACTION), any(), any());
+        assertEquals(2, hederaRecordCache.getRecords(transactionId).size());
+        verify(hederaRecordCache, times(2)).getRecord(any());
+        verify(hederaRecordCache, times(2)).add(eq(0L), any(), any(), any());
+        verify(dispatcher, times(1)).dispatchHandle(any());
     }
 
     @Nested
