@@ -33,7 +33,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
-import com.hedera.node.app.records.RecordManager;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -113,7 +113,7 @@ class HandleWorkflowTest extends AppTestBase {
     private TransactionDispatcher dispatcher;
 
     @Mock
-    private RecordManager recordManager;
+    private BlockRecordManager blockRecordManager;
 
     @Mock(strictness = LENIENT)
     private SignatureExpander signatureExpander;
@@ -174,7 +174,7 @@ class HandleWorkflowTest extends AppTestBase {
                 networkInfo,
                 preHandleWorkflow,
                 dispatcher,
-                recordManager,
+                blockRecordManager,
                 signatureExpander,
                 signatureVerifier,
                 checker,
@@ -191,7 +191,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,
@@ -203,7 +203,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         null,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,
@@ -215,7 +215,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         null,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,
@@ -239,7 +239,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         null,
                         signatureVerifier,
                         checker,
@@ -251,7 +251,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         null,
                         checker,
@@ -263,7 +263,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         null,
@@ -275,7 +275,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,
@@ -287,7 +287,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,
@@ -299,7 +299,7 @@ class HandleWorkflowTest extends AppTestBase {
                         networkInfo,
                         preHandleWorkflow,
                         dispatcher,
-                        recordManager,
+                        blockRecordManager,
                         signatureExpander,
                         signatureVerifier,
                         checker,
@@ -321,8 +321,8 @@ class HandleWorkflowTest extends AppTestBase {
         // then
         assertThat(accountsState.isModified()).isFalse();
         assertThat(aliasesState.isModified()).isFalse();
-        verify(recordManager, never()).startUserTransaction(any());
-        verify(recordManager, never()).endUserTransaction(any());
+        verify(blockRecordManager, never()).startUserTransaction(any(), any());
+        verify(blockRecordManager, never()).endUserTransaction(any(), any());
     }
 
     @Test
@@ -996,8 +996,9 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, round);
 
             // then
-            verify(recordManager).startUserTransaction(CONSENSUS_NOW);
-            verify(recordManager).endUserTransaction(any());
+            verify(blockRecordManager).startUserTransaction(eq(CONSENSUS_NOW), eq(state));
+            verify(blockRecordManager).endUserTransaction(any(), eq(state));
+            verify(blockRecordManager).endRound(eq(state));
         }
     }
 }
