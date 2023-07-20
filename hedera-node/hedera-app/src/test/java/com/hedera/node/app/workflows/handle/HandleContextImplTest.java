@@ -36,8 +36,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -337,7 +335,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     recordListBuilder,
                     checker,
                     dispatcher,
-                    serviceScopeLookup);
+                    serviceScopeLookup,
+                    blockRecordInfo);
         }
 
         @Test
