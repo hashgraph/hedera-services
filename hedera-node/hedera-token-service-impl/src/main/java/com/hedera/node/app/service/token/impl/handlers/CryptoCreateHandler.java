@@ -36,7 +36,6 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
@@ -49,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -264,11 +264,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         } else if (op.hasStakedNodeId()) {
             builder.stakedNodeId(op.stakedNodeId());
         }
+
         // set the new account number
+        final var hederaConfig = handleContext.configuration().getConfigData(HederaConfig.class);
         builder.accountId(AccountID.newBuilder()
                 .accountNum(handleContext.newEntityNum())
-                .realmNum(StaticProperties.getRealm())
-                .shardNum(StaticProperties.getShard())
+                .realmNum(hederaConfig.realm())
+                .shardNum(hederaConfig.shard())
                 .build());
         return builder.build();
     }

@@ -207,7 +207,7 @@ public class ApproveAllowanceValidator extends AllowanceValidator {
         // ONLY reject self-approval for NFT's; else allow to match OZ ERC-20
         validateFalse(
                 token.tokenType() != TokenType.FUNGIBLE_COMMON
-                        && owner.accountId().equals(spender),
+                        && owner.accountIdOrThrow().equals(spender),
                 SPENDER_ACCOUNT_SAME_AS_OWNER);
         final var relation = tokenRelStore.get(ownerId, tokenId);
         validateTrue(relation != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);

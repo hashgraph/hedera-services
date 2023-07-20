@@ -297,7 +297,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
             return Bytes.wrap(evmAddress).toHex();
         } else {
-            return hex(asEvmAddress(account.accountId().accountNum()));
+            return hex(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
         }
     }
 

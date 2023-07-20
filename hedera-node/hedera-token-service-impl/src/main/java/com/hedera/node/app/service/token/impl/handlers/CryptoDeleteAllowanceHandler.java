@@ -152,7 +152,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
                 final var nft = nftStore.get(tokenId, serial);
 
                 validateTrue(nft != null, INVALID_NFT_ID);
-                AccountID accountOwner = owner.accountId();
+                final AccountID accountOwner = owner.accountId();
                 validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
                 // Clear spender on the nft

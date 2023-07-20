@@ -122,7 +122,6 @@ public class TokenServiceImpl implements TokenService {
                     accounts.put(
                             id,
                             Account.newBuilder()
-
                                     .receiverSigRequired(false)
                                     .deleted(false)
                                     .expiry(expiry)
