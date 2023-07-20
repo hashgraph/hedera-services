@@ -171,11 +171,15 @@ public class RecordListBuilder {
      *
      * @return the stream of all records
      */
-    public Stream<SingleTransactionRecord> build() {
-        final var stream = precedingRecordBuilders == null
-                ? recordBuilders.stream()
-                : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
-        return stream.map(SingleTransactionRecordBuilder::build);
+    public Result build() {
+        final var mainRecord = recordBuilders.get(0).build();
+        final var childRecordStream = recordBuilders.stream().skip(1).map(SingleTransactionRecordBuilder::build);
+        final var mainRecordStream = Stream.concat(Stream.of(mainRecord), childRecordStream);
+        final var recordStream = precedingRecordBuilders == null
+                ? mainRecordStream
+                : Stream.concat(
+                        precedingRecordBuilders.stream().map(SingleTransactionRecordBuilder::build), mainRecordStream);
+        return new Result(mainRecord, recordStream);
     }
 
     /*
@@ -187,4 +191,7 @@ public class RecordListBuilder {
                 ? recordBuilders.stream()
                 : Stream.concat(precedingRecordBuilders.stream(), recordBuilders.stream());
     }
+
+    public record Result(
+            @NonNull SingleTransactionRecord mainRecord, @NonNull Stream<SingleTransactionRecord> recordStream) {}
 }
