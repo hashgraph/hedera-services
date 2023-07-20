@@ -122,4 +122,12 @@ public class BenchmarkKey implements VirtualLongKey {
         }
         return true;
     }
+
+    @Deprecated(forRemoval = true)
+    public boolean equals(ByteBuffer buffer) {
+        for (int i = 0; i < keySize; ++i) {
+            if (buffer.get() != keyBytes[i]) return false;
+        }
+        return true;
+    }
 }

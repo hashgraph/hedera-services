@@ -20,6 +20,7 @@ import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
+import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION;
 import static com.swirlds.merkledb.files.DataFileCommon.byteOffsetFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.fileIndexFromDataLocation;
 import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
@@ -31,13 +32,13 @@ import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
+import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingMap;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -218,7 +219,7 @@ public class DataFileCollection<D> implements Snapshotable {
                 null,
                 dataItemSerializer,
                 loadedDataCallback,
-                ImmutableIndexedObjectListUsingArray::new);
+                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader<D>>(DataFileReader[]::new, l));
     }
 
     /**
@@ -251,7 +252,7 @@ public class DataFileCollection<D> implements Snapshotable {
                 legacyStoreName,
                 dataItemSerializer,
                 loadedDataCallback,
-                ImmutableIndexedObjectListUsingArray::new);
+                l -> new ImmutableIndexedObjectListUsingArray<DataFileReader<D>>(DataFileReader[]::new, l));
     }
 
     /**
@@ -443,7 +444,16 @@ public class DataFileCollection<D> implements Snapshotable {
                 snapshotCompactionLock.acquire();
                 try {
                     final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
-                    final long newLocation = newFileWriter.writeCopiedDataItem(reader.readProtoBytes(fileOffset));
+                    final long newLocation;
+                    final BufferedData itemBytes = reader.readProtoBytes(fileOffset);
+                    if (itemBytes != null) {
+                        newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
+                    } else {
+                        // Future work: once JDB format is dropped, itemBytes must never be null
+                        final D item = reader.readDataItem(fileOffset);
+                        assert item != null;
+                        newLocation = newFileWriter.storeDataItem(item);
+                    }
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
                 } catch (final IOException z) {
@@ -488,12 +498,12 @@ public class DataFileCollection<D> implements Snapshotable {
     private void startNewCompactionFile() throws IOException {
         final Instant startTime = currentCompactionStartTime.get();
         assert startTime != null;
-        final DataFileWriter<D> newFileWriter = newDataFile(startTime);
+        final DataFileWriter<D> newFileWriter = newDataFile(startTime, true);
         currentCompactionWriter.set(newFileWriter);
         final Path newFileCreated = newFileWriter.getPath();
         newCompactedFiles.add(newFileCreated);
         final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
-        final DataFileReader<D> newFileReader = addNewDataFileReader(newFileCreated, newFileMetadata);
+        final DataFileReader<D> newFileReader = addNewDataFileReader(newFileCreated, newFileMetadata, true);
         currentCompactionReader.set(newFileReader);
     }
 
@@ -594,14 +604,20 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
+        startWriting(true);
+    }
+
+    // For JDB to PBJ migration testing. After JDB support is dropped, this method may be removed
+    // and startWriting() to be used instead
+    void startWriting(final boolean usePbj) throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
         }
-        final DataFileWriter<D> writer = newDataFile(Instant.now());
+        final DataFileWriter<D> writer = newDataFile(Instant.now(), usePbj);
         currentDataFileWriter.set(writer);
         final DataFileMetadata metadata = writer.getMetadata();
-        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata);
+        final DataFileReader<D> reader = addNewDataFileReader(writer.getPath(), metadata, usePbj);
         currentDataFileReader.set(reader);
     }
 
@@ -839,11 +855,15 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param filePath the path for the new data file
      * @param metadata The metadata for the file at filePath, to save reading from file
+     * @param usePbj Indicates whether to use PBJ (if usePbj is true) or JDB (if false) reader format
      * @return The newly added DataFileReader.
      */
-    private DataFileReader<D> addNewDataFileReader(final Path filePath, final DataFileMetadata metadata)
+    private DataFileReader<D> addNewDataFileReader(
+            final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
             throws IOException {
-        final DataFileReader<D> newDataFileReader = new DataFileReader<>(filePath, dataItemSerializer, metadata);
+        final DataFileReader<D> newDataFileReader = usePbj ?
+                new DataFileReader<>(filePath, dataItemSerializer, metadata) :
+                new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
                 return (currentFileList == null)
@@ -879,14 +899,17 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param creationTime The creation time for the data in the new file. It could be now or old in
      *     case of merge.
+     * @param usePbj Indicates whether to use PBJ (if usePbj is true) or JDB (if false) writer format
      * @return the newly created data file
      */
-    private DataFileWriter<D> newDataFile(final Instant creationTime) throws IOException {
+    private DataFileWriter<D> newDataFile(final Instant creationTime, final boolean usePbj) throws IOException {
         final int newFileIndex = nextFileIndex.getAndIncrement();
         if (logger.isTraceEnabled()) {
             setOfNewFileIndexes.add(newFileIndex);
         }
-        return new DataFileWriter<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
+        return usePbj ?
+                new DataFileWriter<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime) :
+                new DataFileWriterJdb<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
     }
 
     /**
@@ -925,7 +948,9 @@ public class DataFileCollection<D> implements Snapshotable {
             final DataFileReader<D>[] dataFileReaders = new DataFileReader[fullWrittenFilePaths.length];
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
-                    dataFileReaders[i] = new DataFileReader<>(fullWrittenFilePaths[i], dataItemSerializer);
+                    dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION) ?
+                            new DataFileReader<>(fullWrittenFilePaths[i], dataItemSerializer) :
+                            new DataFileReaderJdb<>(fullWrittenFilePaths[i], dataItemSerializer);
                 }
                 // sort the readers into data file index order
                 Arrays.sort(dataFileReaders);

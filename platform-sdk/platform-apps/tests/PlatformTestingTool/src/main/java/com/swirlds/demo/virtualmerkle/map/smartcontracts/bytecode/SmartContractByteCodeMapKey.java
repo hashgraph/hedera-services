@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -95,18 +97,28 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         contractId = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.putLong(contractId);
+    public void serialize(final WritableSequentialData out) throws IOException {
+        out.writeLong(contractId);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @Deprecated(forRemoval = true)
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        buffer.putLong(contractId);
+    }
+
+    public void deserialize(final ReadableSequentialData in) throws IOException {
+        contractId = in.readLong();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Deprecated(forRemoval = true)
     public void deserialize(final ByteBuffer buffer) throws IOException {
         contractId = buffer.getLong();
     }
@@ -129,6 +141,11 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         return new EqualsBuilder().append(contractId, that.contractId).isEquals();
     }
 
+    @Deprecated(forRemoval = true)
+    public boolean equals(final ByteBuffer buffer) {
+        return buffer.getLong() == this.contractId;
+    }
+
     /**
      * Verifies if the content from {@code buffer} is equal to the content of this instance.
      *
@@ -136,9 +153,8 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
      * 		The buffer with data to be compared with this class.
      * @return {@code true} if the content from the buffer has the same data as this instance.
      *        {@code false}, otherwise.
-     * @throws IOException
      */
-    public boolean equals(final BufferedData buffer) throws IOException {
+    public boolean equals(final BufferedData buffer) {
         return buffer.readLong() == this.contractId;
     }
 

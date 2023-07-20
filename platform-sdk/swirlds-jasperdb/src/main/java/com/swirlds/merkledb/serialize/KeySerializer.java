@@ -60,7 +60,7 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
     /**
      * Serialize a key including header to the byte buffer returning the size of the data written.
      * Bytes written using this method will then be used for deserialization with {@link
-     * #deserialize(ByteBuffer)} method.
+     * #deserialize(ByteBuffer, long)} method.
      *
      * This method returns the number of bytes written to the buffer. For fixed-sized keys the
      * size must be equal to {@link #getSerializedSize()} return value.
@@ -70,10 +70,8 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @return The size, in bytes, of the serialized key
      * @throws IOException If there was a problem writing to the buffer
      */
+    @Deprecated(forRemoval = true)
     int serialize(K data, ByteBuffer buffer) throws IOException;
-
-    default void serialize(K data, WritableSequentialData out) throws IOException {
-    }
 
     /**
      * Deserialize a key from the byte buffer, where it was previously written using either {@link
@@ -83,14 +81,28 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @return A key deserialized from the buffer
      * @throws IOException If there was a problem reading from the buffer
      */
-    K deserialize(ByteBuffer buffer) throws IOException;
-
-    default K deserialize(ReadableSequentialData in) throws IOException {
-        return null;
-    }
+    @Deprecated(forRemoval = true)
+    K deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
 
     /**
      * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer
+     * is assumed to be starting at the current buffer position and in the format written by this
+     * class's serialize() method. The reason for this rather than just deserializing then doing an
+     * object equals is performance. By doing the comparison here you can fail fast on the first
+     * byte that does not match. As this is used in a tight loop in searching a hash map bucket for
+     * a match performance is critical.
+     *
+     * @param buffer The buffer to read from and compare to
+     * @param dataVersion The serialization version of the data in the buffer
+     * @param keyToCompare The key to compare with the data in the file.
+     * @return true if the content of the buffer matches this class's data
+     * @throws IOException If there was a problem reading from the buffer
+     */
+    @Deprecated(forRemoval = true)
+    boolean equals(ByteBuffer buffer, int dataVersion, K keyToCompare) throws IOException;
+
+    /**
+     * Compare keyToCompare's data to that contained in the given buffer. The data in the buffer
      * is assumed to be starting at the current buffer position and in the format written by this
      * class's serialize() method. The reason for this rather than just deserializing then doing an
      * object equals is performance. By doing the comparison here you can fail fast on the first

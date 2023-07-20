@@ -66,21 +66,4 @@ public enum FilesTestType {
                 return new ExampleLongLongKeyVariableSize(i);
         }
     }
-
-    /**
-     * Get the file size for a file created in DataFileLowLevelTest.createFile test. Values here are
-     * measured values from a known good test run.
-     */
-    public long getDataFileLowLevelTestFileSize() {
-        switch (this) {
-            case fixed:
-            default:
-            case fixedComplexKey:
-                return 20480L;
-            case variable:
-                return 98304L;
-            case variableComplexKey:
-                return 28672L;
-        }
-    }
 }

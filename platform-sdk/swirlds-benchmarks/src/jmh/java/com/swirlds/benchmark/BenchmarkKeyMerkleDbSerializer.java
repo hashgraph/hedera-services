@@ -59,6 +59,7 @@ public class BenchmarkKeyMerkleDbSerializer implements KeySerializer<BenchmarkKe
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public int serialize(final BenchmarkKey data, final ByteBuffer buffer) throws IOException {
         data.serialize(buffer);
         return getSerializedSize();
@@ -70,7 +71,8 @@ public class BenchmarkKeyMerkleDbSerializer implements KeySerializer<BenchmarkKe
     }
 
     @Override
-    public BenchmarkKey deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated(forRemoval = true)
+    public BenchmarkKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         BenchmarkKey key = new BenchmarkKey();
         key.deserialize(buffer);
         return key;
@@ -85,6 +87,12 @@ public class BenchmarkKeyMerkleDbSerializer implements KeySerializer<BenchmarkKe
 
     @Override
     public boolean equals(final BufferedData buffer, final BenchmarkKey keyToCompare) {
+        return keyToCompare.equals(buffer);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare) {
         return keyToCompare.equals(buffer);
     }
 }

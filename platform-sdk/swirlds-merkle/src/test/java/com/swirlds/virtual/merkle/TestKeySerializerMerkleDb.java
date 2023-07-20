@@ -22,7 +22,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
@@ -62,32 +61,40 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public TestKey deserialize(final ByteBuffer buffer) {
+    @Deprecated(forRemoval = true)
+    public TestKey deserialize(final ByteBuffer buffer, final long dataVersion) {
         final TestKey key = new TestKey();
         key.deserialize(buffer);
         return key;
     }
 
     @Override
-    public TestKey deserialize(ReadableSequentialData in) throws IOException {
+    public TestKey deserialize(ReadableSequentialData in) {
         final TestKey key = new TestKey();
         key.deserialize(in);
         return key;
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public int serialize(final TestKey data, final ByteBuffer buffer) {
         data.serialize(buffer);
         return TestKey.BYTES;
     }
 
     @Override
-    public void serialize(TestKey data, WritableSequentialData out) throws IOException {
+    public void serialize(TestKey data, WritableSequentialData out) {
         data.serialize(out);
     }
 
     @Override
     public boolean equals(final BufferedData buffer, final TestKey keyToCompare) {
         return buffer.readLong() == keyToCompare.getKeyAsLong();
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final TestKey keyToCompare) {
+        return buffer.getLong() == keyToCompare.getKeyAsLong();
     }
 }

@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import java.io.IOException;
@@ -44,11 +46,29 @@ public final class SmartContractMapKeySerializerMerkleDb extends AbstractFixedSi
         return new SmartContractMapKey();
     }
 
+    @Override
+    public void serialize(final SmartContractMapKey key, final WritableSequentialData out) throws IOException {
+        key.serialize(out);
+    }
+
+    @Override
+    public SmartContractMapKey deserialize(final ReadableSequentialData in) throws IOException {
+        final SmartContractMapKey key = new SmartContractMapKey();
+        key.deserialize(in);
+        return key;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean equals(final BufferedData buffer, final SmartContractMapKey keyToCompare) throws IOException {
+        return keyToCompare.equals(buffer);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public boolean equals(ByteBuffer buffer, int dataVersion, SmartContractMapKey keyToCompare) throws IOException {
         return keyToCompare.equals(buffer);
     }
 }

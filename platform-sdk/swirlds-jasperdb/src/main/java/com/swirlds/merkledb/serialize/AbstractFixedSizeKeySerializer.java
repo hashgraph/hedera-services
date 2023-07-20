@@ -89,6 +89,7 @@ public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey> imple
 
     /** {@inheritDoc} */
     @Override
+    @Deprecated(forRemoval = true)
     public int serialize(final K data, final ByteBuffer buffer) throws IOException {
         data.serialize(buffer);
         return serializedKeySize;
@@ -96,7 +97,11 @@ public abstract class AbstractFixedSizeKeySerializer<K extends VirtualKey> imple
 
     /** {@inheritDoc} */
     @Override
-    public K deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated(forRemoval = true)
+    public K deserialize(final ByteBuffer buffer, long dataVersion) throws IOException {
+        if (dataVersion != serializedKeyVersion) {
+            throw new IllegalArgumentException("Serialization version mismatch");
+        }
         final K key = newKey();
         key.deserialize(buffer);
         return key;

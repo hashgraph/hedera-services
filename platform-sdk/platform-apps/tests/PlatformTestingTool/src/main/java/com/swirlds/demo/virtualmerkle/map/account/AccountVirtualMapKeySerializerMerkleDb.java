@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.account;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import java.io.IOException;
@@ -36,12 +38,30 @@ public class AccountVirtualMapKeySerializerMerkleDb extends AbstractFixedSizeKey
         super(CLASS_ID, ClassVersion.ORIGINAL, AccountVirtualMapKey.getSizeInBytes(), 1, AccountVirtualMapKey::new);
     }
 
+    @Override
+    public void serialize(AccountVirtualMapKey dataItem, WritableSequentialData out) throws IOException {
+        dataItem.serialize(out);
+    }
+
+    @Override
+    public AccountVirtualMapKey deserialize(ReadableSequentialData in) throws IOException {
+        final AccountVirtualMapKey key = new AccountVirtualMapKey();
+        key.deserialize(in);
+        return key;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean equals(final BufferedData buffer, final AccountVirtualMapKey keyToCompare)
             throws IOException {
+        return keyToCompare.equals(buffer);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public boolean equals(ByteBuffer buffer, int dataVersion, AccountVirtualMapKey keyToCompare) throws IOException {
         return keyToCompare.equals(buffer);
     }
 }

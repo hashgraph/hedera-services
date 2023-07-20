@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.reconnect;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -54,12 +57,22 @@ public final class TestKey implements VirtualLongKey {
         return 1;
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(k);
+    }
+
     @Override
+    @Deprecated(forRemoval = true)
     public void serialize(final ByteBuffer buffer) {
         buffer.putLong(k);
     }
 
+    public void deserialize(final ReadableSequentialData in) {
+        k = in.readLong();
+    }
+
     @Override
+    @Deprecated(forRemoval = true)
     public void deserialize(final ByteBuffer buffer) {
         k = buffer.getLong();
     }

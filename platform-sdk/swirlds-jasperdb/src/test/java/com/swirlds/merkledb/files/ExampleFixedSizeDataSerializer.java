@@ -46,14 +46,40 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     }
 
     @Override
-    public long[] deserialize(ReadableSequentialData in) throws IOException {
-        return new long[] {in.readLong(), in.readLong()};
+    @Deprecated(forRemoval = true)
+    public int getHeaderSize() {
+        return Long.BYTES;
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
+        return new DataItemHeader(Long.BYTES * 2, buffer.getLong());
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public int serialize(final long[] data, final ByteBuffer buffer) throws IOException {
+        buffer.putLong(data[0]);
+        buffer.putLong(data[1]);
+        return getSerializedSize();
     }
 
     @Override
     public void serialize(final long[] data, final WritableSequentialData out) throws IOException {
         out.writeLong(data[0]);
         out.writeLong(data[1]);
+    }
+
+    @Override
+    public long[] deserialize(final ReadableSequentialData in) throws IOException {
+        return new long[] {in.readLong(), in.readLong()};
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        return new long[] {buffer.getLong(), buffer.getLong()};
     }
 
     @Override

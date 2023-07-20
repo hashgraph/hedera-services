@@ -47,7 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @param <D> Data item type
  */
-public final class DataFileWriter<D> {
+// Future work: make this class final after DataFileWriterJdb is dropped
+public class DataFileWriter<D> {
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
@@ -56,17 +57,20 @@ public final class DataFileWriter<D> {
      * The file channel we are writing to. The channel isn't used directly to write bytes, but to
      * create mapped byte buffers.
      */
-    private FileChannel writingChannel;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected FileChannel writingChannel;
     /**
      * The current mapped byte buffer used for writing. When overflowed, it is released, and another
      * buffer is mapped from the file channel.
      */
-    private MappedByteBuffer writingMmap;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected MappedByteBuffer writingMmap;
     /**
      * Offset, in bytes, of the current mapped byte buffer in the file channel. After the file is
      * completely written and closed, this field value is equal to the file size.
      */
-    private long mmapPositionInFile = 0;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected long mmapPositionInFile = 0;
     /* */
     private BufferedData writingPbjData;
 
@@ -74,18 +78,22 @@ public final class DataFileWriter<D> {
     private BufferedData writingHeaderPbjData;
 
     /** Serializer for converting raw data to/from data items */
-    private final DataItemSerializer<D> dataItemSerializer;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected final DataItemSerializer<D> dataItemSerializer;
     /** The path to the data file we are writing */
-    private final Path path;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected final Path path;
     /** The path to the lock file for data file we are writing */
-    private final Path lockFilePath;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected final Path lockFilePath;
     /** File metadata */
     private final DataFileMetadata metadata;
     /**
      * Count of the number of data items we have written so far. Ready to be stored in footer
      * metadata
      */
-    private long dataItemCount = 0;
+    // Future work: make it private once DataFileWriterJdb is dropped
+    protected long dataItemCount = 0;
 
     /**
      * Create a new data file in the given directory, in append mode. Puts the object into "writing"
@@ -105,8 +113,20 @@ public final class DataFileWriter<D> {
             final DataItemSerializer<D> dataItemSerializer,
             final Instant creationTime)
             throws IOException {
+        this(filePrefix, dataFileDir, index, dataItemSerializer, creationTime, DataFileCommon.FILE_EXTENSION);
+    }
+
+    // Future work: remove this extra constructor, once DataFileWriterJdb is dropped
+    protected DataFileWriter(
+            final String filePrefix,
+            final Path dataFileDir,
+            final int index,
+            final DataItemSerializer<D> dataItemSerializer,
+            final Instant creationTime,
+            final String extension)
+            throws IOException {
         this.dataItemSerializer = dataItemSerializer;
-        this.path = createDataFilePath(filePrefix, dataFileDir, index, creationTime);
+        this.path = createDataFilePath(filePrefix, dataFileDir, index, creationTime, extension);
         this.lockFilePath = getLockFilePath(path);
         if (Files.exists(lockFilePath)) {
             throw new IOException("Tried to start writing to data file [" + path + "] when lock file already existed");
@@ -138,7 +158,8 @@ public final class DataFileWriter<D> {
         writingPbjData = BufferedData.wrap(writingMmap);
     }
 
-    private void writeHeader() throws IOException {
+    // Future work: make it private
+    protected void writeHeader() throws IOException {
         writingHeaderMmap = writingChannel.map(MapMode.READ_WRITE, 0, 1024);
         writingHeaderPbjData = BufferedData.wrap(writingHeaderMmap);
 
@@ -146,10 +167,6 @@ public final class DataFileWriter<D> {
 
         // prepare to write data items
         moveWritingBuffer(writingHeaderPbjData.position());
-    }
-
-    private void updateDataItemCount(final long count) throws IOException {
-        metadata.updateDataItemCount(writingHeaderPbjData, dataItemCount);
     }
 
     /** Get the path for the file being written. Useful when needing to get a reader to the file. */
@@ -266,7 +283,7 @@ public final class DataFileWriter<D> {
         // total file size is where the current writing pos is
         final long totalFileSize = mmapPositionInFile + writingPbjData.position();
         // update data item count in the metadata and in the file
-        updateDataItemCount(dataItemCount);
+        metadata.updateDataItemCount(writingHeaderPbjData, dataItemCount);
         // release all the resources
         DataFileCommon.closeMmapBuffer(writingHeaderMmap);
         DataFileCommon.closeMmapBuffer(writingMmap);

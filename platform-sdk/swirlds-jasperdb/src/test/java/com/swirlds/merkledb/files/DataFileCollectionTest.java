@@ -18,7 +18,8 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
-import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
+import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.checkData;
+import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.getVariableSizeDataForI;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,13 +52,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,61 +78,6 @@ class DataFileCollectionTest {
     protected static final Map<FilesTestType, LongListHeap> storedOffsetsMap = new HashMap<>();
 
     private static final int MAX_TEST_FILE_MB = 16;
-
-    // =================================================================================================================
-    // Helper Methods
-
-    /**
-     * For tests, we want to have all different data sizes, so we use this function to choose how
-     * many times to repeat the data value long
-     */
-    private static int getRepeatCountForKey(final long key) {
-        return (int) (key % 20L);
-    }
-
-    /** Create an example variable sized data item with lengths of data from 1 to 20. */
-    private static long[] getVariableSizeDataForI(final int i, final int valueAddition) {
-        final int repeatCount = getRepeatCountForKey(i);
-        final long[] dataValue = new long[1 + repeatCount];
-        dataValue[0] = i;
-        for (int j = 1; j < dataValue.length; j++) {
-            dataValue[j] = i + valueAddition;
-        }
-        return dataValue;
-    }
-
-    protected static void checkData(
-            final FilesTestType testType, final int fromIndex, final int toIndexExclusive, final int valueAddition) {
-        final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
-        // now read back all the data and check all data
-        for (int i = fromIndex; i < toIndexExclusive; i++) {
-            // test read with index
-            final long fi = i;
-            final long[] dataItem2 = assertDoesNotThrow(
-                    () -> fileCollection.readDataItemUsingIndex(storedOffsets, fi), "Read should not a exception.");
-            checkDataItem(testType, valueAddition, dataItem2, i);
-        }
-    }
-
-    private static void checkDataItem(
-            FilesTestType testType, final int valueAddition, final long[] dataItem, final int expectedKey) {
-        assertNotNull(dataItem, "dataItem should not be null");
-        switch (testType) {
-            default:
-            case fixed:
-                assertEquals(2, dataItem.length, "unexpected length"); // size
-                assertEquals(expectedKey, dataItem[0], "unexpected key"); // key
-                assertEquals(expectedKey + valueAddition, dataItem[1], "unexpected value"); // value
-                break;
-            case variable:
-                assertEquals(
-                        Arrays.toString(getVariableSizeDataForI(expectedKey, valueAddition)),
-                        Arrays.toString(dataItem),
-                        "unexpected dataItem value");
-                break;
-        }
-    }
 
     // =================================================================================================================
     // Tests
@@ -207,7 +153,7 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void check1000(final FilesTestType testType) {
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
     }
 
     @Order(4)
@@ -226,6 +172,19 @@ class DataFileCollectionTest {
         }
     }
 
+    boolean directMemoryUsageByDataFileIteratorWorkaroundApplied = false;
+
+    // When the first DataFileIterator is initialized, it allocates 16Mb direct byte buffer internally.
+    // Since we have direct memory usage checks after each test case, it's reported as a memory leak.
+    // A workaround is to reset memory usage value right after the first usage of iterator. No need to
+    // do it before each test run, it's enough to do just once
+    void reinitializeDirectMemoryUsage() {
+        if (!directMemoryUsageByDataFileIteratorWorkaroundApplied) {
+            initializeDirectMemoryAtStart();
+            directMemoryUsageByDataFileIteratorWorkaroundApplied = true;
+        }
+    }
+
     @Order(10)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
@@ -235,12 +194,13 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection = new DataFileCollection<>(
                 tempFileDir.resolve(testType.name()), "test", testType.dataItemSerializer, loadedDataCallbackImpl);
         fileCollectionMap.put(testType, fileCollection);
+        reinitializeDirectMemoryUsage();
         // check that the 10 files were created previously (in the very first unit test) still are
         // readable
         assertEquals(
                 10,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .count(),
                 "Temp file should not have changed since previous test in sequence");
         // examine loadedDataCallbackImpl content's map sizes as well as checking the data
@@ -252,7 +212,7 @@ class DataFileCollectionTest {
                 1000,
                 loadedDataCallbackImpl.dataValueMap.size(),
                 "Size of data value map in collection loaded from store should reflect known size");
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         assertEquals(new KeyRange(0, 1000), fileCollection.getValidKeyRange(), "Should still have the valid range");
         assertTrue(
                 fileCollection.isLoadedFromExistingFiles(),
@@ -302,7 +262,7 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void check1000AfterReopen(final FilesTestType testType) {
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
     }
 
     /**
@@ -312,8 +272,8 @@ class DataFileCollectionTest {
      */
     private static class SlowImmutableIndexedObjectListUsingArray<T extends IndexedObject>
             extends ImmutableIndexedObjectListUsingArray<T> {
-        public SlowImmutableIndexedObjectListUsingArray(final List<T> objects) {
-            super(objects);
+        public SlowImmutableIndexedObjectListUsingArray(final Function<Integer, T[]> ap, final List<T> objects) {
+            super(ap, objects);
         }
 
         @Override
@@ -345,7 +305,8 @@ class DataFileCollectionTest {
                             null,
                             testType.dataItemSerializer,
                             testCallback,
-                            SlowImmutableIndexedObjectListUsingArray::new);
+                            l -> new SlowImmutableIndexedObjectListUsingArray<DataFileReader<long[]>>(
+                                    DataFileReader[]::new, l));
                     fileCollectionMap.put(testType, reopenedFileCollection);
                 },
                 "Shouldn't be a problem re-opening a closed collection");
@@ -456,7 +417,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .count(),
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
@@ -476,7 +437,7 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void check1000AfterMerge(final FilesTestType testType) {
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
     }
 
     @Order(200)
@@ -506,7 +467,7 @@ class DataFileCollectionTest {
         assertEquals(
                 2,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .count(),
                 "unexpected # of files");
     }
@@ -515,8 +476,8 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void check1000BeforeMerge(final FilesTestType testType) {
-        checkData(testType, 0, 50, 100_000);
-        checkData(testType, 50, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 50, 100_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 50, 1000, 10_000);
     }
 
     @Order(202)
@@ -534,8 +495,8 @@ class DataFileCollectionTest {
                 // the time while we are merging
                 while (!mergeComplete.get()) {
                     try {
-                        checkData(testType, 0, 50, 100_000);
-                        checkData(testType, 50, 1000, 10_000);
+                        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 50, 100_000);
+                        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 50, 1000, 10_000);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -598,7 +559,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(tempFileDir.resolve(testType.name()))
-                        .filter(f -> f.toString().endsWith(".jdb"))
+                        .filter(f -> f.toString().endsWith(".pbj"))
                         .count(),
                 "unexpected # of files");
     }
@@ -607,8 +568,8 @@ class DataFileCollectionTest {
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void check1000AfterMerge2(final FilesTestType testType) {
-        checkData(testType, 0, 50, 100_000);
-        checkData(testType, 50, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 50, 100_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 50, 1000, 10_000);
     }
 
     @Order(1000)
@@ -661,7 +622,7 @@ class DataFileCollectionTest {
                         .count(),
                 "expected 10 db files");
         assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files");
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // check all files are available for merge
         assertSame(10, fileCollection.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // close
@@ -672,7 +633,7 @@ class DataFileCollectionTest {
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // check all files are available for merge
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // merge
@@ -682,12 +643,12 @@ class DataFileCollectionTest {
         assertEquals(
                 1,
                 Files.list(dbDir)
-                        .filter(file -> file.getFileName().toString().matches(storeName + ".*jdb"))
+                        .filter(file -> file.getFileName().toString().matches(storeName + ".*pbj"))
                         .count(),
                 "expected 1 db files but had ["
                         + Arrays.toString(Files.list(dbDir).toArray())
                         + "]");
-        checkData(testType, 0, 1000, 10_000);
+        checkData(fileCollectionMap.get(testType), storedOffsetsMap.get(testType), testType, 0, 1000, 10_000);
         // close db
         fileCollection2.close();
     }

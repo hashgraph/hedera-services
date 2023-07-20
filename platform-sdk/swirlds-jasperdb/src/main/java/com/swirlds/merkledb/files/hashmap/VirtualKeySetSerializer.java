@@ -18,6 +18,8 @@ package com.swirlds.merkledb.files.hashmap;
 
 import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
@@ -38,16 +40,28 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
         super(0, 0, BYTES_PER_LONG, 0);
     }
 
+    @Override
+    public void serialize(VirtualLongKey data, WritableSequentialData out) throws IOException {
+        out.writeLong(data.getKeyAsLong());
+    }
+
     /** {@inheritDoc} */
     @Override
+    @Deprecated(forRemoval = true)
     public int serialize(final VirtualLongKey data, final ByteBuffer buffer) throws IOException {
         buffer.putLong(data.getKeyAsLong());
         return BYTES_PER_LONG;
     }
 
+    @Override
+    public VirtualLongKey deserialize(ReadableSequentialData in) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
     /** {@inheritDoc} */
     @Override
-    public VirtualLongKey deserialize(final ByteBuffer buffer) throws IOException {
+    @Deprecated(forRemoval = true)
+    public VirtualLongKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -55,5 +69,13 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
     @Override
     public boolean equals(final BufferedData buffer, final VirtualLongKey keyToCompare) throws IOException {
         return buffer.readLong() == keyToCompare.getKeyAsLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Deprecated(forRemoval = true)
+    public boolean equals(final ByteBuffer buffer, final int dataVersion, final VirtualLongKey keyToCompare)
+            throws IOException {
+        return buffer.getLong() == keyToCompare.getKeyAsLong();
     }
 }

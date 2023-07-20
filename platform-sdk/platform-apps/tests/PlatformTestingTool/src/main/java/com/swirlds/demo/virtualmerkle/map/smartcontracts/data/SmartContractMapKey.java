@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.smartcontracts.data;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -85,23 +87,40 @@ public final class SmartContractMapKey implements VirtualKey {
         return contractId == buffer.readLong() && keyValuePairIndex == buffer.readLong();
     }
 
+    @Deprecated(forRemoval = true)
+    public boolean equals(final ByteBuffer buffer) throws IOException {
+        return contractId == buffer.getLong() && keyValuePairIndex == buffer.getLong();
+    }
+
     public static int getSizeInBytes() {
         return 2 * Long.BYTES;
+    }
+
+    public void serialize(final WritableSequentialData out) throws IOException {
+        out.writeLong(contractId);
+        out.writeLong(keyValuePairIndex);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @Deprecated(forRemoval = true)
     public void serialize(final ByteBuffer buffer) throws IOException {
         buffer.putLong(contractId);
         buffer.putLong(keyValuePairIndex);
     }
 
+    public void deserialize(final ReadableSequentialData in) throws IOException {
+        contractId = in.readLong();
+        keyValuePairIndex = in.readLong();
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
+    @Deprecated(forRemoval = true)
     public void deserialize(final ByteBuffer buffer) throws IOException {
         contractId = buffer.getLong();
         keyValuePairIndex = buffer.getLong();

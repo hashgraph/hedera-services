@@ -20,12 +20,30 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public interface DataItemSerializer<D> extends BaseSerializer<D> {
 
-    void serialize(D dataItem, WritableSequentialData out) throws IOException;
+    /**
+     * Get the number of bytes used for data item header
+     *
+     * @return size of header in bytes
+     */
+    @Deprecated(forRemoval = true)
+    default int getHeaderSize() {
+        throw new RuntimeException("TO IMPLEMENT");
+    }
 
-    D deserialize(ReadableSequentialData in) throws IOException;
+    /**
+     * Deserialize data item header from the given byte buffer
+     *
+     * @param buffer Buffer to read from
+     * @return The read header
+     */
+    @Deprecated(forRemoval = true)
+    default DataItemHeader deserializeHeader(ByteBuffer buffer) {
+        throw new RuntimeException("TO IMPLEMENT");
+    }
 
     long extractKey(BufferedData dataItemData);
 }

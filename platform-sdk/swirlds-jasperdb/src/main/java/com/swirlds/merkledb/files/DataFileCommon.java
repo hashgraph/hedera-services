@@ -101,8 +101,10 @@ public final class DataFileCommon {
     /** Date formatter for dates used in data file names */
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS").withZone(ZoneId.of("Z"));
-    /** Extension to use for Merkle DB data files :-) */
-    private static final String FILE_EXTENSION = ".jdb";
+    /** Extension to use for Merkle DB data files in protobuf format */
+    public static final String FILE_EXTENSION = ".pbj";
+    /** Extension to use for Merkle DB data files in legacy binary format */
+    public static final String FILE_EXTENSION_JDB = ".jdb";
     /**
      * System page size used in calculations, could be read from system but for linux we are pretty
      * safe assuming 4k
@@ -116,11 +118,6 @@ public final class DataFileCommon {
     /** Comparator for comparing DataFileReaders by file creation time reversed */
     private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED =
             DATA_FILE_READER_CREATION_TIME_COMPARATOR.reversed();
-
-    static final FieldDefinition FIELD_DATAITEM_KEY =
-            new FieldDefinition("key", FieldType.SINT64, false, true, false, 1);
-    static final FieldDefinition FIELD_DATAITEM_DATA =
-            new FieldDefinition("key", FieldType.BYTES, false, true, false, 5);
 
     static final FieldDefinition FIELD_DATAFILE_INDEX =
             new FieldDefinition("index", FieldType.UINT32, false, true, false, 1);
@@ -186,14 +183,14 @@ public final class DataFileCommon {
      * @param creationInstant the date and time the file was created
      * @return path to file
      */
-    static Path createDataFilePath(
-            final String filePrefix, final Path dataFileDir, final int index, final Instant creationInstant) {
+    static Path createDataFilePath(final String filePrefix, final Path dataFileDir, final int index,
+            final Instant creationInstant, final String extension) {
         return dataFileDir.resolve(filePrefix
                 + "_"
                 + DATE_FORMAT.format(creationInstant)
                 + "_"
                 + StringUtils.leftPad(Integer.toString(index), PRINTED_INDEX_FIELD_WIDTH, '_')
-                + FILE_EXTENSION);
+                + extension);
     }
 
     /** Get the path for a lock file for a given data file path */
@@ -262,7 +259,8 @@ public final class DataFileCommon {
             return false;
         }
         final String fileName = path.getFileName().toString();
-        final boolean validFile = fileName.startsWith(filePrefix) && fileName.endsWith(FILE_EXTENSION);
+        final boolean validFile = fileName.startsWith(filePrefix) &&
+                (fileName.endsWith(FILE_EXTENSION) || fileName.endsWith(FILE_EXTENSION_JDB));
         if (!validFile) {
             return false;
         }

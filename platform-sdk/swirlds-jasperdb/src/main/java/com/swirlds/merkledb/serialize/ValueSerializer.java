@@ -56,12 +56,4 @@ public interface ValueSerializer<V extends VirtualValue> extends BaseSerializer<
     default void deserialize(SerializableDataInputStream in, int version) throws IOException {
         // most value serializers are stateless, so there is nothing to deserialize
     }
-
-    default void serialize(V data, WritableSequentialData out) throws IOException {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
-
-    default V deserialize(ReadableSequentialData in) throws IOException {
-        throw new RuntimeException("TO IMPLEMENT");
-    }
 }

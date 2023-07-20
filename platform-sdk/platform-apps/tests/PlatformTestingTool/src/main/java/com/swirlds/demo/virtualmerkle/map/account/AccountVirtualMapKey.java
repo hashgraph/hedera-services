@@ -16,6 +16,8 @@
 
 package com.swirlds.demo.virtualmerkle.map.account;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -86,20 +88,34 @@ public class AccountVirtualMapKey implements VirtualKey {
         this.accountID = in.readLong();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(final ByteBuffer buffer) throws IOException {
-        buffer.putLong(realmID);
-        buffer.putLong(shardId);
-        buffer.putLong(accountID);
+    public void serialize(final WritableSequentialData out) throws IOException {
+        out.writeLong(realmID);
+        out.writeLong(shardId);
+        out.writeLong(accountID);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @Deprecated(forRemoval = true)
+    public void serialize(final ByteBuffer buffer) throws IOException {
+        buffer.putLong(realmID);
+        buffer.putLong(shardId);
+        buffer.putLong(accountID);
+    }
+
+    public void deserialize(final ReadableSequentialData in) throws IOException {
+        this.realmID = in.readLong();
+        this.shardId = in.readLong();
+        this.accountID = in.readLong();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Deprecated(forRemoval = true)
     public void deserialize(final ByteBuffer buffer) throws IOException {
         this.realmID = buffer.getLong();
         this.shardId = buffer.getLong();
@@ -112,6 +128,11 @@ public class AccountVirtualMapKey implements VirtualKey {
 
     public boolean equals(final BufferedData buffer) throws IOException {
         return realmID == buffer.readLong() && shardId == buffer.readLong() && accountID == buffer.readLong();
+    }
+
+    @Deprecated(forRemoval = true)
+    public boolean equals(final ByteBuffer buffer) throws IOException {
+        return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
     }
 
     /**

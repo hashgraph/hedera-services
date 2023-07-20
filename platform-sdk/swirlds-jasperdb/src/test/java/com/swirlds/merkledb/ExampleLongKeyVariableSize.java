@@ -247,7 +247,8 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
          * @return Deserialized data item
          */
         @Override
-        public ExampleLongKeyVariableSize deserialize(final ByteBuffer buffer)
+        @Deprecated(forRemoval = true)
+        public ExampleLongKeyVariableSize deserialize(final ByteBuffer buffer, final long dataVersion)
                 throws IOException {
             final ExampleLongKeyVariableSize key = new ExampleLongKeyVariableSize();
             key.deserialize(buffer);
@@ -262,6 +263,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
 
         @Override
+        @Deprecated(forRemoval = true)
         public int serialize(final ExampleLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
             data.serialize(buffer);
             return 1 + computeNonZeroBytes(data.getKeyAsLong());
@@ -298,6 +300,23 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             if (numOfBytes >= 3) value |= ((long) buffer.readByte() & 255) << 16;
             if (numOfBytes >= 2) value |= ((long) buffer.readByte() & 255) << 8;
             if (numOfBytes >= 1) value |= ((long) buffer.readByte() & 255);
+            return value == keyToCompare.getKeyAsLong();
+        }
+
+        @Override
+        @Deprecated(forRemoval = true)
+        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyVariableSize keyToCompare)
+                throws IOException {
+            byte numOfBytes = buffer.get();
+            long value = 0;
+            if (numOfBytes >= 8) value |= ((long) buffer.get() & 255) << 56;
+            if (numOfBytes >= 7) value |= ((long) buffer.get() & 255) << 48;
+            if (numOfBytes >= 6) value |= ((long) buffer.get() & 255) << 40;
+            if (numOfBytes >= 5) value |= ((long) buffer.get() & 255) << 32;
+            if (numOfBytes >= 4) value |= ((long) buffer.get() & 255) << 24;
+            if (numOfBytes >= 3) value |= ((long) buffer.get() & 255) << 16;
+            if (numOfBytes >= 2) value |= ((long) buffer.get() & 255) << 8;
+            if (numOfBytes >= 1) value |= ((long) buffer.get() & 255);
             return value == keyToCompare.getKeyAsLong();
         }
 

@@ -50,7 +50,8 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * @param <D> Data item type
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
-public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
+// Future work: make it final again after DataFileReaderJdb is dropped
+public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 16;
     private static final long MAX_FILE_SIZE = 32L * 1024 * 1024 * 1024;
     /** FileChannel's for each thread */
@@ -69,11 +70,14 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
     /** Indicates whether this file reader is open */
     private final AtomicBoolean open = new AtomicBoolean(true);
     /** The path to the file on disk */
-    private final Path path;
+    // Future work: make it back private
+    protected final Path path;
     /** The metadata for this file read from the footer */
-    private final DataFileMetadata metadata;
+    // Future work: make it back private
+    protected final DataFileMetadata metadata;
     /** Serializer for converting raw data to/from data items */
-    private final DataItemSerializer<D> dataItemSerializer;
+    // Future work: make it back private
+    protected final DataItemSerializer<D> dataItemSerializer;
     /** A flag for if the underlying file is fully written and ready to be compacted. */
     private final AtomicBoolean fileCompleted = new AtomicBoolean(false);
     /**
@@ -82,6 +86,7 @@ public final class DataFileReader<D> implements AutoCloseable, Comparable<DataFi
      * and for newly created files right after they are fully written and available to compact.
      */
     private final AtomicLong fileSizeBytes = new AtomicLong(0);
+
     /**
      * Open an existing data file, reading the metadata from the file
      *

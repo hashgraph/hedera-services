@@ -60,6 +60,38 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
+    @Deprecated(forRemoval = true)
+    public int getHeaderSize() {
+        return Long.BYTES * 2;
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
+        return new DataItemHeader((int) buffer.getLong(), buffer.getLong());
+    }
+
+    @Override
+    public void serialize(final long[] data, final WritableSequentialData out) throws IOException {
+        int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
+        out.writeLong(dataSizeBytes);
+        for (long d : data) {
+            out.writeLong(d);
+        }
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public int serialize(long[] data, ByteBuffer buffer) throws IOException {
+        int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
+        buffer.putLong(dataSizeBytes);
+        for (long d : data) {
+            buffer.putLong(d);
+        }
+        return dataSizeBytes;
+    }
+
+    @Override
     public long[] deserialize(ReadableSequentialData in) throws IOException {
         int dataSize = (int) in.readLong(); // int stored as long
         int repeats = (dataSize - Long.BYTES) / Long.BYTES;
@@ -72,12 +104,16 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    public void serialize(final long[] data, final WritableSequentialData out) throws IOException {
-        int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
-        out.writeLong(dataSizeBytes);
-        for (long d : data) {
-            out.writeLong(d);
+    @Deprecated(forRemoval = true)
+    public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        int dataSize = (int) buffer.getLong(); // int stored as long
+        int repeats = (dataSize - Long.BYTES) / Long.BYTES;
+        long[] dataItem = new long[repeats];
+        // read key and data longs
+        for (int i = 0; i < dataItem.length; i++) {
+            dataItem[i] = buffer.getLong();
         }
+        return dataItem;
     }
 
     @Override

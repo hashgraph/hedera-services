@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.files.DataFileCommon.FILE_EXTENSION;
 import static com.swirlds.merkledb.files.DataFileCommon.createDataFilePath;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -133,7 +134,7 @@ class DataFileLowLevelTest {
         assertTrue(Files.exists(writer.getPath()), "expected file does not exist");
         assertEquals(
                 writer.getPath(),
-                createDataFilePath("test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START),
+                createDataFilePath("test_" + testType.name(), tempFileDir, DATA_FILE_INDEX, TEST_START, FILE_EXTENSION),
                 "unexpected path for writer");
 //        long expectedFileSizeEstimate = testType.getDataFileLowLevelTestFileSize();
 //        assertEquals(expectedFileSizeEstimate, writer.getFileSizeEstimate(), "unexpected fileSizeEstimate");

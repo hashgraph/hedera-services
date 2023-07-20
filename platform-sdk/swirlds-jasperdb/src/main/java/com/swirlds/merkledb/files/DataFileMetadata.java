@@ -42,13 +42,16 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * DataFile's metadata that is stored in the data file's footer
  */
 @SuppressWarnings("unused")
-public final class DataFileMetadata {
+// Future work: make this class final, once DataFileMetadataJdb is dropped
+public class DataFileMetadata {
 
     /** The file index, in a data file collection */
-    private final int index;
+    // Future work: make it private final, once this class is final again
+    protected int index;
 
     /** The creation date of this file */
-    private final Instant creationDate;
+    // Future work: make it private final, once this class is final again
+    protected Instant creationDate;
 
     /**
      * The number of data items the file contains. When metadata is loaded from a file, the number
@@ -57,10 +60,12 @@ public final class DataFileMetadata {
      * right before the file is finished writing. For such new files, no code needs their metadata
      * until they are fully written, so wrong (zero) item count shouldn't be an issue.
      */
-    private volatile long itemsCount;
+    // Future work: make it private, once this class is final again
+    protected volatile long itemsCount;
 
     /** Serialization version for data stored in the file */
-    private final long serializationVersion;
+    // Future work: make it private final, once this class is final again
+    protected long serializationVersion;
 
     /** Header (metadata) size, in bytes */
     private final int headerSize;
@@ -124,7 +129,8 @@ public final class DataFileMetadata {
         }
     }
 
-    private int calculateHeaderSize() {
+    // Future work: make it private once DataFileMetadataJdb is dropped
+    protected int calculateHeaderSize() {
 //        return ProtoWriterTools.sizeOfInteger(FIELD_DATAFILE_INDEX, index) +
         return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT) +
                 ProtoUtils.sizeOfUnsignedVarInt32(index) +
