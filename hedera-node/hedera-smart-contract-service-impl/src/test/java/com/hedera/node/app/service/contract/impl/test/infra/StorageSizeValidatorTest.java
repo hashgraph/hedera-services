@@ -16,27 +16,28 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertExhaustsResourceLimit;
-import static org.mockito.BDDMockito.given;
-
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertExhaustsResourceLimit;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class StorageSizeValidatorTest {
     private static final long PRETEND_MAX_AGGREGATE = 123456L;
 
     @Mock
-    private HandleExtWorldScope extWorldScope;
+    private ExtWorldScope extWorldScope;
 
     private StorageSizeValidator subject;
 

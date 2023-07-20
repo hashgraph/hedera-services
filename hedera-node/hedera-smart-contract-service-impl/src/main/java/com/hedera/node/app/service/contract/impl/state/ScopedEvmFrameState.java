@@ -90,32 +90,25 @@ public class ScopedEvmFrameState implements EvmFrameState {
 
     private final ExtFrameScope extFrameScope;
     private final ContractStateStore contractStateStore;
-    private final WritableKVState<SlotKey, SlotValue> storage;
-    private final WritableKVState<EntityNumber, Bytecode> bytecode;
 
-    public ScopedEvmFrameState(
-            @NonNull final ExtFrameScope extFrameScope,
-            @NonNull final ContractStateStore contractStateStore,
-            @NonNull final WritableKVState<SlotKey, SlotValue> storage,
-            @NonNull final WritableKVState<EntityNumber, Bytecode> bytecode) {
-        this.contractStateStore = contractStateStore;
-        this.storage = requireNonNull(storage);
-        this.bytecode = requireNonNull(bytecode);
+    public ScopedEvmFrameState(@NonNull final ExtFrameScope extFrameScope, @NonNull final ContractStateStore contractStateStore) {
         this.extFrameScope = requireNonNull(extFrameScope);
+        this.contractStateStore = requireNonNull(contractStateStore);
     }
 
     @Override
     public void setStorageValue(final long number, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        final var oldSlotValue = storage.get(slotKey);
-        // Ensure we don't change any prev/next keys until committing the final WorldUpdater
+        final var oldSlotValue = contractStateStore.getSlotValue(slotKey);
+        // Ensure we don't change any prev/next keys until the base commit
         final var slotValue = new SlotValue(
                 tuweniToPbjBytes(requireNonNull(value)),
                 oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.previousKey(),
                 oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.nextKey());
-        // Note we intentionally do not call remove() when the new value is zero because we
-        // want to preserve the prev/next key information until the final commit
-        storage.put(slotKey, slotValue);
+        // We don't call remove() here when the new value is zero, again because we
+        // want to preserve the prev/next key information until the base commit; only
+        // then will we remove the zeroed out slot from the K/V state
+        contractStateStore.putSlot(slotKey, slotValue);
     }
 
     /**
@@ -124,7 +117,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull UInt256 getStorageValue(final long number, @NonNull final UInt256 key) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        return valueOrZero(storage.get(slotKey));
+        return valueOrZero(contractStateStore.getSlotValue(slotKey));
     }
 
     /**
@@ -133,7 +126,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull UInt256 getOriginalStorageValue(final long number, @NonNull final UInt256 key) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        return valueOrZero(storage.getOriginalValue(slotKey));
+        return valueOrZero(contractStateStore.getOriginalSlotValue(slotKey));
     }
 
     /**
@@ -142,12 +135,12 @@ public class ScopedEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull List<StorageAccesses> getStorageChanges() {
         final Map<Long, List<StorageAccess>> modifications = new TreeMap<>();
-        storage.modifiedKeys().forEach(slotKey -> modifications
+        contractStateStore.getModifiedSlotKeys().forEach(slotKey -> modifications
                 .computeIfAbsent(slotKey.contractNumber(), k -> new ArrayList<>())
                 .add(StorageAccess.newWrite(
                         pbjToTuweniUInt256(slotKey.key()),
-                        valueOrZero(storage.getOriginalValue(slotKey)),
-                        valueOrZero(storage.get(slotKey)))));
+                        valueOrZero(contractStateStore.getOriginalSlotValue(slotKey)),
+                        valueOrZero(contractStateStore.getSlotValue(slotKey)))));
         final List<StorageAccesses> allChanges = new ArrayList<>();
         modifications.forEach(
                 (number, storageAccesses) -> allChanges.add(new StorageAccesses(number, storageAccesses)));
@@ -159,7 +152,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public long getKvStateSize() {
-        return storage.size();
+        return contractStateStore.getNumSlots();
     }
 
     /**
@@ -176,7 +169,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public @NonNull Bytes getCode(final long number) {
-        final var numberedBytecode = bytecode.get(new EntityNumber(number));
+        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
         if (numberedBytecode == null) {
             return Bytes.EMPTY;
         } else {
@@ -190,7 +183,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public @NonNull Hash getCodeHash(final long number) {
-        final var numberedBytecode = bytecode.get(new EntityNumber(number));
+        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
         if (numberedBytecode == null) {
             return Hash.EMPTY;
         } else {
@@ -252,7 +245,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public void setCode(final long number, @NonNull final Bytes code) {
-        bytecode.put(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
+        contractStateStore.putBytecode(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
     }
 
     /**

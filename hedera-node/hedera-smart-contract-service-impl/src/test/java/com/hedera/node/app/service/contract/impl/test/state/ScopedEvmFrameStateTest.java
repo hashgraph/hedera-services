@@ -28,7 +28,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
@@ -37,7 +37,6 @@ import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes32;
@@ -117,22 +116,16 @@ class ScopedEvmFrameStateTest {
             .build();
 
     @Mock
-    private HandleExtFrameScope extFrameScope;
+    private ExtFrameScope extFrameScope;
 
     @Mock
     private ContractStateStore contractStateStore;
-
-    @Mock
-    private WritableKVState<SlotKey, SlotValue> storage;
-
-    @Mock
-    private WritableKVState<EntityNumber, Bytecode> bytecode;
 
     private ScopedEvmFrameState subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ScopedEvmFrameState(extFrameScope, contractStateStore, storage, bytecode);
+        subject = new ScopedEvmFrameState(extFrameScope, contractStateStore);
     }
 
     @Test
@@ -155,12 +148,12 @@ class ScopedEvmFrameStateTest {
 
         subject.setCode(ACCOUNT_NUM, pbjToTuweniBytes(SOME_PRETEND_CODE));
 
-        verify(bytecode).put(new EntityNumber(ACCOUNT_NUM), expectedCode);
+        verify(contractStateStore).putBytecode(new EntityNumber(ACCOUNT_NUM), expectedCode);
     }
 
     @Test
     void getsExtantStorageValues() {
-        given(storage.get(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
+        given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
 
         final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
         final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
@@ -170,7 +163,7 @@ class ScopedEvmFrameStateTest {
 
     @Test
     void getsOriginalStorageValues() {
-        given(storage.getOriginalValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
+        given(contractStateStore.getOriginalSlotValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
 
         final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
         final var actualWord = subject.getOriginalStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
@@ -197,7 +190,7 @@ class ScopedEvmFrameStateTest {
                 new SlotKey(1L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
                 new SlotKey(2L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
                 new SlotKey(2L, tuweniToPbjBytes(UInt256.ONE)));
-        given(storage.modifiedKeys()).willReturn(new LinkedHashSet<>(modifiedKeys));
+        given(contractStateStore.getModifiedSlotKeys()).willReturn(new LinkedHashSet<>(modifiedKeys));
         final var iter = modifiedKeys.iterator();
         givenOrigAndNewValues(iter.next(), UInt256.ONE, UInt256.MAX_VALUE);
         givenOrigAndNewValues(iter.next(), UInt256.MIN_VALUE, UInt256.ONE);
@@ -211,11 +204,11 @@ class ScopedEvmFrameStateTest {
 
     private void givenOrigAndNewValues(
             @NonNull final SlotKey key, @NonNull final UInt256 origValue, @NonNull final UInt256 newValue) {
-        given(storage.getOriginalValue(key))
+        given(contractStateStore.getOriginalSlotValue(key))
                 .willReturn(SlotValue.newBuilder()
                         .value(tuweniToPbjBytes(origValue))
                         .build());
-        given(storage.get(key))
+        given(contractStateStore.getSlotValue(key))
                 .willReturn(
                         SlotValue.newBuilder().value(tuweniToPbjBytes(newValue)).build());
     }
@@ -230,7 +223,7 @@ class ScopedEvmFrameStateTest {
 
         subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
 
-        verify(storage).put(A_SLOT_KEY, newSlotValue);
+        verify(contractStateStore).putSlot(A_SLOT_KEY, newSlotValue);
     }
 
     @Test
@@ -246,10 +239,10 @@ class ScopedEvmFrameStateTest {
                 .nextKey(Bytes.fromHex("5678"))
                 .build();
 
-        given(storage.get(A_SLOT_KEY)).willReturn(oldSlotValue);
+        given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(oldSlotValue);
         subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
 
-        verify(storage).put(A_SLOT_KEY, newSlotValue);
+        verify(contractStateStore).putSlot(A_SLOT_KEY, newSlotValue);
     }
 
     @Test
@@ -261,7 +254,7 @@ class ScopedEvmFrameStateTest {
 
     @Test
     void getsZeroWordForEmptySlotValue() {
-        given(storage.get(A_SLOT_KEY)).willReturn(SlotValue.DEFAULT);
+        given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(SlotValue.DEFAULT);
 
         final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
 
@@ -306,7 +299,7 @@ class ScopedEvmFrameStateTest {
 
     @Test
     void getsEmptyCodeForNull() {
-        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null));
+        given(contractStateStore.getBytecode(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null));
 
         final var actualCode = subject.getCode(ACCOUNT_NUM);
 
@@ -696,12 +689,12 @@ class ScopedEvmFrameStateTest {
 
     @Test
     void delegatesSizeOfKvState() {
-        given(storage.size()).willReturn(123L);
+        given(contractStateStore.getNumSlots()).willReturn(123L);
         assertEquals(123L, subject.getKvStateSize());
     }
 
     private void givenWellKnownBytecode() {
-        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(SOME_PRETEND_BYTECODE);
+        given(contractStateStore.getBytecode(new EntityNumber(ACCOUNT_NUM))).willReturn(SOME_PRETEND_BYTECODE);
     }
 
     private void givenWellKnownAccount(final Account.Builder builder) {

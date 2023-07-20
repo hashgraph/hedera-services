@@ -16,31 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
-import com.hedera.node.app.spi.state.WritableKVState;
-import java.util.List;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 @ExtendWith(MockitoExtension.class)
 class LegibleStorageManagerTest {
     @Mock
-    private HandleExtWorldScope scope;
+    private ExtWorldScope extWorldScope;
 
     @Mock
-    private WritableKVState<SlotKey, SlotValue> storage;
+    private ContractStateStore store;
 
     private final LegibleStorageManager subject = new LegibleStorageManager();
 
     @Test
     void rewriteIsNoopForNow() {
-        assertDoesNotThrow(() -> subject.rewrite(scope, List.of(), List.of(), storage));
+        assertDoesNotThrow(() -> subject.rewrite(extWorldScope, List.of(), List.of(), store));
     }
 }

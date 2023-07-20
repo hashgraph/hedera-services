@@ -16,6 +16,33 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
+import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
+import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
+import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
+import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
+import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Set;
+
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -53,32 +80,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
-import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
-import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
-import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
-import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
-import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionProcessorTest {
@@ -210,7 +211,7 @@ class TransactionProcessorTest {
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        inOrder.verify(worldUpdater).setupAliasedCreate(Address.ZERO, expectedToAddress);
+        inOrder.verify(worldUpdater).setupAliasedCreate(EIP_1014_ADDRESS, expectedToAddress);
         inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
@@ -251,7 +252,7 @@ class TransactionProcessorTest {
         given(gasCharging.chargeForGas(senderAccount, null, context, worldUpdater, transaction))
                 .willReturn(NO_ALLOWANCE_CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
-        given(worldUpdater.setupCreate(Address.ZERO)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(worldUpdater.setupCreate(EIP_1014_ADDRESS)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frameBuilder.buildInitialFrameWith(
                         transaction,
                         worldUpdater,
@@ -265,12 +266,11 @@ class TransactionProcessorTest {
                         transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
-        given(worldUpdater.setupCreate(Address.ZERO)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        inOrder.verify(worldUpdater).setupCreate(Address.ZERO);
+        inOrder.verify(worldUpdater).setupCreate(EIP_1014_ADDRESS);
         inOrder.verify(gasCharging).chargeForGas(senderAccount, null, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
                 .buildInitialFrameWith(

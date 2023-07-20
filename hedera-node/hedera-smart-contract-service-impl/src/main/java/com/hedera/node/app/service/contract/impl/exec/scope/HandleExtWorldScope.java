@@ -17,9 +17,10 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,12 +28,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Map;
 
 /**
- * A {@link HandleExtWorldScope} implementation based on a {@link HandleContext}.
+ * A fully mutable {@link ExtWorldScope} implementation based on a {@link HandleContext}.
  */
 @TransactionScope
-public class HandleExtWorldScope {
+public class HandleExtWorldScope implements ExtWorldScope {
     private final HandleContext context;
 
     @Inject
@@ -41,207 +43,163 @@ public class HandleExtWorldScope {
     }
 
     /**
-     * Creates a new {@link HandleExtWorldScope} that is a child of this {@link HandleExtWorldScope}.
-     *
-     * @return a nested {@link HandleExtWorldScope}
+     * {@inheritDoc}
      */
+    @Override
     public @NonNull HandleExtWorldScope begin() {
         context.savepointStack().createSavepoint();
         return this;
     }
 
     /**
-     * Commits all changes made within this {@link HandleExtWorldScope} to the parent {@link HandleExtWorldScope}. For
-     * everything except records, these changes will only affect state if every ancestor up to
-     * and including the root {@link HandleExtWorldScope} is also committed. Records are a bit different,
-     * as even if the root {@link HandleExtWorldScope} reverts, any records created within this
-     * {@link HandleExtWorldScope} will still appear in state; but those with status {@code SUCCESS} will
-     * have with their stateful effects cleared from the record and their status replaced with
-     * {@code REVERTED_SUCCESS}.
+     * {@inheritDoc}
      */
+    @Override
     public void commit() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Reverts all changes and ends this session, with the possible exception of records, as
-     * described above.
+     * {@inheritDoc}
      */
+    @Override
     public void revert() {
         context.savepointStack().rollback();
     }
 
     /**
-     * Returns the {@link WritableStates} the {@code ContractService} can use to update
-     * its own state within this {@link HandleExtWorldScope}.
-     *
-     * @return the contract state reflecting all changes made up to this {@link HandleExtWorldScope}
+     * {@inheritDoc}
      */
+    @Override
     public ContractStateStore getStore() {
-        return context.writableStore(ContractStateStore.class);
+        return context.writableStore(WritableContractStateStore.class);
     }
 
     /**
-     * Returns the account number of the Hedera account that is paying for the transaction.
-     *
-     * @return the payer account number
+     * {@inheritDoc}
      */
-    public long payerAccountNumber() {
-        return context.payer().accountNumOrThrow();
-    }
-
-    /**
-     * Returns what will be the next new entity number.
-     *
-     * @return the next entity number
-     */
+    @Override
     public long peekNextEntityNumber() {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Reserves a new entity number for a contract being created.
-     *
-     * @return the reserved entity number
+     * {@inheritDoc}
      */
+    @Override
     public long useNextEntityNumber() {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Returns the entropy available in this scope. See <a href="https://hips.hedera.com/hip/hip-351">HIP-351</a>
-     * for details on how the Hedera node implements this.
-     *
-     * @return the available entropy
+     * {@inheritDoc}
      */
+    @Override
     public @NonNull Bytes entropy() {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Returns the lazy creation cost within this scope.
-     *
-     * @return the lazy creation cost in gas
+     * {@inheritDoc}
      */
+    @Override
     public long lazyCreationCostInGas() {
         return 0;
     }
 
     /**
-     * Given an amount in tinycents, return the equivalent value in tinybars at the
-     * active exchange rate.
-     *
-     * @param tinycents the fee in tinycents
-     * @return the equivalent cost in tinybars
+     * {@inheritDoc}
      */
+    @Override
     public long valueInTinybars(final long tinycents) {
         return 0;
     }
 
     /**
-     * Collects the given fee from the given account. The caller should have already
-     * verified that the account exists and has sufficient balance to pay the fee, so
-     * this method surfaces any problem by throwing an exception.
-     *
-     * @param payerId the account to collect the fee from
-     * @param amount the amount to collect
-     * @throws IllegalArgumentException if the collection fails for any reason
+     * {@inheritDoc}
      */
+    @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Refunds the given {@code amount} of fees from the given {@code fromEntityNumber}.
-     *
-     * @param payerId the address of the account to refund the fees to
-     * @param amount          the amount of fees to collect
+     * {@inheritDoc}
      */
+    @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Attempts to charge the given {@code amount} of rent to the given {@code contractNumber}, with
-     * preference to its auto-renew account (if any); falling back to charging the contract itself
-     * if the auto-renew account does not exist or does not have sufficient balance.
-     *
-     * @param contractNumber         the number of the contract to charge
-     * @param amount                 the amount to charge
-     * @param itemizeStoragePayments whether to itemize storage payments in the record
+     * {@inheritDoc}
      */
+    @Override
     public void chargeStorageRent(final long contractNumber, final long amount, final boolean itemizeStoragePayments) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Updates the storage metadata for the given contract.
-     *
-     * @param contractNumber the number of the contract
-     * @param firstKey       the first key in the storage linked list, or {@code null} if the list is empty
-     * @param slotsUsed      the number of storage slots used by the contract
+     * {@inheritDoc}
      */
+    @Override
     public void updateStorageMetadata(final long contractNumber, @Nullable final Bytes firstKey, final int slotsUsed) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Creates a new contract with the given entity number and EVM address; and also "links" the alias.
-     *
-     * <p>Any inheritable Hedera-native properties managed by the {@code TokenService} should be set on
-     * the new contract based on the given model account.
-     *
-     * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
-     *
-     * @param number       the number of the contract to create
-     * @param parentNumber the number of the contract whose properties the new contract should inherit
-     * @param nonce        the nonce of the contract to create
-     * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
+     * {@inheritDoc}
      */
+    @Override
     public void createContract(
             final long number, final long parentNumber, final long nonce, @Nullable final Bytes evmAddress) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Deletes the contract whose alias is the given {@code evmAddress}, and also "unlinks" the alias.
-     * Signing requirements are waived, and the record of this deletion should only be externalized if
-     * the top-level HAPI transaction succeeds.
-     *
-     * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
-     *
-     * @param evmAddress the EVM address of the contract to delete
+     * {@inheritDoc}
      */
+    @Override
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Convenience method to delete an unaliased contract with the given number.
-     *
-     * @param number the number of the contract to delete
+     * {@inheritDoc}
      */
+    @Override
     public void deleteUnaliasedContract(final long number) {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Returns a list of the account numbers that have been modified in this scope.
-     *
-     * @return the list of modified account numbers
+     * {@inheritDoc}
      */
+    @Override
     public List<Long> getModifiedAccountNumbers() {
         throw new AssertionError("Not implemented");
     }
 
     /**
-     * Returns number of slots used by the contract with the given number, ignoring any uncommitted
-     * modifications already dispatched. If the contract did not exist before the transaction, returns
-     * zero.
-     *
-     * @param contractNumber the contract number
-     * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
+     * {@inheritDoc}
      */
+    @Override
+    public List<ContractID> getCreatedContractIds() {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<ContractID, Long> getUpdatedContractNonces() {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int getOriginalSlotsUsed(final long contractNumber) {
         throw new AssertionError("Not implemented");
     }

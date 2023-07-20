@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
@@ -40,10 +32,19 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+
+import java.util.function.Supplier;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Modeled after the Besu {@code MainnetTransactionProcessor}, so that all four HAPI
@@ -195,10 +196,9 @@ public class TransactionProcessor {
             final Address to;
             if (transaction.isEthereumTransaction()) {
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
-                // Top-level creates "originate" from the zero address
-                updater.setupAliasedCreate(Address.ZERO, to);
+                updater.setupAliasedCreate(sender.getAddress(), to);
             } else {
-                to = updater.setupCreate(Address.ZERO);
+                to = updater.setupCreate(sender.getAddress());
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {

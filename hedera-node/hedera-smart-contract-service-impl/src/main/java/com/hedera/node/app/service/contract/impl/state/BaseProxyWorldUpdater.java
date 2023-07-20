@@ -16,20 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
-import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
@@ -43,14 +43,17 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
     private final LegibleStorageManager storageManager;
     private final StorageSizeValidator storageSizeValidator;
 
+    private List<ContractID> createdContractIds = null;
+    private Map<ContractID, Long> updatedContractNonces = null;
+
     @Inject
     public BaseProxyWorldUpdater(
-            @NonNull final HandleExtWorldScope scope,
+            @NonNull final ExtWorldScope extWorldScope,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final LegibleStorageManager storageManager,
             @NonNull final StorageSizeValidator storageSizeValidator) {
-        super(scope, evmFrameStateFactory, null);
+        super(extWorldScope, evmFrameStateFactory, null);
         this.storageManager = storageManager;
         this.rentCalculator = rentCalculator;
         this.storageSizeValidator = storageSizeValidator;
@@ -78,9 +81,42 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
-        storageManager.rewrite(extWorldScope, changes, sizeEffects.sizeChanges(), scopedStorage());
+        storageManager.rewrite(extWorldScope, changes, sizeEffects.sizeChanges(), extWorldScope.getStore());
 
+        // At this point, we have a an apparently valid
+        final var pendingCreatedContractIds = extWorldScope.getCreatedContractIds();
+        final var pendingUpdatedContractNonces = extWorldScope.getUpdatedContractNonces();
+        // This call should only fail on an internal error; but just to be extra safe, we don't officially
+        // record this updater's created contract ids or updated contract nonces until after commit()
         super.commit();
+        createdContractIds = pendingCreatedContractIds;
+        updatedContractNonces = pendingUpdatedContractNonces;
+    }
+
+    /**
+     * If a successful commit has been made, returns the list of contract ids created during the transaction.
+     *
+     * @return the list of contract ids created during the transaction
+     * @throws IllegalStateException if a commit has not been made successfully
+     */
+    public List<ContractID> getCreatedContractIds() {
+        if (createdContractIds == null) {
+            throw new IllegalStateException("No successful commit has been made");
+        }
+        return createdContractIds;
+    }
+
+    /**
+     * If a successful commit has been made, returns the map of contract ids to nonces updated during the transaction.
+     *
+     * @return the map of contract ids to nonces updated during the transaction
+     * @throws IllegalStateException if a commit has not been made successfully
+     */
+    public Map<ContractID, Long> getUpdatedContractNonces() {
+        if (updatedContractNonces == null) {
+            throw new IllegalStateException("No successful commit has been made");
+        }
+        return updatedContractNonces;
     }
 
     private record SizeEffects(long finalSlotsUsed, List<StorageSizeChange> sizeChanges) {}
@@ -111,9 +147,5 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
                 extWorldScope.chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
             }
         }
-    }
-
-    private WritableKVState<SlotKey, SlotValue> scopedStorage() {
-        return extWorldScope.getStore().storage();
     }
 }

@@ -16,16 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.service.contract.impl.state.InScopeFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
-import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,34 +31,26 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class InScopeFrameStateFactoryTest {
+class ScopedEvmFrameStateFactoryTest {
     @Mock
-    private HandleExtWorldScope scope;
+    private ExtWorldScope scope;
 
     @Mock
-    private HandleExtFrameScope extFrameScope;
+    private ExtFrameScope extFrameScope;
 
     @Mock
-    private ContractStateStore writableContractsStore;
+    private ContractStateStore store;
 
-    @Mock
-    private WritableKVState<SlotKey, SlotValue> storage;
-
-    @Mock
-    private WritableKVState<EntityNumber, Bytecode> bytecode;
-
-    private InScopeFrameStateFactory subject;
+    private ScopedEvmFrameStateFactory subject;
 
     @BeforeEach
     void setUp() {
-        subject = new InScopeFrameStateFactory(scope, extFrameScope);
+        subject = new ScopedEvmFrameStateFactory(scope, extFrameScope);
     }
 
     @Test
     void createsScopedEvmFrameStates() {
-        given(scope.getStore()).willReturn(writableContractsStore);
-        given(writableContractsStore.storage()).willReturn(storage);
-        given(writableContractsStore.bytecode()).willReturn(bytecode);
+        given(scope.getStore()).willReturn(store);
 
         final var nextFrame = subject.get();
 

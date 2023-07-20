@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
@@ -35,8 +33,11 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Map;
 import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
@@ -62,7 +63,7 @@ public class WritableStoreFactory {
             FileService.NAME,
             Map.of(WritableFileStore.class, WritableFileStore::new),
             ContractService.NAME,
-            Map.of(ContractStateStore.class, ContractStateStore::new));
+            Map.of(WritableContractStateStore.class, WritableContractStateStore::new));
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

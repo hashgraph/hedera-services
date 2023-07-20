@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
-import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -41,7 +39,7 @@ class HandleExtWorldScopeTest {
     private HandleContext context;
 
     @Mock
-    private ContractStateStore writableContractsStore;
+    private WritableContractStateStore stateStore;
 
     private HandleExtWorldScope subject;
 
@@ -52,9 +50,9 @@ class HandleExtWorldScopeTest {
 
     @Test
     void returnsContextualStore() {
-        given(context.writableStore(ContractStateStore.class)).willReturn(writableContractsStore);
+        given(context.writableStore(WritableContractStateStore.class)).willReturn(stateStore);
 
-        assertSame(writableContractsStore, subject.getStore());
+        assertSame(stateStore, subject.getStore());
     }
 
     @Test
@@ -79,11 +77,5 @@ class HandleExtWorldScopeTest {
     @Test
     void commitIsUnsupportedForNow() {
         assertThrows(UnsupportedOperationException.class, subject::commit);
-    }
-
-    @Test
-    void reportsPayerAccountNumber() {
-        given(context.payer()).willReturn(RELAYER_ID);
-        assertEquals(RELAYER_ID.accountNumOrThrow(), subject.payerAccountNumber());
     }
 }

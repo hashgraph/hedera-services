@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import javax.inject.Inject;
@@ -29,22 +29,19 @@ import java.util.Objects;
  * the ongoing transaction.
  */
 @TransactionScope
-public class InScopeFrameStateFactory implements EvmFrameStateFactory {
-    private final HandleExtWorldScope scope;
-    private final HandleExtFrameScope extFrameScope;
+public class ScopedEvmFrameStateFactory implements EvmFrameStateFactory {
+    private final ExtWorldScope extWorldScope;
+    private final ExtFrameScope extFrameScope;
 
     @Inject
-    public InScopeFrameStateFactory(@NonNull final HandleExtWorldScope scope, @NonNull final HandleExtFrameScope extFrameScope) {
-        this.scope = Objects.requireNonNull(scope);
+    public ScopedEvmFrameStateFactory(
+            @NonNull final ExtWorldScope extWorldScope, @NonNull final ExtFrameScope extFrameScope) {
+        this.extWorldScope = Objects.requireNonNull(extWorldScope);
         this.extFrameScope = Objects.requireNonNull(extFrameScope);
     }
 
     @Override
     public EvmFrameState get() {
-        return new ScopedEvmFrameState(
-                extFrameScope,
-                scope.getStore(),
-                scope.getStore().storage(),
-                scope.getStore().bytecode());
+        return new ScopedEvmFrameState(extFrameScope, extWorldScope.getStore());
     }
 }

@@ -16,26 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
-import static java.util.Objects.requireNonNull;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -44,6 +31,20 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 /**
  * A {@link WorldUpdater} that delegates to a given {@link HandleExtWorldScope} for state management.
@@ -78,7 +79,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * The scope in which this {@code ProxyWorldUpdater} operates; stored in case we need to
      * create a "stacked" updater in a child scope via {@link #updater()}.
      */
-    protected final HandleExtWorldScope extWorldScope;
+    protected final ExtWorldScope extWorldScope;
 
     /**
      * If our {@code CreateOperation}s used the addresses prescribed by the {@code CREATE} and
@@ -103,7 +104,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     private PendingCreation pendingCreation;
 
     public ProxyWorldUpdater(
-            @NonNull final HandleExtWorldScope extWorldScope,
+            @NonNull final ExtWorldScope extWorldScope,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @Nullable final WorldUpdater parent) {
         this.parent = parent;
@@ -314,8 +315,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @SuppressWarnings("java:S125")
     public void commit() {
         // It might seem like we should have a call to evmFrameState.commit() here; but remember the
-        // EvmFrameState is just a convenience wrapper around the Scope to let us use Besu types, and
-        // ultimately the Scope is the one tracking and managing all changes
+        // EvmFrameState is just a mutable view of the scope's state that lets us use Besu types
         extWorldScope.commit();
     }
 
@@ -386,14 +386,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pendingNumber;
     }
 
-    private void setupPendingCreation(@NonNull final Address receiver, @Nullable final Address alias) {
+    private void setupPendingCreation(@NonNull final Address origin, @Nullable final Address alias) {
+        final long parentNumber = evmFrameState.getIdNumber(origin);
         final var number = extWorldScope.peekNextEntityNumber();
-        final long parentNumber = Address.ZERO.equals(requireNonNull(receiver))
-                ? extWorldScope.payerAccountNumber()
-                : evmFrameState.getIdNumber(receiver);
-        if (parentNumber == MISSING_ENTITY_NUMBER) {
-            throw new IllegalStateException("Claimed receiver " + receiver + " has no Hedera account number");
-        }
         pendingCreation = new PendingCreation(alias == null ? asLongZeroAddress(number) : alias, number, parentNumber);
     }
 }

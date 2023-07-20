@@ -16,23 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
-import static org.mockito.BDDMockito.given;
-
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.spi.state.WritableKVState;
-import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +35,14 @@ import org.mockito.BDDMockito;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Map;
+
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class BaseProxyWorldUpdaterTest {
@@ -68,13 +70,10 @@ class BaseProxyWorldUpdaterTest {
     private EvmFrameState evmFrameState;
 
     @Mock
-    private HandleExtWorldScope extWorldScope;
+    private ExtWorldScope extWorldScope;
 
     @Mock
-    private ContractStateStore writableContractStore;
-
-    @Mock
-    private WritableKVState<SlotKey, SlotValue> storage;
+    private ContractStateStore store;
 
     private BaseProxyWorldUpdater subject;
 
@@ -82,6 +81,12 @@ class BaseProxyWorldUpdaterTest {
     void setUp() {
         subject = new BaseProxyWorldUpdater(
                 extWorldScope, () -> evmFrameState, rentCalculator, storageManager, storageSizeValidator);
+    }
+
+    @Test
+    void refusesToReturnCommittedChangesWithoutSucessfulCommit() {
+        assertThrows(IllegalStateException.class, subject::getUpdatedContractNonces);
+        assertThrows(IllegalStateException.class, subject::getCreatedContractIds);
     }
 
     @Test
@@ -104,16 +109,22 @@ class BaseProxyWorldUpdaterTest {
                 .willReturn(rentInTinycents);
         given(extWorldScope.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
-        given(extWorldScope.getStore()).willReturn(writableContractStore);
-        given(writableContractStore.storage()).willReturn(storage);
+        given(extWorldScope.getStore()).willReturn(store);
+        final var createdIds = List.of(CALLED_CONTRACT_ID);
+        final var updatedNonces = Map.of(CALLED_CONTRACT_ID, 1L);
+        given(extWorldScope.getCreatedContractIds()).willReturn(createdIds);
+        given(extWorldScope.getUpdatedContractNonces()).willReturn(updatedNonces);
 
         subject.commit();
 
         inOrder.verify(storageSizeValidator)
                 .assertValid(sizeExcludingPendingRemovals, extWorldScope, expectedSizeChanges());
         inOrder.verify(extWorldScope).chargeStorageRent(A_NUM, rentInTinybars, true);
-        inOrder.verify(storageManager).rewrite(extWorldScope, pendingChanges(), expectedSizeChanges(), storage);
+        inOrder.verify(storageManager).rewrite(extWorldScope, pendingChanges(), expectedSizeChanges(), store);
         inOrder.verify(extWorldScope).commit();
+
+        assertSame(createdIds, subject.getCreatedContractIds());
+        assertSame(updatedNonces, subject.getUpdatedContractNonces());
     }
 
     private List<StorageAccesses> pendingChanges() {

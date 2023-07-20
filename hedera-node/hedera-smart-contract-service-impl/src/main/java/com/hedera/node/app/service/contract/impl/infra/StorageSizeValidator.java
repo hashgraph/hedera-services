@@ -16,19 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException.validateResource;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
+
 import javax.inject.Inject;
+import java.util.List;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException.validateResource;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Validates that a set of storage size changes are valid, given the current contract service configuration.
@@ -51,7 +52,7 @@ public class StorageSizeValidator {
      */
     public void assertValid(
             final long aggregateSlotsUsed,
-            @NonNull final HandleExtWorldScope extWorldScope,
+            @NonNull final ExtWorldScope extWorldScope,
             @NonNull final List<StorageSizeChange> storageSizeChanges) {
         final var maxAggregateSlots = contractsConfig.maxKvPairsAggregate();
         validateResource(maxAggregateSlots >= aggregateSlotsUsed, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);

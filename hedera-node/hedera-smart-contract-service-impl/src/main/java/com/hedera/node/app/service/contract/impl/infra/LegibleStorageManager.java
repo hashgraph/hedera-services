@@ -16,12 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -51,13 +50,13 @@ public class LegibleStorageManager {
      * @param scope the scope of the current transaction
      * @param changes the pending changes to storage values
      * @param sizeChanges the pending changes to storage sizes
-     * @param storage the writable storage K/V state
+     * @param store the writable state store
      */
     public void rewrite(
-            @NonNull final HandleExtWorldScope scope,
+            @NonNull final ExtWorldScope scope,
             @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
-            @NonNull final WritableKVState<SlotKey, SlotValue> storage) {
+            @NonNull final ContractStateStore store) {
         // TODO - refactor mono-service code for this before perf tests
     }
 }

@@ -24,14 +24,15 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * A {@link WorldUpdater} extension with additional methods for Hedera-specific operations.
@@ -148,10 +149,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
     Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
 
     /**
-     * Given the possibly zero address of the origin of a {@code CONTRACT_CREATION} message,
-     * sets up the {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete
-     * the creation of the new account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)};
-     * returns the "long-zero" address to be assigned to the new account.
+     * Given the origin address of a {@code CONTRACT_CREATION} message, sets up the {@link PendingCreation}
+     * this {@link ProxyWorldUpdater} will use to complete the creation of the new account in
+     * {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}; returns the "long-zero" address to be
+     * assigned to the new account.
      *
      * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
      * @return the "long-zero" address to be assigned to the new account
@@ -159,11 +160,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
     Address setupCreate(@NonNull Address origin);
 
     /**
-     * Given the possibly zero address of the origin of a {@code CONTRACT_CREATION} message,
-     * and either the canonical {@code CREATE1} address, or the EIP-1014 address computed by an
-     * in-progress {@code CREATE2} operation, sets up the {@link PendingCreation} this
-     * {@link ProxyWorldUpdater} will use to complete the creation of the new account in
-     * {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     * Given the origin address of a {@code CONTRACT_CREATION} message, and either the canonical {@code CREATE1}
+     * address, or the EIP-1014 address computed by an in-progress {@code CREATE2} operation, sets up the
+     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of the new account
+     * in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
      *
      * <p>Does not return anything, as the {@code CREATE2} address is already known.
      *
