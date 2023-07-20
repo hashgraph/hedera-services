@@ -28,7 +28,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.platform.event.CreateEventTask;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.ValidEvent;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.sync.SyncManager;
 import com.swirlds.platform.internal.EventImpl;
@@ -227,6 +226,6 @@ public class EventTaskCreator {
      * 		the newly created event
      */
     public void createdEvent(final GossipEvent event) {
-        addEvent(new ValidEvent(event));
+        addEvent(event);
     }
 }

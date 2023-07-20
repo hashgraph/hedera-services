@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 /**
  * Determines that ancient events are invalid
  */
-public class AncientValidator implements GossipEventValidator {
+public class AncientValidator implements GossipEventValidator { // TODO can we do away with this?
     private final Supplier<GraphGenerations> generations;
 
     public AncientValidator(final Supplier<GraphGenerations> generations) {

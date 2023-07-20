@@ -33,8 +33,6 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.test.RandomUtils;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.validation.EventDeduplication;
-import com.swirlds.platform.event.validation.EventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
 import com.swirlds.platform.event.validation.StaticValidators;
@@ -43,9 +41,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -85,44 +81,6 @@ class EventValidatorTests {
         assertTrue(new GossipEventValidators(List.of(VALID)).isEventValid(event));
         assertTrue(new GossipEventValidators(List.of(VALID, VALID, VALID)).isEventValid(event));
         assertFalse(new GossipEventValidators(List.of(VALID, INVALID, VALID)).isEventValid(event));
-    }
-
-    @Test
-    void eventValidator() {
-        final Set<GossipEvent> intakeEvents = new HashSet<>();
-        final AtomicBoolean isValid = new AtomicBoolean(true);
-        final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
-
-        final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
-        eventValidator.validateEvent(validEvent);
-        assertTrue(intakeEvents.contains(validEvent), "event should have been passed to intake");
-
-        isValid.set(false);
-        final GossipEvent invalidEvent = GossipEventBuilder.builder().buildEvent();
-        eventValidator.validateEvent(invalidEvent);
-        assertFalse(intakeEvents.contains(invalidEvent), "event should not have been passed to intake");
-    }
-
-    @Test
-    void eventDeduplication() {
-        final AtomicBoolean isDuplicate = new AtomicBoolean(true);
-        final EventIntakeMetrics metrics = mock(EventIntakeMetrics.class);
-        final EventDeduplication deduplication = new EventDeduplication(e -> isDuplicate.get(), metrics);
-        final GossipEvent event = GossipEventBuilder.builder().buildEvent();
-
-        assertFalse(deduplication.isEventValid(event), "it should be a duplicate, so not valid");
-        verify(metrics, description("metrics should have recorded the duplicate event"))
-                .duplicateEvent();
-        verify(metrics, never().description("there was no non-duplicate event so far"))
-                .nonDuplicateEvent();
-
-        isDuplicate.set(false);
-
-        assertTrue(deduplication.isEventValid(event), "it should not be a duplicate, so valid");
-        verify(metrics, description("metrics should have recorded the duplicate event"))
-                .duplicateEvent();
-        verify(metrics, description("metrics should have recorded the non-duplicate event"))
-                .nonDuplicateEvent();
     }
 
     @ParameterizedTest

@@ -43,6 +43,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.platform.DefaultDoubleAccumulator;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
@@ -105,8 +106,8 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
 import com.swirlds.platform.event.validation.AncientValidator;
-import com.swirlds.platform.event.validation.EventDeduplication;
-import com.swirlds.platform.event.validation.EventValidator;
+import com.swirlds.platform.event.validation.EventDeduplicator;
+import com.swirlds.platform.event.validation.IncomingEventProcessor;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
 import com.swirlds.platform.event.validation.SignatureValidator;
@@ -208,6 +209,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private final StateManagementComponent stateManagementComponent;
     private final EventTaskDispatcher eventTaskDispatcher;
     private final QueueThread<EventIntakeTask> intakeQueue;
+    private final EventDeduplicator deduplicator;
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
     /** Stores and processes consensus events including sending them to {@link SwirldStateManager} for handling */
@@ -451,6 +453,8 @@ public class SwirldsPlatform implements Platform, Startable {
         final AddedEventMetrics addedEventMetrics = new AddedEventMetrics(this.selfId, metrics);
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
 
+        deduplicator = new EventDeduplicator();
+
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
@@ -466,14 +470,18 @@ public class SwirldsPlatform implements Platform, Startable {
                             "Interrupted while attempting to enqueue preconsensus event for writing");
                 },
                 (ConsensusRoundObserver) round -> {
+                    final long minimumGenerationNonAncient = round.getGenerations().getMinGenerationNonAncient();
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::setMinimumGenerationNonAncient,
-                            round.getGenerations().getMinGenerationNonAncient(),
+                            minimumGenerationNonAncient,
                             "Interrupted while attempting to enqueue change in minimum generation non-ancient");
+
+                    deduplicator.setMinimumGenerationNonAncient(minimumGenerationNonAncient);
 
                     abortAndThrowIfInterrupted(
                             preconsensusEventWriter::requestFlush,
                             "Interrupted while requesting preconsensus event flush");
+
                 });
 
         final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
@@ -495,11 +503,33 @@ public class SwirldsPlatform implements Platform, Startable {
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
 
+        // TODO this is wrong... we should feed from gossip directly into the incoming event processor
+
+        // - events from gossip (and new tipset events) are put onto the intakeQueue. Pre-tipset, event creation
+        //   requests are also put onto the intakeQueue. This queue thread takes these tasks and passes them one at a
+        //   time to eventTaskDispatcher.
+        // - the eventTaskDispatcher multiplexes new events with event creation requests. Event
+        //   creation requests are (pre-tipset only) handled differently depending on gossip flavor. Events
+        //   are passed to the incomingEventProcessor.
+        // - the incomingEventProcessor hashes, deduplicates, and validates events. It passes valid events
+        //   to the eventIntake object via addUnlinkedEvent().
+        // - eventIntake is responsible for all following phases in the intake process.
+        //
+        // In summary, preconsensus events flow as follows:
+        //
+        //      tipset event creation <--------------------------------------------------|
+        //                |                                                              |
+        //                v                                                              |
+        // gossip -> intakeQueue -> eventTaskDispatcher -> incomingEventProcessor -> eventIntake -> shadowgraph
+        //    ^                             |                                            ^               |
+        //    |                             v                                            |               |
+        //    |                    pre-tipset event creation ----------------------------|               |
+        //    |                             ^                                                            |
+        //    |-----------------------------|------------------------------------------------------------|
+
+        // TODO extract into helper method maybe
         final List<GossipEventValidator> validators = new ArrayList<>();
-        // it is very important to discard ancient events, otherwise the deduplication will not work, since it
-        // doesn't track ancient events
         validators.add(new AncientValidator(consensusRef::get));
-        validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
         validators.add(StaticValidators::isParentDataValid);
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         if (basicConfig.verifyEventSigs()) {
@@ -507,17 +537,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
-        /* validates events received from gossip */
-        final EventValidator eventValidator = new EventValidator(eventValidators, eventIntake::addUnlinkedEvent);
-
-        eventTaskDispatcher = new EventTaskDispatcher(
-                time,
-                eventValidator,
-                eventCreator,
-                eventIntake::addUnlinkedEvent,
-                eventIntakeMetrics,
-                intakeCycleStats);
-
+        // TODO can we kill this queue? It's not really necessary any more
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)
                 .setNodeId(selfId)
                 .setComponent(PLATFORM_THREAD_POOL_NAME)
@@ -532,6 +552,21 @@ public class SwirldsPlatform implements Platform, Startable {
                         .enableMaxSizeMetric()
                         .enableBusyTimeMetric())
                 .build());
+
+        // TODO do we need to flush this on PCES/reconnect?
+        final IncomingEventProcessor incomingEventProcessor = components.add(new IncomingEventProcessor(
+                platformContext,
+                threadManager,
+                deduplicator,
+                eventValidators,
+                eventIntake::addUnlinkedEvent));
+
+        eventTaskDispatcher = new EventTaskDispatcher(
+                time,
+                eventCreator,
+                incomingEventProcessor::ingestEvent,
+                eventIntakeMetrics,
+                intakeCycleStats);
 
         tipsetEventCreator = buildTipsetEventCreationManager(
                 platformContext,
@@ -599,6 +634,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             loadStateIntoConsensusAndEventMapper(initialState);
             loadStateIntoEventCreator(initialState);
+            deduplicator.setMinimumGenerationNonAncient(initialMinimumGenerationNonAncient);
             eventLinker.loadFromSignedState(initialState);
 
             // We don't want to invoke these callbacks until after we are starting up.
@@ -836,6 +872,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
             loadStateIntoConsensusAndEventMapper(signedState);
             loadStateIntoEventCreator(signedState);
+            // TODO
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
             // so the intake thread is paused before the data is loaded and unpaused after. this ensures that the

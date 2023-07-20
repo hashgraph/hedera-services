@@ -140,6 +140,14 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
         this.roundCreated = roundCreated;
     }
 
+    public boolean isSignatureValid() throws InterruptedException {
+        return false; // TODO
+    }
+
+    public void setSignatureValidity(final boolean signatureIsValid) {
+        // TODO
+    }
+
     /**
      * {@inheritDoc}
      */
