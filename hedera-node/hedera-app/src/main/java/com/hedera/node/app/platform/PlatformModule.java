@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.platform;
 
+import com.hedera.node.app.annotations.CommonExecutor;
+import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import javax.inject.Singleton;
 
 @Module
@@ -29,5 +33,18 @@ public interface PlatformModule {
     @Singleton
     static NodeId selfId(@NonNull final Platform platform) {
         return platform.getSelfId();
+    }
+
+    @Provides
+    @Singleton
+    static Signer signer(@NonNull final Platform platform) {
+        return platform;
+    }
+
+    @Provides
+    @Singleton
+    @CommonExecutor
+    static ExecutorService provideCommonExecutor() {
+        return ForkJoinPool.commonPool();
     }
 }

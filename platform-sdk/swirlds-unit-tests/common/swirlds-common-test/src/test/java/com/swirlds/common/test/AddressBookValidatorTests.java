@@ -22,10 +22,15 @@ import static com.swirlds.common.system.address.AddressBookValidator.isNextAddre
 import static com.swirlds.common.system.address.AddressBookValidator.isNonEmpty;
 import static com.swirlds.common.system.address.AddressBookValidator.noAddressReinsertion;
 import static com.swirlds.common.system.address.AddressBookValidator.validNextId;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookValidator;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -107,5 +112,44 @@ class AddressBookValidatorTests {
 
         assertFalse(noAddressReinsertion(reducedAddressBook1, addressBook1), "should fail validation");
         assertFalse(isNextAddressBookValid(reducedAddressBook1, addressBook1), "should fail validation");
+    }
+
+    @Test
+    @DisplayName("validation of nwew nextNodeId and address book")
+    void validateNextNodeIdAndAddressBook() {
+        final RandomAddressBookGenerator generator = new RandomAddressBookGenerator().setSize(10);
+
+        final AddressBook oldAddressBook = generator.build();
+        final NodeId oldNextNodeId = oldAddressBook.getNextNodeId();
+        final Address firstAddress = oldAddressBook.getAddress(oldAddressBook.getNodeId(0));
+        final Address newAddress1 =
+                firstAddress.copySetNodeId(oldAddressBook.getNextNodeId().getOffset(1));
+        final Address newAddress2 =
+                firstAddress.copySetNodeId(oldAddressBook.getNextNodeId().getOffset(2));
+
+        // successful validation
+        final AddressBook newAddressBook1 = oldAddressBook.copy();
+        final NodeId newNextNodeId1 = oldNextNodeId.getOffset(3);
+        newAddressBook1.add(newAddress1);
+        newAddressBook1.setNextNodeId(newNextNodeId1);
+        assertDoesNotThrow(
+                () -> AddressBookValidator.validateNewAddressBook(oldAddressBook, newAddressBook1),
+                "this should pass validation");
+
+        // failure scenario: new the new address book as a lower nextNodeId
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookValidator.validateNewAddressBook(newAddressBook1, oldAddressBook),
+                "this should fail validation");
+
+        // failure scenario: the new address book has a new node lower than the old address book's nextNodeId.
+        final AddressBook newAddressBook2 = oldAddressBook.copy();
+        newAddressBook2.add(newAddress1);
+        newAddressBook2.add(newAddress2);
+        newAddressBook2.setNextNodeId(newNextNodeId1);
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookValidator.validateNewAddressBook(newAddressBook1, newAddressBook2),
+                "this should fail validation");
     }
 }

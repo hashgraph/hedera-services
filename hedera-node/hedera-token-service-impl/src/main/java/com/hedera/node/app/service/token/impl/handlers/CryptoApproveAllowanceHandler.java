@@ -208,7 +208,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
             final var amount = allowance.amount();
 
-            updateCryptoAllowance(mutableAllowances, amount, spender.accountNumOrThrow());
+            updateCryptoAllowance(mutableAllowances, amount, spender);
             final var copy = effectiveOwner
                     .copyBuilder()
                     .cryptoAllowances(mutableAllowances)
@@ -227,13 +227,13 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * If the amount is zero removes the allowance if it exists in the list
      * @param mutableAllowances the list of mutable allowances of owner
      * @param amount the amount
-     * @param spenderNum the spender number
+     * @param spenderId the spender id
      */
     private void updateCryptoAllowance(
-            final ArrayList<AccountCryptoAllowance> mutableAllowances, final long amount, final long spenderNum) {
-        final var newAllowanceBuilder = AccountCryptoAllowance.newBuilder().spenderNum(spenderNum);
+            final ArrayList<AccountCryptoAllowance> mutableAllowances, final long amount, final AccountID spenderId) {
+        final var newAllowanceBuilder = AccountCryptoAllowance.newBuilder().spenderId(spenderId);
         // get the index of the allowance with same spender in existing list
-        final var index = lookupSpender(mutableAllowances, spenderNum);
+        final var index = lookupSpender(mutableAllowances, spenderId);
         // If given amount is zero, if the element exists remove it, otherwise do nothing
         if (amount == 0) {
             if (index != -1) {
@@ -272,7 +272,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var effectiveOwner = getEffectiveOwnerAccount(owner, payerId, accountStore);
             final var mutableTokenAllowances = new ArrayList<>(effectiveOwner.tokenAllowancesOrElse(emptyList()));
 
-            updateTokenAllowance(mutableTokenAllowances, amount, spender.accountNumOrThrow(), tokenId.tokenNum());
+            updateTokenAllowance(mutableTokenAllowances, amount, spender, tokenId);
             final var copy = effectiveOwner
                     .copyBuilder()
                     .tokenAllowances(mutableTokenAllowances)
@@ -292,18 +292,17 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * If the amount is zero removes the allowance if it exists in the list
      * @param mutableAllowances the list of mutable allowances of owner
      * @param amount the amount
-     * @param spenderNum the spender number
-     * @param tokenNum the token number
+     * @param spenderId the spender number
+     * @param tokenId the token number
      */
     private void updateTokenAllowance(
             final ArrayList<AccountFungibleTokenAllowance> mutableAllowances,
             final long amount,
-            final long spenderNum,
-            final long tokenNum) {
-        final var newAllowanceBuilder = AccountFungibleTokenAllowance.newBuilder()
-                .spenderNum(spenderNum)
-                .tokenNum(tokenNum);
-        final var index = lookupSpenderAndToken(mutableAllowances, spenderNum, tokenNum);
+            final AccountID spenderId,
+            final TokenID tokenId) {
+        final var newAllowanceBuilder =
+                AccountFungibleTokenAllowance.newBuilder().spenderId(spenderId).tokenId(tokenId);
+        final var index = lookupSpenderAndToken(mutableAllowances, spenderId, tokenId);
         // If given amount is zero, if the element exists remove it
         if (amount == 0) {
             if (index != -1) {
@@ -348,8 +347,8 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
 
             if (allowance.hasApprovedForAll()) {
                 final var approveForAllAllowance = AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(tokenId.tokenNum())
-                        .spenderNum(spender.accountNumOrThrow())
+                        .tokenId(tokenId)
+                        .spenderId(spender)
                         .build();
 
                 if (Boolean.TRUE.equals(allowance.approvedForAll())) {
@@ -396,13 +395,7 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
             final var nft = uniqueTokenStore.get(tokenId, serialNum);
             final var token = tokenStore.get(tokenId);
 
-            // FUTURE: owner will be updated to use an AccountID instead of a long account number
-            // Issue #7243
-            AccountID accountOwner = AccountID.newBuilder()
-                    .accountNum(owner.accountNumber())
-                    .realmNum(0)
-                    .shardNum(0)
-                    .build();
+            AccountID accountOwner = owner.accountId();
             validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             final var copy = nft.copyBuilder().spenderId(spenderId).build();
             uniqueTokenStore.put(copy);
@@ -416,10 +409,10 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * @param spenderNum spender account number
      * @return index of the allowance if it exists, otherwise -1
      */
-    private int lookupSpender(final List<AccountCryptoAllowance> ownerAllowances, final long spenderNum) {
+    private int lookupSpender(final List<AccountCryptoAllowance> ownerAllowances, final AccountID spenderNum) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.spenderNum() == spenderNum) {
+            if (allowance.spenderId().equals(spenderNum)) {
                 return i;
             }
         }
@@ -430,15 +423,17 @@ public class CryptoApproveAllowanceHandler implements TransactionHandler {
      * Returns the index of the allowance  with the given spender and token in the list if it exists,
      * otherwise returns -1
      * @param ownerAllowances list of allowances
-     * @param spenderNum spender account number
-     * @param tokenNum token number
+     * @param spenderId spender account number
+     * @param tokenId token number
      * @return index of the allowance if it exists, otherwise -1
      */
     private int lookupSpenderAndToken(
-            final List<AccountFungibleTokenAllowance> ownerAllowances, final long spenderNum, final long tokenNum) {
+            final List<AccountFungibleTokenAllowance> ownerAllowances,
+            final AccountID spenderId,
+            final TokenID tokenId) {
         for (int i = 0; i < ownerAllowances.size(); i++) {
             final var allowance = ownerAllowances.get(i);
-            if (allowance.spenderNum() == spenderNum && allowance.tokenNum() == tokenNum) {
+            if (allowance.spenderId() == spenderId && allowance.tokenId() == tokenId) {
                 return i;
             }
         }

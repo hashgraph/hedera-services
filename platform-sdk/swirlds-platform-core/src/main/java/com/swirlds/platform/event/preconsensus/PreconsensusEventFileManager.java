@@ -26,6 +26,7 @@ import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.RandomAccessDeque;
+import com.swirlds.common.utility.UnmodifiableIterator;
 import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -216,7 +217,7 @@ public class PreconsensusEventFileManager {
             previousTimestamp.setValue(descriptor.getTimestamp());
 
             // If the sequence number is good then add it to the collection of tracked files
-            files.addLast(descriptor);
+            addFile(descriptor);
         };
     }
 
@@ -285,7 +286,7 @@ public class PreconsensusEventFileManager {
      *                           available event files.
      * @param fixDiscontinuities if true, any discontinuities after the requested minimum generation will be "fixed" by
      *                           deleting all data following the first discontinuity.
-     * @return an iterator that walks over event files in order
+     * @return an unmodifiable iterator that walks over event files in order
      */
     public @NonNull Iterator<PreconsensusEventFile> getFileIterator(
             final long minimumGeneration, final boolean fixDiscontinuities) {
@@ -295,7 +296,7 @@ public class PreconsensusEventFileManager {
             if (fixDiscontinuities) {
                 scanForDiscontinuities(0);
             }
-            return files.iterator();
+            return new UnmodifiableIterator<>(files.iterator());
         }
 
         // Edge case: there are no files
@@ -318,7 +319,7 @@ public class PreconsensusEventFileManager {
             if (fixDiscontinuities) {
                 scanForDiscontinuities(0);
             }
-            return files.iterator();
+            return new UnmodifiableIterator<>(files.iterator());
         }
 
         // Edge case: all of our data comes before the requested starting generation
@@ -342,7 +343,7 @@ public class PreconsensusEventFileManager {
                 if (fixDiscontinuities) {
                     scanForDiscontinuities(index);
                 }
-                return files.iterator(index);
+                return new UnmodifiableIterator<>(files.iterator(index));
             }
         }
 
@@ -524,10 +525,20 @@ public class PreconsensusEventFileManager {
                     descriptor);
         }
 
-        files.addLast(descriptor);
+        addFile(descriptor);
         metrics.getPreconsensusEventFileYoungestGeneration().set(descriptor.getMaximumGeneration());
 
         return descriptor;
+    }
+
+    /**
+     * Add a new files to the end of the file list.
+     *
+     * @param file the file to be added
+     */
+    private void addFile(@NonNull final PreconsensusEventFile file) {
+        Objects.requireNonNull(file);
+        files.addLast(file);
     }
 
     /**

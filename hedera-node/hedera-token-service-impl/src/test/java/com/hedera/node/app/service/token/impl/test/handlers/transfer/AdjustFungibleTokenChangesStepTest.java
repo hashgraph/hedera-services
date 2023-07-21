@@ -30,13 +30,13 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        recordBuilder = new SingleTransactionRecordBuilder(consensusInstant);
+        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
         givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token

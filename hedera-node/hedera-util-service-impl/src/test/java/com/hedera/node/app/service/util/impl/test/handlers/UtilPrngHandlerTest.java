@@ -18,34 +18,26 @@ package com.hedera.node.app.service.util.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.node.util.UtilPrngTransactionBody;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.fixtures.TestBase;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.threading.futures.StandardFuture;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,11 +61,14 @@ class UtilPrngHandlerTest {
     @Mock
     private PrngRecordBuilder recordBuilder;
 
+    @Mock
+    private BlockRecordInfo blockRecordInfo;
+
     private UtilPrngHandler subject;
     private UtilPrngTransactionBody txn;
     private static final Random random = new Random(92399921);
-    private static final Hash hash = new Hash(TestBase.randomBytes(random, 48));
-    private static final RunningHash nMinusThreeHash = new RunningHash(hash);
+    private static final Bytes hash = Bytes.wrap(TestBase.randomBytes(random, 48));
+    private static final Bytes nMinusThreeHash = hash;
 
     @BeforeEach
     void setUp() {
@@ -146,21 +141,20 @@ class UtilPrngHandlerTest {
     @Test
     void followsHappyPathWithNoRange() {
         givenTxnWithoutRange();
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
-        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, Bytes.wrap(hash.getValue()));
         verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder).entropyBytes(Bytes.wrap(hash.getValue()));
+        verify(recordBuilder).entropyBytes(hash);
     }
 
     @Test
     void followsHappyPathWithRange() {
         givenTxnWithRange(20);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
@@ -173,8 +167,8 @@ class UtilPrngHandlerTest {
     @Test
     void followsHappyPathWithMaxIntegerRange() {
         givenTxnWithRange(Integer.MAX_VALUE);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
@@ -198,20 +192,20 @@ class UtilPrngHandlerTest {
     @Test
     void givenRangeZeroGivesBitString() {
         givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(nMinusThreeHash);
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(nMinusThreeHash);
 
         subject.handle(handleContext);
 
         verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder).entropyBytes(Bytes.wrap(hash.getValue()));
+        verify(recordBuilder).entropyBytes(hash);
     }
 
     @Test
-    void nullRunningHashesThrows() {
+    void nullBlockRecordInfoThrows() {
         givenTxnWithRange(0);
         given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(null);
+        given(handleContext.blockRecordInfo()).willReturn(null);
 
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
 
@@ -221,14 +215,10 @@ class UtilPrngHandlerTest {
 
     @Test
     void nullHashFromRunningHashDoesntReturnAnyValue() throws ExecutionException, InterruptedException {
-        final var hash = mock(RunningHash.class);
-        final var future = mock(StandardFuture.class);
-
         givenTxnWithRange(0);
         given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(hash);
-        given(hash.getFutureHash()).willReturn(future);
-        given(future.get()).willReturn(null);
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(null);
 
         subject.handle(handleContext);
 
@@ -237,34 +227,13 @@ class UtilPrngHandlerTest {
     }
 
     @Test
-    void emptyHashFromRunningHashDoesntReturnAnyValue() throws ExecutionException, InterruptedException {
-        final var hash = mock(RunningHash.class);
-        final var future = mock(StandardFuture.class);
-
+    void emptyHashFromRunningHashDoesntReturnAnyValue() {
         givenTxnWithRange(0);
         given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(hash);
-        given(hash.getFutureHash()).willReturn(future);
-        given(future.get()).willReturn(new Hash());
+        given(handleContext.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(Bytes.EMPTY);
 
         subject.handle(handleContext);
-
-        verify(recordBuilder, never()).entropyNumber(anyInt());
-        verify(recordBuilder, never()).entropyBytes(any());
-    }
-
-    @Test
-    void interruptedWhileGettingHash() throws ExecutionException, InterruptedException {
-        final var hash = mock(RunningHash.class);
-        final var future = mock(StandardFuture.class);
-
-        givenTxnWithRange(0);
-        given(handleContext.readableStore(ReadableRunningHashLeafStore.class)).willReturn(readableRunningHashLeafStore);
-        given(readableRunningHashLeafStore.getNMinusThreeRunningHash()).willReturn(hash);
-        given(hash.getFutureHash()).willReturn(future);
-        given(future.get()).willThrow(new InterruptedException());
-
-        assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(HandleException.class);
 
         verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder, never()).entropyBytes(any());

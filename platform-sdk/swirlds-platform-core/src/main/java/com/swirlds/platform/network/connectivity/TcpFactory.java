@@ -41,9 +41,9 @@ public class TcpFactory implements SocketFactory {
     }
 
     @Override
-    public Socket createClientSocket(final String ipAddress, final int port) throws IOException {
+    public Socket createClientSocket(final String hostname, final int port) throws IOException {
         final Socket clientSocket = new Socket();
-        SocketFactory.configureAndConnect(clientSocket, socketConfig, ipAddress, port);
+        SocketFactory.configureAndConnect(clientSocket, socketConfig, hostname, port);
         return clientSocket;
     }
 }

@@ -43,6 +43,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -726,6 +727,9 @@ class DispatchingEvmFrameStateTest {
     }
 
     private Account.Builder accountWith(final long num) {
-        return Account.newBuilder().accountNumber(num).expiry(EXPIRY).contractKvPairsNumber(NUM_KV_SLOTS);
+        return Account.newBuilder()
+                .accountId(AccountID.newBuilder().accountNum(num))
+                .expiry(EXPIRY)
+                .contractKvPairsNumber(NUM_KV_SLOTS);
     }
 }
