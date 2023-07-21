@@ -27,12 +27,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -128,6 +128,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
+                mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
 
@@ -173,10 +174,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Verifies that {@link EventStreamManager#addEvents(List)} is called the desired number of times.
      *
-     * @param eventStreamManager
-     * 		the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
-     * @param roundConsumer
-     * 		the round consumer to test
+     * @param eventStreamManager the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
+     * @param roundConsumer      the round consumer to test
      */
     private void testEventStream(
             final EventStreamManager<EventImpl> eventStreamManager, final Consumer<ConsensusRound> roundConsumer) {
@@ -208,16 +207,15 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
                 .build();
-        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
                 platformContext,
                 addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                transactionConfig,
+                mock(StatusActionSubmitter.class),
                 () -> false,
                 state,
                 new BasicSoftwareVersion(1));
@@ -232,6 +230,7 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
+                mock(StatusActionSubmitter.class),
                 (round) -> {},
                 new BasicSoftwareVersion(1));
         consensusRoundHandler.start();

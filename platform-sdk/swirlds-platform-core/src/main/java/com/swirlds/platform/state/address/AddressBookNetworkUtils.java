@@ -42,11 +42,11 @@ public final class AddressBookNetworkUtils {
     public static boolean isLocal(@NonNull final Address address) {
         Objects.requireNonNull(address, "The address must not be null.");
         try {
-            return Network.isOwn(InetAddress.getByAddress(address.getAddressInternalIpv4()));
+            return Network.isOwn(InetAddress.getByName(address.getHostnameInternal()));
         } catch (final SocketException | UnknownHostException e) {
             throw new IllegalStateException(
                     "Not able to determine locality of address [%s] for node [%s]"
-                            .formatted(address.getAddressInternalIpv4(), address.getNodeId()),
+                            .formatted(address.getHostnameInternal(), address.getNodeId()),
                     e);
         }
     }

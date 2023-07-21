@@ -44,7 +44,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
@@ -53,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -66,7 +68,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -137,7 +141,47 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 duplicateEntriesGetsReplacedWithDifferentTxn(),
                 duplicateKeysAndSerialsInSameTxnDoesntThrow(),
                 scheduledCryptoApproveAllowanceWorks(),
-                canDeleteAllowanceFromDeletedSpender());
+                canDeleteAllowanceFromDeletedSpender(),
+                transferringMissingNftViaApprovalFailsWithInvalidNftId());
+    }
+
+    private HapiSpec transferringMissingNftViaApprovalFailsWithInvalidNftId() {
+        return defaultHapiSpec("TransferringMissingNftViaApprovalFailsWithInvalidNftId")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .maxSupply(10L)
+                                .initialSupply(0)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"),
+                                        ByteString.copyFromUtf8("c"))))
+                .when()
+                .then(cryptoTransfer((spec, builder) -> builder.addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        // Doesn't exist
+                                        .setSerialNumber(4L)
+                                        .setSenderAccountID(spec.registry().getAccountID(OWNER))
+                                        .setReceiverAccountID(spec.registry().getAccountID(RECEIVER))
+                                        .setIsApproval(true)
+                                        .build())))
+                        .payingWith(SPENDER)
+                        .signedBy(SPENDER, OWNER)
+                        .hasKnownStatus(INVALID_NFT_ID));
     }
 
     private HapiSpec canDeleteAllowanceFromDeletedSpender() {

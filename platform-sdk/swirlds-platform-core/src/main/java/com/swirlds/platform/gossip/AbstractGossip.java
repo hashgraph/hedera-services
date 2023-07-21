@@ -31,6 +31,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
@@ -100,10 +101,17 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
     protected final SyncManagerImpl syncManager;
     protected final ReconnectThrottle reconnectThrottle;
     protected final ReconnectMetrics reconnectMetrics;
-    protected final Runnable updatePlatformStatus;
+
+    /**
+     * Enables submitting platform status actions
+     */
+    protected final StatusActionSubmitter statusActionSubmitter;
+
     protected final List<Startable> thingsToStart = new ArrayList<>();
 
-    /** the number of active connections this node has to other nodes */
+    /**
+     * the number of active connections this node has to other nodes
+     */
     private final AtomicInteger activeConnectionNumber = new AtomicInteger(0);
 
     /**
@@ -123,7 +131,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param syncMetrics                   metrics for sync
+     * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -141,15 +150,17 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final StateManagementComponent stateManagementComponent,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
+            @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
-        this.updatePlatformStatus = Objects.requireNonNull(updatePlatformStatus);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.syncMetrics = Objects.requireNonNull(syncMetrics);
 
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
@@ -181,7 +192,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         final ConnectionServer connectionServer = new ConnectionServer(
                 threadManager,
                 address.getListenAddressIpv4(),
-                address.getListenPortIpv4(),
+                address.getListenPort(),
                 socketFactory,
                 inboundConnectionHandler::handle);
         thingsToStart.add(new StoppableThreadConfiguration<>(threadManager)
@@ -222,7 +233,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         networkMetrics = new NetworkMetrics(platformContext.getMetrics(), selfId, addressBook);
         platformContext.getMetrics().addUpdater(networkMetrics::update);
-        syncMetrics = new SyncMetrics(platformContext.getMetrics());
 
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
 
@@ -311,7 +321,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         Objects.requireNonNull(sc);
 
         activeConnectionNumber.getAndIncrement();
-        updatePlatformStatus.run();
         networkMetrics.connectionEstablished(sc);
     }
 
@@ -326,7 +335,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         if (connectionNumber < 0) {
             logger.error(EXCEPTION.getMarker(), "activeConnectionNumber is {}, this is a bug!", connectionNumber);
         }
-        updatePlatformStatus.run();
 
         networkMetrics.recordDisconnect(conn);
     }

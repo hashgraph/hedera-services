@@ -23,14 +23,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -200,6 +203,18 @@ class MerkleAccountScopedCheckTest {
         when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(revokedSpender));
 
         assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
+    }
+
+    @Test
+    void noAllowanceCanExistOnMissingNft() {
+        when(balanceChange.isApprovedAllowance()).thenReturn(true);
+        when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
+        when(balanceChange.getPayerID()).thenReturn(payerID);
+        when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+        when(balanceChange.nftId()).thenReturn(nftId1);
+        willThrow(MissingEntityException.class).given(nftsLedger).get(nftId1, NftProperty.SPENDER);
+
+        assertEquals(INVALID_NFT_ID, subject.checkUsing(account, changeSet));
     }
 
     @Test

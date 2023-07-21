@@ -70,8 +70,8 @@ public class RandomAddressBookGenerator {
     private HashStrategy hashStrategy = HashStrategy.NO_HASH;
 
     /**
-     * Describes different ways that the random address book has its weight distributed if the custom strategy
-     * lambda is unset.
+     * Describes different ways that the random address book has its weight distributed if the custom strategy lambda is
+     * unset.
      */
     public enum WeightDistributionStrategy {
         /**
@@ -90,8 +90,8 @@ public class RandomAddressBookGenerator {
     private WeightDistributionStrategy weightDistributionStrategy = WeightDistributionStrategy.GAUSSIAN;
 
     /**
-     * The average weight. Used directly if using {@link WeightDistributionStrategy#BALANCED}, used as mean if
-     * using {@link WeightDistributionStrategy#GAUSSIAN}.
+     * The average weight. Used directly if using {@link WeightDistributionStrategy#BALANCED}, used as mean if using
+     * {@link WeightDistributionStrategy#GAUSSIAN}.
      */
     private long averageWeight = 1000;
 
@@ -116,7 +116,8 @@ public class RandomAddressBookGenerator {
      */
     private Function<NodeId, Long> customWeightGenerator;
 
-    private NodeId previousNodeId = null;
+    /** the next available node id for new addresses. */
+    private NodeId nextNodeId = NodeId.FIRST_NODE_ID;
 
     /**
      * Create a new address book generator.
@@ -128,8 +129,7 @@ public class RandomAddressBookGenerator {
     /**
      * Create a new address book generator with a source of randomness.
      *
-     * @param random
-     * 		a source of randomness
+     * @param random a source of randomness
      */
     public RandomAddressBookGenerator(final Random random) {
         this.random = random;
@@ -138,8 +138,7 @@ public class RandomAddressBookGenerator {
     /**
      * Create a new address book generator with a seed.
      *
-     * @param seed
-     * 		the seed for the random number generator
+     * @param seed the seed for the random number generator
      */
     public RandomAddressBookGenerator(final long seed) {
         this(new Random(seed));
@@ -148,12 +147,9 @@ public class RandomAddressBookGenerator {
     /**
      * Generate an address that has random data in the "unimportant" fields.
      *
-     * @param random
-     * 		a source of randomness
-     * @param id
-     * 		the node ID
-     * @param weight
-     * 		the weight
+     * @param random a source of randomness
+     * @param id     the node ID
+     * @param weight the weight
      */
     @NonNull
     public static Address addressWithRandomData(
@@ -170,26 +166,22 @@ public class RandomAddressBookGenerator {
 
         final int maxPort = 65535;
         final int minPort = 2000;
-        final byte[] addressInternalIpv4;
+        final String addressInternalHostname;
         try {
-            addressInternalIpv4 =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getAddress();
+            addressInternalHostname =
+                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
         } catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
         final int portInternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-        final byte[] addressExternalIpv4;
+        final String addressExternalHostname;
         try {
-            addressExternalIpv4 =
-                    InetAddress.getByName(RandomUtils.randomIp(random)).getAddress();
+            addressExternalHostname =
+                    InetAddress.getByName(RandomUtils.randomIp(random)).getHostAddress();
         } catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
         final int portExternalIpv4 = minPort + random.nextInt(maxPort - minPort);
-        final byte[] addressInternalIpv6 = null;
-        final int portInternalIpv6 = -1;
-        final byte[] addressExternalIpv6 = null;
-        final int portExternalIpv6 = -1;
 
         final String memo = RandomUtils.randomString(random, 10);
 
@@ -198,14 +190,10 @@ public class RandomAddressBookGenerator {
                 nickname,
                 selfName,
                 weight,
-                addressInternalIpv4,
+                addressInternalHostname,
                 portInternalIpv4,
-                addressExternalIpv4,
+                addressExternalHostname,
                 portExternalIpv4,
-                addressInternalIpv6,
-                portInternalIpv6,
-                addressExternalIpv6,
-                portExternalIpv6,
                 sigPublicKey,
                 encPublicKey,
                 agreePublicKey,
@@ -216,11 +204,10 @@ public class RandomAddressBookGenerator {
      * Generate the next node ID.
      */
     private NodeId getNextNodeId() {
-        final NodeId nextId;
+        final NodeId nextId = this.nextNodeId;
         // randomly advance between 1 and 3 steps
-        final int offset = random.nextInt(3);
-        nextId = previousNodeId == null ? new NodeId(offset) : new NodeId(previousNodeId.id() + offset + 1L);
-        previousNodeId = nextId;
+        final int randomAdvance = random.nextInt(3);
+        this.nextNodeId = this.nextNodeId.getOffset(randomAdvance + 1L);
         return nextId;
     }
 
@@ -249,11 +236,7 @@ public class RandomAddressBookGenerator {
      */
     public AddressBook build() {
         final AddressBook addressBook = new AddressBook();
-        if (previousNodeId == null) {
-            addressBook.setNextNodeId(0);
-        } else {
-            addressBook.setNextNodeId(previousNodeId.id() + 1);
-        }
+        addressBook.setNextNodeId(this.nextNodeId);
         addressBook.setRound(Math.abs(random.nextLong()));
 
         addToAddressBook(addressBook);
@@ -262,10 +245,10 @@ public class RandomAddressBookGenerator {
 
     /**
      * Add new addresses to an address book. The number of addresses is equal to the value specified by
-     * {@link #setSize(int)}. The next candidate ID is set to be the address book's {@link AddressBook#getNextNodeId()}.
+     * {@link #setSize(int)}. The next candidate ID is set to be the address book's
+     * {@link AddressBook#getNextNodeId()}.
      *
-     * @param addressBook
-     * 		the address book to add new addresses to
+     * @param addressBook the address book to add new addresses to
      * @return the input address book after it has been expanded
      */
     public AddressBook addToAddressBook(final AddressBook addressBook) {
@@ -291,10 +274,8 @@ public class RandomAddressBookGenerator {
     /**
      * Remove a number of addresses from an address book.
      *
-     * @param addressBook
-     * 		the address book to remove from
-     * @param count
-     * 		the number of addresses to remove, removes all addresses if count exceeds address book size
+     * @param addressBook the address book to remove from
+     * @param count       the number of addresses to remove, removes all addresses if count exceeds address book size
      * @return the input address book
      */
     @NonNull
@@ -333,11 +314,8 @@ public class RandomAddressBookGenerator {
      * Build a random address with a specific node ID and take.
      */
     public Address buildNextAddress(final NodeId nodeId, final long weight) {
-        try {
-            return addressWithRandomData(random, nodeId, weight);
-        } finally {
-            previousNodeId = nodeId;
-        }
+        this.nextNodeId = nodeId;
+        return addressWithRandomData(random, getNextNodeId(), weight);
     }
 
     /**
@@ -439,17 +417,12 @@ public class RandomAddressBookGenerator {
      * Set the next node ID that may be used to generate a random address. This node ID may be skipped if gaps are
      * permitted.
      *
-     * @param nodeId
-     * 		the next node ID that is considered when generating a random address
+     * @param nodeId the next node ID that is considered when generating a random address
      * @return this object
      */
     public RandomAddressBookGenerator setNextPossibleNodeId(@NonNull final NodeId nodeId) {
         Objects.requireNonNull(nodeId, "NodeId must not be null");
-        if (Objects.equals(nodeId, NodeId.FIRST_NODE_ID)) {
-            this.previousNodeId = null;
-        } else {
-            this.previousNodeId = new NodeId(nodeId.id() - 1);
-        }
+        this.nextNodeId = nodeId;
         return this;
     }
 }

@@ -416,7 +416,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         @Test
         void fungibleAmountBurnedWithLeftoverTreasuryBalance() {
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNum())
+                    .accountId(ACCOUNT_1339)
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
@@ -452,7 +452,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         void fungibleAmountBurnedWithZeroTreasuryBalance() {
 
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNum())
+                    .accountId(ACCOUNT_1339)
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
@@ -653,7 +653,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         void numNftSerialsExceedsNftSupply() {
 
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNum())
+                    .accountId(ACCOUNT_1339)
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
@@ -696,7 +696,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         void nftSerialsBurnedWithLeftoverTreasuryBalance() {
 
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNum())
+                    .accountId(ACCOUNT_1339)
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .numberOwnedNfts(3)
@@ -756,7 +756,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
         void nftSerialsBurnedWithNoLeftoverTreasuryBalance() {
 
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNum())
+                    .accountId(ACCOUNT_1339)
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .numberOwnedNfts(3)
@@ -818,7 +818,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             // This is a success case, and should be identical to the case without no duplicates above
 
             writableAccountStore = newWritableStoreWithAccounts(Account.newBuilder()
-                    .accountNumber(ACCOUNT_1339.accountNum())
+                    .accountId(ACCOUNT_1339)
                     .numberTreasuryTitles(1)
                     .numberPositiveBalances(1)
                     .build());
