@@ -25,6 +25,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -51,6 +52,7 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SimultaneousSyncThrottle;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.unidirectional.HeartbeatProtocolResponder;
 import com.swirlds.platform.network.unidirectional.HeartbeatSender;
 import com.swirlds.platform.network.unidirectional.Listener;
@@ -108,7 +110,8 @@ public class LegacySyncGossip extends AbstractGossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param syncMetrics                   metrics for sync
+     * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -130,7 +133,8 @@ public class LegacySyncGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final SyncMetrics syncMetrics,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
@@ -147,8 +151,9 @@ public class LegacySyncGossip extends AbstractGossip {
                 stateManagementComponent,
                 eventMapper,
                 eventIntakeMetrics,
+                syncMetrics,
                 eventObserverDispatcher,
-                updatePlatformStatus,
+                statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -252,7 +257,6 @@ public class LegacySyncGossip extends AbstractGossip {
                 syncManager,
                 sharedConnectionLocks,
                 eventTaskCreator,
-                updatePlatformStatus,
                 syncShadowgraphSynchronizer);
 
         /* the thread that repeatedly initiates syncs with other members */
@@ -306,7 +310,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                updatePlatformStatus,
+                statusActionSubmitter,
                 () -> {},
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }

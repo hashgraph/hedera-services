@@ -48,7 +48,7 @@ final class ApiPermissionConfigTest {
             })
     void testHederaFunctionalityUsage(final HederaFunctionality hederaFunctionality) {
         // given
-        final var configuration = HederaTestConfigBuilder.create(false)
+        final var configuration = HederaTestConfigBuilder.create()
                 .withConfigDataType(ApiPermissionConfig.class)
                 .getOrCreateConfig();
         final ApiPermissionConfig config = configuration.getConfigData(ApiPermissionConfig.class);
@@ -80,7 +80,7 @@ final class ApiPermissionConfigTest {
             })
     void testNotSupportedHederaFunctionalityUsage(final HederaFunctionality hederaFunctionality) {
         // given
-        final var configuration = HederaTestConfigBuilder.create(false)
+        final var configuration = HederaTestConfigBuilder.create()
                 .withConfigDataType(ApiPermissionConfig.class)
                 .getOrCreateConfig();
         final ApiPermissionConfig config = configuration.getConfigData(ApiPermissionConfig.class);

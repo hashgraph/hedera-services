@@ -20,16 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -50,17 +50,15 @@ public class SwirldStateManagerImplTests {
         initialState = newState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final TransactionConfig transactionConfig =
-                platformContext.getConfiguration().getConfigData(TransactionConfig.class);
 
         swirldStateManagerImpl = new SwirldStateManagerImpl(
                 platformContext,
                 addressBook,
                 new NodeId(0L),
-                mock(PreConsensusSystemTransactionManager.class),
-                mock(PostConsensusSystemTransactionManager.class),
+                mock(PreconsensusSystemTransactionManager.class),
+                mock(ConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
-                transactionConfig,
+                mock(StatusActionSubmitter.class),
                 () -> false,
                 initialState,
                 new BasicSoftwareVersion(1));

@@ -26,9 +26,10 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -54,22 +55,34 @@ import org.apache.logging.log4j.Logger;
  */
 public class SwirldStateManagerImpl implements SwirldStateManager {
 
-    /** use this for all logging, as controlled by the optional data/log4j2.xml file */
+    /**
+     * use this for all logging, as controlled by the optional data/log4j2.xml file
+     */
     private static final Logger logger = LogManager.getLogger(SwirldStateManagerImpl.class);
 
-    /** Stats relevant to SwirldState operations. */
+    /**
+     * Stats relevant to SwirldState operations.
+     */
     private final SwirldStateMetrics stats;
 
-    /** reference to the state that reflects all known consensus transactions */
+    /**
+     * reference to the state that reflects all known consensus transactions
+     */
     private final AtomicReference<State> stateRef = new AtomicReference<>();
 
-    /** The most recent immutable state. No value until the first fast copy is created. */
+    /**
+     * The most recent immutable state. No value until the first fast copy is created.
+     */
     private final AtomicReference<State> latestImmutableState = new AtomicReference<>();
 
-    /** Contains self transactions to be included in the next event. */
+    /**
+     * Contains self transactions to be included in the next event.
+     */
     private final EventTransactionPool transactionPool;
 
-    /** Handle transactions by applying them to a state */
+    /**
+     * Handle transactions by applying them to a state
+     */
     private final TransactionHandler transactionHandler;
 
     /**
@@ -80,12 +93,12 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Handles system transactions pre-consensus
      */
-    private final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
+    private final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
 
     /**
      * Handles system transactions post-consensus
      */
-    private final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
+    private final ConsensusSystemTransactionManager consensusSystemTransactionManager;
 
     /**
      * The current software version.
@@ -96,8 +109,8 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public SwirldStateManagerImpl() {
         stats = null;
         transactionPool = null;
-        preConsensusSystemTransactionManager = null;
-        postConsensusSystemTransactionManager = null;
+        preconsensusSystemTransactionManager = null;
+        consensusSystemTransactionManager = null;
         transactionHandler = null;
         uptimeTracker = null;
         softwareVersion = null;
@@ -106,25 +119,25 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     /**
      * Creates a new instance with the provided state.
      *
-     * @param platformContext                       the platform context
-     * @param addressBook                           the address book
-     * @param selfId                                this node's id
-     * @param preConsensusSystemTransactionManager  the manager for pre-consensus system transactions
-     * @param postConsensusSystemTransactionManager the manager for post-consensus system transactions
-     * @param swirldStateMetrics                    metrics related to SwirldState
-     * @param transactionConfig                     the transaction configuration
-     * @param inFreeze                              indicates if the system is currently in a freeze
-     * @param state                                 the genesis state
-     * @param softwareVersion                       the current software version
+     * @param platformContext                      the platform context
+     * @param addressBook                          the address book
+     * @param selfId                               this node's id
+     * @param preconsensusSystemTransactionManager the manager for pre-consensus system transactions
+     * @param consensusSystemTransactionManager    the manager for post-consensus system transactions
+     * @param swirldStateMetrics                   metrics related to SwirldState
+     * @param statusActionSubmitter                enables submitting platform status actions
+     * @param inFreeze                             indicates if the system is currently in a freeze
+     * @param state                                the genesis state
+     * @param softwareVersion                      the current software version
      */
     public SwirldStateManagerImpl(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
+            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
+            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
             @NonNull final SwirldStateMetrics swirldStateMetrics,
-            @NonNull final TransactionConfig transactionConfig,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final BooleanSupplier inFreeze,
             @NonNull final State state,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -132,17 +145,21 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        this.preConsensusSystemTransactionManager = Objects.requireNonNull(preConsensusSystemTransactionManager);
-        this.postConsensusSystemTransactionManager = Objects.requireNonNull(postConsensusSystemTransactionManager);
+        this.preconsensusSystemTransactionManager = Objects.requireNonNull(preconsensusSystemTransactionManager);
+        this.consensusSystemTransactionManager = Objects.requireNonNull(consensusSystemTransactionManager);
         this.stats = Objects.requireNonNull(swirldStateMetrics);
-        Objects.requireNonNull(transactionConfig);
+        Objects.requireNonNull(statusActionSubmitter);
         Objects.requireNonNull(inFreeze);
         Objects.requireNonNull(state);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
 
-        this.transactionPool = new EventTransactionPool(platformContext.getMetrics(), transactionConfig, inFreeze);
+        this.transactionPool = new EventTransactionPool(
+                platformContext.getMetrics(),
+                platformContext.getConfiguration().getConfigData(TransactionConfig.class),
+                inFreeze);
         this.transactionHandler = new TransactionHandler(selfId, stats);
-        this.uptimeTracker = new UptimeTracker(platformContext, addressBook, selfId, Time.getCurrent());
+        this.uptimeTracker =
+                new UptimeTracker(platformContext, addressBook, statusActionSubmitter, selfId, Time.getCurrent());
         initialState(state);
     }
 
@@ -178,7 +195,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public void handlePreConsensusEvent(final EventImpl event) {
         final long startTime = System.nanoTime();
 
-        preConsensusSystemTransactionManager.handleEvent(event);
+        preconsensusSystemTransactionManager.handleEvent(event);
 
         stats.preConsensusHandleTime(startTime, System.nanoTime());
     }
@@ -195,7 +212,7 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
                 state.getPlatformDualState().getMutableUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        postConsensusSystemTransactionManager.handleRound(state, round);
+        consensusSystemTransactionManager.handleRound(state, round);
         updateEpoch();
     }
 

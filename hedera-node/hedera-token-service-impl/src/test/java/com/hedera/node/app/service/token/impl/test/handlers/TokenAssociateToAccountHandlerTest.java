@@ -274,8 +274,8 @@ class TokenAssociateToAccountHandlerTest {
             final var newAcctNum = 12345L;
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
             writableAccountStore.put(Account.newBuilder()
-                    .accountNumber(newAcctNum)
-                    .headTokenNumber(0)
+                    .accountId(newAcctId)
+                    .headTokenId(TokenID.DEFAULT)
                     .build());
             final var txn = TransactionBody.newBuilder()
                     .transactionID(
@@ -300,9 +300,7 @@ class TokenAssociateToAccountHandlerTest {
                                     .accountId(newAcctId)
                                     .tokenId(toPbj(KNOWN_TOKEN_WITH_WIPE))
                                     .build());
-            final var headToken = TokenID.newBuilder()
-                    .tokenNum(writableAccountStore.getAccountById(newAcctId).headTokenNumber())
-                    .build();
+            final var headToken = writableAccountStore.getAccountById(newAcctId).headTokenId();
             final var headTokenRel = writableTokenRelStore.get(newAcctId, headToken);
             Assertions.assertThat(headTokenRel.frozen()).isFalse();
             Assertions.assertThat(headTokenRel.kycGranted()).isFalse();
@@ -325,8 +323,8 @@ class TokenAssociateToAccountHandlerTest {
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
             // put a new account into the account store that has two tokens associated with it
             writableAccountStore.put(Account.newBuilder()
-                    .accountNumber(newAcctNum)
-                    .headTokenNumber(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
+                    .accountId(newAcctId)
+                    .headTokenId(TokenID.newBuilder().tokenNum(774L))
                     .build());
 
             // put the pre-existing token rels into the rel store
@@ -367,9 +365,8 @@ class TokenAssociateToAccountHandlerTest {
                                     .accountId(newAcctId)
                                     .tokenId(toPbj(KNOWN_TOKEN_WITH_KYC))
                                     .build());
-            final var headTokenId = TokenID.newBuilder()
-                    .tokenNum(writableAccountStore.getAccountById(newAcctId).headTokenNumber())
-                    .build();
+            final var headTokenId =
+                    writableAccountStore.getAccountById(newAcctId).headTokenId();
             final var headTokenRel = writableTokenRelStore.get(newAcctId, headTokenId);
             Assertions.assertThat(headTokenRel.previousToken()).isNull();
             Assertions.assertThat(headTokenRel.tokenId()).isEqualTo(toPbj(KNOWN_TOKEN_WITH_FREEZE));
@@ -413,8 +410,8 @@ class TokenAssociateToAccountHandlerTest {
             final var newAcctId = AccountID.newBuilder().accountNum(newAcctNum).build();
             // put a new account into the account store that has a bogus head token number
             writableAccountStore.put(Account.newBuilder()
-                    .accountNumber(newAcctNum)
-                    .headTokenNumber(TOKEN_300.tokenNum())
+                    .accountId(newAcctId)
+                    .headTokenId(TOKEN_300)
                     .build());
 
             final var txn = TransactionBody.newBuilder()
@@ -444,7 +441,8 @@ class TokenAssociateToAccountHandlerTest {
             final var updatedAcct = writableAccountStore.getAccountById(newAcctId);
             Assertions.assertThat(updatedAcct).isNotNull();
             // The account's updated head token num will point to the first new token
-            Assertions.assertThat(updatedAcct.headTokenNumber()).isEqualTo(KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
+            Assertions.assertThat(updatedAcct.headTokenId().tokenNum())
+                    .isEqualTo(KNOWN_TOKEN_WITH_FREEZE.getTokenNum());
             // And new token relations will still exist for the new token IDs
             Assertions.assertThat(writableTokenRelStore.get(newAcctId, toPbj(KNOWN_TOKEN_WITH_FREEZE)))
                     .isNotNull();

@@ -280,6 +280,7 @@ extraJavaModuleInfo {
 
     // Test Related Modules
     automaticModule("org.mockito:mockito-inline", "org.mockito.inline")
+    automaticModule("com.google.jimfs:jimfs", "com.google.jimfs")
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
     automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
     automaticModule("com.github.docker-java:docker-java-api", "com.github.docker.java.api")

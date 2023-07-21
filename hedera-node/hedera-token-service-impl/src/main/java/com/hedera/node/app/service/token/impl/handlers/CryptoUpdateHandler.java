@@ -217,9 +217,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate expiry metadata
         final var currentMetadata = new ExpiryMeta(
-                updateAccount.expiry(),
-                updateAccount.autoRenewSecs(),
-                asAccount(updateAccount.autoRenewAccountNumber())); // update after issue#7243
+                updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountId());
         final var updateMeta = new ExpiryMeta(
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
