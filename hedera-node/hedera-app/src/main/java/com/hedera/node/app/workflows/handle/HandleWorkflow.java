@@ -328,10 +328,24 @@ public class HandleWorkflow {
       // TODO: handle system tasks. System tasks should be outside the blockRecordManager start/end user transaction
       // TODO: and have their own start/end. So system transactions are handled like separate user transactions.
 
+      // add the transaction to the cache
+      if (preHandleResult != null) {
+        hederaRecordCache.add(
+            platformEvent.getCreatorId().id(),
+            preHandleResult.payer(),
+            recordListResult.mainRecord().record(),
+            consensusNow);
+      } else {
+        // The only reason the preHandleResult might be null is if there is an exception in the try-catch
+        // block above. If that happens the recordBuilder's status will be updated by the catch blocks so there
+        // is no need to override it here. Logging should be enough. // TODO: is that true?
+        logger.warn("The transaction was not saved in the cache");
+      }
+
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
       // TODO: handle system tasks
-      
+
     }
 
     public void recordFailedTransaction(

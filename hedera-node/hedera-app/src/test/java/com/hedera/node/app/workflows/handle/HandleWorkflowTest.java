@@ -369,18 +369,18 @@ class HandleWorkflowTest extends AppTestBase {
             solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        preHandleWorkflow,
-                        dispatcher,
-                        recordManager,
-                        signatureExpander,
-                        signatureVerifier,
-                        checker,
-                        serviceLookup,
-                        configProvider,
-                        instantSource,
-                        null,
-                        solvencyPreCheck))
+            networkInfo,
+            preHandleWorkflow,
+            dispatcher,
+            blockRecordManager,
+            signatureExpander,
+            signatureVerifier,
+            checker,
+            serviceLookup,
+            configProvider,
+            instantSource,
+            null,
+            solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -429,12 +429,12 @@ class HandleWorkflowTest extends AppTestBase {
         assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
         assertThat(alice).isEqualTo(ALICE.account().accountId());
 
-        final var inOrder = inOrder(recordManager, hederaRecordCache, dispatcher, recordManager);
-        inOrder.verify(recordManager, times(1)).startUserTransaction(any());
+        final var inOrder = inOrder(blockRecordManager, hederaRecordCache, dispatcher, blockRecordManager);
+        inOrder.verify(blockRecordManager, times(1)).startUserTransaction(any(), any());
         inOrder.verify(hederaRecordCache, times(1)).getRecord(any());
         inOrder.verify(dispatcher, times(1)).dispatchHandle(any());
         inOrder.verify(hederaRecordCache, times(1)).add(eq(0L), any(), any(), any());
-        inOrder.verify(recordManager, times(1)).endUserTransaction(any());
+        inOrder.verify(blockRecordManager, times(1)).endUserTransaction(any(), any());
         // TODO: Check that record was created
     }
 
@@ -541,10 +541,10 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
-            verify(recordManager, times(1)).startUserTransaction(any());
+            verify(blockRecordManager, times(1)).startUserTransaction(any(), any());
             verify(hederaRecordCache, times(0)).getRecord(any());
             verify(dispatcher, times(0)).dispatchHandle(any());
-            verify(recordManager, times(1)).endUserTransaction(any());
+            verify(blockRecordManager, times(1)).endRound(any());
             verify(hederaRecordCache, times(0)).add(eq(0L), any(), any(), any());
 
             // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
@@ -593,10 +593,10 @@ class HandleWorkflowTest extends AppTestBase {
 
         // then
         assertThat(aliasesState.isModified()).isFalse();
-        verify(recordManager, times(1)).startUserTransaction(any());
+        verify(blockRecordManager, times(1)).startUserTransaction(any(), any());
         verify(hederaRecordCache, times(0)).getRecord(any());
         verify(dispatcher, times(0)).dispatchHandle(any());
-        verify(recordManager, times(1)).endUserTransaction(any());
+        verify(blockRecordManager, times(1)).endRound(any());
         verify(hederaRecordCache, times(0)).add(eq(0L), any(), any(), any());
         // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
     }
