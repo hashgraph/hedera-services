@@ -31,7 +31,7 @@ import java.util.Map;
 public class WrappedHederaState implements HederaState {
 
     private final HederaState delegate;
-    private final Map<String, HederaWritableStates> writableStatesMap = new HashMap<>();
+    private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
 
     /**
      * Constructs a {@link WrappedHederaState} that wraps the given {@link HederaState}.
@@ -71,9 +71,9 @@ public class WrappedHederaState implements HederaState {
      */
     @Override
     @NonNull
-    public HederaWritableStates createWritableStates(@NonNull String serviceName) {
+    public WritableStates createWritableStates(@NonNull String serviceName) {
         return writableStatesMap.computeIfAbsent(
-                serviceName, s -> (HederaWritableStates) delegate.createWritableStates(s));
+                serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
     }
 
     /**

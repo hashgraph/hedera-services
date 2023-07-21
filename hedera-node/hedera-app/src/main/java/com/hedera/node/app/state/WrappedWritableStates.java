@@ -25,6 +25,7 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.state.merkle.MerkleHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,6 +123,10 @@ public class WrappedWritableStates implements WritableStates {
         }
         for (WrappedWritableSingletonState<?> singletonState : writableSingletonStateMap.values()) {
             singletonState.commit();
+        }
+
+        if (delegate instanceof MerkleHederaState.MerkleWritableStates mws) {
+            mws.commit();
         }
     }
 }

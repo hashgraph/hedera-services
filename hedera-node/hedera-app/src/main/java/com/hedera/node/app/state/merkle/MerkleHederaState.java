@@ -33,7 +33,6 @@ import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HandleConsensusRoundListener;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.HederaWritableStates;
 import com.hedera.node.app.state.PreHandleListener;
 import com.hedera.node.app.state.merkle.disk.OnDiskReadableKVState;
 import com.hedera.node.app.state.merkle.disk.OnDiskWritableKVState;
@@ -595,7 +594,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * An implementation of {@link WritableStates} based on the merkle tree.
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public final class MerkleWritableStates extends MerkleStates implements HederaWritableStates {
+    public final class MerkleWritableStates extends MerkleStates implements WritableStates {
         /**
          * Create a new instance
          *
@@ -651,22 +650,6 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             return new WritableQueueStateImpl<>(md, q);
         }
 
-        @Override
-        public boolean isModified() {
-            for (final ReadableKVState kv : kvInstances.values()) {
-                if (((WritableKVStateBase) kv).isModified()) return true;
-            }
-            for (final ReadableSingletonState s : singletonInstances.values()) {
-                if (((WritableSingletonStateBase) s).isModified()) return true;
-            }
-            for (final ReadableQueueState q : queueInstances.values()) {
-                if (((WritableQueueStateBase) q).isModified()) return true;
-            }
-
-            return false;
-        }
-
-        @Override
         public void commit() {
             for (final ReadableKVState kv : kvInstances.values()) {
                 ((WritableKVStateBase) kv).commit();
