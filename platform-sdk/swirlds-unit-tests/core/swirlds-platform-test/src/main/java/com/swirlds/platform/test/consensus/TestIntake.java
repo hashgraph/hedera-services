@@ -43,6 +43,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -115,7 +116,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 ab,
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
-                shadowGraph);
+                shadowGraph,
+                new HashMap<>()); // TODO problem?
     }
 
     /**

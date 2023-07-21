@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -28,15 +29,18 @@ import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -79,6 +83,8 @@ public class ShadowGraphSynchronizer {
     /** executed before fetching the tips from the shadowgraph for the second time in phase 3 */
     private final InterruptableRunnable executePreFetchTips;
 
+    private final Map<NodeId, AtomicLong> unprocessedEvents;
+
     public ShadowGraphSynchronizer(
             final ShadowGraph shadowGraph,
             final int numberOfNodes,
@@ -89,7 +95,8 @@ public class ShadowGraphSynchronizer {
             final FallenBehindManager fallenBehindManager,
             final ParallelExecutor executor,
             final boolean sendRecInitBytes,
-            final InterruptableRunnable executePreFetchTips) {
+            final InterruptableRunnable executePreFetchTips,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
         this.shadowGraph = shadowGraph;
         this.numberOfNodes = numberOfNodes;
         this.syncMetrics = syncMetrics;
@@ -100,6 +107,7 @@ public class ShadowGraphSynchronizer {
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
+        this.unprocessedEvents = Objects.requireNonNull(unprocessedEvents);
     }
 
     private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
@@ -310,7 +318,8 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone),
+                SyncComms.phase3Read(
+                        conn, eventHandler, syncMetrics, eventReadingDone, unprocessedEvents.get(conn.getOtherId())),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {

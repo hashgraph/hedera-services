@@ -65,7 +65,9 @@ import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -132,7 +134,8 @@ public class LegacySyncGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
         super(
                 platformContext,
                 threadManager,
@@ -168,7 +171,8 @@ public class LegacySyncGossip extends AbstractGossip {
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {});
+                () -> {},
+                unprocessedEvents);
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),

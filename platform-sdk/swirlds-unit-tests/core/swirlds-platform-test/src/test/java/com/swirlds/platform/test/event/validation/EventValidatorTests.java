@@ -43,6 +43,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -91,7 +92,8 @@ class EventValidatorTests {
     void eventValidator() {
         final Set<GossipEvent> intakeEvents = new HashSet<>();
         final AtomicBoolean isValid = new AtomicBoolean(true);
-        final EventValidator eventValidator = new EventValidator((e) -> isValid.get(), intakeEvents::add);
+        final EventValidator eventValidator =
+                new EventValidator((e) -> isValid.get(), intakeEvents::add, new HashMap<>());
 
         final GossipEvent validEvent = GossipEventBuilder.builder().buildEvent();
         eventValidator.validateEvent(validEvent);

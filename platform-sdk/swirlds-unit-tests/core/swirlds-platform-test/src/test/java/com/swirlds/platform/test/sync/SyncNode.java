@@ -35,6 +35,7 @@ import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -215,7 +216,8 @@ public class SyncNode {
                 syncManager,
                 executor,
                 sendRecInitBytes,
-                () -> {});
+                () -> {},
+                new HashMap<>()); // TODO problem?
     }
 
     /**

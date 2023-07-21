@@ -48,7 +48,9 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -92,6 +94,7 @@ public final class GossipFactory {
      * @param updatePlatformStatus          a method that updates the platform status, when called
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param unprocessedEvents             a map of node ID to the number of unprocessed events for that node
      * @return the gossip engine
      */
     public static Gossip buildGossip(
@@ -119,7 +122,8 @@ public final class GossipFactory {
             @NonNull final EventLinker eventLinker,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -176,7 +180,8 @@ public final class GossipFactory {
                     eventLinker,
                     updatePlatformStatus,
                     loadReconnectState,
-                    clearAllPipelinesForReconnect);
+                    clearAllPipelinesForReconnect,
+                    unprocessedEvents);
         } else if (syncConfig.syncAsProtocolEnabled()) {
             if (addressBook.getSize() == 1) {
                 logger.info(STARTUP.getMarker(), "Using SingleNodeSyncGossip");
@@ -225,7 +230,8 @@ public final class GossipFactory {
                         eventIntakeMetrics,
                         updatePlatformStatus,
                         loadReconnectState,
-                        clearAllPipelinesForReconnect);
+                        clearAllPipelinesForReconnect,
+                        unprocessedEvents);
             }
         } else {
             logger.info(STARTUP.getMarker(), "Using LegacySyncGossip");
@@ -249,7 +255,8 @@ public final class GossipFactory {
                     eventIntakeMetrics,
                     updatePlatformStatus,
                     loadReconnectState,
-                    clearAllPipelinesForReconnect);
+                    clearAllPipelinesForReconnect,
+                    unprocessedEvents);
         }
     }
 }

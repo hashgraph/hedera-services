@@ -38,6 +38,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -67,7 +68,8 @@ class EventIntakeTest {
                 addressBook,
                 dispatcher,
                 mock(IntakeCycleStats.class),
-                shadowGraph);
+                shadowGraph,
+                new HashMap<>()); // TODO problem?
 
         final GossipEvent gossipEvent = mock(GossipEvent.class);
         final EventImpl added = mock(EventImpl.class);

@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -101,6 +102,9 @@ public class SyncProtocol implements Protocol {
      */
     private final Time time;
 
+    private final boolean intakeThrottleEnabled;
+    private final AtomicLong unprocessedEvents;
+
     /**
      * Constructs a new sync protocol
      *
@@ -113,6 +117,8 @@ public class SyncProtocol implements Protocol {
      * @param sleepAfterSync         the amount of time to sleep after a sync
      * @param syncMetrics            metrics tracking syncing
      * @param time                   a source of time
+     * @param intakeThrottleEnabled  if true then throttle on the event intake pipeline
+     * @param unprocessedEvents      the number of unprocessed events
      */
     public SyncProtocol(
             @NonNull final NodeId peerId,
@@ -123,7 +129,9 @@ public class SyncProtocol implements Protocol {
             @NonNull final PeerAgnosticSyncChecks peerAgnosticSyncChecks,
             @NonNull final Duration sleepAfterSync,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Time time) {
+            @NonNull final Time time,
+            final boolean intakeThrottleEnabled,
+            @NonNull final AtomicLong unprocessedEvents) {
 
         this.peerId = Objects.requireNonNull(peerId);
         this.synchronizer = Objects.requireNonNull(synchronizer);
@@ -134,6 +142,8 @@ public class SyncProtocol implements Protocol {
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.time = Objects.requireNonNull(time);
+        this.intakeThrottleEnabled = intakeThrottleEnabled;
+        this.unprocessedEvents = Objects.requireNonNull(unprocessedEvents);
     }
 
     /**
@@ -164,7 +174,10 @@ public class SyncProtocol implements Protocol {
         syncMetrics.opportunityToInitiateSync();
 
         // are there any reasons not to initiate?
-        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete()
+                || !peerAgnosticSyncChecks.shouldSync()
+                || fallenBehindManager.hasFallenBehind()
+                || (intakeThrottleEnabled && unprocessedEvents.get() > 0)) {
             return false;
         }
 
@@ -192,7 +205,10 @@ public class SyncProtocol implements Protocol {
         syncMetrics.incomingSyncRequestReceived();
 
         // are there any reasons not to accept?
-        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete()
+                || !peerAgnosticSyncChecks.shouldSync()
+                || fallenBehindManager.hasFallenBehind()
+                || (intakeThrottleEnabled && unprocessedEvents.get() > 0)) {
             return false;
         }
 
