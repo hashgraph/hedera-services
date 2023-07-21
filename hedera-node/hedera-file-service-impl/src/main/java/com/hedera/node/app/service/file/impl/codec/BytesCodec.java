@@ -45,19 +45,23 @@ public class BytesCodec implements Codec<Bytes> {
     }
 
     @Override
+    // ReadableSequentialData view is incorrect it consumes the stream
     public int measure(@NonNull ReadableSequentialData input) throws IOException {
-        return input.view(4).readInt() + 4;
+        throw new UnsupportedOperationException("Cannot be implemented");
+        //        return input.view(4).readInt() + 4;
     }
 
     @Override
     public int measureRecord(Bytes item) {
-        return Math.toIntExact(item.length());
+        throw new UnsupportedOperationException("Cannot be implemented");
+        //        return Math.toIntExact(item.length());
     }
 
     @Override
     public boolean fastEquals(@NonNull Bytes item, @NonNull ReadableSequentialData input) throws IOException {
-        final ReadableSequentialData comparisonView = input.view(measure(input));
-        final Bytes other = parseStrict(comparisonView);
-        return item.equals(other);
+        throw new UnsupportedOperationException("Cannot be implemented");
+        //        final ReadableSequentialData comparisonView = input.view(measure(input));
+        //        final Bytes other = parseStrict(comparisonView);
+        //        return item.equals(other);
     }
 }
