@@ -30,11 +30,11 @@ import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -70,7 +70,7 @@ public class EventCreator {
     private final EventMapper eventMapper;
 
     /** Stores the most recent event created by me */
-    private final SelfEventStorage selfEventStorage;
+    //    private final SelfEventStorage selfEventStorage;
 
     /** An implementor of {@link TransactionPool} */
     private final TransactionPool transactionPool;
@@ -86,6 +86,8 @@ public class EventCreator {
      */
     private final boolean disabled;
 
+    private GossipEvent lastSelfEvent;
+
     /**
      * Construct a new EventCreator.
      *
@@ -97,7 +99,6 @@ public class EventCreator {
      * @param transactionSupplier      this method supplies transactions that should be inserted into newly created
      *                                 events
      * @param newEventHandler          this method is passed all newly created events
-     * @param selfEventStorage         stores the most recent event created by me
      * @param eventMapper              the object that tracks the most recent events from each node
      * @param transactionPool          the TransactionPool
      * @param inFreeze                 indicates if the system is currently in a freeze
@@ -112,7 +113,6 @@ public class EventCreator {
             @NonNull final TransactionSupplier transactionSupplier,
             @NonNull final InterruptableConsumer<GossipEvent> newEventHandler,
             @NonNull final EventMapper eventMapper,
-            @NonNull final SelfEventStorage selfEventStorage,
             @NonNull final TransactionPool transactionPool,
             @NonNull final BooleanSupplier inFreeze,
             @NonNull final EventCreationRules eventCreationRules) {
@@ -124,7 +124,6 @@ public class EventCreator {
         this.transactionSupplier = Objects.requireNonNull(transactionSupplier, "the transaction supplier is null");
         this.newEventHandler = Objects.requireNonNull(newEventHandler, "the new event handler is null");
         this.eventMapper = Objects.requireNonNull(eventMapper, "the event mapper is null");
-        this.selfEventStorage = Objects.requireNonNull(selfEventStorage, "the self event storage is null");
         this.transactionPool = Objects.requireNonNull(transactionPool, "the transaction pool is null");
         this.inFreeze = Objects.requireNonNull(inFreeze, "the in freeze is null");
         this.eventCreationRules = Objects.requireNonNull(eventCreationRules, "the event creation rules is null");
@@ -158,7 +157,7 @@ public class EventCreator {
         }
 
         final EventImpl otherParent = eventMapper.getMostRecentEvent(otherId);
-        final GossipEvent selfParent = selfEventStorage.getMostRecentSelfEvent();
+        final GossipEvent selfParent = getLastSelfEvent();
 
         if (eventCreationRules.shouldCreateEvent(selfParent, otherParent) == EventCreationRuleResponse.DONT_CREATE) {
             return false;
@@ -169,8 +168,23 @@ public class EventCreator {
             return false;
         }
 
-        handleNewEvent(buildEvent(selfParent, otherParent));
+        final GossipEvent event = buildEvent(selfParent, otherParent);
+        lastSelfEvent = event;
+        handleNewEvent(event);
         return true;
+    }
+
+    @Nullable
+    private GossipEvent getLastSelfEvent() {
+        if (lastSelfEvent == null) {
+            // Special case: when booting up from a state on disk,
+            // the event mapper will have our most recent self event.
+            final EventImpl lastSelfEventImpl = eventMapper.getMostRecentEvent(selfId);
+            if (lastSelfEventImpl != null) {
+                lastSelfEvent = new GossipEvent(lastSelfEventImpl.getHashedData(), lastSelfEventImpl.getUnhashedData());
+            }
+        }
+        return lastSelfEvent;
     }
 
     private void handleNewEvent(@NonNull final GossipEvent event) {

@@ -933,7 +933,6 @@ public class SwirldsPlatform implements Platform, Startable {
                     swirldStateManager.getTransactionPool(),
                     incomingEventProcessor::ingestEvent,
                     eventMapper,
-                    eventMapper,
                     swirldStateManager.getTransactionPool(),
                     freezeManager::isFreezeStarted,
                     new EventCreationRules(List.of()));

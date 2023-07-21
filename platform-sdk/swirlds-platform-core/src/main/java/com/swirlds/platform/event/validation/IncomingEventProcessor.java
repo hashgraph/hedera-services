@@ -23,6 +23,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -57,12 +58,16 @@ public class IncomingEventProcessor {
 
         // TODO add a metric for this queue
         // TODO settings
+
+        final BlockingQueue<Runnable> workQueue =
+                new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(new LinkedBlockingQueue<>(1024));
+
         executorService = new ThreadPoolExecutor(
                 8,
                 8,
                 0L,
                 TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(1024),
+                workQueue,
                 threadManager.createThreadFactory("platform", "event-processor"));
     }
 
