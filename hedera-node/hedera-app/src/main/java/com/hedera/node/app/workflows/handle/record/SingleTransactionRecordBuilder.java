@@ -129,7 +129,6 @@ public final class SingleTransactionRecordBuilder
 
     public SingleTransactionRecordBuilder(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.parentConsensusTimestamp = consensusNow;
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -199,7 +198,7 @@ public final class SingleTransactionRecordBuilder
                         scheduleRef,
                         assessedCustomFees,
                         automaticTokenAssociations,
-                        HapiUtils.asTimestamp(parentConsensusTimestamp),
+                        parentConsensusTimestamp != null ? HapiUtils.asTimestamp(parentConsensusTimestamp) : null,
                         alias,
                         ethereumHash,
                         paidStakingRewards,
@@ -290,7 +289,7 @@ public final class SingleTransactionRecordBuilder
         return this;
     }
 
-    @NonNull
+    @Nullable
     public Instant parentConsensusTimestamp() {
         return parentConsensusTimestamp;
     }

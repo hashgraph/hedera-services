@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -75,7 +76,7 @@ class RecordListBuilderTest {
         assertThat(preceding.consensusNow())
                 .isAfterOrEqualTo(base.consensusNow().minusNanos(MAX_PRECEDING))
                 .isBefore(base.consensusNow());
-        assertThat(preceding.parentConsensusTimestamp()).isEqualTo(preceding.consensusNow());
+        assertNull(preceding.parentConsensusTimestamp());
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(preceding, base);
     }
@@ -100,9 +101,9 @@ class RecordListBuilderTest {
         assertThat(preceding1.consensusNow())
                 .isAfterOrEqualTo(base.consensusNow().minusNanos(maxPreceding))
                 .isBefore(preceding2.consensusNow());
-        assertThat(preceding1.parentConsensusTimestamp()).isEqualTo(preceding1.consensusNow());
+        assertNull(preceding1.parentConsensusTimestamp());
         assertThat(preceding2.consensusNow()).isBefore(base.consensusNow());
-        assertThat(preceding2.parentConsensusTimestamp()).isEqualTo(preceding2.consensusNow());
+        assertNull(preceding2.parentConsensusTimestamp());
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(preceding1, preceding2, base);
     }
@@ -377,9 +378,9 @@ class RecordListBuilderTest {
         assertThat(preceding1.consensusNow())
                 .isAfterOrEqualTo(base.consensusNow().minusNanos(MAX_PRECEDING))
                 .isBefore(preceding2.consensusNow());
-        assertThat(preceding1.parentConsensusTimestamp()).isEqualTo(preceding1.consensusNow());
+        assertNull(preceding1.parentConsensusTimestamp());
         assertThat(preceding2.consensusNow()).isBefore(base.consensusNow());
-        assertThat(preceding2.parentConsensusTimestamp()).isEqualTo(preceding2.consensusNow());
+        assertNull(preceding2.parentConsensusTimestamp());
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
         assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
