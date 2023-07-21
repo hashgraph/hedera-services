@@ -30,6 +30,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -137,7 +138,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param eventIntakeMetrics            metrics for event intake
      * @param syncMetrics                   metrics for sync
      * @param eventLinker                   links together events, if chatter is enabled will also buffer orphans
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
@@ -165,7 +166,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final EventLinker eventLinker,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
@@ -184,7 +185,7 @@ public class ChatterGossip extends AbstractGossip {
                 eventIntakeMetrics,
                 syncMetrics,
                 eventObserverDispatcher,
-                updatePlatformStatus,
+                statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -384,7 +385,7 @@ public class ChatterGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                updatePlatformStatus,
+                statusActionSubmitter,
                 () -> getReconnectController().start(),
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }

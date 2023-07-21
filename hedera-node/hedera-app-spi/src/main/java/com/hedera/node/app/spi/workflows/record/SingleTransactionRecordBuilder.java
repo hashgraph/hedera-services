@@ -14,14 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.system.status.actions;
+package com.hedera.node.app.spi.workflows.record;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 /**
- * An action that is triggered when the platform observes a self event reaching consensus.
- *
- * @param wallClockTime the wall clock time when this action was triggered
+ * This interface contains methods to read general properties a transaction record builder.
  */
-public record SelfEventReachedConsensusAction(@NonNull Instant wallClockTime) implements PlatformStatusAction {}
+public interface SingleTransactionRecordBuilder {
+
+    /**
+     * Returns the status that is currently set in the record builder.
+     *
+     * @return the status of the transaction
+     */
+    @NonNull
+    ResponseCodeEnum status();
+}
