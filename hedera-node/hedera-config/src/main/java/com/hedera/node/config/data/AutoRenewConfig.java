@@ -24,7 +24,7 @@ import java.util.Set;
 @ConfigData("autoRenew")
 public record AutoRenewConfig(
         //         @ConfigProperty(defaultValue = "") Set<EntityType> targetTypes
-        @ConfigProperty(defaultValue = "CONTRACT,ACCOUNT") @NetworkProperty Set<String> targetTypes) {
+        @ConfigProperty(defaultValue = "") @NetworkProperty Set<String> targetTypes) {
     public boolean expireContracts() {
         return targetTypes.contains("CONTRACT");
     }

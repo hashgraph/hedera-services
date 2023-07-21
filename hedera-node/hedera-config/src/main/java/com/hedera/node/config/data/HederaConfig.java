@@ -24,8 +24,8 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("hedera")
 public record HederaConfig(
         @ConfigProperty(defaultValue = "1001") @NetworkProperty long firstUserEntity,
-        @ConfigProperty(defaultValue = "0") @NetworkProperty long realm,
-        @ConfigProperty(defaultValue = "0") @NetworkProperty long shard,
+        @ConfigProperty(defaultValue = "0") @NodeProperty long realm,
+        @ConfigProperty(defaultValue = "0") @NodeProperty long shard,
         @ConfigProperty(value = "recordStream.sidecarMaxSizeMb", defaultValue = "256") @NetworkProperty
                 int recordStreamSidecarMaxSizeMb,
         @ConfigProperty(value = "transaction.maxMemoUtf8Bytes", defaultValue = "100") @NetworkProperty

@@ -314,6 +314,11 @@ class MonoExpiryValidatorTest {
 
     @Test
     void failsIfAccountExpiredAndPendingRemoval() {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+
         assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, subject.expirationStatus(EntityType.ACCOUNT, true, 0L));
         assertTrue(subject.isDetached(EntityType.ACCOUNT, true, 0));
 

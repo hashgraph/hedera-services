@@ -609,6 +609,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().build();
         givenTxnWith(txn);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));

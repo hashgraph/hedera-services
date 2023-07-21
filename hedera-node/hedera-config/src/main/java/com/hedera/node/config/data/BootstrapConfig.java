@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.NodeProperty;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -31,10 +32,10 @@ public record BootstrapConfig(
                 @NetworkProperty
                 Bytes genesisPublicKey,
         @ConfigProperty(value = "hapiPermissions.path", defaultValue = "data/config/api-permission.properties")
-                @NetworkProperty
+                @NodeProperty
                 String hapiPermissionsPath,
         @ConfigProperty(value = "networkProperties.path", defaultValue = "data/config/application.properties")
-                @NetworkProperty
+                @NodeProperty
                 String networkPropertiesPath,
         @ConfigProperty(value = "rates.currentHbarEquiv", defaultValue = "1") @NetworkProperty
                 int ratesCurrentHbarEquiv,
@@ -47,5 +48,5 @@ public record BootstrapConfig(
         @ConfigProperty(value = "rates.nextExpiry", defaultValue = "4102444800") @NetworkProperty long ratesNextExpiry,
         @ConfigProperty(value = "system.entityExpiry", defaultValue = "1812637686") @NetworkProperty
                 long systemEntityExpiry,
-        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "throttles.json") @NetworkProperty
+        @ConfigProperty(value = "throttleDefsJson.resource", defaultValue = "throttles.json") @NodeProperty
                 String throttleDefsJsonResource) {}
