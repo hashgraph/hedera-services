@@ -43,7 +43,6 @@ public class BookEntryPojo {
         @SuppressWarnings("java:S5960")
         private static String asReadableIp(final ByteString octets) {
             final byte[] raw = octets.toByteArray();
-            Assertions.assertEquals(9, raw.length, "An IP4v4 address should have four octets!");
             final var sb = new StringBuilder();
             for (int i = 0; i < 4; i++) {
                 sb.append("" + (0xff & raw[i]));
