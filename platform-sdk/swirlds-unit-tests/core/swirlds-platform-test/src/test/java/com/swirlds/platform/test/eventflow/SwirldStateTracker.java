@@ -21,10 +21,10 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.test.state.DummySwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -93,8 +93,8 @@ public class SwirldStateTracker extends DummySwirldState implements TransactionT
     }
 
     @Override
-    public synchronized void preHandle(final Event event) {
-        event.forEachTransaction(trans -> {
+    public synchronized void preHandle(@NonNull final Iterator<Transaction> transactionIterator) {
+        transactionIterator.forEachRemaining(trans -> {
             trans.setMetadata(Boolean.TRUE);
             if (!preHandleTxns.add(trans)) {
                 addFailure(String.format("Encountered duplicate preHandle transaction: %s", trans));

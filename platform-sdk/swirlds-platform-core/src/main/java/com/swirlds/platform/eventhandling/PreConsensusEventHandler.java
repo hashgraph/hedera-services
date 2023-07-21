@@ -66,11 +66,6 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     private final ConsensusMetrics consensusMetrics;
 
     /**
-     * The class responsible for all interactions with the swirld state
-     */
-    private final SwirldStateManager swirldStateManager;
-
-    /**
      * @param metrics
      *      metrics system
      * @param threadManager
@@ -96,7 +91,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
         Objects.requireNonNull(threadConfig);
 
         this.selfId = Objects.requireNonNull(selfId);
-        this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
+        Objects.requireNonNull(swirldStateManager);
         this.consensusMetrics = Objects.requireNonNull(consensusMetrics);
         final BlockingQueue<EventImpl> queue = new PriorityBlockingQueue<>(
                 INITIAL_PRE_CONS_EVENT_QUEUE_CAPACITY, EventUtils::consensusPriorityComparator);
@@ -146,22 +141,12 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
 
     /**
      * Do pre-handle processing on the pre-consensus event and add it to the queue (q1) for handling. Events that are
-     * null or empty are discarded immediately. All other events go through pre-handle processing. Events that should
-     * not be handled pre-consensus according to {@link SwirldStateManager#discardPreConsensusEvent(EventImpl)} are not
-     * added to the queue.
+     * null or empty are discarded immediately. All other events go through pre-handle processing.
      */
     @Override
     public void preConsensusEvent(final EventImpl event) {
         // we don't need empty pre-consensus events
         if (event == null || event.isEmpty()) {
-            return;
-        }
-
-        // All events are supplied for preHandle
-        swirldStateManager.preHandle(event);
-
-        // some events should not be applied as pre-consensus, so discard them
-        if (swirldStateManager.discardPreConsensusEvent(event)) {
             return;
         }
 

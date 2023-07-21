@@ -28,32 +28,36 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 // TODO rename
 
 /**
- * Hashes, deduplicates, and validates events on a thread pool.
+ * Hashes, deduplicates, validates, and calls prehandle for transactions in incoming events.
  */
-public class IncomingEventProcessor {
+public class EventPreprocessor {
 
     private final ExecutorService executorService;
 
     private final Cryptography cryptography;
     private final EventDeduplicator deduplicator;
     private final GossipEventValidators validators;
+    private final Consumer<GossipEvent> transactionPrehandler;
     private final InterruptableConsumer<GossipEvent> validEventConsumer;
 
-    public IncomingEventProcessor(
+    public EventPreprocessor(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final EventDeduplicator deduplicator,
             @NonNull final GossipEventValidators validators,
+            @NonNull final Consumer<GossipEvent> transactionPrehandler,
             @NonNull final InterruptableConsumer<GossipEvent> validEventConsumer) {
 
         Objects.requireNonNull(threadManager);
         this.cryptography = platformContext.getCryptography();
         this.deduplicator = Objects.requireNonNull(deduplicator);
         this.validators = Objects.requireNonNull(validators);
+        this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
         this.validEventConsumer = Objects.requireNonNull(validEventConsumer);
 
         // TODO add a metric for this queue
@@ -72,7 +76,7 @@ public class IncomingEventProcessor {
     }
 
     /**
-     * Add an event that needs hashed, deduplicated, and validated.
+     * Add an event to be preprocessed.
      *
      * @param event the event to be hashed
      */
@@ -93,24 +97,26 @@ public class IncomingEventProcessor {
                 cryptography.digestSync(event.getHashedData());
             }
 
-            final boolean isDuplicate = deduplicator.isDuplicate(event);
-            if (isDuplicate) {
+            if (deduplicator.isDuplicate(event)) {
                 return;
             }
 
+            // TODO some validation can move before hashing
             final boolean isValid = validators.isEventValid(event);
             if (!isValid) {
                 return;
             }
 
+            transactionPrehandler.accept(event);
+
             event.buildDescriptor();
 
             try {
                 validEventConsumer.accept(event);
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("unable to pass event to next stage in pipeline", e);
-                // TODO fix how we do interrupts in all places in this changeset
+                // TODO evaluate how we do interrupts in all places in this changeset
             }
         };
     }

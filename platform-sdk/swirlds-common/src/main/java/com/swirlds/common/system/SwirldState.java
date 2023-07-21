@@ -23,6 +23,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -60,6 +61,7 @@ public interface SwirldState extends MerkleNode {
     }
 
     /**
+     * TODO fix javadoc
      * Provides the application an opportunity to perform operations on transactions in an event prior to handling.
      * Called against a given {@link Event} only once, globally (not once per state instance) This method may modify the
      * {@link Transaction}s in the event by doing nothing, adding additional signatures, removing existing signatures,
@@ -77,12 +79,11 @@ public interface SwirldState extends MerkleNode {
      * <p>
      * <strong>This method is always invoked on an immutable state.</strong>
      *
-     * @param event the event to perform pre-handling on
-     * @see #handleConsensusRound(Round, SwirldDualState)
+     * @param transactionIterator an iterator that walks over the application transactions in the event
      */
-    default void preHandle(final Event event) {}
+    default void preHandle(@NonNull final Iterator<Transaction> transactionIterator) {}
 
-    /**
+    /** TODO fix javadoc
      * {@inheritDoc}
      * <p>
      * The state of this object must NEVER change except inside the methods below.
@@ -93,9 +94,6 @@ public interface SwirldState extends MerkleNode {
      *     <li>{@link #handleConsensusRound(Round, SwirldDualState)}</li>
      *  </ul>
      * <p>
-     * If signature verification was started on a background thread in {@link #preHandle(Event)}, the process
-     * should be checked for completion. Accessing {@link TransactionSignature#getSignatureStatus()} before this
-     * process is complete will cause it to return {@code null}:
      *
      * <pre>
      *     for (TransactionSignature sig : transaction.getSignatures()) {

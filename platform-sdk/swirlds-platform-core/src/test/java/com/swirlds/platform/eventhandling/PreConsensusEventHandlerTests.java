@@ -37,7 +37,6 @@ import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -161,33 +160,5 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         assertTrue(emptyEvent.isEmpty(), "The generated event should be empty");
         preConsensusEventHandler.preConsensusEvent(emptyEvent);
         assertEquals(0, preConsensusEventHandler.getQueueSize(), "Empty events should not be added to the queue");
-    }
-
-    /**
-     * Test that events are discarded if the {@link SwirldStateManager} says they should be.
-     */
-    @Test
-    void testEventsDiscarded() {
-        final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
-        when(swirldStateManager.discardPreConsensusEvent(any(EventImpl.class))).thenReturn(true);
-
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
-
-        preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusMetrics,
-                threadConfig);
-        preConsensusEventHandler.start();
-
-        final List<EventImpl> events = createEvents(10, 10, false);
-        events.forEach(preConsensusEventHandler::preConsensusEvent);
-        assertEquals(
-                0,
-                preConsensusEventHandler.getQueueSize(),
-                "queue should be empty because all events should be discarded");
     }
 }

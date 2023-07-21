@@ -408,7 +408,7 @@ public final class EventRecoveryWorkflow {
         mutableState.throwIfImmutable();
 
         for (final ConsensusEvent event : round) {
-            immutableState.preHandle(event);
+            immutableState.preHandle(event.transactionIterator());
         }
 
         mutableState.handleConsensusRound(round, dualState);

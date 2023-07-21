@@ -21,10 +21,15 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -50,6 +55,21 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
+    }
+
+    /**
+     * Get an iterator that walks over application transactions.
+     *
+     * @return an iterator that walks over application transactions
+     */
+    @NonNull
+    public Iterator<Transaction> getApplicationTransactionIterator() {
+        final ConsensusTransactionImpl[] transactions = hashedData.getTransactions();
+        if (transactions == null) {
+            // TODO is this even possible?
+            return Collections.emptyIterator();
+        }
+        return new ApplicationTransactionIterator(transactions);
     }
 
     /**

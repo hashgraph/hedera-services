@@ -49,7 +49,6 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.ConsensusEvent;
-import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
@@ -102,6 +101,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -1616,7 +1616,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public void preHandle(final Event event) {
-        event.forEachTransaction(this::preHandleTransaction);
+    public void preHandle(@NonNull final Iterator<Transaction> transactionIterator) {
+        transactionIterator.forEachRemaining(this::preHandleTransaction);
     }
 }

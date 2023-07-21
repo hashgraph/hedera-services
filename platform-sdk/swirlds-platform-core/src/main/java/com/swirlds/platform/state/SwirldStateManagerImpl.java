@@ -29,6 +29,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
 import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -158,14 +159,17 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final EventImpl event) {
+    public void preHandle(@NonNull final GossipEvent event) {
+        Objects.requireNonNull(event);
+
         final long startTime = System.nanoTime();
 
         State immutableState = latestImmutableState.get();
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
         }
-        transactionHandler.preHandle(event, immutableState.getSwirldState());
+        immutableState.getSwirldState().preHandle(event.getApplicationTransactionIterator());
+
         immutableState.release();
 
         stats.preHandleTime(startTime, System.nanoTime());

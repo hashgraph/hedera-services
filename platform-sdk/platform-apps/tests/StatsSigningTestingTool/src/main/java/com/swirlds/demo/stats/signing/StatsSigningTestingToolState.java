@@ -40,12 +40,12 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -107,10 +107,10 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * {@inheritDoc}
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(@NonNull final Iterator<Transaction> transactionIterator) {
         final TransactionPool transactionPool = transactionPoolSupplier.get();
         if (transactionPool != null) {
-            event.forEachTransaction(transaction -> {
+            transactionIterator.forEachRemaining(transaction -> {
                 transactionPool.expandSignatures(transaction);
                 CryptographyHolder.get().verifyAsync(transaction.getSignatures());
             });

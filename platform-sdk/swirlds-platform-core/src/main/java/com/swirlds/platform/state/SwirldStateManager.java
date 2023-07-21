@@ -23,10 +23,12 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.FreezePeriodChecker;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * The methods used to interact with instances of {@link SwirldState}.
@@ -34,13 +36,12 @@ import com.swirlds.platform.state.signed.LoadableFromSignedState;
 public interface SwirldStateManager extends FreezePeriodChecker, Clearable, LoadableFromSignedState {
 
     /**
-     * Invokes the pre-handle method. Called after the event has been verified but before
-     * {@link #handlePreConsensusEvent(EventImpl)}.
+     * Invokes the pre-handle method.
      *
      * @param event
      * 		the event to handle
      */
-    void preHandle(final EventImpl event);
+    void preHandle(@NonNull final GossipEvent event);
 
     /**
      * Handles an event before it reaches consensus..
@@ -49,18 +50,6 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
      * 		the event to handle
      */
     void handlePreConsensusEvent(final EventImpl event);
-
-    /**
-     * Determines if a pre-consensus event should be discarded or added to the pre-consensus queue (q1) for
-     * processing.
-     *
-     * @param event
-     * 		the event to discard or not
-     * @return true if the event should be discarded, false otherwise
-     */
-    default boolean discardPreConsensusEvent(final EventImpl event) {
-        return false;
-    }
 
     /**
      * Provides the transaction pool used to store transactions submitted by this node.
