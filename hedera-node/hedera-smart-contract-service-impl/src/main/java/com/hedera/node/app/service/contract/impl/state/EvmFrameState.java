@@ -296,5 +296,6 @@ public interface EvmFrameState {
      * @param number the account number
      * @return the rent factors
      */
+    @NonNull
     RentFactors getRentFactorsFor(long number);
 }
