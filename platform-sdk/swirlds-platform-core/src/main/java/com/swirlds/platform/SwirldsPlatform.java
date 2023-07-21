@@ -544,6 +544,7 @@ public class SwirldsPlatform implements Platform, Startable {
         eventPreprocessor = new EventPreprocessor(
                 platformContext,
                 threadManager,
+                time,
                 deduplicator,
                 eventValidators,
                 swirldStateManager::preHandle,

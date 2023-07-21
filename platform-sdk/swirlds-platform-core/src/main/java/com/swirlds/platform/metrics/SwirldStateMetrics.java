@@ -62,11 +62,6 @@ public class SwirldStateMetrics {
                     + "(in microseconds)")
             .withFormat(FORMAT_16_2);
     private final RunningAverageMetric avgStateCopyMicros;
-    /**
-     * average time spent in
-     * {@code SwirldStateManager#prehandle} by the {@code intake} thread (in microseconds)
-     */
-    private final AverageTimeStat preHandleTime;
 
     private final AverageTimeStat preConsHandleTime;
 
@@ -89,12 +84,6 @@ public class SwirldStateMetrics {
                 INTERNAL_CATEGORY,
                 "preConsHandleMicros",
                 "average time it takes to handle a pre-consensus event from q4 (in microseconds)");
-        preHandleTime = new AverageTimeStat(
-                metrics,
-                ChronoUnit.MICROS,
-                INTERNAL_CATEGORY,
-                "preHandleMicros",
-                "average time it takes to perform preHandle (in microseconds)");
     }
 
     /**
@@ -139,13 +128,5 @@ public class SwirldStateMetrics {
      */
     public void preConsensusHandleTime(final long start, final long end) {
         preConsHandleTime.update(start, end);
-    }
-
-    /**
-     * The amount of time it takes to apply an event or a transaction, depending on which {@link SwirldState} the
-     * application implements.
-     */
-    public void preHandleTime(final long start, final long end) {
-        preHandleTime.update(start, end);
     }
 }

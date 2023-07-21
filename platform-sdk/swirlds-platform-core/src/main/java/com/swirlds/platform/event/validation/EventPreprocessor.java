@@ -16,12 +16,16 @@
 
 package com.swirlds.platform.event.validation;
 
+import com.swirlds.base.time.Time;
+import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -31,8 +35,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-// TODO rename
-
 /**
  * Hashes, deduplicates, validates, and calls prehandle for transactions in incoming events.
  */
@@ -41,18 +43,20 @@ public class EventPreprocessor {
     private final ExecutorService executorService;
 
     private final Cryptography cryptography;
+    private final Time time;
     private final EventDeduplicator deduplicator;
     private final GossipEventValidators validators;
     private final Consumer<GossipEvent> transactionPrehandler;
     private final InterruptableConsumer<GossipEvent> validEventConsumer;
     private final EventPreprocessorMetrics metrics;
-    private final int threadPoolSize = 8;
+    private final int threadPoolSize;
 
     /**
      * Create a new event preprocessor.
      *
      * @param platformContext       the platform context
      * @param threadManager         manages creation of threading resources
+     * @param time                  provides wall clock time
      * @param deduplicator          responsible for deduplicating events
      * @param validators            performs validation on events
      * @param transactionPrehandler prehandles transactions in events
@@ -61,6 +65,7 @@ public class EventPreprocessor {
     public EventPreprocessor(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull final EventDeduplicator deduplicator,
             @NonNull final GossipEventValidators validators,
             @NonNull final Consumer<GossipEvent> transactionPrehandler,
@@ -68,17 +73,19 @@ public class EventPreprocessor {
 
         Objects.requireNonNull(threadManager);
         this.cryptography = platformContext.getCryptography();
+        this.time = Objects.requireNonNull(time);
         this.deduplicator = Objects.requireNonNull(deduplicator);
         this.validators = Objects.requireNonNull(validators);
         this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
         this.validEventConsumer = Objects.requireNonNull(validEventConsumer);
 
-        // TODO settings
+        final EventConfig config = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        final BlockingQueue<Runnable> workQueue =
-                new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(new LinkedBlockingQueue<>(1024));
+        final BlockingQueue<Runnable> workQueue = new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(
+                new LinkedBlockingQueue<>(config.eventIntakeQueueSize()));
 
         metrics = new EventPreprocessorMetrics(platformContext, workQueue::size);
+        threadPoolSize = config.eventIntakeQueueThrottleSize();
 
         executorService = new ThreadPoolExecutor(
                 threadPoolSize,
@@ -106,9 +113,9 @@ public class EventPreprocessor {
      */
     @NonNull
     private Runnable buildProcessingTask(@NonNull final GossipEvent event) {
-        // TODO add some metrics for this workflow
-
         return () -> {
+            final Instant start = time.now();
+
             if (event.getHashedData().getHash() == null) {
                 cryptography.digestSync(event.getHashedData());
             }
@@ -119,15 +126,25 @@ public class EventPreprocessor {
             }
             metrics.registerUniqueEvent();
 
+            final Instant doneHashingAndDeduplicating = time.now();
+            metrics.reportEventHashTime(Duration.between(start, doneHashingAndDeduplicating));
+
             // FUTURE WORK some validation can move before hashing
             if (!validators.isEventValid(event)) {
                 metrics.registerInvalidEvent();
                 return;
             }
             metrics.registerValidEvent();
+            event.buildDescriptor();
+
+            final Instant doneValidating = time.now();
+            metrics.reportEventValidationTime(Duration.between(doneHashingAndDeduplicating, doneValidating));
 
             transactionPrehandler.accept(event);
-            event.buildDescriptor();
+
+            final Instant donePrehandling = time.now();
+            metrics.reportEventPrehandleTime(Duration.between(doneValidating, donePrehandling));
+            metrics.reportEventPreprocessTime(Duration.between(start, donePrehandling));
 
             try {
                 validEventConsumer.accept(event);

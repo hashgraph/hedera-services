@@ -162,8 +162,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
     public void preHandle(@NonNull final GossipEvent event) {
         Objects.requireNonNull(event);
 
-        final long startTime = System.nanoTime();
-
         State immutableState = latestImmutableState.get();
         while (!immutableState.tryReserve()) {
             immutableState = latestImmutableState.get();
@@ -171,8 +169,6 @@ public class SwirldStateManagerImpl implements SwirldStateManager {
         immutableState.getSwirldState().preHandle(event.getApplicationTransactionIterator());
 
         immutableState.release();
-
-        stats.preHandleTime(startTime, System.nanoTime());
     }
 
     /**
