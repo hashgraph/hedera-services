@@ -24,10 +24,12 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -65,6 +67,11 @@ public class ProxyEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public Wei getBalance() {
         return state.getBalance(number);
+    }
+
+    @Override
+    public @NonNull Code getEvmCode() {
+        return CodeFactory.createCode(getCode(), 0, false);
     }
 
     @Override

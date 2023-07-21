@@ -52,8 +52,11 @@ import com.hedera.node.app.spi.meta.bni.Scope;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -112,21 +115,28 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull UInt256 getStorageValue(final long number, @NonNull final UInt256 key) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        final var slotValue = storage.get(slotKey);
-        return (slotValue == null) ? UInt256.ZERO : pbjToTuweniUInt256(slotValue.value());
+        return valueOrZero(storage.get(slotKey));
     }
 
     @Override
-    public @NonNull UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key) {
-        // TODO - when WritableKVState supports getting the original value, use that here
-        throw new AssertionError("Not implemented");
+    public @NonNull UInt256 getOriginalStorageValue(final long number, @NonNull final UInt256 key) {
+        final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
+        return valueOrZero(storage.getOriginalValue(slotKey));
     }
 
-    @NonNull
     @Override
-    public List<StorageAccesses> getStorageChanges() {
-        // TODO - when WritableKVState supports getting the original value, use that here
-        throw new AssertionError("Not implemented");
+    public @NonNull List<StorageAccesses> getStorageChanges() {
+        final Map<Long, List<StorageAccess>> modifications = new TreeMap<>();
+        storage.modifiedKeys().forEach(slotKey -> modifications
+                .computeIfAbsent(slotKey.contractNumber(), k -> new ArrayList<>())
+                .add(StorageAccess.newWrite(
+                        pbjToTuweniUInt256(slotKey.key()),
+                        valueOrZero(storage.getOriginalValue(slotKey)),
+                        valueOrZero(storage.get(slotKey)))));
+        final List<StorageAccesses> allChanges = new ArrayList<>();
+        modifications.forEach(
+                (number, storageAccesses) -> allChanges.add(new StorageAccesses(number, storageAccesses)));
+        return allChanges;
     }
 
     @Override
@@ -135,8 +145,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     @Override
-    public RentFactors getRentFactorsFor(final long number) {
-        throw new AssertionError("Not implemented");
+    public @NonNull RentFactors getRentFactorsFor(final long number) {
+        final var account = validatedAccount(number);
+        return new RentFactors(account.contractKvPairsNumber(), account.expiry());
     }
 
     @Override
@@ -419,5 +430,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
             throw new IllegalArgumentException("No account has number " + number);
         }
         return account;
+    }
+
+    private UInt256 valueOrZero(@Nullable final SlotValue slotValue) {
+        return (slotValue == null) ? UInt256.ZERO : pbjToTuweniUInt256(slotValue.value());
     }
 }
