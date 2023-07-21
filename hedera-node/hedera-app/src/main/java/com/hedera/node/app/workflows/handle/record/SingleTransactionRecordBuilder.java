@@ -101,7 +101,7 @@ public final class SingleTransactionRecordBuilder
     private ScheduleID scheduleRef;
     private List<AssessedCustomFee> assessedCustomFees;
     private List<TokenAssociation> automaticTokenAssociations;
-    private Instant parentConsensusTimestamp;
+    private final Instant parentConsensusTimestamp;
     private Bytes alias;
     private Bytes ethereumHash;
     private List<AccountAmount> paidStakingRewards;
@@ -128,7 +128,13 @@ public final class SingleTransactionRecordBuilder
     public final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
     public SingleTransactionRecordBuilder(@NonNull final Instant consensusNow) {
+        this(requireNonNull(consensusNow, "consensusNow must not be null"), null);
+    }
+
+    public SingleTransactionRecordBuilder(
+            @NonNull final Instant consensusNow, @Nullable final Instant parentConsensusTimestamp) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.parentConsensusTimestamp = parentConsensusTimestamp;
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -279,13 +285,6 @@ public final class SingleTransactionRecordBuilder
     public SingleTransactionRecordBuilder automaticTokenAssociations(
             List<TokenAssociation> automaticTokenAssociations) {
         this.automaticTokenAssociations = automaticTokenAssociations;
-        return this;
-    }
-
-    @NonNull
-    public SingleTransactionRecordBuilder parentConsensusTimestamp(@NonNull Instant parentConsensusTimestamp) {
-        this.parentConsensusTimestamp =
-                requireNonNull(parentConsensusTimestamp, "parentConsensusTimestamp must not be null");
         return this;
     }
 

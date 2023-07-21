@@ -134,12 +134,9 @@ public class RecordListBuilder {
 
         final var previousRecord = recordBuilders.get(childCount - 1);
         final var consensusNow = previousRecord.consensusNow().plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
-
         final var parentConsensusTimestamp =
                 childCount == 1 ? previousRecord.consensusNow() : previousRecord.parentConsensusTimestamp();
-        recordBuilder.parentConsensusTimestamp(parentConsensusTimestamp);
-
+        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow, parentConsensusTimestamp);
         recordBuilders.add(recordBuilder);
         return recordBuilder;
     }

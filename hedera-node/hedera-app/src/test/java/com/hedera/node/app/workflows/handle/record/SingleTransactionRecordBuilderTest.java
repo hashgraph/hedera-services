@@ -108,7 +108,7 @@ public class SingleTransactionRecordBuilderTest {
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
         SingleTransactionRecordBuilder singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilder(CONSENSUS_TIME);
+                new SingleTransactionRecordBuilder(CONSENSUS_TIME, PARENT_CONSENSUS_TIME);
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
 
         singleTransactionRecordBuilder
@@ -124,7 +124,6 @@ public class SingleTransactionRecordBuilderTest {
                 .scheduleRef(scheduleRef)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(automaticTokenAssociations)
-                .parentConsensusTimestamp(PARENT_CONSENSUS_TIME)
                 .alias(alias)
                 .ethereumHash(ethereumHash)
                 .paidStakingRewards(paidStakingRewards)
