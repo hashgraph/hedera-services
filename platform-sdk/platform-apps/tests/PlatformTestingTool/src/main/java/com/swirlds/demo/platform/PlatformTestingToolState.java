@@ -1616,7 +1616,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     @Override
-    public void preHandle(@NonNull final Iterator<Transaction> transactionIterator) {
+    public synchronized void preHandle(@NonNull final Iterator<Transaction> transactionIterator) {
         transactionIterator.forEachRemaining(this::preHandleTransaction);
     }
 }

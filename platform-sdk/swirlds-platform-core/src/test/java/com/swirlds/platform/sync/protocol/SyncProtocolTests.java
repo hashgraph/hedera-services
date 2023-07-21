@@ -41,6 +41,7 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -96,7 +97,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -117,7 +120,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 Duration.ofMillis(100),
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldInitiate());
@@ -154,7 +159,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain the only existing permit, so it isn't available to the protocol
@@ -181,7 +188,9 @@ class SyncProtocolTests {
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -203,7 +212,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -226,7 +237,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldInitiate());
@@ -249,7 +262,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -269,7 +284,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -294,7 +311,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertTrue(protocol.shouldAccept());
         assertEquals(0, permitProvider.getNumAvailable());
@@ -314,7 +333,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 Duration.ofMillis(100),
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldAccept());
@@ -361,7 +382,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertFalse(protocol.shouldAccept());
         assertEquals(0, permitProvider.getNumAvailable());
@@ -380,7 +403,9 @@ class SyncProtocolTests {
                 new PeerAgnosticSyncChecks(List.of(() -> false)),
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -402,7 +427,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertFalse(protocol.shouldAccept());
@@ -421,7 +448,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldAccept());
@@ -442,7 +471,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         assertTrue(protocol.shouldInitiate());
@@ -463,7 +494,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldInitiate();
@@ -484,7 +517,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertEquals(2, permitProvider.getNumAvailable());
         protocol.shouldAccept();
@@ -505,7 +540,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
     }
@@ -523,7 +560,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         // mock synchronize to throw a ParallelExecutionException
         Mockito.when(shadowGraphSynchronizer.synchronize(any()))
@@ -551,7 +590,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         // mock synchronize to throw a ParallelExecutionException with root cause being an IOException
         Mockito.when(shadowGraphSynchronizer.synchronize(any()))
@@ -578,7 +619,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         // mock synchronize to throw a SyncException
         Mockito.when(shadowGraphSynchronizer.synchronize(any())).thenThrow(new SyncException(""));
@@ -604,7 +647,9 @@ class SyncProtocolTests {
                 peerAgnosticSyncChecks,
                 sleepAfterSync,
                 syncMetrics,
-                time);
+                time,
+                false,
+                new AtomicLong());
 
         assertTrue(protocol.acceptOnSimultaneousInitiate());
     }

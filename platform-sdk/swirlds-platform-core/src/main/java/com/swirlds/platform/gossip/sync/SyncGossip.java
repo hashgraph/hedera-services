@@ -75,7 +75,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -153,7 +155,8 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
         super(
                 platformContext,
                 threadManager,
@@ -277,7 +280,9 @@ public class SyncGossip extends AbstractGossip {
                                             peerAgnosticSyncChecks,
                                             Duration.ZERO,
                                             syncMetrics,
-                                            time)))))
+                                            time,
+                                            syncConfig.ingestThrottlingEnabled(),
+                                            unprocessedEvents.get(otherId))))))
                     .build());
         }
 

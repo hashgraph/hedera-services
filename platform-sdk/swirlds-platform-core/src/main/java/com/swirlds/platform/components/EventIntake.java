@@ -36,7 +36,9 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,6 +66,8 @@ public class EventIntake {
     /** Stores events, expires them, provides event lookup methods */
     private final ShadowGraph shadowGraph;
 
+    private final Map<NodeId, AtomicLong> unprocessedEvents;
+
     /**
      * Constructor
      *
@@ -79,7 +83,8 @@ public class EventIntake {
             @NonNull final AddressBook addressBook,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
-            @NonNull final ShadowGraph shadowGraph) {
+            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.eventLinker = Objects.requireNonNull(eventLinker, "eventLinker must not be null");
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier, "consensusSupplier must not be null");
@@ -88,6 +93,7 @@ public class EventIntake {
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher must not be null");
         this.stats = Objects.requireNonNull(stats, "stats must not be null");
         this.shadowGraph = Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
+        this.unprocessedEvents = Objects.requireNonNull(unprocessedEvents);
     }
 
     /**
@@ -110,6 +116,10 @@ public class EventIntake {
         stats.doneLinking();
         while (eventLinker.hasLinkedEvents()) {
             addEvent(eventLinker.pollLinkedEvent());
+        }
+
+        if (event.getOrigin() != NodeId.UNDEFINED_NODE_ID) {
+            unprocessedEvents.get(event.getOrigin()).getAndDecrement();
         }
     }
 

@@ -18,6 +18,7 @@ package com.swirlds.platform.event;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
@@ -26,6 +27,7 @@ import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
@@ -44,6 +46,11 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private Instant timeReceived;
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
+    /**
+     * The node that sent us this event.
+     */
+    private NodeId origin;
+
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
 
@@ -51,10 +58,30 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      * @param hashedData   the hashed data for the event
      * @param unhashedData the unhashed data for the event
      */
-    public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
+    public GossipEvent(
+            @NonNull final BaseEventHashedData hashedData,
+            @NonNull final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
+    }
+
+    /**
+     * Get the ID of the node that sent us this event. May not be set for events that were not received directly through
+     * gossip.
+     *
+     * @return the ID of the node that sent us this event
+     */
+    @Nullable
+    public NodeId getOrigin() {
+        return origin;
+    }
+
+    /**
+     * Set the origin of this event.
+     */
+    public void setOrigin(@NonNull final NodeId origin) {
+        this.origin = Objects.requireNonNull(origin);
     }
 
     /**

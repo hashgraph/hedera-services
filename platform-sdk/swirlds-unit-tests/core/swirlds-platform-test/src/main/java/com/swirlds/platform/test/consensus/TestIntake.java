@@ -43,6 +43,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -108,6 +109,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 new InOrderLinker(ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
+
         intake = new EventIntake(
                 new NodeId(0L), // only used for logging
                 linker,
@@ -115,7 +117,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 ab,
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
-                shadowGraph);
+                shadowGraph,
+                new HashMap<>()); // TODO is this ok?
     }
 
     /**

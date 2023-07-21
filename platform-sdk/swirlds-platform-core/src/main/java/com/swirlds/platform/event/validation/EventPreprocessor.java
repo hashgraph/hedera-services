@@ -23,6 +23,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
@@ -32,6 +33,7 @@ import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -42,6 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,9 +67,11 @@ public class EventPreprocessor implements Clearable, Startable {
     private final InterruptableConsumer<GossipEvent> validEventConsumer;
     private final EventPreprocessorMetrics metrics;
     private final int threadPoolSize;
+    final Map<NodeId, AtomicLong> unprocessedEvents;
 
     private final QueueThread<Future<GossipEvent>> deduplicationQueue;
     private final QueueThread<Future<GossipEvent>> finalizerQueue;
+
 
     // TODO document and organize this class
 
@@ -80,6 +85,7 @@ public class EventPreprocessor implements Clearable, Startable {
      * @param validators            performs validation on events
      * @param transactionPrehandler prehandles transactions in events
      * @param validEventConsumer    events that pass all checks are passed here
+     * @param unprocessedEvents     tracks the number of unprocessed events in the ingest pipeline
      */
     public EventPreprocessor(
             @NonNull final PlatformContext platformContext,
@@ -88,7 +94,8 @@ public class EventPreprocessor implements Clearable, Startable {
             @NonNull final EventDeduplicator deduplicator,
             @NonNull final GossipEventValidators validators,
             @NonNull final Consumer<GossipEvent> transactionPrehandler,
-            @NonNull final InterruptableConsumer<GossipEvent> validEventConsumer) {
+            @NonNull final InterruptableConsumer<GossipEvent> validEventConsumer,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
 
         Objects.requireNonNull(threadManager);
         this.cryptography = platformContext.getCryptography();
@@ -97,6 +104,7 @@ public class EventPreprocessor implements Clearable, Startable {
         this.validators = Objects.requireNonNull(validators);
         this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
         this.validEventConsumer = Objects.requireNonNull(validEventConsumer);
+        this.unprocessedEvents = Objects.requireNonNull(unprocessedEvents);
 
         final EventConfig config = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
@@ -138,8 +146,9 @@ public class EventPreprocessor implements Clearable, Startable {
      * @param event the event to be hashed
      */
     public void ingestEvent(@NonNull final GossipEvent event) throws InterruptedException {
-        //        executorService.submit(buildProcessingTask(event));
-
+        if (event.getOrigin() != NodeId.UNDEFINED_NODE_ID) {
+            unprocessedEvents.get(event.getOrigin()).getAndIncrement();
+        }
         deduplicationQueue.put(executorService.submit(buildHashingTask(event)));
     }
 
@@ -170,6 +179,9 @@ public class EventPreprocessor implements Clearable, Startable {
 
             if (deduplicator.addAndCheckIfDuplicated(event)) {
                 metrics.registerDuplicateEvent();
+                if (event.getOrigin() != NodeId.UNDEFINED_NODE_ID) {
+                    unprocessedEvents.get(event.getOrigin()).getAndDecrement();
+                }
                 return;
             }
             metrics.registerUniqueEvent();
@@ -195,6 +207,9 @@ public class EventPreprocessor implements Clearable, Startable {
                 // FUTURE WORK some validation can move before hashing
                 if (!validators.isEventValid(event)) {
                     metrics.registerInvalidEvent();
+                    if (event.getOrigin() != NodeId.UNDEFINED_NODE_ID) {
+                        unprocessedEvents.get(event.getOrigin()).getAndDecrement();
+                    }
                     return null;
                 }
                 metrics.registerValidEvent();

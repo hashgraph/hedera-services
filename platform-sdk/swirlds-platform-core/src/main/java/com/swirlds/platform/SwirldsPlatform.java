@@ -152,6 +152,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -390,10 +391,9 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        final Address address = getSelfAddress();
         final String eventStreamManagerName;
-        if (!address.getMemo().isEmpty()) {
-            eventStreamManagerName = address.getMemo();
+        if (!getSelfAddress().getMemo().isEmpty()) {
+            eventStreamManagerName = getSelfAddress().getMemo();
         } else {
             eventStreamManagerName = String.valueOf(selfId);
         }
@@ -512,6 +512,12 @@ public class SwirldsPlatform implements Platform, Startable {
         //    |                                                                                    |
         //    |------------------------------------------------------------------------------------|
 
+        // TODO clear this on reconnect
+        final Map<NodeId, AtomicLong> unprocessedEvents = new HashMap<>();
+        for (final Address address : initialAddressBook) {
+            unprocessedEvents.put(address.getNodeId(), new AtomicLong(0));
+        }
+
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
         final EventIntake eventIntake = new EventIntake(
@@ -521,7 +527,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 initialAddressBook,
                 eventObserverDispatcher,
                 intakeCycleStats,
-                shadowGraph);
+                shadowGraph,
+                unprocessedEvents);
 
         final List<GossipEventValidator> validators = new ArrayList<>();
         validators.add(StaticValidators::isParentDataValid);
@@ -548,7 +555,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 deduplicator,
                 eventValidators,
                 swirldStateManager::preHandle,
-                intakeQueue::put));
+                intakeQueue::put,
+                unprocessedEvents));
 
         final EventCreator eventCreator = buildEventCreator(eventPreprocessor);
 
@@ -604,7 +612,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventLinker,
                 this::checkPlatformStatus,
                 this::loadReconnectState,
-                this::clearAllPipelines);
+                this::clearAllPipelines,
+                unprocessedEvents);
 
         if (startedFromGenesis) {
             initialMinimumGenerationNonAncient = 0;

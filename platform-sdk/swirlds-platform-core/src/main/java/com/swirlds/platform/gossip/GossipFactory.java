@@ -50,7 +50,9 @@ import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -122,7 +124,8 @@ public final class GossipFactory {
             @NonNull final EventLinker eventLinker,
             @NonNull final Runnable updatePlatformStatus,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -148,6 +151,7 @@ public final class GossipFactory {
         Objects.requireNonNull(updatePlatformStatus);
         Objects.requireNonNull(loadReconnectState);
         Objects.requireNonNull(clearAllPipelinesForReconnect);
+        Objects.requireNonNull(unprocessedEvents);
 
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
@@ -231,7 +235,8 @@ public final class GossipFactory {
                         eventIntakeMetrics,
                         updatePlatformStatus,
                         loadReconnectState,
-                        clearAllPipelinesForReconnect);
+                        clearAllPipelinesForReconnect,
+                        unprocessedEvents);
             }
         } else {
             logger.info(STARTUP.getMarker(), "Using LegacySyncGossip");
