@@ -16,33 +16,28 @@
 
 package com.swirlds.platform.event.validation;
 
-import com.swirlds.base.state.Startable;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.threading.framework.QueueThread;
-import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 // TODO rename
 
 /**
  * Hashes, deduplicates, and validates events on a thread pool.
  */
-public class IncomingEventProcessor implements Startable {
+public class IncomingEventProcessor {
 
     private final ExecutorService executorService;
 
     private final Cryptography cryptography;
-    private final QueueThread<Future<GossipEvent>> finalizer;
     private final EventDeduplicator deduplicator;
     private final GossipEventValidators validators;
     private final InterruptableConsumer<GossipEvent> validEventConsumer;
@@ -60,15 +55,15 @@ public class IncomingEventProcessor implements Startable {
         this.validators = Objects.requireNonNull(validators);
         this.validEventConsumer = Objects.requireNonNull(validEventConsumer);
 
+        // TODO add a metric for this queue
         // TODO settings
-        executorService = Executors.newFixedThreadPool(
-                8, threadManager.createThreadFactory("platform", "event-intake-processing"));
-
-        finalizer = new QueueThreadConfiguration<Future<GossipEvent>>(threadManager)
-                .setComponent("platform")
-                .setThreadName("event-intake-processing-finalizer")
-                .setHandler(this::waitForEventToBeProcessed)
-                .build();
+        executorService = new ThreadPoolExecutor(
+                8,
+                8,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(1024),
+                threadManager.createThreadFactory("platform", "event-processor"));
     }
 
     /**
@@ -76,9 +71,8 @@ public class IncomingEventProcessor implements Startable {
      *
      * @param event the event to be hashed
      */
-    public void ingestEvent(@NonNull final GossipEvent event) throws InterruptedException {
-        final Future<GossipEvent> future = executorService.submit(buildProcessingTask(event));
-        finalizer.put(future);
+    public void ingestEvent(@NonNull final GossipEvent event) {
+        executorService.submit(buildProcessingTask(event));
     }
 
     /**
@@ -88,7 +82,7 @@ public class IncomingEventProcessor implements Startable {
      * @param event the event to be hashed
      */
     @NonNull
-    private Callable<GossipEvent> buildProcessingTask(@NonNull final GossipEvent event) {
+    private Runnable buildProcessingTask(@NonNull final GossipEvent event) {
         return () -> {
             if (event.getHashedData().getHash() == null) {
                 cryptography.digestSync(event.getHashedData());
@@ -96,46 +90,23 @@ public class IncomingEventProcessor implements Startable {
 
             final boolean isDuplicate = deduplicator.isDuplicate(event);
             if (isDuplicate) {
-                return null;
+                return;
             }
 
             final boolean isValid = validators.isEventValid(event);
             if (!isValid) {
-                return null;
+                return;
             }
 
             event.buildDescriptor();
-            return event;
 
-            // TODO metrics?
-        };
-    }
-
-    /**
-     * Wait for the next event to be hashed, deduplicated, and validated. If an event passes all of these checks, it is
-     * passed to the {@link #validEventConsumer}.
-     *
-     * @param future the future that will contain the hashed event
-     */
-    private void waitForEventToBeProcessed(@NonNull final Future<GossipEvent> future) {
-        try {
-            final GossipEvent event = future.get();
-            if (event != null) {
+            try {
                 validEventConsumer.accept(event);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("unable to pass event to next stage in pipeline", e);
+                // TODO fix how we do interrupts in all places in this changeset
             }
-        } catch (final ExecutionException e) {
-            throw new RuntimeException(e);
-        } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            // TODO log error
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start() {
-        finalizer.start();
+        };
     }
 }

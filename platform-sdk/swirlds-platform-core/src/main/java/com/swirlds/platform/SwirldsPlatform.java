@@ -543,8 +543,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 .build());
 
         // TODO do we need to flush this on PCES/reconnect?
-        final IncomingEventProcessor incomingEventProcessor = components.add(new IncomingEventProcessor(
-                platformContext, threadManager, deduplicator, eventValidators, intakeQueue::put));
+        final IncomingEventProcessor incomingEventProcessor = new IncomingEventProcessor(
+                platformContext, threadManager, deduplicator, eventValidators, intakeQueue::put);
 
         final EventCreator eventCreator = buildEventCreator(incomingEventProcessor);
 
