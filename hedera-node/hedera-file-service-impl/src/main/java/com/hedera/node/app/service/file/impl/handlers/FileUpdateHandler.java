@@ -96,13 +96,7 @@ public class FileUpdateHandler implements TransactionHandler {
             return;
         }
 
-        // copy over just the fileNum from the update file
-        // leave shard and realm at zero
-        // this ensures that shard and realm are clamped to zero
-        FileID maybeFileId = FileID.newBuilder()
-                .fileNum(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum())
-                .build();
-        final var maybeFile = fileStore.get(maybeFileId);
+        final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT));
         if (maybeFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
         }
@@ -131,7 +125,9 @@ public class FileUpdateHandler implements TransactionHandler {
         // empty old upgrade file
         fileStore.resetFileContents();
         final var file = new File.Builder()
-                .fileId(fileUpdate.fileIDOrThrow())
+                .fileId(FileID.newBuilder()
+                        .fileNum(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum())
+                        .build())
                 .contents(fileUpdate.contents())
                 .deleted(false)
                 .expirationTime(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())

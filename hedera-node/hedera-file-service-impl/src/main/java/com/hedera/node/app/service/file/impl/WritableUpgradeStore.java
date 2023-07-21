@@ -20,7 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.spi.state.WritableQueueState;
+import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
@@ -33,9 +35,11 @@ import java.util.function.Predicate;
  */
 public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements WritableQueueState<File> {
     /** The underlying data storage class that holds the file data. */
-    private final WritableQueueState<File> writableUpgradeState;
+    private final WritableQueueState<Bytes> writableUpgradeState;
 
-    private static final Predicate<File> TRUE_PREDICATE = new TruePredicate();
+    private final WritableSingletonState<File> writableUpgradeFileState;
+
+    private static final Predicate<Bytes> TRUE_PREDICATE = new TruePredicate();
 
     /**
      * Create a new {@link WritableUpgradeStore} instance.
@@ -45,11 +49,13 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
     public WritableUpgradeStore(@NonNull final WritableStates states) {
         super(states);
         this.writableUpgradeState = requireNonNull(states.getQueue(getStateKey()));
+        this.writableUpgradeFileState = requireNonNull(states.getSingleton(getFileStateKey()));
     }
 
     public void add(@NonNull File file) {
         requireNonNull(file);
-        writableUpgradeState.add(file);
+        writableUpgradeState.add(file.contents());
+        writableUpgradeFileState.put(file);
     }
 
     public void resetFileContents() {
@@ -59,12 +65,12 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
 
     @Nullable
     public File removeIf(@NonNull Predicate<File> predicate) {
-        return writableUpgradeState.removeIf(predicate);
+        return writableUpgradeFileState.get();
     }
 
-    private static class TruePredicate implements Predicate<File> {
+    private static class TruePredicate implements Predicate<Bytes> {
         @Override
-        public boolean test(File file) {
+        public boolean test(Bytes file) {
             return true;
         }
     }

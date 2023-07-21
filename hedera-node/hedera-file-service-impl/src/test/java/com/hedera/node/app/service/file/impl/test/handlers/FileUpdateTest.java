@@ -248,7 +248,8 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableUpgradeStates.poll();
-        assertEquals(newContent, newFile.contents());
+        assertEquals(newContent.length(), newFile.length());
+        assertEquals(newContent.toString(), newFile.toString());
     }
 
     @Test

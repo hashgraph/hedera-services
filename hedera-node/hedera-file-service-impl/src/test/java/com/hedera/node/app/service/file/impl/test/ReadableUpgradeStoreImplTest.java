@@ -27,8 +27,10 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
+import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +44,7 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
 
     @Test
     void getsFileMetadataIfUpgradeFileExists() {
-        givenValidFile();
+        givenValidUpgradeFile(false, true);
         final var file = subject.peek();
 
         assertNotNull(file);
@@ -57,8 +59,13 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
 
     @Test
     void missingUpgradeFileIsNull() {
-        final var state = ListReadableQueueState.<File>builder(UPGRADE_FILE).build();
-        given(filteredReadableStates.<File>getQueue(UPGRADE_FILE)).willReturn(state);
+        final var stateData =
+                ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
+        final AtomicReference<File> backingStore = new AtomicReference<>();
+        final var stateFile = new ReadableSingletonStateBase<>(UPGRADE_FILE_KEY, backingStore::get);
+        ;
+        given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
+        given(filteredReadableStates.<File>getSingleton(UPGRADE_FILE_KEY)).willReturn(stateFile);
         subject = new ReadableUpgradeStoreImpl(filteredReadableStates);
         assertThat(subject.peek()).isNull();
     }

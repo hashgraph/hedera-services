@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -191,12 +190,12 @@ class FileAppendTest extends FileTestBase {
 
         subject.handle(handleContext);
         final var iterator = writableUpgradeStates.iterator();
-        File file = null;
+        Bytes file = null;
 
         while (iterator.hasNext()) {
             file = iterator.next();
         }
-        assertEquals(bytesNewContentExpected, file.contents());
+        assertEquals(bytesNewContentExpected, file);
     }
 
     private FileID wellKnownId() {
