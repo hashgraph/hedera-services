@@ -191,8 +191,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
             getAccountBalance(account).hasTinyBars(changeFromSnapshot("preUpdate", 0))
         };
         HapiSpecOperation[] opsArray = {
-            validateOp,
-            UtilVerbs.updateLargeFile(account, fileName, fileName),
+            validateOp, UtilVerbs.updateLargeFile(account, fileName, fileName),
         };
         if (account.equals(GENESIS) || !isFree) {
             return opsArray;
