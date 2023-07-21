@@ -42,6 +42,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
+import com.swirlds.platform.event.validation.EventPreprocessor;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -195,6 +196,7 @@ class PreconsensusEventReplayWorkflowTests {
                 preconsensusEventFileManager,
                 preconsensusEventWriter,
                 eventTaskDispatcher,
+                mock(EventPreprocessor.class),
                 eventIntakeTaskQueueThread,
                 consensusRoundHandler,
                 stateHashSignQueue,

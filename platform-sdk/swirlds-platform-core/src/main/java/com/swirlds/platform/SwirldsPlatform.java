@@ -204,6 +204,7 @@ public class SwirldsPlatform implements Platform, Startable {
     private final StateManagementComponent stateManagementComponent;
     private final EventTaskDispatcher eventTaskDispatcher;
     private final QueueThread<EventIntakeTask> intakeQueue;
+    private final EventPreprocessor eventPreprocessor;
     private final EventDeduplicator deduplicator;
     private final QueueThread<ReservedSignedState> stateHashSignQueue;
     private final EventLinker eventLinker;
@@ -540,8 +541,7 @@ public class SwirldsPlatform implements Platform, Startable {
                         .enableBusyTimeMetric())
                 .build());
 
-        // TODO do we need to flush this on PCES/reconnect?
-        final EventPreprocessor eventPreprocessor = new EventPreprocessor(
+        eventPreprocessor = new EventPreprocessor(
                 platformContext,
                 threadManager,
                 deduplicator,
@@ -644,6 +644,17 @@ public class SwirldsPlatform implements Platform, Startable {
                 RECONNECT.getMarker(),
                 List.of(
                         Pair.of(gossip, "gossip"),
+                        Pair.of(
+                                () -> {
+                                    try {
+                                        eventPreprocessor.flush();
+                                    } catch (final InterruptedException e) {
+                                        Thread.currentThread().interrupt();
+                                        throw new RuntimeException(
+                                                "interrupted while attempting to flush event preprocessing", e);
+                                    }
+                                },
+                                "eventPreprocessor"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));
@@ -1046,6 +1057,7 @@ public class SwirldsPlatform implements Platform, Startable {
                     preconsensusEventFileManager,
                     preconsensusEventWriter,
                     eventTaskDispatcher,
+                    eventPreprocessor,
                     intakeQueue,
                     consensusRoundHandler,
                     stateHashSignQueue,

@@ -36,7 +36,7 @@ public class EventDeduplicator {
     }
 
     /**
-     * Check if the next event is a duplicate or ancient.
+     * Check if the next event is a duplicate or ancient, and add to set TODO rename this method
      *
      * @param event the event to check
      * @return true if the event is a duplicate or ancient, false otherwise

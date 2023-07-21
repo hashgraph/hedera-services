@@ -34,6 +34,7 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.validation.EventPreprocessor;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -63,6 +64,7 @@ public final class PreconsensusEventReplayWorkflow {
      * @param preconsensusEventFileManager       manages the preconsensus event files on disk
      * @param preconsensusEventWriter            writes preconsensus events to disk
      * @param eventTaskDispatcher                where events read from the stream should be passed
+     * @param eventPreprocessor                  hashes, deduplicates, validates, and calls prehandle for transactions
      * @param intakeQueue                        the queue thread for the event intake component
      * @param consensusRoundHandler              the object responsible for applying transactions to consensus rounds
      * @param stateHashSignQueue                 the queue thread for hashing and signing states
@@ -78,6 +80,7 @@ public final class PreconsensusEventReplayWorkflow {
             @NonNull final PreconsensusEventFileManager preconsensusEventFileManager,
             @NonNull final PreconsensusEventWriter preconsensusEventWriter,
             @NonNull final EventTaskDispatcher eventTaskDispatcher,
+            @NonNull final EventPreprocessor eventPreprocessor,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue,
@@ -116,7 +119,7 @@ public final class PreconsensusEventReplayWorkflow {
                     platformContext, threadManager, iterator, eventTaskDispatcher::dispatchTask);
             eventReplayPipeline.replayEvents();
 
-            waitForReplayToComplete(intakeQueue, consensusRoundHandler, stateHashSignQueue);
+            waitForReplayToComplete(eventPreprocessor, intakeQueue, consensusRoundHandler, stateHashSignQueue);
 
             final Instant finish = time.now();
             final Duration elapsed = Duration.between(start, finish);
@@ -171,16 +174,18 @@ public final class PreconsensusEventReplayWorkflow {
     }
 
     /**
-     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for them
-     * to complete even after we exhaust all available events from the stream.
+     * Wait for all events to be replayed. Some of this work happens on asynchronous threads, so we need to wait for
+     * them to complete even after we exhaust all available events from the stream.
      */
     private static void waitForReplayToComplete(
+            @NonNull final EventPreprocessor eventPreprocessor,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
             @NonNull final ConsensusRoundHandler consensusRoundHandler,
             @NonNull final QueueThread<ReservedSignedState> stateHashSignQueue)
             throws InterruptedException {
 
         // Wait until all events from the preconsensus event stream have been fully ingested.
+        eventPreprocessor.flush();
         intakeQueue.waitUntilNotBusy();
 
         // Wait until all rounds from the preconsensus event stream have been fully processed.

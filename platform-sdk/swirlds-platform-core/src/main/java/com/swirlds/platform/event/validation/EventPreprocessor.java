@@ -24,6 +24,7 @@ import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -44,7 +45,19 @@ public class EventPreprocessor {
     private final GossipEventValidators validators;
     private final Consumer<GossipEvent> transactionPrehandler;
     private final InterruptableConsumer<GossipEvent> validEventConsumer;
+    private final EventPreprocessorMetrics metrics;
+    private final int threadPoolSize = 8;
 
+    /**
+     * Create a new event preprocessor.
+     *
+     * @param platformContext       the platform context
+     * @param threadManager         manages creation of threading resources
+     * @param deduplicator          responsible for deduplicating events
+     * @param validators            performs validation on events
+     * @param transactionPrehandler prehandles transactions in events
+     * @param validEventConsumer    events that pass all checks are passed here
+     */
     public EventPreprocessor(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
@@ -60,15 +73,16 @@ public class EventPreprocessor {
         this.transactionPrehandler = Objects.requireNonNull(transactionPrehandler);
         this.validEventConsumer = Objects.requireNonNull(validEventConsumer);
 
-        // TODO add a metric for this queue
         // TODO settings
 
         final BlockingQueue<Runnable> workQueue =
                 new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(new LinkedBlockingQueue<>(1024));
 
+        metrics = new EventPreprocessorMetrics(platformContext, workQueue::size);
+
         executorService = new ThreadPoolExecutor(
-                8,
-                8,
+                threadPoolSize,
+                threadPoolSize,
                 0L,
                 TimeUnit.MILLISECONDS,
                 workQueue,
@@ -92,23 +106,27 @@ public class EventPreprocessor {
      */
     @NonNull
     private Runnable buildProcessingTask(@NonNull final GossipEvent event) {
+        // TODO add some metrics for this workflow
+
         return () -> {
             if (event.getHashedData().getHash() == null) {
                 cryptography.digestSync(event.getHashedData());
             }
 
             if (deduplicator.isDuplicate(event)) {
+                metrics.registerDuplicateEvent();
                 return;
             }
+            metrics.registerUniqueEvent();
 
-            // TODO some validation can move before hashing
-            final boolean isValid = validators.isEventValid(event);
-            if (!isValid) {
+            // FUTURE WORK some validation can move before hashing
+            if (!validators.isEventValid(event)) {
+                metrics.registerInvalidEvent();
                 return;
             }
+            metrics.registerValidEvent();
 
             transactionPrehandler.accept(event);
-
             event.buildDescriptor();
 
             try {
@@ -119,5 +137,33 @@ public class EventPreprocessor {
                 // TODO evaluate how we do interrupts in all places in this changeset
             }
         };
+    }
+
+    /**
+     * Flush the pipeline. When this method returns, all events previously passed to {@link #ingestEvent(GossipEvent)}
+     * will have been processed.
+     *
+     * @throws InterruptedException if interrupted while waiting for flush to complete
+     */
+    public void flush() throws InterruptedException {
+
+        // Submit tasks that will block a thread until all threads are guaranteed to be blocked.
+        // Since threads process elements from the queue in order, when all threads are blocked
+        // by these new tasks we are guaranteed that all prior work will have been handled.
+
+        final CountDownLatch latch = new CountDownLatch(threadPoolSize);
+        for (int i = 0; i < threadPoolSize; i++) {
+            executorService.submit(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("interrupted while waiting for flush to complete", e);
+                }
+            });
+        }
+
+        latch.await();
     }
 }

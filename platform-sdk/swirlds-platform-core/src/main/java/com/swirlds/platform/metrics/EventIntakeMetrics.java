@@ -17,12 +17,9 @@
 package com.swirlds.platform.metrics;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_1;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_14_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
@@ -44,18 +41,6 @@ public class EventIntakeMetrics implements StaleEventObserver {
             .withDescription("number of events per second generated to prevent stale events")
             .withFormat(FORMAT_16_2);
     private final SpeedometerMetric rescuedEventsPerSecond;
-
-    private static final SpeedometerMetric.Config DUPLICATE_EVENTS_PER_SECOND_CONFIG = new SpeedometerMetric.Config(
-                    INTERNAL_CATEGORY, "dupEv/sec")
-            .withDescription("number of events received per second that are already known")
-            .withFormat(FORMAT_14_2);
-    private final SpeedometerMetric duplicateEventsPerSecond;
-
-    private static final RunningAverageMetric.Config AVG_DUPLICATE_PERCENT_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "dupEv%")
-            .withDescription("percentage of events received that are already known")
-            .withFormat(FORMAT_10_2);
-    private final RunningAverageMetric avgDuplicatePercent;
 
     private static final SpeedometerMetric.Config TIME_FRAC_ADD_CONFIG = new SpeedometerMetric.Config(
                     INTERNAL_CATEGORY, "timeFracAdd")
@@ -95,8 +80,6 @@ public class EventIntakeMetrics implements StaleEventObserver {
         this.time = time;
 
         rescuedEventsPerSecond = metrics.getOrCreate(RESCUED_EVENTS_PER_SECOND_CONFIG);
-        duplicateEventsPerSecond = metrics.getOrCreate(DUPLICATE_EVENTS_PER_SECOND_CONFIG);
-        avgDuplicatePercent = metrics.getOrCreate(AVG_DUPLICATE_PERCENT_CONFIG);
         timeFracAdd = metrics.getOrCreate(TIME_FRAC_ADD_CONFIG);
         shouldCreateEvent = metrics.getOrCreate(SHOULD_CREATE_EVENT_CONFIG);
         staleEventsTotal = metrics.getOrCreate(STALE_EVENTS_TOTAL_CONFIG);
@@ -109,23 +92,6 @@ public class EventIntakeMetrics implements StaleEventObserver {
      */
     public void rescuedEvent() {
         rescuedEventsPerSecond.cycle();
-    }
-
-    /**
-     * Update a statistics accumulator when a duplicate event has been detected.
-     */
-    public void duplicateEvent() {
-        duplicateEventsPerSecond.cycle();
-        // move toward 100%
-        avgDuplicatePercent.update(100);
-    }
-
-    /**
-     * Update a statistics accumulator when a non-duplicate event has been detected
-     */
-    public void nonDuplicateEvent() {
-        // move toward 0%
-        avgDuplicatePercent.update(0);
     }
 
     /**
