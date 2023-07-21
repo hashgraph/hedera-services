@@ -66,18 +66,16 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private final AccountID ACCOUNT_1212_ID =
             AccountID.newBuilder().accountNum(1212).build();
     private final Account ACCOUNT_1212 =
-            givenValidAccount().copyBuilder().accountId(ACCOUNT_1212_ID).build();
+            givenValidAccountBuilder().accountId(ACCOUNT_1212_ID).build();
     private final AccountID ACCOUNT_3434_ID =
             AccountID.newBuilder().accountNum(3434).build();
-    private final Account ACCOUNT_3434 = givenValidAccount()
-            .copyBuilder()
+    private final Account ACCOUNT_3434 = givenValidAccountBuilder()
             .accountId(ACCOUNT_3434_ID)
             .tinybarBalance(500)
             .build();
     private final AccountID ACCOUNT_5656_ID =
             AccountID.newBuilder().accountNum(5656).build();
-    private final Account ACCOUNT_5656 = givenValidAccount()
-            .copyBuilder()
+    private final Account ACCOUNT_5656 = givenValidAccountBuilder()
             .accountId(ACCOUNT_5656_ID)
             .tinybarBalance(10000)
             .build();
@@ -253,10 +251,10 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleFungibleTokenBalanceIsNegative() {
-        final var validAcct = givenValidAccount();
+        final var validAcct = givenValidAccountBuilder();
         final var tokenRel = givenFungibleTokenRelation(); // Already tied to validAcct's account ID
-        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct);
-        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct);
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct.build());
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct.build());
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         writableTokenRelStore.put(tokenRel.copyBuilder().balance(-1).build());
@@ -269,10 +267,10 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleFungibleTransferTokenBalancesDontChange() {
-        final var validAcct = givenValidAccount();
+        final var validAcct = givenValidAccountBuilder();
         final var tokenRel = givenFungibleTokenRelation();
-        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct);
-        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct);
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct.build());
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct.build());
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty

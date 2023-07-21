@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class StakingUtils {
     public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
@@ -39,7 +40,13 @@ public class StakingUtils {
      * @param modifiedAccount the modified account after the transaction
      * @return true if the account has any changes that modified the staking metadata, false otherwise
      */
-    public static boolean hasStakeMetaChanges(final Account originalAccount, final Account modifiedAccount) {
+    public static boolean hasStakeMetaChanges(
+            @Nullable final Account originalAccount, @NonNull final Account modifiedAccount) {
+        if (originalAccount == null) {
+            return modifiedAccount.hasStakedNodeId()
+                    || modifiedAccount.hasStakedAccountId()
+                    || modifiedAccount.declineReward();
+        }
         final var differDeclineReward = originalAccount.declineReward() != modifiedAccount.declineReward();
         final var differStakedNodeId =
                 !originalAccount.stakedNodeIdOrElse(0L).equals(modifiedAccount.stakedNodeIdOrElse(0L));

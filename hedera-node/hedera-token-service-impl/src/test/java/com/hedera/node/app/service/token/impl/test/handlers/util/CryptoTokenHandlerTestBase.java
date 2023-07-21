@@ -705,14 +705,10 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     private void givenValidAccounts() {
-        account = givenValidAccount();
-        spenderAccount = givenValidAccount()
-                .copyBuilder()
-                .key(spenderKey)
-                .accountId(spenderId)
-                .build();
-        ownerAccount = givenValidAccount()
-                .copyBuilder()
+        account = givenValidAccountBuilder().stakedNodeId(1L).build();
+        spenderAccount =
+                givenValidAccountBuilder().key(spenderKey).accountId(spenderId).build();
+        ownerAccount = givenValidAccountBuilder()
                 .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
                         .spenderId(spenderId)
@@ -730,16 +726,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .key(ownerKey)
                 .build();
         delegatingSpenderAccount =
-                givenValidAccount().copyBuilder().accountId(delegatingSpenderId).build();
+                givenValidAccountBuilder().accountId(delegatingSpenderId).build();
         transferAccount =
-                givenValidAccount().copyBuilder().accountId(transferAccountId).build();
-        treasuryAccount = givenValidAccount()
-                .copyBuilder()
+                givenValidAccountBuilder().accountId(transferAccountId).build();
+        treasuryAccount = givenValidAccountBuilder()
                 .accountId(treasuryId)
                 .key(treasuryKey)
                 .build();
-        stakingRewardAccount = givenValidAccount()
-                .copyBuilder()
+        stakingRewardAccount = givenValidAccountBuilder()
                 .accountId(stakingRewardId)
                 .key(EMPTY_KEYLIST)
                 .build();
@@ -798,7 +792,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected Account givenValidAccount() {
+    protected Account.Builder givenValidAccountBuilder() {
         return Account.newBuilder()
                 .accountId(payerId)
                 .tinybarBalance(payerBalance)
@@ -809,7 +803,6 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .deleted(false)
                 .stakedToMe(1_234L)
                 .stakePeriodStart(stakePeriodStart)
-                .stakedNodeId(1L)
                 .declineReward(false)
                 .receiverSigRequired(true)
                 .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
@@ -833,8 +826,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .approveForAllNftAllowances(emptyList())
                 .numberTreasuryTitles(2)
                 .expiredAndPendingRemoval(false)
-                .firstContractStorageKey(null)
-                .build();
+                .firstContractStorageKey(null);
     }
 
     protected TokenRelation givenFungibleTokenRelation() {

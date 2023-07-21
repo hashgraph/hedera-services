@@ -106,7 +106,7 @@ public enum StakeIdChangeType {
     public static StakeIdChangeType forCase(
             @Nullable final Account currentAccount, @NonNull final Account modifiedAccount) {
         final var curStakedIdCase =
-                currentAccount == null ? null : currentAccount.stakedId().kind();
+                currentAccount == null ? UNSET : currentAccount.stakedId().kind();
         final var newStakedIdCase = modifiedAccount.stakedId().kind();
 
         // Ends with staking to a node
