@@ -36,16 +36,14 @@ public class EventDeduplicator {
     }
 
     /**
-     * Check if the next event is a duplicate or ancient, and add to set TODO rename this method
+     * Check if the next event is a duplicate (or ancient), and add to the set of tracked events (if non-ancient).
      *
      * @param event the event to check
      * @return true if the event is a duplicate or ancient, false otherwise
      */
-    public synchronized boolean isDuplicate(@NonNull final GossipEvent event) {
+    public synchronized boolean addAndCheckIfDuplicated(@NonNull final GossipEvent event) {
         final RecentEvent recentEvent = RecentEvent.of(event);
-        final boolean added = recentEvents.add(recentEvent);
-
-        return !added;
+        return !recentEvents.add(recentEvent);
     }
 
     /**

@@ -522,7 +522,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 intakeCycleStats,
                 shadowGraph);
 
-        // TODO extract into helper method maybe
         final List<GossipEventValidator> validators = new ArrayList<>();
         validators.add(StaticValidators::isParentDataValid);
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
@@ -645,17 +644,6 @@ public class SwirldsPlatform implements Platform, Startable {
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of( // TODO this needs to happen inside gossip!!!
-                                () -> {
-                                    try {
-                                        eventPreprocessor.flush();
-                                    } catch (final InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new RuntimeException(
-                                                "interrupted while attempting to flush event preprocessing", e);
-                                    }
-                                },
-                                "eventPreprocessor"),
                         Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -879,7 +867,6 @@ public class SwirldsPlatform implements Platform, Startable {
 
             loadStateIntoConsensusAndEventMapper(signedState);
             loadStateIntoEventCreator(signedState);
-            // TODO
             // eventLinker is not thread safe, which is not a problem regularly because it is only used by a single
             // thread. after a reconnect, it needs to load the minimum generation from a state on a different thread,
             // so the intake thread is paused before the data is loaded and unpaused after. this ensures that the

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event.validation;
 
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
@@ -35,11 +37,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Hashes, deduplicates, validates, and calls prehandle for transactions in incoming events.
  */
 public class EventPreprocessor implements Clearable {
+
+    private final Logger logger = LogManager.getLogger(EventPreprocessor.class);
 
     private final Cryptography cryptography;
     private final Time time;
@@ -122,7 +128,7 @@ public class EventPreprocessor implements Clearable {
                 cryptography.digestSync(event.getHashedData());
             }
 
-            if (deduplicator.isDuplicate(event)) {
+            if (deduplicator.addAndCheckIfDuplicated(event)) {
                 metrics.registerDuplicateEvent();
                 return;
             }
@@ -152,8 +158,8 @@ public class EventPreprocessor implements Clearable {
                 validEventConsumer.accept(event);
             } catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new RuntimeException("unable to pass event to next stage in pipeline", e);
-                // TODO evaluate how we do interrupts in all places in this changeset
+                logger.error(EXCEPTION.getMarker(),
+                        "interrupted while passing event to next stage in pipeline", e);
             }
         };
     }
