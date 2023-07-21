@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
@@ -659,7 +660,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .stake(1000L)
                 .stakeToNotReward(400L)
                 .stakeToReward(300L)
-                .stakeRewardStart(111000000000L)
+                .stakeRewardStart(2 * 555L * HBARS_TO_TINYBARS)
                 .maxStake(1000000000L)
                 .minStake(500000000)
                 .weight(200)
@@ -671,7 +672,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .stake(1000L)
                 .stakeToNotReward(400L)
                 .stakeToReward(300L)
-                .stakeRewardStart(111000000000L)
+                .stakeRewardStart(2 * 555L * HBARS_TO_TINYBARS)
                 .maxStake(1000000000L)
                 .minStake(500000000)
                 .weight(300)
