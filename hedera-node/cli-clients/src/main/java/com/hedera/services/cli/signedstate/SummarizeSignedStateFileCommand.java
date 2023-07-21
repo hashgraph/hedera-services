@@ -16,24 +16,24 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.hedera.services.cli.signedstate.SignedStateHolder.getContracts;
-
-import com.hedera.services.cli.ExamplePcliPlugin;
 import com.hedera.services.cli.signedstate.SignedStateHolder.Contract;
+import com.swirlds.cli.utility.AbstractCommand;
+import com.swirlds.cli.utility.SubcommandOf;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
+import java.util.List;
+import java.util.Objects;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.ParentCommand;
 
 @Command(
         name = "summarize",
-        subcommands = {picocli.CommandLine.HelpCommand.class},
+        mixinStandardHelpOptions = true,
         description = "Summarizes contents of signed state file (to stdout)")
-public class SummarizeSignedStateFileCommand implements Callable<Integer> {
-    @ParentCommand
-    private ExamplePcliPlugin examplePcliPlugin;
+@SubcommandOf(SignedStateCommand.class)
+public class SummarizeSignedStateFileCommand extends AbstractCommand {
 
     @Option(
             names = {"-f", "--file"},
@@ -41,22 +41,38 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
             description = "Input signed state file")
     Path inputFile;
 
+    @CommandLine.Option(
+            names = {"-c", "--config"},
+            description = "A path to where a configuration file can be found. If not provided then defaults are used.")
+    private void setConfigurationPath(@NonNull final List<Path> configurationPaths) {
+        Objects.requireNonNull(configurationPaths, "configurationPaths");
+
+        configurationPaths.forEach(this::pathMustExist);
+        this.configurationPaths = configurationPaths;
+    }
+
+    private List<Path> configurationPaths = List.of();
+
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
 
-        final var knownContracts = getContracts(inputFile);
+        try (final var signedState = new SignedStateHolder(inputFile, configurationPaths)) {
 
-        final int contractsWithBytecodeFound = knownContracts.contracts().size();
-        final var bytesFound = knownContracts.contracts().stream()
-                .map(Contract::bytecode)
-                .mapToInt(Array::getLength)
-                .sum();
+            final var contractsInfo = signedState.getContracts();
+            final var nContractsWithBytecodeFound = contractsInfo.contracts().size();
+            final var nDeletedContracts = contractsInfo.deletedContracts().size();
+            final var bytesFound = contractsInfo.contracts().stream()
+                    .map(Contract::bytecode)
+                    .mapToInt(Array::getLength)
+                    .sum();
 
-        System.out.printf(
-                "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
-                        + " (%d bytes total)%n",
-                knownContracts.registeredContractsCount(), contractsWithBytecodeFound, bytesFound);
-
+            System.out.printf(
+                    "signed-state summarize: %d contractIds found (%d deleted), %d contracts with bytecode, %d bytes total%n",
+                    contractsInfo.registeredContractsCount(),
+                    nDeletedContracts,
+                    nContractsWithBytecodeFound,
+                    bytesFound);
+        }
         return 0;
     }
 }
