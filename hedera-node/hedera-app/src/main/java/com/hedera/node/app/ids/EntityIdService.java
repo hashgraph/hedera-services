@@ -67,7 +67,7 @@ public class EntityIdService implements Service {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 final var entityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
-                entityIdState.put(new EntityNumber(0));
+                entityIdState.put(new EntityNumber(999));
             }
         });
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -92,23 +93,23 @@ public class SingleTransactionRecordBuilderImpl
     private Transaction transaction;
     private TransactionID transactionID;
     private String memo;
-    private Bytes transactionBytes;
+    private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     private final Instant consensusNow;
     private long transactionFee;
     private ContractFunctionResult contractCallResult;
     private ContractFunctionResult contractCreateResult;
     private TransferList transferList;
-    private List<TokenTransferList> tokenTransferLists;
+    private List<TokenTransferList> tokenTransferLists = emptyList();
     private ScheduleID scheduleRef;
-    private List<AssessedCustomFee> assessedCustomFees;
-    private List<TokenAssociation> automaticTokenAssociations;
+    private List<AssessedCustomFee> assessedCustomFees = emptyList();
+    private List<TokenAssociation> automaticTokenAssociations = emptyList();
     private Timestamp parentConsensusTimestamp;
-    private Bytes alias;
-    private Bytes ethereumHash;
-    private List<AccountAmount> paidStakingRewards;
+    private Bytes alias = Bytes.EMPTY;
+    private Bytes ethereumHash = Bytes.EMPTY;
+    private List<AccountAmount> paidStakingRewards = emptyList();
     private OneOf<TransactionRecord.EntropyOneOfType> entropy = new OneOf<>(EntropyOneOfType.UNSET, null);
-    private Bytes evmAddress;
+    private Bytes evmAddress = Bytes.EMPTY;
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private AccountID accountID;
@@ -117,13 +118,13 @@ public class SingleTransactionRecordBuilderImpl
     private ExchangeRateSet exchangeRate;
     private TopicID topicID;
     private long topicSequenceNumber;
-    private Bytes topicRunningHash;
+    private Bytes topicRunningHash = Bytes.EMPTY;
     private long topicRunningHashVersion;
     private TokenID tokenID;
     private long newTotalSupply;
     private ScheduleID scheduleID;
     private TransactionID scheduledTransactionID;
-    private List<Long> serialNumbers;
+    private List<Long> serialNumbers = emptyList();
     // Sidecar data, booleans are the migration flag
     public final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new ArrayList<>();
     public final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new ArrayList<>();

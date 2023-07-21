@@ -97,6 +97,11 @@ public class WrappedWritableStates implements WritableStates {
                 return true;
             }
         }
+        for (WrappedWritableQueueState<?> queueState : writableQueueStateMap.values()) {
+            if (queueState.isModified()) {
+                return true;
+            }
+        }
         for (WrappedWritableSingletonState<?> singletonState : writableSingletonStateMap.values()) {
             if (singletonState.isModified()) {
                 return true;
@@ -111,6 +116,9 @@ public class WrappedWritableStates implements WritableStates {
     public void commit() {
         for (WrappedWritableKVState<?, ?> kvState : writableKVStateMap.values()) {
             kvState.commit();
+        }
+        for (WrappedWritableQueueState<?> queueState : writableQueueStateMap.values()) {
+            queueState.commit();
         }
         for (WrappedWritableSingletonState<?> singletonState : writableSingletonStateMap.values()) {
             singletonState.commit();

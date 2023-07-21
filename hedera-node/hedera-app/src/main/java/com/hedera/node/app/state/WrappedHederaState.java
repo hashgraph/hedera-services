@@ -31,7 +31,7 @@ import java.util.Map;
 public class WrappedHederaState implements HederaState {
 
     private final HederaState delegate;
-    private final Map<String, WrappedWritableStates> writableStatesMap = new HashMap<>();
+    private final Map<String, HederaWritableStates> writableStatesMap = new HashMap<>();
 
     /**
      * Constructs a {@link WrappedHederaState} that wraps the given {@link HederaState}.
@@ -49,7 +49,7 @@ public class WrappedHederaState implements HederaState {
      * @return {@code true}, if the state has been modified; otherwise {@code false}
      */
     public boolean isModified() {
-        for (final WrappedWritableStates writableStates : writableStatesMap.values()) {
+        for (final var writableStates : writableStatesMap.values()) {
             if (writableStates.isModified()) {
                 return true;
             }
@@ -71,16 +71,16 @@ public class WrappedHederaState implements HederaState {
      */
     @Override
     @NonNull
-    public WritableStates createWritableStates(@NonNull String serviceName) {
+    public HederaWritableStates createWritableStates(@NonNull String serviceName) {
         return writableStatesMap.computeIfAbsent(
-                serviceName, s -> new WrappedWritableStates(delegate.createWritableStates(s)));
+                serviceName, s -> (HederaWritableStates) delegate.createWritableStates(s));
     }
 
     /**
      * Writes all modifications to the underlying {@link HederaState}.
      */
     public void commit() {
-        for (final WrappedWritableStates writableStates : writableStatesMap.values()) {
+        for (final var writableStates : writableStatesMap.values()) {
             writableStates.commit();
         }
     }
