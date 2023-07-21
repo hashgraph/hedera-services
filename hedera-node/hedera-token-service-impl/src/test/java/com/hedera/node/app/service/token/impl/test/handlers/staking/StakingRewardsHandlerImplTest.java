@@ -138,19 +138,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     void anAccountThatStartedStakingBeforeCurrentPeriodAndHasntBeenRewardedUnclaimsStakeWhenChangingElection() {
         storesWithAccountProps(555L * HBARS_TO_TINYBARS, NO_LAST_PERIOD_STAKE);
 
-        // set stakeToReward to be more than the expected calculation to unclaim rewards
-        final var copy = node1Info
-                .copyBuilder()
-                .stakeRewardStart(2 * account.tinybarBalance())
-                .build();
-        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
-                .value(0L, node0Info)
-                .value(1L, copy)
-                .build();
-        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
-        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
-
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
                 .get(payerId)
@@ -177,17 +164,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedDaysAgoUnclaimsStakeWhenChangingElection() {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
         storesWithAccountProps(newBalance, newBalance / 5);
-
-        // set stakeToReward to be more than the expected calculation to unclaim rewards
-        final var copy =
-                node1Info.copyBuilder().stakeRewardStart(2 * newBalance).build();
-        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
-                .value(0L, node0Info)
-                .value(1L, copy)
-                .build();
-        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
-        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
 
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
@@ -216,17 +192,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
         storesWithAccountProps(newBalance, newBalance / 5);
 
-        // set stakeToReward to be more than the expected calculation to unclaim rewards
-        final var copy =
-                node1Info.copyBuilder().stakeRewardStart(2 * newBalance).build();
-        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
-                .value(0L, node0Info)
-                .value(1L, copy)
-                .build();
-        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
-        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
-
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
                 .get(payerId)
@@ -254,17 +219,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         stakingNotActivated();
         final var newBalance = 555L * HBARS_TO_TINYBARS;
         storesWithAccountProps(newBalance, newBalance / 5);
-
-        // set stakeToReward to be more than the expected calculation to unclaim rewards
-        final var copy =
-                node1Info.copyBuilder().stakeRewardStart(2 * newBalance).build();
-        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
-                .value(0L, node0Info)
-                .value(1L, copy)
-                .build();
-        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
-        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
 
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
@@ -1065,13 +1019,13 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
-    private void storesWithAccountProps(final Long amount, final Long stakeAtStartOfLastRewardperiod) {
+    private void storesWithAccountProps(final Long amount, final Long stakeAtStartOfLastRewardPeriod) {
         final var copy = account.copyBuilder();
         if (amount != null) {
             copy.tinybarBalance(amount);
         }
-        if (stakeAtStartOfLastRewardperiod > 0) {
-            copy.stakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardperiod);
+        if (stakeAtStartOfLastRewardPeriod != null) {
+            copy.stakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardPeriod);
         }
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(payerId, copy.build())
