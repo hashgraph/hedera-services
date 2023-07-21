@@ -192,23 +192,12 @@ public class SyncGossip extends AbstractGossip {
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
-                () -> {
-                });
+                () -> {});
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(
-                                () -> {
-                                    try {
-                                        eventPreprocessor.flush();
-                                    } catch (final InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new RuntimeException(
-                                                "interrupted while attempting to flush event preprocessing", e);
-                                    }
-                                },
-                                "eventPreprocessor"),
+                        Pair.of(eventPreprocessor, "eventPreprocessor"),
                         Pair.of(intakeQueue, "intakeQueue"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));

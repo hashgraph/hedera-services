@@ -22,6 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -38,7 +39,7 @@ import java.util.function.Consumer;
 /**
  * Hashes, deduplicates, validates, and calls prehandle for transactions in incoming events.
  */
-public class EventPreprocessor {
+public class EventPreprocessor implements Clearable {
 
     private final Cryptography cryptography;
     private final Time time;
@@ -183,6 +184,19 @@ public class EventPreprocessor {
         }
 
         latch.await();
+    }
+
+    /**
+     * {@inheritDoc
+     */
+    @Override
+    public void clear() {
+        try {
+            flush();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("interrupted while flushing", e);
+        }
     }
 
     /**

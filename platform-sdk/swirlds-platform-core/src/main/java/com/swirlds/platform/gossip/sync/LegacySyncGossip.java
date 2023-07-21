@@ -171,23 +171,12 @@ public class LegacySyncGossip extends AbstractGossip {
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {
-                });
+                () -> {});
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(
-                                () -> {
-                                    try {
-                                        eventPreprocessor.flush();
-                                    } catch (final InterruptedException e) {
-                                        Thread.currentThread().interrupt();
-                                        throw new RuntimeException(
-                                                "interrupted while attempting to flush event preprocessing", e);
-                                    }
-                                },
-                                "eventPreprocessor"),
+                        Pair.of(eventPreprocessor, "eventPreprocessor"),
                         Pair.of(intakeQueue, "intakeQueue"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
@@ -322,8 +311,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 selfId,
                 topology.getConnectionGraph(),
                 updatePlatformStatus,
-                () -> {
-                },
+                () -> {},
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 

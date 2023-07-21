@@ -226,8 +226,7 @@ public class ChatterGossip extends AbstractGossip {
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {
-                    },
+                    sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -347,6 +346,7 @@ public class ChatterGossip extends AbstractGossip {
                 List.of(
                         // chatter event creator needs to be cleared first, because it sends event to intake
                         Pair.of(eventCreatorThread, "eventCreatorThread"),
+                        Pair.of(eventPreprocessor, "eventPreprocessor"),
                         Pair.of(intakeQueue, "intakeQueue"),
                         // eventLinker is not thread safe, so the intake thread needs to be paused while it's being
                         // cleared
