@@ -23,6 +23,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.utils.RewardCalculator;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -30,17 +32,12 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class RewardCalculator {
+public class RewardCalculatorImpl implements RewardCalculator {
     private final StakePeriodManager stakePeriodManager;
-    private long rewardsPaid;
 
     @Inject
-    public RewardCalculator(@NonNull final StakePeriodManager stakePeriodManager) {
+    public RewardCalculatorImpl(@NonNull final StakePeriodManager stakePeriodManager) {
         this.stakePeriodManager = stakePeriodManager;
-    }
-
-    public void reset() {
-        rewardsPaid = 0;
     }
 
     public long computePendingReward(
@@ -55,10 +52,6 @@ public class RewardCalculator {
         final var rewardOffered =
                 computeRewardFromDetails(account, stakingInfo, stakePeriodManager.currentStakePeriod(), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
-    }
-
-    public long rewardsPaidInThisTxn() {
-        return rewardsPaid;
     }
 
     public long estimatePendingRewards(
@@ -114,11 +107,6 @@ public class RewardCalculator {
         } else {
             return calculateTotalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
         }
-    }
-
-    @VisibleForTesting
-    public void setRewardsPaidInThisTxn(final long rewards) {
-        rewardsPaid = rewards;
     }
 
     private static long calculateNodeAddressId(long stakedNodeId) {

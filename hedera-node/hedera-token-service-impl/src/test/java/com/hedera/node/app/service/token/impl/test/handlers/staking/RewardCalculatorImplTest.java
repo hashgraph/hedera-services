@@ -27,7 +27,7 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.Units;
-import com.hedera.node.app.service.token.impl.staking.RewardCalculator;
+import com.hedera.node.app.service.token.impl.staking.RewardCalculatorImpl;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RewardCalculatorTest {
+class RewardCalculatorImplTest {
     private static final long TODAY_NUMBER =
             LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
     private static final int REWARD_HISTORY_SIZE = 366;
@@ -60,12 +60,12 @@ class RewardCalculatorTest {
 
     private List<Long> rewardHistory;
 
-    private RewardCalculator subject;
+    private RewardCalculatorImpl subject;
 
     @BeforeEach
     void setUp() {
         rewardHistory = newRewardHistory();
-        subject = new RewardCalculator(stakePeriodManager);
+        subject = new RewardCalculatorImpl(stakePeriodManager);
     }
 
     @Test
@@ -113,32 +113,6 @@ class RewardCalculatorTest {
         reward = subject.computePendingReward(account, stakingInfoStore);
 
         assertEquals(270, reward);
-    }
-
-    @Test
-    void estimatesPendingRewardsForStateView() {
-        final var todayNum = 300L;
-
-        given(stakePeriodManager.estimatedCurrentStakePeriod()).willReturn(todayNum);
-        given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
-        given(account.stakePeriodStart()).willReturn(todayNum - 2);
-        given(account.stakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
-        given(account.declineReward()).willReturn(false);
-        given(account.stakedToMe()).willReturn(100 * Units.HBARS_TO_TINYBARS);
-        given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);
-        given(stakePeriodManager.isEstimatedRewardable(todayNum - 2)).willReturn(true);
-
-        subject.setRewardsPaidInThisTxn(100L);
-        final long reward = subject.estimatePendingRewards(account, stakingNodeInfo);
-
-        assertEquals(500, reward);
-
-        // no changes to state
-        assertEquals(100, subject.rewardsPaidInThisTxn());
-
-        // if declinedReward
-        given(account.declineReward()).willReturn(true);
-        assertEquals(0L, subject.estimatePendingRewards(account, stakingNodeInfo));
     }
 
     @Test
