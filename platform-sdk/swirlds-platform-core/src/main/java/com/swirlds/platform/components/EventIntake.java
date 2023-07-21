@@ -97,6 +97,12 @@ public class EventIntake {
      * @param event the event
      */
     public void addUnlinkedEvent(final GossipEvent event) {
+
+        if (consensus().getMinGenerationNonAncient() > event.getGeneration()) {
+            // Ancient events should be ignored.
+            return;
+        }
+
         stats.receivedUnlinkedEvent();
         dispatcher.receivedEvent(event);
         stats.dispatchedReceived();
@@ -112,7 +118,7 @@ public class EventIntake {
      *
      * @param event an event to be added
      */
-    public void addEvent(final EventImpl event) {
+    private void addEvent(final EventImpl event) {
         // an expired event will cause ShadowGraph to throw an exception, so we just to discard it
         if (consensus().isExpired(event)) {
             return;

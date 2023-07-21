@@ -88,11 +88,9 @@ import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.ReconnectStateLoadedTrigger;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.linking.EventLinker;
-import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
@@ -154,7 +152,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -482,10 +479,7 @@ public class SwirldsPlatform implements Platform, Startable {
                             "Interrupted while requesting preconsensus event flush");
                 });
 
-        final List<Predicate<EventDescriptor>> isDuplicateChecks = new ArrayList<>();
-        isDuplicateChecks.add(d -> shadowGraph.isHashInGraph(d.getHash()));
-
-        eventLinker = buildEventLinker(isDuplicateChecks);
+        eventLinker = buildEventLinker();
 
         // Pre-tipset event intake flow:
         //
@@ -950,33 +944,18 @@ public class SwirldsPlatform implements Platform, Startable {
      * Build the event linker.
      */
     @NonNull
-    private EventLinker buildEventLinker(@NonNull final List<Predicate<EventDescriptor>> isDuplicateChecks) {
-        Objects.requireNonNull(isDuplicateChecks);
+    private EventLinker buildEventLinker() {
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        if (chatterConfig.useChatter()) {
-            final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    parentFinder,
-                    chatterConfig.futureGenerationLimit());
-            metrics.getOrCreate(
-                    new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
-                            .withDescription("the number of events without parents buffered")
-                            .withFormat("%d"));
-
-            // when using chatter an event could be an orphan, in this case it will be stored in the orphan set
-            // when its parents are found, or become ancient, it will move to the shadowgraph
-            // non-orphans are also stored in the shadowgraph
-            // to dedupe, we need to check both
-            isDuplicateChecks.add(orphanBuffer::isOrphan);
-
-            return orphanBuffer;
-        } else {
-            return new InOrderLinker(
-                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                    parentFinder,
-                    eventMapper::getMostRecentEvent);
-        }
+        final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
+                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                parentFinder,
+                chatterConfig.futureGenerationLimit());
+        metrics.getOrCreate(
+                new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
+                        .withDescription("the number of events without parents buffered")
+                        .withFormat("%d"));
+        return orphanBuffer;
     }
 
     /**

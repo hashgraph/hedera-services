@@ -152,8 +152,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     /**
      * Same as {@link #addEvent(GossipEvent)} but skips the linking and inserts this instance
      */
-    public void addLinkedEvent(final EventImpl event) {
-        intake.addEvent(event);
+    public void addLinkedEvent(final EventImpl event) { // TODO this now calls into addUnlinkedEvent!
+        intake.addUnlinkedEvent(new GossipEvent(event.getHashedData(), event.getUnhashedData()));
         numEventsAdded++;
     }
 
