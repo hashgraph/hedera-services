@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.verifier;
 
 import static java.util.Objects.requireNonNull;
 

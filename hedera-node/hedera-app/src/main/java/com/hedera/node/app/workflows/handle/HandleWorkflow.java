@@ -39,8 +39,9 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -140,37 +141,37 @@ public class HandleWorkflow {
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final ConsensusTransaction platformTxn) {
-        // skip system transactions
-        if (platformTxn.isSystem()) {
-            return;
-        }
+      // skip system transactions
+      if (platformTxn.isSystem()) {
+        return;
+      }
 
-        // Get the consensus timestamp
-        final var consensusNow = platformTxn.getConsensusTimestamp();
+      // Get the consensus timestamp
+      final var consensusNow = platformTxn.getConsensusTimestamp();
 
-        // Setup record builder list
+      // Setup record builder list
       blockRecordManager.startUserTransaction(consensusNow, state);
-        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
-        final var recordListBuilder = new RecordListBuilder(recordBuilder);
+      final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+      final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
-        PreHandleResult preHandleResult = null;
-        try {
-          // Setup configuration
-          final var configuration = configProvider.getConfiguration();
-          final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+      PreHandleResult preHandleResult = null;
+      try {
+        // Setup configuration
+        final var configuration = configProvider.getConfiguration();
+        final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
-          preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
-          final var transactionInfo = preHandleResult.txInfo();
-          final var txBody = transactionInfo.txBody();
-          recordBuilder
-              .transaction(transactionInfo.transaction())
-              .transactionBytes(transactionInfo.signedBytes())
-              .transactionID(txBody.transactionID())
-              .memo(txBody.memo());
+        preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
+        final var transactionInfo = preHandleResult.txInfo();
+        final var txBody = transactionInfo.txBody();
+        recordBuilder
+            .transaction(transactionInfo.transaction())
+            .transactionBytes(transactionInfo.signedBytes())
+            .transactionID(txBody.transactionID())
+            .memo(txBody.memo());
 
-          // Check the payer signature. Whether this is a duplicate transaction or not, we need to have the payer
-          // information to proceed. Also perform a solvency check on the account to make sure the account has not
-          // been deleted, it does exist, and it has sufficient funds to pay for the transaction. If any of those
+        // Check the payer signature. Whether this is a duplicate transaction or not, we need to have the payer
+        // information to proceed. Also perform a solvency check on the account to make sure the account has not
+        // been deleted, it does exist, and it has sufficient funds to pay for the transaction. If any of those
           // things is not true, then we will charge the node instead.
           final var timeout = hederaConfig.workflowVerificationTimeoutMS();
           final var maxMillis = instantSource.millis() + timeout;
@@ -268,7 +269,7 @@ public class HandleWorkflow {
             }
             // Setup context
             final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                 txBody,
                 preHandleResult.payer(),
@@ -348,14 +349,14 @@ public class HandleWorkflow {
 
     }
 
-    public void recordFailedTransaction(
-            @NonNull final ResponseCodeEnum status,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
-            @NonNull final RecordListBuilder recordListBuilder) {
-        recordBuilder.status(status);
-        recordListBuilder.revertChildRecordBuilders(recordBuilder);
-        // TODO: Finalize failed transaction with the help of token-service and commit required state changes
-    }
+  public void recordFailedTransaction(
+      @NonNull final ResponseCodeEnum status,
+      @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+      @NonNull final RecordListBuilder recordListBuilder) {
+    recordBuilder.status(status);
+    recordListBuilder.revertChildRecordBuilders(recordBuilder);
+    // TODO: Finalize failed transaction with the help of token-service and commit required state changes
+  }
 
     /*
      * This method gets all the verification data for the current transaction. If pre-handle was previously ran

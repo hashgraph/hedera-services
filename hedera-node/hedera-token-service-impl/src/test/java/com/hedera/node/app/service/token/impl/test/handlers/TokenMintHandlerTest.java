@@ -42,7 +42,7 @@ import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
@@ -58,7 +58,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
     private final Bytes metadata1 = Bytes.wrap("memo".getBytes());
     private final Bytes metadata2 = Bytes.wrap("memo2".getBytes());
     private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
-    private SingleTransactionRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
     private TokenMintHandler subject;
 
     @BeforeEach
@@ -67,7 +67,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
     }
 
     @Test

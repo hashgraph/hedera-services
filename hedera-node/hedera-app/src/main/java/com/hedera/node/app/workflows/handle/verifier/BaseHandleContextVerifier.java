@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.verifier;
 
-import static com.hedera.node.app.spi.signatures.SignatureVerification.failedVerification;
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -25,9 +26,11 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -39,42 +42,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper class that contains all functionality for verifying signatures during handle.
+ * Base implementation of {@link HandleContextVerifier}
  */
-public class HandleContextVerifier {
+public class BaseHandleContextVerifier implements HandleContextVerifier {
 
-    private static final Logger logger = LoggerFactory.getLogger(HandleContextVerifier.class);
+    private static final Logger logger = LoggerFactory.getLogger(BaseHandleContextVerifier.class);
 
     private final long timeout;
     private final Map<Key, SignatureVerificationFuture> keyVerifications;
 
     /**
-     * Creates a {@link HandleContextVerifier}
+     * Creates a {@link BaseHandleContextVerifier}
      *
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
-    public HandleContextVerifier(
+    public BaseHandleContextVerifier(
             @NonNull final HederaConfig config, @NonNull final Map<Key, SignatureVerificationFuture> keyVerifications) {
         this.timeout = requireNonNull(config, "config must not be null").workflowVerificationTimeoutMS();
         this.keyVerifications = requireNonNull(keyVerifications, "keyVerifications must not be null");
     }
 
-    /**
-     * Get a {@link SignatureVerification} for the given key.
-     *
-     * <p>If the key is a cryptographic key (i.e. a basic key like ED25519 or ECDSA_SECP256K1), and the cryptographic
-     * key was in the signature map of the transaction, then a {@link SignatureVerification} will be for that key.
-     * If there was no such cryptographic key in the signature map, {@code null} is returned.
-     *
-     * <p>If the key is a key list, then a {@link SignatureVerification} will be returned that aggregates the results
-     * of each key in the key list, possibly nested.
-     *
-     * <p>If the key is a threshold key, then a {@link SignatureVerification} will be returned that aggregates the
-     * results of each key in the threshold key, possibly nested, based on the threshold for that key.
-     *
-     * @param key The key to check on the verification results for.
-     * @return A {@link SignatureVerification} for the given key, if available, {@code null} otherwise.
-     */
+    @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull final Key key) {
         requireNonNull(key, "key must not be null");
@@ -82,11 +70,48 @@ public class HandleContextVerifier {
         return resolveFuture(verificationFutureFor(key), () -> failedVerification(key));
     }
 
-    /**
-     * Look for a {@link SignatureVerification} that applies to the given hollow account.
-     * @param evmAlias The evm alias to lookup verification for.
-     * @return The {@link SignatureVerification} for the given hollow account.
-     */
+    @Override
+    @NonNull
+    public SignatureVerification verificationFor(
+            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
+        requireNonNull(key, "key must not be null");
+        requireNonNull(callback, "callback must not be null");
+
+        return switch (key.key().kind()) {
+            case ED25519, ECDSA_SECP256K1 -> {
+                final var result = resolveFuture(keyVerifications.get(key), () -> failedVerification(key));
+                yield callback.test(key, result) ? passedVerification(key) : failedVerification(key);
+            }
+            case KEY_LIST -> {
+                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                var failed = keys.isEmpty();
+                for (final var childKey : keys) {
+                    failed |= verificationFor(childKey, callback).failed();
+                }
+                yield failed ? failedVerification(key) : passedVerification(key);
+            }
+            case THRESHOLD_KEY -> {
+                final var thresholdKey = key.thresholdKeyOrThrow();
+                final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
+                final var keys = keyList.keysOrElse(emptyList());
+                final var threshold = thresholdKey.threshold();
+                final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
+                var passed = 0;
+                for (final var childKey : keys) {
+                    if (verificationFor(childKey, callback).passed()) {
+                        passed++;
+                    }
+                }
+                yield passed >= clampedThreshold ? passedVerification(key) : failedVerification(key);
+            }
+            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> {
+                final var failure = failedVerification(key);
+                yield callback.test(key, failure) ? passedVerification(key) : failure;
+            }
+        };
+    }
+
+    @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
         requireNonNull(evmAlias, "evmAlias must not be null");
@@ -135,7 +160,7 @@ public class HandleContextVerifier {
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
                 final var keys = keyList.keysOrElse(emptyList());
                 final var threshold = thresholdKey.threshold();
-                final var clampedThreshold = Math.min(Math.max(1, threshold), keys.size());
+                final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 yield verificationFutureFor(key, keys, keys.size() - clampedThreshold);
             }
             case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, ECDSA_384, RSA_3072, UNSET -> completedFuture(
@@ -164,8 +189,11 @@ public class HandleContextVerifier {
 
     @NonNull
     private SignatureVerification resolveFuture(
-            @NonNull final Future<SignatureVerification> future,
+            @Nullable final Future<SignatureVerification> future,
             @NonNull final Supplier<SignatureVerification> fallback) {
+        if (future == null) {
+            return fallback.get();
+        }
         try {
             return future.get(timeout, TimeUnit.MILLISECONDS);
         } catch (final InterruptedException e) {

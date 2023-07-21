@@ -108,8 +108,8 @@ public class SingleTransactionRecordBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        SingleTransactionRecordBuilder singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilder(CONSENSUS_TIME);
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
 
         singleTransactionRecordBuilder
