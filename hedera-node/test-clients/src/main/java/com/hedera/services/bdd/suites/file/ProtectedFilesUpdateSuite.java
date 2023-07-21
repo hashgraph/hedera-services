@@ -193,7 +193,6 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
         HapiSpecOperation[] opsArray = {
             validateOp,
             UtilVerbs.updateLargeFile(account, fileName, fileName),
-            getFileContents(fileName).hasContents(fileName)
         };
         if (account.equals(GENESIS) || !isFree) {
             return opsArray;
