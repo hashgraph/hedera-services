@@ -97,7 +97,7 @@ public class SubmissionManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
-        submittedTxns = requireNonNull(deduplicationCache);
+        this.submittedTxns = requireNonNull(deduplicationCache);
 
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;

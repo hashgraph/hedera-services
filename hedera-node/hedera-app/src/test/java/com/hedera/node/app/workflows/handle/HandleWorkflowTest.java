@@ -117,9 +117,7 @@ class HandleWorkflowTest extends AppTestBase {
                 key,
                 status,
                 code,
-                new TransactionScenarioBuilder()
-                        .withTransactionID(transactionId)
-                        .txInfo(),
+                new TransactionScenarioBuilder().txInfo(),
                 Set.of(),
                 Map.of(key, FakeSignatureVerificationFuture.goodFuture(key)),
                 null,
