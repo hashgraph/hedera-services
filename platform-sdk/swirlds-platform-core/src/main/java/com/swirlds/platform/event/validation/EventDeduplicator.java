@@ -54,7 +54,6 @@ public class EventDeduplicator {
      * @param minimumGenerationNonAncient the current minimum generation non-ancient
      */
     public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
-        System.err.println(minimumGenerationNonAncient); // TODO
         recentEvents.shiftWindow(minimumGenerationNonAncient);
     }
 }

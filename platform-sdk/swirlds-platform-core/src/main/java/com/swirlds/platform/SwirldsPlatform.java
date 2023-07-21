@@ -104,7 +104,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
 import com.swirlds.platform.event.tipset.TipsetEventCreationManager;
-import com.swirlds.platform.event.validation.AncientValidator;
 import com.swirlds.platform.event.validation.EventDeduplicator;
 import com.swirlds.platform.event.validation.GossipEventValidator;
 import com.swirlds.platform.event.validation.GossipEventValidators;
@@ -532,12 +531,9 @@ public class SwirldsPlatform implements Platform, Startable {
 
         // TODO extract into helper method maybe
         final List<GossipEventValidator> validators = new ArrayList<>();
-        validators.add(new AncientValidator(consensusRef::get));
         validators.add(StaticValidators::isParentDataValid);
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
-        if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(initialAddressBook));
-        }
+        validators.add(new SignatureValidator(initialAddressBook));
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
         intakeQueue = components.add(new QueueThreadConfiguration<EventIntakeTask>(threadManager)

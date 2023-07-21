@@ -34,8 +34,6 @@ import java.time.Duration;
  *
  * @param configsUsedFilename
  *      the name of the file that contains the list of config files used to create this config
- * @param verifyEventSigs
- * 		verify event signatures (rather than just trusting they are correct)?
  * @param showInternalStats
  * 		show the user all statistics, including those with category "internal"?
  * @param verboseStatistics
@@ -140,7 +138,6 @@ import java.time.Duration;
 @ConfigData
 public record BasicConfig(
         @ConfigProperty(defaultValue = "configsUsed.txt") String configsUsedFilename,
-        @ConfigProperty(defaultValue = "true") boolean verifyEventSigs,
         @ConfigProperty(defaultValue = "false") boolean showInternalStats,
         @ConfigProperty(defaultValue = "false") boolean verboseStatistics,
         @ConfigProperty(defaultValue = "10000") int maxEventQueueForCons,
