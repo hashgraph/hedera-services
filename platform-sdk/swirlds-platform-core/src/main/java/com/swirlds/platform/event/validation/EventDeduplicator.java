@@ -28,6 +28,8 @@ public class EventDeduplicator {
 
     private final SequenceSet<RecentEvent> recentEvents;
 
+    // TODO we also need to consider signatures (in case a malicious node retransmits with a different signature)
+
     /**
      * Create a new event deduplicator.
      */
@@ -41,7 +43,7 @@ public class EventDeduplicator {
      * @param event the event to check
      * @return true if the event is a duplicate or ancient, false otherwise
      */
-    public synchronized boolean addAndCheckIfDuplicated(@NonNull final GossipEvent event) {
+    public boolean addAndCheckIfDuplicated(@NonNull final GossipEvent event) {
         final RecentEvent recentEvent = RecentEvent.of(event);
         return !recentEvents.add(recentEvent);
     }
@@ -51,7 +53,7 @@ public class EventDeduplicator {
      *
      * @param minimumGenerationNonAncient the current minimum generation non-ancient
      */
-    public synchronized void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
+    public void setMinimumGenerationNonAncient(final long minimumGenerationNonAncient) {
         recentEvents.shiftWindow(minimumGenerationNonAncient);
     }
 }

@@ -99,7 +99,7 @@ public class EventPreprocessorMetrics {
         eventPreprocessTime = platformContext.getMetrics().getOrCreate(EVENT_PREPROCESS_TIME_CONFIG);
 
         final FunctionGauge.Config<Integer> preprocessQueueSizeConfig = new FunctionGauge.Config<>(
-                        PLATFORM_CATEGORY, "preprocessQueueSize", Integer.class, preprocessQueueSizeSupplier)
+                        PLATFORM_CATEGORY, "eventPreprocessQueueSize", Integer.class, preprocessQueueSizeSupplier)
                 .withDescription("Number of events in the preprocess queue.");
         platformContext.getMetrics().getOrCreate(preprocessQueueSizeConfig);
     }

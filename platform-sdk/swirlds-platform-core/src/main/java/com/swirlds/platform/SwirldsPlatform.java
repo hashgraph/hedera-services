@@ -91,6 +91,7 @@ import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
@@ -540,14 +541,14 @@ public class SwirldsPlatform implements Platform, Startable {
                         .enableBusyTimeMetric())
                 .build());
 
-        eventPreprocessor = new EventPreprocessor(
+        eventPreprocessor = components.add(new EventPreprocessor(
                 platformContext,
                 threadManager,
                 time,
                 deduplicator,
                 eventValidators,
                 swirldStateManager::preHandle,
-                intakeQueue::put);
+                intakeQueue::put));
 
         final EventCreator eventCreator = buildEventCreator(eventPreprocessor);
 
@@ -949,15 +950,23 @@ public class SwirldsPlatform implements Platform, Startable {
     private EventLinker buildEventLinker() {
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
-        final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
-                platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
-                parentFinder,
-                chatterConfig.futureGenerationLimit());
-        metrics.getOrCreate(
-                new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
-                        .withDescription("the number of events without parents buffered")
-                        .withFormat("%d"));
-        return orphanBuffer;
+        if (chatterConfig.useChatter()) {
+            final OrphanBufferingLinker orphanBuffer = new OrphanBufferingLinker(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    parentFinder,
+                    chatterConfig.futureGenerationLimit());
+            metrics.getOrCreate(
+                    new FunctionGauge.Config<>("intake", "numOrphans", Integer.class, orphanBuffer::getNumOrphans)
+                            .withDescription("the number of events without parents buffered")
+                            .withFormat("%d"));
+
+            return orphanBuffer;
+        } else {
+            return new InOrderLinker(
+                    platformContext.getConfiguration().getConfigData(ConsensusConfig.class),
+                    parentFinder,
+                    eventMapper::getMostRecentEvent);
+        }
     }
 
     /**

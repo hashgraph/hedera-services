@@ -21,6 +21,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
 
 /**
  * Describes a recent event.
@@ -28,8 +29,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param creatorId  the ID of the event's creator
  * @param generation the event's generation
  * @param hash       the hash of the event
+ * @param signature  the signature of the event (we have to check this when doing deduplication if we want to
+ *                   deduplicate prior to signature validation)
  */
-public record RecentEvent(@NonNull NodeId creatorId, long generation, @NonNull Hash hash) {
+public record RecentEvent(@NonNull NodeId creatorId, long generation, @NonNull Hash hash, @NonNull byte[] signature) {
 
     public static RecentEvent of(@NonNull final GossipEvent event) {
 
@@ -41,7 +44,8 @@ public record RecentEvent(@NonNull NodeId creatorId, long generation, @NonNull H
         return new RecentEvent(
                 event.getHashedData().getCreatorId(),
                 event.getGeneration(),
-                event.getHashedData().getHash());
+                event.getHashedData().getHash(),
+                event.getUnhashedData().getSignature());
     }
 
     @Override
@@ -61,6 +65,7 @@ public record RecentEvent(@NonNull NodeId creatorId, long generation, @NonNull H
         final RecentEvent that = (RecentEvent) obj;
         return this.creatorId.equals(that.creatorId)
                 && this.generation == that.generation
-                && this.hash.equals(that.hash);
+                && this.hash.equals(that.hash)
+                && Arrays.equals(this.signature, that.signature);
     }
 }

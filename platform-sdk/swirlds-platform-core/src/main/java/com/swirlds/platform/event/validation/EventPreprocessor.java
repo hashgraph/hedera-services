@@ -18,10 +18,13 @@ package com.swirlds.platform.event.validation;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.base.state.Startable;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.threading.framework.QueueThread;
+import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.Clearable;
@@ -31,8 +34,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Hashes, deduplicates, validates, and calls prehandle for transactions in incoming events.
  */
-public class EventPreprocessor implements Clearable {
+public class EventPreprocessor implements Clearable, Startable {
 
     private final Logger logger = LogManager.getLogger(EventPreprocessor.class);
 
@@ -58,6 +64,11 @@ public class EventPreprocessor implements Clearable {
     private final InterruptableConsumer<GossipEvent> validEventConsumer;
     private final EventPreprocessorMetrics metrics;
     private final int threadPoolSize;
+
+    private final QueueThread<Future<GossipEvent>> deduplicationQueue;
+    private final QueueThread<Future<GossipEvent>> finalizerQueue;
+
+    // TODO document and organize this class
 
     /**
      * Create a new event preprocessor.
@@ -89,8 +100,10 @@ public class EventPreprocessor implements Clearable {
 
         final EventConfig config = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        workQueue = new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(
-                new LinkedBlockingQueue<>(config.eventIntakeQueueSize()));
+        // TODO
+        //        workQueue = new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(
+        //                new LinkedBlockingQueue<>(config.eventIntakeQueueSize()));
+        workQueue = new LinkedBlockingQueue<>();
 
         metrics = new EventPreprocessorMetrics(platformContext, workQueue::size);
         threadPoolSize = config.eventIntakeQueueThrottleSize();
@@ -102,6 +115,21 @@ public class EventPreprocessor implements Clearable {
                 TimeUnit.MILLISECONDS,
                 workQueue,
                 threadManager.createThreadFactory("platform", "event-processor"));
+
+        deduplicationQueue = new QueueThreadConfiguration<Future<GossipEvent>>(threadManager)
+                .setComponent("platform")
+                .setThreadName("event-deduplication")
+                .setCapacity(config.eventIntakeQueueSize())
+                .setHandler(this::handleDeduplication)
+                .build();
+
+        // TODO this queue could go away if we make the event intake queue take futures
+        finalizerQueue = new QueueThreadConfiguration<Future<GossipEvent>>(threadManager)
+                .setComponent("platform")
+                .setThreadName("event-finalizer")
+                .setHandler(this::handleFinalization)
+                .setCapacity(config.eventIntakeQueueSize())
+                .build();
     }
 
     /**
@@ -109,24 +137,36 @@ public class EventPreprocessor implements Clearable {
      *
      * @param event the event to be hashed
      */
-    public void ingestEvent(@NonNull final GossipEvent event) {
-        executorService.submit(buildProcessingTask(event));
+    public void ingestEvent(@NonNull final GossipEvent event) throws InterruptedException {
+        //        executorService.submit(buildProcessingTask(event));
+
+        deduplicationQueue.put(executorService.submit(buildHashingTask(event)));
     }
 
-    /**
-     * Build a task that will hash the event on the executor service. The callable returns null if the event should not
-     * be ingested, and returns the event if it passes all checks.
-     *
-     * @param event the event to be hashed
-     */
     @NonNull
-    private Runnable buildProcessingTask(@NonNull final GossipEvent event) {
+    private Callable<GossipEvent> buildHashingTask(@NonNull final GossipEvent event) {
         return () -> {
-            final Instant start = time.now();
+            try {
+                final Instant start = time.now();
 
-            if (event.getHashedData().getHash() == null) {
-                cryptography.digestSync(event.getHashedData());
+                if (event.getHashedData().getHash() == null) {
+                    cryptography.digestSync(event.getHashedData());
+                }
+
+                final Instant doneHashing = time.now();
+                metrics.reportEventHashTime(Duration.between(start, doneHashing)); // TODO metrics documentation
+
+                return event;
+            } catch (final Throwable t) {
+                logger.error(EXCEPTION.getMarker(), "exception while hashing event", t);
+                throw t;
             }
+        };
+    }
+
+    private void handleDeduplication(@NonNull final Future<GossipEvent> future) {
+        try {
+            final GossipEvent event = future.get();
 
             if (deduplicator.addAndCheckIfDuplicated(event)) {
                 metrics.registerDuplicateEvent();
@@ -134,34 +174,69 @@ public class EventPreprocessor implements Clearable {
             }
             metrics.registerUniqueEvent();
 
-            final Instant doneHashingAndDeduplicating = time.now();
-            metrics.reportEventHashTime(Duration.between(start, doneHashingAndDeduplicating));
+            finalizerQueue.put(executorService.submit(buildValidationAndPrehandleTask(event)));
 
-            // FUTURE WORK some validation can move before hashing
-            if (!validators.isEventValid(event)) {
-                metrics.registerInvalidEvent();
-                return;
-            }
-            metrics.registerValidEvent();
-            event.buildDescriptor();
+        } catch (@NonNull InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e); // TODO
+        } catch (final ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (final Throwable t) {
+            logger.error(EXCEPTION.getMarker(), "exception while deduplicating event", t);
+            throw t;
+        }
+    }
 
-            final Instant doneValidating = time.now();
-            metrics.reportEventValidationTime(Duration.between(doneHashingAndDeduplicating, doneValidating));
-
-            transactionPrehandler.accept(event);
-
-            final Instant donePrehandling = time.now();
-            metrics.reportEventPrehandleTime(Duration.between(doneValidating, donePrehandling));
-            metrics.reportEventPreprocessTime(Duration.between(start, donePrehandling));
-
+    private Callable<GossipEvent> buildValidationAndPrehandleTask(@NonNull final GossipEvent event) {
+        return () -> {
             try {
-                validEventConsumer.accept(event);
-            } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.error(EXCEPTION.getMarker(),
-                        "interrupted while passing event to next stage in pipeline", e);
+                final Instant start = time.now();
+
+                // FUTURE WORK some validation can move before hashing
+                if (!validators.isEventValid(event)) {
+                    metrics.registerInvalidEvent();
+                    return null;
+                }
+                metrics.registerValidEvent();
+                event.buildDescriptor();
+
+                final Instant doneValidating = time.now();
+                metrics.reportEventValidationTime(Duration.between(start, doneValidating));
+
+                transactionPrehandler.accept(event);
+
+                final Instant donePrehandling = time.now();
+                metrics.reportEventPrehandleTime(Duration.between(doneValidating, donePrehandling));
+                metrics.reportEventPreprocessTime(Duration.between(start, donePrehandling));
+
+                return event;
+            } catch (final Throwable t) {
+                logger.error(EXCEPTION.getMarker(), "exception while validating event", t);
+                throw t;
             }
         };
+    }
+
+    private void handleFinalization(@NonNull final Future<GossipEvent> future) {
+        try {
+            final GossipEvent event = future.get();
+
+            if (event == null) {
+                // event was invalid
+                return;
+            }
+
+            validEventConsumer.accept(event);
+
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (final ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (final Throwable t) {
+            logger.error(EXCEPTION.getMarker(), "exception while finalizing event", t);
+            throw t;
+        }
     }
 
     /**
@@ -171,6 +246,16 @@ public class EventPreprocessor implements Clearable {
      * @throws InterruptedException if interrupted while waiting for flush to complete
      */
     public void flush() throws InterruptedException {
+        flushExecutor(); // Flush hash jobs
+        deduplicationQueue.waitUntilNotBusy();
+        flushExecutor(); // Flush validation and prehandle jobs
+        finalizerQueue.waitUntilNotBusy();
+    }
+
+    /**
+     * Flush jobs in the executor service.
+     */
+    private void flushExecutor() throws InterruptedException { // TODO this needs to be more nuanced
 
         // Submit tasks that will block a thread until all threads are guaranteed to be blocked.
         // Since threads process elements from the queue in order, when all threads are blocked
@@ -193,7 +278,7 @@ public class EventPreprocessor implements Clearable {
     }
 
     /**
-     * {@inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public void clear() {
@@ -210,5 +295,14 @@ public class EventPreprocessor implements Clearable {
      */
     public int getQueueSize() {
         return workQueue.size();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        deduplicationQueue.start();
+        finalizerQueue.start();
     }
 }
