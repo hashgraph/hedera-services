@@ -28,7 +28,6 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
-import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncUtils;
@@ -37,8 +36,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,8 +56,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
 
     private final EventConfig eventConfig;
 
-    /** the event intake queue */
-    private final BlockingQueue<EventIntakeTask> intakeQueue;
+    private final IntSupplier preprocessQueueSize;
     /** This object holds data on how nodes are connected to each other. */
     private final RandomGraph connectionGraph;
     /** The id of this node */
@@ -80,15 +78,15 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
     /**
      * Creates a new SyncManager
      *
-     * @param metrics            the metrics engine
-     * @param intakeQueue        the event intake queue
-     * @param connectionGraph    The platforms connection graph.
-     * @param selfId             The ID of the platform.
-     * @param eventCreationRules Contains a list of rules for checking whether this node should create an event or not
+     * @param metrics             the metrics engine
+     * @param preprocessQueueSize gets the size of the preprocess queue
+     * @param connectionGraph     The platforms connection graph.
+     * @param selfId              The ID of the platform.
+     * @param eventCreationRules  Contains a list of rules for checking whether this node should create an event or not
      */
     public SyncManagerImpl(
             @NonNull final Metrics metrics,
-            @NonNull final BlockingQueue<EventIntakeTask> intakeQueue,
+            @NonNull final IntSupplier preprocessQueueSize,
             @NonNull final RandomGraph connectionGraph,
             @NonNull final NodeId selfId,
             @NonNull final EventCreationRules eventCreationRules,
@@ -97,7 +95,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final EventConfig eventConfig) {
 
-        this.intakeQueue = Objects.requireNonNull(intakeQueue);
+        this.preprocessQueueSize = Objects.requireNonNull(preprocessQueueSize);
         this.connectionGraph = Objects.requireNonNull(connectionGraph);
         this.selfId = Objects.requireNonNull(selfId);
 
@@ -130,7 +128,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // we shouldn't sync if the event intake queue is too big
-        final int intakeQueueSize = intakeQueue.size();
+        final int intakeQueueSize = preprocessQueueSize.getAsInt();
         if (intakeQueueSize > eventConfig.eventIntakeQueueThrottleSize()) {
             logger.debug(
                     SYNC.getMarker(),
@@ -154,7 +152,7 @@ public class SyncManagerImpl implements SyncManager, FallenBehindManager {
         }
 
         // we shouldn't sync if the event intake queue is too big
-        return intakeQueue.size() <= eventConfig.eventIntakeQueueThrottleSize();
+        return preprocessQueueSize.getAsInt() <= eventConfig.eventIntakeQueueThrottleSize();
     }
 
     /**

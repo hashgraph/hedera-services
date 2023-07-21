@@ -52,6 +52,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,6 +80,7 @@ public final class GossipFactory {
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
+     * @param preprocessQueueSize           gets the size of the preprocess queue
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
@@ -107,6 +109,7 @@ public final class GossipFactory {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final IntSupplier preprocessQueueSize,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -164,6 +167,7 @@ public final class GossipFactory {
                     emergencyRecoveryManager,
                     consensusRef,
                     intakeQueue,
+                    preprocessQueueSize,
                     freezeManager,
                     startUpEventFrozenManager,
                     swirldStateManager,
@@ -189,6 +193,7 @@ public final class GossipFactory {
                         appVersion,
                         shadowGraph,
                         intakeQueue,
+                        preprocessQueueSize,
                         freezeManager,
                         startUpEventFrozenManager,
                         swirldStateManager,
@@ -215,6 +220,7 @@ public final class GossipFactory {
                         emergencyRecoveryManager,
                         consensusRef,
                         intakeQueue,
+                        preprocessQueueSize,
                         freezeManager,
                         startUpEventFrozenManager,
                         swirldStateManager,
@@ -239,6 +245,7 @@ public final class GossipFactory {
                     shadowGraph,
                     consensusRef,
                     intakeQueue,
+                    preprocessQueueSize,
                     freezeManager,
                     startUpEventFrozenManager,
                     swirldStateManager,

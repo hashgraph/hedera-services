@@ -69,6 +69,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -121,6 +122,7 @@ public class LegacySyncGossip extends AbstractGossip {
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final IntSupplier preprocessQueueSize,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -140,6 +142,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
+                preprocessQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,

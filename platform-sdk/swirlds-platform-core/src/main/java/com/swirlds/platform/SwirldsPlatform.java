@@ -564,7 +564,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 selfId,
                 appVersion,
                 swirldStateManager.getTransactionPool(),
-                intakeQueue::size,
+                eventPreprocessor::getQueueSize,
                 eventPreprocessor::ingestEvent,
                 eventObserverDispatcher,
                 currentPlatformStatus::get,
@@ -591,6 +591,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
+                eventPreprocessor::getQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,
@@ -644,8 +645,7 @@ public class SwirldsPlatform implements Platform, Startable {
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
-                        Pair.of(gossip, "gossip"),
-                        Pair.of(
+                        Pair.of( // TODO this needs to happen inside gossip!!!
                                 () -> {
                                     try {
                                         eventPreprocessor.flush();
@@ -656,6 +656,7 @@ public class SwirldsPlatform implements Platform, Startable {
                                     }
                                 },
                                 "eventPreprocessor"),
+                        Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
                         Pair.of(swirldStateManager, "swirldStateManager")));

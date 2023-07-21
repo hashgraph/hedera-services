@@ -75,6 +75,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -138,6 +139,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final NodeId selfId,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final IntSupplier preprocessQueueSize,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -200,7 +202,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         syncManager = new SyncManagerImpl(
                 platformContext.getMetrics(),
-                intakeQueue,
+                preprocessQueueSize,
                 topology.getConnectionGraph(),
                 selfId,
                 new EventCreationRules(

@@ -131,7 +131,7 @@ public class SyncManagerTest {
             eventQueue = new DummyEventQueue(hashgraph);
             syncManager = new SyncManagerImpl(
                     new NoOpMetrics(),
-                    eventQueue,
+                    eventQueue::size,
                     connectionGraph,
                     selfId,
                     new EventCreationRules(List.of(startUpEventFrozenManager, freezeManager)),

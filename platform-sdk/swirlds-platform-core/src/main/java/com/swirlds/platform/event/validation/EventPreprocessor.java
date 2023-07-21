@@ -40,10 +40,11 @@ import java.util.function.Consumer;
  */
 public class EventPreprocessor {
 
-    private final ExecutorService executorService;
-
     private final Cryptography cryptography;
     private final Time time;
+
+    private final BlockingQueue<Runnable> workQueue;
+    private final ExecutorService executorService;
     private final EventDeduplicator deduplicator;
     private final GossipEventValidators validators;
     private final Consumer<GossipEvent> transactionPrehandler;
@@ -81,7 +82,7 @@ public class EventPreprocessor {
 
         final EventConfig config = platformContext.getConfiguration().getConfigData(EventConfig.class);
 
-        final BlockingQueue<Runnable> workQueue = new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(
+        workQueue = new ReallyBlockingQueueImSeriousThisNeedsToBlockQueue<>(
                 new LinkedBlockingQueue<>(config.eventIntakeQueueSize()));
 
         metrics = new EventPreprocessorMetrics(platformContext, workQueue::size);
@@ -182,5 +183,12 @@ public class EventPreprocessor {
         }
 
         latch.await();
+    }
+
+    /**
+     * Get the size of the queue of events waiting to be processed.
+     */
+    public int getQueueSize() {
+        return workQueue.size();
     }
 }

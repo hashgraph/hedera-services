@@ -53,6 +53,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,6 +83,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param appVersion                    the version of the app
      * @param shadowGraph                   contains non-ancient events
      * @param intakeQueue                   the event intake queue
+     * @param preprocessQueueSize           gets the size of the preprocess queue
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
@@ -103,6 +105,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final IntSupplier preprocessQueueSize,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -122,6 +125,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
+                preprocessQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,

@@ -77,6 +77,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -115,6 +116,7 @@ public class SyncGossip extends AbstractGossip {
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
+     * @param preprocessQueueSize           gets the size of the preprocess queue
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
@@ -140,6 +142,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
+            @NonNull final IntSupplier preprocessQueueSize,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -159,6 +162,7 @@ public class SyncGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
+                preprocessQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,
@@ -213,7 +217,8 @@ public class SyncGossip extends AbstractGossip {
         }
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
-                () -> !gossipHalted.get(), () -> intakeQueue.size() < eventConfig.eventIntakeQueueThrottleSize()));
+                () -> !gossipHalted.get(),
+                () -> preprocessQueueSize.getAsInt() < eventConfig.eventIntakeQueueThrottleSize()));
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
