@@ -591,7 +591,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 emergencyRecoveryManager,
                 consensusRef,
                 intakeQueue,
-                eventPreprocessor::getQueueSize,
+                eventPreprocessor,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,

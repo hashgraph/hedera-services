@@ -65,6 +65,7 @@ import com.swirlds.platform.event.creation.OtherParentTracker;
 import com.swirlds.platform.event.creation.StaticCreationRules;
 import com.swirlds.platform.event.intake.ChatterEventMapper;
 import com.swirlds.platform.event.linking.EventLinker;
+import com.swirlds.platform.event.validation.EventPreprocessor;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
@@ -91,7 +92,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -125,7 +125,7 @@ public class ChatterGossip extends AbstractGossip {
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
-     * @param preprocessQueueSize           gets the size of the preprocess queue
+     * @param eventPreprocessor             preprocesses events
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
@@ -153,7 +153,7 @@ public class ChatterGossip extends AbstractGossip {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final IntSupplier preprocessQueueSize,
+            @NonNull final EventPreprocessor eventPreprocessor,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -175,7 +175,7 @@ public class ChatterGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
-                preprocessQueueSize,
+                eventPreprocessor::getQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,
@@ -226,7 +226,8 @@ public class ChatterGossip extends AbstractGossip {
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {},
+                    sr -> {
+                    },
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,

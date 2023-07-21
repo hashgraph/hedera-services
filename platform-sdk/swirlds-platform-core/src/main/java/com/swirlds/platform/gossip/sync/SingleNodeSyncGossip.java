@@ -41,6 +41,7 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.validation.EventPreprocessor;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -83,7 +84,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param appVersion                    the version of the app
      * @param shadowGraph                   contains non-ancient events
      * @param intakeQueue                   the event intake queue
-     * @param preprocessQueueSize           gets the size of the preprocess queue
+     * @param eventPreprocessor             preprocesses events
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
@@ -105,7 +106,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull SoftwareVersion appVersion,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final IntSupplier preprocessQueueSize,
+            @NonNull final EventPreprocessor eventPreprocessor,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -125,7 +126,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
-                preprocessQueueSize,
+                eventPreprocessor::getQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,

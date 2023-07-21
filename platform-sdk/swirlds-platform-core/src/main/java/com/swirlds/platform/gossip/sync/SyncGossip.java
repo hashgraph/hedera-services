@@ -50,6 +50,7 @@ import com.swirlds.platform.components.EventMapper;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.validation.EventPreprocessor;
 import com.swirlds.platform.gossip.AbstractGossip;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
@@ -77,7 +78,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -116,7 +116,7 @@ public class SyncGossip extends AbstractGossip {
      * @param emergencyRecoveryManager      handles emergency recovery
      * @param consensusRef                  a pointer to consensus
      * @param intakeQueue                   the event intake queue
-     * @param preprocessQueueSize           gets the size of the preprocess queue
+     * @param eventPreprocessor             preprocesses events
      * @param freezeManager                 handles freezes
      * @param startUpEventFrozenManager     prevents event creation during startup
      * @param swirldStateManager            manages the mutable state
@@ -142,7 +142,7 @@ public class SyncGossip extends AbstractGossip {
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
             @NonNull final AtomicReference<Consensus> consensusRef,
             @NonNull final QueueThread<EventIntakeTask> intakeQueue,
-            @NonNull final IntSupplier preprocessQueueSize,
+            @NonNull final EventPreprocessor eventPreprocessor,
             @NonNull final FreezeManager freezeManager,
             @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
             @NonNull final SwirldStateManager swirldStateManager,
@@ -162,7 +162,7 @@ public class SyncGossip extends AbstractGossip {
                 selfId,
                 appVersion,
                 intakeQueue,
-                preprocessQueueSize,
+                eventPreprocessor::getQueueSize,
                 freezeManager,
                 startUpEventFrozenManager,
                 swirldStateManager,
@@ -192,11 +192,23 @@ public class SyncGossip extends AbstractGossip {
                 shadowgraphExecutor,
                 // don't send or receive init bytes if running sync as a protocol. the negotiator handles this
                 false,
-                () -> {});
+                () -> {
+                });
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
+                        Pair.of(
+                                () -> {
+                                    try {
+                                        eventPreprocessor.flush();
+                                    } catch (final InterruptedException e) {
+                                        Thread.currentThread().interrupt();
+                                        throw new RuntimeException(
+                                                "interrupted while attempting to flush event preprocessing", e);
+                                    }
+                                },
+                                "eventPreprocessor"),
                         Pair.of(intakeQueue, "intakeQueue"),
                         Pair.of(eventMapper, "eventMapper"),
                         Pair.of(shadowGraph, "shadowGraph")));
@@ -218,7 +230,7 @@ public class SyncGossip extends AbstractGossip {
 
         final PeerAgnosticSyncChecks peerAgnosticSyncChecks = new PeerAgnosticSyncChecks(List.of(
                 () -> !gossipHalted.get(),
-                () -> preprocessQueueSize.getAsInt() < eventConfig.eventIntakeQueueThrottleSize()));
+                () -> eventPreprocessor.getQueueSize() < eventConfig.eventIntakeQueueThrottleSize()));
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
