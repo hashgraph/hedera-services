@@ -168,7 +168,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final var containStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
 
             // If this scenario is changing StakedId from a node or to a node, change stake of those nodes
-            if (scenario.withdrawsFromNode() || scenario.awardsToNode()) {
+            if ((scenario.withdrawsFromNode() || scenario.awardsToNode())) {
                 adjustNodeStakes(
                         scenario,
                         originalAccount,

@@ -16,11 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.RewardsHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.RewardsPayer;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
@@ -29,8 +38,11 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +58,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private HandleContext handleContext;
 
     private StakingRewardsHandler subject;
+    private StakePeriodManager stakePeriodManager;
     private final EntityNum node0Id = EntityNum.fromLong(0L);
     private final EntityNum node1Id = EntityNum.fromLong(1L);
     private final long stakingRewardAccountNum = 800L;
@@ -53,15 +66,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
+        refreshWritableStores();
+
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
         givenStoresAndConfig(handleContext);
 
-        refreshWritableStores();
-
         final var stakingRewardHelper = new RewardsHelper();
-        final var stakePeriodManager = new StakePeriodManager(configProvider);
+        stakePeriodManager = new StakePeriodManager(configProvider);
         final var stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
         final var rewardsPayer = new RewardsPayer(stakingRewardHelper, stakeRewardCalculator);
         final var stakeInfoHelper = new StakeInfoHelper();
@@ -69,13 +82,12 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void noStakingRewardsIfNoChangesToStakingFields() {
+    void changingKeyOnlyIsNotRewardSituation() {
         final var stakedToMeBefore = account.stakedToMe();
         final var stakePeriodStartBefore = account.stakePeriodStart();
         final var stakeAtStartOfLastRewardedPeriodBefore = account.stakeAtStartOfLastRewardedPeriod();
 
-        writableAccountStore.put(account.copyBuilder().autoRenewSecs(20000000).build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        noStakeChanges();
 
         final var rewards = subject.applyStakingRewards(handleContext);
 
@@ -95,62 +107,67 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var stakedToMeBefore = account.stakedToMe();
         final var stakePeriodStartBefore = account.stakePeriodStart();
         final var stakeAtStartOfLastRewardedPeriodBefore = account.stakeAtStartOfLastRewardedPeriod();
-        assertThat(stakedToMeBefore).isEqualTo(1234L);
 
-        writableAccountStore.put(account.copyBuilder().declineReward(true).build());
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        randomStakeNodeChanges();
 
         final var rewards = subject.applyStakingRewards(handleContext);
 
-        assertThat(rewards).isEmpty();
+        // earned zero rewards due to zero stake
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards).containsEntry(payerId, 0L);
+
         final var modifiedAccount = writableAccountStore.get(payerId);
+        // stakedToMe will not change as this is not staked by another account
         final var stakedToMeAfter = modifiedAccount.stakedToMe();
+        // These should change as staking is triggered
         final var stakePeriodStartAfter = modifiedAccount.stakePeriodStart();
         final var stakeAtStartOfLastRewardedPeriodAfter = modifiedAccount.stakeAtStartOfLastRewardedPeriod();
 
+        final var expectedStakePeriodStart = stakePeriodManager.currentStakePeriod(consensusInstant);
         assertThat(stakedToMeAfter).isEqualTo(stakedToMeBefore);
-        assertThat(stakePeriodStartAfter).isEqualTo(stakePeriodStartBefore);
+        assertThat(stakePeriodStartAfter).isNotEqualTo(stakePeriodStartBefore);
+        assertThat(stakePeriodStartAfter).isEqualTo(expectedStakePeriodStart);
         assertThat(stakeAtStartOfLastRewardedPeriodAfter).isEqualTo(stakeAtStartOfLastRewardedPeriodBefore);
     }
-    //
-    //    @Test
-    //    void changingKeyOnlyIsNotRewardSituation() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var changes = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
-    //        final Map<AccountProperty, Object> keyOnlyChanges = Map.of(AccountProperty.KEY, EMPTY_KEY);
-    //        changes.include(counterpartyId, counterparty, keyOnlyChanges);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //
-    //        subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0] = NA;
-    //
-    //        subject.preview(changes);
-    //
-    //        assertEquals(NA, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
-    //        verify(rewardCalculator).reset();
-    //    }
-    //
-    //    @Test
-    //    void anAccountThatStartedStakingBeforeCurrentPeriodAndHasntBeenRewardedUnclaimsStakeWhenChangingElection() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var changes = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
-    //        final var node0Info = stakingInfo.get(node0Id);
-    //        node0Info.setStakeRewardStart(2 * counterpartyBalance);
-    //
-    //        final Map<AccountProperty, Object> nodeChange = Map.of(AccountProperty.STAKED_ID, -2L);
-    //        changes.include(counterpartyId, counterparty, nodeChange);
-    //        counterparty.setStakePeriodStart(stakePeriodStart);
-    //        counterparty.setStakeAtStartOfLastRewardedPeriod(-1);
-    //
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 1);
-    //
-    //        subject.preview(changes);
-    //
-    //        assertEquals(counterpartyBalance, node0Info.getUnclaimedStakeRewardStart());
-    //        verify(rewardCalculator).reset();
-    //    }
+
+    @Test
+    void anAccountThatStartedStakingBeforeCurrentPeriodAndHasntBeenRewardedUnclaimsStakeWhenChangingElection() {
+        storesWithPayerBalance(555L * HBARS_TO_TINYBARS);
+
+        // set stakeToReward to be more than the expected calculation to unclaim rewards
+        final var copy = node1Info
+                .copyBuilder()
+                .stakeRewardStart(2 * account.tinybarBalance())
+                .build();
+        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(0L, node0Info)
+                .value(1L, copy)
+                .build();
+        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
+        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
+        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
+
+        // Change node, so to trigger rewards
+        writableAccountStore.put(writableAccountStore
+                .get(payerId)
+                .copyBuilder()
+                .stakedNodeId(0L)
+                .stakeAtStartOfLastRewardedPeriod(-1)
+                .build());
+
+        // We use next stake period to trigger rewards
+        Instant nextDayInstant = originalInstant.plus(1, ChronoUnit.DAYS);
+
+        given(handleContext.consensusNow()).willReturn(nextDayInstant);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        subject.applyStakingRewards(handleContext);
+
+        final var node1Info = writableStakingInfoState.get(1L);
+
+        assertThat(writableAccountStore.get(payerId).tinybarBalance()).isEqualTo(node1Info.unclaimedStakeRewardStart());
+    }
     //
     //    @Test
     //    void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedDaysAgoUnclaimsStakeWhenChangingElection() {
@@ -968,4 +985,45 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     //        assertEquals(NA, subject.getStakePeriodStartUpdates()[expectedFundingI]);
     //    }
 
+    private void randomStakeAccountChanges() {
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(100L)
+                .stakedAccountId(treasuryId)
+                .declineReward(true)
+                .build());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+    }
+
+    private void randomStakeNodeChanges() {
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(100L)
+                .stakedNodeId(0L)
+                .declineReward(true)
+                .build());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+    }
+
+    private void noStakeChanges() {
+        writableAccountStore.put(account.copyBuilder().key(kycKey).build());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+    }
+
+    private void storesWithPayerBalance(final long amount) {
+        final var copy = account.copyBuilder().tinybarBalance(amount).build();
+        readableAccounts = emptyReadableAccountStateBuilder()
+                .value(payerId, copy)
+                .value(stakingRewardId, stakingRewardAccount)
+                .build();
+        given(readableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(readableAccounts);
+        readableAccountStore = new ReadableAccountStoreImpl(readableStates);
+        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        writableAccounts = emptyWritableAccountStateBuilder()
+                .value(payerId, copy)
+                .value(stakingRewardId, stakingRewardAccount)
+                .build();
+        given(writableStates.<AccountID, Account>get(ACCOUNTS)).willReturn(writableAccounts);
+        writableAccountStore = new WritableAccountStore(writableStates);
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+    }
 }
