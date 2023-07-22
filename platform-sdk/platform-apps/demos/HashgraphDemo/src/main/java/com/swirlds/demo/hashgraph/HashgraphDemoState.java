@@ -33,7 +33,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.system.events.Event;
 
 /**
  * The state for the hashgraph demo. See the comments for com.swirlds.demos.HashgraphDemoMain
@@ -113,11 +112,5 @@ public class HashgraphDemoState extends PartialMerkleLeaf implements SwirldState
     @Override
     public int getMinimumSupportedVersion() {
         return ClassVersion.MIGRATE_TO_SERIALIZABLE;
-    }
-
-    @Override
-    public void preHandle(Event event) {
-        System.out.println(
-                "getting prehandled on thread " + Thread.currentThread().getName());
     }
 }
