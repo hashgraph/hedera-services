@@ -118,7 +118,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(2);
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.serialNumbers()).isNull();
+        assertThat(recordBuilder.serialNumbers()).isEmpty();
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
