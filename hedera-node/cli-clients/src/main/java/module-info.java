@@ -1,6 +1,6 @@
 module com.hedera.node.services.cli {
-    exports com.hedera.services.cli;
     exports com.hedera.services.cli.sign;
+    exports com.hedera.services.cli.signedstate;
 
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
