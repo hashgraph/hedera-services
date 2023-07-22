@@ -62,5 +62,4 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
-        @ConfigProperty(defaultValue = "50") long sleepCallerSkips) {
-}
+        @ConfigProperty(defaultValue = "50") long sleepCallerSkips) {}

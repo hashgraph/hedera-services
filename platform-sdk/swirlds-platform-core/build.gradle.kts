@@ -31,6 +31,7 @@ dependencies {
     api(project(":swirlds-jasperdb"))
     api(project(":swirlds-cli"))
     api(project(":swirlds-base"))
+    testImplementation("org.testng:testng:7.1.0")
     compileOnly(libs.spotbugs.annotations)
     runtimeOnly(project(":swirlds-config-impl"))
 

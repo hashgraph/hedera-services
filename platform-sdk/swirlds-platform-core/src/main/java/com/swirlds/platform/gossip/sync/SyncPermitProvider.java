@@ -19,9 +19,7 @@ package com.swirlds.platform.gossip.sync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.merkle.iterators.MerkleIterationOrder;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.locks.AutoClosableLock;
 import com.swirlds.common.threading.locks.Locks;
@@ -29,7 +27,6 @@ import com.swirlds.common.threading.locks.locked.Locked;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.concurrent.Future;
 import java.util.function.IntSupplier;
 
 /**
@@ -82,8 +79,7 @@ public class SyncPermitProvider {
     private final int suspendablePermitCount;
 
     public SyncPermitProvider(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final IntSupplier intakeQueueSizeSupplier) {
+            @NonNull final PlatformContext platformContext, @NonNull final IntSupplier intakeQueueSizeSupplier) {
 
         final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
 
@@ -205,26 +201,17 @@ public class SyncPermitProvider {
      */
     private void buildMetrics(@NonNull final Metrics metrics) {
         final FunctionGauge.Config<Integer> permitsAvailableConfig = new FunctionGauge.Config<>(
-                "platform",
-                "syncPermitsAvailable",
-                Integer.class,
-                this::getAvailablePermitCount)
+                        "platform", "syncPermitsAvailable", Integer.class, this::getAvailablePermitCount)
                 .withDescription("The number of sync permits currently available.");
         metrics.getOrCreate(permitsAvailableConfig);
 
         final FunctionGauge.Config<Integer> permitsHeldConfig = new FunctionGauge.Config<>(
-                "platform",
-                "syncPermitsHeld",
-                Integer.class,
-                this::getHeldPermitCount)
+                        "platform", "syncPermitsHeld", Integer.class, this::getHeldPermitCount)
                 .withDescription("The number of sync permits currently held.");
         metrics.getOrCreate(permitsHeldConfig);
 
         final FunctionGauge.Config<Integer> permitsSuspendedConfig = new FunctionGauge.Config<>(
-                "platform",
-                "syncPermitsSuspended",
-                Integer.class,
-                this::getSuspendedPermitCount)
+                        "platform", "syncPermitsSuspended", Integer.class, this::getSuspendedPermitCount)
                 .withDescription("The number of sync permits currently suspended due to event ingestion pressure.");
         metrics.getOrCreate(permitsSuspendedConfig);
     }
