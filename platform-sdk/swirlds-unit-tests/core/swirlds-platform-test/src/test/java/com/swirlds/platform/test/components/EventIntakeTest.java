@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.components;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
@@ -38,6 +40,8 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -61,7 +65,15 @@ class EventIntakeTest {
         final ArgumentCaptor<ConsensusRound> roundCaptor = ArgumentCaptor.forClass(ConsensusRound.class);
         final ShadowGraph shadowGraph = mock(ShadowGraph.class);
 
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue("asyncPrehandle", false)
+                        .getOrCreateConfig())
+                .build();
+
         final EventIntake intake = new EventIntake(
+                platformContext,
+                getStaticThreadManager(),
                 new NodeId(0L),
                 mock(EventLinker.class),
                 () -> consensus,
@@ -69,7 +81,8 @@ class EventIntakeTest {
                 dispatcher,
                 mock(IntakeCycleStats.class),
                 shadowGraph,
-                new HashMap<>()); // TODO problem?
+                new HashMap<>(),
+                e -> {});
 
         final GossipEvent gossipEvent = mock(GossipEvent.class);
         final EventImpl added = mock(EventImpl.class);

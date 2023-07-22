@@ -436,7 +436,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final ThreadConfig threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         final PreConsensusEventHandler preConsensusEventHandler = components.add(new PreConsensusEventHandler(
-                metrics, threadManager, selfId, swirldStateManager, consensusMetrics, threadConfig));
+                platformContext, threadManager, selfId, swirldStateManager, consensusMetrics));
         consensusRoundHandler = components.add(PlatformConstructor.consensusHandler(
                 platformContext,
                 threadManager,
@@ -485,13 +485,14 @@ public class SwirldsPlatform implements Platform, Startable {
 
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
-        // TODO clear this on reconnect
         unprocessedEvents = new HashMap<>();
         for (final Address address : initialAddressBook) {
             unprocessedEvents.put(address.getNodeId(), new AtomicLong(0));
         }
 
         final EventIntake eventIntake = new EventIntake(
+                platformContext,
+                threadManager,
                 selfId,
                 eventLinker,
                 consensusRef::get,
@@ -499,7 +500,8 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 intakeCycleStats,
                 shadowGraph,
-                unprocessedEvents);
+                unprocessedEvents,
+                swirldStateManager::preHandle);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);

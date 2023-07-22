@@ -16,11 +16,13 @@
 
 package com.swirlds.platform.test.consensus;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.Consensus;
@@ -41,6 +43,8 @@ import com.swirlds.platform.observers.StaleEventObserver;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
@@ -109,7 +113,16 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 new InOrderLinker(ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
+
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(new TestConfigBuilder()
+                        .withValue("asyncPrehandle", false)
+                        .getOrCreateConfig())
+                .build();
+
         intake = new EventIntake(
+                platformContext,
+                getStaticThreadManager(),
                 new NodeId(0L), // only used for logging
                 linker,
                 this::getConsensus,
@@ -117,7 +130,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
                 dispatcher,
                 ConsensusUtils.NOOP_INTAKE_CYCLE_STATS,
                 shadowGraph,
-                new HashMap<>()); // TODO problem?
+                new HashMap<>(),
+                e -> {});
     }
 
     /**

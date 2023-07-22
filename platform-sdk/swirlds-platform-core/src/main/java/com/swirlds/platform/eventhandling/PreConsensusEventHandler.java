@@ -23,7 +23,8 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatNames;
 import com.swirlds.common.threading.framework.QueueThread;
@@ -70,30 +71,22 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
      */
     private final SwirldStateManager swirldStateManager;
 
+    private final boolean prehandleTransactions;
+
     /**
-     * @param metrics
-     *      metrics system
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		the ID of this node
-     * @param swirldStateManager
-     * 		manages states
-     * @param consensusMetrics
-     * 		metrics relating to consensus
-     * @param threadConfig
-     *      configuration for the thread system
+     * @param platformContext    the platform context for this node
+     * @param threadManager      responsible for managing thread lifecycles
+     * @param selfId             the ID of this node
+     * @param swirldStateManager manages states
+     * @param consensusMetrics   metrics relating to consensus
      */
     public PreConsensusEventHandler(
-            @NonNull final Metrics metrics,
+            @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
             @NonNull final SwirldStateManager swirldStateManager,
-            @NonNull final ConsensusMetrics consensusMetrics,
-            @NonNull final ThreadConfig threadConfig) {
-        Objects.requireNonNull(metrics);
+            @NonNull final ConsensusMetrics consensusMetrics) {
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(threadConfig);
 
         this.selfId = Objects.requireNonNull(selfId);
         this.swirldStateManager = Objects.requireNonNull(swirldStateManager);
@@ -108,18 +101,28 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
                 .setThreadName("thread-curr")
                 .setStopBehavior(swirldStateManager.getStopBehavior())
                 .setHandler(swirldStateManager::handlePreConsensusEvent)
-                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
-                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
+                .setLogAfterPauseDuration(platformContext
+                        .getConfiguration()
+                        .getConfigData(ThreadConfig.class)
+                        .logStackTracePauseDuration())
+                .setMetricsConfiguration(
+                        new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .build();
 
         final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(
-                metrics,
+                platformContext.getMetrics(),
                 INTERNAL_CATEGORY,
                 PlatformStatNames.PRE_CONSENSUS_QUEUE_SIZE,
                 "average number of events in the preconsensus queue (q1) waiting to be handled",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
-        metrics.addUpdater(() -> avgQ1PreConsEvents.update(queueThread.size()));
+        platformContext.getMetrics().addUpdater(() -> avgQ1PreConsEvents.update(queueThread.size()));
+
+        // If asynchronous prehandling is enabled, don't prehandle in this class
+        prehandleTransactions = !platformContext
+                .getConfiguration()
+                .getConfigData(EventConfig.class)
+                .asyncPrehandle();
     }
 
     /**
@@ -157,8 +160,10 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
             return;
         }
 
-        // All events are supplied for preHandle
-        swirldStateManager.preHandle(event);
+        if (prehandleTransactions) {
+            // All events are supplied for preHandle
+            swirldStateManager.preHandle(event);
+        }
 
         // some events should not be applied as pre-consensus, so discard them
         if (swirldStateManager.discardPreConsensusEvent(event)) {

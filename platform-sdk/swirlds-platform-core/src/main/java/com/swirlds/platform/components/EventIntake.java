@@ -20,8 +20,11 @@ import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
@@ -38,7 +41,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,15 +74,21 @@ public class EventIntake {
 
     private final Map<NodeId, AtomicLong> unprocessedEvents;
 
+    private final ExecutorService prehandlePool;
+    private final Consumer<EventImpl> prehandleEvent;
+
     /**
      * Constructor
      *
-     * @param selfId                        the ID of this node
-     * @param consensusSupplier             a functor which provides access to the {@code Consensus} interface
-     * @param addressBook                   the current address book
-     * @param dispatcher                    an event observer dispatcher
+     * @param selfId            the ID of this node
+     * @param consensusSupplier a functor which provides access to the {@code Consensus} interface
+     * @param addressBook       the current address book
+     * @param dispatcher        an event observer dispatcher
+     * @param prehandleEvent    prehandles transactions in an event, ignored unless asyncPrehandle is enabled
      */
     public EventIntake(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
             @NonNull final EventLinker eventLinker,
             @NonNull final Supplier<Consensus> consensusSupplier,
@@ -84,7 +96,8 @@ public class EventIntake {
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
-            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents) {
+            @NonNull final Map<NodeId, AtomicLong> unprocessedEvents,
+            @NonNull final Consumer<EventImpl> prehandleEvent) {
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
         this.eventLinker = Objects.requireNonNull(eventLinker, "eventLinker must not be null");
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier, "consensusSupplier must not be null");
@@ -94,6 +107,16 @@ public class EventIntake {
         this.stats = Objects.requireNonNull(stats, "stats must not be null");
         this.shadowGraph = Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
         this.unprocessedEvents = Objects.requireNonNull(unprocessedEvents);
+        this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
+
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+
+        if (eventConfig.asyncPrehandle()) {
+            prehandlePool = Executors.newFixedThreadPool(
+                    eventConfig.prehandlePoolSize(), threadManager.createThreadFactory("platform", "txn-prehandle"));
+        } else {
+            prehandlePool = null;
+        }
     }
 
     /**
@@ -152,6 +175,11 @@ public class EventIntake {
                         event::toMediumString);
             }
         }
+
+        if (prehandlePool != null) {
+            prehandlePool.submit(buildPrehandleTask(event));
+        }
+
         // record the event in the hashgraph, which results in the events in consEvent reaching consensus
         final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
         // #5762 after we calculate roundCreated, se set its value in GossipEvent so that it can be shared with other
@@ -174,6 +202,17 @@ public class EventIntake {
     }
 
     /**
+     * Build a task that will prehandle transactions in an event. Executed on a thread pool.
+     */
+    @NonNull
+    private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
+        return () -> {
+            prehandleEvent.accept(event);
+            event.signalPrehandleCompletion();
+        };
+    }
+
+    /**
      * Notify observer of stale events, of all event in the consensus stale event queue.
      */
     private void handleStale(final long previousNonAncient) {
@@ -192,14 +231,21 @@ public class EventIntake {
     }
 
     /**
-     * Notify observers that an event has reach consensus. Called on a list of events returned from
-     * {@code Consensus.addEvent}.
+     * Notify observers that a round has reach consensus.
      *
      * @param consensusRound the (new) consensus round to be observed
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {
             eventLinker.updateGenerations(consensusRound.getGenerations());
+
+            // If we are asynchronously prehandling transactions, we need to
+            // wait for prehandles to finish before proceeding. It is critically
+            // important that prehandle is always called prior to handleConsensusRound().
+            if (prehandlePool != null) {
+                consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            }
+
             dispatcher.consensusRound(consensusRound);
         }
     }

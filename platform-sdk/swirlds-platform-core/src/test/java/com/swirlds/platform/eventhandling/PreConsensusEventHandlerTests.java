@@ -26,15 +26,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.TestQualifierTags;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -52,7 +50,6 @@ import org.junit.jupiter.api.Test;
 class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
 
     private PreConsensusEventHandler preConsensusEventHandler;
-    private SwirldStateManager swirldStateManager;
 
     @Override
     @BeforeEach
@@ -94,16 +91,11 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         // Set up a separate thread to invoke clear
         final Callable<Void> clear = (ThrowingRunnable) () -> preConsensusEventHandler.clear();
 
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusMetrics,
-                threadConfig);
+                platformContext, getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
 
         final int numEvents = 1000;
         final EventImpl event = mock(EventImpl.class);
@@ -141,16 +133,11 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
     void testEmptyEventsDiscarded() {
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
 
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusMetrics,
-                threadConfig);
+                platformContext, getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
 
         assertDoesNotThrow(
                 () -> preConsensusEventHandler.preConsensusEvent(null),
@@ -171,16 +158,11 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
         when(swirldStateManager.discardPreConsensusEvent(any(EventImpl.class))).thenReturn(true);
 
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusMetrics,
-                threadConfig);
+                platformContext, getStaticThreadManager(), selfId, swirldStateManager, consensusMetrics);
         preConsensusEventHandler.start();
 
         final List<EventImpl> events = createEvents(10, 10, false);

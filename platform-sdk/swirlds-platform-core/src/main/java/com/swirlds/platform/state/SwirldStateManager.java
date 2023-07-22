@@ -43,7 +43,7 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
     void preHandle(final EventImpl event);
 
     /**
-     * Handles an event before it reaches consensus..
+     * Handles an event before it reaches consensus.
      *
      * @param event
      * 		the event to handle
