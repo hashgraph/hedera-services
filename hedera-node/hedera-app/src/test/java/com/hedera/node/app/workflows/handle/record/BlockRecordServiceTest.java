@@ -74,7 +74,9 @@ final class BlockRecordServiceTest {
             doNothing().when(blockInfoState).put(blockInfoCapture.capture());
 
             schema.migrate(migrationContext);
-            assertEquals(new RunningHashes(GENESIS_HASH, null, null, null), runningHashesCapture.getValue());
+            assertEquals(
+                    new RunningHashes(GENESIS_HASH, Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY),
+                    runningHashesCapture.getValue());
             assertEquals(new BlockInfo(0, null, Bytes.EMPTY), blockInfoCapture.getValue());
             return null;
         });

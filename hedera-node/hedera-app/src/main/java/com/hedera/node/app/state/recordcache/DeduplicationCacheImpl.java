@@ -32,8 +32,10 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /** An implementation of {@link DeduplicationCache}. */
+@Singleton
 public final class DeduplicationCacheImpl implements DeduplicationCache {
     /**
      * The {@link TransactionID}s that this node has already submitted to the platform, sorted by transaction start

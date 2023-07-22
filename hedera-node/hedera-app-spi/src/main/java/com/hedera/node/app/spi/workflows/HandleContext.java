@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -196,6 +197,10 @@ public interface HandleContext {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
+
+    /** Gets the {@link RecordCache}. */
+    @NonNull
+    RecordCache recordCache();
 
     /**
      * Get a readable store given the store's interface. This gives read-only access to the store.

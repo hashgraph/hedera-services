@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -169,37 +170,47 @@ public class HandleWorkflow {
             .transactionID(txBody.transactionID())
             .memo(txBody.memo());
 
+        // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
+        switch (preHandleResult.status()) {
+          case SO_FAR_SO_GOOD -> {
+            /* All good nothing to do */
+          }
+          case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
+          case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
+          default -> throw new PreCheckException(preHandleResult.responseCode());
+        }
+
         // Check the payer signature. Whether this is a duplicate transaction or not, we need to have the payer
         // information to proceed. Also perform a solvency check on the account to make sure the account has not
         // been deleted, it does exist, and it has sufficient funds to pay for the transaction. If any of those
-          // things is not true, then we will charge the node instead.
-          final var timeout = hederaConfig.workflowVerificationTimeoutMS();
-          final var maxMillis = instantSource.millis() + timeout;
-          final var payerKeyVerification =
-              preHandleResult.verificationResults().get(preHandleResult.payerKey());
-          if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
-            throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
-          }
+        // things is not true, then we will charge the node instead.
+        final var timeout = hederaConfig.workflowVerificationTimeoutMS();
+        final var maxMillis = instantSource.millis() + timeout;
+        final var payerKeyVerification =
+            preHandleResult.verificationResults().get(preHandleResult.payerKey());
+        if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
+          throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
+        }
 
-          // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
-          // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
-          // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
-          // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
-          // and create an appropriate record to save in state and send to the record stream.
-          final var foundTransactionRecord = hederaRecordCache.getRecord(
-              preHandleResult.txInfo().txBody().transactionID());
+        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+        // and create an appropriate record to save in state and send to the record stream.
+        final var foundTransactionRecord = hederaRecordCache.getRecord(
+            preHandleResult.txInfo().txBody().transactionID());
 
-          if (foundTransactionRecord != null) {
-            // Duplicate code path:
-            // 1. Compute the node+network fees
-            // 2. Create a transaction record
-          } else {
-            for (final var key : preHandleResult.requiredKeys()) {
-              final var remainingMillis = maxMillis - instantSource.millis();
-              if (remainingMillis <= 0) {
-                throw new TimeoutException("Verification of signatures timed out");
-              }
-              final var verification = preHandleResult.verificationResults().get(key);
+        if (foundTransactionRecord != null) {
+          // Duplicate code path:
+          // 1. Compute the node+network fees
+          // 2. Create a transaction record
+        } else {
+          for (final var key : preHandleResult.requiredKeys()) {
+            final var remainingMillis = maxMillis - instantSource.millis();
+            if (remainingMillis <= 0) {
+              throw new TimeoutException("Verification of signatures timed out");
+            }
+            final var verification = preHandleResult.verificationResults().get(key);
               if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
               }
@@ -282,30 +293,33 @@ public class HandleWorkflow {
                 checker,
                 dispatcher,
                 serviceScopeLookup,
-                blockRecordManager);
+                blockRecordManager,
+                hederaRecordCache);
 
-            // Dispatch the transaction to the handler
-            dispatcher.dispatchHandle(context);
-          }
-            // TODO: Finalize transaction with the help of the token service
-
-            // commit state
-            stack.commit();
-        } catch (final PreCheckException e) {
-            recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
-        } catch (final HandleException e) {
-            recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
-        } catch (final InterruptedException e) {
-            logger.error("Interrupted while waiting for signature verification", e);
-          Thread.currentThread().interrupt();
-          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (final TimeoutException e) {
-          logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
-          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (final Throwable e) {
-          logger.error("An unexpected exception was thrown during handle", e);
-          recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+          // Dispatch the transaction to the handler
+          dispatcher.dispatchHandle(context);
         }
+        // TODO: Finalize transaction with the help of the token service
+
+        recordBuilder.status(SUCCESS);
+
+        // commit state
+        stack.commit();
+      } catch (final PreCheckException e) {
+        recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
+      } catch (final HandleException e) {
+        recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
+      } catch (final InterruptedException e) {
+        logger.error("Interrupted while waiting for signature verification", e);
+        Thread.currentThread().interrupt();
+        recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+      } catch (final TimeoutException e) {
+        logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
+        recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+      } catch (final Throwable e) {
+        logger.error("An unexpected exception was thrown during handle", e);
+        recordBuilder.status(ResponseCodeEnum.UNKNOWN);
+      }
 
       // store all records at once
       final var recordListResult = recordListBuilder.build();
@@ -346,7 +360,6 @@ public class HandleWorkflow {
       blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
       // TODO: handle system tasks
-
     }
 
   public void recordFailedTransaction(
@@ -396,15 +409,7 @@ public class HandleWorkflow {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var creator = networkInfo.nodeInfo(platformEvent.getCreatorId().id());
         final var creatorId = creator == null ? null : creator.accountId();
-        final var result = preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
-
-        // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
-        return switch (result.status()) {
-            case SO_FAR_SO_GOOD -> result;
-            case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
-            case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
-            default -> throw new PreCheckException(result.responseCode());
-        };
+      return preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
     }
 
     @NonNull

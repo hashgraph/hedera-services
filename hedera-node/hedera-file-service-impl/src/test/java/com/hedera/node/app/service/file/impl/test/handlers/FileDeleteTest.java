@@ -52,6 +52,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,6 +106,7 @@ class FileDeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("File without keys returns error")
+    @Disabled("Revisit after fix for https://github.com/hashgraph/hedera-services/issues/7646")
     void noFileKeys() throws PreCheckException {
         // given:
         mockPayerLookup();

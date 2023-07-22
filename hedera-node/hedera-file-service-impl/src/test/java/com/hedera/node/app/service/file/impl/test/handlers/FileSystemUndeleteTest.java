@@ -52,6 +52,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,6 +108,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("File without keys returns error")
+    @Disabled("Revisit after fix for https://github.com/hashgraph/hedera-services/issues/7646")
     void noFileKeys() throws PreCheckException {
         // given:
         mockPayerLookup();

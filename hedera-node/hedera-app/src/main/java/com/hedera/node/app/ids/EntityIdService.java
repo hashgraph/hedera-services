@@ -19,7 +19,12 @@ package com.hedera.node.app.ids;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.*;
+import com.hedera.node.app.spi.state.MigrationContext;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.Schema;
+import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -67,7 +72,9 @@ public class EntityIdService implements Service {
             @Override
             public void migrate(@NonNull MigrationContext ctx) {
                 final var entityIdState = ctx.newStates().getSingleton(ENTITY_ID_STATE_KEY);
-                entityIdState.put(new EntityNumber(0));
+                final var config = ctx.configuration().getConfigData(HederaConfig.class);
+                // need -1 because it will be incremented on first use before being read
+                entityIdState.put(new EntityNumber(config.firstUserEntity() - 1));
             }
         });
     }

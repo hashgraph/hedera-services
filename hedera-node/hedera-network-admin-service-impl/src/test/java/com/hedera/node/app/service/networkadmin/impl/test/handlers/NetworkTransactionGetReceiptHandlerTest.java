@@ -35,7 +35,6 @@ import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetReceiptHandler;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
@@ -108,7 +107,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
         final var query = createGetTransactionRecieptQuery(transactionID, false, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();
@@ -124,7 +123,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
         final var query = createGetTransactionRecieptQuery(transactionIDNotInCache, false, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();
@@ -141,7 +140,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
         final var query = createGetTransactionRecieptQuery(transactionID, false, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();
@@ -159,7 +158,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
         final var query = createGetTransactionRecieptQuery(transactionID, true, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();
@@ -181,7 +180,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
 
         final var query = createGetTransactionRecieptQuery(transactionID, false, true);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetReceiptHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetReceiptOrThrow();

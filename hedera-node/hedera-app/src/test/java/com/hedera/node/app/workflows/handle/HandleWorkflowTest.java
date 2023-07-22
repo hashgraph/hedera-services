@@ -68,6 +68,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -195,10 +196,11 @@ class HandleWorkflowTest extends AppTestBase {
         when(configProvider.getConfiguration()).thenReturn(config);
 
         doAnswer(invocation -> {
-                    final var context = invocation.getArgument(0, HandleContext.class);
-                    context.writableStore(WritableAccountStore.class).putAlias(ALICE_ALIAS, ALICE.accountID());
-                    return null;
-                })
+          final var context = invocation.getArgument(0, HandleContext.class);
+          context.writableStore(WritableAccountStore.class)
+              .putAlias(Bytes.wrap(ALICE_ALIAS), ALICE.accountID());
+          return null;
+        })
                 .when(dispatcher)
                 .dispatchHandle(any());
 
@@ -379,21 +381,86 @@ class HandleWorkflowTest extends AppTestBase {
             instantSource,
             null,
             solvencyPreCheck))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        preHandleWorkflow,
-                        dispatcher,
-                        recordManager,
-                        signatureExpander,
-                        signatureVerifier,
-                        checker,
-                        serviceLookup,
-                        configProvider,
-                        instantSource,
-                        hederaRecordCache,
-                        null))
-                .isInstanceOf(NullPointerException.class);
+            .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          null,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          recordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          null,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          recordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          null,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          recordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          null,
+          configProvider,
+          instantSource,
+          recordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          null,
+          instantSource,
+          recordCache))
+          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> new HandleWorkflow(
+          networkInfo,
+          preHandleWorkflow,
+          dispatcher,
+          blockRecordManager,
+          signatureExpander,
+          signatureVerifier,
+          checker,
+          serviceLookup,
+          configProvider,
+          instantSource,
+          hederaRecordCache,
+          null))
+          .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -422,7 +489,7 @@ class HandleWorkflowTest extends AppTestBase {
         workflow.handleRound(state, round);
 
         // then
-        final var alice = aliasesState.get(ALICE_ALIAS);
+      final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
         assertThat(alice).isNotNull();
         assertThat(alice.accountNum()).isEqualTo(ALICE.account().accountNumber());
         assertThat(alice).isEqualTo(ALICE.account().accountId());
@@ -520,7 +587,7 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, round);
 
             // then
-            final var alice = aliasesState.get(ALICE_ALIAS);
+          final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
             assertThat(alice).isNotNull();
             assertThat(alice).isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
