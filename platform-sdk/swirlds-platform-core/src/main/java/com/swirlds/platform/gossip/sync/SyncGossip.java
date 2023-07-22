@@ -210,7 +210,7 @@ public class SyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(platformContext);
+        syncPermitProvider = new SyncPermitProvider(platformContext, intakeQueue::size);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -305,7 +305,7 @@ public class SyncGossip extends AbstractGossip {
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
         abortAndThrowIfInterrupted(
-                syncPermitProvider::waitForAllSyncsToFinish, "interrupted while waiting for syncs to finish");
+                syncPermitProvider::acquireAndReleaseAll, "interrupted while waiting for syncs to finish");
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
         }
@@ -383,7 +383,7 @@ public class SyncGossip extends AbstractGossip {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
         Uninterruptable.abortAndThrowIfInterrupted(
-                syncPermitProvider::waitForAllSyncsToFinish, "interrupted while attempting to pause");
+                syncPermitProvider::acquireAndReleaseAll, "interrupted while attempting to pause");
     }
 
     /**

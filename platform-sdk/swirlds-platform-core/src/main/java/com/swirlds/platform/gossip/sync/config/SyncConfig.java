@@ -25,6 +25,11 @@ import com.swirlds.config.api.ConfigProperty;
  * @param syncAsProtocolEnabled           if true, perform the sync gossip algorithm as a negotiated protocol using
  *                                        bidirectional connections.
  * @param ingestThrottlingEnabled         if true, use ingest throttling (sync as protocol only, ignored otherwise)
+ * @param permitSuspensionEnabled         if true, use permit suspension (sync as protocol only, ignored otherwise)
+ * @param lowerIntakeQueueThreshold       the lower threshold for the intake queue size before permit suspension is
+ *                                        used
+ * @param upperIntakeQueueThreshold       the threshold size of the intake queue where all permits possible are suspended
+ * @param unsuspendablePermitCount        the number of permits that are never suspended
  * @param syncSleepAfterFailedNegotiation the number of milliseconds to sleep after a failed negotiation when running
  *                                        the sync-as-a-protocol algorithm
  * @param syncProtocolPermitCount         the number of permits to use when running the sync-as-a-protocol algorithm
@@ -47,11 +52,15 @@ import com.swirlds.config.api.ConfigProperty;
 public record SyncConfig(
         @ConfigProperty(defaultValue = "true") boolean syncAsProtocolEnabled,
         @ConfigProperty(defaultValue = "true") boolean ingestThrottlingEnabled,
-        @ConfigProperty(defaultValue = "true") boolean permitSnarfingEnabled,
+        @ConfigProperty(defaultValue = "true") boolean permitSuspensionEnabled,
+        @ConfigProperty(defaultValue = "100") int lowerIntakeQueueThreshold,
+        @ConfigProperty(defaultValue = "1000") int upperIntakeQueueThreshold,
+        @ConfigProperty(defaultValue = "0") int unsuspendablePermitCount,
         @ConfigProperty(defaultValue = "25") int syncSleepAfterFailedNegotiation,
         @ConfigProperty(defaultValue = "17") int syncProtocolPermitCount,
         @ConfigProperty(defaultValue = "1000") int syncProtocolHeartbeatPeriod,
         @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
-        @ConfigProperty(defaultValue = "50") long sleepCallerSkips) {}
+        @ConfigProperty(defaultValue = "50") long sleepCallerSkips) {
+}

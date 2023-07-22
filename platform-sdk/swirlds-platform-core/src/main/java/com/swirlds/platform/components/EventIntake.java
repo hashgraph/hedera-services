@@ -19,6 +19,7 @@ package com.swirlds.platform.components;
 import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;

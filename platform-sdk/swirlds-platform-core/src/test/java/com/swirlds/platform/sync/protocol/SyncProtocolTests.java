@@ -76,7 +76,7 @@ class SyncProtocolTests {
                         .getOrCreateConfig())
                 .build();
 
-        permitProvider = new SyncPermitProvider(platformContext);
+        permitProvider = new SyncPermitProvider(platformContext, () -> 0);
         criticalQuorum = mock(CriticalQuorum.class);
         sleepAfterSync = Duration.ofMillis(0);
         syncMetrics = mock(SyncMetrics.class);
@@ -112,15 +112,15 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
     }
 
     @Test
     @DisplayName("Protocol won't initiate connection if cooldown isn't complete")
     void initiateCooldown() {
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         final SyncProtocol protocol = new SyncProtocol(
                 peerId,
@@ -137,25 +137,25 @@ class SyncProtocolTests {
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         // no time has passed since the previous protocol
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         // tick part of the way through the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         // tick past the end of the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
     }
 
     // TODO
@@ -204,9 +204,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -228,9 +228,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -253,9 +253,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertFalse(protocol.shouldInitiate());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -278,9 +278,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -300,9 +300,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
     }
 
     // TODO
@@ -335,7 +335,7 @@ class SyncProtocolTests {
     @Test
     @DisplayName("Protocol won't accept connection if cooldown isn't complete")
     void acceptCooldown() {
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         final SyncProtocol protocol = new SyncProtocol(
                 peerId,
@@ -352,25 +352,25 @@ class SyncProtocolTests {
 
         // do an initial sync, so we can verify that the resulting cooldown period is respected
         assertTrue(protocol.shouldAccept());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         // no time has passed since the previous protocol
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         // tick part of the way through the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
 
         // tick past the end of the cooldown period
         time.tick(Duration.ofMillis(55));
 
         assertTrue(protocol.shouldAccept());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
     }
 
     // TODO
@@ -421,9 +421,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -445,9 +445,9 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertFalse(protocol.shouldAccept());
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -466,11 +466,11 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertTrue(protocol.shouldAccept());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
         protocol.acceptFailed();
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -489,11 +489,11 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         assertTrue(protocol.shouldInitiate());
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
         protocol.initiateFailed();
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -512,11 +512,11 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         protocol.shouldInitiate();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -535,11 +535,11 @@ class SyncProtocolTests {
                 false,
                 new AtomicLong());
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
         assertDoesNotThrow(() -> protocol.runProtocol(mock(Connection.class)));
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -582,13 +582,13 @@ class SyncProtocolTests {
         Mockito.when(shadowGraphSynchronizer.synchronize(any()))
                 .thenThrow(new ParallelExecutionException(mock(Throwable.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -612,13 +612,13 @@ class SyncProtocolTests {
         Mockito.when(shadowGraphSynchronizer.synchronize(any()))
                 .thenThrow(new ParallelExecutionException(new IOException()));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
 
         assertThrows(IOException.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test
@@ -640,13 +640,13 @@ class SyncProtocolTests {
         // mock synchronize to throw a SyncException
         Mockito.when(shadowGraphSynchronizer.synchronize(any())).thenThrow(new SyncException(""));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
         protocol.shouldAccept();
-        assertEquals(1, permitProvider.getNumAvailable());
+        assertEquals(1, permitProvider.getAvailablePermitCount());
 
         assertThrows(NetworkProtocolException.class, () -> protocol.runProtocol(mock(Connection.class)));
 
-        assertEquals(2, permitProvider.getNumAvailable());
+        assertEquals(2, permitProvider.getAvailablePermitCount());
     }
 
     @Test

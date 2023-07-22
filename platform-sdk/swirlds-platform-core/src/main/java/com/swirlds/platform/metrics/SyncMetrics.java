@@ -42,12 +42,6 @@ import java.time.temporal.ChronoUnit;
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
-    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "syncPermitsAvailable")
-            .withDescription("number of sync permits available")
-            .withFormat(FORMAT_16_2);
-    private final RunningAverageMetric permitsAvailable;
-
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes/sec_sync")
             .withDescription("average number of bytes per second transferred during a sync")
@@ -216,8 +210,6 @@ public class SyncMetrics {
                 "the average number of generations waiting to be expired",
                 FORMAT_5_3,
                 AverageStat.WEIGHT_VOLATILE);
-
-        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
@@ -335,15 +327,6 @@ public class SyncMetrics {
      */
     public void updateGensWaitingForExpiry(final long numGenerations) {
         gensWaitingForExpiry.update(numGenerations);
-    }
-
-    /**
-     * Updates the number of permits available for syncs
-     *
-     * @param permits the number of permits available
-     */
-    public void updateSyncPermitsAvailable(final int permits) { // TODO move this
-        permitsAvailable.update(permits);
     }
 
     /**
