@@ -16,32 +16,11 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
-import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
-import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
-import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_DELIMITED;
-
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.collections.IndexedObject;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * The aim for a DataFileReader is to facilitate fast highly concurrent random reading of items from
@@ -50,81 +29,16 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * @param <D> Data item type
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
-// Future work: make it final again after DataFileReaderJdb is dropped
-public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
-    private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 16;
-    private static final long MAX_FILE_SIZE = 32L * 1024 * 1024 * 1024;
-    /** FileChannel's for each thread */
-    private static final ThreadLocal<BufferedData> BUFFER_CACHE = new ThreadLocal<>();
-    /**
-     */
-    private FileChannel fileChannel;
+public interface DataFileReader<D> extends AutoCloseable, Comparable<DataFileReader<D>>, IndexedObject {
 
-    private final AtomicReferenceArray<MappedByteBuffer> readingMmaps =
-            new AtomicReferenceArray<>(Math.toIntExact(MAX_FILE_SIZE / MMAP_BUF_SIZE * 2));
-    private final AtomicReferenceArray<BufferedData> readingBufs =
-            new AtomicReferenceArray<>(Math.toIntExact(MAX_FILE_SIZE / MMAP_BUF_SIZE * 2));
-
-    private final List<MappedByteBuffer> mmapsToClean = Collections.synchronizedList(new ArrayList<>());
-
-    /** Indicates whether this file reader is open */
-    private final AtomicBoolean open = new AtomicBoolean(true);
-    /** The path to the file on disk */
-    // Future work: make it back private
-    protected final Path path;
-    /** The metadata for this file read from the footer */
-    // Future work: make it back private
-    protected final DataFileMetadata metadata;
-    /** Serializer for converting raw data to/from data items */
-    // Future work: make it back private
-    protected final DataItemSerializer<D> dataItemSerializer;
-    /** A flag for if the underlying file is fully written and ready to be compacted. */
-    private final AtomicBoolean fileCompleted = new AtomicBoolean(false);
-    /**
-     * The size of this file in bytes, cached as need it often. This size is updated in {@link
-     * #setFileCompleted()}, which is called for existing files right after the reader is created,
-     * and for newly created files right after they are fully written and available to compact.
-     */
-    private final AtomicLong fileSizeBytes = new AtomicLong(0);
-
-    /**
-     * Open an existing data file, reading the metadata from the file
-     *
-     * @param path the path to the data file
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
-     */
-    public DataFileReader(final Path path, final DataItemSerializer<D> dataItemSerializer) throws IOException {
-        this(path, dataItemSerializer, new DataFileMetadata(path));
-    }
-
-    /**
-     * Open an existing data file, using the provided metadata
-     *
-     * @param path the path to the data file
-     * @param dataItemSerializer Serializer for converting raw data to/from data items
-     * @param metadata the file's metadata to save loading from file
-     */
-    public DataFileReader(
-            final Path path, final DataItemSerializer<D> dataItemSerializer, final DataFileMetadata metadata)
-            throws IOException {
-        if (!Files.exists(path)) {
-            throw new IllegalArgumentException(
-                    "Tried to open a non existent data file [" + path.toAbsolutePath() + "].");
-        }
-        this.path = path;
-        this.metadata = metadata;
-        this.dataItemSerializer = dataItemSerializer;
-        openNewFileChannel();
-    }
+    DataFileType getFileType();
 
     /**
      * Returns if this file is completed and ready to be compacted.
      *
      * @return if true the file is completed (read only and ready to compact)
      */
-    public boolean isFileCompleted() {
-        return fileCompleted.get();
-    }
+    boolean isFileCompleted();
 
     /**
      * Marks the reader as completed, so it can be included into future compactions. If the reader
@@ -132,35 +46,22 @@ public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileRead
      * is created for a new file, which is still being written in a different thread, it's marked as
      * completed right after the file is fully written and the writer is closed.
      */
-    public void setFileCompleted() {
-        try {
-            fileSizeBytes.set(fileChannel.size());
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to update data file reader size", e);
-        } finally {
-            fileCompleted.set(true);
-        }
-    }
+    void setFileCompleted();
+
+    /** Get the path to this data file */
+    Path getPath();
 
     /**
      * Get file index, the index is an ordered integer identifying the file in a set of files
      *
      * @return this file's index
      */
-    @Override
-    public int getIndex() {
-        return metadata.getIndex();
+    default int getIndex() {
+        return getMetadata().getIndex();
     }
 
     /** Get the files metadata */
-    public DataFileMetadata getMetadata() {
-        return metadata;
-    }
-
-    /** Get the path to this data file */
-    public Path getPath() {
-        return path;
-    }
+    DataFileMetadata getMetadata();
 
     /**
      * Create an iterator to iterate over the data items in this data file. It opens its own file
@@ -170,9 +71,7 @@ public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileRead
      * @return new data item iterator
      * @throws IOException if there was a problem creating a new DataFileIterator
      */
-    public DataFileIterator createIterator() throws IOException {
-        return new DataFileIterator(path, metadata, dataItemSerializer);
-    }
+    DataFileIterator createIterator() throws IOException;
 
     /**
      * Read data item bytes from file at dataLocation and deserialize them into the Java object, if
@@ -184,17 +83,20 @@ public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileRead
      * @throws IOException If there was a problem reading from data file
      * @throws ClosedChannelException if the data file was closed
      */
-    public D readDataItem(final long dataLocation) throws IOException {
-        final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
-        final BufferedData data = read(byteOffset);
-        return dataItemSerializer.deserialize(data);
-    }
+    D readDataItem(final long dataLocation) throws IOException;
 
-    public BufferedData readProtoBytes(final long dataLocation) throws IOException {
-        final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
-//        return read(byteOffset, true);
-        return read(byteOffset);
-    }
+    /**
+     * Reads raw data item bytes for the item at the given location. This raw data can be used
+     * to fast copy item contents from a file reader to a compatible file writer.
+     *
+     * This method may return null. In this case, to copy the item, it must be read and deserialized
+     * using {@link #readDataItem(long)} and then written using {@link DataFileWriter#storeDataItem(Object)}.
+     *
+     * @param dataLocation data item location (file index + offset)
+     * @return data item bytes, or null if this reader doesn't support reading raw bytes
+     * @throws IOException if an I/O error occurred
+     */
+    Object readDataItemBytes(final long dataLocation) throws IOException;
 
     /**
      * Get the size of this file in bytes. This method should only be called for files available to
@@ -202,148 +104,16 @@ public class DataFileReader<D> implements AutoCloseable, Comparable<DataFileRead
      *
      * @return file size in bytes
      */
-    public long getSize() {
-        return fileSizeBytes.get();
-    }
-
-    /** Equals for use when comparing in collections, based on matching file paths */
-    @SuppressWarnings("rawtypes")
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final DataFileReader that = (DataFileReader) o;
-        return path.equals(that.path);
-    }
-
-    /** hashCode for use when comparing in collections, based on file path */
-    @Override
-    public int hashCode() {
-        return path.hashCode();
-    }
-
-    /** Compares this Data File to another based on creation date and index */
-    @Override
-    public int compareTo(final DataFileReader o) {
-        Objects.requireNonNull(o);
-        if (this == o) {
-            return 0;
-        }
-        final int res = metadata.getCreationDate().compareTo(o.getMetadata().getCreationDate());
-        return (res != 0)
-                ? res
-                : Integer.compare(metadata.getIndex(), o.getMetadata().getIndex());
-    }
-
-    /** ToString for debugging */
-    @Override
-    public String toString() {
-        return Integer.toString(metadata.getIndex());
-    }
+    long getSize();
 
     /**
      * Get if the DataFile is open for reading.
      *
      * @return True if file is open for reading
      */
-    public boolean isOpen() {
-        return open.get();
-    }
+    boolean isOpen();
 
-    /** Close this data file, it can not be used once closed. */
-    public void close() throws IOException {
-        open.set(false);
-        fileChannel.close();
-        for (final MappedByteBuffer mmap : mmapsToClean) {
-            DataFileCommon.closeMmapBuffer(mmap);
-        }
-    }
-
-    // =================================================================================================================
-    // Private methods
-
-    private BufferedData getReadBuffer(final int index) throws IOException {
-        final long bufOffset = (long) index * (MMAP_BUF_SIZE / 2);
-        final long bufSize = Math.min(MMAP_BUF_SIZE, fileChannel.size() - bufOffset);
-        MappedByteBuffer buf = readingMmaps.get(index);
-        if ((buf == null) || (buf.capacity() < bufSize)) {
-            final MappedByteBuffer newBuf = fileChannel.map(MapMode.READ_ONLY, bufOffset, bufSize);
-            if (readingMmaps.compareAndSet(index, buf, newBuf)) {
-                mmapsToClean.add(newBuf);
-                buf = newBuf;
-            } else {
-                DataFileCommon.closeMmapBuffer(newBuf);
-                buf = readingMmaps.get(index);
-            }
-        }
-        BufferedData readBuf = readingBufs.get(index);
-        if ((readBuf == null) || (readBuf.capacity() != buf.capacity())) {
-            final BufferedData newReadBuf = BufferedData.wrap(buf);
-            if (readingBufs.compareAndSet(index, readBuf, newReadBuf)) {
-                readBuf = newReadBuf;
-            } else {
-                readBuf = readingBufs.get(index);
-            }
-        }
-        return readBuf;
-    }
-
-    private void openNewFileChannel() throws IOException {
-        assert (fileChannel == null) || !fileChannel.isOpen();
-        fileChannel = FileChannel.open(path, StandardOpenOption.READ);
-    }
-
-    /**
-     * Read bytesToRead bytes of data from the file starting at byteOffsetInFile unless we reach the
-     * end of file. If we reach the end of file then returned buffer's limit will be set to the
-     * number of bytes read and be less than bytesToRead.
-     *
-     * @param byteOffsetInFile Offset to start reading at
-     * @return ByteBuffer containing read data. This is a reused per thread buffer, so you can use
-     *     it till your thread calls read again.
-     * @throws IOException if there was a problem reading
-     * @throws ClosedChannelException if the file was closed
-     */
-    private BufferedData read(final long byteOffsetInFile) throws IOException {
-        final int bufIndex = Math.toIntExact(byteOffsetInFile / (MMAP_BUF_SIZE / 2));
-        // Try a few times. It's very unlikely (other than in tests) that a thread is
-        // interrupted more than once in short period of time, so 2 retries should be enough
-        final long mmapOffset = (long) bufIndex * (MMAP_BUF_SIZE / 2);
-        for (int retries = 2; retries > 0; retries--) {
-            try {
-                final BufferedData in = getReadBuffer(bufIndex);
-                final int tag = in.getVarInt(byteOffsetInFile - mmapOffset, false); // tag
-                assert tag == ((FIELD_DATAFILE_ITEMS.number() << TAG_FIELD_OFFSET) | WIRE_TYPE_DELIMITED);
-                final int sizeOfTag = ProtoUtils.sizeOfUnsignedVarInt32(tag);
-                final int size = in.getVarInt(byteOffsetInFile + sizeOfTag - mmapOffset, false);
-                if (size >= MMAP_BUF_SIZE / 2) {
-                    throw new UnsupportedOperationException("Data item is too large");
-                }
-                final int sizeOfSize = ProtoUtils.sizeOfUnsignedVarInt32(size);
-                BufferedData buf = BUFFER_CACHE.get();
-                if ((buf == null) || (buf.capacity() < size)) {
-                    buf = BufferedData.allocate(size);
-                    BUFFER_CACHE.set(buf);
-                }
-                buf.position(0);
-                buf.limit(size);
-                in.getBytes(byteOffsetInFile + sizeOfTag + sizeOfSize - mmapOffset, buf);
-//                buf.flip(); // TODO: why isn't buf position updated?
-                return buf;
-            } catch (final ClosedByInterruptException e) {
-                // If the thread and the channel are interrupted, propagate it to the callers
-                throw e;
-            } catch (final ClosedChannelException e) {
-                // This exception may be thrown, if the channel was closed, because a different
-                // thread reading from the channel was interrupted. Re-create the file channel
-                // and retry
-                openNewFileChannel();
-            }
-        }
-        throw new IOException("Failed to read from file, file channel keeps getting closed");
-    }
+    /** {@inheritDoc} */
+    @Override
+    void close() throws IOException;
 }

@@ -26,6 +26,7 @@ import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -62,6 +63,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -369,7 +371,15 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 loadedDataCallback = (path, dataLocation, keyValueData) -> {
                     // read key from keyValueData, as we are in isLongKeyMode mode then
                     // the key is a single long
-                    final long key = keyValueData.getLong(0);
+                    final long key;
+                    // This is ugly, but hopefully we'll be able to drop this code altogether soon
+                    if (keyValueData instanceof BufferedData keyValueBufferedData) {
+                        key = keyValueBufferedData.getLong(0);
+                    } else if (keyValueData instanceof ByteBuffer keyValueByteBuffer) {
+                        key = keyValueByteBuffer.getLong(0);
+                    } else {
+                        throw new RuntimeException("Unknown keyValueData type");
+                    }
                     // update index
                     longKeyToPath.put(key, path);
                 };

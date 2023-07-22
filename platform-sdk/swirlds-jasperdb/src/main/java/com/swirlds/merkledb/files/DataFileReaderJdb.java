@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  */
 @SuppressWarnings({"DuplicatedCode", "NullableProblems"})
 // Future work: drop this class after all files are migrated to protobuf format
-public class DataFileReaderJdb<D> extends DataFileReader<D> {
+public class DataFileReaderJdb<D> extends DataFileReaderPbj<D> {
 
     /** FileChannel's for each thread */
     private static final ThreadLocal<ByteBuffer> BUFFER_CACHE = new ThreadLocal<>();
@@ -88,6 +88,11 @@ public class DataFileReaderJdb<D> extends DataFileReader<D> {
         openNewFileChannel(0);
     }
 
+    @Override
+    public DataFileType getFileType() {
+        return DataFileType.JDB;
+    }
+
     /**
      * Create an iterator to iterate over the data items in this data file. It opens its own file
      * handle so can be used in a separate thread. It must therefore be closed when you are finished
@@ -95,8 +100,8 @@ public class DataFileReaderJdb<D> extends DataFileReader<D> {
      *
      * @return new data item iterator
      */
-    public DataFileIterator createIterator() {
-        throw new UnsupportedOperationException("Should never be called");
+    public DataFileIterator createIterator() throws IOException {
+        return new DataFileIteratorJdb(path, metadata, dataItemSerializer);
     }
 
     /**
@@ -111,12 +116,13 @@ public class DataFileReaderJdb<D> extends DataFileReader<D> {
      */
     public D readDataItem(final long dataLocation) throws IOException {
         long serializationVersion = metadata.getSerializationVersion();
-        final ByteBuffer data = readDataItemBytes(dataLocation);
+        final ByteBuffer data = (ByteBuffer) readDataItemBytes(dataLocation);
         return dataItemSerializer.deserialize(data, serializationVersion);
     }
 
-    private ByteBuffer readDataItemBytes(final long dataLocation) throws IOException {
-        final long serializationVersion = metadata.getSerializationVersion();
+    @Override
+    public Object readDataItemBytes(final long dataLocation) throws IOException {
+        long serializationVersion = metadata.getSerializationVersion();
         final long byteOffset = DataFileCommon.byteOffsetFromDataLocation(dataLocation);
         final int bytesToRead;
         if (dataItemSerializer.isVariableSize()) {
@@ -128,10 +134,6 @@ public class DataFileReaderJdb<D> extends DataFileReader<D> {
             bytesToRead = dataItemSerializer.getSerializedSizeForVersion(serializationVersion);
         }
         return read(byteOffset, bytesToRead);
-    }
-
-    public BufferedData readProtoBytes(final long dataLocation) throws IOException {
-        return null; // indicates "not supported"
     }
 
     /** Close this data file, it can not be used once closed. */

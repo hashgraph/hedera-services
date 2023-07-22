@@ -19,6 +19,7 @@ package com.swirlds.merkledb.files;
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -47,7 +48,7 @@ import sun.misc.Unsafe;
  * @param <D> Data item type
  */
 // Future work: remove this class after JDB format support is no longer needed
-public final class DataFileWriterJdb<D> extends DataFileWriter<D> {
+public final class DataFileWriterJdb<D> extends DataFileWriterPbj<D> {
 
     /** Mapped buffer size */
     private static final int MMAP_BUF_SIZE = PAGE_SIZE * 1024 * 4;
@@ -101,13 +102,54 @@ public final class DataFileWriterJdb<D> extends DataFileWriter<D> {
         // no op
     }
 
+    @Override
+    public DataFileType getFileType() {
+        return DataFileType.JDB;
+    }
+
     /**
      * Get file metadata for the written file.
      *
      * @return data file metadata
      */
-    public DataFileMetadata getMetadata() {
+    public DataFileMetadataJdb getMetadata() {
+        // return this.metadata, not super.metadata
         return metadata;
+    }
+
+    @Override
+    public synchronized long writeCopiedDataItem(final Object dataItemData)
+            throws IOException {
+        if (!(dataItemData instanceof ByteBuffer jdbData)) {
+            throw new IllegalArgumentException("Data item data buffer type mismatch");
+        }
+        // capture the current write position for beginning of data item
+        final int currentWritingMmapPos = writingMmap.position();
+        final long byteOffset = mmapPositionInFile + currentWritingMmapPos;
+        // capture the current read position in the data item data buffer
+        final int currentDataItemPos = jdbData.position();
+        try {
+            writingMmap.put(jdbData);
+        } catch (final BufferOverflowException e) {
+            // Buffer overflow indicates the current writing mapped byte buffer needs to be
+            // mapped to a new location
+            moveMmapBuffer(currentWritingMmapPos);
+            // Reset dataItemData buffer position and retry
+            jdbData.position(currentDataItemPos);
+            try {
+                writingMmap.put(jdbData);
+            } catch (final BufferOverflowException t) {
+                // If still a buffer overflow, it means the mapped buffer is smaller than even a single
+                // data item
+                throw new IOException(
+                        "Data item is too large to write to a data file. Increase data file"
+                                + "mapped byte buffer size",
+                        e);
+            }
+        }
+        dataItemCount++;
+        // return the offset where we wrote the data
+        return DataFileCommon.dataLocation(metadata.getIndex(), byteOffset);
     }
 
     /**

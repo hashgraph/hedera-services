@@ -104,6 +104,8 @@ import java.time.temporal.ChronoUnit;
  * @param leafRecordCacheSize
  *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB config.
  *      If the value is zero, leaf records cache isn't used.
+ * @param usePbj
+ *      If true, use PBJ format for new (flushed) and compacted data files, otherwise use JDB.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
@@ -129,7 +131,8 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
         @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
-        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize,
+        @ConfigProperty(defaultValue = "true") boolean usePbj) {
 
     static double UNIT_FRACTION_PERCENT = 100.0;
 

@@ -16,10 +16,7 @@
 
 package com.swirlds.merkledb.serialize;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface DataItemSerializer<D> extends BaseSerializer<D> {

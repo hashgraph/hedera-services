@@ -72,7 +72,7 @@ public class DataFileReaderHammerTest {
         final Random rand = new Random();
         final DataFileMetadata metadata = new DataFileMetadata(itemCount, 0, Instant.now(), 0);
         final DataFileReader<byte[]> dataReader =
-                new DataFileReader<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
+                new DataFileReaderPbj<>(tempFile, new TestDataItemSerializer(itemSize), metadata);
         final AtomicInteger activeReaders = new AtomicInteger(readerThreads);
         final AtomicReferenceArray<Thread> threads = new AtomicReferenceArray<>(readerThreads);
         final Future<?>[] jobs = new Future[readerThreads];

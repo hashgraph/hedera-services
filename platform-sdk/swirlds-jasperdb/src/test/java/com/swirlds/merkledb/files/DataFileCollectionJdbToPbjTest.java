@@ -4,23 +4,32 @@ import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.checkData;
 import static com.swirlds.merkledb.files.DataFileCollectionTestUtils.getVariableSizeDataForI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.LongListHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * A set of tests to check JDB (old binary format) to PBJ (new protobuf compatible format)
  * migration for data file collections.
  */
 public class DataFileCollectionJdbToPbjTest {
+
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     private final static String STORE_NAME = "test";
 
@@ -129,9 +138,9 @@ public class DataFileCollectionJdbToPbjTest {
     }
 
     @ParameterizedTest
-    @EnumSource(FilesTestType.class)
+    @MethodSource("fileTypeAndBooleanParams")
     @DisplayName("Write a mix of JDB and PBJ files, merge")
-    void writeMixMergeTest(final FilesTestType testType) throws IOException, InterruptedException {
+    void writeMixMergeTest(final FilesTestType testType, final boolean usePbj) throws IOException, InterruptedException {
         final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeMixMergeTest");
         final Path testDir = dir.resolve(testType.name());
 
@@ -142,7 +151,7 @@ public class DataFileCollectionJdbToPbjTest {
         final DataFileCollection<long[]> fileCollection = dataFileCollection(
                 testDir, testType, FILES, count, COUNT_INC, index, i -> i % 2 != 0);
 
-        fileCollection.compactFiles(index, fileCollection.getAllCompletedFiles());
+        fileCollection.compactFiles(index, fileCollection.getAllCompletedFiles(), usePbj);
         assertEquals(1, fileCollection.getNumOfFiles());
         checkData(fileCollection, index, testType, 0, FILES * COUNT_INC, VALUE_ADDITION);
 
@@ -153,9 +162,9 @@ public class DataFileCollectionJdbToPbjTest {
     }
 
     @ParameterizedTest
-    @EnumSource(FilesTestType.class)
+    @MethodSource("fileTypeAndBooleanParams")
     @DisplayName("Write a mix of JDB and PBJ files, merge, write more PBJ files")
-    void writeMixMergeWritePbjTest(final FilesTestType testType) throws IOException, InterruptedException {
+    void writeMixMergeWritePbjTest(final FilesTestType testType, final boolean usePbj) throws IOException, InterruptedException {
         final Path dir = TemporaryFileBuilder.buildTemporaryDirectory("writeMixMergeWritePbjTest");
         final Path testDir = dir.resolve(testType.name());
 
@@ -166,7 +175,7 @@ public class DataFileCollectionJdbToPbjTest {
         final DataFileCollection<long[]> fileCollection = dataFileCollection(
                 testDir, testType, FILES, count, COUNT_INC, index, i -> i % 2 != 0);
 
-        fileCollection.compactFiles(index, fileCollection.getAllCompletedFiles());
+        fileCollection.compactFiles(index, fileCollection.getAllCompletedFiles(), usePbj);
         assertEquals(1, fileCollection.getNumOfFiles());
 
         final DataFileCollection<long[]> fileCollection2 = dataFileCollection(
@@ -178,5 +187,14 @@ public class DataFileCollectionJdbToPbjTest {
                 dir.resolve(testType.name()), STORE_NAME, testType.dataItemSerializer, null);
         assertEquals(1 + FILES, newCollection.getNumOfFiles());
         checkData(newCollection, index, testType, 0, FILES * COUNT_INC * 2, VALUE_ADDITION);
+    }
+
+    static Stream<Arguments> fileTypeAndBooleanParams() {
+        final List<Arguments> args = new ArrayList<>();
+        for (final FilesTestType filesTestType : FilesTestType.values()) {
+            args.add(Arguments.of(filesTestType, false));
+            args.add(Arguments.of(filesTestType, true));
+        }
+        return args.stream();
     }
 }

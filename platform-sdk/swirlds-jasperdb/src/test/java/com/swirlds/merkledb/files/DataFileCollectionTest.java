@@ -678,10 +678,10 @@ class DataFileCollectionTest {
 
     private static class LoadedDataCallbackImpl implements DataFileCollection.LoadedDataCallback {
         public final Map<Long, Long> dataLocationMap = new HashMap<>();
-        public final Map<Long, BufferedData> dataValueMap = new HashMap<>();
+        public final Map<Long, Object> dataValueMap = new HashMap<>();
 
         @Override
-        public void newIndexEntry(final long key, final long dataLocation, final BufferedData dataValue) {
+        public void newIndexEntry(final long key, final long dataLocation, final Object dataValue) {
             dataLocationMap.put(key, dataLocation);
             dataValueMap.put(key, dataValue);
         }

@@ -27,13 +27,14 @@ import static com.swirlds.merkledb.files.DataFileCommon.isFullyWrittenDataFile;
 import static java.util.Collections.singletonList;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectList;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
-import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingMap;
 import com.swirlds.merkledb.collections.LongList;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.DataInputStream;
@@ -80,7 +81,10 @@ import org.apache.logging.log4j.Logger;
  */
 @SuppressWarnings({"unused", "unchecked"})
 public class DataFileCollection<D> implements Snapshotable {
+
     private static final Logger logger = LogManager.getLogger(DataFileCollection.class);
+
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /**
      * Maximum number of data items that can be in a data file. This is dictated by the maximum size
@@ -163,6 +167,8 @@ public class DataFileCollection<D> implements Snapshotable {
 
     /** Start time of the current compaction, or null if compaction isn't running */
     private final AtomicReference<Instant> currentCompactionStartTime = new AtomicReference<>();
+    /** Indicates whether to use PBJ for current compaction */
+    private final AtomicBoolean currentCompactionUsePbj = new AtomicBoolean();
     /**
      * Current data file writer during compaction, or null if compaction isn't running. The writer
      * is created at compaction start. If compaction is interrupted by a snapshot, the writer is
@@ -384,6 +390,13 @@ public class DataFileCollection<D> implements Snapshotable {
     public synchronized List<Path> compactFiles(
             final CASableLongIndex index, final List<DataFileReader<D>> filesToMerge)
             throws IOException, InterruptedException {
+        return compactFiles(index, filesToMerge, config.usePbj());
+    }
+
+    // For testing purposes
+    synchronized List<Path> compactFiles(
+            final CASableLongIndex index, final List<DataFileReader<D>> filesToMerge, final boolean usePbj)
+            throws IOException, InterruptedException {
         if (filesToMerge.size() < 2) {
             // nothing to do we have merged since the last data update
             logger.debug(MERKLE_DB.getMarker(), "No files were available for merging [{}]", storeName);
@@ -398,6 +411,7 @@ public class DataFileCollection<D> implements Snapshotable {
                 .get();
         snapshotCompactionLock.acquire();
         try {
+            currentCompactionUsePbj.set(usePbj);
             currentCompactionStartTime.set(startTime);
             newCompactedFiles.clear();
             startNewCompactionFile();
@@ -444,12 +458,16 @@ public class DataFileCollection<D> implements Snapshotable {
                 snapshotCompactionLock.acquire();
                 try {
                     final DataFileWriter<D> newFileWriter = currentCompactionWriter.get();
-                    final long newLocation;
-                    final BufferedData itemBytes = reader.readProtoBytes(fileOffset);
-                    if (itemBytes != null) {
-                        newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
-                    } else {
-                        // Future work: once JDB format is dropped, itemBytes must never be null
+                    long newLocation = -1;
+                    // Check if reader and writer are compatible
+                    if (newFileWriter.getFileType() == reader.getFileType()) {
+                        // Check if reader supports reading raw data item bytes
+                        final Object itemBytes = reader.readDataItemBytes(fileOffset);
+                        if (itemBytes != null) {
+                            newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
+                        }
+                    }
+                    if (newLocation < 0) {
                         final D item = reader.readDataItem(fileOffset);
                         assert item != null;
                         newLocation = newFileWriter.storeDataItem(item);
@@ -498,12 +516,14 @@ public class DataFileCollection<D> implements Snapshotable {
     private void startNewCompactionFile() throws IOException {
         final Instant startTime = currentCompactionStartTime.get();
         assert startTime != null;
-        final DataFileWriter<D> newFileWriter = newDataFile(startTime, true);
+        // no way to force JDB or PBJ format for compacted files, always get the value from config
+        final DataFileWriter<D> newFileWriter = newDataFile(startTime, currentCompactionUsePbj.get());
         currentCompactionWriter.set(newFileWriter);
         final Path newFileCreated = newFileWriter.getPath();
         newCompactedFiles.add(newFileCreated);
         final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
-        final DataFileReader<D> newFileReader = addNewDataFileReader(newFileCreated, newFileMetadata, true);
+        final DataFileReader<D> newFileReader =
+                addNewDataFileReader(newFileCreated, newFileMetadata, currentCompactionUsePbj.get());
         currentCompactionReader.set(newFileReader);
     }
 
@@ -604,12 +624,12 @@ public class DataFileCollection<D> implements Snapshotable {
      * @throws IOException If there was a problem opening a new data file
      */
     public void startWriting() throws IOException {
-        startWriting(true);
+        startWriting(config.usePbj());
     }
 
-    // For JDB to PBJ migration testing. After JDB support is dropped, this method may be removed
-    // and startWriting() to be used instead
-    void startWriting(final boolean usePbj) throws IOException {
+    // Future work: remove this method, once JDB is no longer supported
+    @Deprecated(forRemoval = true)
+    void startWriting(boolean usePbj) throws IOException {
         final DataFileWriter<D> activeDataFileWriter = currentDataFileWriter.get();
         if (activeDataFileWriter != null) {
             throw new IOException("Tried to start writing when we were already writing.");
@@ -833,7 +853,7 @@ public class DataFileCollection<D> implements Snapshotable {
     @FunctionalInterface
     public interface LoadedDataCallback {
         /** Add an index entry for the given key and data location and value */
-        void newIndexEntry(long key, long dataLocation, BufferedData dataValue);
+        void newIndexEntry(long key, long dataLocation, Object dataValue);
     }
 
     // =================================================================================================================
@@ -855,14 +875,13 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param filePath the path for the new data file
      * @param metadata The metadata for the file at filePath, to save reading from file
-     * @param usePbj Indicates whether to use PBJ (if usePbj is true) or JDB (if false) reader format
      * @return The newly added DataFileReader.
      */
     private DataFileReader<D> addNewDataFileReader(
             final Path filePath, final DataFileMetadata metadata, final boolean usePbj)
             throws IOException {
         final DataFileReader<D> newDataFileReader = usePbj ?
-                new DataFileReader<>(filePath, dataItemSerializer, metadata) :
+                new DataFileReaderPbj<>(filePath, dataItemSerializer, metadata) :
                 new DataFileReaderJdb<>(filePath, dataItemSerializer, (DataFileMetadataJdb) metadata);
         dataFiles.getAndUpdate(currentFileList -> {
             try {
@@ -899,7 +918,6 @@ public class DataFileCollection<D> implements Snapshotable {
      *
      * @param creationTime The creation time for the data in the new file. It could be now or old in
      *     case of merge.
-     * @param usePbj Indicates whether to use PBJ (if usePbj is true) or JDB (if false) writer format
      * @return the newly created data file
      */
     private DataFileWriter<D> newDataFile(final Instant creationTime, final boolean usePbj) throws IOException {
@@ -908,7 +926,7 @@ public class DataFileCollection<D> implements Snapshotable {
             setOfNewFileIndexes.add(newFileIndex);
         }
         return usePbj ?
-                new DataFileWriter<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime) :
+                new DataFileWriterPbj<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime) :
                 new DataFileWriterJdb<>(storeName, storeDir, newFileIndex, dataItemSerializer, creationTime);
     }
 
@@ -949,7 +967,7 @@ public class DataFileCollection<D> implements Snapshotable {
             try {
                 for (int i = 0; i < fullWrittenFilePaths.length; i++) {
                     dataFileReaders[i] = fullWrittenFilePaths[i].toString().endsWith(FILE_EXTENSION) ?
-                            new DataFileReader<>(fullWrittenFilePaths[i], dataItemSerializer) :
+                            new DataFileReaderPbj<>(fullWrittenFilePaths[i], dataItemSerializer) :
                             new DataFileReaderJdb<>(fullWrittenFilePaths[i], dataItemSerializer);
                 }
                 // sort the readers into data file index order
@@ -1019,13 +1037,12 @@ public class DataFileCollection<D> implements Snapshotable {
         // now call indexEntryCallback
         if (loadedDataCallback != null) {
             // now iterate over every file and every key
-            for (final DataFileReader<D> file : dataFileReaders) {
-                try (final DataFileIterator iterator =
-                        new DataFileIterator(file.getPath(), file.getMetadata(), dataItemSerializer)) {
+            for (final DataFileReader<D> reader : dataFileReaders) {
+                try (final DataFileIterator iterator = reader.createIterator()) {
                     while (iterator.next()) {
                         loadedDataCallback.newIndexEntry(
-                                iterator.getDataItemsKey(),
-                                iterator.getDataItemsDataLocation(),
+                                iterator.getDataItemKey(),
+                                iterator.getDataItemDataLocation(),
                                 iterator.getDataItemData());
                     }
                 }

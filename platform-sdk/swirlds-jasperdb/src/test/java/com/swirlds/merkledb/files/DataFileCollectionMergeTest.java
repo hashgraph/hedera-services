@@ -138,7 +138,7 @@ class DataFileCollectionMergeTest {
         final var itr = dataFileReader.createIterator();
         prevKey = -1;
         while (itr.next()) {
-            final long key = itr.getDataItemsKey();
+            final long key = itr.getDataItemKey();
             assertTrue(key > prevKey, "Keys must be sorted in ascending order");
             assertTrue(key >= 5, "We should not update below firstLeafPath");
             prevKey = key;
