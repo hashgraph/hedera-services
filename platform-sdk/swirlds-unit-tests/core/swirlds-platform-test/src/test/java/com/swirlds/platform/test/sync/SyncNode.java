@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -34,6 +35,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -205,8 +207,12 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowGraphSynchronizer(
+                platformContext,
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),

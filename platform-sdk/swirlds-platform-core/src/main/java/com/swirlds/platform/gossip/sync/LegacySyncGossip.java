@@ -162,6 +162,7 @@ public class LegacySyncGossip extends AbstractGossip {
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+                platformContext,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,

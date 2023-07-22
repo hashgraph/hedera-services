@@ -221,6 +221,7 @@ public class ChatterGossip extends AbstractGossip {
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
+                    platformContext,
                     shadowGraph,
                     addressBook.getSize(),
                     syncMetrics,

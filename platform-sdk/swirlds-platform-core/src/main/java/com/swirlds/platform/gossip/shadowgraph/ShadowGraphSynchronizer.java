@@ -18,6 +18,8 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -26,6 +28,7 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
@@ -85,7 +88,11 @@ public class ShadowGraphSynchronizer {
 
     private final Map<NodeId, AtomicLong> unprocessedEvents;
 
+    private final Cryptography cryptography;
+    private final boolean hashOnSyncThread;
+
     public ShadowGraphSynchronizer(
+            @NonNull final PlatformContext platformContext,
             final ShadowGraph shadowGraph,
             final int numberOfNodes,
             final SyncMetrics syncMetrics,
@@ -108,6 +115,11 @@ public class ShadowGraphSynchronizer {
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
         this.unprocessedEvents = Objects.requireNonNull(unprocessedEvents);
+        cryptography = platformContext.getCryptography();
+        hashOnSyncThread = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .hashOnSyncThread();
     }
 
     private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
@@ -319,7 +331,13 @@ public class ShadowGraphSynchronizer {
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
                 SyncComms.phase3Read(
-                        conn, eventHandler, syncMetrics, eventReadingDone, unprocessedEvents.get(conn.getOtherId())),
+                        cryptography,
+                        conn,
+                        eventHandler,
+                        syncMetrics,
+                        eventReadingDone,
+                        unprocessedEvents.get(conn.getOtherId()),
+                        hashOnSyncThread),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {

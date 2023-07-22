@@ -18,6 +18,7 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.SyncException;
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -244,14 +246,21 @@ public final class SyncComms {
      * @param syncMetrics       tracks event reading metrics
      * @param eventReadingDone  used to notify the writing thread that reading is done
      * @param unprocessedEvents the number of unprocessed events from this node
+     * @param hashOnSyncThread  if true then immediately hash all incoming events
      * @return A {@link Callable} that executes this part of the sync
      */
     public static Callable<Integer> phase3Read(
+            @NonNull final Cryptography cryptography,
             final Connection conn,
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
-            @NonNull final AtomicLong unprocessedEvents) {
+            @NonNull final AtomicLong unprocessedEvents,
+            final boolean hashOnSyncThread) {
+
+        Objects.requireNonNull(cryptography);
+        Objects.requireNonNull(unprocessedEvents);
+
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
             int eventsRead = 0;
@@ -268,6 +277,10 @@ public final class SyncComms {
                             final GossipEvent gossipEvent = conn.getDis().readEventData();
                             gossipEvent.setOrigin(conn.getOtherId());
                             unprocessedEvents.incrementAndGet();
+                            if (hashOnSyncThread) {
+                                cryptography.digestSync(gossipEvent.getHashedData());
+                                gossipEvent.buildDescriptor();
+                            }
                             eventHandler.accept(gossipEvent);
                             eventsRead++;
                         }

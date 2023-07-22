@@ -28,7 +28,8 @@ import com.swirlds.config.api.ConfigProperty;
  * @param permitSuspensionEnabled         if true, use permit suspension (sync as protocol only, ignored otherwise)
  * @param lowerIntakeQueueThreshold       the lower threshold for the intake queue size before permit suspension is
  *                                        used
- * @param upperIntakeQueueThreshold       the threshold size of the intake queue where all permits possible are suspended
+ * @param upperIntakeQueueThreshold       the threshold size of the intake queue where all permits possible are
+ *                                        suspended
  * @param unsuspendablePermitCount        the number of permits that are never suspended
  * @param syncSleepAfterFailedNegotiation the number of milliseconds to sleep after a failed negotiation when running
  *                                        the sync-as-a-protocol algorithm
@@ -46,7 +47,9 @@ import com.swirlds.config.api.ConfigProperty;
  * @param callerSkipsBeforeSleep          sleep sleepCallerSkips ms after the caller fails this many times to call a
  *                                        random member
  * @param sleepCallerSkips                caller sleeps this many milliseconds if it failed to connect to
- *                                        callerSkipsBeforeSleep in a row *
+ *                                        callerSkipsBeforeSleep in a row
+ * @param hashOnSyncThread                if true, hash events on the sync thread, otherwise hash on event intake
+ *                                        thread
  */
 @ConfigData("sync")
 public record SyncConfig(
@@ -62,4 +65,5 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "2") int maxOutgoingSyncs,
         @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
-        @ConfigProperty(defaultValue = "50") long sleepCallerSkips) {}
+        @ConfigProperty(defaultValue = "50") long sleepCallerSkips,
+        @ConfigProperty(defaultValue = "true") boolean hashOnSyncThread) {}
