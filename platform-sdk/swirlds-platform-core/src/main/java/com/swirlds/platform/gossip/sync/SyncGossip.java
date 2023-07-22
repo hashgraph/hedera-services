@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gossip.sync;
 
+import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
@@ -33,6 +34,7 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
+import com.swirlds.common.threading.interrupt.Uninterruptable;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
@@ -101,8 +103,6 @@ public class SyncGossip extends AbstractGossip {
      * A list of threads that execute the sync protocol using bidirectional connections
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
-
-    private final PermitSnarfer permitSnarfer;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
@@ -210,13 +210,7 @@ public class SyncGossip extends AbstractGossip {
 
         final Duration hangingThreadDuration = basicConfig.hangingThreadDuration();
 
-        syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
-
-        if (syncConfig.permitSnarfingEnabled()) {
-            permitSnarfer = new PermitSnarfer(platformContext, threadManager, syncPermitProvider, intakeQueue::size);
-        } else {
-            permitSnarfer = null;
-        }
+        syncPermitProvider = new SyncPermitProvider(platformContext);
 
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
@@ -310,23 +304,10 @@ public class SyncGossip extends AbstractGossip {
         gossipHalted.set(true);
         // wait for all existing syncs to stop. no new ones will be started, since gossip has been halted, and
         // we've fallen behind
-        syncPermitProvider.waitForAllSyncsToFinish();
+        abortAndThrowIfInterrupted(
+                syncPermitProvider::waitForAllSyncsToFinish, "interrupted while waiting for syncs to finish");
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
-        }
-        if (permitSnarfer != null) {
-            permitSnarfer.stop();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start() {
-        super.start();
-        if (permitSnarfer != null) {
-            permitSnarfer.start();
         }
     }
 
@@ -401,7 +382,8 @@ public class SyncGossip extends AbstractGossip {
     public void pause() {
         throwIfNotInPhase(LifecyclePhase.STARTED);
         gossipHalted.set(true);
-        syncPermitProvider.waitForAllSyncsToFinish();
+        Uninterruptable.abortAndThrowIfInterrupted(
+                syncPermitProvider::waitForAllSyncsToFinish, "interrupted while attempting to pause");
     }
 
     /**

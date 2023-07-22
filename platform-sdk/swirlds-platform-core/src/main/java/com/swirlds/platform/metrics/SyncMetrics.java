@@ -342,7 +342,7 @@ public class SyncMetrics {
      *
      * @param permits the number of permits available
      */
-    public void updateSyncPermitsAvailable(final int permits) {
+    public void updateSyncPermitsAvailable(final int permits) { // TODO move this
         permitsAvailable.update(permits);
     }
 

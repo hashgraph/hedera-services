@@ -16,83 +16,99 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.threading.locks.AutoClosableLock;
+import com.swirlds.common.threading.locks.Locks;
+import com.swirlds.common.threading.locks.locked.Locked;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.Semaphore;
 
 /**
  * Manages the permits that allow syncs to occur in the protocol paradigm. Syncs should only proceed once a permit is
  * acquired. This class is thread safe.
  */
 public class SyncPermitProvider {
-    /**
-     * A semaphore that is used to manage the number of concurrent syncs
-     */
-    private final Semaphore syncPermits;
 
-    /**
-     * The object returned when a permit is successfully obtained
-     */
-    private final AcquiredOnTry acquired;
+    private final AutoClosableLock lock = Locks.createAutoLock();
 
-    /**
-     * The number of permits this provider has available to distribute
-     */
-    private final int numPermits;
+    private final int totalPermits;
+    private int permitsHeld = 0;
 
-    /**
-     * Creates a new instance with a maximum number of permits
-     *
-     * @param numPermits the number of concurrent syncs this provider will allow
-     */
-    public SyncPermitProvider(final int numPermits) {
-        this.numPermits = numPermits;
-        this.syncPermits = new Semaphore(numPermits);
-        this.acquired = new AcquiredOnTry(syncPermits::release);
+    public SyncPermitProvider(@NonNull final PlatformContext platformContext) {
+
+        final SyncConfig syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
+
+        totalPermits = syncConfig.syncProtocolPermitCount();
     }
 
+    // TODO remove this
     /**
      * @return the current number of available sync permits
      */
     public int getNumAvailable() {
-        return syncPermits.availablePermits();
+        return 0; // TODO move metric inside this class
     }
 
     /**
-     * Attempts to acquire a sync permit. This method returns immediately and never blocks, even if no permit is
-     * available.
+     * Acquire a permit if one is available.
      *
-     * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
-     * release the permit when used in a try-with-resources block
+     * @return true if a permit was acquired, false otherwise
      */
-    public @NonNull MaybeLocked tryAcquire() {
-        if (syncPermits.tryAcquire()) {
-            return acquired;
+    public boolean tryAcquire() {
+        try (final Locked l = lock.lock()) {
+            final int availablePermits = totalPermits - permitsHeld - getNumberOfSuspendedPermits();
+            if (availablePermits < 1) {
+                return false;
+            }
+
+            permitsHeld++;
+            return true;
         }
-        return MaybeLocked.NOT_ACQUIRED;
     }
 
     /**
-     * Acquire a permit, blocking until one is available.
-     */
-    public void acquire() {
-        syncPermits.acquireUninterruptibly();
-    }
-
-    /**
-     * Release a permit. Should only be called after a call to {@link #acquire()}.
+     * Release a permit. Should only be called after {@link #tryAcquire()}, and only if a permit was successfully
+     * acquired..
      */
     public void release() {
-        syncPermits.release();
+        try (final Locked l = lock.lock()) {
+            if (permitsHeld < 1) {
+                throw new IllegalStateException("too many permits released");
+            }
+            permitsHeld--;
+        }
     }
 
     /**
      * First acquires all permits uninterruptibly, then releases them again. The effect of this is the caller waiting
      * for all permits to be returned before proceeding
      */
-    public void waitForAllSyncsToFinish() {
-        syncPermits.acquireUninterruptibly(numPermits);
-        syncPermits.release(numPermits);
+    public void waitForAllSyncsToFinish() throws InterruptedException {
+        int permits = 0;
+        while (permits < totalPermits) {
+            try (final Locked l = lock.lock()) {
+                final int availablePermits = totalPermits - permitsHeld;
+                permitsHeld += availablePermits;
+                permits += availablePermits;
+            }
+
+            if (permits < totalPermits) {
+                MILLISECONDS.sleep(1);
+            }
+        }
+
+        try (final Locked l = lock.lock()) {
+            permitsHeld = 0;
+        }
+    }
+
+    /**
+     * Get the number of permits not allowed to be issued due to event ingestion pressure.
+     */
+    private int getNumberOfSuspendedPermits() {
+
+        return 0;
     }
 }

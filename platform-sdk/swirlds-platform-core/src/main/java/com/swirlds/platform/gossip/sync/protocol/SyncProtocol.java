@@ -20,14 +20,13 @@ import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.gossip.sync.SyncPermitProvider;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.sync.SyncPermitProvider;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -81,11 +80,6 @@ public class SyncProtocol implements Protocol {
      * The provider for sync permits
      */
     private final SyncPermitProvider permitProvider;
-
-    /**
-     * A permit to sync, which may or may not be acquired
-     */
-    private MaybeLocked permit = MaybeLocked.NOT_ACQUIRED;
 
     /**
      * The last time this protocol executed
@@ -183,15 +177,11 @@ public class SyncProtocol implements Protocol {
 
         // is there a reason to initiate?
         if (peerNeededForFallenBehind() || criticalQuorum.isInCriticalQuorum(peerId)) {
-            permit = permitProvider.tryAcquire();
-            final boolean isLockAcquired = permit.isLockAcquired();
-
-            if (isLockAcquired) {
-                syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+            if (permitProvider.tryAcquire()) {
                 syncMetrics.outgoingSyncRequestSent();
+                return true;
             }
-
-            return isLockAcquired;
+            return false;
         } else {
             return false;
         }
@@ -212,25 +202,11 @@ public class SyncProtocol implements Protocol {
             return false;
         }
 
-        permit = permitProvider.tryAcquire();
-        final boolean isLockAcquired = permit.isLockAcquired();
-
-        if (isLockAcquired) {
-            syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+        if (permitProvider.tryAcquire()) {
             syncMetrics.acceptedSyncRequest();
+            return true;
         }
-
-        return isLockAcquired;
-    }
-
-    /**
-     * Closes the existing permit, and resets the {@link #permit} member variable
-     */
-    private void closePermit() {
-        permit.close();
-        permit = MaybeLocked.NOT_ACQUIRED;
-
-        syncMetrics.updateSyncPermitsAvailable(permitProvider.getNumAvailable());
+        return false;
     }
 
     /**
@@ -238,7 +214,7 @@ public class SyncProtocol implements Protocol {
      */
     @Override
     public void initiateFailed() {
-        closePermit();
+        permitProvider.release();
     }
 
     /**
@@ -246,7 +222,7 @@ public class SyncProtocol implements Protocol {
      */
     @Override
     public void acceptFailed() {
-        closePermit();
+        permitProvider.release();
     }
 
     /**
@@ -264,10 +240,6 @@ public class SyncProtocol implements Protocol {
     public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
 
-        if (!permit.isLockAcquired()) {
-            throw new NetworkProtocolException("sync permit not acquired prior to executing sync protocol");
-        }
-
         try {
             synchronizer.synchronize(connection);
         } catch (final ParallelExecutionException | SyncException e) {
@@ -277,8 +249,7 @@ public class SyncProtocol implements Protocol {
 
             throw new NetworkProtocolException(e);
         } finally {
-            closePermit();
-
+            permitProvider.release();
             lastSyncTime = time.now();
         }
     }
