@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform.gossip.sync;
 
 import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
@@ -71,6 +71,20 @@ public class SyncPermitProvider {
             return acquired;
         }
         return MaybeLocked.NOT_ACQUIRED;
+    }
+
+    /**
+     * Acquire a permit, blocking until one is available.
+     */
+    public void acquire() {
+        syncPermits.acquireUninterruptibly();
+    }
+
+    /**
+     * Release a permit. Should only be called after a call to {@link #acquire()}.
+     */
+    public void release() {
+        syncPermits.release();
     }
 
     /**

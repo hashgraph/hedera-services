@@ -29,7 +29,6 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -102,6 +101,8 @@ public class SyncGossip extends AbstractGossip {
      * A list of threads that execute the sync protocol using bidirectional connections
      */
     private final List<StoppableThread> syncProtocolThreads = new ArrayList<>();
+
+    private final PermitSnarfer permitSnarfer;
 
     /**
      * Builds the gossip engine, depending on which flavor is requested in the configuration.
@@ -211,6 +212,12 @@ public class SyncGossip extends AbstractGossip {
 
         syncPermitProvider = new SyncPermitProvider(syncConfig.syncProtocolPermitCount());
 
+        if (syncConfig.permitSnarfingEnabled()) {
+            permitSnarfer = new PermitSnarfer(platformContext, threadManager, syncPermitProvider, intakeQueue::size);
+        } else {
+            permitSnarfer = null;
+        }
+
         if (emergencyRecoveryManager.isEmergencyStateRequired()) {
             // If we still need an emergency recovery state, we need it via emergency reconnect.
             // Start the helper first so that it is ready to receive a connection to perform reconnect with when the
@@ -306,6 +313,20 @@ public class SyncGossip extends AbstractGossip {
         syncPermitProvider.waitForAllSyncsToFinish();
         for (final StoppableThread thread : syncProtocolThreads) {
             thread.stop();
+        }
+        if (permitSnarfer != null) {
+            permitSnarfer.stop();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void start() {
+        super.start();
+        if (permitSnarfer != null) {
+            permitSnarfer.start();
         }
     }
 

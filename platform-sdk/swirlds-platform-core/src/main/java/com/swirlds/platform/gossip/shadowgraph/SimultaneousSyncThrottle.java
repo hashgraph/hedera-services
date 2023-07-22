@@ -22,7 +22,7 @@ import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.threading.SyncLock;
+import com.swirlds.platform.gossip.sync.SyncLock;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;

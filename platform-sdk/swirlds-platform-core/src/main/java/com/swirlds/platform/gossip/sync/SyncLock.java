@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform.gossip.sync;
 
 import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;

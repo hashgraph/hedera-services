@@ -67,6 +67,8 @@ module com.swirlds.common {
     exports com.swirlds.common.threading.futures;
     exports com.swirlds.common.threading.interrupt;
     exports com.swirlds.common.threading.locks;
+    // FUTURE WORK: remove this export once dependencies are broken
+    exports com.swirlds.common.threading.locks.internal;
     exports com.swirlds.common.threading.locks.locked;
     exports com.swirlds.common.threading.manager;
     exports com.swirlds.common.threading.pool;

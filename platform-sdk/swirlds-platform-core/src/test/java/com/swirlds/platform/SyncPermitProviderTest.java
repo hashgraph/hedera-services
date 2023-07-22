@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.threading;
+package com.swirlds.platform;
 
 import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.platform.gossip.sync.SyncPermitProvider;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
