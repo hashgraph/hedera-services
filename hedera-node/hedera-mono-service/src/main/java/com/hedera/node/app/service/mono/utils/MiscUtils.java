@@ -906,7 +906,7 @@ public final class MiscUtils {
     }
 
     public static boolean hasUnknownFieldsHere(final GeneratedMessageV3 msg) {
-        return !msg.getUnknownFields().asMap().isEmpty();
+        return msg.getUnknownFields().getSerializedSize() != 0;
     }
 
     /**

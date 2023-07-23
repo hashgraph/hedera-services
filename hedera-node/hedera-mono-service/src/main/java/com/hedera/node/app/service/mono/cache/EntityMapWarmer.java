@@ -114,6 +114,9 @@ public class EntityMapWarmer {
      * @param round the round to warm the cache for
      */
     public void warmCache(Round round) {
+        if (!acctsOnDisk && !nftsOnDisk && !tokenRelsOnDisk) {
+            return;
+        }
         removeAllTasks();
         threadpool.execute(() -> doWarmups(round));
     }
