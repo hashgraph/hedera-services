@@ -43,15 +43,15 @@ import javax.inject.Singleton;
 
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
-    private final RewardsPayer rewardsPayer;
-    private final RewardsHelper stakingRewardHelper;
+    private final StakingRewardsPayer rewardsPayer;
+    private final StakingRewardsHelper stakingRewardHelper;
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
     public StakingRewardsHandlerImpl(
-            @NonNull final RewardsPayer rewardsPayer,
-            @NonNull final RewardsHelper stakingRewardHelper,
+            @NonNull final StakingRewardsPayer rewardsPayer,
+            @NonNull final StakingRewardsHelper stakingRewardHelper,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final StakeInfoHelper stakeInfoHelper) {
         this.rewardsPayer = requireNonNull(rewardsPayer);
@@ -266,7 +266,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         }
     }
 
-    private boolean shouldUpdateStakeStart(
+    public boolean shouldUpdateStakeStart(
             @Nullable final Account account,
             final boolean isRewarded,
             final long reward,

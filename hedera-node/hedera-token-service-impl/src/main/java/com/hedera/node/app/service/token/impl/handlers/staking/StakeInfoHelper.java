@@ -53,8 +53,7 @@ public class StakeInfoHelper {
         final var currentStakeRewardStart = currentStakingInfo.stakeRewardStart();
         final var newUnclaimedStakeRewardStart = currentStakingInfo.unclaimedStakeRewardStart() + amount;
 
-        final var newStakingInfo =
-                currentStakingInfo.copyBuilder().unclaimedStakeRewardStart(newUnclaimedStakeRewardStart);
+        final var newStakingInfo = currentStakingInfo.copyBuilder();
         if (newUnclaimedStakeRewardStart > currentStakeRewardStart) {
             log.warn(
                     "Asked to release {} more rewards for node{} (now {}), but only {} was staked",
@@ -63,6 +62,8 @@ public class StakeInfoHelper {
                     newUnclaimedStakeRewardStart,
                     currentStakeRewardStart);
             newStakingInfo.unclaimedStakeRewardStart(currentStakeRewardStart);
+        } else {
+            newStakingInfo.unclaimedStakeRewardStart(newUnclaimedStakeRewardStart);
         }
 
         stakingInfoStore.put(nodeId, newStakingInfo.build());

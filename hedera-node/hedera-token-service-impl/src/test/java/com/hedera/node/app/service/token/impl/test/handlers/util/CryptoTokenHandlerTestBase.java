@@ -91,6 +91,7 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected static final Instant originalInstant = Instant.ofEpochSecond(12345678910L);
     protected static final long stakePeriodStart =
             LocalDate.ofInstant(originalInstant, ZONE_UTC).toEpochDay() - 1;
+    protected static final Instant stakePeriodStartInstant =
+            LocalDate.ofEpochDay(stakePeriodStart).atStartOfDay(ZoneOffset.UTC).toInstant();
     /* ---------- Keys */
     protected final Key key = A_COMPLEX_KEY;
     protected static final Key payerKey = A_COMPLEX_KEY;
@@ -664,7 +667,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .maxStake(1000000000L)
                 .minStake(500000000)
                 .weight(200)
-                .rewardSumHistory(List.of(100L, 200L, 300L))
+                .rewardSumHistory(List.of(300L, 200L, 100L))
                 .unclaimedStakeRewardStart(0L)
                 .build();
         node1Info = StakingNodeInfo.newBuilder()
@@ -676,7 +679,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .maxStake(1000000000L)
                 .minStake(500000000)
                 .weight(300)
-                .rewardSumHistory(List.of(100L, 200L, 300L))
+                .rewardSumHistory(List.of(300L, 200L, 100L))
                 .unclaimedStakeRewardStart(0L)
                 .build();
     }

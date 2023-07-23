@@ -35,13 +35,13 @@ import javax.inject.Singleton;
  * Helper class for paying out staking rewards.
  */
 @Singleton
-public class RewardsPayer {
-    private RewardsHelper stakingRewardHelper;
+public class StakingRewardsPayer {
+    private StakingRewardsHelper stakingRewardHelper;
     private StakeRewardCalculatorImpl rewardCalculator;
 
     @Inject
-    public RewardsPayer(
-            @NonNull final RewardsHelper stakingRewardHelper,
+    public StakingRewardsPayer(
+            @NonNull final StakingRewardsHelper stakingRewardHelper,
             @NonNull final StakeRewardCalculatorImpl rewardCalculator) {
         this.stakingRewardHelper = stakingRewardHelper;
         this.rewardCalculator = rewardCalculator;

@@ -41,12 +41,12 @@ import org.apache.logging.log4j.Logger;
  * Helper class for staking reward calculations
  */
 @Singleton
-public class RewardsHelper {
-    private static final Logger log = LogManager.getLogger(RewardsHelper.class);
+public class StakingRewardsHelper {
+    private static final Logger log = LogManager.getLogger(StakingRewardsHelper.class);
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 
     @Inject
-    public RewardsHelper() {
+    public StakingRewardsHelper() {
         // Exists for Dagger injection
     }
 
