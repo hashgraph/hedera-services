@@ -166,7 +166,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      * such test class, and terminated after it has been run. Each instance of this class is used both during discovery
      * (thanks to {@link AbstractTestDescriptor}, and during test execution (thanks to the {@link Node} interface).
      */
-    private static final class ClassTestDescriptor extends AbstractTestDescriptor implements Node<HapiTestEngineExecutionContext> {
+    private static final class ClassTestDescriptor extends AbstractTestDescriptor
+            implements Node<HapiTestEngineExecutionContext> {
         /** The class annotated with {@link HapiTestSuite} */
         private final Class<?> testClass;
         /** We will skip initialization of a {@link Hedera} instance if there are no test methods */
@@ -280,7 +281,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
                 System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
                 System.setProperty(
-                        "hedera.recordStream.logDir", tmpDir.resolve("recordStream").toString());
+                        "hedera.recordStream.logDir",
+                        tmpDir.resolve("recordStream").toString());
                 System.setProperty("accounts.storeOnDisk", "true");
                 System.setProperty("grpc.port", "0");
                 System.setProperty("grpc.tlsPort", "0");
@@ -372,7 +374,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         defaultProperties.get("tls"),
                         defaultProperties.get("txn.proto.structure"),
                         defaultProperties.get("node.selector"),
-                        Map.of("recordStream.path", tmpDir.resolve("recordStream").toString()));
+                        Map.of(
+                                "recordStream.path",
+                                tmpDir.resolve("recordStream").toString()));
 
                 return new HapiTestEngineExecutionContext(); // <--- Actually, this is going to have connection info to
                 // connect to the node!?
