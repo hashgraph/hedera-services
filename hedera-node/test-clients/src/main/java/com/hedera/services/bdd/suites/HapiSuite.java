@@ -216,6 +216,23 @@ public abstract class HapiSuite {
         return runSuite(HapiSuite::runSequentialSpecs);
     }
 
+    public FinalOutcome runSpecSync(HapiSpec spec) {
+        if (!overrides.isEmpty()) {
+            spec.addOverrideProperties(overrides);
+        }
+
+        final var name = name();
+        spec.setSuitePrefix(name);
+        spec.run();
+        finalSpecs = List.of(spec);
+        //        summarizeResults(getResultsLogger());
+        if (tearDownClientsAfter) {
+            HapiApiClients.tearDown();
+        }
+
+        return finalOutcomeFor(finalSpecs);
+    }
+
     protected FinalOutcome finalOutcomeFor(final List<HapiSpec> completedSpecs) {
         return completedSpecs.stream().allMatch(HapiSpec::ok) ? SUITE_PASSED : SUITE_FAILED;
     }
