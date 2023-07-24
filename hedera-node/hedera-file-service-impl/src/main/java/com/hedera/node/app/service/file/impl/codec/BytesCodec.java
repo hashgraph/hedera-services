@@ -64,4 +64,9 @@ public class BytesCodec implements Codec<Bytes> {
         //        final Bytes other = parseStrict(comparisonView);
         //        return item.equals(other);
     }
+
+    @Override
+    public Bytes toBytes(@NonNull Bytes item) {
+        return item;
+    }
 }
