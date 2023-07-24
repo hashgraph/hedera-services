@@ -204,6 +204,6 @@ class FileAppendTest extends FileTestBase {
 
     private FileID wellKnowUpgradeId() {
 
-        return fileSystemFileId;
+        return fileUpgradeFileId;
     }
 }
