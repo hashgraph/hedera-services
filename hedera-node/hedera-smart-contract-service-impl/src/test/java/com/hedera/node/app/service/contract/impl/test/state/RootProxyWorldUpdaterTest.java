@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.contract.ContractNonceInfo;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
@@ -46,7 +46,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class BaseProxyWorldUpdaterTest {
+class RootProxyWorldUpdaterTest {
     private static final long A_NUM = 123L;
     private static final long B_NUM = 234L;
     private static final UInt256 A_KEY_BEING_ADDED = UInt256.fromHexString("0x1234");
@@ -71,12 +71,12 @@ class BaseProxyWorldUpdaterTest {
     private EvmFrameState evmFrameState;
 
     @Mock
-    private ExtWorldScope extWorldScope;
+    private HederaOperations extWorldScope;
 
     @Mock
     private ContractStateStore store;
 
-    private BaseProxyWorldUpdater subject;
+    private RootProxyWorldUpdater subject;
 
     @Test
     void refusesToReturnCommittedChangesWithoutSucessfulCommit() {
@@ -128,7 +128,7 @@ class BaseProxyWorldUpdaterTest {
     }
 
     private void givenSubjectWith(@NonNull final Configuration configuration) {
-        subject = new BaseProxyWorldUpdater(
+        subject = new RootProxyWorldUpdater(
                 extWorldScope,
                 configuration,
                 () -> evmFrameState,

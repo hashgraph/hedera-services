@@ -37,8 +37,8 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import java.util.List;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -56,7 +56,7 @@ class HederaEvmTransactionResultTest {
     private ProxyWorldUpdater proxyWorldUpdater;
 
     @Mock
-    private BaseProxyWorldUpdater committedUpdater;
+    private RootProxyWorldUpdater committedUpdater;
 
     @Mock
     private StorageAccessTracker accessTracker;

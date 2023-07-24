@@ -30,14 +30,14 @@ import java.util.List;
 import javax.inject.Inject;
 
 /**
- * A fully mutable {@link ExtWorldScope} implementation based on a {@link HandleContext}.
+ * A fully mutable {@link HederaOperations} implementation based on a {@link HandleContext}.
  */
 @TransactionScope
-public class HandleExtWorldScope implements ExtWorldScope {
+public class HandleHederaOperations implements HederaOperations {
     private final HandleContext context;
 
     @Inject
-    public HandleExtWorldScope(@NonNull final HandleContext context) {
+    public HandleHederaOperations(@NonNull final HandleContext context) {
         this.context = context;
     }
 
@@ -45,7 +45,7 @@ public class HandleExtWorldScope implements ExtWorldScope {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull HandleExtWorldScope begin() {
+    public @NonNull HandleHederaOperations begin() {
         context.savepointStack().createSavepoint();
         return this;
     }

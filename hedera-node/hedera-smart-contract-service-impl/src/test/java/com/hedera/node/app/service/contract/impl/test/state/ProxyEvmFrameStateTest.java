@@ -55,12 +55,12 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
-import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
@@ -82,7 +82,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScopedEvmFrameStateTest {
+class ProxyEvmFrameStateTest {
     private static final int REDIRECT_CODE_FIXED_PREFIX_LEN =
             "6080604052348015600f57600080fd5b506000610167905077618dc65e".length();
     private static final int NUM_KV_SLOTS = 42;
@@ -115,16 +115,16 @@ class ScopedEvmFrameStateTest {
             .build();
 
     @Mock
-    private ExtFrameScope extFrameScope;
+    private HederaNativeOperations extFrameScope;
 
     @Mock
     private ContractStateStore contractStateStore;
 
-    private ScopedEvmFrameState subject;
+    private ProxyEvmFrameState subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ScopedEvmFrameState(extFrameScope, contractStateStore);
+        subject = new ProxyEvmFrameState(extFrameScope, contractStateStore);
     }
 
     @Test
@@ -675,7 +675,7 @@ class ScopedEvmFrameStateTest {
 
     @Test
     void getAccountDelegatesToGetMutableAccount() {
-        final var mockSubject = mock(ScopedEvmFrameState.class);
+        final var mockSubject = mock(ProxyEvmFrameState.class);
         final var mockAccount = mock(TokenEvmAccount.class);
 
         given(mockSubject.getMutableAccount(TOKEN_ADDRESS)).willReturn(mockAccount);

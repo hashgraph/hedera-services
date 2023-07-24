@@ -19,10 +19,10 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -54,9 +54,9 @@ public interface QueryModule {
 
     @Binds
     @QueryScope
-    ExtWorldScope bindExtWorldScope(HandleExtWorldScope handleExtWorldScope);
+    HederaOperations bindExtWorldScope(HandleHederaOperations handleExtWorldScope);
 
     @Binds
     @QueryScope
-    ExtFrameScope bindExtFrameScope(HandleExtFrameScope handleExtFrameScope);
+    HederaNativeOperations bindExtFrameScope(HandleHederaNativeOperations handleExtFrameScope);
 }

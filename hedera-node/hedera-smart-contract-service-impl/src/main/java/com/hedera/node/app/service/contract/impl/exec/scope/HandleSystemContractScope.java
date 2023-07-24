@@ -114,7 +114,7 @@ public class HandleSystemContractScope {
 
     /**
      * Attempts to dispatch the given {@code syntheticTransaction} in the context of the current
-     * {@link HandleExtWorldScope}, performing signature verification with priority given to the included
+     * {@link HandleHederaOperations}, performing signature verification with priority given to the included
      * {@code VerificationStrategy}.
      *
      * <p>If the result is {@code SUCCESS}, but this scope or any of its parents revert, the record

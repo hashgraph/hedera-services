@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.gas;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
 /**
  * TODO - Refactor as a transaction-scope {@link com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22}
- * that gets its price and exchange rate from the {@link com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope}.
+ * that gets its price and exchange rate from the {@link HederaOperations}.
  */
 @Singleton
 public class CustomGasCalculator extends LondonGasCalculator {

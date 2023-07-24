@@ -29,7 +29,7 @@ import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -62,7 +62,7 @@ class ContextTransactionProcessorTest {
     private TransactionProcessor processor;
 
     @Mock
-    private BaseProxyWorldUpdater baseProxyWorldUpdater;
+    private RootProxyWorldUpdater baseProxyWorldUpdater;
 
     @Mock
     private Supplier<HederaWorldUpdater> feesOnlyUpdater;

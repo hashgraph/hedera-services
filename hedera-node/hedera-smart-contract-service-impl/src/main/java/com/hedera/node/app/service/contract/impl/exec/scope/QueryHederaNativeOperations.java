@@ -28,13 +28,13 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * A read-only {@link ExtFrameScope} based on a {@link QueryContext}.
+ * A read-only {@link HederaNativeOperations} based on a {@link QueryContext}.
  */
 @QueryScope
-public class QueryExtFrameScope implements ExtFrameScope {
+public class QueryHederaNativeOperations implements HederaNativeOperations {
     private final QueryContext context;
 
-    public QueryExtFrameScope(@NonNull final QueryContext context) {
+    public QueryHederaNativeOperations(@NonNull final QueryContext context) {
         this.context = Objects.requireNonNull(context);
     }
 

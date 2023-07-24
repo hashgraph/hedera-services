@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.ResourceExh
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -51,7 +51,7 @@ public class StorageSizeValidator {
      */
     public void assertValid(
             final long aggregateSlotsUsed,
-            @NonNull final ExtWorldScope extWorldScope,
+            @NonNull final HederaOperations extWorldScope,
             @NonNull final List<StorageSizeChange> storageSizeChanges) {
         final var maxAggregateSlots = contractsConfig.maxKvPairsAggregate();
         validateResource(maxAggregateSlots >= aggregateSlotsUsed, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);

@@ -31,14 +31,14 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 /**
- * TODO - a read-only {@link ExtWorldScope} implementation based on a {@link QueryContext}.
+ * TODO - a read-only {@link HederaOperations} implementation based on a {@link QueryContext}.
  */
 @QueryScope
-public class QueryExtWorldScope implements ExtWorldScope {
+public class QueryHederaOperations implements HederaOperations {
     private final QueryContext context;
 
     @Inject
-    public QueryExtWorldScope(@NonNull final QueryContext context) {
+    public QueryHederaOperations(@NonNull final QueryContext context) {
         this.context = Objects.requireNonNull(context);
     }
 
@@ -48,7 +48,7 @@ public class QueryExtWorldScope implements ExtWorldScope {
      * @return this
      */
     @Override
-    public @NonNull ExtWorldScope begin() {
+    public @NonNull HederaOperations begin() {
         return this;
     }
 

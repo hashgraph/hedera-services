@@ -47,8 +47,8 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -69,7 +69,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
- * contract storage and bytecode, and a {@link HandleExtFrameScope} for additional influence over
+ * contract storage and bytecode, and a {@link HandleHederaNativeOperations} for additional influence over
  * the non-contract Hedera state in the current scope.
  *
  * <p>Almost every access requires a conversion from a PBJ type to a Besu type. At some
@@ -78,7 +78,7 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
  * <p>
  * TODO - get a little further to clarify DI strategy, then bring back a code cache.
  */
-public class ScopedEvmFrameState implements EvmFrameState {
+public class ProxyEvmFrameState implements EvmFrameState {
     private static final Key HOLLOW_ACCOUNT_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
@@ -87,12 +87,13 @@ public class ScopedEvmFrameState implements EvmFrameState {
     private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
             "6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
-    private final ExtFrameScope extFrameScope;
+    private final HederaNativeOperations nativeOperations;
     private final ContractStateStore contractStateStore;
 
-    public ScopedEvmFrameState(
-            @NonNull final ExtFrameScope extFrameScope, @NonNull final ContractStateStore contractStateStore) {
-        this.extFrameScope = requireNonNull(extFrameScope);
+    public ProxyEvmFrameState(
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final ContractStateStore contractStateStore) {
+        this.nativeOperations = requireNonNull(nativeOperations);
         this.contractStateStore = requireNonNull(contractStateStore);
     }
 
@@ -253,7 +254,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public void setNonce(final long number, final long nonce) {
-        extFrameScope.setNonce(number, nonce);
+        nativeOperations.setNonce(number, nonce);
     }
 
     /**
@@ -269,7 +270,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public long getIdNumber(@NonNull Address address) {
-        final var number = maybeMissingNumberOf(address, extFrameScope);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             throw new IllegalArgumentException("Address " + address + " has no associated Hedera id");
         }
@@ -295,11 +296,11 @@ public class ScopedEvmFrameState implements EvmFrameState {
 
     @Override
     public boolean isHollowAccount(@NonNull final Address address) {
-        final var number = maybeMissingNumberOf(address, extFrameScope);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             return false;
         }
-        final var account = extFrameScope.getAccount(number);
+        final var account = nativeOperations.getAccount(number);
         if (account == null) {
             return false;
         }
@@ -311,7 +312,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public void finalizeHollowAccount(@NonNull final Address address) {
-        extFrameScope.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
+        nativeOperations.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
     /**
@@ -336,7 +337,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
         } else if (to instanceof TokenEvmAccount) {
             return Optional.of(ILLEGAL_STATE_CHANGE);
         }
-        final var status = extFrameScope.transferWithReceiverSigCheck(
+        final var status = nativeOperations.transferWithReceiverSigCheck(
                 amount,
                 from.number,
                 ((ProxyEvmAccount) to).number,
@@ -362,9 +363,9 @@ public class ScopedEvmFrameState implements EvmFrameState {
         if (isLongZero(address)) {
             throw new IllegalArgumentException("Cannot perform lazy creation at long-zero address " + address);
         }
-        final var number = maybeMissingNumberOf(address, extFrameScope);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {
-            final var account = extFrameScope.getAccount(number);
+            final var account = nativeOperations.getAccount(number);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
                     return Optional.of(INVALID_VALUE_TRANSFER);
@@ -374,7 +375,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
                 }
             }
         }
-        final var status = extFrameScope.createHollowAccount(tuweniToPbjBytes(address));
+        final var status = nativeOperations.createHollowAccount(tuweniToPbjBytes(address));
         if (status != OK) {
             if (status == MAX_CHILD_RECORDS_EXCEEDED) {
                 return Optional.of(TOO_MANY_CHILD_RECORDS);
@@ -409,7 +410,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
         if (deletedAccount.numPositiveTokenBalances() > 0) {
             return Optional.of(TOKEN_HOLDER_SELFDESTRUCT);
         }
-        extFrameScope.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
+        nativeOperations.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
         return Optional.empty();
     }
 
@@ -426,13 +427,13 @@ public class ScopedEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable EvmAccount getMutableAccount(@NonNull final Address address) {
-        final var number = maybeMissingNumberOf(address, extFrameScope);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }
-        final var account = extFrameScope.getAccount(number);
+        final var account = nativeOperations.getAccount(number);
         if (account == null) {
-            final var token = extFrameScope.getToken(number);
+            final var token = nativeOperations.getToken(number);
             if (token != null) {
                 // If the token is deleted or expired, the system contract executed by the redirect
                 // bytecode will fail with a more meaningful error message, so don't check that here
@@ -460,7 +461,7 @@ public class ScopedEvmFrameState implements EvmFrameState {
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {
-        final var account = extFrameScope.getAccount(number);
+        final var account = nativeOperations.getAccount(number);
         if (account == null) {
             throw new IllegalArgumentException("No account has number " + number);
         }

@@ -35,7 +35,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -46,7 +46,7 @@ import org.mockito.Mock;
 
 public class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
-    private BaseProxyWorldUpdater baseProxyWorldUpdater;
+    private RootProxyWorldUpdater baseProxyWorldUpdater;
 
     @Mock
     private TransactionComponent component;

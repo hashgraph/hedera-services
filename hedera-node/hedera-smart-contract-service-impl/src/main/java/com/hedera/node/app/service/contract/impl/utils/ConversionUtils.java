@@ -25,8 +25,8 @@ import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -160,15 +160,15 @@ public class ConversionUtils {
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
-     * within the given {@link HandleExtFrameScope}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
+     * within the given {@link HandleHederaNativeOperations}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
      * and does not correspond to a known Hedera entity.
      *
      * @param address  the EVM address
-     * @param extFrameScope the {@link HandleExtFrameScope} to use for resolving aliases
+     * @param extFrameScope the {@link HandleHederaNativeOperations} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
      */
     public static long maybeMissingNumberOf(
-            @NonNull final Address address, @NonNull final ExtFrameScope extFrameScope) {
+            @NonNull final Address address, @NonNull final HederaNativeOperations extFrameScope) {
         final var explicit = address.toArrayUnsafe();
         if (isLongZeroAddress(explicit)) {
             return longFrom(

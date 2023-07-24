@@ -19,10 +19,10 @@ package com.hedera.node.app.service.contract.impl.exec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
@@ -71,14 +71,14 @@ public interface TransactionModule {
     @Provides
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
-            @NonNull final ExtWorldScope extWorldScope, @NonNull final HederaEvmBlocks hederaEvmBlocks) {
+            @NonNull final HederaOperations extWorldScope, @NonNull final HederaEvmBlocks hederaEvmBlocks) {
         return new HederaEvmContext(extWorldScope.gasPriceInTinybars(), false, hederaEvmBlocks);
     }
 
     @Provides
     @TransactionScope
     static Supplier<HederaWorldUpdater> feesOnlyUpdater(
-            @NonNull final ExtWorldScope extWorldScope, @NonNull final EvmFrameStateFactory factory) {
+            @NonNull final HederaOperations extWorldScope, @NonNull final EvmFrameStateFactory factory) {
         return () -> new ProxyWorldUpdater(requireNonNull(extWorldScope), requireNonNull(factory), null);
     }
 
@@ -88,11 +88,11 @@ public interface TransactionModule {
 
     @Binds
     @TransactionScope
-    ExtWorldScope bindExtWorldScope(HandleExtWorldScope handleExtWorldScope);
+    HederaOperations bindExtWorldScope(HandleHederaOperations handleExtWorldScope);
 
     @Binds
     @TransactionScope
-    ExtFrameScope bindExtFrameScope(HandleExtFrameScope handleExtFrameScope);
+    HederaNativeOperations bindExtFrameScope(HandleHederaNativeOperations handleExtFrameScope);
 
     @Binds
     @TransactionScope

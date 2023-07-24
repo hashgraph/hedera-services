@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
@@ -44,7 +44,7 @@ public class LegibleStorageManager {
      *
      * <p>Besides updating the first keys of these linked lists in the scoped accounts, also updates the
      * slots used per contract via
-     * {@link HandleExtWorldScope#updateStorageMetadata(long, Bytes, int)}.
+     * {@link HandleHederaOperations#updateStorageMetadata(long, Bytes, int)}.
      *
      * @param scope the scope of the current transaction
      * @param changes the pending changes to storage values
@@ -52,7 +52,7 @@ public class LegibleStorageManager {
      * @param store the writable state store
      */
     public void rewrite(
-            @NonNull final ExtWorldScope scope,
+            @NonNull final HederaOperations scope,
             @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
             @NonNull final ContractStateStore store) {

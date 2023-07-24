@@ -20,15 +20,16 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmFrameState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * The "extended" frame scope that a {@link ScopedEvmFrameState} needs to perform all required operations.
+ * Provides Hedera operations using PBJ types to allow a {@link ProxyEvmFrameState} to access and change
+ * the state of the world (including all changes up to and including the current frame).
  */
-public interface ExtFrameScope {
+public interface HederaNativeOperations {
     /**
      * Returns the {@link Account} with the given number.
      *
@@ -105,7 +106,7 @@ public interface ExtFrameScope {
     void refundFee(long fromEntityNumber, final long amount);
 
     /**
-     * Transfers value from one account or contract to another without creating a record in this {@link HandleExtWorldScope},
+     * Transfers value from one account or contract to another without creating a record in this {@link HandleHederaOperations},
      * performing signature verification for a receiver with {@code receiverSigRequired=true} by giving priority
      * to the included {@code VerificationStrategy}.
      *

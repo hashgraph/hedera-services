@@ -20,8 +20,8 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
@@ -34,12 +34,12 @@ import javax.inject.Inject;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
- * making the final commit in the "base" {@link HandleExtWorldScope}. These include validating storage size
+ * making the final commit in the "base" {@link HandleHederaOperations}. These include validating storage size
  * limits, calculating and charging rent, and preserving per-contract linked lists. See the
  * {@link #commit()} implementation for more details.
  */
 @TransactionScope
-public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
+public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     private final RentCalculator rentCalculator;
     private final ContractsConfig contractsConfig;
     private final LegibleStorageManager storageManager;
@@ -50,8 +50,8 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
     private List<ContractNonceInfo> updatedContractNonces;
 
     @Inject
-    public BaseProxyWorldUpdater(
-            @NonNull final ExtWorldScope extWorldScope,
+    public RootProxyWorldUpdater(
+            @NonNull final HederaOperations extWorldScope,
             @NonNull final Configuration configuration,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
@@ -80,16 +80,16 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
         // Validate the effects on size are legal
         final var changes = evmFrameState.getStorageChanges();
         final var sizeEffects = summarizeSizeEffects(changes);
-        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), extWorldScope, sizeEffects.sizeChanges());
+        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), hederaOperations, sizeEffects.sizeChanges());
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
-        storageManager.rewrite(extWorldScope, changes, sizeEffects.sizeChanges(), extWorldScope.getStore());
+        storageManager.rewrite(hederaOperations, changes, sizeEffects.sizeChanges(), hederaOperations.getStore());
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record
-        createdContractIds = extWorldScope.createdContractIds();
-        updatedContractNonces = extWorldScope.updatedContractNonces();
+        createdContractIds = hederaOperations.createdContractIds();
+        updatedContractNonces = hederaOperations.updatedContractNonces();
         super.commit();
         // Be sure not to externalize contract ids or nonces without a successful commit
         committed = true;
@@ -145,8 +145,8 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
                         sizeChange.numAdded(),
                         rentFactors.numSlotsUsed(),
                         rentFactors.expiry());
-                final var rentInTinybars = extWorldScope.valueInTinybars(rentInTinycents);
-                extWorldScope.chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
+                final var rentInTinybars = hederaOperations.valueInTinybars(rentInTinycents);
+                hederaOperations.chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
             }
         }
     }

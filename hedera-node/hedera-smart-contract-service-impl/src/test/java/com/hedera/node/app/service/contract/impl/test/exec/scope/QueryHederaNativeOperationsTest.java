@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.scope.QueryExtFrameScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,15 +29,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class QueryExtFrameScopeTest {
+class QueryHederaNativeOperationsTest {
     @Mock
     private QueryContext context;
 
-    private QueryExtFrameScope subject;
+    private QueryHederaNativeOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new QueryExtFrameScope(context);
+        subject = new QueryHederaNativeOperations(context);
     }
 
     @Test

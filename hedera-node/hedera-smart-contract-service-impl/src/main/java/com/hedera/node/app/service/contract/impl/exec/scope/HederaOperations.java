@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -28,23 +29,23 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
- * The "extended" world scope that a {@link ProxyWorldUpdater} needs to perform all required operations.
+ * Provides the Hedera operations that only a {@link ProxyWorldUpdater} needs (but not a {@link ProxyEvmFrameState}.
  */
-public interface ExtWorldScope {
+public interface HederaOperations {
     /**
-     * Creates a new {@link ExtWorldScope} that is a child of this {@link ExtWorldScope}.
+     * Creates a new {@link HederaOperations} that is a child of this {@link HederaOperations}.
      *
-     * @return a nested {@link ExtWorldScope}
+     * @return a nested {@link HederaOperations}
      */
     @NonNull
-    ExtWorldScope begin();
+    HederaOperations begin();
 
     /**
-     * Commits all changes made within this {@link ExtWorldScope} to the parent {@link ExtWorldScope}. For
+     * Commits all changes made within this {@link HederaOperations} to the parent {@link HederaOperations}. For
      * everything except records, these changes will only affect state if every ancestor up to
-     * and including the root {@link ExtWorldScope} is also committed. Records are a bit different,
-     * as even if the root {@link ExtWorldScope} reverts, any records created within this
-     * {@link ExtWorldScope} will still appear in state; but those with status {@code SUCCESS} will
+     * and including the root {@link HederaOperations} is also committed. Records are a bit different,
+     * as even if the root {@link HederaOperations} reverts, any records created within this
+     * {@link HederaOperations} will still appear in state; but those with status {@code SUCCESS} will
      * have with their stateful effects cleared from the record and their status replaced with
      * {@code REVERTED_SUCCESS}.
      */
@@ -58,9 +59,9 @@ public interface ExtWorldScope {
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
-     * its own state within this {@link ExtWorldScope}.
+     * its own state within this {@link HederaOperations}.
      *
-     * @return the contract state reflecting all changes made up to this {@link ExtWorldScope}
+     * @return the contract state reflecting all changes made up to this {@link HederaOperations}
      */
     ContractStateStore getStore();
 

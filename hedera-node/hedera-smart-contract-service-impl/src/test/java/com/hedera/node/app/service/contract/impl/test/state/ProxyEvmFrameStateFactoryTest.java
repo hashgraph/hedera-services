@@ -19,10 +19,10 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +31,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScopedEvmFrameStateFactoryTest {
+class ProxyEvmFrameStateFactoryTest {
     @Mock
-    private ExtWorldScope scope;
+    private HederaOperations scope;
 
     @Mock
-    private ExtFrameScope extFrameScope;
+    private HederaNativeOperations extFrameScope;
 
     @Mock
     private ContractStateStore store;
@@ -54,6 +54,6 @@ class ScopedEvmFrameStateFactoryTest {
 
         final var nextFrame = subject.get();
 
-        assertInstanceOf(ScopedEvmFrameState.class, nextFrame);
+        assertInstanceOf(ProxyEvmFrameState.class, nextFrame);
     }
 }

@@ -29,14 +29,14 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 /**
- * TODO - a fully mutable {@link ExtFrameScope} based on a {@link HandleContext}.
+ * TODO - a fully mutable {@link HederaNativeOperations} based on a {@link HandleContext}.
  */
 @TransactionScope
-public class HandleExtFrameScope implements ExtFrameScope {
+public class HandleHederaNativeOperations implements HederaNativeOperations {
     private final HandleContext context;
 
     @Inject
-    public HandleExtFrameScope(@NonNull final HandleContext context) {
+    public HandleHederaNativeOperations(@NonNull final HandleContext context) {
         this.context = Objects.requireNonNull(context);
     }
 

@@ -28,7 +28,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -61,7 +61,7 @@ public record HederaEvmTransactionResult(
         return null;
     }
 
-    public ContractFunctionResult asProtoResultForBase(@NonNull final BaseProxyWorldUpdater updater) {
+    public ContractFunctionResult asProtoResultForBase(@NonNull final RootProxyWorldUpdater updater) {
         final var errorMessage = maybeErrorMessage();
         if (errorMessage == null) {
             return asSuccessResultForCommitted(updater);
@@ -162,7 +162,7 @@ public record HederaEvmTransactionResult(
                 null);
     }
 
-    private ContractFunctionResult asSuccessResultForCommitted(@NonNull final BaseProxyWorldUpdater updater) {
+    private ContractFunctionResult asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
         final var createdIds = updater.getCreatedContractIds();
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)

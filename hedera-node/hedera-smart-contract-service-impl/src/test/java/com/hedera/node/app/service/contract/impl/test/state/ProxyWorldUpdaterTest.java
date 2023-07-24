@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
@@ -94,7 +94,7 @@ class ProxyWorldUpdaterTest {
     private MessageFrame frame;
 
     @Mock
-    private ExtWorldScope extWorldScope;
+    private HederaOperations extWorldScope;
 
     @Mock
     private WorldUpdater parent;

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TransactionModuleTest {
     @Mock
-    private ExtWorldScope extWorldScope;
+    private HederaOperations extWorldScope;
 
     @Mock
     private EvmFrameStateFactory factory;

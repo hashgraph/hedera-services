@@ -18,7 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.infra;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import java.util.List;
@@ -30,7 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LegibleStorageManagerTest {
     @Mock
-    private ExtWorldScope extWorldScope;
+    private HederaOperations extWorldScope;
 
     @Mock
     private ContractStateStore store;

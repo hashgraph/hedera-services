@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.service.contract.impl.exec.scope.QueryExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -34,18 +34,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class QueryExtWorldScopeTest {
+class QueryHederaOperationsTest {
     @Mock
     private QueryContext context;
 
     @Mock
     private ContractStateStore store;
 
-    private QueryExtWorldScope subject;
+    private QueryHederaOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new QueryExtWorldScope(context);
+        subject = new QueryHederaOperations(context);
     }
 
     @Test

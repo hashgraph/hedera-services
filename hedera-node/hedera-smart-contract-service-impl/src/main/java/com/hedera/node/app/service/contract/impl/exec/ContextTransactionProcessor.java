@@ -26,7 +26,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -49,7 +49,7 @@ public class ContextTransactionProcessor implements Callable<ContractFunctionRes
     private final Configuration configuration;
     private final HederaEvmContext hederaEvmContext;
     private final ActionSidecarContentTracer tracer;
-    private final BaseProxyWorldUpdater worldUpdater;
+    private final RootProxyWorldUpdater worldUpdater;
     private final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
     private final Map<HederaEvmVersion, TransactionProcessor> processors;
@@ -61,7 +61,7 @@ public class ContextTransactionProcessor implements Callable<ContractFunctionRes
             @NonNull final Configuration configuration,
             @NonNull final HederaEvmContext hederaEvmContext,
             @NonNull final ActionSidecarContentTracer tracer,
-            @NonNull final BaseProxyWorldUpdater worldUpdater,
+            @NonNull final RootProxyWorldUpdater worldUpdater,
             @NonNull final HevmTransactionFactory hevmTransactionFactory,
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors) {

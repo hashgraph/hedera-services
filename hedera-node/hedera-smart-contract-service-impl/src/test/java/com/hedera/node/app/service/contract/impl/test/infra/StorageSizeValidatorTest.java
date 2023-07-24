@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_RE
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertExhaustsResourceLimit;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -36,7 +36,7 @@ class StorageSizeValidatorTest {
     private static final long PRETEND_MAX_AGGREGATE = 123456L;
 
     @Mock
-    private ExtWorldScope extWorldScope;
+    private HederaOperations extWorldScope;
 
     private StorageSizeValidator subject;
 

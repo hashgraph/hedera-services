@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HandleExtWorldScopeTest {
+class HandleHederaOperationsTest {
     @Mock
     private HandleContext.SavepointStack savepointStack;
 
@@ -41,11 +41,11 @@ class HandleExtWorldScopeTest {
     @Mock
     private WritableContractStateStore stateStore;
 
-    private HandleExtWorldScope subject;
+    private HandleHederaOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HandleExtWorldScope(context);
+        subject = new HandleHederaOperations(context);
     }
 
     @Test

@@ -38,13 +38,13 @@ public class ContractCallHandler implements TransactionHandler {
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
-        requireNonNull(context);
-        // Nothing to do
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
+    public void preHandle(@NonNull final PreHandleContext context) {
+        requireNonNull(context);
+        // Nothing to do
     }
 }
