@@ -24,6 +24,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class FileServiceImpl implements FileService {
     public static final String BLOBS_KEY = "FILES";
+    public static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
+    public static final String UPGRADE_DATA_KEY = "UPGRADE_DATA";
 
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
