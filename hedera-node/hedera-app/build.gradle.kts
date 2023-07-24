@@ -145,6 +145,10 @@ val generatedSources = file("build/generated/sources/annotationProcessor/java/ma
 
 java.sourceSets["main"].java.srcDir(generatedSources)
 
+val xtestGeneratedSources = file("build/generated/sources/annotationProcessor/java/xtest")
+
+java.sourceSets["xtest"].java.srcDir(xtestGeneratedSources)
+
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {
     group = "application"
