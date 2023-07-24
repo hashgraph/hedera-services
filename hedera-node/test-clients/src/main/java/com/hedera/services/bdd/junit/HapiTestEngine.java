@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.junit;
 
+import static java.util.Objects.requireNonNull;
+import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
+
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -65,6 +68,15 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Disabled;
@@ -82,19 +94,6 @@ import org.junit.platform.engine.support.descriptor.EngineDescriptor;
 import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine;
 import org.junit.platform.engine.support.hierarchical.Node;
-
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.concurrent.Executors;
-import java.util.function.Predicate;
-
-import static java.util.Objects.requireNonNull;
-import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
 
 /**
  * An implementation of a JUnit {@link TestEngine} to execute HAPI Specification Tests.
@@ -305,16 +304,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 // 6. Create an Address Book
                 final var addressBook = new AddressBook();
-                addressBook.add(new Address(
-                        nodeId,
-                        "TEST0",
-                        "TEST0",
-                        1,
-                        "127.0.0.1",
-                        port,
-                        "127.0.0.1",
-                        port,
-                        "0.0.3"));
+                addressBook.add(
+                        new Address(nodeId, "TEST0", "TEST0", 1, "127.0.0.1", port, "127.0.0.1", port, "0.0.3"));
 
                 // 7. Setup some cryptography
                 //        final var crypto = CryptoSetup.initNodeSecurity(addressBook, config)[0];
@@ -344,7 +335,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 final var initialState = GenesisStateBuilder.buildGenesisState(
                         platformContext, addressBook, new BasicSoftwareVersion(Long.MAX_VALUE), hedera.newState());
-                final var initialSignedState = new SignedState(platformContext, initialState.get().getState(), "Genesis");
+                final var initialSignedState =
+                        new SignedState(platformContext, initialState.get().getState(), "Genesis");
 
                 final SwirldsPlatform platform = (SwirldsPlatform) constructor.newInstance(
                         platformContext,
