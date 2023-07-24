@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.FunctionGauge;
@@ -51,23 +50,24 @@ import org.junit.jupiter.api.io.TempDir;
 
 class LegacyCsvWriterTest {
 
-    private static final NodeId NODE_ID = NodeId.createMain(42L);
+    private static final NodeId NODE_ID = new NodeId(42L);
     private Metrics metrics;
     private MetricsConfig metricsConfig;
+    private Configuration configuration;
 
     @TempDir
     private Path tempDir;
 
     @BeforeEach
     void setStandardSettings() {
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue("csvOutputFolder", tempDir.toString())
-                .withValue("csvAppend", "false")
+        configuration = new TestConfigBuilder()
+                .withValue("metrics.csvOutputFolder", tempDir.toString())
+                .withValue("metrics.csvAppend", "false")
+                .withValue("showInternalStats", "false")
+                .withValue("verboseStatistics", "false")
                 .getOrCreateConfig();
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
-        SettingsCommon.showInternalStats = false;
-        SettingsCommon.verboseStatistics = false;
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
@@ -77,7 +77,7 @@ class LegacyCsvWriterTest {
     @Test
     void testToString() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
 
         // then
         assertThat(writer.toString()).matches("^LegacyCsvWriter\\[csvFilePath=" + tempDir + ".*]$");
@@ -88,7 +88,7 @@ class LegacyCsvWriterTest {
         // given
         final Path grandParentPath = Files.createTempDirectory(tempDir, null);
         final Path parentPath = Files.createTempDirectory(grandParentPath, null);
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, parentPath, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, parentPath, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
 
         Files.deleteIfExists(csvFilePath);
@@ -113,7 +113,7 @@ class LegacyCsvWriterTest {
     @Test
     void testWriteDefault() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createCompleteList();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -149,30 +149,30 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
-				FunctionGauge:,FunctionGauge,
-				IntegerAccumulator:,IntegerAccumulator,
-				IntegerGauge:,IntegerGauge,
-				IntegerPairAccumulator:,IntegerPairAccumulator,
-				LongAccumulator:,LongAccumulator,
-				LongGauge:,LongGauge,
-				RunningAverageMetric:,RunningAverageMetric,
-				SpeedometerMetric:,SpeedometerMetric,
-				StatEntry:,StatEntry,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
+                                FunctionGauge:,FunctionGauge,
+                                IntegerAccumulator:,IntegerAccumulator,
+                                IntegerGauge:,IntegerGauge,
+                                IntegerPairAccumulator:,IntegerPairAccumulator,
+                                LongAccumulator:,LongAccumulator,
+                                LongGauge:,LongGauge,
+                                RunningAverageMetric:,RunningAverageMetric,
+                                SpeedometerMetric:,SpeedometerMetric,
+                                StatEntry:,StatEntry,
 
-				,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
-				,,Counter,DoubleGauge,FunctionGauge,IntegerAccumulator,IntegerGauge,IntegerPairAccumulator,LongAccumulator,LongGauge,RunningAverageMetric,SpeedometerMetric,StatEntry,
-				,,0,0\\.0,Hello FunctionGauge,0,0,0.0,0,0,0\\.0,0\\.0,Hello StatEntry,
-				,,1,3\\.1,Hello FunctionGauge,42,42,112\\.2,42,4711,1000\\.0,\\d*\\.\\d,Hello StatEntry,
-				""");
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
+                                ,,Counter,DoubleGauge,FunctionGauge,IntegerAccumulator,IntegerGauge,IntegerPairAccumulator,LongAccumulator,LongGauge,RunningAverageMetric,SpeedometerMetric,StatEntry,
+                                ,,0,0\\.0,Hello FunctionGauge,0,0,0.0,0,0,0\\.0,0\\.0,Hello StatEntry,
+                                ,,1,3\\.1,Hello FunctionGauge,42,42,112\\.2,42,4711,1000\\.0,\\d*\\.\\d,Hello StatEntry,
+                                """);
     }
 
     @Test
     void testWritingOfSpecialValues() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createShortList();
         final DoubleGauge gauge = (DoubleGauge) metrics.get(1);
@@ -202,18 +202,20 @@ class LegacyCsvWriterTest {
 
         // then
         final String content = Files.readString(csvFilePath);
-        assertThat(content).matches("""
-				(.*\\n){5}.*
-				,,0,0.0,
-				,,0,0.0,
-				,,0,0.0,
-				""");
+        assertThat(content)
+                .matches(
+                        """
+                                (.*\\n){5}.*
+                                ,,0,0.0,
+                                ,,0,0.0,
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithExistingFile() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         Files.writeString(csvFilePath, "Hello World");
         final List<Metric> metrics = createShortList();
@@ -231,38 +233,37 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,0,0.0,
-				""");
+                                ,,platform,platform,
+                                ,,Counter,DoubleGauge,
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithAppendedModeAndExistingFile() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("csvOutputFolder", tempDir.toString())
-                .withValue("csvAppend", "true")
+                .withValue("metrics.csvOutputFolder", tempDir.toString())
+                .withValue("metrics.csvAppend", "true")
                 .getOrCreateConfig();
-        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         Files.writeString(
                 csvFilePath,
                 """
-				filename:,/tmp/tempfile.tmp,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                        filename:,/tmp/tempfile.tmp,
+                        Counter:,Counter,
+                        DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,1,2.0,
-				,,11,12.0,
-				""");
+                        ,,platform,platform,
+                        ,,Counter,DoubleGauge,
+                        ,,1,2.0,
+                        ,,11,12.0,
+                        """);
         final List<Metric> metrics = createShortList();
         final List<Snapshot> snapshots = metrics.stream()
                 .map(DefaultMetric.class::cast)
@@ -278,29 +279,28 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,1,2.0,
-				,,11,12.0,
-				
-				
-				,,0,0.0,
-				""");
+                                ,,platform,platform,
+                                ,,Counter,DoubleGauge,
+                                ,,1,2.0,
+                                ,,11,12.0,
+                                				
+                                				
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithAppendedModeAndNonExistingFile() throws IOException {
         // given
         final Configuration configuration = new TestConfigBuilder()
-                .withValue("csvOutputFolder", tempDir.toString())
-                .withValue("csvAppend", "true")
+                .withValue("metrics.csvOutputFolder", tempDir.toString())
+                .withValue("metrics.csvAppend", "true")
                 .getOrCreateConfig();
-        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         Files.deleteIfExists(csvFilePath);
         final List<Metric> metrics = createShortList();
@@ -318,20 +318,20 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter:,Counter,
-				DoubleGauge:,DoubleGauge,
+                                filename:,.*,
+                                Counter:,Counter,
+                                DoubleGauge:,DoubleGauge,
 
-				,,platform,platform,
-				,,Counter,DoubleGauge,
-				,,0,0.0,
-				""");
+                                ,,platform,platform,
+                                ,,Counter,DoubleGauge,
+                                ,,0,0.0,
+                                """);
     }
 
     @Test
     void testWriteWithInternalIgnored() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithInternals();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -362,22 +362,23 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Public Counter:,Public Counter,
-				Public DoubleGauge:,Public DoubleGauge,
+                                filename:,.*,
+                                Public Counter:,Public Counter,
+                                Public DoubleGauge:,Public DoubleGauge,
 
-				,,platform,platform,
-				,,Public Counter,Public DoubleGauge,
-				,,0,0.0,
-				,,3,2.7,
-				""");
+                                ,,platform,platform,
+                                ,,Public Counter,Public DoubleGauge,
+                                ,,0,0.0,
+                                ,,3,2.7,
+                                """);
     }
 
     @Test
     void testWriteWithInternalNotIgnored() throws IOException {
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("showInternalStats", "true").getOrCreateConfig();
         // given
-        SettingsCommon.showInternalStats = true;
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithInternals();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -408,23 +409,23 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Internal Counter:,Internal Counter,
-				Public Counter:,Public Counter,
-				Internal DoubleGauge:,Internal DoubleGauge,
-				Public DoubleGauge:,Public DoubleGauge,
+                                filename:,.*,
+                                Internal Counter:,Internal Counter,
+                                Public Counter:,Public Counter,
+                                Internal DoubleGauge:,Internal DoubleGauge,
+                                Public DoubleGauge:,Public DoubleGauge,
 
-				,,internal,platform,internal,platform,
-				,,Internal Counter,Public Counter,Internal DoubleGauge,Public DoubleGauge,
-				,,0,0,0.0,0.0,
-				,,2,3,3.1,2.7,
-				""");
+                                ,,internal,platform,internal,platform,
+                                ,,Internal Counter,Public Counter,Internal DoubleGauge,Public DoubleGauge,
+                                ,,0,0,0.0,0.0,
+                                ,,2,3,3.1,2.7,
+                                """);
     }
 
     @Test
     void testWriteWithSecondaryValuesNotIncluded() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithSecondaryValues();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -455,24 +456,25 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric:,RunningAverageMetric,
-				SpeedometerMetric:,SpeedometerMetric,
-				RunningAverageMetric Info:,RunningAverageMetric Info,
-				SpeedometerMetric Info:,SpeedometerMetric Info,
+                                filename:,.*,
+                                RunningAverageMetric:,RunningAverageMetric,
+                                SpeedometerMetric:,SpeedometerMetric,
+                                RunningAverageMetric Info:,RunningAverageMetric Info,
+                                SpeedometerMetric Info:,SpeedometerMetric Info,
 
-				,,platform,platform,platform\\.info,platform\\.info,
-				,,RunningAverageMetric,SpeedometerMetric,RunningAverageMetric Info,SpeedometerMetric Info,
-				,,0\\.0,0\\.0,0\\.0,0\\.0,
-				,,1000\\.0,\\d*\\.\\d,3000\\.0,\\d*\\.\\d,
-				""");
+                                ,,platform,platform,platform\\.info,platform\\.info,
+                                ,,RunningAverageMetric,SpeedometerMetric,RunningAverageMetric Info,SpeedometerMetric Info,
+                                ,,0\\.0,0\\.0,0\\.0,0\\.0,
+                                ,,1000\\.0,\\d*\\.\\d,3000\\.0,\\d*\\.\\d,
+                                """);
     }
 
     @Test
     void testWriteWithSecondaryValuesIncluded() throws IOException {
         // given
-        SettingsCommon.verboseStatistics = true;
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createListWithSecondaryValues();
         final List<Snapshot> snapshots1 = metrics.stream()
@@ -503,23 +505,23 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric:,RunningAverageMetric,
-				SpeedometerMetric:,SpeedometerMetric,
-				RunningAverageMetric Info:,RunningAverageMetric Info,
-				SpeedometerMetric Info:,SpeedometerMetric Info,
+                                filename:,.*,
+                                RunningAverageMetric:,RunningAverageMetric,
+                                SpeedometerMetric:,SpeedometerMetric,
+                                RunningAverageMetric Info:,RunningAverageMetric Info,
+                                SpeedometerMetric Info:,SpeedometerMetric Info,
 
-				,,platform,platform,platform,platform,platform,platform,platform,platform,platform\\.info,platform\\.info,
-				,,RunningAverageMetric,RunningAverageMetricMax,RunningAverageMetricMin,RunningAverageMetricStd,SpeedometerMetric,SpeedometerMetricMax,SpeedometerMetricMin,SpeedometerMetricStd,RunningAverageMetric Info,SpeedometerMetric Info,
-				,,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,
-				,,1000\\.0,1000\\.0,1000\\.0,0\\.0,\\d*\\.\\d,\\d*\\.\\d,\\d*\\.\\d,0\\.0,3000\\.0,\\d*\\.\\d,
-				""");
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform\\.info,platform\\.info,
+                                ,,RunningAverageMetric,RunningAverageMetricMax,RunningAverageMetricMin,RunningAverageMetricStd,SpeedometerMetric,SpeedometerMetricMax,SpeedometerMetricMin,SpeedometerMetricStd,RunningAverageMetric Info,SpeedometerMetric Info,
+                                ,,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,0\\.0,
+                                ,,1000\\.0,1000\\.0,1000\\.0,0\\.0,\\d*\\.\\d,\\d*\\.\\d,\\d*\\.\\d,0\\.0,3000\\.0,\\d*\\.\\d,
+                                """);
     }
 
     @Test
     void testBrokenFormatString() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final DoubleGauge gauge = metrics.getOrCreate(new DoubleGauge.Config(Metrics.PLATFORM_CATEGORY, "DoubleGauge")
                 .withFormat("%d")
@@ -533,15 +535,15 @@ class LegacyCsvWriterTest {
         // then
         final String content = Files.readString(csvFilePath);
         assertThat(content).matches("""
-				(.*\\n){4}.*
-				,,,
-				""");
+                (.*\\n){4}.*
+                ,,,
+                """);
     }
 
     @Test
     void testChangedEntriesWithSimpleMetrics() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createSimpleList();
 
@@ -572,24 +574,24 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				Counter 1:,Counter 1,
-				Counter 2:,Counter 2,
-				Counter 3:,Counter 3,
-				Counter 4:,Counter 4,
-				Counter 5:,Counter 5,
+                                filename:,.*,
+                                Counter 1:,Counter 1,
+                                Counter 2:,Counter 2,
+                                Counter 3:,Counter 3,
+                                Counter 4:,Counter 4,
+                                Counter 5:,Counter 5,
 
-				,,platform,platform,platform,platform,platform,
-				,,Counter 1,Counter 2,Counter 3,Counter 4,Counter 5,
-				,,0,1,2,3,4,
-				,,,11,,33,,
-				""");
+                                ,,platform,platform,platform,platform,platform,
+                                ,,Counter 1,Counter 2,Counter 3,Counter 4,Counter 5,
+                                ,,0,1,2,3,4,
+                                ,,,11,,33,,
+                                """);
     }
 
     @Test
     void testChangedEntriesWithComplexMetricsAndNoSecondaryValues() throws IOException {
         // given
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createComplexList();
 
@@ -620,25 +622,26 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric 1:,RunningAverageMetric 1,
-				RunningAverageMetric 2:,RunningAverageMetric 2,
-				RunningAverageMetric 3:,RunningAverageMetric 3,
-				RunningAverageMetric 4:,RunningAverageMetric 4,
-				RunningAverageMetric 5:,RunningAverageMetric 5,
+                                filename:,.*,
+                                RunningAverageMetric 1:,RunningAverageMetric 1,
+                                RunningAverageMetric 2:,RunningAverageMetric 2,
+                                RunningAverageMetric 3:,RunningAverageMetric 3,
+                                RunningAverageMetric 4:,RunningAverageMetric 4,
+                                RunningAverageMetric 5:,RunningAverageMetric 5,
 
-				,,platform,platform,platform,platform,platform,
-				,,RunningAverageMetric 1,RunningAverageMetric 2,RunningAverageMetric 3,RunningAverageMetric 4,RunningAverageMetric 5,
-				,,0\\.0,1000\\.0,2000\\.0,3000\\.0,4000\\.0,
-				,,,5\\d*\\.\\d,,16\\d*\\.\\d,,
-				""");
+                                ,,platform,platform,platform,platform,platform,
+                                ,,RunningAverageMetric 1,RunningAverageMetric 2,RunningAverageMetric 3,RunningAverageMetric 4,RunningAverageMetric 5,
+                                ,,0\\.0,1000\\.0,2000\\.0,3000\\.0,4000\\.0,
+                                ,,,5\\d*\\.\\d,,16\\d*\\.\\d,,
+                                """);
     }
 
     @Test
     void testChangedEntriesWithComplexMetricsAndSecondaryValues() throws IOException {
         // given
-        SettingsCommon.verboseStatistics = true;
-        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, metricsConfig);
+        final Configuration configuration =
+                new TestConfigBuilder().withValue("verboseStatistics", "true").getOrCreateConfig();
+        final LegacyCsvWriter writer = new LegacyCsvWriter(NODE_ID, tempDir, configuration);
         final Path csvFilePath = writer.getCsvFilePath();
         final List<Metric> metrics = createComplexList();
 
@@ -669,18 +672,18 @@ class LegacyCsvWriterTest {
         assertThat(content)
                 .matches(
                         """
-				filename:,.*,
-				RunningAverageMetric 1:,RunningAverageMetric 1,
-				RunningAverageMetric 2:,RunningAverageMetric 2,
-				RunningAverageMetric 3:,RunningAverageMetric 3,
-				RunningAverageMetric 4:,RunningAverageMetric 4,
-				RunningAverageMetric 5:,RunningAverageMetric 5,
+                                filename:,.*,
+                                RunningAverageMetric 1:,RunningAverageMetric 1,
+                                RunningAverageMetric 2:,RunningAverageMetric 2,
+                                RunningAverageMetric 3:,RunningAverageMetric 3,
+                                RunningAverageMetric 4:,RunningAverageMetric 4,
+                                RunningAverageMetric 5:,RunningAverageMetric 5,
 
-				,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
-				,,RunningAverageMetric 1,RunningAverageMetric 1Max,RunningAverageMetric 1Min,RunningAverageMetric 1Std,RunningAverageMetric 2,RunningAverageMetric 2Max,RunningAverageMetric 2Min,RunningAverageMetric 2Std,RunningAverageMetric 3,RunningAverageMetric 3Max,RunningAverageMetric 3Min,RunningAverageMetric 3Std,RunningAverageMetric 4,RunningAverageMetric 4Max,RunningAverageMetric 4Min,RunningAverageMetric 4Std,RunningAverageMetric 5,RunningAverageMetric 5Max,RunningAverageMetric 5Min,RunningAverageMetric 5Std,
-				,,0\\.0,0\\.0,0\\.0,0\\.0,1000\\.0,1000\\.0,1000\\.0,0\\.0,2000\\.0,2000\\.0,2000\\.0,0\\.0,3000\\.0,3000\\.0,3000\\.0,0\\.0,4000\\.0,4000\\.0,4000\\.0,0\\.0,
-				,,,,,,5\\d*\\.\\d,5\\d*\\.\\d,1000.0,\\d*\\.\\d,,,,,16\\d*\\.\\d,16\\d*\\.\\d,3000.0,\\d*\\.\\d,,,,,
-				""");
+                                ,,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,platform,
+                                ,,RunningAverageMetric 1,RunningAverageMetric 1Max,RunningAverageMetric 1Min,RunningAverageMetric 1Std,RunningAverageMetric 2,RunningAverageMetric 2Max,RunningAverageMetric 2Min,RunningAverageMetric 2Std,RunningAverageMetric 3,RunningAverageMetric 3Max,RunningAverageMetric 3Min,RunningAverageMetric 3Std,RunningAverageMetric 4,RunningAverageMetric 4Max,RunningAverageMetric 4Min,RunningAverageMetric 4Std,RunningAverageMetric 5,RunningAverageMetric 5Max,RunningAverageMetric 5Min,RunningAverageMetric 5Std,
+                                ,,0\\.0,0\\.0,0\\.0,0\\.0,1000\\.0,1000\\.0,1000\\.0,0\\.0,2000\\.0,2000\\.0,2000\\.0,0\\.0,3000\\.0,3000\\.0,3000\\.0,0\\.0,4000\\.0,4000\\.0,4000\\.0,0\\.0,
+                                ,,,,,,5\\d*\\.\\d,5\\d*\\.\\d,1000.0,\\d*\\.\\d,,,,,16\\d*\\.\\d,16\\d*\\.\\d,3000.0,\\d*\\.\\d,,,,,
+                                """);
     }
 
     private List<Metric> createCompleteList() {

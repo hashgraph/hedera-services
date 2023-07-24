@@ -21,15 +21,17 @@ import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.StartupTime;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.logging.payloads.ReconnectFailurePayload;
 import com.swirlds.logging.payloads.UnableToReconnectPayload;
-import com.swirlds.platform.Connection;
 import com.swirlds.platform.Utilities;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,13 +43,13 @@ import org.apache.logging.log4j.Logger;
 public class ReconnectLearnerThrottle {
     private static final Logger logger = LogManager.getLogger(ReconnectLearnerThrottle.class);
     private final NodeId selfId;
-    private final ReconnectSettings settings;
+    private final ReconnectConfig config;
     /** The number of times reconnect has failed since the last succesfull reconnect. */
     private int failedReconnectsInARow;
 
-    public ReconnectLearnerThrottle(final NodeId selfId, final ReconnectSettings settings) {
-        this.selfId = selfId;
-        this.settings = settings;
+    public ReconnectLearnerThrottle(@NonNull final NodeId selfId, @NonNull final ReconnectConfig config) {
+        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
+        this.config = Objects.requireNonNull(config, "config must not be null");
         this.failedReconnectsInARow = 0;
     }
 
@@ -85,9 +87,9 @@ public class ReconnectLearnerThrottle {
     }
 
     private void killNodeIfThresholdMet() {
-        if (failedReconnectsInARow >= settings.getMaximumReconnectFailuresBeforeShutdown()) {
+        if (failedReconnectsInARow >= config.maximumReconnectFailuresBeforeShutdown()) {
             logger.error(EXCEPTION.getMarker(), "Too many reconnect failures in a row, killing node");
-            SystemUtils.exitSystem(SystemExitReason.RECONNECT_FAILURE);
+            SystemExitUtils.exitSystem(SystemExitCode.RECONNECT_FAILURE);
         }
     }
 
@@ -95,21 +97,21 @@ public class ReconnectLearnerThrottle {
      * Check if a reconnect is currently allowed. If not then kill the node.
      */
     public void exitIfReconnectIsDisabled() {
-        if (!settings.isActive()) {
+        if (!config.active()) {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
-                            "Node has fallen behind, reconnect is disabled, will die", selfId.getIdAsInt())
+                            "Node has fallen behind, reconnect is disabled, will die", selfId.id())
                     .toString());
-            SystemUtils.exitSystem(SystemExitReason.BEHIND_RECONNECT_DISABLED);
+            SystemExitUtils.exitSystem(SystemExitCode.BEHIND_RECONNECT_DISABLED);
         }
 
-        if (settings.getReconnectWindowSeconds() >= 0
-                && settings.getReconnectWindowSeconds()
+        if (config.reconnectWindowSeconds() >= 0
+                && config.reconnectWindowSeconds()
                         < StartupTime.getTimeSinceStartup().toSeconds()) {
             logger.warn(STARTUP.getMarker(), () -> new UnableToReconnectPayload(
                             "Node has fallen behind, reconnect is disabled outside of time window, will die",
-                            selfId.getIdAsInt())
+                            selfId.id())
                     .toString());
-            SystemUtils.exitSystem(SystemExitReason.BEHIND_RECONNECT_DISABLED);
+            SystemExitUtils.exitSystem(SystemExitCode.BEHIND_RECONNECT_DISABLED);
         }
     }
 }

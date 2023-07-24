@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.node.app.spi.config.Profile;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -47,7 +47,7 @@ class GrpcStarterTest {
 
     private final int port = 50211;
     private final int tlsPort = 50212;
-    private final NodeId nodeId = new NodeId(false, 123L);
+    private final NodeId nodeId = new NodeId(123L);
 
     @Mock
     private Address nodeAddress;
@@ -112,7 +112,7 @@ class GrpcStarterTest {
     void startsIfBlessedOnDevProfileOnlyOneNodeListening() {
         withPorts();
 
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
         given(nodeAddress.getMemo()).willReturn("0.0.3");
@@ -129,7 +129,7 @@ class GrpcStarterTest {
     void doesntStartIfNotBlessedOnDevProfileOnlyOneNodeListening() {
         withPorts();
 
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeLocalProperties.devOnlyDefaultNodeListens()).willReturn(true);
         given(nodeAddress.getMemo()).willReturn("0.0.4");
@@ -149,7 +149,7 @@ class GrpcStarterTest {
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeAddress.getMemo()).willReturn("0.0.3");
         given(nodeLocalProperties.devListeningAccount()).willReturn("0.0.3");
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
 
         // when:
         subject.startIfAppropriate();
@@ -162,7 +162,7 @@ class GrpcStarterTest {
     void startsIfUnblessedOnDevProfileAllNodesListening() {
         withPorts();
 
-        given(addressBook.getAddress(nodeId.getId())).willReturn(nodeAddress);
+        given(addressBook.getAddress(nodeId)).willReturn(nodeAddress);
         given(nodeLocalProperties.activeProfile()).willReturn(Profile.DEV);
         given(nodeAddress.getMemo()).willReturn("0.0.4");
         given(nodeAddress.getPortExternalIpv4()).willReturn(50666);

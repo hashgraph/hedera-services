@@ -20,13 +20,16 @@ import static com.swirlds.platform.test.event.EventUtils.integerPowerDistributio
 import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
 import static com.swirlds.platform.test.event.RandomEventUtils.randomEventWithTimestamp;
 
-import com.swirlds.common.test.TransactionGenerator;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.TransactionGenerator;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.DynamicValueGenerator;
 import com.swirlds.platform.test.event.IndexedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -37,7 +40,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
     /**
      * The unique ID of this source/node. Is set by the StandardEventGenerator.
      */
-    private int nodeId;
+    private NodeId nodeId;
 
     /**
      * Influences the probability that this node create a new event.
@@ -117,7 +120,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
         this.useFakeHashes = useFakeHashes;
         this.transactionGenerator = transactionGenerator;
         this.weight = weight;
-        nodeId = -1;
+        nodeId = NodeId.UNDEFINED_NODE_ID;
         setNewEventWeight(1.0);
 
         eventCount = 0;
@@ -166,7 +169,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      * {@inheritDoc}
      */
     @Override
-    public int getNodeId() {
+    public NodeId getNodeId() {
         return nodeId;
     }
 
@@ -175,7 +178,8 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
      */
     @SuppressWarnings("unchecked")
     @Override
-    public T setNodeId(final int nodeId) {
+    public T setNodeId(@NonNull final NodeId nodeId) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
         this.nodeId = nodeId;
         return (T) this;
     }

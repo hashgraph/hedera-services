@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.BddTestNameDoesNotMatchMethodName;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +51,26 @@ public class VersionInfoSpec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(discoversExpectedVersions());
+        return List.of(
+                discoversExpectedVersions()
+                //                appendsConfigVersionIfPresent()
+                );
     }
 
+    private HapiSpec appendsConfigVersionIfPresent() {
+        return defaultHapiSpec("appendsConfigVersionIfPresent")
+                .given()
+                .when()
+                .then(
+                        getVersionInfo()
+                                .logged()
+                                .hasNoDegenerateSemvers()
+                                .hasServicesSemVerBuild("10") // by setting src/main/resources/bootstrap.properties
+                        // to this value before starting node
+                        );
+    }
+
+    @BddTestNameDoesNotMatchMethodName
     private HapiSpec discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")
@@ -61,7 +79,7 @@ public class VersionInfoSpec extends HapiSuite {
                     .when()
                     .then(getVersionInfo().withYahcliLogging().noLogging());
         } else {
-            return defaultHapiSpec("getsExpectedVersions")
+            return defaultHapiSpec("discoversExpectedVersions")
                     .given()
                     .when()
                     .then(getVersionInfo().logged().hasNoDegenerateSemvers());

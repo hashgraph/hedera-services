@@ -38,10 +38,13 @@ public interface ReadableStates {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @NonNull
-    <K extends Comparable<? super K>, V> ReadableKVState<K, V> get(@NonNull String stateKey);
+    <K, V> ReadableKVState<K, V> get(@NonNull String stateKey);
 
     @NonNull
     <T> ReadableSingletonState<T> getSingleton(@NonNull String stateKey);
+
+    @NonNull
+    <E> ReadableQueueState<E> getQueue(@NonNull String stateKey);
 
     /**
      * Gets whether the given state key is a member of this set.

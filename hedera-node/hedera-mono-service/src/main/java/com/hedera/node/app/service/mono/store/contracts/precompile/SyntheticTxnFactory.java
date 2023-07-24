@@ -17,14 +17,14 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -524,7 +524,7 @@ public class SyntheticTxnFactory {
 
     public TransactionBody.Builder nodeStakeUpdate(
             final Timestamp stakingPeriodEnd, final List<NodeStake> nodeStakes, final PropertySource properties) {
-        final var stakingRewardRate = dynamicProperties.getStakingRewardRate();
+        final var stakingRewardRate = dynamicProperties.stakingRewardRate();
         final var threshold = dynamicProperties.getStakingStartThreshold();
         final var stakingPeriod = properties.getLongProperty(STAKING_PERIOD_MINS);
         final var stakingPeriodsStored = properties.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);

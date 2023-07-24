@@ -21,8 +21,9 @@ import static java.lang.Integer.max;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.merkle.util.MerkleSerializeUtils;
+import com.swirlds.common.test.fixtures.merkle.util.MerkleSerializeUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.EventImpl;
@@ -30,6 +31,8 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -84,7 +87,7 @@ public abstract class EventUtils {
         originalState.setPlatformState(platformState);
         platformState.setPlatformData(platformData);
 
-        return new SignedState(originalState, false);
+        return new SignedState(TestPlatformContextBuilder.create().build(), originalState, "test", false);
     }
 
     /**
@@ -100,7 +103,8 @@ public abstract class EventUtils {
         registry.registerConstructables("com.swirlds.platform.state");
         registry.registerConstructables("com.swirlds.common.*");
         final State stateCopy = MerkleSerializeUtils.serializeDeserialize(dir, signedState.getState());
-        final SignedState signedStateCopy = new SignedState(stateCopy);
+        final SignedState signedStateCopy =
+                new SignedState(TestPlatformContextBuilder.create().build(), stateCopy, "test");
         signedStateCopy.setSigSet(signedState.getSigSet());
         return signedStateCopy;
     }
@@ -146,13 +150,16 @@ public abstract class EventUtils {
      * @param events
      * 		a list of events
      * @param numberOfNodes
-     * 		ahe total number of nodes
-     * @return an array containing the max generation number for each node
+     * 		the total number of nodes
+     * @return a map containing the max generation number for each node
      */
-    public static long[] getLastGenerationInState(final EventImpl[] events, final int numberOfNodes) {
-        final long[] last = new long[numberOfNodes];
+    @NonNull
+    public static Map<NodeId, Long> getLastGenerationInState(
+            @NonNull final EventImpl[] events, final int numberOfNodes) {
+        Objects.requireNonNull(events, "events must not be null");
+        final Map<NodeId, Long> last = new HashMap<>(numberOfNodes);
         for (final EventImpl event : events) {
-            last[(int) event.getCreatorId()] = event.getGeneration();
+            last.put(event.getCreatorId(), event.getGeneration());
         }
         return last;
     }
@@ -175,7 +182,7 @@ public abstract class EventUtils {
             throw new IllegalArgumentException("Total weight must be greater than 0.0.");
         }
 
-        // TODO this can be done in logn time with a binary search
+        // FUTURE WORK this can be done in logn time with a binary search
 
         final double randomValue = random.nextDouble() * totalWeight;
         double sum = 0.0;
@@ -194,18 +201,19 @@ public abstract class EventUtils {
     /**
      * Check to see if all events have increasing generation numbers for each node.
      */
-    public static boolean areGenerationNumbersValid(final Iterable<IndexedEvent> events, final int numberOfNodes) {
-        final Map<Long, Long> previousGenNumber = new HashMap<>();
-        for (long nodeID = 0; nodeID < numberOfNodes; nodeID++) {
-            previousGenNumber.put(nodeID, -1L);
-        }
+    public static boolean areGenerationNumbersValid(
+            @NonNull final Iterable<IndexedEvent> events, final int numberOfNodes) {
+        Objects.requireNonNull(events, "events must not be null");
+        final Map<NodeId, Long> previousGenNumber = new HashMap<>(numberOfNodes);
 
         for (final IndexedEvent event : events) {
-            final long nodeID = event.getCreatorId();
-            if (previousGenNumber.get(nodeID) >= event.getGeneration()) {
-                return false;
+            final NodeId nodeId = event.getCreatorId();
+            if (previousGenNumber.containsKey(nodeId)) {
+                if (previousGenNumber.get(nodeId) >= event.getGeneration()) {
+                    return false;
+                }
             }
-            previousGenNumber.put(nodeID, event.getGeneration());
+            previousGenNumber.put(nodeId, event.getGeneration());
         }
         return true;
     }
@@ -518,7 +526,7 @@ public abstract class EventUtils {
         if (otherParent == null) {
             return 0;
         }
-        final long otherParentNode = otherParent.getCreatorId();
+        final NodeId otherParentNode = otherParent.getCreatorId();
 
         int age = 0;
         for (int index = eventIndex - 1; index >= 0; index--) {
@@ -526,7 +534,7 @@ public abstract class EventUtils {
             if (nextEvent == otherParent) {
                 break;
             }
-            if (nextEvent.getCreatorId() == otherParentNode) {
+            if (Objects.equals(nextEvent.getCreatorId(), otherParentNode)) {
                 age++;
             }
         }
@@ -552,7 +560,7 @@ public abstract class EventUtils {
      * @return A map: {age : number of events with that age}
      */
     public static Map<Integer, Integer> gatherOtherParentAges(
-            final List<IndexedEvent> events, final Set<Long> excludedNodes) {
+            final List<IndexedEvent> events, final Set<NodeId> excludedNodes) {
         final Map<Integer, Integer> map = new HashMap<>();
         for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 

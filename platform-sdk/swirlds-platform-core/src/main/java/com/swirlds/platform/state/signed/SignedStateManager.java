@@ -16,18 +16,19 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.base.ArgumentUtils.throwArgNull;
-import static com.swirlds.platform.state.signed.SignedStateUtilities.newSignedStateWrapper;
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
-import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 /**
@@ -78,7 +82,7 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, long memberId, Signature signature) {}
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
 
     /**
      * Signatures for rounds in the future.
@@ -93,6 +97,18 @@ public class SignedStateManager implements SignedStateFinder {
     private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
+
+    /**
+     * The timestamp of the first state processed by this class since the last restart, or null if no state has been
+     * processed yet.
+     */
+    private final AtomicReference<Instant> firstStateTimestamp = new AtomicReference<>(null);
+
+    /**
+     * The round number of the first state processed by this class since the last restart, or -1 if no state has been
+     * processed yet.
+     */
+    private final AtomicLong firstStateRound = new AtomicLong(-1);
 
     /**
      * Start empty, with no known signed states. The number of addresses in platform.hashgraph.getAddressBook() must not
@@ -115,13 +131,14 @@ public class SignedStateManager implements SignedStateFinder {
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
 
-        this.stateConfig = throwArgNull(stateConfig, "stateConfig");
-        this.signedStateMetrics = throwArgNull(signedStateMetrics, "signedStateMetrics");
+        this.stateConfig = Objects.requireNonNull(stateConfig, "stateConfig");
+        this.signedStateMetrics = Objects.requireNonNull(signedStateMetrics, "signedStateMetrics");
         this.newLatestCompleteStateConsumer =
-                throwArgNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
+                Objects.requireNonNull(newLatestCompleteStateConsumer, "newLatestCompleteStateConsumer");
         this.stateHasEnoughSignaturesConsumer =
-                throwArgNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
-        this.stateLacksSignaturesConsumer = throwArgNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
+                Objects.requireNonNull(stateHasEnoughSignaturesConsumer, "stateHasEnoughSignaturesConsumer");
+        this.stateLacksSignaturesConsumer =
+                Objects.requireNonNull(stateLacksSignaturesConsumer, "stateLacksSignaturesConsumer");
 
         this.savedSignatures =
                 new StandardSequenceSet<>(0, stateConfig.maxAgeOfFutureStateSignatures(), SavedSignature::round);
@@ -138,22 +155,26 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Get a wrapper containing the last complete signed state.
+     * Get the last complete signed state
      *
-     * @return a wrapper with the latest complete signed state, or null if no recent states that are complete
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return the latest complete signed state, or a null reservation if no recent states that are complete
      */
-    public @NonNull AutoCloseableWrapper<SignedState> getLatestSignedState() {
-        return completeStates.getLatest();
+    public @NonNull ReservedSignedState getLatestSignedState(@NonNull final String reason) {
+        return completeStates.getLatestAndReserve(reason);
     }
 
     /**
-     * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required
-     * signatures. State is returned with a reservation.
+     * Get the latest immutable signed state. May be unhashed, may or may not have all required signatures. State is
+     * returned with a reservation.
      *
-     * @return a wrapper with the latest signed state, or null if none are complete
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return the latest signed state, or a null reservation if none are complete
      */
-    public @NonNull AutoCloseableWrapper<SignedState> getLatestImmutableState() {
-        return lastState.get();
+    public @NonNull ReservedSignedState getLatestImmutableState(@NonNull final String reason) {
+        return lastState.getAndReserve(reason);
     }
 
     /**
@@ -200,16 +221,23 @@ public class SignedStateManager implements SignedStateFinder {
     }
 
     /**
-     * Add a state. State may be ignored if it is too old..
+     * Add a state. State may be ignored if it is too old.
      *
      * @param signedState the signed state to add
      */
     public synchronized void addState(@NonNull final SignedState signedState) {
-        throwArgNull(signedState, "signedState");
+        Objects.requireNonNull(signedState, "reservedSignedState");
 
         if (signedState.getState().getHash() == null) {
             throw new IllegalArgumentException(
                     "Unhashed state for round " + signedState.getRound() + " added to the signed state manager");
+        }
+
+        if (firstStateTimestamp.get() == null) {
+            firstStateTimestamp.set(
+                    signedState.getState().getPlatformState().getPlatformData().getConsensusTimestamp());
+            firstStateRound.set(
+                    signedState.getState().getPlatformState().getPlatformData().getRound());
         }
 
         // Double check that the signatures on this state are valid.
@@ -217,12 +245,12 @@ public class SignedStateManager implements SignedStateFinder {
         signedState.pruneInvalidSignatures();
 
         if (signedState.isComplete()) {
-            completeStates.put(signedState);
+            completeStates.put(signedState, "SignedStateManager.addState(complete)");
             if (completeStates.getLatestRound() == signedState.getRound()) {
                 notifyNewLatestCompleteState(signedState);
             }
         } else {
-            incompleteStates.put(signedState);
+            incompleteStates.put(signedState, "SignedStateManager.addState(incomplete)");
             gatherSavedSignatures(signedState);
         }
 
@@ -238,23 +266,24 @@ public class SignedStateManager implements SignedStateFinder {
      */
     private void setLastStateIfNewer(@NonNull final SignedState signedState) {
         if (signedState.getRound() > lastState.getRound()) {
-            lastState.set(signedState);
+            lastState.set(signedState, "SignedStateManager.setLastStateIfNewer()");
         }
     }
 
     /**
      * An observer of pre-consensus state signatures.
      *
-     * @param round     the round that was signed
-     * @param signerId  the ID of the signer
-     * @param signature the signature on the hash
+     * @param signerId             the node that created the signature
+     * @param signatureTransaction the signature transaction
      */
-    public synchronized void preConsensusSignatureObserver(
-            @NonNull final Long round, @NonNull final Long signerId, @NonNull final Signature signature) {
+    public synchronized void handlePreconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
 
-        throwArgNull(round, "round");
-        throwArgNull(signerId, "signerId");
-        throwArgNull(signature, "signature");
+        Objects.requireNonNull(signerId);
+        Objects.requireNonNull(signatureTransaction);
+
+        final long round = signatureTransaction.getRound();
+        final Signature signature = signatureTransaction.getStateSignature();
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
 
@@ -264,30 +293,26 @@ public class SignedStateManager implements SignedStateFinder {
             signedStateMetrics.getStateSignatureAge().update(signatureAge);
         }
 
-        try (final AutoCloseableWrapper<SignedState> wrapper = getIncompleteState(round)) {
-
-            final SignedState signedState = wrapper.get();
-            if (signedState == null) {
+        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
+            if (reservedState.isNull()) {
                 // This round has already been completed, or it is really old or in the future
                 savedSignatures.add(new SavedSignature(round, signerId, signature));
                 return;
             }
 
-            addSignature(signedState, signerId, signature);
+            addSignature(reservedState.get(), signerId, signature);
         }
     }
 
     /**
-     * Find the latest state that matches a predicate. States are scanned starting with the latest round, and the first
-     * state encountered that matches the criteria is returned.
-     *
-     * @param criteria a predicate, the first encountered state that causes this to return true is returned
-     * @return a wrapper around the first state encountered that causes the criteria to pass, or a wrapper around null
-     * if no state causes the criteria to pass.
+     * {@inheritDoc}
      */
     @Override
-    public synchronized @NonNull AutoCloseableWrapper<SignedState> find(
-            @NonNull final Predicate<SignedState> criteria) {
+    public synchronized @NonNull ReservedSignedState find(
+            @NonNull final Predicate<SignedState> criteria, @NonNull final String reason) {
+
+        Objects.requireNonNull(criteria);
+        Objects.requireNonNull(reason);
 
         final List<SignedState> allStates = new ArrayList<>();
 
@@ -299,11 +324,33 @@ public class SignedStateManager implements SignedStateFinder {
 
         for (final SignedState signedState : allStates) {
             if (criteria.test(signedState)) {
-                return newSignedStateWrapper(signedState);
+                return signedState.reserve(reason);
             }
         }
 
-        return newSignedStateWrapper(null);
+        return createNullReservation();
+    }
+
+    /**
+     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
+     * total consensus time that this node has been operating for.
+     *
+     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
+     * have been ingested yet
+     */
+    @Nullable
+    public Instant getFirstStateTimestamp() {
+        return firstStateTimestamp.get();
+    }
+
+    /**
+     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
+     * elapsed rounds since startup.
+     *
+     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
+     */
+    public long getFirstStateRound() {
+        return firstStateRound.get();
     }
 
     /**
@@ -383,11 +430,10 @@ public class SignedStateManager implements SignedStateFinder {
      * Get an unsigned state for a particular round, if it exists.
      *
      * @param round the round in question
-     * @return a wrapper around a signed state for a round, or a wrapper around null if a signed state for that round is
-     * not present
+     * @return a signed state for a round, or a null reservation if a signed state for that round is not present
      */
-    private @NonNull AutoCloseableWrapper<SignedState> getIncompleteState(final long round) {
-        return incompleteStates.get(round);
+    private @NonNull ReservedSignedState getIncompleteState(final long round) {
+        return incompleteStates.getAndReserve(round, "SignedStateManager.getIncompleteState()");
     }
 
     /**
@@ -430,7 +476,7 @@ public class SignedStateManager implements SignedStateFinder {
             notifyNewLatestCompleteState(signedState);
         }
 
-        completeStates.put(signedState);
+        completeStates.put(signedState, "SignedStateManager.signedStateNewlyComplete()");
         incompleteStates.remove(signedState.getRound());
 
         purgeOldStates();
@@ -444,7 +490,11 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signature   the signature on the state
      */
     private void addSignature(
-            @NonNull final SignedState signedState, final long nodeId, @NonNull final Signature signature) {
+            @NonNull final SignedState signedState, @NonNull final NodeId nodeId, @NonNull final Signature signature) {
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(signature, "signature must not be null");
+
         if (signedState.addSignature(nodeId, signature)) {
             // at this point the signed state is complete for the first time
             signedStateNewlyComplete(signedState);
@@ -457,7 +507,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the new most recently and complete signed state
      */
     private void notifyNewLatestCompleteState(@NonNull final SignedState signedState) {
-        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(new SignedStateWrapper(signedState));
+        newLatestCompleteStateConsumer.newLatestCompleteStateEvent(signedState);
     }
 
     /**
@@ -466,7 +516,8 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that was unable to be complete signed
      */
     private void notifyStateLacksSignatures(@NonNull final SignedState signedState) {
-        stateLacksSignaturesConsumer.stateLacksSignatures(new SignedStateWrapper(signedState));
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        stateLacksSignaturesConsumer.stateLacksSignatures(signedState);
     }
 
     /**
@@ -475,6 +526,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param signedState the state that now has enough signatures
      */
     private void notifyStateHasEnoughSignatures(@NonNull final SignedState signedState) {
-        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(new SignedStateWrapper(signedState));
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        stateHasEnoughSignaturesConsumer.stateHasEnoughSignatures(signedState);
     }
 }

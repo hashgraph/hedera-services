@@ -29,19 +29,27 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.EventStreamManager;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.state.PlatformData;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.SwirldStateManagerImpl;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.test.framework.TestQualifierTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -61,7 +69,7 @@ import org.junit.jupiter.api.Test;
 class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
 
     private EventStreamManager<EventImpl> eventStreamManager;
-    private QueueThread<SignedState> stateHashSignQueue;
+    private QueueThread<ReservedSignedState> stateHashSignQueue;
 
     private ConsensusRoundHandler consensusRoundHandler;
 
@@ -113,16 +121,16 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
-                selfId.getId(),
-                settingsProvider,
+                selfId,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
+                mock(StatusActionSubmitter.class),
                 (round) -> {},
-                null);
+                new BasicSoftwareVersion(1));
 
         final int numRounds = 500;
         final ConsensusRound round = mock(ConsensusRound.class);
@@ -166,10 +174,8 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
     /**
      * Verifies that {@link EventStreamManager#addEvents(List)} is called the desired number of times.
      *
-     * @param eventStreamManager
-     * 		the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
-     * @param roundConsumer
-     * 		the round consumer to test
+     * @param eventStreamManager the instance of {@link EventStreamManager} used by {@link ConsensusRoundHandler}
+     * @param roundConsumer      the round consumer to test
      */
     private void testEventStream(
             final EventStreamManager<EventImpl> eventStreamManager, final Consumer<ConsensusRound> roundConsumer) {
@@ -184,33 +190,49 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final State state = new State();
         state.setSwirldState(swirldState);
 
-        when(settingsProvider.getMaxEventQueueForCons()).thenReturn(500);
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        state.setPlatformState(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("event.maxEventQueueForCons", 500)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
 
         final SwirldStateManager swirldStateManager = new SwirldStateManagerImpl(
+                platformContext,
+                addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
                 mock(SwirldStateMetrics.class),
-                settingsProvider,
+                mock(StatusActionSubmitter.class),
                 () -> false,
-                state);
-
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
+                state,
+                new BasicSoftwareVersion(1));
 
         consensusRoundHandler = new ConsensusRoundHandler(
                 platformContext,
                 getStaticThreadManager(),
-                selfId.getId(),
-                settingsProvider,
+                selfId,
                 swirldStateManager,
                 consensusHandlingMetrics,
                 eventStreamManager,
                 stateHashSignQueue,
                 e -> {},
                 () -> {},
+                mock(StatusActionSubmitter.class),
                 (round) -> {},
-                null);
+                new BasicSoftwareVersion(1));
         consensusRoundHandler.start();
     }
 }

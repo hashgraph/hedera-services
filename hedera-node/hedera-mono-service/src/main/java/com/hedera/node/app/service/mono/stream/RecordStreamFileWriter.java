@@ -50,6 +50,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
 import com.swirlds.logging.LogMarker;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -59,16 +60,39 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 import java.util.zip.GZIPOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
+/**
+ * <i>IMPORTANT:</i> This class does not guarantee that every written record file is a complete
+ * 2-second block. That guarantee only holds <b>if the node's JVM has been running and handling
+ * transactions since the (consensus) start of the 2-second block</b>.
+ *
+ * <p>In particular, if a node restarts, and the first record stream {@code item} it gives this
+ * class is in a 2-second block {@code B}, but not the first {@code item} in {@code B}; then
+ * this class will <b>skip all items received for block {@code B}, and only begin writing items
+ * in block {@code B + 1}</b>.
+ *
+ * <p>Since we only need {@code 1/3} of trustworthy nodes to avoid restarting in the middle of
+ * a given block {@code B} to have enough signatures on the resulting record file, this still
+ * provides many 9's of availability for the record stream in the absence of a separate
+ * catastrophic event.
+ *
+ * <p>If more than {@code 2/3} of trustworthy nodes <i>did</i> all restart in the middle of a
+ * given block (and these were not correlated failures due to a separate catastrophic event
+ * that already required event stream recovery); then this exceptional bad luck would require
+ * some manual steps to gather signatures on the problem block.
+ */
+public class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
     private static final Logger LOG = LogManager.getLogger(RecordStreamFileWriter.class);
 
     private static final DigestType currentDigestType = Cryptography.DEFAULT_DIGEST_TYPE;
 
-    /** < * the current record stream type; used to obtain file extensions and versioning */
+    /**
+     * < * the current record stream type; used to obtain file extensions and versioning
+     */
     private final RecordStreamType streamType;
 
     /**
@@ -84,7 +108,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private final MessageDigest metadataStreamDigest;
 
-    /** a messageDigest object for digesting sidecar files and generating sidecar file hash */
+    /**
+     * a messageDigest object for digesting sidecar files and generating sidecar file hash
+     */
     private final MessageDigest sidecarStreamDigest;
 
     /**
@@ -99,7 +125,9 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private RunningHash runningHash;
 
-    /** signer for generating signatures */
+    /**
+     * signer for generating signatures
+     */
     private final Signer signer;
 
     /**
@@ -114,17 +142,37 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      */
     private int currentSidecarFileSize;
 
-    /** the max file size (in bytes) a sidecar file can have */
+    /**
+     * the max file size (in bytes) a sidecar file can have
+     */
     private final int maxSidecarFileSize;
 
-    /** The instant of the first transaction in the current period */
+    /**
+     * The instant of the first transaction in the current period
+     */
     private Instant firstTxnInstant;
 
-    /** the path to which we write record stream files and signature files */
+    /**
+     * the path to which we write record stream files and signature files
+     */
     private final String dirPath;
 
-    /** the path to which we write sidecar record stream files */
+    /**
+     * the path to which we write sidecar record stream files
+     */
     private final String sidecarDirPath;
+
+    /**
+     * Whether we should overwrite an existing record file on disk, because we are doing recovery.
+     * (If false, this class just skips any record files that already exist.)
+     */
+    private final boolean overwriteFilesDuringRecovery;
+
+    /**
+     * The functional that will be used to try to delete a file; we only have this as a field so
+     * pass in a failing deletion functional for unit tests.
+     */
+    private final Predicate<File> tryDeletion;
 
     private int recordFileVersion;
     private RecordStreamFile.Builder recordStreamFileBuilder;
@@ -138,11 +186,15 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             final RecordStreamType streamType,
             final String sidecarDirPath,
             final int maxSidecarFileSize,
+            final boolean overwriteFilesDuringRecovery,
+            @NonNull final Predicate<File> tryDeletion,
             final GlobalDynamicProperties globalDynamicProperties)
             throws NoSuchAlgorithmException {
         this.dirPath = dirPath;
         this.signer = signer;
         this.streamType = streamType;
+        this.overwriteFilesDuringRecovery = overwriteFilesDuringRecovery;
+        this.tryDeletion = tryDeletion;
         this.streamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.metadataStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
         this.sidecarStreamDigest = MessageDigest.getInstance(currentDigestType.algorithmName());
@@ -163,9 +215,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             beginNew(object);
         }
 
-        // if recordStreamFile is null, it means startWriteAtCompleteWindow is true,
-        // and we are still in the first incomplete window, so we don't serialize this object;
-        // so we only serialize the object when stream is not null
         if (recordStreamFileBuilder != null) {
             consume(object);
         }
@@ -188,9 +237,14 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                             ? uncompressedRecordFilePath + COMPRESSION_ALGORITHM_EXTENSION
                             : uncompressedRecordFilePath);
             final var recordFileNameShort = recordFile.getName(); // for logging purposes
-            if (recordFile.exists() && !recordFile.isDirectory()) {
+            final var fileExists = recordFile.exists() && !recordFile.isDirectory();
+            if (fileExists && !overwriteFilesDuringRecovery) {
                 LOG.debug(OBJECT_STREAM.getMarker(), "Stream file already exists {}", recordFileNameShort);
             } else {
+                if (fileExists && !tryDeletion.test(recordFile)) {
+                    throw new IllegalStateException("Could not delete existing record file '" + recordFileNameShort
+                            + "' to replace during recovery, aborting");
+                }
                 try {
                     // write endRunningHash
                     final var endRunningHash = runningHash.getFutureHash().get();
@@ -320,7 +374,6 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
             for (final var value : fileHeader) {
                 dosMeta.writeInt(value);
             }
-            // write startRunningHash
             final var startRunningHash = runningHash.getFutureHash().get();
             recordStreamFileBuilder.setStartObjectRunningHash(toProto(startRunningHash.getValue()));
             dosMeta.write(startRunningHash.getValue());
@@ -388,7 +441,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     }
                     currentSidecarFileSize += sidecarSizeInBytes;
                     sidecarFileBuilder.addSidecarRecords(sidecar);
-                } else {
+                } else { // TODO this error should be the same
                     LOG.warn("A sidecar record without an actual sidecar has been received");
                 }
             }
@@ -409,8 +462,8 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
      * generate full sidecar file path from given Instant object
      *
      * @param consensusTimestamp the consensus timestamp of the first transaction in the record file
-     *     this sidecar file is associated with
-     * @param sidecarId the sidecar id of this sidecar file
+     *                           this sidecar file is associated with
+     * @param sidecarId          the sidecar id of this sidecar file
      * @return the new sidecar file path
      */
     String generateSidecarFilePath(final Instant consensusTimestamp, final int sidecarId) {

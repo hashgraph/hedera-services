@@ -24,9 +24,9 @@ import static com.hedera.node.app.service.mono.store.schedule.ScheduleStore.MISS
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EvmTokenUtil.asEvmTokenInfo;
@@ -301,7 +301,7 @@ public class StateView {
 
     public Optional<TokenNftInfo> infoForNft(final NftID target) {
         final var currentNfts = uniqueTokens();
-        final var tokenId = EntityNum.fromTokenId(target.getTokenID());
+        final var tokenId = EntityNum.fromTokenId(target.getTokenId());
         final var targetKey = NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
         if (!currentNfts.containsKey(targetKey)) {
             return Optional.empty();
@@ -418,7 +418,7 @@ public class StateView {
                 .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
                 .setEthereumNonce(account.getEthereumNonce());
         Optional.ofNullable(account.getProxy()).map(EntityId::toGrpcAccountId).ifPresent(info::setProxyAccountID);
-        if (account.getAlias().size() != EVM_ADDRESS_SIZE) {
+        if (!isOfEvmAddressSize(account.getAlias())) {
             info.setAlias(account.getAlias());
         }
         final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
@@ -431,7 +431,7 @@ public class StateView {
     }
 
     private String getContractAccountId(final JKey key, final AccountID accountID, final ByteString alias) {
-        if (alias.size() == EVM_ADDRESS_SIZE) {
+        if (isOfEvmAddressSize(alias)) {
             return CommonUtils.hex(ByteStringUtils.unwrapUnsafelyIfPossible(alias));
         }
         // If we can recover an Ethereum EOA address from the account key, we should return that

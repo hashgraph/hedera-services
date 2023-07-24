@@ -16,16 +16,19 @@
 
 package com.swirlds.platform.state.iss.internal;
 
-import static com.swirlds.platform.Utilities.isMajority;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -41,7 +44,7 @@ public class ConsensusHashFinder {
     /**
      * Nodes that have already reported a hash for this round.
      */
-    private final Set<Long> reportingNodes = new HashSet<>();
+    private final Set<NodeId> reportingNodes = new HashSet<>();
 
     /**
      * The total weight in the network.
@@ -127,7 +130,9 @@ public class ConsensusHashFinder {
      * @param stateHash
      * 		the hash reported by the node
      */
-    public void addHash(final long nodeId, final long nodeWeight, final Hash stateHash) {
+    public void addHash(@NonNull final NodeId nodeId, final long nodeWeight, @NonNull final Hash stateHash) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(stateHash, "stateHash must not be null");
         if (!reportingNodes.add(nodeId)) {
             // Prevent the same node from reporting multiple times in the same round.
             return;
@@ -157,14 +162,14 @@ public class ConsensusHashFinder {
         }
 
         // Now, check and see if we are capable of making a decision
-        if (isMajority(largestPartition.getTotalWeight(), totalWeight)) {
+        if (MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight(), totalWeight)) {
             // There exists a partition with a quorum.
             consensusHash = largestPartition.getHash();
             status = ConsensusHashStatus.DECIDED;
             sendHashValidityDispatchForAllNodes();
         } else {
             long remainingWeight = totalWeight - hashReportedWeight;
-            if (!isMajority(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
+            if (!MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
                 // There exists no partition with quorum, and there will never exist a partition with a quorum.
                 // Heaven help us.
                 status = ConsensusHashStatus.CATASTROPHIC_ISS;
@@ -180,7 +185,9 @@ public class ConsensusHashFinder {
      * @param stateHash
      * 		the wrong hash derived by the node
      */
-    private void sendHashValidityDispatch(final long nodeId, final Hash stateHash) {
+    private void sendHashValidityDispatch(@NonNull final NodeId nodeId, @NonNull final Hash stateHash) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(stateHash, "stateHash must not be null");
         if (consensusHash != null) {
             stateHashValidityDispatcher.dispatch(round, nodeId, stateHash, consensusHash);
         }
@@ -191,7 +198,7 @@ public class ConsensusHashFinder {
      */
     private void sendHashValidityDispatchForAllNodes() {
         for (final HashPartition partition : partitionMap.values()) {
-            for (final long nodeId : partition.getNodes()) {
+            for (final NodeId nodeId : partition.getNodes()) {
                 sendHashValidityDispatch(nodeId, partition.getHash());
             }
         }
@@ -244,12 +251,12 @@ public class ConsensusHashFinder {
                 sb.append("s");
             }
 
-            final List<Long> nodes = new ArrayList<>(partition.getNodes().size());
+            final List<NodeId> nodes = new ArrayList<>(partition.getNodes().size());
             nodes.addAll(partition.getNodes());
             Collections.sort(nodes);
 
             boolean first = true;
-            for (final long node : nodes) {
+            for (final NodeId node : nodes) {
                 if (first) {
                     sb.append(" ");
                     first = false;

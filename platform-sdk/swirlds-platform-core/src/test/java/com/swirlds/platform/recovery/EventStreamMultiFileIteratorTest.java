@@ -16,34 +16,40 @@
 
 package com.swirlds.platform.recovery;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.generateRandomEvents;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getLastEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.getMiddleEventStreamFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.truncateFile;
 import static com.swirlds.platform.recovery.RecoveryTestUtils.writeRandomEventStream;
-import static com.swirlds.platform.recovery.internal.EventStreamPathIterator.FIRST_ROUND_AVAILABLE;
+import static com.swirlds.platform.recovery.internal.EventStreamLowerBound.UNBOUNDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.recovery.internal.EventStreamLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamMultiFileIterator;
+import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -55,10 +61,6 @@ class EventStreamMultiFileIteratorTest {
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        SettingsCommon.maxTransactionBytesPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.maxTransactionCountPerEvent = Integer.MAX_VALUE;
-        SettingsCommon.transactionMaxBytes = Integer.MAX_VALUE;
-        SettingsCommon.maxAddressSizeAllowed = Integer.MAX_VALUE;
     }
 
     public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
@@ -80,7 +82,7 @@ class EventStreamMultiFileIteratorTest {
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         try (final IOIterator<DetailedConsensusEvent> iterator =
-                new EventStreamMultiFileIterator(directory, FIRST_ROUND_AVAILABLE)) {
+                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -123,7 +125,7 @@ class EventStreamMultiFileIteratorTest {
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         try (final IOIterator<DetailedConsensusEvent> iterator =
-                new EventStreamMultiFileIterator(directory, readStartingAtRound)) {
+                new EventStreamMultiFileIterator(directory, new EventStreamRoundLowerBound(readStartingAtRound))) {
 
             final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -168,7 +170,7 @@ class EventStreamMultiFileIteratorTest {
 
         assertThrows(
                 NoSuchElementException.class,
-                () -> new EventStreamMultiFileIterator(directory, readStartingAtRound),
+                () -> new EventStreamMultiFileIterator(directory, new EventStreamRoundLowerBound(readStartingAtRound)),
                 "should throw if events are not available");
 
         FileUtils.deleteDirectory(directory);
@@ -193,7 +195,7 @@ class EventStreamMultiFileIteratorTest {
 
         boolean readFailed = false;
         try (final IOIterator<DetailedConsensusEvent> iterator =
-                new EventStreamMultiFileIterator(directory, FIRST_ROUND_AVAILABLE)) {
+                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -236,7 +238,7 @@ class EventStreamMultiFileIteratorTest {
         truncateFile(lastFile, false);
 
         try (final IOIterator<DetailedConsensusEvent> iterator =
-                new EventStreamMultiFileIterator(directory, FIRST_ROUND_AVAILABLE)) {
+                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
 
@@ -289,7 +291,7 @@ class EventStreamMultiFileIteratorTest {
 
         boolean readFailed = false;
         try (final IOIterator<DetailedConsensusEvent> iterator =
-                new EventStreamMultiFileIterator(directory, FIRST_ROUND_AVAILABLE)) {
+                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -313,5 +315,103 @@ class EventStreamMultiFileIteratorTest {
         }
 
         assertTrue(readFailed, "should have been unable to read with missing file");
+    }
+
+    @Test
+    @DisplayName("Extensive Bound Test")
+    void extensiveBoundTest() throws IOException, NoSuchAlgorithmException, ConstructableRegistryException {
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+
+        final Random random = getRandomPrintSeed();
+        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+
+        final int durationInSeconds = 100;
+        final int roundsPerSecond = 1;
+        final int secondsPerFile = 2;
+
+        final long firstRound = 100;
+
+        final List<EventImpl> events =
+                generateRandomEvents(random, firstRound, Duration.ofSeconds(durationInSeconds), roundsPerSecond, 20);
+
+        writeRandomEventStream(random, directory, secondsPerFile, events);
+
+        final Instant start = events.get(0).getConsensusTimestamp();
+        final Instant end = events.get(events.size() - 1).getConsensusTimestamp();
+
+        // unbounded test
+        testEventStreamBound(UNBOUNDED, events, directory);
+
+        // round tests
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound), events, directory);
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound + 75), events, directory);
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound + 50), events, directory);
+        testEventStreamBound(new EventStreamRoundLowerBound(firstRound + 200), events, directory);
+
+        // timestamp tests
+        final long longStart = start.toEpochMilli();
+        final long longEnd = end.toEpochMilli();
+        final long longHalfDuration = (longEnd - longStart) / 2;
+        final long longQuarterDuration = longHalfDuration / 2;
+        TemporalAmount halfDuration = Duration.ofMillis(longHalfDuration);
+        TemporalAmount quarterDuration = Duration.ofMillis(longQuarterDuration);
+        testEventStreamBound(new EventStreamTimestampLowerBound(start), events, directory);
+        testEventStreamBound(new EventStreamTimestampLowerBound(start.plus(halfDuration)), events, directory);
+        testEventStreamBound(
+                new EventStreamTimestampLowerBound(start.plus(halfDuration).plus(quarterDuration)), events, directory);
+        testEventStreamBound(new EventStreamTimestampLowerBound(end.plus(quarterDuration)), events, directory);
+
+        FileUtils.deleteDirectory(directory);
+    }
+
+    /**
+     * Test that the iterator returns the correct events when given a bound
+     *
+     * @param lowerBound the lower bound to use
+     * @param events     the list of all events
+     * @param directory  the directory to search
+     */
+    private void testEventStreamBound(
+            @NonNull final EventStreamLowerBound lowerBound,
+            @NonNull final List<EventImpl> events,
+            @NonNull final Path directory)
+            throws IOException {
+        Objects.requireNonNull(lowerBound, "lowerBound must not be null");
+        Objects.requireNonNull(events, "events must not be null");
+        Objects.requireNonNull(directory, "directory must not be null");
+
+        int startingIndex = 0;
+        while (startingIndex < events.size() && lowerBound.compareTo(events.get(startingIndex)) < 0) {
+            startingIndex++;
+        }
+
+        try (final IOIterator<DetailedConsensusEvent> iterator =
+                new EventStreamMultiFileIterator(directory, lowerBound)) {
+
+            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+
+            try {
+                iterator.forEachRemaining(deserializedEvents::add);
+            } catch (final IOException e) {
+                if (e.getMessage().contains("does not contain any events")) {
+                    // The last file had too few events and the truncated file had no events.
+                    // This happens randomly, but especially when the original file has 3 or less events in it.
+                    // abort the unit tests in a successful state.
+                    return;
+                } else {
+                    throw e;
+                }
+            }
+
+            for (int eventIndex = 0; eventIndex < deserializedEvents.size(); eventIndex++) {
+
+                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+
+                // Convert to event impl to allow comparison
+                final EventImpl e = new EventImpl(
+                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
+                assertEventsAreEqual(e, events.get(startingIndex + eventIndex));
+            }
+        }
     }
 }

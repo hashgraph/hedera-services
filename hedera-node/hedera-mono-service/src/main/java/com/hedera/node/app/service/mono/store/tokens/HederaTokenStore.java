@@ -629,7 +629,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
     }
 
     private void updateMemoIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
-        if (changes.hasMemo() && changes.getMemo().getValue().length() > 0) {
+        if (changes.hasMemo()) {
             token.setMemo(changes.getMemo().getValue());
         }
     }
@@ -668,7 +668,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
                 && !op.hasAutoRenewAccount()
                 && op.getSymbol().length() == 0
                 && op.getName().length() == 0
-                && op.getAutoRenewPeriod().getSeconds() == 0;
+                && op.getAutoRenewPeriod().getSeconds() == 0
+                && !op.hasMemo();
     }
 
     private ResponseCodeEnum fullySanityChecked(

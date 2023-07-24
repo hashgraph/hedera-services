@@ -19,15 +19,20 @@ package com.swirlds.common.system.events;
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.io.OptionalSelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -59,13 +64,20 @@ public class BaseEventHashedData extends AbstractSerializableHashable
          * class with different subclasses to support internal system transactions and application transactions
          */
         public static final int TRANSACTION_SUBCLASSES = 2;
+
+        /**
+         * In this version, the software version of the node that created this event is included in the event.
+         */
+        public static final int SOFTWARE_VERSION = 3;
     }
     ///////////////////////////////////////
     // immutable, sent during normal syncs, affects the hash that is signed:
     ///////////////////////////////////////
 
+    /** the software version of the node that created this event. */
+    private SoftwareVersion softwareVersion;
     /** ID of this event's creator (translate before sending) */
-    private long creatorId;
+    private NodeId creatorId;
     /** the generation for the self parent */
     private long selfParentGen;
     /** the generation for the other parent */
@@ -87,6 +99,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * Create a BaseEventHashedData object
      *
+     * @param softwareVersion
+     *      the software version of the node that created this event.
      * @param creatorId
      * 		ID of this event's creator
      * @param selfParentGen
@@ -103,19 +117,21 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * 		the payload: an array of transactions included in this event instance
      */
     public BaseEventHashedData(
-            final long creatorId,
+            @NonNull SoftwareVersion softwareVersion,
+            @NonNull final NodeId creatorId,
             final long selfParentGen,
             final long otherParentGen,
-            final Hash selfParentHash,
-            final Hash otherParentHash,
-            final Instant timeCreated,
-            final ConsensusTransactionImpl[] transactions) {
-        this.creatorId = creatorId;
+            @Nullable final Hash selfParentHash,
+            @Nullable final Hash otherParentHash,
+            @NonNull final Instant timeCreated,
+            @Nullable final ConsensusTransactionImpl[] transactions) {
+        this.softwareVersion = Objects.requireNonNull(softwareVersion, "The softwareVersion must not be null");
+        this.creatorId = Objects.requireNonNull(creatorId, "The creatorId must not be null");
         this.selfParentGen = selfParentGen;
         this.otherParentGen = otherParentGen;
         this.selfParentHash = selfParentHash;
         this.otherParentHash = otherParentHash;
-        this.timeCreated = timeCreated;
+        this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
         this.transactions = transactions;
         checkUserTransactions();
     }
@@ -123,6 +139,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     /**
      * Create a BaseEventHashedData object
      *
+     * @param softwareVersion
+     *      the software version of the node that created this event.
      * @param creatorId
      * 		ID of this event's creator
      * @param selfParentGen
@@ -139,14 +157,16 @@ public class BaseEventHashedData extends AbstractSerializableHashable
      * 		the payload: an array of transactions included in this event instance
      */
     public BaseEventHashedData(
-            final long creatorId,
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final NodeId creatorId,
             final long selfParentGen,
             final long otherParentGen,
-            final byte[] selfParentHash,
-            final byte[] otherParentHash,
-            final Instant timeCreated,
-            final ConsensusTransactionImpl[] transactions) {
+            @Nullable final byte[] selfParentHash,
+            @Nullable final byte[] otherParentHash,
+            @NonNull final Instant timeCreated,
+            @Nullable final ConsensusTransactionImpl[] transactions) {
         this(
+                softwareVersion,
                 creatorId,
                 selfParentGen,
                 otherParentGen,
@@ -162,9 +182,13 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out, final EventSerializationOptions option)
+    public void serialize(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventSerializationOptions option)
             throws IOException {
-        out.writeLong(creatorId);
+        out.writeSerializable(softwareVersion, true);
+        // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        out.writeLong(creatorId.id());
         out.writeLong(selfParentGen);
         out.writeLong(otherParentGen);
         out.writeSerializable(selfParentHash, false);
@@ -191,24 +215,29 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        deserialize(in, version, SettingsCommon.maxTransactionCountPerEvent);
+        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
+        deserialize(in, version, transactionConfig.maxTransactionCountPerEvent());
     }
 
-    public void deserialize(final SerializableDataInputStream in, final int version, final int maxTransactionCount)
+    public void deserialize(
+            @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
             throws IOException {
-        creatorId = in.readLong();
+        Objects.requireNonNull(in, "The input stream must not be null");
+        if (version >= ClassVersion.SOFTWARE_VERSION) {
+            softwareVersion = in.readSerializable();
+        } else {
+            softwareVersion = SoftwareVersion.NO_VERSION;
+        }
+        // FUTURE WORK: The creatorId should be a selfSerializable NodeId at some point.
+        // Changing the event format may require a HIP.  The old format is preserved for now.
+        creatorId = NodeId.deserializeLong(in, false);
         selfParentGen = in.readLong();
         otherParentGen = in.readLong();
         selfParentHash = in.readSerializable(false, Hash::new);
         otherParentHash = in.readSerializable(false, Hash::new);
         timeCreated = in.readInstant();
-        if (version == ClassVersion.TRANSACTION_SUBCLASSES) {
-            in.readInt(); // read serialized length
-            transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
-        } else {
-            throw new UnsupportedOperationException("Unsupported version " + version + ". Minimum supported version is "
-                    + getMinimumSupportedVersion());
-        }
+        in.readInt(); // read serialized length
+        transactions = in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true);
         checkUserTransactions();
     }
 
@@ -242,18 +271,20 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
         final BaseEventHashedData that = (BaseEventHashedData) o;
 
-        return (creatorId == that.creatorId)
+        return (Objects.equals(creatorId, that.creatorId))
                 && (selfParentGen == that.selfParentGen)
                 && (otherParentGen == that.otherParentGen)
                 && Objects.equals(selfParentHash, that.selfParentHash)
                 && Objects.equals(otherParentHash, that.otherParentHash)
                 && Objects.equals(timeCreated, that.timeCreated)
-                && Arrays.equals(transactions, that.transactions);
+                && Arrays.equals(transactions, that.transactions)
+                && Objects.equals(softwareVersion, that.softwareVersion);
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37)
+                .append(softwareVersion)
                 .append(creatorId)
                 .append(selfParentGen)
                 .append(otherParentGen)
@@ -267,6 +298,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
     @Override
     public String toString() {
         return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("softwareVersion", softwareVersion)
                 .append("creatorId", creatorId)
                 .append("selfParentGen", selfParentGen)
                 .append("otherParentGen", otherParentGen)
@@ -289,10 +321,26 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public int getVersion() {
-        return ClassVersion.TRANSACTION_SUBCLASSES;
+        return ClassVersion.SOFTWARE_VERSION;
     }
 
-    public long getCreatorId() {
+    /**
+     * Returns the software version of the node that created this event.
+     *
+     * @return the software version of the node that created this event
+     */
+    @Nullable
+    public SoftwareVersion getSoftwareVersion() {
+        return softwareVersion;
+    }
+
+    /**
+     * The ID of the node that created this event.
+     *
+     * @return the ID of the node that created this event
+     */
+    @NonNull
+    public NodeId getCreatorId() {
         return creatorId;
     }
 

@@ -152,6 +152,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final long maxGasAllowance,
             final BigInteger userOfferedGasPrice) {
         worldState.clearProvisionalContractCreations();
+        worldState.clearContractNonces();
 
         // --- Translate from gRPC types ---
         final var op = contractCreateTxn.getContractCreateInstance();
@@ -227,6 +228,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         // --- Persist changes into state ---
         final var createdContracts = worldState.getCreatedContractIds();
         result.setCreatedContracts(createdContracts);
+
+        if (properties.isContractsNoncesExternalizationEnabled()) {
+            final var createdNonces = worldState.getContractNonces();
+            result.setContractNonces(createdNonces);
+        }
 
         if (!result.isSuccessful()) {
             worldState.reclaimContractId();
@@ -312,8 +318,12 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         if (op.getGas() > properties.maxGasPerSec()) {
             return MAX_GAS_LIMIT_EXCEEDED;
         }
-        if (op.getMaxAutomaticTokenAssociations() > 0 && !properties.areContractAutoAssociationsEnabled()) {
+        final var usesAutoAssociations = op.getMaxAutomaticTokenAssociations() > 0;
+        if (usesAutoAssociations && !properties.areContractAutoAssociationsEnabled()) {
             return NOT_SUPPORTED;
+        }
+        if (op.getMaxAutomaticTokenAssociations() > properties.maxAllowedAutoAssociations()) {
+            return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
         }
         if (properties.areTokenAssociationsLimited()
                 && op.getMaxAutomaticTokenAssociations() > properties.maxTokensPerAccount()) {

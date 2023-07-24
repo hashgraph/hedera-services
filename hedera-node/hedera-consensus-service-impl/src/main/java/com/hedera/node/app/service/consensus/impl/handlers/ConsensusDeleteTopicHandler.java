@@ -23,12 +23,10 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.consensus.ConsensusDeleteTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.consensus.impl.records.ConsensusDeleteTopicRecordBuilder;
-import com.hedera.node.app.service.consensus.impl.records.DeleteTopicRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -47,24 +45,14 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         // Exists for injection
     }
 
-    /**
-     * This method is called during the pre-handle workflow.
-     *
-     * <p>Determines signatures needed for deleting a consensus topic
-     *
-     * @param context the {@link PreHandleContext} which collects all information that will be
-     *     passed to {@code handle()}
-     * @param topicStore the {@link ReadableTopicStore} to use to resolve topic metadata
-     * @throws NullPointerException if any of the arguments are {@code null}
-     */
-    public void preHandle(@NonNull final PreHandleContext context, @NonNull ReadableTopicStore topicStore)
-            throws PreCheckException {
+    @Override
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        requireNonNull(topicStore);
 
         final var op = context.body().consensusDeleteTopicOrThrow();
+        final var topicStore = context.createStore(ReadableTopicStore.class);
         // The topic ID must be present on the transaction and the topic must exist.
-        final var topic = topicStore.getTopicMetadata(op.topicID());
+        final var topic = topicStore.getTopic(op.topicID());
         mustExist(topic, INVALID_TOPIC_ID);
         // To delete a topic, the transaction must be signed by the admin key. If there is no admin
         // key, then it is impossible to delete the topic.
@@ -74,15 +62,19 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
     /**
      * Given the appropriate context, deletes a topic.
      *
-     * @param op the {@link ConsensusDeleteTopicTransactionBody} of the active transaction
-     * @param topicStore the {@link WritableTopicStore} to use to delete the topic
+     * @param context the {@link HandleContext} of the active transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public void handle(
-            @NonNull final ConsensusDeleteTopicTransactionBody op, @NonNull final WritableTopicStore topicStore) {
+    @Override
+    public void handle(@NonNull final HandleContext context) {
+        requireNonNull(context, "The argument 'context' must not be null");
+
+        final var op = context.body().consensusDeleteTopicOrThrow();
+        final var topicStore = context.writableStore(WritableTopicStore.class);
+
         var topicId = op.topicIDOrElse(TopicID.DEFAULT);
 
-        var optionalTopic = topicStore.get(topicId.topicNum());
+        var optionalTopic = topicStore.get(topicId);
 
         /* If the topic doesn't exist, return INVALID_TOPIC_ID */
         if (optionalTopic.isEmpty()) {
@@ -97,10 +89,10 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         /* Copy all the fields from existing topic and change deleted flag */
         final var topicBuilder = new Topic.Builder()
-                .topicNumber(topic.topicNumber())
+                .id(topic.id())
                 .adminKey(topic.adminKey())
                 .submitKey(topic.submitKey())
-                .autoRenewAccountNumber(topic.autoRenewAccountNumber())
+                .autoRenewAccountId(topic.autoRenewAccountId())
                 .autoRenewPeriod(topic.autoRenewPeriod())
                 .expiry(topic.expiry())
                 .memo(topic.memo())
@@ -111,13 +103,5 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         /* --- Put the modified topic. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         topicStore.put(topicBuilder.build());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ConsensusDeleteTopicRecordBuilder newRecordBuilder() {
-        return new DeleteTopicRecordBuilder();
     }
 }

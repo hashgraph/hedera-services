@@ -19,13 +19,16 @@ package com.swirlds.platform.test.eventflow;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -46,13 +49,15 @@ public class TransactionFeeder {
     private int numSystemTransactions = 0;
 
     public TransactionFeeder(
-            final Random random,
-            final long selfId,
-            final Consumer<ConsensusTransactionImpl> transactionConsumer,
-            final Duration timeBetweenSubmissions) {
-        this.random = random;
-        this.transactionConsumer = transactionConsumer;
-        this.timeBetweenSubmissions = timeBetweenSubmissions;
+            @NonNull final Random random,
+            @NonNull final NodeId selfId,
+            @NonNull final Consumer<ConsensusTransactionImpl> transactionConsumer,
+            @NonNull final Duration timeBetweenSubmissions) {
+        this.random = Objects.requireNonNull(random, "random must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        this.transactionConsumer = Objects.requireNonNull(transactionConsumer, "transactionConsumer must not be null");
+        this.timeBetweenSubmissions =
+                Objects.requireNonNull(timeBetweenSubmissions, "timeBetweenSubmissions must not be null");
         worker = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setNodeId(selfId)
                 .setThreadName("transaction-submitter")

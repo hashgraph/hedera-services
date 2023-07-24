@@ -53,13 +53,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
 import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -160,6 +160,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
                 return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
             }
+            if (newMax > dynamicProperties.maxAllowedAutoAssociations()) {
+                return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+            }
             if (dynamicProperties.areTokenAssociationsLimited() && newMax > dynamicProperties.maxTokensPerAccount()) {
                 return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
             }
@@ -228,7 +231,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
                 if (!fcKey.isValid()) {
                     return INVALID_ADMIN_KEY;
                 }
-            } catch (DecoderException e) {
+            } catch (InvalidKeyException e) {
                 return BAD_ENCODING;
             }
         }

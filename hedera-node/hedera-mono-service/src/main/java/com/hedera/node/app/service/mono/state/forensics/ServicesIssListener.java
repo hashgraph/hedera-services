@@ -18,10 +18,12 @@ package com.hedera.node.app.service.mono.state.forensics;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -53,13 +55,15 @@ public class ServicesIssListener implements IssListener {
         }
 
         final long round = notice.getRound();
-        final long otherNodeId = notice.getOtherNodeId();
-        try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLatestImmutableState()) {
+        final long otherNodeId =
+                Optional.ofNullable(notice.getOtherNodeId()).map(NodeId::id).orElse(-1L);
+        final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
+        try (final AutoCloseableWrapper<ServicesState> wrapper =
+                platform.getLatestImmutableState(this.getClass().getName() + " " + msg)) {
             final ServicesState issState = wrapper.get();
             issEventInfo.alert(issState.getTimeOfLastHandledTxn());
             if (issEventInfo.shouldLogThisRound()) {
                 issEventInfo.decrementRoundsToLog();
-                final String msg = String.format(ISS_ERROR_MSG_PATTERN, round, otherNodeId);
                 log.error(msg);
                 issState.logSummary();
             }

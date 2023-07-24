@@ -22,6 +22,7 @@ import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import java.nio.file.Path;
 import org.openjdk.jmh.annotations.Setup;
 
 public class CryptoBenchMerkleDb extends CryptoBench {
@@ -32,8 +33,20 @@ public class CryptoBenchMerkleDb extends CryptoBench {
         registry.registerConstructables("com.swirlds.merkledb");
     }
 
+    private int dbIndex = 0;
+
+    @Override
+    public void beforeTest(String name) {
+        super.beforeTest(name);
+        // Use a different MerkleDb instance for every test run. With a single instance,
+        // even if its folder is deleted before each run, there could be background
+        // threads (virtual pipeline thread, data source compaction thread, etc.) from
+        // the previous run that re-create the folder, and it results in a total mess
+        final Path merkleDbPath = getTestDir().resolve("merkledb" + dbIndex++);
+        MerkleDb.setDefaultPath(merkleDbPath);
+    }
+
     protected VirtualMap<BenchmarkKey, BenchmarkValue> createEmptyMap() {
-        MerkleDb.setDefaultPath(getTestDir().resolve("merkledb"));
         MerkleDbTableConfig<BenchmarkKey, BenchmarkValue> tableConfig = new MerkleDbTableConfig<>(
                         (short) 1, DigestType.SHA_384,
                         (short) 1, new BenchmarkKeyMerkleDbSerializer(),
@@ -41,6 +54,6 @@ public class CryptoBenchMerkleDb extends CryptoBench {
                 .preferDiskIndices(false);
         MerkleDbDataSourceBuilder<BenchmarkKey, BenchmarkValue> dataSourceBuilder =
                 new MerkleDbDataSourceBuilder<>(tableConfig);
-        return new VirtualMap<>("vm" + System.nanoTime(), dataSourceBuilder);
+        return new VirtualMap<>(LABEL, dataSourceBuilder);
     }
 }

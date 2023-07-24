@@ -23,8 +23,10 @@ import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ALIASES_KEY;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.mockStates;
-import static com.hedera.node.app.service.token.impl.test.handlers.AdapterUtils.wellKnownAliasState;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.mockWritableStates;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.wellKnownAliasState;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT;
@@ -33,6 +35,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_BA
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DEFAULT_PAYER_BALANCE;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELETED_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DILIGENT_SIGNING_PAYER_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
@@ -71,21 +74,30 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.hapi.node.state.token.AccountTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.StateKeyAdapter;
@@ -100,21 +112,33 @@ public class SigReqAdapterUtils {
     private static final String TOKENS_KEY = "TOKENS";
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
-    private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-            .accountNum(DEFAULT_PAYER.getAccountNum())
-            .amount(500L)
-            .build();
-    private static AccountFungibleTokenAllowance fungibleTokenAllowances = AccountFungibleTokenAllowance.newBuilder()
-            .tokenAllowanceKey(AccountTokenAllowance.newBuilder()
-                    .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+    public static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
+
+    private static final AccountCryptoAllowance CRYPTO_ALLOWANCES = AccountCryptoAllowance.newBuilder()
+            .spenderId(AccountID.newBuilder()
                     .accountNum(DEFAULT_PAYER.getAccountNum())
                     .build())
-            .amount(10_000L)
+            .amount(500L)
             .build();
+    private static final AccountFungibleTokenAllowance FUNGIBLE_TOKEN_ALLOWANCES =
+            AccountFungibleTokenAllowance.newBuilder()
+                    .tokenId(TokenID.newBuilder()
+                            .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
+                            .build())
+                    .spenderId(AccountID.newBuilder()
+                            .accountNum(DEFAULT_PAYER.getAccountNum())
+                            .build())
+                    .amount(10_000L)
+                    .build();
 
-    private static AccountTokenAllowance nftAllowances = AccountTokenAllowance.newBuilder()
-            .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-            .accountNum(DEFAULT_PAYER.getAccountNum())
+    private static final AccountApprovalForAllAllowance NFT_ALLOWANCES = AccountApprovalForAllAllowance.newBuilder()
+            .tokenId(TokenID.newBuilder()
+                    .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
+                    .build())
+            .spenderId(AccountID.newBuilder()
+                    .accountNum(DEFAULT_PAYER.getAccountNum())
+                    .build())
             .build();
 
     /**
@@ -125,8 +149,24 @@ public class SigReqAdapterUtils {
      * @return the well-known token store
      */
     public static ReadableTokenStore wellKnownTokenStoreAt() {
+        final var wrappedState = wellKnownTokenState();
+        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
+        return new ReadableTokenStoreImpl(mockStates(Map.of(TOKENS_KEY, state)));
+    }
+
+    /**
+     * Returns the {@link WritableTokenStore} containing the "well-known" tokens that exist in a
+     * {@code SigRequirementsTest} scenario (see also {@link #wellKnownTokenStoreAt()})
+     *
+     * @return the well-known token store
+     */
+    public static WritableTokenStore wellKnownWritableTokenStoreAt() {
+        return new WritableTokenStore(mockWritableStates(Map.of(TOKENS_KEY, wellKnownTokenState())));
+    }
+
+    private static WritableKVState<TokenID, Token> wellKnownTokenState() {
         final var source = sigReqsMockTokenStore();
-        final Map<EntityNum, Token> destination = new HashMap<>();
+        final Map<TokenID, Token> destination = new HashMap<>();
         List.of(
                         toPbj(KNOWN_TOKEN_IMMUTABLE),
                         toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS),
@@ -136,91 +176,132 @@ public class SigReqAdapterUtils {
                         toPbj(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY),
                         toPbj(KNOWN_TOKEN_WITH_ROYALTY_FEE_AND_FALLBACK),
                         toPbj(KNOWN_TOKEN_WITH_SUPPLY),
-                        toPbj(KNOWN_TOKEN_WITH_WIPE))
-                .forEach(id -> destination.put(EntityNum.fromLong(id.tokenNum()), asToken(source.get(fromPbj(id)))));
-        final var wrappedState = new MapReadableKVState<>("TOKENS", destination);
-        final var state = new StateKeyAdapter<>(wrappedState, Function.identity());
-        return new ReadableTokenStore(mockStates(Map.of(TOKENS_KEY, state)));
+                        toPbj(KNOWN_TOKEN_WITH_WIPE),
+                        toPbj(DELETED_TOKEN))
+                .forEach(id -> destination.put(id, asToken(source.get(fromPbj(id)))));
+        return new MapWritableKVState<>("TOKENS", destination);
     }
 
-    public static ReadableAccountStore wellKnownAccountStoreAt() {
-        final var destination = new HashMap<EntityNumVirtualKey, Account>();
+    public static WritableTokenRelationStore wellKnownTokenRelStoreAt() {
+        final var destination = new HashMap<EntityIDPair, TokenRelation>();
         destination.put(
-                EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
+                EntityIDPair.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_IMMUTABLE))
+                        .build(),
+                TokenRelation.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_IMMUTABLE))
+                        .balance(10)
+                        .build());
+        destination.put(
+                EntityIDPair.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+                        .build(),
+                TokenRelation.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_NO_SPECIAL_KEYS))
+                        .balance(20)
+                        .build());
+        destination.put(
+                EntityIDPair.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_KYC))
+                        .build(),
+                TokenRelation.newBuilder()
+                        .accountId(toPbj(MISC_ACCOUNT))
+                        .tokenId(toPbj(KNOWN_TOKEN_WITH_KYC))
+                        .balance(30)
+                        .build());
+
+        final var wrappedState = new MapWritableKVState<>(TOKEN_RELS_KEY, destination);
+        return new WritableTokenRelationStore(mockWritableStates(Map.of(TOKEN_RELS_KEY, wrappedState)));
+    }
+
+    public static ReadableAccountStoreImpl wellKnownAccountStoreAt() {
+        return new ReadableAccountStoreImpl(
+                mockStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+    }
+
+    public static WritableAccountStore wellKnownWritableAccountStoreAt() {
+        return new WritableAccountStore(
+                mockWritableStates(Map.of(ACCOUNTS_KEY, wrappedAccountState(), ALIASES_KEY, wellKnownAliasState())));
+    }
+
+    private static WritableKVState<AccountID, Account> wrappedAccountState() {
+        final var destination = new HashMap<AccountID, Account>();
+        destination.put(
+                toPbj(FIRST_TOKEN_SENDER),
                 toPbjAccount(FIRST_TOKEN_SENDER.getAccountNum(), FIRST_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
         destination.put(
-                EntityNumVirtualKey.fromLong(SECOND_TOKEN_SENDER.getAccountNum()),
+                toPbj(SECOND_TOKEN_SENDER),
                 toPbjAccount(SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
         destination.put(
-                EntityNumVirtualKey.fromLong(TOKEN_RECEIVER.getAccountNum()),
-                toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
+                toPbj(TOKEN_RECEIVER), toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
         destination.put(
-                EntityNumVirtualKey.fromLong(DEFAULT_NODE.getAccountNum()),
-                toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
+                toPbj(DEFAULT_NODE), toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
         destination.put(
-                EntityNumVirtualKey.fromLong(DEFAULT_PAYER.getAccountNum()),
+                toPbj(DEFAULT_PAYER),
                 toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(STAKING_FUND.getAccountNum()),
-                toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
+                toPbj(STAKING_FUND), toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
         destination.put(
-                EntityNumVirtualKey.fromLong(MASTER_PAYER.getAccountNum()),
+                toPbj(MASTER_PAYER),
                 toPbjAccount(MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(TREASURY_PAYER.getAccountNum()),
+                toPbj(TREASURY_PAYER),
                 toPbjAccount(TREASURY_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(NO_RECEIVER_SIG.getAccountNum()),
+                toPbj(NO_RECEIVER_SIG),
                 toPbjAccount(NO_RECEIVER_SIG.getAccountNum(), NO_RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(RECEIVER_SIG.getAccountNum()),
+                toPbj(RECEIVER_SIG),
                 toPbjAccount(RECEIVER_SIG.getAccountNum(), RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, true));
         destination.put(
-                EntityNumVirtualKey.fromLong(SYS_ACCOUNT.getAccountNum()),
+                toPbj(SYS_ACCOUNT),
                 toPbjAccount(SYS_ACCOUNT.getAccountNum(), SYS_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(MISC_ACCOUNT.getAccountNum()),
+                toPbj(MISC_ACCOUNT),
                 toPbjAccount(MISC_ACCOUNT.getAccountNum(), MISC_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(CUSTOM_PAYER_ACCOUNT.getAccountNum()),
+                toPbj(CUSTOM_PAYER_ACCOUNT),
                 toPbjAccount(
                         CUSTOM_PAYER_ACCOUNT.getAccountNum(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(OWNER_ACCOUNT.getAccountNum()),
+                toPbj(OWNER_ACCOUNT),
                 toPbjAccount(
                         OWNER_ACCOUNT.getAccountNum(),
                         OWNER_ACCOUNT_KT.asPbjKey(),
                         DEFAULT_BALANCE,
                         false,
-                        List.of(cryptoAllowances),
-                        List.of(fungibleTokenAllowances),
-                        List.of(nftAllowances)));
+                        List.of(CRYPTO_ALLOWANCES),
+                        List.of(FUNGIBLE_TOKEN_ALLOWANCES),
+                        List.of(NFT_ALLOWANCES)));
         destination.put(
-                EntityNumVirtualKey.fromLong(DELEGATING_SPENDER.getAccountNum()),
+                toPbj(DELEGATING_SPENDER),
                 toPbjAccount(
                         DELEGATING_SPENDER.getAccountNum(),
                         DELEGATING_SPENDER_KT.asPbjKey(),
                         DEFAULT_BALANCE,
                         false,
-                        List.of(cryptoAllowances),
-                        List.of(fungibleTokenAllowances),
-                        List.of(nftAllowances)));
+                        List.of(CRYPTO_ALLOWANCES),
+                        List.of(FUNGIBLE_TOKEN_ALLOWANCES),
+                        List.of(NFT_ALLOWANCES)));
         destination.put(
-                EntityNumVirtualKey.fromLong(COMPLEX_KEY_ACCOUNT.getAccountNum()),
+                toPbj(COMPLEX_KEY_ACCOUNT),
                 toPbjAccount(COMPLEX_KEY_ACCOUNT.getAccountNum(), COMPLEX_KEY_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(TOKEN_TREASURY.getAccountNum()),
+                toPbj(TOKEN_TREASURY),
                 toPbjAccount(TOKEN_TREASURY.getAccountNum(), TOKEN_TREASURY_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(DILIGENT_SIGNING_PAYER.getAccountNum()),
+                toPbj(DILIGENT_SIGNING_PAYER),
                 toPbjAccount(
                         DILIGENT_SIGNING_PAYER.getAccountNum(), DILIGENT_SIGNING_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
         destination.put(
-                EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
+                toPbj(FROM_OVERLAP_PAYER),
                 toPbjAccount(FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
-        final var wrappedState = new MapReadableKVState<>(ACCOUNTS_KEY, destination);
-        return new ReadableAccountStore(
-                mockStates(Map.of(ACCOUNTS_KEY, wrappedState, ALIASES_KEY, wellKnownAliasState())));
+        return new MapWritableKVState<>(ACCOUNTS_KEY, destination);
     }
 
     private static Account toPbjAccount(final long number, final Key key, long balance) {
@@ -239,9 +320,9 @@ public class SigReqAdapterUtils {
             boolean receiverSigRequired,
             List<AccountCryptoAllowance> cryptoAllowances,
             List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
-            List<AccountTokenAllowance> nftTokenAllowances) {
+            List<AccountApprovalForAllAllowance> nftTokenAllowances) {
         return new Account(
-                number,
+                AccountID.newBuilder().accountNum(number).build(),
                 Bytes.EMPTY,
                 key,
                 10_000L,
@@ -250,11 +331,11 @@ public class SigReqAdapterUtils {
                 false,
                 1_234_567L,
                 1_234_567L,
-                0L,
+                UNSET_STAKED_ID,
                 false,
                 receiverSigRequired,
-                3L,
-                2L,
+                TokenID.newBuilder().tokenNum(3L).build(),
+                NftID.newBuilder().tokenId(TokenID.newBuilder().tokenNum(2L)).build(),
                 1L,
                 2,
                 3,
@@ -264,14 +345,15 @@ public class SigReqAdapterUtils {
                 3,
                 0,
                 1_234_5678L,
-                2,
+                AccountID.newBuilder().accountNum(2L).build(),
                 76_000L,
                 0,
                 cryptoAllowances,
                 nftTokenAllowances,
                 fungibleTokenAllowances,
                 2,
-                false);
+                false,
+                null);
     }
 
     @SuppressWarnings("java:S1604")
@@ -300,12 +382,14 @@ public class SigReqAdapterUtils {
             customFee.forEach(fee -> pbjFees.add(fromFcCustomFee(fee)));
         }
         return new Token(
-                token.entityNum(),
+                TokenID.newBuilder().tokenNum(token.entityNum()).build(),
                 token.name(),
                 token.symbol(),
                 token.decimals(),
                 token.totalSupply(),
-                token.treasuryNum().longValue(),
+                AccountID.newBuilder()
+                        .accountNum(token.treasuryNum().longValue())
+                        .build(),
                 !token.adminKey().isEmpty()
                         ? fromGrpcKey(asKeyUnchecked(token.adminKey().get()))
                         : Key.DEFAULT,
@@ -333,7 +417,11 @@ public class SigReqAdapterUtils {
                 token.supplyType() == com.hedera.node.app.service.mono.state.enums.TokenSupplyType.FINITE
                         ? com.hedera.hapi.node.base.TokenSupplyType.FINITE
                         : com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
-                token.autoRenewAccount() == null ? 0 : token.autoRenewAccount().num(),
+                token.autoRenewAccount() == null
+                        ? AccountID.DEFAULT
+                        : AccountID.newBuilder()
+                                .accountNum(token.autoRenewAccount().num())
+                                .build(),
                 token.autoRenewPeriod(),
                 token.expiry(),
                 token.memo(),

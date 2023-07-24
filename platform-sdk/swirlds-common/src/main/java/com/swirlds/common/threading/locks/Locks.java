@@ -19,6 +19,7 @@ package com.swirlds.common.threading.locks;
 import com.swirlds.common.threading.locks.internal.AutoLock;
 import com.swirlds.common.threading.locks.internal.DefaultIndexLock;
 import com.swirlds.common.threading.locks.internal.ResourceLock;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -34,6 +35,7 @@ public interface Locks {
      * 		* 		indexes at the cost of additional memory overhead.
      * @return a new lock for index values.
      */
+    @NonNull
     static IndexLock createIndexLock(final int parallelism) {
         return new DefaultIndexLock(parallelism);
     }
@@ -43,6 +45,7 @@ public interface Locks {
      *
      * @return the lock
      */
+    @NonNull
     static AutoClosableLock createAutoLock() {
         return new AutoLock();
     }
@@ -57,7 +60,8 @@ public interface Locks {
      * 		type of the resource
      * @return the lock
      */
-    static <T> AutoClosableResourceLock<T> createResourceLock(final T resource) {
+    @NonNull
+    static <T> AutoClosableResourceLock<T> createResourceLock(@NonNull final T resource) {
         return new ResourceLock<>(new ReentrantLock(), resource);
     }
 }

@@ -28,7 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.mirrorAddrWith;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -71,10 +71,14 @@ public class SelfDestructSuite extends HapiSuite {
     private HapiSpec hscsEvm008SelfDestructInConstructorWorks() {
         final var contract = "FactorySelfDestructConstructor";
         final var nextAccount = "civilian";
-
-        return defaultHapiSpec("HSCS_EVM_008_SelfDestructInConstructorWorks")
-                .given(uploadInitCode(contract))
-                .when(contractCreate(contract).balance(3 * ONE_HBAR).via("contractCreate"), cryptoCreate(nextAccount))
+        return defaultHapiSpec("hscsEvm008SelfDestructInConstructorWorks")
+                .given(cryptoCreate(BENEFICIARY).balance(ONE_HUNDRED_HBARS), uploadInitCode(contract))
+                .when(
+                        contractCreate(contract)
+                                .balance(3 * ONE_HBAR)
+                                .via("contractCreate")
+                                .payingWith(BENEFICIARY),
+                        cryptoCreate(nextAccount))
                 .then(
                         getAccountInfo(contract).hasCostAnswerPrecheck(ACCOUNT_DELETED),
                         getContractInfo(contract).has(contractWith().isDeleted()),
@@ -89,7 +93,7 @@ public class SelfDestructSuite extends HapiSuite {
     }
 
     private HapiSpec hscsEvm008SelfDestructWhenCalling() {
-        return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
+        return defaultHapiSpec("hscsEvm008SelfDestructWhenCalling")
                 .given(
                         cryptoCreate("acc").balance(5 * ONE_HUNDRED_HBARS),
                         uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT))

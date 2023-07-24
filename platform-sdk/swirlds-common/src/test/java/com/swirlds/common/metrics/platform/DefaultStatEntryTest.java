@@ -31,12 +31,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.common.internal.SettingsCommon;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -52,6 +53,8 @@ class DefaultStatEntryTest {
     private static final String UNIT = "UnIt";
     private static final String FORMAT = "FoRmAt";
     private static final double EPSILON = 1e-6;
+    private static final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @SuppressWarnings({"unchecked", "removal"})
     @Test
@@ -111,7 +114,7 @@ class DefaultStatEntryTest {
         statEntry.reset();
 
         // then
-        verify(reset).accept(SettingsCommon.halfLife);
+        verify(reset).accept(metricsConfig.halfLife());
         verify(buffered, never()).reset(anyDouble());
     }
 
@@ -129,7 +132,7 @@ class DefaultStatEntryTest {
         statEntry.reset();
 
         // then
-        verify(buffered).reset(SettingsCommon.halfLife);
+        verify(buffered).reset(metricsConfig.halfLife());
     }
 
     @SuppressWarnings({"unchecked", "removal"})

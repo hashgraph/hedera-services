@@ -16,7 +16,7 @@
 
 package com.swirlds.merkledb.collections;
 
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.merkledb.utilities.MerkleDbFileUtils.readFromFileChannel;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -213,7 +213,9 @@ public abstract class AbstractLongList<C> implements LongList {
                 numLongsPerChunk = headerBuffer.getInt();
                 memoryChunkSize = numLongsPerChunk * Long.BYTES;
                 // skip the maxIndexThatCanBeStored field as it's no longer used
-                if (formatVersion == INITIAL_VERSION) headerBuffer.getLong();
+                if (formatVersion == INITIAL_VERSION) {
+                    headerBuffer.getLong();
+                }
 
                 maxLongs = headerBuffer.getLong();
                 if (formatVersion >= MIN_VALID_INDEX_SUPPORT_VERSION) {

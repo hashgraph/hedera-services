@@ -23,15 +23,19 @@ import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectThrottle;
-import com.swirlds.platform.state.EmergencyRecoveryManager;
+import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.signed.SignedStateFinder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,12 +48,15 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final EmergencyRecoveryManager emergencyRecoveryManager;
     private final ReconnectThrottle teacherThrottle;
     private final SignedStateFinder stateFinder;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics reconnectMetrics;
     private final ReconnectController reconnectController;
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final NotificationEngine notificationEngine;
+
+    @NonNull
+    private final FallenBehindManager fallenBehindManager;
 
     /**
      * @param threadManager
@@ -68,6 +75,8 @@ public class EmergencyReconnectProtocol implements Protocol {
      * 		tracks reconnect metrics
      * @param reconnectController
      * 		controls reconnecting as a learner
+     * @param fallenBehindManager
+     *      maintains this node's behind status
      */
     public EmergencyReconnectProtocol(
             final ThreadManager threadManager,
@@ -76,9 +85,10 @@ public class EmergencyReconnectProtocol implements Protocol {
             final EmergencyRecoveryManager emergencyRecoveryManager,
             final ReconnectThrottle teacherThrottle,
             final SignedStateFinder stateFinder,
-            final int reconnectSocketTimeout,
+            final Duration reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
-            final ReconnectController reconnectController) {
+            final ReconnectController reconnectController,
+            @NonNull final FallenBehindManager fallenBehindManager) {
         this.threadManager = threadManager;
         this.notificationEngine = notificationEngine;
         this.peerId = peerId;
@@ -88,6 +98,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.reconnectMetrics = reconnectMetrics;
         this.reconnectController = reconnectController;
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
     }
 
     @Override
@@ -113,7 +124,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     @Override
     public boolean shouldAccept() {
         // if the throttle is initiated, we should call markReconnectFinished in teacher()
-        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId.getId());
+        final boolean shouldAccept = teacherThrottle.initiateReconnect(peerId);
         if (shouldAccept) {
             initiatedBy = InitiatedBy.PEER;
         }
@@ -136,7 +147,7 @@ public class EmergencyReconnectProtocol implements Protocol {
                 default -> throw new NetworkProtocolException(String.format(
                         "runProtocol() called for emergency reconnect with peer %d "
                                 + "but it is unclear who the teacher and who the learner is",
-                        peerId.getId()));
+                        peerId.id()));
             }
         } finally {
             initiatedBy = InitiatedBy.NO_ONE;
@@ -145,7 +156,12 @@ public class EmergencyReconnectProtocol implements Protocol {
 
     private void teacher(final Connection connection) {
         try {
-            new EmergencyReconnectTeacher(threadManager, stateFinder, reconnectSocketTimeout, reconnectMetrics)
+            new EmergencyReconnectTeacher(
+                            threadManager,
+                            stateFinder,
+                            reconnectSocketTimeout,
+                            fallenBehindManager::hasFallenBehind,
+                            reconnectMetrics)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();
@@ -178,7 +194,7 @@ public class EmergencyReconnectProtocol implements Protocol {
                     RECONNECT.getMarker(),
                     "Emergency Reconnect Complete, round {} received from peer {}",
                     notification.getRoundNumber(),
-                    peerId.getId());
+                    peerId.id());
             emergencyRecoveryManager.emergencyStateLoaded();
         }
     }

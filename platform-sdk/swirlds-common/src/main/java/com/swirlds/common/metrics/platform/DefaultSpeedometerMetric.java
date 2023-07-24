@@ -18,11 +18,10 @@ package com.swirlds.common.metrics.platform;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.statistics.StatsBuffered;
-import com.swirlds.common.statistics.StatsSpeedometer;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsSpeedometer;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -34,7 +33,7 @@ public class DefaultSpeedometerMetric extends AbstractDistributionMetric impleme
     private final StatsSpeedometer speedometer;
 
     public DefaultSpeedometerMetric(final SpeedometerMetric.Config config) {
-        this(config, OSTime.getInstance());
+        this(config, Time.getCurrent());
     }
 
     /**

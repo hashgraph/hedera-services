@@ -16,16 +16,18 @@
 
 package com.hedera.node.app.service.mono.txns;
 
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,7 +48,7 @@ class ProcessLogicTest {
     @Mock
     private ProcessLogic subject;
 
-    private List<ConsensusTransaction> mockTxns = new ArrayList<>();
+    private final SoftwareVersion eventVersion = SEMANTIC_VERSIONS.deployedSoftwareVersion();
 
     @BeforeEach
     void setUp() {
@@ -68,7 +70,7 @@ class ProcessLogicTest {
 
         for (int i = 0, n = roundMetadata.size(); i < n; i++) {
             inOrder.verify(subject)
-                    .incorporateConsensusTxn(null, roundMetadata.get(i).getRight());
+                    .incorporateConsensusTxn(null, roundMetadata.get(i).getRight(), eventVersion);
         }
     }
 
@@ -80,7 +82,8 @@ class ProcessLogicTest {
                             (BiConsumer<ConsensusEvent, ConsensusTransaction>) invocationOnMock.getArgument(0);
                     for (int i = 0; i < metadata.length; i++) {
                         final var event = mock(ConsensusEvent.class);
-                        given(event.getCreatorId()).willReturn(metadata[i].getRight());
+                        given(event.getCreatorId()).willReturn(new NodeId(metadata[i].getRight()));
+                        given(event.getSoftwareVersion()).willReturn(eventVersion);
                         observer.accept(event, null);
                     }
                     return null;

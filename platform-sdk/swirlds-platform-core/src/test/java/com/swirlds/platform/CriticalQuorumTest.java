@@ -16,28 +16,35 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.CriticalQuorumImpl;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -58,7 +65,7 @@ class CriticalQuorumTest {
         }
 
         public CriticalQuorum getCriticalQuorum() {
-            return new CriticalQuorumImpl(addressBook);
+            return new CriticalQuorumImpl(new NoOpMetrics(), new NodeId(0), addressBook);
         }
 
         @Override
@@ -70,9 +77,9 @@ class CriticalQuorumTest {
     /**
      * Build an event containing just the data required for this test.
      */
-    private static EventImpl buildSimpleEvent(final long creatorId, final long roundCreated) {
-        final BaseEventHashedData baseEventHashedData =
-                new BaseEventHashedData(creatorId, 0, 0, (byte[]) null, null, null, null);
+    private static EventImpl buildSimpleEvent(@NonNull final NodeId creatorId, final long roundCreated) {
+        final BaseEventHashedData baseEventHashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1), creatorId, 0, 0, (byte[]) null, null, Instant.now(), null);
 
         final BaseEventUnhashedData baseEventUnhashedData = new BaseEventUnhashedData();
 
@@ -85,10 +92,10 @@ class CriticalQuorumTest {
     /**
      * Build and initialize a map for tracking event counts.
      */
-    private static Map<Integer, Integer> buildEventCountMap(final AddressBook addressBook) {
-        final Map<Integer, Integer> eventCountMap = new HashMap<>();
-        for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
-            eventCountMap.put(nodeId, 0);
+    private static Map<NodeId, Integer> buildEventCountMap(final AddressBook addressBook) {
+        final Map<NodeId, Integer> eventCountMap = new HashMap<>();
+        for (final Address address : addressBook) {
+            eventCountMap.put(address.getNodeId(), 0);
         }
         return eventCountMap;
     }
@@ -98,7 +105,8 @@ class CriticalQuorumTest {
      */
     private static long weightInCriticalQuorum(final AddressBook addressBook, final CriticalQuorum criticalQuorum) {
         long weight = 0;
-        for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
+        for (int index = 0; index < addressBook.getSize(); index++) {
+            NodeId nodeId = addressBook.getNodeId(index);
             if (criticalQuorum.isInCriticalQuorum(nodeId)) {
                 weight += addressBook.getAddress(nodeId).getWeight();
             }
@@ -112,13 +120,13 @@ class CriticalQuorumTest {
     private static long thresholdToBeInCriticalQuorum(
             final AddressBook addressBook,
             final CriticalQuorum criticalQuorum,
-            final Map<Integer, Integer> eventCounts) {
+            final Map<NodeId, Integer> eventCounts) {
 
         long threshold = 0;
 
-        for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
-            final int eventCount = eventCounts.get(nodeId);
-            if (criticalQuorum.isInCriticalQuorum(nodeId) && eventCount > threshold) {
+        for (final Address address : addressBook) {
+            final int eventCount = eventCounts.get(address.getNodeId());
+            if (criticalQuorum.isInCriticalQuorum(address.getNodeId()) && eventCount > threshold) {
                 threshold = eventCount;
             }
         }
@@ -130,11 +138,12 @@ class CriticalQuorumTest {
      * Get the weight of all nodes which do not exceed a given event threshold.
      */
     private static long weightNotExceedingThreshold(
-            final int threshold, final AddressBook addressBook, final Map<Integer, Integer> eventCounts) {
+            final int threshold, final AddressBook addressBook, final Map<NodeId, Integer> eventCounts) {
 
         long weight = 0;
 
-        for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
             if (eventCounts.get(nodeId) <= threshold) {
                 weight += addressBook.getAddress(nodeId).getWeight();
             }
@@ -149,12 +158,13 @@ class CriticalQuorumTest {
     private String criticalQuorumDebugInfo(
             final AddressBook addressBook,
             final CriticalQuorum criticalQuorum,
-            final Map<Integer, Integer> eventCounts) {
+            final Map<NodeId, Integer> eventCounts) {
 
         final StringBuilder sb = new StringBuilder();
 
         sb.append("{\n");
-        for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
             sb.append("   ")
                     .append(nodeId)
                     .append(": count = ")
@@ -174,7 +184,7 @@ class CriticalQuorumTest {
     private void assertCriticalQuorumIsValid(
             final AddressBook addressBook,
             final CriticalQuorum criticalQuorum,
-            final Map<Integer, Integer> eventCounts) {
+            final Map<NodeId, Integer> eventCounts) {
 
         final long totalWeight = addressBook.getTotalWeight();
         final long weightInCriticalQuorum = weightInCriticalQuorum(addressBook, criticalQuorum);
@@ -182,7 +192,7 @@ class CriticalQuorumTest {
         final long criticalQuorumThreshold = thresholdToBeInCriticalQuorum(addressBook, criticalQuorum, eventCounts);
 
         assertTrue(
-                Utilities.isStrongMinority(weightInCriticalQuorum, totalWeight),
+                STRONG_MINORITY.isSatisfiedBy(weightInCriticalQuorum, totalWeight),
                 () -> "critical quorum must contain weight equal to or exceeding 1/3 of the total weight."
                         + "\nWith a threshold of "
                         + criticalQuorumThreshold + " the current critical quorum only "
@@ -197,7 +207,7 @@ class CriticalQuorumTest {
                     weightNotExceedingThreshold((int) (criticalQuorumThreshold - 1), addressBook, eventCounts);
 
             assertFalse(
-                    Utilities.isStrongMinority(weightAtLowerThreshold, totalWeight),
+                    STRONG_MINORITY.isSatisfiedBy(weightAtLowerThreshold, totalWeight),
                     () -> "critical quorum is expected to contain the minimum amount of weight possible."
                             + "\nCurrent threshold is "
                             + criticalQuorumThreshold + ", but with a threshold of " + (criticalQuorumThreshold - 1)
@@ -208,15 +218,15 @@ class CriticalQuorumTest {
         }
 
         // All nodes that have an event count at or below the threshold should be part of the critical quorum.
-        for (int nodeId = 0; nodeId < addressBook.getSize(); nodeId++) {
+        for (final Address address : addressBook) {
+            final NodeId nodeId = address.getNodeId();
             if (eventCounts.get(nodeId) <= criticalQuorumThreshold) {
                 // final node ID to make compiler happy with lambda
-                final int nid = nodeId;
                 assertTrue(
                         criticalQuorum.isInCriticalQuorum(nodeId),
                         () -> "node with event count below threshold should be in the critical quorum.\nThreshold is "
                                 + criticalQuorumThreshold
-                                + " but node " + nid + " with event count " + eventCounts.get(nid)
+                                + " but node " + nodeId + " with event count " + eventCounts.get(nodeId)
                                 + " is not in the critical quorum.\n"
                                 + criticalQuorumDebugInfo(addressBook, criticalQuorum, eventCounts));
             }
@@ -262,10 +272,10 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 3; numNodes <= 20; numNodes++) {
             final List<Long> weights = WeightGenerators.oneThirdNodesZeroWeight(null, numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one third of nodes are zero-weight, remaining have random weight "
                     + "between [1, 90]";
@@ -284,10 +294,10 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 11; numNodes <= 20; numNodes++) {
             final List<Long> weights = WeightGenerators.threeNodesWithStrongMinority(numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name =
                     numNodes + " nodes, three nodes have a strong minority, remaining weight evenly " + "distributed";
@@ -306,10 +316,10 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 3; numNodes <= 9; numNodes++) {
             final List<Long> weights = WeightGenerators.singleNodeWithStrongMinority(numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " nodes, one node has strong minority, remaining weight evenly distributed";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
@@ -327,10 +337,10 @@ class CriticalQuorumTest {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
             final List<Long> weights = WeightGenerators.incrementingWeightWithOneZeroWeight(numNodes);
+            final AtomicInteger index = new AtomicInteger(0);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setCustomWeightGenerator(id -> weights.get(index.getAndIncrement()))
                     .build();
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " unbalanced";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
@@ -346,12 +356,11 @@ class CriticalQuorumTest {
     private static Collection<Arguments> balancedWeightArgs() {
         final List<Arguments> arguments = new ArrayList<>();
         for (int numNodes = 1; numNodes <= 9; numNodes++) {
-            final List<Long> weights = Collections.nCopies(numNodes, 1L);
             final AddressBook addressBook = new RandomAddressBookGenerator()
                     .setSize(numNodes)
-                    .setSequentialIds(true)
-                    .setCustomWeightGenerator(id -> weights.get((int) id))
+                    .setCustomWeightGenerator(id -> 1L)
                     .build();
+
             final String name = numNodes + " node" + (numNodes == 1 ? "" : "s") + " balanced";
             arguments.add(Arguments.of(new CriticalQuorumBuilder(name, addressBook)));
         }
@@ -370,7 +379,7 @@ class CriticalQuorumTest {
     void randomEventTest(final CriticalQuorumBuilder criticalQuorumBuilder) {
         final AddressBook addressBook = criticalQuorumBuilder.getAddressBook();
         final CriticalQuorum criticalQuorum = criticalQuorumBuilder.getCriticalQuorum();
-        Map<Integer, Integer> eventCounts = buildEventCountMap(addressBook);
+        Map<NodeId, Integer> eventCounts = buildEventCountMap(addressBook);
 
         // Should be valid when there are no events
         assertCriticalQuorumIsValid(addressBook, criticalQuorum, eventCounts);
@@ -393,9 +402,11 @@ class CriticalQuorumTest {
             }
 
             final int eventCreatorId = random.nextInt(addressBook.getSize());
-            eventCounts.put(eventCreatorId, eventCounts.get(eventCreatorId) + 1);
+            // Noncontiguous NodeId Compatibility: random NodeIds can use random NodeId indexes.
+            final NodeId nodeId = addressBook.getNodeId(eventCreatorId);
+            eventCounts.put(nodeId, eventCounts.get(nodeId) + 1);
 
-            final EventImpl event = buildSimpleEvent(eventCreatorId, roundCreated);
+            final EventImpl event = buildSimpleEvent(nodeId, roundCreated);
             criticalQuorum.eventAdded(event);
 
             assertCriticalQuorumIsValid(addressBook, criticalQuorum, eventCounts);

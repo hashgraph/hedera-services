@@ -46,7 +46,7 @@ public class FilteredReadableStates implements ReadableStates {
 
     @NonNull
     @Override
-    public <K extends Comparable<? super K>, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
+    public <K, V> ReadableKVState<K, V> get(@NonNull String stateKey) {
         Objects.requireNonNull(stateKey);
         if (!contains(stateKey)) {
             throw new IllegalArgumentException("Could not find k/v state " + stateKey);
@@ -64,6 +64,17 @@ public class FilteredReadableStates implements ReadableStates {
         }
 
         return delegate.getSingleton(stateKey);
+    }
+
+    @NonNull
+    @Override
+    public <E> ReadableQueueState<E> getQueue(@NonNull String stateKey) {
+        Objects.requireNonNull(stateKey);
+        if (!contains(stateKey)) {
+            throw new IllegalArgumentException("Could not find queue state " + stateKey);
+        }
+
+        return delegate.getQueue(stateKey);
     }
 
     @Override

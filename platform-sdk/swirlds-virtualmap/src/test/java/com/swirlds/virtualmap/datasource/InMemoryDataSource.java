@@ -16,6 +16,7 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
@@ -24,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.imageio.IIOException;
 
@@ -41,34 +41,24 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     private static final String NEGATIVE_PATH_MESSAGE = "path is less than 0";
 
     private final String name;
-
-    private final ConcurrentHashMap<Long, VirtualInternalRecord> internalRecords = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Hash> hashes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, VirtualLeafRecord<K, V>> leafRecords = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<K, Long> keyToPathMap = new ConcurrentHashMap<>();
     private volatile long firstLeafPath = -1;
     private volatile long lastLeafPath = -1;
     private volatile boolean closed = false;
 
+    private boolean failureOnHashLookup = false;
+    private boolean failureOnSave = false;
+    private boolean failureOnLeafRecordLookup = false;
+
     /**
      * Create a new InMemoryDataSource
      *
      * @param name
      * 		data source name
-     * @param keySizeBytes
-     * 		the number of bytes a key takes when serialized
-     * @param keyConstructor
-     * 		constructor to create new keys for deserialization
-     * @param valueSizeBytes
-     * 		the number of bytes a value takes when serialized
-     * @param valueConstructor
-     * 		constructor to create new values for deserialization
      */
-    public InMemoryDataSource(
-            final String name,
-            int keySizeBytes,
-            Supplier<K> keyConstructor,
-            int valueSizeBytes,
-            Supplier<V> valueConstructor) {
+    public InMemoryDataSource(final String name) {
         this.name = name;
     }
 
@@ -76,7 +66,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         this.name = copy.name;
         this.firstLeafPath = copy.firstLeafPath;
         this.lastLeafPath = copy.lastLeafPath;
-        this.internalRecords.putAll(copy.internalRecords);
+        this.hashes.putAll(copy.hashes);
         this.leafRecords.putAll(copy.leafRecords);
         this.keyToPathMap.putAll(copy.keyToPathMap);
     }
@@ -90,7 +80,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
      */
     @Override
     public void close() {
-        internalRecords.clear();
+        hashes.clear();
         leafRecords.clear();
         keyToPathMap.clear();
         closed = true;
@@ -107,7 +97,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
      * 		the new path of first leaf node
      * @param lastLeafPath
      * 		the new path of last leaf node
-     * @param internalRecords
+     * @param pathHashRecordsToUpdate
      * 		stream of new internal nodes and updated internal nodes
      * @param leafRecordsToAddOrUpdate
      * 		stream of new leaf nodes and updated leaf nodes
@@ -119,10 +109,14 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualInternalRecord> internalRecords,
+            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
             final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
+
+        if (failureOnSave) {
+            throw new IOException("Preconfigured failure on save");
+        }
 
         if (closed) {
             throw new IOException("Data Source is closed");
@@ -141,7 +135,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
 
         deleteInternalRecords(firstLeafPath);
         deleteLeafRecords(leafRecordsToDelete);
-        saveInternalRecords(firstLeafPath, internalRecords);
+        saveInternalRecords(lastLeafPath, pathHashRecordsToUpdate);
         saveLeafRecords(firstLeafPath, lastLeafPath, leafRecordsToAddOrUpdate);
         // Save the leaf paths for later validation checks and to let us know when to delete internals
         this.firstLeafPath = firstLeafPath;
@@ -189,6 +183,10 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
             throw new IllegalArgumentException(NEGATIVE_PATH_MESSAGE);
         }
 
+        if (failureOnLeafRecordLookup) {
+            throw new IOException("Preconfigured failure on leaf record lookup");
+        }
+
         if (path < firstLeafPath) {
             throw new IllegalArgumentException(
                     "path[" + path + "] is less than the firstLeafPath[" + firstLeafPath + "]");
@@ -202,7 +200,7 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         final var rec = leafRecords.get(path);
         assert rec != null
                 : "When looking up leaves, we should never be asked to look up a leaf that doesn't exist. path=" + path;
-        return new VirtualLeafRecord<>(rec.getPath(), rec.getHash(), rec.getKey(), rec.getValue());
+        return new VirtualLeafRecord<>(rec.getPath(), rec.getKey(), rec.getValue());
     }
 
     /**
@@ -220,53 +218,25 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     }
 
     /**
-     * Load the record for an internal node by path
-     *
-     * @param path
-     * 		the path for an internal
-     * @param deserialize
-     * 		flag to avoid deserialization
-     * @return the internal node's record if one was stored for the given path or null if not stored
-     *         returns null when deserialize is false
+     * {@inheritDoc}
      */
     @Override
-    public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) {
+    public Hash loadHash(long path) throws IOException {
+        if (failureOnHashLookup) {
+            throw new IOException("Preconfigured failure on hash lookup");
+        }
+
         if (path < 0) {
             throw new IllegalArgumentException(NEGATIVE_PATH_MESSAGE);
         }
 
         // It may be that some code is trying to iterate over an internal node that has never
         // been created or saved. We have to be prepared for that case.
-        if (path != 0 && path >= firstLeafPath) {
+        if (path != 0 && path > lastLeafPath) {
             return null;
         }
 
-        final var rec = internalRecords.get(path);
-        return rec == null ? null : new VirtualInternalRecord(rec.getPath(), rec.getHash());
-    }
-
-    @Override
-    public void warmInternalRecord(long path) throws IOException {
-        // only when we have data store which stores on disk this method should read from disk and store it in OS cache
-    }
-
-    /**
-     * Load the hash for a leaf
-     *
-     * NOTE: Called during the hashing phase ONLY. Never called on non-existent nodes.
-     *
-     * @param path
-     * 		the path to the leaf
-     * @return leaf's hash or null if no leaf hash is stored for the given path
-     */
-    @Override
-    public Hash loadLeafHash(long path) {
-        try {
-            final var rec = loadLeafRecord(path);
-            return rec == null ? null : rec.getHash();
-        } catch (IOException e) {
-            throw new AssertionError("Should not have failed", e);
-        }
+        return hashes.get(path);
     }
 
     /**
@@ -306,25 +276,24 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
     // =================================================================================================================
     // private methods
 
-    private void saveInternalRecords(final long firstLeafPath, final Stream<VirtualInternalRecord> internalRecords)
+    private void saveInternalRecords(final long maxValidPath, final Stream<VirtualHashRecord> pathHashRecords)
             throws IOException {
-        final var itr = internalRecords.iterator();
+        final var itr = pathHashRecords.iterator();
         while (itr.hasNext()) {
             final var rec = itr.next();
-            final var path = rec.getPath();
-            final var hash =
-                    Objects.requireNonNull(rec.getHash(), "The hash of a saved internal record cannot be null");
+            final var path = rec.path();
+            final var hash = Objects.requireNonNull(rec.hash(), "The hash of a saved internal record cannot be null");
 
             if (path < 0) {
                 throw new IIOException("Internal record for " + path + " is bogus. It cannot be < 0");
             }
 
-            if (path >= firstLeafPath) {
+            if (path > maxValidPath) {
                 throw new IOException(
-                        "Internal record for " + path + " is bogus. It cannot be >= first leaf path " + firstLeafPath);
+                        "Internal record for " + path + " is bogus. It cannot be > last leaf path " + maxValidPath);
             }
 
-            this.internalRecords.put(path, new VirtualInternalRecord(path, hash));
+            this.hashes.put(path, hash);
         }
     }
 
@@ -335,7 +304,6 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
         while (itr.hasNext()) {
             final var rec = itr.next();
             final var path = rec.getPath();
-            final var hash = Objects.requireNonNull(rec.getHash(), "The hash of a saved leaf record cannot be null");
             final var key = Objects.requireNonNull(rec.getKey(), "Key cannot be null");
             final var value = rec.getValue(); // Not sure if this can be null or not.
 
@@ -349,14 +317,14 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
                         "Leaf record for " + path + " is bogus. It cannot be > last leaf path " + lastLeafPath);
             }
 
-            this.leafRecords.put(path, new VirtualLeafRecord<>(path, hash, key, value));
+            this.leafRecords.put(path, new VirtualLeafRecord<>(path, key, value));
             this.keyToPathMap.put(key, path);
         }
     }
 
     private void deleteInternalRecords(final long firstLeafPath) {
         for (long i = firstLeafPath; i < this.firstLeafPath; i++) {
-            this.internalRecords.remove(i);
+            this.hashes.remove(i);
         }
     }
 
@@ -367,5 +335,33 @@ public class InMemoryDataSource<K extends VirtualKey, V extends VirtualValue> im
             this.keyToPathMap.remove(rec.getKey());
             this.leafRecords.remove(rec.getPath());
         }
+    }
+
+    @Override
+    public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+        // It doesn't have to be very precise as this data source is used for testing purposed only
+        return dirtyInternals * (Long.BYTES + DigestType.SHA_384.digestLength()) + dirtyLeaves * 1024;
+    }
+
+    @Override
+    public long getFirstLeafPath() {
+        return firstLeafPath;
+    }
+
+    @Override
+    public long getLastLeafPath() {
+        return lastLeafPath;
+    }
+
+    public void setFailureOnHashLookup(boolean failureOnHashLookup) {
+        this.failureOnHashLookup = failureOnHashLookup;
+    }
+
+    public void setFailureOnSave(boolean failureOnSave) {
+        this.failureOnSave = failureOnSave;
+    }
+
+    public void setFailureOnLeafRecordLookup(boolean failureOnLeafRecordLookup) {
+        this.failureOnLeafRecordLookup = failureOnLeafRecordLookup;
     }
 }

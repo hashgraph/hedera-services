@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -247,5 +247,20 @@ class DefaultIntegerAccumulatorTest {
         // then
         assertThat(accumulator.toString())
                 .contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, Metric.DataType.INT.toString(), "42");
+    }
+
+    @Test
+    void testResetValue() {
+        // given
+        final IntegerAccumulator.Config config = new IntegerAccumulator.Config(CATEGORY, NAME).withInitialValue(42);
+        final IntegerAccumulator accumulator = new DefaultIntegerAccumulator(config);
+        accumulator.update(5);
+
+        // when
+        accumulator.reset();
+
+        // then
+        assertEquals(42, accumulator.get(), "Value should be 42");
+        assertEquals(42, accumulator.get(VALUE), "Value should be 42");
     }
 }

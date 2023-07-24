@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.network.Connection;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;

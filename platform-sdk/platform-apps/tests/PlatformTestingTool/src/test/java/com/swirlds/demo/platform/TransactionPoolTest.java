@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.test.crypto.ED25519SigningProvider;
+import com.swirlds.common.test.fixtures.crypto.ED25519SigningProvider;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.FCMFamily;
 import com.swirlds.demo.merkle.map.FCMTransactionHandler;
@@ -72,7 +72,7 @@ public class TransactionPoolTest {
 
     static {
         platform = Mockito.mock(Platform.class);
-        Mockito.when(platform.getSelfId()).thenReturn(NodeId.createMain(myID));
+        Mockito.when(platform.getSelfId()).thenReturn(new NodeId(myID));
         System.arraycopy(payload, 0, payloadWithSig, 0, payload.length);
         expectedFCMFamily = new DummyExpectedFCMFamily(myID);
         fCMFamily = new FCMFamily(true);

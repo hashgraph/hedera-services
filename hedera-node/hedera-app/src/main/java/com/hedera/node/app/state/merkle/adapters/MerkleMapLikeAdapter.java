@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle.adapters;
 
+import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.service.mono.context.StateChildrenProvider;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -34,20 +35,20 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * Adapts a {@link MerkleMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping"
- * its {@link InMemoryKey} and {@link InMemoryValue} containers, so that a
+ * Adapts a {@link MerkleMap} constructed by {@code MerkleHederaState#MerkleStates} by "unwrapping" its
+ * {@link InMemoryKey} and {@link InMemoryValue} containers, so that a
  * {@code MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>>} appears as a {@code MerkleMapLike<K, V>}.
  *
  * <p>This allows us to use a {@link MerkleHederaState} as a {@link StateChildrenProvider} binding
- * within a {@link com.hedera.node.app.HederaApp} instance, which is important while we are relying
- * heavily on adapters around {@code mono-service} components.
+ * within a {@link HederaInjectionComponent} instance, which is important while we are relying heavily on adapters
+ * around {@code mono-service} components.
  */
 public final class MerkleMapLikeAdapter {
     private MerkleMapLikeAdapter() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static <K extends Comparable<? super K>, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
+    public static <K, V extends MerkleNode & Keyed<K>> MerkleMapLike<K, V> unwrapping(
             final StateMetadata<K, V> md, final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> real) {
         return new MerkleMapLike<>() {
             @Override

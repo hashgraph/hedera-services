@@ -16,6 +16,7 @@
 
 package com.swirlds.common.threading.framework.internal;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.threading.framework.QueueThread;
@@ -23,21 +24,18 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Implements a thread that continuously takes elements from a queue and handles them.
  *
- * @param <T>
- * 		the type of the item in the queue
+ * @param <T> the type of the item in the queue
  */
 public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements QueueThread<T> {
-
-    private static final int WAIT_FOR_WORK_DELAY_MS = 10;
 
     private final int bufferSize;
 
@@ -47,9 +45,32 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
     private final StoppableThread stoppableThread;
 
-    private final InterruptableRunnable waitForItemRunnable;
-
     private final AbstractQueueThreadConfiguration<?, T> configuration;
+
+    /**
+     * Incremented each time we timeout while waiting for work from the queue.
+     */
+    private final AtomicLong noWorkCount = new AtomicLong();
+
+    /**
+     * Tracks metrics related to this queue thread
+     */
+    private final QueueThreadMetrics metrics;
+
+    /**
+     * If not null, called periodically when the queue thread is idle.
+     */
+    private final InterruptableRunnable idleCallback;
+
+    /**
+     * If not null, called when a batch of work has been handled.
+     */
+    private final InterruptableRunnable batchHandledCallback;
+
+    /**
+     * The amount of time to wait for work.
+     */
+    private final Duration waitForWorkDuration;
 
     /**
      * <p>
@@ -57,15 +78,14 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
      * </p>
      *
      * <p>
-     * Unlike previous iterations of this class, this constructor DOES NOT start the background handler thread.
-     * Call {@link #start()} to start the handler thread.
+     * Unlike previous iterations of this class, this constructor DOES NOT start the background handler thread. Call
+     * {@link #start()} to start the handler thread.
      * </p>
      *
-     * @param configuration
-     * 		the configuration object
+     * @param configuration the configuration object
      */
     public QueueThreadImpl(final AbstractQueueThreadConfiguration<?, T> configuration) {
-        super(configuration.getOrInitializeQueue());
+        super(ThreadBuildingUtils.getOrBuildQueue(configuration));
 
         this.configuration = configuration;
 
@@ -78,11 +98,11 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
         }
 
         buffer = new ArrayList<>(bufferSize);
-
         handler = configuration.getHandler();
-
-        this.waitForItemRunnable =
-                Objects.requireNonNullElseGet(configuration.getWaitForItemRunnable(), () -> this::waitForItem);
+        idleCallback = configuration.getIdleCallback();
+        batchHandledCallback = configuration.getBatchHandledCallback();
+        this.waitForWorkDuration = configuration.getWaitForWorkDuration();
+        metrics = new QueueThreadMetrics(configuration);
 
         stoppableThread = configuration
                 .setWork(this::doWork)
@@ -93,15 +113,14 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
 
     /**
      * <p>
-     * Build a "seed" that can be planted in a thread. When the runnable is executed, it takes over the calling
-     * thread
-     * and configures that thread the way it would configure a newly created thread. When work
-     * is finished, the calling thread is restored back to its original configuration.
+     * Build a "seed" that can be planted in a thread. When the runnable is executed, it takes over the calling thread
+     * and configures that thread the way it would configure a newly created thread. When work is finished, the calling
+     * thread is restored back to its original configuration.
      * </p>
      *
      * <p>
-     * Note that this seed will be unable to change the thread group of the calling thread, regardless of the
-     * thread group that is configured.
+     * Note that this seed will be unable to change the thread group of the calling thread, regardless of the thread
+     * group that is configured.
      * </p>
      *
      * <p>
@@ -130,6 +149,7 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
                     "can not start thread if it has already built a seed or if it has already been started");
         }
 
+        metrics.startingWork();
         stoppableThread.start();
     }
 
@@ -227,7 +247,13 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
     private void doWork() throws InterruptedException {
         drainTo(buffer, bufferSize);
         if (buffer.size() == 0) {
-            waitForItemRunnable.run();
+            metrics.finishedWork();
+            final T item = waitForItem();
+            metrics.startingWork();
+            if (item != null) {
+                handler.accept(item);
+                batchHandled();
+            }
             return;
         }
 
@@ -235,19 +261,63 @@ public class QueueThreadImpl<T> extends AbstractBlockingQueue<T> implements Queu
             handler.accept(item);
         }
         buffer.clear();
+        batchHandled();
     }
 
     /**
-     * Wait a while for the next item to become available and handle it. If no item becomes available before
-     * a timeout then return without doing any work.
-     *
-     * @throws InterruptedException
-     * 		if this method is interrupted during execution
+     * This method is called whenever a batch of work is completed.
      */
-    private void waitForItem() throws InterruptedException {
-        final T item = poll(WAIT_FOR_WORK_DELAY_MS, TimeUnit.MILLISECONDS);
-        if (item != null) {
-            handler.accept(item);
+    private void batchHandled() throws InterruptedException {
+        if (batchHandledCallback != null) {
+            batchHandledCallback.run();
+        }
+    }
+
+    /**
+     * Wait a while for the next item to become available and return it. If no item becomes available before a timeout
+     * then return null.
+     *
+     * @throws InterruptedException if this method is interrupted during execution
+     */
+    private T waitForItem() throws InterruptedException {
+        final T item = poll(waitForWorkDuration.toNanos(), NANOSECONDS);
+        if (item == null) {
+            noWorkCount.incrementAndGet();
+            if (idleCallback != null) {
+                metrics.startingWork();
+                idleCallback.run();
+                metrics.finishedWork();
+            }
+        }
+        return item;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void waitUntilNotBusy() throws InterruptedException {
+
+        // Wait for the no-work count to be incremented twice.
+        //
+        // This algorithm borders on being hacky and will not always
+        // return immediately as soon as it is legal to do so. This
+        // algorithm was chosen because it adds minimal overhead to a
+        // non-idle queue thread under standard operational conditions.
+        //
+        // Waiting for two increments is intentional. Waiting for just a
+        // single increment is not thread safe. By waiting for two increments,
+        // we guarantee that the work queue has been polled in this.waitForItem()
+        // and has returned no work strictly after we entered this method
+        // and read the initial count. If we only waited for a single
+        // increment, it is possible that we could read the initial count
+        // in-between the queue being polled and the no-work count being
+        // incremented, and if more work is enqueued in that time interval
+        // we would return prematurely if we only waited for a single increment.
+
+        final long initialCount = noWorkCount.get();
+        while (noWorkCount.get() <= initialCount + 1 && getStatus() != Status.DEAD) {
+            NANOSECONDS.sleep(waitForWorkDuration.toNanos());
         }
     }
 

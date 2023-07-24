@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.utils;
 
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.Random;
 import java.util.concurrent.Executors;
 
@@ -36,7 +36,7 @@ public class TestUtils {
      * @param length The number of bytes to generate.
      * @return Some random bytes.
      */
-    public static byte[] randomBytes(int length) {
+    public static byte[] randomBytes(final int length) {
         final byte[] data = new byte[length];
         for (int i = 0; i < length; i++) {
             data[i] = (byte) RANDOM.nextInt();
@@ -46,10 +46,10 @@ public class TestUtils {
 
     public static Metrics metrics() {
         final MetricsConfig metricsConfig =
-                new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
+                HederaTestConfigBuilder.createConfig().getConfigData(MetricsConfig.class);
 
         return new DefaultMetrics(
-                NodeId.createMain(DEFAULT_NODE_ID),
+                new NodeId(DEFAULT_NODE_ID),
                 new MetricKeyRegistry(),
                 Executors.newSingleThreadScheduledExecutor(),
                 new DefaultMetricsFactory(),

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
 import com.swirlds.common.system.NodeId;
@@ -62,7 +62,7 @@ public class TransactionHandler {
             logger.error(
                     EXCEPTION.getMarker(),
                     "error invoking SwirldState.preHandle() [ nodeId = {} ] with event {}",
-                    selfId.getId(),
+                    selfId,
                     event.toMediumString(),
                     t);
         }
@@ -105,7 +105,7 @@ public class TransactionHandler {
             logger.error(
                     EXCEPTION.getMarker(),
                     "error invoking SwirldState.handleConsensusRound() [ nodeId = {} ] with round {}",
-                    selfId.getId(),
+                    selfId,
                     round.getRoundNum(),
                     t);
         }

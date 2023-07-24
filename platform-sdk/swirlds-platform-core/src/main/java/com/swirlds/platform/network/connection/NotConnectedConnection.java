@@ -17,9 +17,9 @@
 package com.swirlds.platform.network.connection;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
+import com.swirlds.platform.network.Connection;
 import java.net.SocketException;
 
 /**
@@ -106,7 +106,7 @@ public class NotConnectedConnection implements Connection {
      * Throws an {@link UnsupportedOperationException} since this is not a real connection
      */
     @Override
-    public void setTimeout(int timeoutMillis) throws SocketException {
+    public void setTimeout(long timeoutMillis) throws SocketException {
         throw NOT_IMPLEMENTED;
     }
 

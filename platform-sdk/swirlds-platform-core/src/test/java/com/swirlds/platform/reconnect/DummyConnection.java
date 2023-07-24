@@ -21,11 +21,11 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.SocketConnection;
-import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
+import com.swirlds.platform.network.Connection;
+import com.swirlds.platform.network.ConnectionTracker;
+import com.swirlds.platform.network.SocketConnection;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -65,7 +65,7 @@ public class DummyConnection extends SocketConnection {
             final SyncInputStream syncInputStream,
             final SyncOutputStream syncOutputStream,
             final Socket socket) {
-        super(selfId, otherId, mock(SwirldsPlatform.class), false, socket, syncInputStream, syncOutputStream);
+        super(selfId, otherId, mock(ConnectionTracker.class), false, socket, syncInputStream, syncOutputStream);
         this.dis = syncInputStream;
         this.dos = syncOutputStream;
         this.socket = socket;
@@ -73,7 +73,7 @@ public class DummyConnection extends SocketConnection {
 
     public DummyConnection(
             final SyncInputStream syncInputStream, final SyncOutputStream syncOutputStream, final Socket socket) {
-        super(null, null, mock(SwirldsPlatform.class), false, socket, syncInputStream, syncOutputStream);
+        super(null, null, mock(ConnectionTracker.class), false, socket, syncInputStream, syncOutputStream);
         this.dis = syncInputStream;
         this.dos = syncOutputStream;
         this.socket = socket;
@@ -112,8 +112,8 @@ public class DummyConnection extends SocketConnection {
     }
 
     @Override
-    public void setTimeout(final int timeoutMillis) throws SocketException {
-        socket.setSoTimeout(timeoutMillis);
+    public void setTimeout(final long timeoutMillis) throws SocketException {
+        socket.setSoTimeout(timeoutMillis > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) timeoutMillis);
     }
 
     @Override

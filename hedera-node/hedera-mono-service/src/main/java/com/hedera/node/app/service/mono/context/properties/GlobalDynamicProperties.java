@@ -18,125 +18,132 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_MAX_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.AUTO_CREATION_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
-import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
-import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN;
-import static com.hedera.node.app.spi.config.PropertyNames.AUTO_RENEW_TARGET_TYPES;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_COMPRESS_ON_CREATION;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_DIR_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
-import static com.hedera.node.app.spi.config.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
-import static com.hedera.node.app.spi.config.PropertyNames.CACHE_RECORDS_TTL;
-import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_CREATE2;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_CHAIN_ID;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_EVM_VERSION;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECARS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
-import static com.hedera.node.app.spi.config.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
-import static com.hedera.node.app.spi.config.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
-import static com.hedera.node.app.spi.config.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
-import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
-import static com.hedera.node.app.spi.config.PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS;
-import static com.hedera.node.app.spi.config.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
-import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.FILES_MAX_SIZE_KB;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.LAZY_CREATION_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_FUNDING_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
-import static com.hedera.node.app.spi.config.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
-import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
-import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_MAX_TXN_PER_SEC;
-import static com.hedera.node.app.spi.config.PropertyNames.SCHEDULING_WHITE_LIST;
-import static com.hedera.node.app.spi.config.PropertyNames.SIGS_EXPAND_FROM_IMMUTABLE_STATE;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_IS_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_START_THRESH;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_CUSTOM_FEE_DEPTH;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_PER_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
-import static com.hedera.node.app.spi.config.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILDCARDS;
-import static com.hedera.node.app.spi.config.PropertyNames.TOPICS_MAX_NUM;
-import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
-import static com.hedera.node.app.spi.config.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
-import static com.hedera.node.app.spi.config.PropertyNames.UPGRADE_ARTIFACTS_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.UTIL_PRNG_IS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_CREATION_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_GRACE_PERIOD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_MAX_NUM_OF_ENTITIES_TO_RENEW_OR_DELETE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_NUM_OF_ENTITIES_TO_SCAN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_TARGET_TYPES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_COMPRESS_ON_CREATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_TOKEN_BALANCES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_CRYPTO_TRANSFER_WARM_THREADS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ALLOW_AUTO_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ALLOW_CREATE2;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_CHAIN_ID;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ENFORCE_CREATION_THROTTLE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_EVM_VERSION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_FREE_STORAGE_TIER_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_ITEMIZE_STORAGE_FEES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KEYS_LEGACY_ACTIVATIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_KNOWN_BLOCK_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_KV_PAIRS_AGGREGATE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_NONCES_EXTERNALIZATION_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PERMITTED_DELEGATE_CALLERS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_REDIRECT_TOKEN_CALLS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_REFERENCE_SLOT_LIFETIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_SIDECARS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_SIDECAR_VALIDATION_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_STORAGE_SLOT_PRICE_TIERS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_LIMIT_TOKEN_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_MIN_CONGESTION_PERIOD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_IS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_ALLOWANCES_MAX_TXN_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LAZY_CREATION_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_MAX_AUTO_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_NFT_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_RECORDS_MAX_QUERYABLE_BY_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_LONG_TERM_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_EXPIRATION_FUTURE_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_MAX_TXN_PER_SEC;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SIGS_EXPAND_FROM_IMMUTABLE_STATE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_NODE_REWARD_PERCENT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_FEES_STAKING_REWARD_PERCENT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_IS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_STAKE_REWARDED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_NODE_MAX_TO_MIN_STAKE_RATIOS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REQUIRE_MIN_STAKE_TO_REWARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_BALANCE_THRESHOLD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_START_THRESH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_SUM_OF_CONSENSUS_WEIGHTS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_AUTO_CREATIONS_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_AGGREGATE_RELS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_CUSTOM_FEES_ALLOWED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_CUSTOM_FEE_DEPTH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_PER_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_RELS_PER_INFO_QUERY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_ARE_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MAX_QUERY_RANGE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_NFTS_USE_TREASURY_WILDCARDS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
+import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
@@ -249,9 +256,13 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean enableHTSPrecompileCreate;
     private Set<CustomFeeType> htsUnsupportedCustomFeeReceiverDebits;
     private boolean atomicCryptoTransferEnabled;
+    private boolean enableHRCAssociate;
+    private boolean enableContractsNoncesExternalization;
     private KnownBlockValues knownBlockValues;
     private long exchangeRateGasReq;
     private long stakingRewardRate;
+    private long stakingMaxStakeRewarded;
+    private long stakingRewardBalanceThreshold;
     private long stakingStartThreshold;
     private int nodeRewardPercent;
     private int stakingRewardPercent;
@@ -277,7 +288,6 @@ public class GlobalDynamicProperties implements EvmProperties {
     private ContractStoragePriceTiers storagePriceTiers;
     private boolean compressRecordFilesOnCreation;
     private boolean tokenAutoCreationsEnabled;
-    private boolean doTraceabilityExport;
     private boolean compressAccountBalanceFilesOnCreation;
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
@@ -287,8 +297,12 @@ public class GlobalDynamicProperties implements EvmProperties {
     private Set<Address> permittedDelegateCallers;
     private EntityScaleFactors entityScaleFactors;
     private long maxNumWithHapiSigsAccess;
+    private int maxAutoAssociations;
     private Set<Address> contractsWithSpecialHapiSigsAccess;
     private LegacyContractIdActivations legacyContractIdActivations;
+    private int sumOfConsensusWeights;
+    private int cacheWarmThreads;
+    private int configVersion;
 
     @Inject
     public GlobalDynamicProperties(final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
@@ -394,8 +408,12 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getCustomFeesProperty(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS);
         atomicCryptoTransferEnabled =
                 properties.getBooleanProperty(CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED);
+        enableHRCAssociate = properties.getBooleanProperty(CONTRACTS_PRECOMPILE_HRC_FACADE_ASSOCIATE_ENABLED);
+        enableContractsNoncesExternalization = properties.getBooleanProperty(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED);
         knownBlockValues = properties.getBlockValuesProperty(CONTRACTS_KNOWN_BLOCK_HASH);
         exchangeRateGasReq = properties.getLongProperty(CONTRACTS_PRECOMPILE_EXCHANGE_RATE_GAS_COST);
+        stakingMaxStakeRewarded = properties.getLongProperty(STAKING_MAX_STAKE_REWARDED);
+        stakingRewardBalanceThreshold = properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD);
         stakingRewardRate = properties.getLongProperty(STAKING_REWARD_RATE);
         stakingStartThreshold = properties.getLongProperty(STAKING_START_THRESH);
         nodeRewardPercent = properties.getIntProperty(STAKING_FEES_NODE_REWARD_PERCENT);
@@ -425,7 +443,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         compressRecordFilesOnCreation = properties.getBooleanProperty(HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION);
         tokenAutoCreationsEnabled = properties.getBooleanProperty(TOKENS_AUTO_CREATIONS_ENABLED);
         compressAccountBalanceFilesOnCreation = properties.getBooleanProperty(BALANCES_COMPRESS_ON_CREATION);
-        doTraceabilityExport = properties.getBooleanProperty(HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION);
         traceabilityMaxExportsPerConsSec = properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
@@ -437,6 +454,13 @@ public class GlobalDynamicProperties implements EvmProperties {
         legacyContractIdActivations = properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
         contractsWithSpecialHapiSigsAccess = properties.getEvmAddresses(CONTRACTS_WITH_SPECIAL_HAPI_SIGS_ACCESS);
         maxNumWithHapiSigsAccess = properties.getLongProperty(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS);
+        maxAutoAssociations = properties.getIntProperty(LEDGER_MAX_AUTO_ASSOCIATIONS);
+        sumOfConsensusWeights = properties.getIntProperty(STAKING_SUM_OF_CONSENSUS_WEIGHTS);
+        cacheWarmThreads = properties.getIntProperty(CACHE_CRYPTO_TRANSFER_WARM_THREADS);
+    }
+
+    public int sumOfConsensusWeights() {
+        return sumOfConsensusWeights;
     }
 
     public int maxTokensPerAccount() {
@@ -763,6 +787,14 @@ public class GlobalDynamicProperties implements EvmProperties {
         return atomicCryptoTransferEnabled;
     }
 
+    public boolean isHRCAssociateEnabled() {
+        return enableHRCAssociate;
+    }
+
+    public boolean isContractsNoncesExternalizationEnabled() {
+        return enableContractsNoncesExternalization;
+    }
+
     public KnownBlockValues knownBlockValues() {
         return knownBlockValues;
     }
@@ -771,7 +803,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         return exchangeRateGasReq;
     }
 
-    public long getStakingRewardRate() {
+    public long stakingRewardRate() {
         return stakingRewardRate;
     }
 
@@ -879,10 +911,6 @@ public class GlobalDynamicProperties implements EvmProperties {
         return compressAccountBalanceFilesOnCreation;
     }
 
-    public boolean shouldDoTraceabilityExport() {
-        return doTraceabilityExport;
-    }
-
     public long traceabilityMinFreeToUsedGasThrottleRatio() {
         return traceabilityMinFreeToUsedGasThrottleRatio;
     }
@@ -929,5 +957,39 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public Set<Address> contractsWithSpecialHapiSigsAccess() {
         return contractsWithSpecialHapiSigsAccess;
+    }
+
+    public int maxAllowedAutoAssociations() {
+        return maxAutoAssociations;
+    }
+
+    public long explicitAutoAssocSlotLifetime() {
+        // If account auto-renew is disabled we use the SDK default auto-renew period for slot lifetime
+        return expireAccounts ? 0 : THREE_MONTHS_IN_SECONDS;
+    }
+
+    public int cacheCryptoTransferWarmThreads() {
+        return cacheWarmThreads;
+    }
+
+    /**
+     * The maximum amount of stake that can be rewarded at the full reward rate (in tinybars). If twice this
+     * amount were staked for reward, then the effective reward rate would be cut in half.
+     *
+     * @return the maximum amount of stake that can be rewarded at the full reward rate
+     */
+    public long maxStakeRewarded() {
+        return stakingMaxStakeRewarded;
+    }
+
+    /**
+     * The reward threshold balance of account {@code 0.0.800} (in tinybars). When the balance is this or more,
+     * then the reward rate set in the {@code staking.rewardRate} property is used.  When the balance is less
+     * than this threshold, then a fraction of that reward rate is used.
+     *
+     * @return the minimum balance of account {@code 0.0.800} required for the full reward rate to be used
+     */
+    public long stakingRewardBalanceThreshold() {
+        return stakingRewardBalanceThreshold;
     }
 }

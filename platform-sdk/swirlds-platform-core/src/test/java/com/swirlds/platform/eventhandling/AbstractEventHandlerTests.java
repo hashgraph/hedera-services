@@ -20,13 +20,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.metrics.NoOpMetrics;
-import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;
@@ -48,23 +47,21 @@ public abstract class AbstractEventHandlerTests {
     protected SwirldStateMetrics ssStats;
     protected ConsensusMetrics consensusMetrics;
     protected ConsensusHandlingMetrics consensusHandlingMetrics;
-    protected PreConsensusSystemTransactionManager preConsensusSystemTransactionManager;
-    protected PostConsensusSystemTransactionManager postConsensusSystemTransactionManager;
+    protected PreconsensusSystemTransactionManager preconsensusSystemTransactionManager;
+    protected ConsensusSystemTransactionManager consensusSystemTransactionManager;
     protected Supplier<Instant> consEstimateSupplier;
-    protected SettingsProvider settingsProvider;
     protected Random random;
 
     protected void setup() {
-        selfId = new NodeId(false, 0L);
+        selfId = new NodeId(0L);
         metrics = new NoOpMetrics();
         ssStats = mock(SwirldStateMetrics.class);
         consensusMetrics = mock(ConsensusMetrics.class);
         consensusHandlingMetrics = mock(ConsensusHandlingMetrics.class);
         when(consensusHandlingMetrics.getConsCycleStat()).thenReturn(mock(CycleTimingStat.class));
-        preConsensusSystemTransactionManager = mock(PreConsensusSystemTransactionManager.class);
-        postConsensusSystemTransactionManager = mock(PostConsensusSystemTransactionManager.class);
+        preconsensusSystemTransactionManager = mock(PreconsensusSystemTransactionManager.class);
+        consensusSystemTransactionManager = mock(ConsensusSystemTransactionManager.class);
         consEstimateSupplier = Instant::now;
-        settingsProvider = mock(SettingsProvider.class);
         random = ThreadLocalRandom.current();
     }
 
@@ -94,7 +91,7 @@ public abstract class AbstractEventHandlerTests {
                 when(event.getTransactions()).thenReturn(new ConsensusTransactionImpl[0]);
                 when(event.isEmpty()).thenReturn(true);
             }
-            when(event.getCreatorId()).thenReturn((long) random.nextInt(NUM_NODES));
+            when(event.getCreatorId()).thenReturn(new NodeId(random.nextInt(NUM_NODES)));
             when(event.getEstimatedTime()).thenReturn(Instant.now());
             when(event.getConsensusTimestamp()).thenReturn(Instant.now());
             final boolean isConsensus = random.nextBoolean();

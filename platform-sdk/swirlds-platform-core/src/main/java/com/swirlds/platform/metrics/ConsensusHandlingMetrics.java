@@ -19,9 +19,9 @@ package com.swirlds.platform.metrics;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_8_1;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.time.Time;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -103,8 +103,6 @@ public class ConsensusHandlingMetrics {
                         "newSS",
                         List.of(
                                 Pair.of("getStateMicros", "average time to get the state to sign"),
-                                Pair.of("getStateDataMicros", "average time to get events and min gen info"),
-                                Pair.of("runningHashMicros", "average time spent waiting on the running hash future"),
                                 Pair.of(
                                         "newSSInstanceMicros",
                                         "average time spent creating the new signed state instance"),

@@ -19,6 +19,7 @@ package com.swirlds.platform.util;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.ConfigUtils;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -28,7 +29,6 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Log4jSetup;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +49,7 @@ import org.apache.logging.log4j.Logger;
 public final class BootstrapUtils {
 
     /** The logger for this class */
-    private static Logger logger = LogManager.getLogger(BootstrapUtils.class);
+    private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
 
@@ -59,7 +60,8 @@ public final class BootstrapUtils {
         if (log4jPath != null && Files.exists(log4jPath)) {
             Log4jSetup.startLoggingFramework(log4jPath);
         } else {
-            Log4jSetup.startLoggingFramework(Settings.getInstance().getLogPath());
+            Log4jSetup.startLoggingFramework(
+                    ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath());
         }
     }
 
@@ -82,7 +84,7 @@ public final class BootstrapUtils {
             final Class<?> mainClass = Class.forName(appMainName);
             final Constructor<?>[] constructors = mainClass.getDeclaredConstructors();
             Constructor<?> constructor = null;
-            for (Constructor<?> c : constructors) {
+            for (final Constructor<?> c : constructors) {
                 if (c.getGenericParameterTypes().length == 0) {
                     constructor = c;
                     break;
@@ -108,7 +110,7 @@ public final class BootstrapUtils {
     public static Configuration loadConfiguration(final List<Path> configurationPaths) throws IOException {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
 
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, "com.swirlds");
+        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configPath : configurationPaths) {
             configurationBuilder.withSource(new LegacyFileConfigSource(configPath));

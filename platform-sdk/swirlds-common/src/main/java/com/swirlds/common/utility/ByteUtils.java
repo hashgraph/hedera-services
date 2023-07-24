@@ -16,25 +16,25 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.utility.Units.BYTES_PER_INT;
-import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
-import static com.swirlds.common.utility.Units.BYTES_PER_SHORT;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_SHORT;
 
 /**
  * Utility class for byte operations
  */
 public final class ByteUtils {
+    /** The number of bits in an int */
+    private static final int INT_BITS = 32;
 
     private ByteUtils() {}
 
     /**
-     * Return a long derived from the 8 bytes data[position]...data[position+7], big endian. If the byte array
-     * is not long enough, zeros are substituted for the missing bytes.
+     * Return a long derived from the 8 bytes data[position]...data[position+7], big endian. If the byte array is not
+     * long enough, zeros are substituted for the missing bytes.
      *
-     * @param data
-     * 		an array of bytes
-     * @param position
-     * 		the first byte in the array to use
+     * @param data     an array of bytes
+     * @param position the first byte in the array to use
      * @return the 8 bytes starting at position, converted to a long, big endian
      */
     public static long byteArrayToLong(final byte[] data, final int position) {
@@ -65,8 +65,7 @@ public final class ByteUtils {
     /**
      * Write the long value into 8 bytes of an array, big endian.
      *
-     * @param value
-     * 		the value to write
+     * @param value the value to write
      * @return a byte array
      */
     public static byte[] longToByteArray(final long value) {
@@ -78,12 +77,9 @@ public final class ByteUtils {
     /**
      * Write the long value into 8 bytes of the array, starting at a given position pos, big endian.
      *
-     * @param value
-     * 		the value to write
-     * @param data
-     * 		the array to write to
-     * @param position
-     * 		write to 8 bytes starting with the byte with this index
+     * @param value    the value to write
+     * @param data     the array to write to
+     * @param position write to 8 bytes starting with the byte with this index
      */
     public static void longToByteArray(final long value, final byte[] data, final int position) {
         // Hard coded constants are used instead of a for loop to reduce the arithmetic required at runtime
@@ -100,10 +96,8 @@ public final class ByteUtils {
     /**
      * Return an int derived from the 4 bytes data[position]...data[position+3], big endian.
      *
-     * @param data
-     * 		an array of bytes
-     * @param position
-     * 		the first byte in the array to use
+     * @param data     an array of bytes
+     * @param position the first byte in the array to use
      * @return the 4 bytes starting at position, converted to an int, big endian
      */
     public static int byteArrayToInt(final byte[] data, final int position) {
@@ -130,8 +124,7 @@ public final class ByteUtils {
     /**
      * Write the int value into 4 bytes of an array, big endian.
      *
-     * @param value
-     * 		the value to write
+     * @param value the value to write
      */
     public static byte[] intToByteArray(final int value) {
         final byte[] data = new byte[BYTES_PER_INT];
@@ -142,12 +135,9 @@ public final class ByteUtils {
     /**
      * Write the int value into 4 bytes of the array, starting at a given position pos, big endian.
      *
-     * @param value
-     * 		the value to write
-     * @param data
-     * 		the array to write to
-     * @param position
-     * 		write to 4 bytes starting with the byte with this index
+     * @param value    the value to write
+     * @param data     the array to write to
+     * @param position write to 4 bytes starting with the byte with this index
      */
     public static void intToByteArray(final int value, final byte[] data, final int position) {
         // Hard coded constants are used instead of a for loop to reduce the arithmetic required at runtime
@@ -160,10 +150,8 @@ public final class ByteUtils {
     /**
      * Return a short derived from the 2 bytes data[position] and data[position+1], big endian.
      *
-     * @param data
-     * 		an array of bytes
-     * @param position
-     * 		the first byte in the array to use
+     * @param data     an array of bytes
+     * @param position the first byte in the array to use
      * @return the 2 bytes starting at position, converted to a short, big endian
      */
     public static short byteArrayToShort(final byte[] data, final int position) {
@@ -187,8 +175,7 @@ public final class ByteUtils {
     /**
      * Write the short value into 2 bytes of an array, big endian.
      *
-     * @param value
-     * 		the value to write
+     * @param value the value to write
      */
     public static byte[] shortToByteArray(final short value) {
         final byte[] data = new byte[BYTES_PER_SHORT];
@@ -199,16 +186,44 @@ public final class ByteUtils {
     /**
      * Write the short value into 2 bytes of the array, starting at a given position pos, big endian.
      *
-     * @param value
-     * 		the value to write
-     * @param data
-     * 		the array to write to
-     * @param position
-     * 		write to 2 bytes starting with the byte with this index
+     * @param value    the value to write
+     * @param data     the array to write to
+     * @param position write to 2 bytes starting with the byte with this index
      */
     public static void shortToByteArray(final short value, final byte[] data, final int position) {
         // Hard coded constants are used instead of a for loop to reduce the arithmetic required at runtime
         data[position] = (byte) (value >> 8);
         data[position + 1] = (byte) value;
+    }
+
+    /**
+     * Extract the left integer from a long
+     *
+     * @param pair the long to extract from
+     * @return the left integer
+     */
+    public static int extractLeftInt(final long pair) {
+        return (int) (pair >> INT_BITS);
+    }
+
+    /**
+     * Extract the right integer from a long
+     *
+     * @param pair the long to extract from
+     * @return the right integer
+     */
+    public static int extractRightInt(final long pair) {
+        return (int) pair;
+    }
+
+    /**
+     * Combine the two integers into a single long
+     *
+     * @param left  the left integer
+     * @param right the right integer
+     * @return the combined long
+     */
+    public static long combineInts(final int left, final int right) {
+        return (((long) left) << INT_BITS) | (right & 0xffffffffL);
     }
 }

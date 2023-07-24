@@ -1,6 +1,4 @@
 module com.hedera.node.hapi {
-    requires com.hedera.pbj.runtime;
-
     exports com.hedera.hapi.node.base;
     exports com.hedera.hapi.node.base.codec;
     exports com.hedera.hapi.node.base.schema;
@@ -34,10 +32,27 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams;
     exports com.hedera.hapi.streams.codec;
     exports com.hedera.hapi.streams.schema;
-
-    requires com.github.spotbugs.annotations;
-
     exports com.hedera.hapi.node.state.consensus.codec;
     exports com.hedera.hapi.node.state.consensus;
     exports com.hedera.hapi.node.state.token;
+    exports com.hedera.hapi.node.state.common;
+    exports com.hedera.hapi.node.state.contract;
+    exports com.hedera.hapi.node.state.file;
+    exports com.hedera.hapi.node.state.recordcache;
+    exports com.hedera.hapi.node.state.recordcache.codec;
+    exports com.hedera.hapi.node.state.blockrecords;
+    exports com.hedera.hapi.node.state.blockrecords.codec;
+    exports com.hedera.hapi.node.state.blockrecords.schema;
+    exports com.hedera.services.stream.proto;
+    exports com.hederahashgraph.api.proto.java;
+    exports com.hederahashgraph.service.proto.java;
+
+    requires transitive com.google.common;
+    requires transitive com.google.protobuf;
+    requires transitive com.hedera.pbj.runtime;
+    requires transitive grpc.stub;
+    requires transitive io.grpc;
+    requires grpc.protobuf;
+    requires org.antlr.antlr4.runtime;
+    requires static com.github.spotbugs.annotations;
 }

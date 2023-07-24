@@ -77,14 +77,9 @@ class ThreadDumpGenerator {
                 }
             }
         };
-        new Thread(generator).start();
-    }
-
-    /**
-     * Same as generateThreadDumpFile(Path dir, String heading) but with no heading
-     */
-    public static void generateThreadDumpFile(final Path dir) {
-        generateThreadDumpFile(dir, null);
+        final Thread t = new Thread(generator);
+        t.setDaemon(true);
+        t.start();
     }
 
     /**
@@ -113,7 +108,7 @@ class ThreadDumpGenerator {
                 if (threadInfo == null) {
                     continue;
                 }
-                writeThreadTitle(writer, threadInfo.getThreadName(), threadInfo.getThreadId());
+                writeThreadTitle(writer, threadInfo.getThreadName(), threadInfo.getThreadId(), threadInfo.isDaemon());
                 final Thread.State state = threadInfo.getThreadState();
                 writer.append("\n  java.lang.Thread.State: ");
                 writer.append(state.toString());
@@ -132,7 +127,7 @@ class ThreadDumpGenerator {
                         writeLock(writer, lockInfo);
                         if (lockOwnerName != null) {
                             writer.append("\n      owned by ");
-                            writeThreadTitle(writer, lockOwnerName, threadInfo.getLockOwnerId());
+                            writeThreadTitle(writer, lockOwnerName, threadInfo.getLockOwnerId(), threadInfo.isDaemon());
                         }
                     }
                     if (monitorInfos != null) {
@@ -367,12 +362,19 @@ class ThreadDumpGenerator {
     /**
      * Used to write a textual identification of a thread to a writer
      */
-    private static void writeThreadTitle(Writer writer, String threadName, Long threadId) throws IOException {
+    private static void writeThreadTitle(
+            final Writer writer, final String threadName, final Long threadId, final boolean isDaemon)
+            throws IOException {
         writer.append('"');
         writer.append(threadName);
         writer.append("\" | ");
         writer.append("threadId = ");
         writer.append(Long.toString(threadId));
+        if (isDaemon) {
+            writer.append(" | daemon");
+        } else {
+            writer.append(" | user");
+        }
     }
 
     /**

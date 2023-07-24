@@ -23,12 +23,17 @@ import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @deprecated Replace with {@link SignatureVerifier}.
+ */
+@Deprecated(forRemoval = true)
 public interface SignaturePreparer {
 
     /**
@@ -73,7 +78,7 @@ public interface SignaturePreparer {
     @NonNull
     TransactionSignature prepareSignature(
             @NonNull HederaState state,
-            @NonNull byte[] txBodyBytes,
+            @NonNull Bytes txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull AccountID accountID);
 
@@ -93,7 +98,7 @@ public interface SignaturePreparer {
     @NonNull
     Map<HederaKey, TransactionSignature> prepareSignatures(
             @NonNull HederaState state,
-            @NonNull byte[] txBodyBytes,
+            @NonNull Bytes txBodyBytes,
             @NonNull SignatureMap signatureMap,
             @NonNull Set<HederaKey> keys);
 }

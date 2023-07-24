@@ -17,15 +17,15 @@
 package com.hedera.node.app.service.mono;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
@@ -42,6 +42,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelp
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
+import com.hedera.node.app.service.mono.state.exports.ExportingRecoveredStateListener;
 import com.hedera.node.app.service.mono.state.exports.ServicesSignedStateListener;
 import com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter;
 import com.hedera.node.app.service.mono.state.exports.ToStringAccountsExporter;
@@ -53,6 +54,9 @@ import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.validation.BasedLedgerValidator;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.stats.ServicesStatsManager;
@@ -60,10 +64,13 @@ import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,7 +82,7 @@ class ServicesAppTest {
 
     private final long selfId = 123;
     private static final String ACCOUNT_MEMO = "0.0.3";
-    private final NodeId selfNodeId = new NodeId(false, selfId);
+    private final NodeId selfNodeId = new NodeId(selfId);
 
     @Mock
     private Platform platform;
@@ -89,6 +96,18 @@ class ServicesAppTest {
     @Mock
     private PropertySource overridingProps;
 
+    @Mock
+    private AccountStorageAdapter accountsStorageAdapter;
+
+    @Mock
+    private UniqueTokenMapAdapter nftsAdapter;
+
+    @Mock
+    private Configuration configuration;
+
+    @Mock
+    private TokenRelStorageAdapter tokenRelsAdapter;
+
     private ServicesApp subject;
 
     @BeforeEach
@@ -99,8 +118,11 @@ class ServicesAppTest {
         final var logDirKey = HEDERA_RECORD_STREAM_LOG_DIR;
         final var logDirVal = "data/recordStreams";
         final var nodeProps = new ScreenedNodeFileProps();
+        final var transactionConfig = new TransactionConfig(1, 2, 3, 4, 5);
 
         given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getConfiguration()).willReturn(configuration);
+        given(configuration.getConfigData(TransactionConfig.class)).willReturn(transactionConfig);
         given(platformContext.getCryptography()).willReturn(cryptography);
         given(platform.getSelfId()).willReturn(selfNodeId);
         if (!nodeProps.containsProperty(logDirKey)) {
@@ -110,14 +132,21 @@ class ServicesAppTest {
         }
 
         subject = DaggerServicesApp.builder()
+                .initTrigger(InitTrigger.EVENT_STREAM_RECOVERY)
                 .staticAccountMemo(ACCOUNT_MEMO)
                 .bootstrapProps(props)
                 .initialHash(EMPTY_HASH)
                 .platform(platform)
                 .consoleCreator((ignore, visible) -> null)
                 .crypto(cryptography)
-                .selfId(selfId)
+                .selfId(new NodeId(selfId))
                 .build();
+
+        // Make sure the MutableStateChildren has the needed children to instantiate EntityMapWarmer
+        subject.workingState().setAccounts(accountsStorageAdapter);
+        subject.workingState().setTokenAssociations(tokenRelsAdapter);
+        subject.workingState().setUniqueTokens(nftsAdapter);
+        assertThat(subject.mapWarmer(), instanceOf(EntityMapWarmer.class));
     }
 
     @Test
@@ -132,6 +161,12 @@ class ServicesAppTest {
         assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));
         assertThat(subject.nodeLocalProperties(), instanceOf(NodeLocalProperties.class));
         assertThat(subject.recordStreamManager(), instanceOf(RecordStreamManager.class));
+        // Since we gave InitTrigger.EVENT_STREAM_RECOVERY, the record stream manager
+        // should be instantiated with a recovery writer
+        assertNotNull(subject.recordStreamManager().getRecoveryRecordsWriter());
+        final var maybeRecoveredStateListener = subject.maybeNewRecoveredStateListener();
+        assertTrue(maybeRecoveredStateListener.isPresent());
+        assertThat(maybeRecoveredStateListener.get(), instanceOf(ExportingRecoveredStateListener.class));
         assertThat(subject.globalDynamicProperties(), instanceOf(GlobalDynamicProperties.class));
         assertThat(subject.grpc(), instanceOf(NettyGrpcServerManager.class));
         assertThat(subject.platformStatus(), instanceOf(CurrentPlatformStatus.class));
@@ -154,9 +189,10 @@ class ServicesAppTest {
         assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
         assertThat(subject.bootstrapProps(), instanceOf(ChainedSources.class));
-        assertSame(subject.nodeId(), selfNodeId);
+        assertEquals(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
         assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
+        assertThat(subject.mapWarmer(), instanceOf(EntityMapWarmer.class));
     }
 }

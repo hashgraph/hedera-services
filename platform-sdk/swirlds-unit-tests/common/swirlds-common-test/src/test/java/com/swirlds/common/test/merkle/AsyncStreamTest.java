@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.utility.SerializableLong;
@@ -37,10 +35,10 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -49,53 +47,12 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Async Stream Test")
 class AsyncStreamTest {
 
-    private void configureAsyncStreamSettings(final int bufferSize, final int timeoutMilliseconds) {
-        ReconnectSettingsFactory.configure(new ReconnectSettings() {
-            @Override
-            public boolean isActive() {
-                return false; // unused
-            }
-
-            @Override
-            public int getReconnectWindowSeconds() {
-                return 0; // unused
-            }
-
-            @Override
-            public double getFallenBehindThreshold() {
-                return 0; // unused
-            }
-
-            @Override
-            public int getAsyncStreamTimeoutMilliseconds() {
-                return timeoutMilliseconds;
-            }
-
-            @Override
-            public int getAsyncOutputStreamFlushMilliseconds() {
-                return 50;
-            }
-
-            @Override
-            public int getAsyncStreamBufferSize() {
-                return bufferSize;
-            }
-
-            @Override
-            public int getMaxAckDelayMilliseconds() {
-                return 0; // unused
-            }
-
-            @Override
-            public int getMaximumReconnectFailuresBeforeShutdown() {
-                return 0; // unused
-            }
-
-            @Override
-            public Duration getMinimumTimeBetweenReconnects() {
-                return null; // unused
-            }
-        });
+    private void configureAsyncStreamSettings() {
+        new TestConfigBuilder()
+                .withValue("reconnect.asyncOutputStream", 10000)
+                .withValue("reconnect.asyncStreamBufferSize", 100)
+                .withValue("reconnect.asyncOutputStreamFlush", "50ms")
+                .getOrCreateConfig();
     }
 
     @Test
@@ -175,7 +132,7 @@ class AsyncStreamTest {
     void maxOutputQueueSize() throws InterruptedException, IOException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings(bufferSize, 10_000);
+        configureAsyncStreamSettings();
 
         final int count = 1_000;
 
@@ -242,7 +199,7 @@ class AsyncStreamTest {
     void maxInputQueueSize() throws IOException, InterruptedException {
 
         final int bufferSize = 100;
-        configureAsyncStreamSettings(bufferSize, 10_000);
+        configureAsyncStreamSettings();
 
         final int count = 1_000;
         final StandardWorkGroup workGroup = new StandardWorkGroup(getStaticThreadManager(), "test", null);
@@ -309,8 +266,8 @@ class AsyncStreamTest {
     }
 
     /**
-     * This test verifies that a bug that once existed in AsyncInputStream has been fixed.
-     * This bug could case the stream to deadlock during an abort.
+     * This test verifies that a bug that once existed in AsyncInputStream has been fixed. This bug could case the
+     * stream to deadlock during an abort.
      */
     @Test()
     @Tag(TestTypeTags.FUNCTIONAL)

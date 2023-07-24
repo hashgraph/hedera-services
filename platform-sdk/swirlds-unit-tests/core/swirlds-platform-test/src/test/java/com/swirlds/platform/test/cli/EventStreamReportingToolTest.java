@@ -18,11 +18,13 @@ package com.swirlds.platform.test.cli;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
+import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
 import com.swirlds.platform.test.simulated.RandomSigner;
 import com.swirlds.platform.test.stream.StreamUtils;
@@ -34,6 +36,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -77,8 +80,62 @@ class EventStreamReportingToolTest {
         StreamUtils.writeRoundsToStream(tmpDir, new RandomSigner(random), eventStreamWindowSize, rounds);
 
         // get report
-        final EventStreamReport report =
-                new EventStreamScanner(tmpDir, roundToReportFrom, Duration.ofSeconds(1), false).createReport();
+        final EventStreamReport report = new EventStreamScanner(
+                        tmpDir, new EventStreamRoundLowerBound(roundToReportFrom), Duration.ofSeconds(1), false)
+                .createReport();
+
+        // assert report has same info as expected
+        Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());
+        Assertions.assertEquals(lastEventTime, report.summary().end());
+        Assertions.assertEquals(
+                lastEventTime, report.summary().lastEvent().getConsensusData().getConsensusTimestamp());
+    }
+
+    /**
+     * Generates events, feeds them to consensus, then writes these consensus events to stream files. One the files a
+     * written, it generates a report and checks the values.
+     */
+    @Test
+    void createTimeBoundReportTest() throws IOException, ConstructableRegistryException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+        final int numNodes = 10;
+        final int numEvents = 100_000;
+        final Duration eventStreamWindowSize = Duration.ofSeconds(1);
+
+        // setup
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+
+        // generate consensus events
+        final Deque<ConsensusRound> rounds =
+                GenerateConsensus.generateConsensusRounds(numNodes, numEvents, random.nextLong());
+        if (rounds.isEmpty()) {
+            Assertions.fail("events are excepted to reach consensus");
+        }
+        // get consensus info
+        final long roundToReportFrom = rounds.size() / 2;
+        final AtomicReference<Instant> timestampRef = new AtomicReference<>(Instant.MIN);
+        final int numConsensusEvents = rounds.stream()
+                .filter(r -> {
+                    if (r.getRoundNum() >= roundToReportFrom) {
+                        timestampRef.compareAndSet(
+                                Instant.MIN, r.getConsensusEvents().get(0).getConsensusTimestamp());
+                        return true;
+                    }
+                    return false;
+                })
+                .mapToInt(ConsensusRound::getNumEvents)
+                .sum();
+        final List<EventImpl> lastRound =
+                Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
+        final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
+
+        // write event stream
+        StreamUtils.writeRoundsToStream(tmpDir, new RandomSigner(random), eventStreamWindowSize, rounds);
+
+        // get report
+        final EventStreamReport report = new EventStreamScanner(
+                        tmpDir, new EventStreamTimestampLowerBound(timestampRef.get()), Duration.ofSeconds(1), false)
+                .createReport();
 
         // assert report has same info as expected
         Assertions.assertEquals(numConsensusEvents, report.summary().eventCount());

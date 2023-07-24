@@ -17,71 +17,49 @@
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static java.util.Comparator.comparing;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.migration.StorageStrategy;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcqueue.FCQueue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Queue;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Manager of two queues of expiration events---one for payer records, one for schedule entities.
- *
- * <p>There are two management responsibilities:
- *
- * <ol>
- *   <li>On restart or reconnect, rebuild the expiration queues from state.
- *   <li>At the first consensus second an entity is expired, remove it from its parent collection.
- * </ol>
+ * Manages the purging of expired records and their associated transaction histories from state and
+ * auxiliary data structures. Behaves differently depending on the storage strategy in use.
  */
 @Singleton
 public class ExpiryManager {
-    /* Since the key in Pair<Long, Consumer<EntityId>> is the schedule entity number---and
-    entity numbers are unique---the downstream comparator below will guarantee a fixed
-    ordering for ExpiryEvents with the same expiry. The reason for different scheduled entities having
-    the same expiry is that we round expiration times to a consensus second. */
-    private static final Comparator<ExpiryEvent<Pair<Long, Consumer<EntityId>>>> PQ_CMP = Comparator.comparingLong(
-                    ExpiryEvent<Pair<Long, Consumer<EntityId>>>::expiry)
-            .thenComparingLong(ee -> ee.id().getKey());
+    private static final Logger log = LogManager.getLogger(ExpiryManager.class);
 
-    private final long shard;
-    private final long realm;
-
-    private final SigImpactHistorian sigImpactHistorian;
     private final Map<TransactionID, TxnIdRecentHistory> txnHistories;
-    private final Supplier<RecordsStorageAdapter> payerRecords;
-
+    private final Supplier<RecordsStorageAdapter> records;
+    // Lazy-initialized after the storage strategy is known, post SwirldState.init()
+    private StorageStrategy strategyInUse;
+    // Needed if strategyInUse != IN_SINGLE_FCQ so we can do deterministic expiration
     private final MonotonicFullQueueExpiries<Long> payerRecordExpiries = new MonotonicFullQueueExpiries<>();
-    private final PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> shortLivedEntityExpiries =
-            new PriorityQueueExpiries<>(PQ_CMP);
 
     @Inject
     public ExpiryManager(
-            final HederaNumbers hederaNums,
-            final SigImpactHistorian sigImpactHistorian,
-            final Map<TransactionID, TxnIdRecentHistory> txnHistories,
-            final Supplier<RecordsStorageAdapter> payerRecords) {
-        this.payerRecords = payerRecords;
+            final Map<TransactionID, TxnIdRecentHistory> txnHistories, final Supplier<RecordsStorageAdapter> records) {
+        this.records = records;
         this.txnHistories = txnHistories;
-        this.sigImpactHistorian = sigImpactHistorian;
-
-        this.shard = hederaNums.shard();
-        this.realm = hederaNums.realm();
     }
 
     /**
@@ -90,18 +68,11 @@ public class ExpiryManager {
      * @param now the consensus second
      */
     public void purge(final long now) {
-        purgeExpiredRecordsAt(now);
-        purgeExpiredShortLivedEntities(now);
-    }
-
-    /**
-     * Begins tracking an expiration event.
-     *
-     * @param event the expiration event to track
-     * @param expiry the earliest consensus second at which it should fire
-     */
-    public void trackExpirationEvent(final Pair<Long, Consumer<EntityId>> event, final long expiry) {
-        shortLivedEntityExpiries.track(event, expiry);
+        if (storageStrategy() == StorageStrategy.IN_SINGLE_FCQ) {
+            purgeExpiredRecordsFromConsolidatedStorageAt(now);
+        } else {
+            purgeExpiredRecordsFromPayerScopedStorageAt(now);
+        }
     }
 
     /**
@@ -118,35 +89,68 @@ public class ExpiryManager {
         payerRecordExpiries.reset();
 
         final var payerExpiries = new ArrayList<Map.Entry<Long, Long>>();
-        payerRecords
-                .get()
-                .doForEach((payerNum, accountRecords) ->
-                        stageExpiringRecords(payerNum.longValue(), accountRecords, payerExpiries));
-        payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
-        payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
-
+        final var savedRecords = records.get();
+        if (storageStrategy() == StorageStrategy.IN_SINGLE_FCQ) {
+            final var queryableRecords = requireNonNull(savedRecords.getQueryableRecords());
+            queryableRecords.clear();
+            requireNonNull(savedRecords.getRecords()).forEach(savedRecord -> {
+                stage(savedRecord);
+                // TODO - the effective payer for this record could have been different than the
+                // account in the transaction id (in case of node diligence failure); to address,
+                // we will need to add the effective payer number to the ExpirableTxnRecord type
+                final var payerNum = savedRecord.getPayerNum();
+                queryableRecords
+                        .computeIfAbsent(payerNum, ignore -> new LinkedList<>())
+                        .add(savedRecord);
+            });
+        } else {
+            savedRecords.doForEach((payerNum, accountRecords) ->
+                    stageExpiringRecords(payerNum.longValue(), accountRecords, payerExpiries));
+            payerExpiries.sort(comparing(Map.Entry<Long, Long>::getValue).thenComparing(Map.Entry::getKey));
+            payerExpiries.forEach(entry -> payerRecordExpiries.track(entry.getKey(), entry.getValue()));
+        }
         txnHistories.values().forEach(TxnIdRecentHistory::observeStaged);
     }
 
-    /**
-     * Entities that typically expire on the order of days or months (topics, accounts, tokens,
-     * etc.) are monitored and automatically renewed or removed by the {@link EntityAutoExpiry}
-     * process.
-     *
-     * <p>The only entities that currently qualify as "short-lived" are schedule entities, which
-     * have a default expiration time of 30 minutes. So this method's only function is to scan the
-     * current {@code schedules} FCM and enqueue their expiration events.
-     */
-    public void reviewExistingShortLivedEntities() {
-        shortLivedEntityExpiries.reset();
-    }
-
     void trackRecordInState(final AccountID owner, final long expiry) {
-        payerRecordExpiries.track(owner.getAccountNum(), expiry);
+        // We only need to use an auxiliary expiration queue if records are kept per-payer in state
+        if (storageStrategy() != StorageStrategy.IN_SINGLE_FCQ) {
+            payerRecordExpiries.track(owner.getAccountNum(), expiry);
+        }
     }
 
-    private void purgeExpiredRecordsAt(final long now) {
-        final var curPayerRecords = payerRecords.get();
+    private void purgeExpiredRecordsFromConsolidatedStorageAt(final long now) {
+        final var curRecords = requireNonNull(records.get().getRecords());
+        final var curQueryableRecords = requireNonNull(records.get().getQueryableRecords());
+        for (int i = 0, n = curRecords.size(); i < n; i++) {
+            final var nextRecord = curRecords.peek();
+            if (requireNonNull(nextRecord).getExpiry() > now) {
+                break;
+            }
+            curRecords.poll();
+            purgeHistoryFor(nextRecord, now);
+
+            final var payerRecords = curQueryableRecords.get(nextRecord.getPayerNum());
+            if (payerRecords != null && !payerRecords.isEmpty()) {
+                final var nextPayerRecord = payerRecords.poll();
+                if (!nextRecord.equals(nextPayerRecord)) {
+                    log.error("Inconsistent queryable record {} for expired record {}", nextPayerRecord, nextRecord);
+                }
+                // No more records for this payer, so remove the queue
+                if (payerRecords.isEmpty()) {
+                    curQueryableRecords.remove(nextRecord.getPayerNum());
+                }
+            } else {
+                log.error(
+                        "No queryable records found for payer {} despite link to expiring record {}",
+                        nextRecord.getPayerNum(),
+                        nextRecord);
+            }
+        }
+    }
+
+    private void purgeExpiredRecordsFromPayerScopedStorageAt(final long now) {
+        final var curPayerRecords = records.get();
         while (payerRecordExpiries.hasExpiringAt(now)) {
             final var key = EntityNum.fromLong(payerRecordExpiries.expireNextAt(now));
             final var mutableRecords = curPayerRecords.getMutablePayerRecords(key);
@@ -158,28 +162,23 @@ public class ExpiryManager {
         ExpirableTxnRecord nextRecord;
         while ((nextRecord = records.peek()) != null && nextRecord.getExpiry() <= now) {
             nextRecord = records.poll();
-            final var txnId = nextRecord.getTxnId().toGrpc();
-            final var history = txnHistories.get(txnId);
-            if (history != null) {
-                history.forgetExpiredAt(now);
-                if (history.isForgotten()) {
-                    txnHistories.remove(txnId);
-                }
+            purgeHistoryFor(requireNonNull(nextRecord), now);
+        }
+    }
+
+    private void purgeHistoryFor(@NonNull final ExpirableTxnRecord expiredRecord, final long now) {
+        final var txnId = expiredRecord.getTxnId().toGrpc();
+        final var history = txnHistories.get(txnId);
+        if (history != null) {
+            history.forgetExpiredAt(now);
+            if (history.isForgotten()) {
+                txnHistories.remove(txnId);
             }
         }
     }
 
-    private void purgeExpiredShortLivedEntities(final long now) {
-        while (shortLivedEntityExpiries.hasExpiringAt(now)) {
-            final var current = shortLivedEntityExpiries.expireNextAt(now);
-            final var expiredNum = (long) current.getKey();
-            current.getValue().accept(entityWith(expiredNum));
-            sigImpactHistorian.markEntityChanged(expiredNum);
-        }
-    }
-
     private void stageExpiringRecords(
-            final Long num, final FCQueue<ExpirableTxnRecord> records, final List<Map.Entry<Long, Long>> expiries) {
+            final Long num, final Queue<ExpirableTxnRecord> records, final List<Map.Entry<Long, Long>> expiries) {
         long lastAdded = -1;
         for (final var expirableTxnRecord : records) {
             stage(expirableTxnRecord);
@@ -196,11 +195,11 @@ public class ExpiryManager {
         txnHistories.computeIfAbsent(txnId, ignore -> new TxnIdRecentHistory()).stage(expirableTxnRecord);
     }
 
-    private EntityId entityWith(final long num) {
-        return new EntityId(shard, realm, num);
-    }
-
-    PriorityQueueExpiries<Pair<Long, Consumer<EntityId>>> getShortLivedEntityExpiries() {
-        return shortLivedEntityExpiries;
+    private StorageStrategy storageStrategy() {
+        if (strategyInUse == null) {
+            strategyInUse = records.get().storageStrategy();
+            log.info("Using {} strategy for record storage", strategyInUse);
+        }
+        return strategyInUse;
     }
 }

@@ -64,7 +64,7 @@ public class MonoServicesMain implements SwirldMain {
     @Override
     public void init(final Platform ignore, final NodeId nodeId) {
         try {
-            app = APPS.get(nodeId.getId());
+            app = APPS.get(nodeId);
             initApp();
         } catch (final IllegalArgumentException iae) {
             log.error("No app present for {}", nodeId, iae);
@@ -126,7 +126,7 @@ public class MonoServicesMain implements SwirldMain {
 
     private void validateLedgerState() {
         app.ledgerValidator().validate(app.workingState().accounts());
-        app.nodeInfo().validateSelfAccountIfStaked();
+        app.nodeInfo().validateSelfAccountIfNonZeroStake();
         final var notifications = app.notificationEngine().get();
         notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());

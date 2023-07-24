@@ -15,38 +15,21 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.conventions")
-  `java-test-fixtures`
+    id("com.hedera.hashgraph.conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Application - SPI"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
-  exclude("com.google.code.findbugs", "jsr305")
-  exclude("org.jetbrains", "annotations")
-  exclude("org.checkerframework", "checker-qual")
-
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
-}
-
 dependencies {
-  implementation(libs.swirlds.virtualmap)
-  implementation(libs.swirlds.jasperdb)
-  implementation(libs.swirlds.common)
-  api(libs.pbj.runtime)
-  api(libs.hapi)
-  api(libs.jsr305.annotation)
-  api(project(":hedera-node:hapi"))
-  compileOnlyApi(libs.spotbugs.annotations)
-
-  testImplementation(testLibs.bundles.testing)
-  testCompileOnly(libs.spotbugs.annotations)
-
-  testFixturesCompileOnly(libs.spotbugs.annotations)
-  testFixturesCompileOnly(testLibs.assertj.core)
-  testFixturesApi(libs.swirlds.common)
+    javaModuleDependencies {
+        testImplementation(project(":app-spi"))
+        testImplementation(gav("org.apache.commons.lang3"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
+    }
 }

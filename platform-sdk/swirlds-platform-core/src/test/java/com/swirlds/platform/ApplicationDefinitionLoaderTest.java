@@ -17,31 +17,31 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.internal.ConfigurationException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * TODO: More tests can currently not be written since the ApplicationDefinitionLoader internally tries to load jar
+ * FUTURE WORK: More tests can currently not be written since the ApplicationDefinitionLoader internally tries to load jar
  * files from the classpath.
  */
 class ApplicationDefinitionLoaderTest {
 
     @Test
     void testNullParam() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> ApplicationDefinitionLoader.load(null, null));
-        Assertions.assertThrows(IllegalArgumentException.class, () -> ApplicationDefinitionLoader.load(null, Set.of()));
+        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null, null));
+        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null, Set.of()));
         Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> ApplicationDefinitionLoader.load(new LegacyConfigProperties(), null));
+                NullPointerException.class, () -> ApplicationDefinitionLoader.load(new LegacyConfigProperties(), null));
     }
 
     @Test
     void testEmptyParams() {
         // given
         final LegacyConfigProperties configProperties = new LegacyConfigProperties();
-        final Set<Integer> nodes = Set.of();
+        final Set<NodeId> nodes = Set.of();
 
         // then
         Assertions.assertThrows(

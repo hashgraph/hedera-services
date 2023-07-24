@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -38,7 +38,8 @@ public final class StakingInfoMapBuilder {
         final long maxStakePerNode = bootstrapProperties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT) / numberOfNodes;
         final long minStakePerNode = maxStakePerNode / 2;
         for (int i = 0; i < numberOfNodes; i++) {
-            final var nodeNum = EntityNum.fromLong(addressBook.getAddress(i).getId());
+            final var nodeId = addressBook.getNodeId(i);
+            final var nodeNum = EntityNum.fromLong(nodeId.id());
             final var info = new MerkleStakingInfo(bootstrapProperties);
             info.setMinStake(minStakePerNode);
             info.setMaxStake(maxStakePerNode);

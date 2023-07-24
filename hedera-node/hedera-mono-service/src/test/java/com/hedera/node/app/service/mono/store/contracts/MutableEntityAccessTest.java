@@ -69,6 +69,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class MutableEntityAccessTest {
+    private final AccountID id = IdUtils.asAccount("0.0.1234");
+    private final long balance = 1234L;
+    private final long nonce = 2L;
+    private final UInt256 contractStorageKey = UInt256.ONE;
+    private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
+    private final Bytes bytecode = Bytes.of("contract-code".getBytes());
+    private final VirtualBlobKey expectedBytecodeKey =
+            new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
+    private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
+
     @Mock
     private HederaLedger ledger;
 
@@ -104,24 +114,19 @@ class MutableEntityAccessTest {
 
     private MutableEntityAccess subject;
 
-    private final AccountID id = IdUtils.asAccount("0.0.1234");
-    private final long balance = 1234L;
-
-    private final UInt256 contractStorageKey = UInt256.ONE;
-    private final UInt256 contractStorageValue = UInt256.MAX_VALUE;
-
-    private final Bytes bytecode = Bytes.of("contract-code".getBytes());
-    private final VirtualBlobKey expectedBytecodeKey =
-            new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, (int) id.getAccountNum());
-    private final VirtualBlobValue expectedBytecodeValue = new VirtualBlobValue(bytecode.toArray());
-
     @BeforeEach
     void setUp() {
         given(ledger.getTokenRelsLedger()).willReturn(tokenRelsLedger);
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(ledger.getNftsLedger()).willReturn(nftsLedger);
 
-        subject = new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, supplierBytecode);
+        final var worldLedgers = new WorldLedgers(
+                aliasManager,
+                ledger.getTokenRelsLedger(),
+                ledger.getAccountsLedger(),
+                ledger.getNftsLedger(),
+                tokensLedger);
+        subject = new MutableEntityAccess(ledger, worldLedgers, txnCtx, storage, tokensLedger, supplierBytecode);
     }
 
     @Test
@@ -201,6 +206,20 @@ class MutableEntityAccessTest {
         assertEquals(balance, result);
         // and:
         verify(ledger).getBalance(id);
+    }
+
+    @Test
+    void getsNonce() {
+        // given:
+        given(ledger.getNonce(id)).willReturn(nonce);
+
+        // when:
+        final var result = subject.getNonce(asTypedEvmAddress(id));
+
+        // then:
+        assertEquals(nonce, result);
+        // and:
+        verify(ledger).getNonce(id);
     }
 
     @Test

@@ -16,14 +16,22 @@
 
 package com.swirlds.platform.components;
 
+import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
+
+import com.swirlds.common.metrics.FunctionGauge;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,39 +54,45 @@ public class CriticalQuorumImpl implements CriticalQuorum {
     /**
      * The number of events observed from each node in the current round.
      */
-    private final Map<Long, Integer> eventCounts;
+    private final Map<NodeId, Integer> eventCounts;
 
     /**
-     * A map from possible thresholds to weights. The given weight is the weight of all
-     * nodes that do not exceed the threshold.
+     * A map from possible thresholds to weights. The given weight is the weight of all nodes that do not exceed the
+     * threshold.
      */
     private final Map<Integer, Long> weightNotExceedingThreshold;
 
     /**
-     * Any nodes with an event count that does not exceed this threshold are considered
-     * to be part of the critical quorum.
+     * Any nodes with an event count that does not exceed this threshold are considered to be part of the critical
+     * quorum.
      */
     private final AtomicInteger threshold;
 
     /**
-     * The current round. Observing an event from a higher round will increase this value and
-     * reset event counts.
+     * The current round. Observing an event from a higher round will increase this value and reset event counts.
      */
     private long round;
 
     /**
      * Construct a critical quorum
      *
-     * @param addressBook
-     * 		the source address book
-     * @param considerBothParents
-     * 		true if both parents should be checked for critical quorum and false for just the self parent
-     * @param thresholdSoftening
-     * 		'soften' the threshold by this many events, the higher the number, the less strict the quorum is
+     * @param metrics             the metrics engine
+     * @param selfId              the ID of this node
+     * @param addressBook         the source address book
+     * @param considerBothParents true if both parents should be checked for critical quorum and false for just the self
+     *                            parent
+     * @param thresholdSoftening  'soften' the threshold by this many events, the higher the number, the less strict the
+     *                            quorum is
      */
     public CriticalQuorumImpl(
-            final AddressBook addressBook, final boolean considerBothParents, final int thresholdSoftening) {
-        this.addressBook = addressBook;
+            @NonNull final Metrics metrics,
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook addressBook,
+            final boolean considerBothParents,
+            final int thresholdSoftening) {
+        Objects.requireNonNull(metrics, "metrics must not be null");
+        Objects.requireNonNull(selfId, "selfId must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
         this.considerBothParents = considerBothParents;
         this.thresholdSoftening = thresholdSoftening;
 
@@ -86,23 +100,36 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         weightNotExceedingThreshold = new HashMap<>();
 
         threshold = new AtomicInteger(0);
+
+        metrics.getOrCreate(new FunctionGauge.Config<>(
+                        INTERNAL_CATEGORY,
+                        "isStrongMinorityInMaxRound",
+                        Boolean.class,
+                        () -> isInCriticalQuorum(selfId))
+                .withDescription("Whether this node is in the critical quorum in the max round")
+                .withUnit("is node in the critical quorum"));
     }
 
     /**
      * Construct a critical quorum from an address book
      *
-     * @param addressBook
-     * 		the source address book
+     * @param metrics     the metrics engine
+     * @param selfId      the id of this node
+     * @param addressBook the source address book
      */
-    public CriticalQuorumImpl(final AddressBook addressBook) {
-        this(addressBook, DEFAULT_BOTH_PARENTS, DEFAULT_THRESHOLD_SOFTENING);
+    public CriticalQuorumImpl(
+            @NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final AddressBook addressBook) {
+        this(metrics, selfId, addressBook, DEFAULT_BOTH_PARENTS, DEFAULT_THRESHOLD_SOFTENING);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public boolean isInCriticalQuorum(final long nodeId) {
+    public boolean isInCriticalQuorum(@Nullable final NodeId nodeId) {
+        if (nodeId == null) {
+            return false;
+        }
         return eventCounts.getOrDefault(nodeId, 0) <= threshold.get() + thresholdSoftening;
     }
 
@@ -130,7 +157,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
 
         handleRoundBoundary(event);
 
-        final long nodeId = event.getCreatorId();
+        final NodeId nodeId = event.getCreatorId();
         final long totalWeight = addressBook.getTotalWeight();
 
         // Increase the event count
@@ -145,7 +172,7 @@ public class CriticalQuorumImpl implements CriticalQuorum {
         weightNotExceedingThreshold.put(originalEventCount, newWeightAtThreshold);
 
         // Make sure threshold allows at least 1/3 of the weight to be part of the critical quorum
-        if (!Utilities.isStrongMinority(
+        if (!STRONG_MINORITY.isSatisfiedBy(
                 weightNotExceedingThreshold.getOrDefault(threshold.get(), totalWeight), totalWeight)) {
             threshold.incrementAndGet();
         }

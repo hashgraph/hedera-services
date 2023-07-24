@@ -17,10 +17,10 @@
 package com.swirlds.platform.test.sync;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Connection;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkUtils;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -107,7 +107,7 @@ public class LocalConnection implements Connection {
      * Does nothing, since there is no timout for this connection
      */
     @Override
-    public void setTimeout(final int timeoutMillis) {}
+    public void setTimeout(final long timeoutMillis) {}
 
     @Override
     public void initForSync() {}

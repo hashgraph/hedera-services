@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.Generations;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -118,7 +118,7 @@ public class OrphanBufferTester implements EventLinker {
             return;
         }
         assertTrue(hasLinkedEvents(), "we are expecting linked events");
-        final Map<ChatterEventDescriptor, GossipEvent> map = new HashMap<>();
+        final Map<EventDescriptor, GossipEvent> map = new HashMap<>();
         for (int i = 0; i < expectedEvents.size(); i++) {
             final EventImpl linkedEvent = pollLinkedEvent();
             assertNotNull(linkedEvent, "expected more events in generation");

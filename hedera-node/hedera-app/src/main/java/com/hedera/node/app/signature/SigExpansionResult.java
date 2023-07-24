@@ -25,5 +25,7 @@ import java.util.List;
  *
  * @param cryptoSigs the expanded list of crypto signatures
  * @param status the status of the expansion attempt
+ * @deprecated Replace with {@link SignatureVerifier}.
  */
+@Deprecated(forRemoval = true)
 public record SigExpansionResult(List<TransactionSignature> cryptoSigs, ResponseCodeEnum status) {}

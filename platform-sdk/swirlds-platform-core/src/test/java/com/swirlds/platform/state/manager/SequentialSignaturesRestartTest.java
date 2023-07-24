@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,13 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import java.util.HashMap;
@@ -51,7 +52,6 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
     private final AddressBook addressBook = new RandomAddressBookGenerator(random)
             .setSize(4)
             .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-            .setSequentialIds(true)
             .build();
 
     private final long firstRound = 50;
@@ -63,10 +63,7 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
         // No state is unsigned in this test. If this method is called then the test is expected to fail.
-        return ssw -> {
-            stateLacksSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateLacksSignaturesCount.getAndIncrement();
     }
 
     /**
@@ -75,11 +72,9 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            assertEquals(highestRound.get() - roundAgeToSign, ssw.get().getRound(), "unexpected round completed");
-
+        return ss -> {
+            assertEquals(highestRound.get() - roundAgeToSign, ss.getRound(), "unexpected round completed");
             stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
         };
     }
 
@@ -94,9 +89,9 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
 
         // Simulate a restart (i.e. loading a state from disk)
         final Hash stateHash = randomHash(random);
-        final Map<Long, Signature> signatures = new HashMap<>();
+        final Map<NodeId, Signature> signatures = new HashMap<>();
         for (final Address address : addressBook) {
-            signatures.put(address.getId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
+            signatures.put(address.getNodeId(), buildFakeSignature(address.getSigPublicKey(), stateHash));
         }
 
         final SignedState stateFromDisk = new RandomSignedStateGenerator(random)
@@ -126,17 +121,17 @@ public class SequentialSignaturesRestartTest extends AbstractSignedStateManagerT
 
             // Add some signatures to one of the previous states
             final long roundToSign = round - roundAgeToSign;
-            addSignature(manager, roundToSign, 0);
-            addSignature(manager, roundToSign, 1);
-            addSignature(manager, roundToSign, 2);
+            addSignature(manager, roundToSign, addressBook.getNodeId(0));
+            addSignature(manager, roundToSign, addressBook.getNodeId(1));
+            addSignature(manager, roundToSign, addressBook.getNodeId(2));
             if (random.nextBoolean()) {
-                addSignature(manager, roundToSign, 1);
+                addSignature(manager, roundToSign, addressBook.getNodeId(1));
             }
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
                 if (roundToSign >= firstRound) {
                     assertSame(
                             signedStates.get(roundToSign), lastCompletedState.get(), "unexpected last completed state");

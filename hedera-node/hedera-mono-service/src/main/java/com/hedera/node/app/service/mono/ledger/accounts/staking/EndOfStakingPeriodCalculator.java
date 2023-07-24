@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
-import static com.hedera.node.app.spi.config.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.node.app.spi.config.PropertyNames.STAKING_REWARD_RATE;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -37,6 +36,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -53,6 +56,9 @@ import org.apache.logging.log4j.Logger;
 public class EndOfStakingPeriodCalculator {
 
     private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
+
+    // The exact choice of precision will not have a large effect on the per-hbar reward rate
+    private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO = "End of staking period calculation record";
     private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();
 
@@ -95,8 +101,8 @@ public class EndOfStakingPeriodCalculator {
 
         final var curNetworkCtx = networkCtx.get();
         final var curStakingInfos = stakingInfos.get();
-        final var rewardRate = rewardRateForEndingPeriod();
         final var totalStakedRewardStart = curNetworkCtx.getTotalStakedRewardStart();
+        final var rewardRate = rewardRateForEndingPeriod(totalStakedRewardStart);
         // The tinybars earned per hbar for stakers who were staked to a node whose total
         // stakedRewardStart for the ending period was in the range [minStake, maxStake]
         final var perHbarRate = totalStakedRewardStart < HBARS_TO_TINYBARS
@@ -111,14 +117,17 @@ public class EndOfStakingPeriodCalculator {
 
         long newTotalStakedStart = 0L;
         long newTotalStakedRewardStart = 0L;
+        long maxStakeOfAllNodes = 0L;
+
         final List<NodeStake> nodeStakingInfos = new ArrayList<>();
+        final List<NodeStake.Builder> nodeStakingInfosBuilder = new ArrayList<>();
+
         for (final var nodeNum : curStakingInfos.keySet().stream().sorted().toList()) {
             final var stakingInfo = curStakingInfos.getForModify(nodeNum);
 
             // The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be
-            // paid to all
-            // accounts who had staked-to-reward for this node long enough to be eligible in the
-            // just-finished period
+            // paid to all accounts who had staked-to-reward for this node long enough to be eligible
+            // in the just-finished period
             final var nodeRewardRate = stakingInfo.updateRewardSumHistory(
                     perHbarRate,
                     dynamicProperties.maxDailyStakeRewardThPerH(),
@@ -140,16 +149,51 @@ public class EndOfStakingPeriodCalculator {
 
             newTotalStakedRewardStart += newStakeRewardStart;
             newTotalStakedStart += stakingInfo.getStake();
-            nodeStakingInfos.add(NodeStake.newBuilder()
+            // Update the max stake of all nodes
+            maxStakeOfAllNodes = Math.max(maxStakeOfAllNodes, stakingInfo.getStake());
+            // Build the node stake infos for the record
+            nodeStakingInfosBuilder.add(NodeStake.newBuilder()
                     .setNodeId(nodeNum.longValue())
                     .setRewardRate(nodeRewardRate)
-                    .setStake(stakingInfo.getStake())
                     .setMinStake(stakingInfo.getMinStake())
                     .setMaxStake(stakingInfo.getMaxStake())
                     .setStakeRewarded(stakingInfo.getStakeToReward())
-                    .setStakeNotRewarded(stakingInfo.getStakeToNotReward())
-                    .build());
+                    .setStakeNotRewarded(stakingInfo.getStakeToNotReward()));
         }
+
+        // Update node stake infos for the record with the updated consensus weights.
+        // The weights are updated based on the updated stake of the node.
+        for (final NodeStake.Builder builder : nodeStakingInfosBuilder) {
+            final var sumOfConsensusWeights = dynamicProperties.sumOfConsensusWeights();
+            final var nodeNum = builder.getNodeId();
+            final var stakingInfo = curStakingInfos.getForModify(EntityNum.fromLong(nodeNum));
+            // If the total stake(rewarded + non-rewarded) of a node is less than minStake, stakingInfo's stake field
+            // represents 0, as per calculation done in reviewElectionsAndRecomputeStakes.
+            // Similarly, the total stake(rewarded + non-rewarded) of the node is greater than maxStake,
+            // stakingInfo's stake field is set to maxStake.So, there is no need to clamp the stake value here. Sum of
+            // all stakes can be used to calculate the weight.
+            final var updatedWeight =
+                    calculateWeightFromStake(stakingInfo.getStake(), newTotalStakedStart, sumOfConsensusWeights);
+            final var oldWeight = stakingInfo.getWeight();
+            stakingInfo.setWeight(updatedWeight);
+            log.info("Node {} weight is updated. Old weight {}, updated weight {}", nodeNum, oldWeight, updatedWeight);
+
+            // Scale the consensus weight  range [0, sumOfConsensusWeights] to [minStake, trueMaxStakeOfAllNodes] range
+            // and export
+            // to mirror node. We need to consider the true maxStakeOfAllNodes instead of maxStake because
+            // for a one node network, whose stake < maxStake, we assign a weight of sumOfConsensusWeights to the node.
+            // When we scale it back to stake, we need to give back the real stake of the node
+            // instead of maxStake set on the node.
+            final var scaledWeightToStake = scaleUpWeightToStake(
+                    updatedWeight,
+                    stakingInfo.getMinStake(),
+                    maxStakeOfAllNodes,
+                    newTotalStakedStart,
+                    sumOfConsensusWeights);
+            builder.setStake(scaledWeightToStake);
+            nodeStakingInfos.add(builder.build());
+        }
+
         curNetworkCtx.setTotalStakedRewardStart(newTotalStakedRewardStart);
         curNetworkCtx.setTotalStakedStart(newTotalStakedStart);
         log.info(
@@ -169,13 +213,109 @@ public class EndOfStakingPeriodCalculator {
                         NO_CUSTOM_FEES, NO_OTHER_SIDE_EFFECTS, END_OF_STAKING_PERIOD_CALCULATIONS_MEMO));
     }
 
+    /**
+     * Scales up the weight of the node to the range [minStake, maxStakeOfAllNodes] from the consensus weight range [0, sumOfConsensusWeights].
+     * @param weight weight of the node
+     * @param newMinStake min stake of the node
+     * @param newMaxStake real max stake of all nodes computed by taking max(stakeOfNode1, stakeOfNode2, ...)
+     * @return scaled weight of the node
+     */
+    long scaleUpWeightToStake(
+            final int weight,
+            final long newMinStake,
+            final long newMaxStake,
+            final long totalStakeOfAllNodes,
+            final int sumOfConsensusWeights) {
+        final var zeroStake = 0;
+        // If zero stake return zero
+        if (weight == zeroStake) {
+            return zeroStake;
+        } else {
+            // This should never happen, but if it does, return zero
+            if (totalStakeOfAllNodes == 0) {
+                return 0;
+            }
+            final var oldMinWeight = 1L;
+            // Since we are calculating weights based on the real stake values, we need to consider
+            // the real max Stake and not theoretical max stake of nodes.
+            // Otherwise, on a one node network with a stake < maxStake where we assign a weight of
+            // sumOfConsensusWeights,
+            // the scaled stake value will be greater than its real stake.
+            final var oldMaxWeight = BigInteger.valueOf(newMaxStake)
+                    .multiply(BigInteger.valueOf(sumOfConsensusWeights))
+                    .divide(BigInteger.valueOf(totalStakeOfAllNodes))
+                    .longValue();
+            // Otherwise compute the interpolation of the weight in the range [minStake, maxStake]
+            return BigInteger.valueOf(newMaxStake)
+                    .subtract(BigInteger.valueOf(newMinStake))
+                    .multiply(BigInteger.valueOf(weight - oldMinWeight))
+                    .divide(BigInteger.valueOf(oldMaxWeight - oldMinWeight))
+                    .add(BigInteger.valueOf(newMinStake))
+                    .longValue();
+        }
+    }
+
+    /**
+     * Calculates consensus weight of the node. The network normalizes the weights of nodes above minStake so that the
+     * total sum of weight is approximately as described by {@code GlobalDynamicProperties#sumOfConsensusWeights}.
+     * The stake field in {@code MerkleStakingInfo} is already clamped to [minStake, maxStake].
+     * If stake is less than minStake the weight of a node A will be 0. If stake is greater than minStake, the weight of a node A
+     * will be computed so that every node above minStake has weight at least 1; but any node that has staked at least 1
+     * out of every 250 whole hbars staked will have weight >= 2.
+     * @param stake the stake of current node, includes stake rewarded and non-rewarded
+     * @param totalStakeOfAllNodes the total stake of all nodes at the start of new period
+     * @return calculated consensus weight of the node
+     */
+    int calculateWeightFromStake(final long stake, final long totalStakeOfAllNodes, final int sumOfConsensusWeights) {
+        // if node's total stake is less than minStake, MerkleStakingInfo stake will be zero as per calculation
+        // in reviewElectionsAndRecomputeStakes and weight will be zero.
+        if (stake == 0) {
+            return 0;
+        } else {
+            // If a node's stake is not zero then totalStakeOfAllNodes can't be zero.
+            // This error should never happen. It is added to avoid divide by zero exception, in case of any bug.
+            if (totalStakeOfAllNodes <= 0L) {
+                log.warn("Total stake of all nodes should be greater than 0. But got {}", totalStakeOfAllNodes);
+                return 0;
+            }
+            final var weight = BigInteger.valueOf(stake)
+                    .multiply(BigInteger.valueOf(sumOfConsensusWeights))
+                    .divide(BigInteger.valueOf(totalStakeOfAllNodes))
+                    .longValue();
+            return (int) Math.max(weight, 1);
+        }
+    }
+
+    /**
+     * Given the amount that was staked to reward at the start of the period that is now ending, returns
+     * the effective per-hbar reward rate for the period.
+     *
+     * @param stakedToReward the amount of hbars staked to reward at the start of the ending period
+     * @return the effective per-hbar reward rate for the period
+     */
     @VisibleForTesting
-    long rewardRateForEndingPeriod() {
-        return Math.max(
-                0,
-                Math.min(
-                        rewardsBalance() - networkCtx.get().pendingRewards(),
-                        properties.getLongProperty(STAKING_REWARD_RATE)));
+    long rewardRateForEndingPeriod(final long stakedToReward) {
+        // The balance left in 0.0.800 (in tinybars), after paying all rewards earned so far
+        final var unreservedBalance = rewardsBalance() - networkCtx.get().pendingRewards();
+
+        final var thresholdBalance = dynamicProperties.stakingRewardBalanceThreshold();
+        // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
+        final var balanceRatio = thresholdBalance > 0L
+                ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
+                        .divide(BigDecimal.valueOf(thresholdBalance), MATH_CONTEXT)
+                : BigDecimal.ONE;
+
+        // When 0.0.800 has a high balance, and less than maxStakeRewarded is staked for reward, then
+        // effectiveRewardRate == rewardRate. But as the balance drops or the staking increases, then
+        // it can be the case that effectiveRewardRate < rewardRate
+        return BigDecimal.valueOf(dynamicProperties.stakingRewardRate())
+                .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
+                .multiply(
+                        dynamicProperties.maxStakeRewarded() >= stakedToReward
+                                ? BigDecimal.ONE
+                                : BigDecimal.valueOf(dynamicProperties.maxStakeRewarded())
+                                        .divide(BigDecimal.valueOf(stakedToReward), MATH_CONTEXT))
+                .longValue();
     }
 
     @VisibleForTesting

@@ -20,8 +20,10 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -31,7 +33,7 @@ import java.util.Objects;
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskReadableKVState<K extends Comparable<K>, V> extends ReadableKVStateBase<K, V> {
+public final class OnDiskReadableKVState<K, V> extends ReadableKVStateBase<K, V> {
     /** The backing merkle data structure to use */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
 
@@ -62,11 +64,40 @@ public final class OnDiskReadableKVState<K extends Comparable<K>, V> extends Rea
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
-        throw new UnsupportedOperationException("You cannot iterate over a virtual map's keys!");
+        final var itr = virtualMap.treeIterator();
+        return new Iterator<>() {
+            private K next = null;
+
+            @Override
+            public boolean hasNext() {
+                if (next != null) return true;
+                while (itr.hasNext()) {
+                    final var merkleNode = itr.next();
+                    if (merkleNode instanceof VirtualLeafNode<?, ?> leaf) {
+                        final var k = leaf.getKey();
+                        if (k instanceof OnDiskKey<?> onDiskKey) {
+                            this.next = (K) onDiskKey.getKey();
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public K next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                final var k = next;
+                next = null;
+                return k;
+            }
+        };
     }
 
     /** {@inheritDoc} */
-    @NonNull
     @Override
     public long size() {
         return virtualMap.size();

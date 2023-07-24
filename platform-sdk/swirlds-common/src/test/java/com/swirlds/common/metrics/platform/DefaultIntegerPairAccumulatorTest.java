@@ -31,7 +31,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.DisplayName;
@@ -258,5 +258,21 @@ class DefaultIntegerPairAccumulatorTest {
         // then
         assertThat(accumulator.toString())
                 .contains(CATEGORY, NAME, DESCRIPTION, FORMAT, Metric.DataType.FLOAT.toString());
+    }
+
+    @Test
+    void testResetValue() {
+        // given
+        final IntegerPairAccumulator.Config<Double> config =
+                new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
+        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        accumulator.update(42, 4711);
+
+        // when
+        accumulator.reset();
+
+        // then
+        assertEquals(0.0, accumulator.get(), EPSILON, "Value should be 0");
+        assertEquals(0.0, accumulator.get(VALUE), EPSILON, "Value should be 0");
     }
 }

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.state.forensics;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.state.notifications.IssNotification;
@@ -102,7 +104,7 @@ class ServicesIssListenerTest {
         given(issEventInfo.shouldLogThisRound()).willReturn(true);
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
         given(wrapper.get()).willReturn(state);
-        given(platform.getLatestImmutableState()).willReturn(wrapper);
+        given(platform.getLatestImmutableState(notNull())).willReturn(wrapper);
 
         subject.notify(issNotification);
 
@@ -122,7 +124,7 @@ class ServicesIssListenerTest {
         given(issEventInfo.shouldLogThisRound()).willReturn(false);
         given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
         given(wrapper.get()).willReturn(state);
-        given(platform.getLatestImmutableState()).willReturn(wrapper);
+        given(platform.getLatestImmutableState(notNull())).willReturn(wrapper);
 
         // when:
         subject.notify(issNotification);
@@ -136,6 +138,6 @@ class ServicesIssListenerTest {
 
     private void givenNoticeMeta() {
         given(issNotification.getRound()).willReturn(round);
-        given(issNotification.getOtherNodeId()).willReturn(otherId);
+        given(issNotification.getOtherNodeId()).willReturn(new NodeId(otherId));
     }
 }

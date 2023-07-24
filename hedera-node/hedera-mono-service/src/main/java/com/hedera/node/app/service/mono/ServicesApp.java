@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono;
 
+import com.hedera.node.app.service.mono.cache.EntityMapWarmer;
 import com.hedera.node.app.service.mono.config.ConfigModule;
 import com.hedera.node.app.service.mono.context.ContextModule;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
@@ -81,9 +82,11 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
+import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
@@ -204,12 +207,16 @@ public interface ServicesApp {
 
     NewSignedStateListener newSignedStateListener();
 
+    Optional<NewRecoveredStateListener> maybeNewRecoveredStateListener();
+
     Supplier<NotificationEngine> notificationEngine();
 
     BackingStore<AccountID, HederaAccount> backingAccounts();
 
     @BootstrapProps
     PropertySource bootstrapProps();
+
+    EntityMapWarmer mapWarmer();
 
     @Component.Builder
     interface Builder {
@@ -226,10 +233,13 @@ public interface ServicesApp {
         Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
         @BindsInstance
-        Builder selfId(long selfId);
+        Builder selfId(NodeId selfId);
 
         @BindsInstance
         Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
+
+        @BindsInstance
+        Builder initTrigger(InitTrigger initTrigger);
 
         @BindsInstance
         Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);

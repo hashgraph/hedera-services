@@ -18,13 +18,14 @@ package com.swirlds.common.merkle.synchronization.streams;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -38,17 +39,16 @@ import org.apache.logging.log4j.Logger;
  * </p>
  *
  * <p>
- * Only one type of message is allowed to be sent using an instance of this class. Originally this class was capable
- * of supporting arbitrary message types, but there was a significant memory footprint optimization that was made
- * possible by switching to single message type.
+ * Only one type of message is allowed to be sent using an instance of this class. Originally this class was capable of
+ * supporting arbitrary message types, but there was a significant memory footprint optimization that was made possible
+ * by switching to single message type.
  * </p>
  *
  * <p>
  * This object is not thread safe. Only one thread should attempt to send data over this stream at any point in time.
  * </p>
  *
- * @param <T>
- * 		the type of the message to send
+ * @param <T> the type of the message to send
  */
 public class AsyncOutputStream<T extends SelfSerializable> implements AutoCloseable {
 
@@ -72,7 +72,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     /**
      * The maximum amount of time that is permitted to pass without a flush being attempted.
      */
-    private final int flushIntervalMs;
+    private final Duration flushInterval;
 
     /**
      * If this becomes false then this object's worker thread will stop transmitting messages.
@@ -87,31 +87,29 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     /**
      * The maximum amount of time to wait when writing a message.
      */
-    private final int timeoutMs;
+    private final Duration timeout;
 
     private final StandardWorkGroup workGroup;
 
     /**
-     * Constructs a new instance using the given underlying {@link SerializableDataOutputStream} and {@link
-     * StandardWorkGroup}.
+     * Constructs a new instance using the given underlying {@link SerializableDataOutputStream} and
+     * {@link StandardWorkGroup}.
      *
-     * @param outputStream
-     * 		the outputStream to which all objects are written
-     * @param workGroup
-     * 		the work group that should be used to execute this thread
+     * @param outputStream the outputStream to which all objects are written
+     * @param workGroup    the work group that should be used to execute this thread
      */
     public AsyncOutputStream(final SerializableDataOutputStream outputStream, final StandardWorkGroup workGroup) {
 
-        final ReconnectSettings settings = ReconnectSettingsFactory.get();
+        final ReconnectConfig config = ConfigurationHolder.getConfigData(ReconnectConfig.class);
 
         this.outputStream = outputStream;
         this.workGroup = workGroup;
-        this.outgoingMessages = new LinkedBlockingQueue<>(settings.getAsyncStreamBufferSize());
+        this.outgoingMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());
         this.alive = true;
         this.timeSinceLastFlush = new StopWatch();
         this.timeSinceLastFlush.start();
-        this.flushIntervalMs = settings.getAsyncOutputStreamFlushMilliseconds();
-        this.timeoutMs = settings.getAsyncStreamTimeoutMilliseconds();
+        this.flushInterval = config.asyncOutputStreamFlush();
+        this.timeout = config.asyncStreamTimeout();
     }
 
     /**
@@ -119,15 +117,6 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      */
     public void start() {
         workGroup.execute("async-output-stream", this::run);
-    }
-
-    /**
-     * Returns the maximum time (in milliseconds) allowed to elapse before a flush is required.
-     *
-     * @return the maximum time (in milliseconds) allowed to elapse before a flush is required
-     */
-    public int getFlushIntervalMs() {
-        return flushIntervalMs;
     }
 
     /**
@@ -180,7 +169,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
             throw new MerkleSynchronizationException("Messages can not be sent after close has been called.");
         }
 
-        final boolean success = outgoingMessages.offer(message, timeoutMs, TimeUnit.MILLISECONDS);
+        final boolean success = outgoingMessages.offer(message, timeout.toMillis(), TimeUnit.MILLISECONDS);
 
         if (!success) {
             try {
@@ -193,8 +182,8 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
     }
 
     /**
-     * Close this buffer and release resources.
-     * If there are still messages awaiting transmission then resources will not be immediately freed.
+     * Close this buffer and release resources. If there are still messages awaiting transmission then resources will
+     * not be immediately freed.
      */
     @Override
     public void close() {
@@ -244,7 +233,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      * Flush the stream if necessary.
      */
     private void flushIfRequired() {
-        if (timeSinceLastFlush.getTime(TimeUnit.MILLISECONDS) > flushIntervalMs) {
+        if (timeSinceLastFlush.getTime(TimeUnit.MILLISECONDS) > flushInterval.toMillis()) {
             flush();
         }
     }

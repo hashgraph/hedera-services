@@ -15,33 +15,37 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.benchmark-conventions")
-  id("org.gradle.java-test-fixtures")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.benchmark-conventions")
+    id("org.gradle.java-test-fixtures")
 }
 
 extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
-  compileOnly(libs.spotbugs.annotations)
+    // Individual Dependencies
+    implementation(project(":swirlds-platform-core"))
+    compileOnly(libs.spotbugs.annotations)
 
-  // Test Dependencies
+    // Test Dependencies
+    testCompileOnly(libs.spotbugs.annotations)
 
-  // These should not be implementation() based deps, but this requires refactoring to eliminate.
-  implementation(testLibs.bundles.mocking)
-  implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-  implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    // These should not be implementation() based deps, but this requires refactoring to eliminate.
+    implementation(testLibs.bundles.mocking)
+    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(testFixtures(project(":swirlds-config-api")))
+    implementation(testFixtures(project(":swirlds-common")))
 
-  testImplementation(project(":swirlds-merkle"))
-  testImplementation(project(":swirlds-sign-tool")) // TODO: should be removed in future
-  testImplementation(libs.commons.collections4)
-  testImplementation(libs.classgraph)
-  testImplementation(testLibs.bundles.junit)
-  testImplementation(testLibs.bundles.utils)
-  testImplementation(testFixtures(project(":swirlds-common")))
+    testImplementation(project(":swirlds-merkle"))
+    testImplementation(project(":swirlds-sign-tool")) // FUTURE WORK: should be removed in future
+    testImplementation(libs.commons.collections4)
+    testImplementation(libs.classgraph)
+    testImplementation(testLibs.bundles.junit)
+    testImplementation(testLibs.bundles.utils)
+    testImplementation(testFixtures(project(":swirlds-base")))
+    testImplementation(testFixtures(project(":swirlds-common")))
 
-  testImplementation(project(":swirlds-config-impl"))
+    testImplementation(project(":swirlds-config-impl"))
 }

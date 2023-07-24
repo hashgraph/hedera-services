@@ -18,7 +18,10 @@ package com.swirlds.common.system.address;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 
+import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -78,7 +81,7 @@ public final class AddressBookValidator {
      */
     public static boolean validNextId(final AddressBook previousAddressBook, final AddressBook addressBook) {
 
-        if (previousAddressBook.getNextNodeId() > addressBook.getNextNodeId()) {
+        if (previousAddressBook.getNextNodeId().compareTo(addressBook.getNextNodeId()) > 0) {
             logger.error(
                     EXCEPTION.getMarker(),
                     "Invalid next node ID. Previous address book has a next node ID of {}, "
@@ -92,6 +95,68 @@ public final class AddressBookValidator {
     }
 
     /**
+     * Validates the following properties:
+     * <ul>
+     * <li>newAddressBook.getNextNodeId() is greater than or equal to oldAddressBook.getNextNodeId() </li>
+     * <li>for each nodeId in newAddressBook that is not in oldAddressBook:
+     * <ul>
+     *     <li>the nodeId is greater than or equal to oldAddressBook.getNextNodeId()</li>
+     *     <li>the nodeId is less than newAddressBook.getNextNodeId()</li>
+     * </ul>
+     * </li>
+     * </ul>
+     *
+     * @param oldAddressBook the old address book
+     * @param newAddressBook the new address book
+     * @throws IllegalStateException if the nextNodeId in the new address book is less than or equal to the nextNodeId
+     *                               in the old address book, or if there are any new nodes in the new address book that
+     *                               are less than the old nextNodeId or greater than or equal to the new nextNodeId.
+     */
+    public static void validateNewAddressBook(
+            @NonNull final AddressBook oldAddressBook, @NonNull final AddressBook newAddressBook) {
+
+        final NodeId oldNextNodeId = oldAddressBook.getNextNodeId();
+        final NodeId newNextNodeId = newAddressBook.getNextNodeId();
+
+        if (newNextNodeId.compareTo(oldNextNodeId) < 0) {
+            throw new IllegalStateException("The new address book's nextNodeId " + newNextNodeId
+                    + " must be greater than or equal to the previous address book's nextNodeId "
+                    + oldNextNodeId);
+        }
+
+        final int oldSize = oldAddressBook.getSize();
+        final int newSize = newAddressBook.getSize();
+
+        // Verify that the old next node id is greater than the highest node id in the old address book.
+        final NodeId oldLastNodeId = (oldSize == 0 ? null : oldAddressBook.getNodeId(oldSize - 1));
+        if (oldLastNodeId != null && oldLastNodeId.compareTo(oldNextNodeId) > 0) {
+            throw new IllegalStateException(
+                    "The nextNodeId of the previous address book must be greater than the highest address's node id.");
+        }
+
+        // Determine the new node ids that are in the new address book and not in the old address book.
+        final List<NodeId> newNodes = new ArrayList<>();
+        for (int i = 0; i < newSize; i++) {
+            final NodeId newNodeId = newAddressBook.getNodeId(i);
+            if (!oldAddressBook.contains(newNodeId)) {
+                newNodes.add(newNodeId);
+            }
+        }
+
+        // verify that all new nodes are greater than or equal to oldNextNodeId and less than newNextNodeId.
+        for (final NodeId nodeId : newNodes) {
+            if (nodeId.compareTo(oldNextNodeId) < 0) {
+                throw new IllegalStateException("The new node " + nodeId
+                        + " is less than the previous address book's nextNodeId " + oldNextNodeId);
+            }
+            if (nodeId.compareTo(newNextNodeId) >= 0) {
+                throw new IllegalStateException("The new node " + nodeId
+                        + " is greater than or equal to the new address book's nextNodeId " + newNextNodeId);
+            }
+        }
+    }
+
+    /**
      * No address that is removed may be re-added to the address book. If address N is skipped and address N+1 is later
      * added, then address N can never be added (as this is difficult to distinguish from N being added and then
      * removed).
@@ -102,10 +167,10 @@ public final class AddressBookValidator {
      */
     public static boolean noAddressReinsertion(final AddressBook previousAddressBook, final AddressBook addressBook) {
 
-        final long previousNextId = previousAddressBook.getNextNodeId();
+        final NodeId previousNextId = previousAddressBook.getNextNodeId();
         for (final Address address : addressBook) {
-            final long nodeId = address.getId();
-            if (nodeId < previousNextId && !previousAddressBook.contains(nodeId)) {
+            final NodeId nodeId = address.getNodeId();
+            if (nodeId.compareTo(previousNextId) < 0 && !previousAddressBook.contains(nodeId)) {
                 logger.error(
                         EXCEPTION.getMarker(),
                         "Once an address is removed or a node ID is skipped, "
@@ -168,15 +233,15 @@ public final class AddressBookValidator {
         }
         return IntStream.range(0, addressBookSize)
                 .mapToObj(i -> {
-                    final long nodeId1 = addressBook1.getId(i);
-                    final long nodeId2 = addressBook2.getId(i);
+                    final NodeId nodeId1 = addressBook1.getNodeId(i);
+                    final NodeId nodeId2 = addressBook2.getNodeId(i);
                     final Address address1 = addressBook1.getAddress(nodeId1);
                     final Address address2 = addressBook2.getAddress(nodeId2);
                     if (address1 == null || address2 == null) {
                         logger.error(EXCEPTION.getMarker(), "Address at index {} is null when accessed in order.", i);
                         throw new IllegalStateException("Address at index " + i + " is null.");
                     }
-                    final boolean equal = address1.equalsWithoutWeightAndOwnHost(address2);
+                    final boolean equal = address1.equalsWithoutWeight(address2);
                     if (!equal) {
                         logger.error(
                                 EXCEPTION.getMarker(),

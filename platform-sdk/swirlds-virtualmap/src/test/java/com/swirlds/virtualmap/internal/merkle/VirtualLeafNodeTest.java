@@ -51,18 +51,18 @@ class VirtualLeafNodeTest {
 
     @Test
     void copyNotSupported() {
-        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1, null, null, null);
+        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1, null, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualLeafNode<TestKey, TestValue> virtualLeaf = new VirtualLeafNode<>(leafRecord);
+        final VirtualLeafNode<TestKey, TestValue> virtualLeaf = new VirtualLeafNode<>(leafRecord, null);
         assertThrows(UnsupportedOperationException.class, virtualLeaf::copy, "Copy is not supported");
     }
 
     @Test
     void toStringTest() {
         // Shameless test to cover toString. All I really care is it doesn't throw an NPE.
-        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1, null, null, null);
+        final VirtualLeafRecord<TestKey, TestValue> leafRecord = new VirtualLeafRecord<>(1, null, null);
         final VirtualRootNode<TestKey, TestValue> root = createRoot();
-        final VirtualLeafNode<TestKey, TestValue> leaf = new VirtualLeafNode<>(leafRecord);
+        final VirtualLeafNode<TestKey, TestValue> leaf = new VirtualLeafNode<>(leafRecord, null);
         assertNotNull(leaf.toString(), "leaf should not have a null string");
 
         // a few addition tests that also just juice the coverage numbers

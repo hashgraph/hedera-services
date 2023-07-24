@@ -45,7 +45,7 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K extends Comparable<? super K>>
+public final class OnDiskKeySerializer<K>
         implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
     /** This is a hint for virtual maps, but isn't actually useful. We just pick some size. */
     private static final int TYPICAL_SIZE = 256;
@@ -72,7 +72,7 @@ public final class OnDiskKeySerializer<K extends Comparable<? super K>>
     }
 
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long dataVersion) {
         // We're going to use variable size keys, always. MerkleDB was designed with
         // fast paths if you knew you were using a Long as the key -- but we really
         // cannot use that. The problem manifests itself with state proofs. We wanted

@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb.files.hashmap;
 
-import static com.swirlds.common.utility.Units.BYTES_PER_LONG;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_LONG;
 
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -69,7 +69,7 @@ public class VirtualKeySetSerializer implements KeySerializer<VirtualLongKey> {
      * {@inheritDoc}
      */
     @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(final long dataVersion) {
         return BYTES_PER_LONG;
     }
 

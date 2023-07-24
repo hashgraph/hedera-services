@@ -21,8 +21,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hedera.node.app.spi.config.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -32,6 +34,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.function.LongSupplier;
 import javax.inject.Inject;
@@ -40,11 +43,12 @@ import javax.inject.Singleton;
 /**
  * An implementation of {@link AttributeValidator} that encapsulates the current policies for
  * validating attributes of entities, <i>without</i> any use of {@code mono-service} code.
+ *
+ * @deprecated Use {@link AttributeValidatorImpl} instead.
  */
+@Deprecated(forRemoval = true)
 @Singleton
 public class StandardizedAttributeValidator implements AttributeValidator {
-    public static final int MAX_NESTED_KEY_LEVELS = 15;
-
     private final long maxEntityLifetime;
     private final LongSupplier consensusSecondNow;
     private final GlobalDynamicProperties dynamicProperties;
@@ -65,6 +69,11 @@ public class StandardizedAttributeValidator implements AttributeValidator {
     @Override
     public void validateKey(@NonNull final Key key) {
         validateKeyAtLevel(key, 1);
+
+        // If key is mappable in all levels, validate the key is valid
+        if (!isValid(key)) {
+            throw new HandleException(BAD_ENCODING);
+        }
     }
 
     /**
@@ -92,7 +101,10 @@ public class StandardizedAttributeValidator implements AttributeValidator {
      * {@inheritDoc}
      */
     @Override
-    public void validateMemo(@NonNull final String memo) {
+    public void validateMemo(@Nullable final String memo) {
+        if (memo == null) {
+            return;
+        }
         final var raw = memo.getBytes(StandardCharsets.UTF_8);
         if (raw.length > dynamicProperties.maxMemoUtf8Bytes()) {
             throw new HandleException(MEMO_TOO_LONG);
@@ -135,5 +147,12 @@ public class StandardizedAttributeValidator implements AttributeValidator {
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean isImmutableKey(@NonNull Key key) {
+        requireNonNull(key);
+        return key.hasKeyList()
+                && requireNonNull(key.keyList()).keysOrElse(emptyList()).isEmpty();
     }
 }

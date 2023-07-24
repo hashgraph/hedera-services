@@ -17,11 +17,15 @@
 package com.swirlds.common.test.threading;
 
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.threading.framework.internal.AbstractQueueThreadConfiguration.UNLIMITED_CAPACITY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
+import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -43,7 +49,9 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.ThreadSeed;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.threading.framework.internal.QueueThreadMetrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.config.api.Configuration;
@@ -75,6 +83,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -87,6 +96,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class QueueThreadTests {
 
     static final String THREAD_NAME = "myThread";
+    static final String METRIC_CATEGORY = "myCategory";
     static final String MAX_SIZE_METRIC_NAME = THREAD_NAME + "-queueMaxSize";
     static final String MIN_SIZE_METRIC_NAME = THREAD_NAME + "-queueMinSize";
 
@@ -99,15 +109,21 @@ class QueueThreadTests {
     }
 
     private Metrics metrics;
+    private ScheduledExecutorService executor;
 
     @BeforeEach
     void setUp() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor = Executors.newSingleThreadScheduledExecutor();
         final MetricsFactory factory = new DefaultMetricsFactory();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
+    }
+
+    @AfterEach
+    void teardown() {
+        executor.shutdown();
     }
 
     @Test
@@ -273,7 +289,7 @@ class QueueThreadTests {
 
         qt.stop();
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
         final Future<Void> future = executorService.submit(() -> {
             qt.clear();
             return null;
@@ -281,7 +297,7 @@ class QueueThreadTests {
 
         try {
             future.get(5, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (final ExecutionException | TimeoutException e) {
             fail("clear() hung on stopped thread queue.");
         }
         assertEquals(0, qt.size());
@@ -386,15 +402,15 @@ class QueueThreadTests {
         qt.start();
         qt.add(1);
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(() -> {
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final Future<Void> future = executorService.submit(() -> {
             qt.stop();
             return null;
         });
 
         try {
             future.get(5, TimeUnit.SECONDS);
-        } catch (ExecutionException | TimeoutException e) {
+        } catch (final ExecutionException | TimeoutException e) {
             fail("QueueThread was configured to be interruptable but could not be interrupted.");
         }
 
@@ -493,8 +509,8 @@ class QueueThreadTests {
         qt.start();
         qt.add(1);
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<Void> future = executorService.submit(() -> {
+        final ExecutorService executorService = Executors.newSingleThreadExecutor();
+        final Future<Void> future = executorService.submit(() -> {
             // Stop with interruptable behavior instead of default blocking behavior
             qt.stop(Stoppable.StopBehavior.INTERRUPTABLE);
             return null;
@@ -505,29 +521,6 @@ class QueueThreadTests {
         assertFalse(qt.isAlive(), "The queue thread should not be alive after being stopped.");
     }
 
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @Tag(TestComponentTags.THREADING)
-    @DisplayName("WaitForItemRunnableTest")
-    void waitForItemRunnableTest() throws InterruptedException {
-        final AtomicInteger waitForItemCount = new AtomicInteger(0);
-
-        final QueueThread<Integer> qt = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
-                .setThreadName(THREAD_NAME)
-                .setUnlimitedCapacity()
-                .setHandler((value) -> {})
-                .setWaitForItemRunnable(waitForItemCount::incrementAndGet)
-                .build();
-
-        qt.start();
-
-        MILLISECONDS.sleep(100);
-
-        qt.stop();
-
-        assertTrue(waitForItemCount.get() > 0, "The waitForItemRunnable should have been invoked at least once.");
-    }
-
     @ParameterizedTest
     @MethodSource("queueTypes")
     @Tag(TestTypeTags.FUNCTIONAL)
@@ -535,7 +528,7 @@ class QueueThreadTests {
     @DisplayName("QueueTest")
     void queueTest(final BlockingQueue<Integer> queue) throws InterruptedException {
 
-        Queue<Integer> handledInts = new LinkedList<>();
+        final Queue<Integer> handledInts = new LinkedList<>();
 
         final QueueThread<Integer> qt = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
@@ -638,10 +631,6 @@ class QueueThreadTests {
         assertThrows(
                 MutabilityException.class, () -> configuration.setHandler(null), "configuration should be immutable");
         assertThrows(
-                MutabilityException.class,
-                () -> configuration.setWaitForItemRunnable(null),
-                "configuration should be immutable");
-        assertThrows(
                 MutabilityException.class, () -> configuration.setQueue(null), "configuration should be immutable");
     }
 
@@ -687,15 +676,12 @@ class QueueThreadTests {
     void copyTest() {
         final InterruptableConsumer<Integer> handler = (final Integer x) -> {};
 
-        final InterruptableRunnable waitForItem = () -> {};
-
         final QueueThreadConfiguration<?> configuration = new QueueThreadConfiguration<Integer>(
                         getStaticThreadManager())
                 .setThreadName(THREAD_NAME)
                 .setCapacity(1234)
                 .setMaxBufferSize(1234)
                 .setHandler(handler)
-                .setWaitForItemRunnable(waitForItem)
                 .setQueue(new LinkedBlockingDeque<>());
 
         final QueueThreadConfiguration<?> copy1 = configuration.copy();
@@ -703,10 +689,6 @@ class QueueThreadTests {
         assertEquals(configuration.getCapacity(), copy1.getCapacity(), "copy configuration should match");
         assertEquals(configuration.getMaxBufferSize(), copy1.getMaxBufferSize(), "copy configuration should match");
         assertSame(configuration.getHandler(), copy1.getHandler(), "copy configuration should match");
-        assertSame(
-                configuration.getWaitForItemRunnable(),
-                copy1.getWaitForItemRunnable(),
-                "copy configuration should match");
         assertSame(configuration.getQueue(), copy1.getQueue(), "copy configuration should match");
 
         // It shouldn't matter if the original is immutable.
@@ -718,10 +700,6 @@ class QueueThreadTests {
         assertEquals(configuration.getCapacity(), copy2.getCapacity(), "copy configuration should match");
         assertEquals(configuration.getMaxBufferSize(), copy2.getMaxBufferSize(), "copy configuration should match");
         assertSame(configuration.getHandler(), copy2.getHandler(), "copy configuration should match");
-        assertSame(
-                configuration.getWaitForItemRunnable(),
-                copy2.getWaitForItemRunnable(),
-                "copy configuration should match");
         assertSame(configuration.getQueue(), copy2.getQueue(), "copy configuration should match");
     }
 
@@ -737,8 +715,9 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric())
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -786,8 +765,9 @@ class QueueThreadTests {
                 .setThreadName(THREAD_NAME)
                 .setQueue(queue)
                 .setHandler(handler::add)
-                .enableMaxSizeMetric(metrics)
-                .enableMinSizeMetric(metrics)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .enableMaxSizeMetric()
+                        .enableMinSizeMetric())
                 .build();
 
         final DefaultIntegerAccumulator maxSizeMetric =
@@ -882,7 +862,7 @@ class QueueThreadTests {
         IntStream.range(0, 70).boxed().forEach(x -> {
             try {
                 queueThread.put(x);
-            } catch (InterruptedException ignored) {
+            } catch (final InterruptedException ignored) {
             }
         });
         maxSizeMetric.takeSnapshot();
@@ -897,7 +877,7 @@ class QueueThreadTests {
         IntStream.range(0, 20).boxed().forEach(x -> {
             try {
                 queueThread.take();
-            } catch (InterruptedException ignored) {
+            } catch (final InterruptedException ignored) {
             }
         });
 
@@ -913,5 +893,254 @@ class QueueThreadTests {
         assertThat(queueThread).isEmpty();
         assertThat(maxSizeMetric.get()).isEqualTo(70);
         assertThat(minSizeMetric.get()).isZero();
+    }
+
+    @Test
+    @DisplayName("busyTimeMetricTest() Test")
+    @SuppressWarnings("unchecked")
+    void busyTimeMetricTest() throws InterruptedException {
+        // given
+        final Semaphore handling1 = new Semaphore(0);
+        final Semaphore handling2 = new Semaphore(0);
+        final InterruptableConsumer<Integer> handler = i -> {
+            handling1.release();
+            handling2.acquire();
+        };
+        final FakeTime time = new FakeTime();
+
+        final ControllableQueue queue = new ControllableQueue();
+        final QueueThread<Integer> queueThread = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
+                .setThreadName(THREAD_NAME)
+                .setHandler(handler)
+                .setQueue(queue)
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics)
+                        .setCategory(METRIC_CATEGORY)
+                        .setTime(time)
+                        .enableBusyTimeMetric())
+                .build();
+        final FunctionGauge<Double> busyTimeMetric = (FunctionGauge<Double>)
+                metrics.getMetric(METRIC_CATEGORY, QueueThreadMetrics.buildBusyTimeMetricName(THREAD_NAME));
+
+        queueThread.add(123);
+        queueThread.start();
+
+        // when
+        // wait for handling to start
+        handling1.acquire();
+        // advance time
+        time.tick(Duration.ofSeconds(1));
+        // release handling thread
+        handling2.release();
+        // wait for handling to finish
+        queueThread.waitUntilNotBusy();
+        // cause all future calls to poll() to block
+        queue.blockPolling();
+        // wait until the thread becomes blocked on poll()
+        while (queue.getPollBlockedCount() == 0) {
+            NANOSECONDS.sleep(1);
+        }
+        // advance time again
+        time.tick(Duration.ofSeconds(1));
+        // allow the thread to unblock from polling
+        queue.unblockPolling();
+
+        // then
+        assertEventuallyEquals(0.5, busyTimeMetric::get, Duration.ofSeconds(1), "busy time was not measured correctly");
+
+        queueThread.stop();
+    }
+
+    @Test
+    @DisplayName("waitUntilNotBusy() Test")
+    void waitUntilNotBusyTest() throws InterruptedException {
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setHandler(Runnable::run)
+                .build(true);
+
+        // waiting on an empty queue should not block
+        completeBeforeTimeout(
+                queue::waitUntilNotBusy,
+                Duration.ofSeconds(1),
+                "waitUntilNotBusy() should not block on an empty queue");
+
+        final CountDownLatch queueBlockingLatch = new CountDownLatch(1);
+        queue.add(() -> {
+            try {
+                queueBlockingLatch.await();
+            } catch (final InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        for (int i = 0; i < 100; i++) {
+            queue.add(() -> {});
+        }
+
+        // Waiting on the queue should block until we release the latch
+        final CountDownLatch finishedWaitingLatch = new CountDownLatch(1);
+        new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    try {
+                        queue.waitUntilNotBusy();
+                        finishedWaitingLatch.countDown();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                })
+                .build(true);
+
+        assertFalse(finishedWaitingLatch.await(100, MILLISECONDS));
+
+        // Once we unblock the queue, we should expect the waitUntilNotBusy() call to return
+        queueBlockingLatch.countDown();
+        assertTrue(finishedWaitingLatch.await(100, MILLISECONDS));
+
+        queue.stop();
+    }
+
+    @Test
+    @DisplayName("Idle Callback Test")
+    void idleCallbackTest() throws InterruptedException {
+        final AtomicBoolean error = new AtomicBoolean(false);
+
+        final AtomicBoolean idleCallbackPermitted = new AtomicBoolean(false);
+        final AtomicBoolean idleCallbackCalled = new AtomicBoolean(false);
+        final InterruptableRunnable idleCallback = () -> {
+            if (idleCallbackPermitted.get()) {
+                idleCallbackCalled.set(true);
+            } else {
+                error.set(true);
+            }
+        };
+
+        final QueueThread<Runnable> queue = new QueueThreadConfiguration<Runnable>(getStaticThreadManager())
+                .setThreadName("test")
+                .setIdleCallback(idleCallback)
+                .setHandler(Runnable::run)
+                .setWaitForWorkDuration(Duration.ofMillis(1))
+                .build();
+
+        final CountDownLatch latch1 = new CountDownLatch(1);
+        final CountDownLatch latch2 = new CountDownLatch(1);
+        final CountDownLatch latch3 = new CountDownLatch(1);
+
+        queue.add(() -> {
+            try {
+                latch1.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch2.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.add(() -> {
+            try {
+                latch3.await();
+            } catch (final InterruptedException ignored) {
+                error.set(true);
+                Thread.currentThread().interrupt();
+            }
+        });
+        queue.start();
+
+        // The queue should not call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch1.countDown();
+
+        // The queue should not call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        latch2.countDown();
+
+        // The queue should not call the idle callback during this time,
+        // but give it some time to do bad things if it's going to do bad things.
+        MILLISECONDS.sleep(10);
+
+        // Once job 3 is permitted to complete, we expect for the idle callback to be invoked shortly afterward.
+        idleCallbackPermitted.set(true);
+
+        latch3.countDown();
+
+        assertEventuallyTrue(idleCallbackCalled::get, Duration.ofSeconds(1), "Idle callback was not called");
+
+        queue.stop();
+
+        assertFalse(error.get());
+    }
+
+    @Test
+    void batchCompletedCallbackTest() throws InterruptedException {
+        final AtomicInteger count = new AtomicInteger(0);
+
+        final int bufferSize = 100;
+
+        final QueueThread<Integer> queue = new QueueThreadConfiguration<Integer>(getStaticThreadManager())
+                .setThreadName("test")
+                .setBatchHandledCallback(count::getAndIncrement)
+                .setHandler(x -> {})
+                .setCapacity(UNLIMITED_CAPACITY)
+                .setMaxBufferSize(bufferSize)
+                .build();
+
+        // Add a bunch of stuff to the queue. Things haven't started yet, so we shouldn't have any callbacks.
+        for (int i = 0; i < bufferSize; i++) {
+            queue.add(i);
+        }
+
+        assertEquals(0, count.get());
+
+        // Start the queue. We should see the batch complete callback exactly once, since all 100 items will fit
+        // into the buffer.
+
+        queue.start();
+
+        assertEventuallyEquals(1, count::get, Duration.ofSeconds(1), "Batch completed callback was not called");
+
+        // Wait for a while. Callback should not be called, but give the thread time to misbehave it wants to.
+        MILLISECONDS.sleep(10);
+        assertEquals(1, count.get());
+
+        // Adding just a single element should cause the callback to be called again.
+        queue.add(42);
+
+        assertEventuallyEquals(2, count::get, Duration.ofSeconds(1), "Batch completed callback was not called");
+
+        // Wait for a while. Callback should not be called, but give the thread time to misbehave it wants to.
+        MILLISECONDS.sleep(10);
+        assertEquals(2, count.get());
+
+        // Add a bunch of stuff. Any number of callbacks between 1
+        // and the number of elements divided by buffer size is legal.
+        final int amountToAdd = 10_000;
+        for (int i = 0; i < amountToAdd; i++) {
+            queue.add(i);
+        }
+
+        final int minCount = 2 + (amountToAdd / bufferSize);
+        final int maxCount = 2 + amountToAdd;
+
+        assertEventuallyTrue(
+                () -> count.get() >= minCount,
+                Duration.ofSeconds(1),
+                "Batch completed callback was not called enough times");
+
+        // Give the thread some time to misbehave if it wants to.
+        MILLISECONDS.sleep(10);
+
+        assertTrue(count.get() <= maxCount, "Batch completed callback was called too many times");
+
+        queue.stop();
     }
 }

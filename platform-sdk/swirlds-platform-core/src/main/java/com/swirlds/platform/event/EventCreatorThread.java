@@ -16,17 +16,18 @@
 
 package com.swirlds.platform.event;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.platform.config.ThreadConfig;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -39,7 +40,7 @@ public class EventCreatorThread implements Clearable {
     private final List<NodeId> otherNodes;
     private final Random random;
     private final NodeId selfId;
-    private final BooleanFunction<Long> eventCreator;
+    private final BooleanFunction<NodeId> eventCreator;
 
     /**
      * @param threadManager
@@ -55,30 +56,28 @@ public class EventCreatorThread implements Clearable {
      */
     public EventCreatorThread(
             final ThreadManager threadManager,
+            final ThreadConfig threadConfig,
             final NodeId selfId,
             final int attemptedChatterEventPerSecond,
             final AddressBook addressBook,
-            final BooleanFunction<Long> eventCreator,
+            final BooleanFunction<NodeId> eventCreator,
             final Random random) {
         this.selfId = selfId;
         this.eventCreator = eventCreator;
         this.random = random;
         this.otherNodes = StreamSupport.stream(addressBook.spliterator(), false)
                 // don't create events with self as other parent
-                .filter(a -> !selfId.equalsMain(a.getId()))
-                .map(a -> NodeId.createMain(a.getId()))
+                .map(Address::getNodeId)
+                .filter(nodeId -> !Objects.equals(selfId, nodeId))
                 .collect(Collectors.toList());
 
         creatorThread = new StoppableThreadConfiguration<>(threadManager)
                 .setPriority(Thread.NORM_PRIORITY)
-                .setNodeId(selfId.getId())
+                .setNodeId(selfId)
                 .setMaximumRate(attemptedChatterEventPerSecond)
                 .setComponent("Chatter")
                 .setThreadName("EventGenerator")
-                .setLogAfterPauseDuration(ConfigurationHolder.getInstance()
-                        .get()
-                        .getConfigData(ThreadConfig.class)
-                        .logStackTracePauseDuration())
+                .setLogAfterPauseDuration(threadConfig.logStackTracePauseDuration())
                 .setWork(this::createEvent)
                 .build();
     }
@@ -86,12 +85,12 @@ public class EventCreatorThread implements Clearable {
     public void createEvent() {
         // in case of a single node network, create events that have self as the other parent
         if (otherNodes.isEmpty()) {
-            this.eventCreator.apply(selfId.getId());
+            this.eventCreator.apply(selfId);
             return;
         }
         Collections.shuffle(otherNodes, random);
         for (final NodeId neighbor : otherNodes) {
-            if (this.eventCreator.apply(neighbor.getId())) {
+            if (this.eventCreator.apply(neighbor)) {
                 // try all neighbors until we create an event
                 break;
             }

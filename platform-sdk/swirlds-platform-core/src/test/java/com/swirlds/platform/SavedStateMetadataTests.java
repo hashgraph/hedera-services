@@ -16,7 +16,7 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.state.signed.SavedStateMetadataField.WALL_CLOCK_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,9 +25,10 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -35,6 +36,7 @@ import com.swirlds.platform.state.signed.SavedStateMetadata;
 import com.swirlds.platform.state.signed.SavedStateMetadataField;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +44,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,6 +72,12 @@ class SavedStateMetadataTests {
         return deserialized;
     }
 
+    /** generates a random non-negative node id. */
+    private NodeId generateRandomNodeId(@NonNull final Random random) {
+        Objects.requireNonNull(random, "random must not be null");
+        return new NodeId(random.nextLong(Long.MAX_VALUE));
+    }
+
     @Test
     @DisplayName("Random Data Test")
     void randomDataTest() throws IOException {
@@ -81,10 +90,10 @@ class SavedStateMetadataTests {
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
-        final long nodeId = random.nextLong();
-        final List<Long> signingNodes = new ArrayList<>();
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
-            signingNodes.add(random.nextLong());
+            signingNodes.add(generateRandomNodeId(random));
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
@@ -129,8 +138,8 @@ class SavedStateMetadataTests {
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
-        final long nodeId = random.nextLong();
-        final List<Long> signingNodes = new ArrayList<>();
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
 
@@ -216,18 +225,18 @@ class SavedStateMetadataTests {
             wallClockTime = null;
         }
 
-        final Long nodeId;
+        final NodeId nodeId;
         if (random.nextBoolean()) {
-            nodeId = random.nextLong();
+            nodeId = generateRandomNodeId(random);
         } else {
             nodeId = null;
         }
 
-        final List<Long> signingNodes;
+        final List<NodeId> signingNodes;
         if (random.nextBoolean()) {
             signingNodes = new ArrayList<>();
             for (int i = 0; i < random.nextInt(1, 100); i++) {
-                signingNodes.add(random.nextLong());
+                signingNodes.add(generateRandomNodeId(random));
             }
         } else {
             signingNodes = null;
@@ -294,11 +303,12 @@ class SavedStateMetadataTests {
         when(platformState.getAddressBook()).thenReturn(addressBook);
         when(platformState.getPlatformData()).thenReturn(platformData);
         when(signedState.getSigSet()).thenReturn(sigSet);
-        when(sigSet.getSigningNodes()).thenReturn(new ArrayList<>(List.of(3L, 1L, 2L)));
+        when(sigSet.getSigningNodes())
+                .thenReturn(new ArrayList<>(List.of(new NodeId(3L), new NodeId(1L), new NodeId(2L))));
 
-        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, 1234, Instant.now());
+        final SavedStateMetadata metadata = SavedStateMetadata.create(signedState, new NodeId(1234), Instant.now());
 
-        assertEquals(List.of(1L, 2L, 3L), metadata.signingNodes());
+        assertEquals(List.of(new NodeId(1L), new NodeId(2L), new NodeId(3L)), metadata.signingNodes());
     }
 
     @Test
@@ -312,10 +322,10 @@ class SavedStateMetadataTests {
         final Hash runningEventHash = RandomUtils.randomHash(random);
         final long minimumGenerationNonAncient = random.nextLong();
         final Instant wallClockTime = RandomUtils.randomInstant(random);
-        final long nodeId = random.nextLong();
-        final List<Long> signingNodes = new ArrayList<>();
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
-            signingNodes.add(random.nextLong());
+            signingNodes.add(generateRandomNodeId(random));
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
@@ -370,10 +380,10 @@ class SavedStateMetadataTests {
         final long minimumGenerationNonAncient = random.nextLong();
         final SoftwareVersion softwareVersion = new BasicSoftwareVersion(random.nextLong());
         final Instant wallClockTime = RandomUtils.randomInstant(random);
-        final long nodeId = random.nextLong();
-        final List<Long> signingNodes = new ArrayList<>();
+        final NodeId nodeId = generateRandomNodeId(random);
+        final List<NodeId> signingNodes = new ArrayList<>();
         for (int i = 0; i < random.nextInt(1, 10); i++) {
-            signingNodes.add(random.nextLong());
+            signingNodes.add(generateRandomNodeId(random));
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();

@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -25,16 +24,16 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
@@ -48,6 +47,7 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -60,11 +60,6 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     private final int functionId;
     private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
     private static final String BURN = String.format(FAILURE_MESSAGE, "burn");
-    private static final Function BURN_TOKEN_FUNCTION = new Function("burnToken(address,uint64,int64[])", INT);
-    private static final Function BURN_TOKEN_FUNCTION_V2 = new Function("burnToken(address,int64,int64[])", INT);
-    private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
-    private static final Bytes BURN_TOKEN_SELECTOR_V2 = Bytes.wrap(BURN_TOKEN_FUNCTION_V2.selector());
-    private static final ABIType<Tuple> BURN_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,int64[])");
     private final EncodingFacade encoder;
     private final ContractAliases aliases;
     private final EvmSigsVerifier sigsVerifier;
@@ -89,10 +84,13 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
     @Override
     public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        burnOp = switch (functionId) {
-            case AbiConstants.ABI_ID_BURN_TOKEN -> decodeBurn(input);
-            case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> decodeBurnV2(input);
-            default -> null;};
+        final var burnAbi =
+                switch (functionId) {
+                    case AbiConstants.ABI_ID_BURN_TOKEN -> SystemContractAbis.BURN_TOKEN_V1;
+                    case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_V2;
+                    default -> throw new IllegalArgumentException("invalid selector to burn precompile");
+                };
+        burnOp = getBurnWrapper(input, burnAbi, ledgers);
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -100,6 +98,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public void run(final MessageFrame frame) {
         Objects.requireNonNull(burnOp, "`body` method should be called before `run`");
+        validateTrue(burnOp.amount() >= 0, INVALID_TOKEN_BURN_AMOUNT);
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
@@ -143,26 +142,27 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         return encoder.encodeBurnFailure(status);
     }
 
-    public static BurnWrapper decodeBurn(final Bytes input) {
-        return getBurnWrapper(input, BURN_TOKEN_SELECTOR);
-    }
-
-    private static BurnWrapper getBurnWrapper(final Bytes input, final Bytes burnTokenSelector) {
-        final Tuple decodedArguments = decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
+    public static BurnWrapper getBurnWrapper(
+            final Bytes input, @NonNull final SystemContractAbis abi, @NonNull final WorldLedgers ledgers) {
+        final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var fungibleAmount = (long) decodedArguments.get(1);
+        final var fungibleAmount = SystemContractAbis.toLongSafely(decodedArguments.get(1));
         final var serialNumbers = (long[]) decodedArguments.get(2);
 
-        if (fungibleAmount > 0) {
-            return BurnWrapper.forFungible(tokenID, fungibleAmount);
-        } else {
+        var isNonFungible = false;
+        try {
+            isNonFungible = ledgers.tokens().get(tokenID, TokenProperty.TOKEN_TYPE)
+                    == com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
+        } catch (final MissingEntityException e) {
+            // Do nothing as the transaction will fail downstream
+        }
+
+        if (isNonFungible) {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
+        } else {
+            return BurnWrapper.forFungible(tokenID, fungibleAmount);
         }
-    }
-
-    public static BurnWrapper decodeBurnV2(final Bytes input) {
-        return getBurnWrapper(input, BURN_TOKEN_SELECTOR_V2);
     }
 }

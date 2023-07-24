@@ -16,8 +16,8 @@
 
 package com.swirlds.common.test.utility;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortIfInterrupted;
@@ -27,6 +27,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -219,6 +220,35 @@ class UninterruptableTest {
                 .setRunnable(() -> {
                     abortAndLogIfInterrupted(queue::put, 0, "unexpected error");
                     abortAndLogIfInterrupted(queue::put, 1, "expected error");
+                })
+                .setExceptionHandler((t, throwable) -> exceptionEncountered.set(true))
+                .build(true);
+
+        assertEventuallyEquals(1, queue::size, Duration.ofSeconds(1), "element should eventually added to queue");
+
+        // Thread will be blocked on adding next element. Interrupt should unblock the thread.
+        thread.interrupt();
+
+        assertEventuallyFalse(thread::isAlive, Duration.ofSeconds(1), "thread should be dead");
+
+        assertEquals(0, queue.remove(), "unexpected element in queue");
+        assertTrue(queue.isEmpty(), "nothing else should be in the queue");
+        assertFalse(exceptionEncountered.get(), "no exceptions should have been thrown");
+    }
+
+    @Test
+    @DisplayName("abortAndThrowIfInterrupted() Consumer Test")
+    void abortAndThrowIfInterruptedConsumerTest() {
+        final AtomicBoolean exceptionEncountered = new AtomicBoolean(false);
+
+        final BlockingQueue<Integer> queue = new LinkedBlockingDeque<>(1);
+
+        final Thread thread = new ThreadConfiguration(getStaticThreadManager())
+                .setRunnable(() -> {
+                    abortAndThrowIfInterrupted(queue::put, 0, "unexpected error");
+                    assertThrows(
+                            IllegalStateException.class,
+                            () -> abortAndThrowIfInterrupted(queue::put, 1, "expected error"));
                 })
                 .setExceptionHandler((t, throwable) -> exceptionEncountered.set(true))
                 .build(true);

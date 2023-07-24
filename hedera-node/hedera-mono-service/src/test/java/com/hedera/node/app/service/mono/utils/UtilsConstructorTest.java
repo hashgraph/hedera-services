@@ -54,10 +54,11 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils;
 import com.hedera.node.app.service.mono.state.migration.MapMigrationToDisk;
-import com.hedera.node.app.service.mono.state.migration.ReleaseThirtyMigration;
+import com.hedera.node.app.service.mono.state.migration.RecordConsolidation;
 import com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder;
 import com.hedera.node.app.service.mono.state.migration.StateChildIndices;
 import com.hedera.node.app.service.mono.state.migration.StateVersions;
+import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
 import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils;
@@ -99,6 +100,7 @@ import org.junit.jupiter.api.Test;
 class UtilsConstructorTest {
     private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
             EntityIoUtils.class,
+            TokenStateTranslator.class,
             OrderedComparison.class,
             RecordParsers.class,
             Units.class,
@@ -128,7 +130,7 @@ class UtilsConstructorTest {
             MerkleAccount.ChildIndices.class,
             BitPackUtils.class,
             MapMigrationToDisk.class,
-            ReleaseThirtyMigration.class,
+            RecordConsolidation.class,
             StateChildIndices.class,
             StateVersions.class,
             ExpiryStats.Names.class,

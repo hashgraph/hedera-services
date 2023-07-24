@@ -18,11 +18,11 @@ package com.hedera.node.app.service.mono.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.readUncompressedFileBytes;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
-import static com.hedera.node.app.spi.config.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -93,7 +93,7 @@ import org.mockito.ArgumentCaptor;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 
-    private static final NodeId nodeId = new NodeId(false, 1);
+    private static final NodeId nodeId = new NodeId(1);
     private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
     private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
     private TokenRelStorageAdapter tokenRels;
@@ -216,8 +216,10 @@ class SignedStateBalancesExporterTest {
 
         final var book = mock(AddressBook.class);
         given(book.getSize()).willReturn(2);
-        given(book.getAddress(0)).willReturn(firstNodeAddress);
-        given(book.getAddress(1)).willReturn(secondNodeAddress);
+        given(book.getNodeId(0)).willReturn(new NodeId(0));
+        given(book.getNodeId(1)).willReturn(new NodeId(1));
+        given(book.getAddress(new NodeId(0))).willReturn(firstNodeAddress);
+        given(book.getAddress(new NodeId(1))).willReturn(secondNodeAddress);
 
         state = mock(ServicesState.class);
         given(state.getAccountFromNodeId(nodeId)).willReturn(thisNode);
@@ -503,6 +505,25 @@ class SignedStateBalancesExporterTest {
         now = now.plusSeconds(exportPeriodInSecs);
         assertTrue(subject.isTimeToExport(now));
         assertEquals(startTime.plusSeconds(exportPeriodInSecs * 2), subject.getNextExportTime());
+
+        // Start from a random time greater than 1 period after start time
+        // We reset the nextExportTime to be the next period boundary
+        // so that we don't export immediately
+        now = now.plusSeconds(2 * exportPeriodInSecs);
+        assertFalse(subject.isTimeToExport(now));
+
+        var expectedExportTime = Instant.ofEpochSecond(now.getEpochSecond())
+                .plusSeconds(exportPeriodInSecs - (now.getEpochSecond() % exportPeriodInSecs));
+        assertEquals(expectedExportTime, subject.getNextExportTime());
+
+        // Start from a time greater than 1 period after start time
+        // Adding exportPeriodInSecs + 1 to the nextExportTime time should be greater than nextExportTime and
+        // cause the nextExportTime to be reset to the next period boundary
+        now = Instant.ofEpochSecond(expectedExportTime.getEpochSecond() + exportPeriodInSecs + 1);
+        assertFalse(subject.isTimeToExport(now));
+        expectedExportTime = Instant.ofEpochSecond(now.getEpochSecond())
+                .plusSeconds(exportPeriodInSecs - (now.getEpochSecond() % exportPeriodInSecs));
+        assertEquals(expectedExportTime, subject.getNextExportTime());
     }
 
     static Optional<AllAccountBalances> importBalanceProtoFile(final String protoLoc) {

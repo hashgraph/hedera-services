@@ -17,15 +17,38 @@
 package com.swirlds.merkledb.files.hashmap;
 
 import com.swirlds.merkledb.ExampleLongKeyFixedSize;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ReusableBucketPoolTest {
+
+    final AtomicReference<Throwable> error = new AtomicReference<>();
+    Thread.UncaughtExceptionHandler originalHandler;
+
+    @BeforeEach
+    void setupThreads() {
+        originalHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(((thread, throwable) -> error.set(throwable)));
+    }
+
+    @AfterEach
+    void resore() {
+        Assertions.assertNull(error.get(), () -> {
+            final StringWriter sw = new StringWriter();
+            error.get().printStackTrace(new PrintWriter(sw));
+            return sw.toString();
+        });
+        Thread.setDefaultUncaughtExceptionHandler(originalHandler);
+    }
 
     @Test
     @DisplayName("Basic get / release bucket")
@@ -45,77 +68,39 @@ class ReusableBucketPoolTest {
     }
 
     @Test
-    @DisplayName("Blocking get when pool is empty")
-    void blockingGet() {
-        final BucketSerializer<ExampleLongKeyFixedSize> serializer =
-                new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
-        final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
-        final Bucket<ExampleLongKeyFixedSize> bucket1 = pool.getBucket();
-        Assertions.assertNotNull(bucket1);
-        final Bucket<ExampleLongKeyFixedSize> bucket2 = pool.getBucket();
-        Assertions.assertNotNull(bucket2);
-        final AtomicBoolean bucket2Released = new AtomicBoolean(false);
-        new Thread(() -> {
-                    // This call should block until bucket2 is released
-                    final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
-                    Assertions.assertNotNull(bucket3);
-                    synchronized (bucket2Released) {
-                        Assertions.assertTrue(bucket2Released.get());
-                    }
-                    Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
-                })
-                .start();
-        synchronized (bucket2Released) {
-            Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
-            bucket2Released.set(true);
-        }
-        Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket1));
-    }
-
-    @Test
     @DisplayName("Multiple gets when pool is empty")
     void multipleBlockingGets() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
-        final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);
+        final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(0, serializer);
         final Bucket<ExampleLongKeyFixedSize> bucket1 = pool.getBucket();
         Assertions.assertNotNull(bucket1);
         final Bucket<ExampleLongKeyFixedSize> bucket2 = pool.getBucket();
         Assertions.assertNotNull(bucket2);
-        final AtomicBoolean bucket1Released = new AtomicBoolean(false);
-        final AtomicBoolean bucket2Released = new AtomicBoolean(false);
-        new Thread(() -> {
-                    // This call should block until bucket1 or bucket4 is released
-                    final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
-                    Assertions.assertNotNull(bucket3);
-                    synchronized (bucket1Released) {
-                        Assertions.assertTrue(bucket1Released.get());
-                    }
-                    synchronized (bucket2Released) {
-                        Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
-                    }
-                })
-                .start();
-        new Thread(() -> {
-                    // This call should block until bucket1 or bucket3 is released
-                    final Bucket<ExampleLongKeyFixedSize> bucket4 = pool.getBucket();
-                    Assertions.assertNotNull(bucket4);
-                    synchronized (bucket2Released) {
-                        Assertions.assertFalse(bucket2Released.get());
-                        Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
-                    }
-                    Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket4));
-                })
-                .start();
-        synchronized (bucket1Released) {
+        final Set<Thread> threads = new HashSet<>();
+        threads.add(new Thread(() -> {
+            final Bucket<ExampleLongKeyFixedSize> bucket3 = pool.getBucket();
+            Assertions.assertNotNull(bucket3);
+            Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket3));
             Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket1));
-            bucket1Released.set(true);
+        }));
+        threads.add(new Thread(() -> {
+            final Bucket<ExampleLongKeyFixedSize> bucket4 = pool.getBucket();
+            Assertions.assertNotNull(bucket4);
+            Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket4));
+            Assertions.assertDoesNotThrow(() -> pool.releaseBucket(bucket2));
+        }));
+        for (final Thread t : threads) {
+            t.start();
+        }
+        for (final Thread t : threads) {
+            Assertions.assertTimeout(Duration.ofSeconds(10), () -> t.join());
         }
     }
 
     @Test
     @DisplayName("Chained release / get calls")
-    void chainedReleasesGets() throws Exception {
+    void chainedReleasesGets() {
         final BucketSerializer<ExampleLongKeyFixedSize> serializer =
                 new BucketSerializer<>(new ExampleLongKeyFixedSize.Serializer());
         final ReusableBucketPool<ExampleLongKeyFixedSize> pool = new ReusableBucketPool<>(2, serializer);

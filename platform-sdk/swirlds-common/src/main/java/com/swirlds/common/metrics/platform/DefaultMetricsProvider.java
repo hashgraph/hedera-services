@@ -19,6 +19,8 @@ package com.swirlds.common.metrics.platform;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
 import com.sun.net.httpserver.HttpServer;
+import com.swirlds.base.state.Lifecycle;
+import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
@@ -28,12 +30,12 @@ import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusEndpoint;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.common.utility.Lifecycle;
-import com.swirlds.common.utility.LifecyclePhase;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -59,14 +61,15 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
     private final PrometheusEndpoint prometheusEndpoint;
     private final SnapshotService snapshotService;
     private final MetricsConfig metricsConfig;
+    private final Configuration configuration;
 
     private LifecyclePhase lifecyclePhase = LifecyclePhase.NOT_STARTED;
 
     /**
      * Constructor of {@code DefaultMetricsProvider}
      */
-    public DefaultMetricsProvider(final Configuration configuration) {
-        CommonUtils.throwArgNull(configuration, "configuration");
+    public DefaultMetricsProvider(@NonNull final Configuration configuration) {
+        this.configuration = Objects.requireNonNull(configuration, "configuration is null");
 
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
@@ -78,11 +81,10 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
         // setup Prometheus endpoint
         PrometheusEndpoint endpoint = null;
-        if (!metricsConfig.disableMetricsOutput() && prometheusConfig.prometheusEndpointEnabled()) {
-            final InetSocketAddress address = new InetSocketAddress(prometheusConfig.prometheusEndpointPortNumber());
+        if (!metricsConfig.disableMetricsOutput() && prometheusConfig.endpointEnabled()) {
+            final InetSocketAddress address = new InetSocketAddress(prometheusConfig.endpointPortNumber());
             try {
-                final HttpServer httpServer =
-                        HttpServer.create(address, prometheusConfig.prometheusEndpointMaxBacklogAllowed());
+                final HttpServer httpServer = HttpServer.create(address, prometheusConfig.endpointMaxBacklogAllowed());
                 endpoint = new PrometheusEndpoint(httpServer);
 
                 globalMetrics.subscribe(endpoint::handleMetricsChange);
@@ -129,7 +131,7 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
             // setup LegacyCsvWriter
             if (StringUtils.isNotBlank(metricsConfig.csvFileName())) {
-                final LegacyCsvWriter legacyCsvWriter = new LegacyCsvWriter(nodeId, folderPath, metricsConfig);
+                final LegacyCsvWriter legacyCsvWriter = new LegacyCsvWriter(nodeId, folderPath, configuration);
                 snapshotService.subscribe(legacyCsvWriter::handleSnapshots);
             }
 

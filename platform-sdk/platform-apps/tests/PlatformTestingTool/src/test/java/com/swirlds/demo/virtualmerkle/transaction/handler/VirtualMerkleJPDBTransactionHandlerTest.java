@@ -16,7 +16,7 @@
 
 package com.swirlds.demo.virtualmerkle.transaction.handler;
 
-import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.demo.platform.fs.stresstest.proto.CreateSmartContract;
 import com.swirlds.demo.platform.fs.stresstest.proto.VirtualMerkleTransaction;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.bytecode.SmartContractByteCodeMapKey;
@@ -30,10 +30,12 @@ import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapKe
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValue;
 import com.swirlds.demo.virtualmerkle.map.smartcontracts.data.SmartContractMapValueBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualMap;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,16 +47,17 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
     private static VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> smartContractByteCodeVM;
 
     @BeforeAll
-    public static void beforeAll() {
+    public static void beforeAll() throws IOException {
 
         final Path pathToJasperDBStorageDir = Path.of("data", "saved", "JasperDB", "1");
+        if (Files.exists(pathToJasperDBStorageDir)) {
+            FileUtils.deleteDirectory(pathToJasperDBStorageDir);
+        }
 
         final long maximumNumberOfKeyValuePairsCreation = 28750;
         final SmartContractMapKeySerializer keySerializer = new SmartContractMapKeySerializer();
         final VirtualLeafRecordSerializer<SmartContractMapKey, SmartContractMapValue> leafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         keySerializer.getSerializedSize(),
                         new SmartContractMapKeyBuilder(),
@@ -66,11 +69,11 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
         final JasperDbBuilder<SmartContractMapKey, SmartContractMapValue> jasperDbBuilder = new JasperDbBuilder<
                         SmartContractMapKey, SmartContractMapValue>()
                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                 .keySerializer(keySerializer)
                 .storageDir(pathToJasperDBStorageDir)
                 .maxNumOfKeys(maximumNumberOfKeyValuePairsCreation)
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .preferDiskBasedIndexes(false);
 
         smartContract = new VirtualMap<>("smartContracts", jasperDbBuilder);
@@ -80,8 +83,6 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
         final SmartContractByteCodeMapKeySerializer keySerializer2 = new SmartContractByteCodeMapKeySerializer();
         final VirtualLeafRecordSerializer<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
                 leafRecordSerializer2 = new VirtualLeafRecordSerializer<>(
-                        (short) 1,
-                        DigestType.SHA_384,
                         (short) 1,
                         keySerializer2.getSerializedSize(),
                         new SmartContractByteCodeMapKeyBuilder(),
@@ -93,13 +94,13 @@ public class VirtualMerkleJPDBTransactionHandlerTest {
         final JasperDbBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> jasperDbBuilder2 =
                 new JasperDbBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>()
                         .virtualLeafRecordSerializer(leafRecordSerializer2)
-                        .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                        .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                         .keySerializer(keySerializer2)
                         .storageDir(pathToJasperDBStorageDir)
                         // since each smart contract has one bytecode, we can use the number of
                         // smart contracts to decide the max num of keys for the bytecode map.
                         .maxNumOfKeys(totalSmartContractCreations)
-                        .internalHashesRamToDiskThreshold(0)
+                        .hashesRamToDiskThreshold(0)
                         .preferDiskBasedIndexes(false);
 
         smartContractByteCodeVM = new VirtualMap<>("smartContractByteCode", jasperDbBuilder2);

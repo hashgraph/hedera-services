@@ -26,7 +26,7 @@ import static com.swirlds.jasperdb.files.DataFileCommon.printDataLinkValidation;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.CASable;
@@ -133,6 +133,10 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
                 storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
     }
 
+    public DataItemSerializer<D> getSerializer() {
+        return fileCollection.getDataItemSerializer();
+    }
+
     /**
      * Merge all files that match the given filter
      *
@@ -196,7 +200,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
 
         logMergeStats(
                 storeName,
-                (System.currentTimeMillis() - START) * Units.MILLISECONDS_TO_SECONDS,
+                (System.currentTimeMillis() - START) * UnitConstants.MILLISECONDS_TO_SECONDS,
                 filesToMergeSize,
                 getSizeOfFilesByPath(newFilesCreated),
                 fileCollection,
@@ -263,27 +267,6 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * 		If there was a problem reading the value from file
      */
     public D get(final long key) throws IOException {
-        return get(key, true);
-    }
-
-    /**
-     * Get a value by reading it from disk.
-     *
-     * @param key
-     * 		The key to find and read value for
-     * @param deserialize
-     *
-     * @return Array of serialization version for data if the value was read or null if not found
-     *        <br/> A null is returned :
-     *        <ol>
-     *            <li>if not found</li>
-     *            <li>if deserialize flag is false</li>
-     *        </ol>
-     *
-     * @throws IOException
-     * 		If there was a problem reading the value from file
-     */
-    public D get(final long key, final boolean deserialize) throws IOException {
         // Check if out of range
         final KeyRange keyRange = fileCollection.getValidKeyRange();
         if (!keyRange.withinRange(key)) {
@@ -295,7 +278,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             return null;
         }
         // read from files via index lookup
-        return fileCollection.readDataItemUsingIndex(index, key, deserialize);
+        return fileCollection.readDataItemUsingIndex(index, key);
     }
 
     /**

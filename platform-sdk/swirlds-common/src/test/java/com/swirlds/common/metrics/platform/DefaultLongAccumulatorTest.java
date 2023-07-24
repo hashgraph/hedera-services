@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -213,5 +213,19 @@ class DefaultLongAccumulatorTest {
         // then
         assertThat(accumulator.toString())
                 .contains(CATEGORY, NAME, DESCRIPTION, UNIT, FORMAT, Metric.DataType.INT.toString(), "42");
+    }
+
+    @Test
+    void testResetValue() {
+        // given
+        final LongAccumulator.Config config = new LongAccumulator.Config(CATEGORY, NAME);
+        final LongAccumulator accumulator = new DefaultLongAccumulator(config);
+
+        // when
+        accumulator.update(42L);
+        accumulator.reset();
+
+        // then
+        assertEquals(0L, accumulator.get(), "Value should be 0");
     }
 }

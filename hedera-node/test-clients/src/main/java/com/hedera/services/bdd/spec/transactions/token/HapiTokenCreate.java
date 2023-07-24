@@ -40,6 +40,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -88,6 +90,8 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     private Optional<String> kycKey = Optional.empty();
     private Optional<String> wipeKey = Optional.empty();
     private Optional<String> supplyKey = Optional.empty();
+    private Optional<String> contractKeyName = Optional.empty();
+    private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
     private Optional<String> feeScheduleKey = Optional.empty();
     private Optional<String> pauseKey = Optional.empty();
     private Optional<String> symbol = Optional.empty();
@@ -206,6 +210,12 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
 
     public HapiTokenCreate supplyKey(final String name) {
         supplyKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiTokenCreate contractKey(final Set<TokenKeyType> contractKeyAppliedTo, final String contractKeyName) {
+        this.contractKeyName = Optional.of(contractKeyName);
+        this.contractKeyAppliedTo = contractKeyAppliedTo;
         return this;
     }
 
@@ -345,6 +355,29 @@ public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
                             if (!feeScheduleSuppliers.isEmpty()) {
                                 for (final var supplier : feeScheduleSuppliers) {
                                     b.addCustomFees(supplier.apply(spec));
+                                }
+                            }
+                            // We often want to use an existing contract to control the keys of various types (supply,
+                            // freeze etc.)
+                            // of a token, and in this case we need to use a Key{contractID=0.0.X} as the key; so for
+                            // convenience we have a special case and allow the user to specify the name of the
+                            // contract it should use from the registry to create this special key.
+                            if (contractKeyName.isPresent() && !contractKeyAppliedTo.isEmpty()) {
+                                final var contractId = spec.registry().getContractId(contractKeyName.get());
+                                final var contractKey = Key.newBuilder()
+                                        .setContractID(contractId)
+                                        .build();
+                                for (final var tokenKeyType : contractKeyAppliedTo) {
+                                    switch (tokenKeyType) {
+                                        case ADMIN_KEY -> b.setAdminKey(contractKey);
+                                        case FREEZE_KEY -> b.setFreezeKey(contractKey);
+                                        case KYC_KEY -> b.setKycKey(contractKey);
+                                        case PAUSE_KEY -> b.setPauseKey(contractKey);
+                                        case SUPPLY_KEY -> b.setSupplyKey(contractKey);
+                                        case WIPE_KEY -> b.setWipeKey(contractKey);
+                                        default -> throw new IllegalStateException(
+                                                "Unexpected tokenKeyType: " + tokenKeyType);
+                                    }
                                 }
                             }
                         });

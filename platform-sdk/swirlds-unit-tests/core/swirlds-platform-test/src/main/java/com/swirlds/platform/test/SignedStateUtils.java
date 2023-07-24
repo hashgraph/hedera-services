@@ -19,10 +19,11 @@ package com.swirlds.platform.test;
 import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 
 import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.Random;
 
 public class SignedStateUtils {
@@ -37,7 +38,8 @@ public class SignedStateUtils {
         root.setSwirldState(state);
         root.setPlatformState(randomPlatformState(random, false));
         boolean shouldSaveToDisk = random.nextBoolean();
-        SignedState signedState = new SignedState(root, shouldSaveToDisk);
+        SignedState signedState =
+                new SignedState(TestPlatformContextBuilder.create().build(), root, "test", shouldSaveToDisk);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;
     }

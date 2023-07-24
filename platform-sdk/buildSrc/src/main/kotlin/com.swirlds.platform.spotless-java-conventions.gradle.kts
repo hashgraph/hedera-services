@@ -19,7 +19,7 @@ plugins {
 }
 
 spotless {
-    java({
+    java {
         targetExclude("build/generated/sources/**/*.java")
         // fix errors due to dashed comment blocks (eg: /*-, /*--, etc)
         addStep(RepairDashedCommentsFormatterStep.create())
@@ -55,5 +55,5 @@ spotless {
             */${"\n\n"}
         """.trimIndent(), "(package|import)"
         ).updateYearWithLatest(true)
-    })
+    }
 }

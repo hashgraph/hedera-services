@@ -47,7 +47,7 @@
       <AppenderRef ref="fileLog"/>
     </Root>
 
-    <Logger name="com.swirlds" level="INFO" additivity="false">
+    <Logger name="com.swirlds" level="TRACE" additivity="false">
       <AppenderRef ref="fileLog" />
       <!--
 	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
@@ -268,11 +268,15 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="java.nio" level="ERROR" additivity="false">
+    <Logger name="java.nio" level="WARN" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="io.netty" level="ERROR" additivity="false">
+    <Logger name="io.netty" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="io.grpc" level="WARN" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>

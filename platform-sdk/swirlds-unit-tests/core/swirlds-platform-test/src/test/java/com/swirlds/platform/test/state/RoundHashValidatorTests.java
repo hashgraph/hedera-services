@@ -16,17 +16,18 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.platform.Utilities.isMajority;
-import static com.swirlds.platform.Utilities.isSuperMajority;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
@@ -54,19 +55,16 @@ class RoundHashValidatorTests {
 
     private static final StateHashValidityTrigger NO_OP_DISAGREEMENT_DISPATCHER = (a, b, c, d) -> {};
 
-    record NodeHashInfo(long nodeId, Hash nodeStateHash, long round) {}
+    record NodeHashInfo(NodeId nodeId, Hash nodeStateHash, long round) {}
 
     record HashGenerationData(List<NodeHashInfo> nodeList, Hash consensusHash) {}
 
     /**
      * Based on the desired network status, generate hashes for all nodes.
      *
-     * @param random
-     * 		a source of randomness
-     * @param addressBook
-     * 		the address book for the round
-     * @param desiredValidityStatus
-     * 		the desired validity status
+     * @param random                a source of randomness
+     * @param addressBook           the address book for the round
+     * @param desiredValidityStatus the desired validity status
      * @return a list of node IDs in the order they should be added to the hash validator
      */
     static HashGenerationData generateNodeHashes(
@@ -94,30 +92,30 @@ class RoundHashValidatorTests {
 
         final List<NodeHashInfo> nodes = new LinkedList<>();
 
-        final List<Long> randomNodeOrder = new LinkedList<>();
-        addressBook.iterator().forEachRemaining(address -> randomNodeOrder.add(address.getId()));
+        final List<NodeId> randomNodeOrder = new LinkedList<>();
+        addressBook.iterator().forEachRemaining(address -> randomNodeOrder.add(address.getNodeId()));
         Collections.shuffle(randomNodeOrder, random);
 
         final long totalWeight = addressBook.getTotalWeight();
 
         // This is the hash we want to be chosen for the consensus hash.
         final Hash consensusHash = randomHash(random);
-        final List<Long> correctHashNodes = new LinkedList<>();
+        final List<NodeId> correctHashNodes = new LinkedList<>();
         long correctHashWeight = 0;
 
         // A large group of nodes may decide to use this hash. But it won't become the consensus hash.
         final Hash otherHash = randomHash(random);
         long otherHashWeight = 0;
-        final List<Long> otherHashNodes = new LinkedList<>();
+        final List<NodeId> otherHashNodes = new LinkedList<>();
 
         // All remaining nodes will choose a hash randomly.
-        final List<Long> randomHashNodes = new LinkedList<>();
+        final List<NodeId> randomHashNodes = new LinkedList<>();
 
         // Assign each node to one of the hashing strategies described above.
-        for (final long nodeId : randomNodeOrder) {
+        for (final NodeId nodeId : randomNodeOrder) {
             final long weight = addressBook.getAddress(nodeId).getWeight();
 
-            if (!isMajority(correctHashWeight, totalWeight)) {
+            if (!MAJORITY.isSatisfiedBy(correctHashWeight, totalWeight)) {
                 correctHashNodes.add(nodeId);
                 correctHashWeight += weight;
             } else {
@@ -144,17 +142,17 @@ class RoundHashValidatorTests {
 
             if (choice < 1.0 / 3) {
                 if (!correctHashNodes.isEmpty()) {
-                    final long nodeId = correctHashNodes.remove(0);
+                    final NodeId nodeId = correctHashNodes.remove(0);
                     final long weight = addressBook.getAddress(nodeId).getWeight();
                     nodes.add(new NodeHashInfo(nodeId, consensusHash, round));
                     correctHashWeight += weight;
                 }
             } else if (choice < 2.0 / 3) {
                 if (!otherHashNodes.isEmpty()) {
-                    final long nodeId = otherHashNodes.get(0);
+                    final NodeId nodeId = otherHashNodes.get(0);
                     final long weight = addressBook.getAddress(nodeId).getWeight();
 
-                    if (isMajority(otherHashWeight + weight, totalWeight)) {
+                    if (MAJORITY.isSatisfiedBy(otherHashWeight + weight, totalWeight)) {
                         // We don't want to allow the other hash to accumulate >1/2
                         continue;
                     }
@@ -167,7 +165,7 @@ class RoundHashValidatorTests {
             } else {
                 // The random hashes will never reach a majority, so they can go in whenever
                 if (!randomHashNodes.isEmpty()) {
-                    final long nodeId = randomHashNodes.remove(0);
+                    final NodeId nodeId = randomHashNodes.remove(0);
                     nodes.add(new NodeHashInfo(nodeId, randomHash(random), round));
                 }
             }
@@ -188,19 +186,19 @@ class RoundHashValidatorTests {
 
         final long totalWeight = addressBook.getTotalWeight();
 
-        final List<Long> randomNodeOrder = new LinkedList<>();
-        addressBook.iterator().forEachRemaining(address -> randomNodeOrder.add(address.getId()));
+        final List<NodeId> randomNodeOrder = new LinkedList<>();
+        addressBook.iterator().forEachRemaining(address -> randomNodeOrder.add(address.getNodeId()));
         Collections.shuffle(randomNodeOrder, random);
 
         // A large group of nodes may decide to use this hash. But it won't become the consensus hash.
         final Hash otherHash = randomHash(random);
         long otherHashWeight = 0;
 
-        for (final long nodeId : randomNodeOrder) {
+        for (final NodeId nodeId : randomNodeOrder) {
             final long weight = addressBook.getAddress(nodeId).getWeight();
 
             final double choice = random.nextDouble();
-            if (choice < 1.0 / 3 && !isMajority(otherHashWeight + weight, totalWeight)) {
+            if (choice < 1.0 / 3 && !MAJORITY.isSatisfiedBy(otherHashWeight + weight, totalWeight)) {
                 nodes.add(new NodeHashInfo(nodeId, otherHash, round));
                 otherHashWeight += weight;
             } else {
@@ -252,7 +250,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -267,7 +264,7 @@ class RoundHashValidatorTests {
         boolean decided = false;
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
@@ -299,7 +296,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -318,7 +314,7 @@ class RoundHashValidatorTests {
                 "we should need to gather more data before becoming decided");
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
@@ -344,7 +340,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -362,7 +357,7 @@ class RoundHashValidatorTests {
         int index = 0;
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
@@ -395,7 +390,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -408,7 +402,7 @@ class RoundHashValidatorTests {
                 new RoundHashValidator(NO_OP_DISAGREEMENT_DISPATCHER, round, addressBook.getTotalWeight());
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
@@ -429,7 +423,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -445,11 +438,11 @@ class RoundHashValidatorTests {
         long addedWeight = 0;
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
-            if (isMajority(addedWeight + weight, totalWeight)) {
+            if (MAJORITY.isSatisfiedBy(addedWeight + weight, totalWeight)) {
                 // Don't add enough hash data to reach a decision
                 break;
             }
@@ -471,7 +464,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -490,11 +482,11 @@ class RoundHashValidatorTests {
         long addedWeight = 0;
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
-            if (isMajority(addedWeight + weight, totalWeight)) {
+            if (MAJORITY.isSatisfiedBy(addedWeight + weight, totalWeight)) {
                 // Don't add enough hash data to reach a decision
                 break;
             }
@@ -517,7 +509,6 @@ class RoundHashValidatorTests {
 
         final AddressBook addressBook = new RandomAddressBookGenerator(random)
                 .setSize(Math.max(10, random.nextInt(1000)))
-                .setSequentialIds(false)
                 .setAverageWeight(100)
                 .setWeightStandardDeviation(50)
                 .build();
@@ -536,7 +527,7 @@ class RoundHashValidatorTests {
         long addedWeight = 0;
 
         for (final NodeHashInfo nodeHashInfo : hashGenerationData.nodeList) {
-            final long nodeId = nodeHashInfo.nodeId;
+            final NodeId nodeId = nodeHashInfo.nodeId;
             final long weight = addressBook.getAddress(nodeId).getWeight();
             final Hash hash = nodeHashInfo.nodeStateHash;
 
@@ -548,14 +539,14 @@ class RoundHashValidatorTests {
                 // in time (~1%). That's not the scenario we are trying
                 // to test. But we shouldn't fail if the data choice was unlucky.
                 assertEquals(HashValidityStatus.CATASTROPHIC_ISS, validator.getStatus());
-                assertTrue(isMajority(addedWeight + weight, totalWeight));
+                assertTrue(MAJORITY.isSatisfiedBy(addedWeight + weight, totalWeight));
                 return;
             }
 
             assertEquals(HashValidityStatus.UNDECIDED, validator.getStatus(), "should not be decided");
 
             addedWeight += weight;
-            if (isSuperMajority(addedWeight, totalWeight)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(addedWeight, totalWeight)) {
                 // quit once we add a super majority
                 break;
             }

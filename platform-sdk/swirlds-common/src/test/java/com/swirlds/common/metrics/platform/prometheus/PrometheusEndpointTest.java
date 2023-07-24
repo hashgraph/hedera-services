@@ -25,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
+import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
@@ -56,8 +57,7 @@ import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
@@ -79,10 +79,10 @@ class PrometheusEndpointTest {
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
-    private static final NodeId NODE_ID_1 = NodeId.createMain(1L);
-    private static final String LABEL_1 = String.valueOf(NODE_ID_1.getId());
-    private static final NodeId NODE_ID_2 = NodeId.createMain(2L);
-    private static final String LABEL_2 = String.valueOf(NODE_ID_2.getId());
+    private static final NodeId NODE_ID_1 = new NodeId(1L);
+    private static final String LABEL_1 = NODE_ID_1.toString();
+    private static final NodeId NODE_ID_2 = new NodeId(2L);
+    private static final String LABEL_2 = NODE_ID_2.toString();
 
     private static final InetSocketAddress ADDRESS = new InetSocketAddress(0);
 
@@ -398,7 +398,7 @@ class PrometheusEndpointTest {
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
-            assertThat(collector.get()).isEqualTo(Units.SECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.get()).isEqualTo(UnitConstants.SECONDS_TO_MILLISECONDS, within(EPSILON));
         }
     }
 
@@ -433,8 +433,10 @@ class PrometheusEndpointTest {
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
-            assertThat(collector.labels(LABEL_1).get()).isEqualTo(Units.MICROSECONDS_TO_MILLISECONDS, within(EPSILON));
-            assertThat(collector.labels(LABEL_2).get()).isEqualTo(Units.NANOSECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.labels(LABEL_1).get())
+                    .isEqualTo(UnitConstants.MICROSECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.labels(LABEL_2).get())
+                    .isEqualTo(UnitConstants.NANOSECONDS_TO_MILLISECONDS, within(EPSILON));
         }
     }
 

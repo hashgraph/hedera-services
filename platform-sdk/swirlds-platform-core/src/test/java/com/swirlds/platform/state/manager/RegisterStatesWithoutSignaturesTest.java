@@ -22,13 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import java.time.Instant;
 import java.util.HashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,10 +42,8 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     // the class file with other tests.
     // DO NOT ADD ADDITIONAL UNIT TESTS TO THIS CLASS!
 
-    private final AddressBook addressBook = new RandomAddressBookGenerator(random)
-            .setSize(4)
-            .setSequentialIds(false)
-            .build();
+    private final AddressBook addressBook =
+            new RandomAddressBookGenerator(random).setSize(4).build();
 
     /**
      * Called on each state as it gets too old without collecting enough signatures.
@@ -52,15 +51,12 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateLacksSignaturesConsumer stateLacksSignaturesConsumer() {
-        return ssw -> {
+        return ss -> {
             stateLacksSignaturesCount.getAndIncrement();
 
-            assertEquals(highestRound.get() - roundsToKeepForSigning, ssw.get().getRound(), "unexpected round retired");
+            assertEquals(highestRound.get() - roundsToKeepForSigning, ss.getRound(), "unexpected round retired");
             assertSame(
-                    signedStates.get(highestRound.get() - roundsToKeepForSigning),
-                    ssw.get(),
-                    "unexpected state was retired");
-            ssw.release();
+                    signedStates.get(highestRound.get() - roundsToKeepForSigning), ss, "unexpected state was retired");
         };
     }
 
@@ -70,10 +66,7 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
      * This consumer is provided by the wiring layer, so it should release the resource when finished.
      */
     private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer() {
-        return ssw -> {
-            stateHasEnoughSignaturesCount.getAndIncrement();
-            ssw.release();
-        };
+        return ss -> stateHasEnoughSignaturesCount.getAndIncrement();
     }
 
     /**
@@ -86,6 +79,11 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
                 .stateLacksSignaturesConsumer(stateLacksSignaturesConsumer())
                 .stateHasEnoughSignaturesConsumer(stateHasEnoughSignaturesConsumer())
                 .build();
+
+        assertNull(manager.getFirstStateTimestamp());
+        assertEquals(-1, manager.getFirstStateRound());
+        Instant firstTimestamp = null;
+        final long firstRound = 0;
 
         // Create a series of signed states. Don't add any signatures. Self signatures will be automatically added.
         final int count = 100;
@@ -101,11 +99,21 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
 
             manager.addState(signedState);
 
-            try (final AutoCloseableWrapper<SignedState> lastState = manager.getLatestImmutableState()) {
+            if (round == 0) {
+                firstTimestamp = signedState
+                        .getState()
+                        .getPlatformState()
+                        .getPlatformData()
+                        .getConsensusTimestamp();
+            }
+            assertEquals(firstTimestamp, manager.getFirstStateTimestamp());
+            assertEquals(firstRound, manager.getFirstStateRound());
+
+            try (final ReservedSignedState lastState = manager.getLatestImmutableState("test")) {
                 assertSame(signedState, lastState.get(), "last signed state has unexpected value");
             }
-            try (final AutoCloseableWrapper<SignedState> lastCompletedState = manager.getLatestSignedState()) {
-                assertNull(lastCompletedState.get(), "no states should be completed in this test");
+            try (final ReservedSignedState lastCompletedState = manager.getLatestSignedState("test")) {
+                assertNull(lastCompletedState.getNullable(), "no states should be completed in this test");
             }
 
             final int expectedUnsignedStates = Math.max(0, round - roundsToKeepForSigning + 1);

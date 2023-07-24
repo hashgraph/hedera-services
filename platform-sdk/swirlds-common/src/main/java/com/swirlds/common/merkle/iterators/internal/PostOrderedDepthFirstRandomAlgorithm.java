@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.iterators.internal;
 
 import com.swirlds.common.merkle.MerkleInternal;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,13 +34,14 @@ public class PostOrderedDepthFirstRandomAlgorithm extends PostOrderedDepthFirstA
     private final Random random = new Random();
 
     /**
-     * Add children to the stack in a random order.
-     * {@inheritDoc}
+     * Add children to the stack in a random order. {@inheritDoc}
      */
     @Override
-    public void pushChildren(final MerkleInternal parent, final ObjIntConsumer<MerkleInternal> pushNode) {
-        final List<Integer> iterationOrder = new ArrayList<>(parent.getNumberOfChildren());
-        for (int childIndex = 0; childIndex < parent.getNumberOfChildren(); childIndex++) {
+    public void pushChildren(
+            @NonNull final MerkleInternal parent, @NonNull final ObjIntConsumer<MerkleInternal> pushNode) {
+        final int childCount = parent.getNumberOfChildren();
+        final List<Integer> iterationOrder = new ArrayList<>(childCount);
+        for (int childIndex = 0; childIndex < childCount; childIndex++) {
             iterationOrder.add(childIndex);
         }
 

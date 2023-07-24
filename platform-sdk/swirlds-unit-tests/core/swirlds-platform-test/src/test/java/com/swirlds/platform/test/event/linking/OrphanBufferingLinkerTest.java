@@ -21,17 +21,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.common.config.ConsensusConfig;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.OrphanBufferingLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.Generations;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
@@ -68,24 +69,28 @@ class OrphanBufferingLinkerTest {
      * </pre>
      */
     private static List<GossipEvent> buildGraph(final Random r) {
-        final GossipEvent e0 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(1).buildEvent();
-        final GossipEvent e1 =
-                GossipEventBuilder.builder().setRandom(r).setCreatorId(2).buildEvent();
+        final GossipEvent e0 = GossipEventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(1))
+                .buildEvent();
+        final GossipEvent e1 = GossipEventBuilder.builder()
+                .setRandom(r)
+                .setCreatorId(new NodeId(2))
+                .buildEvent();
         final GossipEvent e2 = GossipEventBuilder.builder()
                 .setRandom(r)
-                .setCreatorId(1)
+                .setCreatorId(new NodeId(1))
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .buildEvent();
         final GossipEvent e3 = GossipEventBuilder.builder()
                 .setRandom(r)
-                .setCreatorId(1)
+                .setCreatorId(new NodeId(1))
                 .setSelfParent(e2)
                 .buildEvent();
         final GossipEvent e4 = GossipEventBuilder.builder()
                 .setRandom(r)
-                .setCreatorId(2)
+                .setCreatorId(new NodeId(2))
                 .setSelfParent(e1)
                 .setOtherParent(e2)
                 .buildEvent();

@@ -21,15 +21,16 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.system.EventCreationRule;
 import com.swirlds.common.system.EventCreationRuleResponse;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.platform.chatter.protocol.peer.CommunicationState;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.creation.AncientParentsRule;
 import com.swirlds.platform.event.creation.BelowIntCreationRule;
 import com.swirlds.platform.event.creation.ChatteringRule;
 import com.swirlds.platform.event.creation.OtherParentTracker;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
 import com.swirlds.platform.test.event.GossipEventBuilder;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -87,8 +88,8 @@ class RulesTests {
 
         assertEquals(EventCreationRuleResponse.PASS, tracker.shouldCreateEvent(null, null), "null should always pass");
 
-        final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(1);
-        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(2);
+        final GossipEventBuilder myBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(1));
+        final GossipEventBuilder otherBuilder = GossipEventBuilder.builder().setCreatorId(new NodeId(2));
 
         final GossipEvent other1 = otherBuilder.buildEvent();
         final GossipEvent self1 = otherBuilder.buildEvent();

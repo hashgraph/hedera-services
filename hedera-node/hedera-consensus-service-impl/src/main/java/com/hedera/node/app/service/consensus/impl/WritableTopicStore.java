@@ -16,16 +16,16 @@
 
 package com.hedera.node.app.service.consensus.impl;
 
+import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -36,9 +36,9 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTopicStore extends TopicStore {
+public class WritableTopicStore {
     /** The underlying data storage class that holds the topic data. */
-    private final WritableKVState<EntityNum, Topic> topicState;
+    private final WritableKVState<TopicID, Topic> topicState;
 
     /**
      * Create a new {@link WritableTopicStore} instance.
@@ -48,7 +48,7 @@ public class WritableTopicStore extends TopicStore {
     public WritableTopicStore(@NonNull final WritableStates states) {
         requireNonNull(states);
 
-        this.topicState = states.get("TOPICS");
+        this.topicState = states.get(TOPICS_KEY);
     }
 
     /**
@@ -58,7 +58,7 @@ public class WritableTopicStore extends TopicStore {
      * @param topic - the topic to be mapped onto a new {@link MerkleTopic} and persisted.
      */
     public void put(@NonNull final Topic topic) {
-        Objects.requireNonNull(topicState).put(EntityNum.fromLong(topic.topicNumber()), Objects.requireNonNull(topic));
+        topicState.put(requireNonNull(topic.id()), requireNonNull(topic));
     }
 
     /**
@@ -71,21 +71,21 @@ public class WritableTopicStore extends TopicStore {
 
     /**
      * Returns the {@link Topic} with the given number. If no such topic exists, returns {@code Optional.empty()}
-     * @param topicNum - the number of the topic to be retrieved.
+     * @param topicID - the id of the topic to be retrieved.
      */
-    public Optional<Topic> get(final long topicNum) {
-        final var topic = Objects.requireNonNull(topicState).get(EntityNum.fromLong(topicNum));
+    public Optional<Topic> get(@NonNull final TopicID topicID) {
+        final var topic = topicState.get(topicID);
         return Optional.ofNullable(topic);
     }
 
     /**
-     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * Returns the {@link Topic} with the given number using {@link WritableKVState#getForModify}.
      * If no such topic exists, returns {@code Optional.empty()}
-     * @param topicNum - the number of the topic to be retrieved.
+     * @param topicID - the id of the topic to be retrieved.
      */
-    public Optional<Topic> getForModify(@NonNull final long topicNum) {
-        requireNonNull(topicNum);
-        final var topic = Objects.requireNonNull(topicState).getForModify(EntityNum.fromLong(topicNum));
+    public Optional<Topic> getForModify(@NonNull final TopicID topicID) {
+        requireNonNull(topicID);
+        final var topic = topicState.getForModify(topicID);
         return Optional.ofNullable(topic);
     }
 
@@ -101,7 +101,7 @@ public class WritableTopicStore extends TopicStore {
      * Returns the set of topics modified in existing state.
      * @return the set of topics modified in existing state
      */
-    public Set<EntityNum> modifiedTopics() {
+    public Set<TopicID> modifiedTopics() {
         return topicState.modifiedKeys();
     }
 }

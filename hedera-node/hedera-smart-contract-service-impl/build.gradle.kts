@@ -18,27 +18,35 @@ plugins { id("com.hedera.hashgraph.conventions") }
 
 description = "Default Hedera Smart Contract Service Implementation"
 
-configurations.all {
-  exclude("javax.annotation", "javax.annotation-api")
+dependencies {
+    javaModuleDependencies {
+        annotationProcessor(gav("dagger.compiler"))
+        testImplementation(testFixtures(project(":app-spi")))
+        testImplementation(testFixtures(project(":config")))
+        testImplementation(testFixtures(project(":app-service-mono")))
 
-  exclude("io.grpc", "grpc-core")
-  exclude("io.grpc", "grpc-context")
-  exclude("io.grpc", "grpc-api")
-  exclude("io.grpc", "grpc-testing")
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.hamcrest"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.swirlds.merkle"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
+        testRuntimeOnly(gav("org.mockito.inline"))
+    }
 }
 
-dependencies {
-  annotationProcessor(libs.dagger.compiler)
-  api(project(":hedera-node:hedera-smart-contract-service"))
-  implementation(project(":hedera-node:hedera-mono-service"))
-  implementation(libs.bundles.di)
+val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
 
-  implementation(libs.swirlds.virtualmap)
-  implementation(libs.swirlds.jasperdb)
-  testImplementation(testLibs.bundles.testing)
-  testImplementation(testLibs.mockito.inline)
-  testImplementation(project(":hedera-node:hedera-app-spi"))
-  testImplementation(project(":hedera-node:hedera-mono-service"))
-  testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
-  testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
+java.sourceSets["main"].java.srcDir(generatedSources)
+
+// TODO module-info.java in 'test'
+// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/issues/900
+dependencyAnalysis.issues {
+    onUnusedDependencies {
+        exclude(":config")
+        exclude(":app-service-mono")
+        exclude(":app-service-token")
+        exclude("org.apache.tuweni:tuweni-units")
+    }
 }

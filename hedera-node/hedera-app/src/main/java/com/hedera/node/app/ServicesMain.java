@@ -16,15 +16,15 @@
 
 package com.hedera.node.app;
 
-import static com.hedera.node.app.spi.config.PropertyNames.WORKFLOWS_ENABLED;
-
-import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,8 +32,8 @@ import org.apache.logging.log4j.Logger;
  * Main entry point.
  *
  * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows
- * are enabled, then {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
+ * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
  */
 public class ServicesMain implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
@@ -41,18 +41,18 @@ public class ServicesMain implements SwirldMain {
     /**
      * The {@link SwirldMain} to actually use, depending on whether workflows are enabled.
      */
-    private SwirldMain delegate;
+    private final SwirldMain delegate;
 
     /** Create a new instance */
     public ServicesMain() {
-        final var bootstrapProps = new BootstrapProperties(false);
-        final var enabledWorkflows = bootstrapProps.getFunctionsProperty(WORKFLOWS_ENABLED);
-        if (enabledWorkflows.isEmpty()) {
+        final var configProvider = new ConfigProviderImpl(false);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        if (hederaConfig.workflowsEnabled().isEmpty()) {
             logger.info("No workflows enabled, using mono-service");
             delegate = new MonoServicesMain();
         } else {
             logger.info("One or more workflows enabled, using Hedera");
-            delegate = new Hedera(ConstructableRegistry.getInstance(), bootstrapProps);
+            delegate = new Hedera(ConstructableRegistry.getInstance());
         }
     }
 
@@ -64,7 +64,7 @@ public class ServicesMain implements SwirldMain {
 
     /** {@inheritDoc} */
     @Override
-    public void init(final Platform ignored, final NodeId nodeId) {
+    public void init(@NonNull final Platform ignored, @NonNull final NodeId nodeId) {
         delegate.init(ignored, nodeId);
     }
 

@@ -18,18 +18,33 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.admin.impl.ReadableSpecialFileStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.NetworkService;
+import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.ReadableRunningHashLeafStoreImpl;
+import com.hedera.node.app.service.networkadmin.impl.ReadableUpdateFileStoreImpl;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.ReadableTokenStore;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
@@ -41,17 +56,22 @@ import java.util.function.Function;
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
  */
-public class ReadableStoreFactory implements PreHandleContext.ReadableStoreFactory {
+public class ReadableStoreFactory {
 
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
     private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
-            AccountAccess.class, new StoreEntry(TokenService.NAME, ReadableAccountStore::new),
-            ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStore::new),
-            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStore::new),
-            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStore::new),
-            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStore::new),
-            ReadableSpecialFileStore.class, new StoreEntry(FreezeService.NAME, ReadableSpecialFileStore::new));
+            ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
+            ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new),
+            ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new),
+            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
+            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
+            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
+            ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new),
+            ReadableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new),
+            ReadableRunningHashLeafStore.class,
+                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new),
+            ReadableTokenRelationStore.class, new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
 
     private final HederaState state;
 
@@ -73,9 +93,8 @@ public class ReadableStoreFactory implements PreHandleContext.ReadableStoreFacto
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
      * @throws NullPointerException if {@code storeInterface} is {@code null}
      */
-    @Override
     @NonNull
-    public <C> C createStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
+    public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null) {
@@ -84,7 +103,7 @@ public class ReadableStoreFactory implements PreHandleContext.ReadableStoreFacto
             assert storeInterface.isInstance(store); // This needs to be ensured while stores are registered
             return storeInterface.cast(store);
         }
-        throw new IllegalArgumentException("No store of the given class is available");
+        throw new IllegalArgumentException("No store of class " + storeInterface + " is available");
     }
 
     private record StoreEntry(@NonNull String name, @NonNull Function<ReadableStates, ?> factory) {}

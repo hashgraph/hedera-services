@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -36,7 +35,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private static final long ROUND_CREATED_UNDEFINED = -1;
     private BaseEventHashedData hashedData;
     private BaseEventUnhashedData unhashedData;
-    private ChatterEventDescriptor descriptor;
+    private EventDescriptor descriptor;
     private Instant timeReceived;
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
@@ -44,10 +43,8 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     public GossipEvent() {}
 
     /**
-     * @param hashedData
-     * 		the hashed data for the event
-     * @param unhashedData
-     * 		the unhashed data for the event
+     * @param hashedData   the hashed data for the event
+     * @param unhashedData the unhashed data for the event
      */
     public GossipEvent(final BaseEventHashedData hashedData, final BaseEventUnhashedData unhashedData) {
         this.hashedData = hashedData;
@@ -96,7 +93,10 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      * {@inheritDoc}
      */
     @Override
-    public ChatterEventDescriptor getDescriptor() {
+    public EventDescriptor getDescriptor() {
+        if (descriptor == null) {
+            throw new IllegalStateException("Can not get descriptor until event has been hashed");
+        }
         return descriptor;
     }
 
@@ -106,7 +106,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      */
     public void buildDescriptor() {
         this.descriptor =
-                new ChatterEventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
+                new EventDescriptor(hashedData.getHash(), hashedData.getCreatorId(), hashedData.getGeneration());
     }
 
     /**
@@ -115,6 +115,14 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     @Override
     public Instant getTimeReceived() {
         return timeReceived;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getGeneration() {
+        return hashedData.getGeneration();
     }
 
     /**

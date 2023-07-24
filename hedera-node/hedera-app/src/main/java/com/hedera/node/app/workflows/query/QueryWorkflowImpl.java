@@ -38,6 +38,7 @@ import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
@@ -45,6 +46,7 @@ import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.MalformedProtobufException;
 import com.hedera.pbj.runtime.UnknownFieldException;
@@ -82,6 +84,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
 
     private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
+    private final ConfigProvider configProvider;
+    private final RecordCache recordCache;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -104,7 +108,9 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
             @NonNull final FeeAccumulator feeAccumulator,
-            @NonNull final Codec<Query> queryParser) {
+            @NonNull final Codec<Query> queryParser,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final RecordCache recordCache) {
         this.stateAccessor = requireNonNull(stateAccessor);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
@@ -113,6 +119,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.dispatcher = requireNonNull(dispatcher);
         this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
+        this.configProvider = requireNonNull(configProvider);
+        this.recordCache = requireNonNull(recordCache);
     }
 
     @Override
@@ -137,13 +145,13 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         Response response;
         long fee = 0L;
         try (final var wrappedState = stateAccessor.apply(responseType)) {
-            // Do some general pre-checks
+            // 2. Do some general pre-checks
             ingestChecker.checkNodeState();
             if (UNSUPPORTED_RESPONSE_TYPES.contains(responseType)) {
                 throw new PreCheckException(NOT_SUPPORTED);
             }
 
-            // 2. Check query throttles
+            // 3. Check query throttles
             if (throttleAccumulator.shouldThrottleQuery(function, query)) {
                 throw new PreCheckException(BUSY);
             }
@@ -154,39 +162,41 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
-                // 3.i Validate CryptoTransfer
                 allegedPayment = queryHeader.paymentOrThrow();
+
+                // 4.i Ingest checks
                 final var transactionInfo = ingestChecker.runAllChecks(state, allegedPayment);
+
+                // 4.ii Validate CryptoTransfer
                 queryChecker.validateCryptoTransfer(transactionInfo);
 
                 txBody = transactionInfo.txBody();
                 final var payer = txBody.transactionIDOrThrow().accountIDOrThrow();
 
-                // 3.ii Check permissions
+                // 4.iii Check permissions
                 queryChecker.checkPermissions(payer, function);
 
-                // 3.iii Calculate costs
+                // 4.iv Calculate costs
                 final var feeData =
                         feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
                 fee = feeData.totalFee();
 
-                // 3.iv Check account balances
-                queryChecker.validateAccountBalances(payer, txBody, fee);
+                // 4.v Check account balances
+                queryChecker.validateAccountBalances(payer, transactionInfo, fee);
+
+                // 4.vi Submit payment to platform
+                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
+                submissionManager.submit(txBody, txBytes);
             } else {
                 if (RESTRICTED_FUNCTIONALITIES.contains(function)) {
                     throw new PreCheckException(NOT_SUPPORTED);
                 }
             }
 
-            // 4. Check validity
-            final var context = new QueryContextImpl(storeFactory, query);
+            // 5. Check validity of query
+            final var context =
+                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
             handler.validate(context);
-
-            // 5. Submit payment to platform
-            if (paymentRequired) {
-                final var txBytes = PbjConverter.asWrappedBytes(Transaction.PROTOBUF, allegedPayment);
-                submissionManager.submit(txBody, txBytes);
-            }
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs

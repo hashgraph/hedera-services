@@ -19,6 +19,7 @@ package com.swirlds.common.config;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * Config that control the SignedStateManager and SignedStateFileManager behaviors.
@@ -38,6 +39,7 @@ import java.nio.file.Path;
  *                                              may not be written to disk.
  * @param saveStatePeriod                       The frequency of writes of a state to disk every this many seconds (0 to
  *                                              never write).
+ * @param saveReconnectStateToDisk              If true, save the state received from a successful reconnect to disk.
  * @param signedStateDisk                       Keep at least this many of the old complete signed states on disk. This
  *                                              should be at least 2 so that  we don't delete an old state while a new
  *                                              one is in the process of writing to disk. set to 0 to not keep any
@@ -66,8 +68,6 @@ import java.nio.file.Path;
  *                                              Ignored if dumpStateOnISS is false.
  * @param secondsBetweenIssLogs                 The minimum time that must pass between log messages about ISS events.
  *                                              If ISS events happen with a higher frequency then they are squelched.
- * @param stateDeletionErrorLogFrequencySeconds If there are problems with state lifecycle then write errors to the log
- *                                              at most once per this period of time.
  * @param enableHashStreamLogging               When enabled, hashes for the nodes are logged per round.
  * @param debugHashDepth                        When logging debug information about the hashes in a merkle tree, do not
  *                                              display hash information for nodes deeper than this.
@@ -81,10 +81,23 @@ import java.nio.file.Path;
  *                                              after a newer state has become fully signed. If set to 0 then each state
  *                                              becomes garbage collection eligible as soon as it is not the most
  *                                              recently signed state.
- * @param signedStateSentinelEnabled            If true, then enable extra debug code that tracks signed states. Very
- *                                              useful for debugging state leaks. This debug code is relatively
- *                                              expensive (it takes and stores stack traces when operations are
- *                                              performed on signed state objects).
+ * @param suspiciousSignedStateAge              The age of a signed state which is considered to be suspicious.
+ *                                              Suspicious states cause a large amount of data to be logged that helps
+ *                                              to debug the potential state leak.
+ * @param stateHistoryEnabled                   If true, then a history of operations that modify the signed state
+ *                                              reference count are kept for debugging purposes.
+ * @param debugStackTracesEnabled               if true and stateHistoryEnabled is true, then stack traces are captured
+ *                                              each time a signed state reference count is changed, and logged if a
+ *                                              signed state reference count bug is detected.
+ * @param requireStateLoad                      if set to true, the platform will fail to start if it fails to load
+ *                                              a state from disk
+ * @param emergencyStateFileName                The name of the file that contains the emergency state.
+ * @param checkSignedStateFromDisk              If true, the platform will recalculate the hash of the signed state
+ *                                              and check it against the written hash. It will also verify that the
+ *                                              signatures are valid.
+ * @param signedStateFreq                       hash and sign a state every signedStateFreq rounds. 1 means that a state
+ *                                              will be signed every round, 2 means every other round, and so on. If the
+ *                                              value is 0 or less, no states will be signed
  */
 @ConfigData("state")
 public record StateConfig(
@@ -92,8 +105,9 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
-        @ConfigProperty(defaultValue = "0") int saveStatePeriod,
-        @ConfigProperty(defaultValue = "3") int signedStateDisk,
+        @ConfigProperty(defaultValue = "900") int saveStatePeriod,
+        @ConfigProperty(defaultValue = "true") boolean saveReconnectStateToDisk,
+        @ConfigProperty(defaultValue = "5") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
         @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
         @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
@@ -101,13 +115,18 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
         @ConfigProperty(defaultValue = "21600") long secondsBetweenISSDumps,
         @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
-        @ConfigProperty(defaultValue = "60") int stateDeletionErrorLogFrequencySeconds,
         @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
         @ConfigProperty(defaultValue = "26") int roundsToKeepForSigning,
         @ConfigProperty(defaultValue = "0") int roundsToKeepAfterSigning,
-        @ConfigProperty(defaultValue = "false") boolean signedStateSentinelEnabled) {
+        @ConfigProperty(defaultValue = "5m") Duration suspiciousSignedStateAge,
+        @ConfigProperty(defaultValue = "false") boolean stateHistoryEnabled,
+        @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
+        @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
+        @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
+        @ConfigProperty(defaultValue = "true") boolean checkSignedStateFromDisk,
+        @ConfigProperty(defaultValue = "1") int signedStateFreq) {
 
     /**
      * Get the main class name that should be used for signed states.

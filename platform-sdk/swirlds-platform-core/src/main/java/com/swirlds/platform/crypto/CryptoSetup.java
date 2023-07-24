@@ -21,17 +21,21 @@ import static com.swirlds.logging.LogMarker.CERTIFICATES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.crypto.CryptographyException;
 import com.swirlds.common.crypto.config.CryptoConfig;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Crypto;
-import com.swirlds.platform.Settings;
 import com.swirlds.platform.Utilities;
-import com.swirlds.platform.system.SystemExitReason;
-import com.swirlds.platform.system.SystemUtils;
+import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.system.SystemExitCode;
+import com.swirlds.platform.system.SystemExitUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,7 +43,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -67,36 +72,42 @@ public final class CryptoSetup {
      * 		the current configuration
      * @return an array of crypto objects, one for each node
      */
-    public static Crypto[] initNodeSecurity(final AddressBook addressBook, final Configuration configuration) {
+    public static Map<NodeId, Crypto> initNodeSecurity(
+            @NonNull final AddressBook addressBook, @NonNull final Configuration configuration) {
+        Objects.requireNonNull(addressBook, "addressBook must not be null");
+        Objects.requireNonNull(configuration, "configuration must not be null");
+
+        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
+        final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final CryptoConfig cryptoConfig = configuration.getConfigData(CryptoConfig.class);
+        final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+
         final ExecutorService cryptoThreadPool = Executors.newFixedThreadPool(
-                Settings.getInstance().getNumCryptoThreads(),
+                threadConfig.numCryptoThreads(),
                 new ThreadConfiguration(getStaticThreadManager())
                         .setComponent("browser")
                         .setThreadName("crypto-verify")
                         .setDaemon(false)
                         .buildFactory());
 
-        final Path keysDirPath = Settings.getInstance().getKeysDirPath();
-        final KeysAndCerts[] keysAndCerts;
+        final Map<NodeId, KeysAndCerts> keysAndCerts;
         try {
-            if (Settings.getInstance().isLoadKeysFromPfxFiles()) {
-                try (final Stream<Path> list = Files.list(keysDirPath)) {
+            if (basicConfig.loadKeysFromPfxFiles()) {
+                try (final Stream<Path> list = Files.list(pathsConfig.getKeysDirPath())) {
                     CommonUtils.tellUserConsole("Reading crypto keys from the files here:   "
                             + list.filter(path -> path.getFileName().endsWith("pfx"))
                                     .toList());
                     logger.debug(STARTUP.getMarker(), "About start loading keys");
                     keysAndCerts = CryptoStatic.loadKeysAndCerts(
                             addressBook,
-                            keysDirPath,
-                            configuration
-                                    .getConfigData(CryptoConfig.class)
-                                    .keystorePassword()
-                                    .toCharArray());
+                            pathsConfig.getKeysDirPath(),
+                            cryptoConfig.keystorePassword().toCharArray());
                     logger.debug(STARTUP.getMarker(), "Done loading keys");
                 }
             } else {
                 // if there are no keys on the disk, then create our own keys
-                CommonUtils.tellUserConsole("Creating keys, because there are no files in " + keysDirPath);
+                CommonUtils.tellUserConsole(
+                        "Creating keys, because there are no files in " + pathsConfig.getKeysDirPath());
                 logger.debug(STARTUP.getMarker(), "About to start creating generating keys");
                 keysAndCerts = CryptoStatic.generateKeysAndCerts(addressBook, cryptoThreadPool);
                 logger.debug(STARTUP.getMarker(), "Done generating keys");
@@ -115,21 +126,26 @@ public final class CryptoSetup {
                         "ERROR",
                         "ERROR: This Java installation does not have the needed cryptography " + "providers installed");
             }
-            SystemUtils.exitSystem(SystemExitReason.KEY_LOADING_FAILED);
+            SystemExitUtils.exitSystem(SystemExitCode.KEY_LOADING_FAILED);
             throw new CryptographyException(e); // will never reach this line due to exit above
         }
 
-        final String msg = Settings.getInstance().isLoadKeysFromPfxFiles()
-                ? "Certificate loaded: {}"
-                : "Certificate generated: {}";
-        Arrays.stream(keysAndCerts).filter(Objects::nonNull).forEach(k -> {
-            logger.debug(CERTIFICATES.getMarker(), msg, k.sigCert());
-            logger.debug(CERTIFICATES.getMarker(), msg, k.encCert());
-            logger.debug(CERTIFICATES.getMarker(), msg, k.agrCert());
+        final String msg = basicConfig.loadKeysFromPfxFiles() ? "Certificate loaded: {}" : "Certificate generated: {}";
+
+        final Map<NodeId, Crypto> cryptoMap = new HashMap<>();
+
+        keysAndCerts.forEach((nodeId, keysAndCertsForNode) -> {
+            if (keysAndCertsForNode == null) {
+                logger.error(CERTIFICATES.getMarker(), "No keys and certs for node {}", nodeId);
+                return;
+            }
+            logger.debug(CERTIFICATES.getMarker(), "Node ID: {}", nodeId);
+            logger.debug(CERTIFICATES.getMarker(), msg, keysAndCertsForNode.sigCert());
+            logger.debug(CERTIFICATES.getMarker(), msg, keysAndCertsForNode.encCert());
+            logger.debug(CERTIFICATES.getMarker(), msg, keysAndCertsForNode.agrCert());
+            cryptoMap.put(nodeId, new Crypto(keysAndCertsForNode, cryptoThreadPool));
         });
 
-        return Arrays.stream(keysAndCerts)
-                .map(kc -> new Crypto(kc, cryptoThreadPool))
-                .toArray(Crypto[]::new);
+        return cryptoMap;
     }
 }

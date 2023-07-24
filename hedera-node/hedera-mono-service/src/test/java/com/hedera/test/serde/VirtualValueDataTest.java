@@ -16,12 +16,14 @@
 
 package com.hedera.test.serde;
 
+import static com.hedera.test.serde.EqualityType.OBJECT_EQUALITY;
+import static com.hedera.test.serde.EqualityType.SERIALIZED_EQUALITY;
 import static com.hedera.test.serde.SerializedForms.assertSameBufferSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBuffer;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.virtualmap.VirtualValue;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -37,14 +39,18 @@ public abstract class VirtualValueDataTest<T extends VirtualValue> extends SelfS
     @ParameterizedTest
     @ArgumentsSource(CurrentVersionArgumentsProvider.class)
     void bufferSerializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
-        assertSameBufferSerialization(getType(), this::getExpectedObject, version, testCaseNo);
+        assertSameBufferSerialization(
+                getType(),
+                propertySource -> this.getExpectedObject(propertySource, SERIALIZED_EQUALITY),
+                version,
+                testCaseNo);
     }
 
     @ParameterizedTest
     @ArgumentsSource(SupportedVersionsArgumentsProvider.class)
     void bufferDeserializationWorksForAllSupportedVersions(final int version, final int testCaseNo) {
         final var serializedForm = getSerializedForm(version, testCaseNo);
-        final var expectedObject = getExpectedObject(version, testCaseNo);
+        final var expectedObject = getExpectedObject(version, testCaseNo, OBJECT_EQUALITY);
 
         final T actualObject = deserializeFromBuffer(() -> instantiate(getType()), version, serializedForm);
 

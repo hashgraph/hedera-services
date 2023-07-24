@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;
@@ -113,14 +113,6 @@ class DataFileCollectionTest {
             final long[] dataItem2 = assertDoesNotThrow(
                     () -> fileCollection.readDataItemUsingIndex(storedOffsets, fi), "Read should not a exception.");
             checkDataItem(testType, valueAddition, dataItem2, i);
-            try {
-                assertNull(
-                        fileCollection.readDataItemUsingIndex(storedOffsets, fi, false),
-                        "A null should be returned with deserialize=false");
-            } catch (IOException e) {
-                e.printStackTrace();
-                fail("No exceptional conditions expected here");
-            }
         }
     }
 
@@ -276,7 +268,7 @@ class DataFileCollectionTest {
         assertEquals(
                 1000,
                 loadedDataCallbackImpl.dataLocationMap.size(),
-                "Size of data location map in collection loaded from store should reflect known" + " size");
+                "Size of data location map in collection loaded from store should reflect known size");
         assertEquals(
                 1000,
                 loadedDataCallbackImpl.dataValueMap.size(),
@@ -738,9 +730,9 @@ class DataFileCollectionTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
+                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB");
     }
 

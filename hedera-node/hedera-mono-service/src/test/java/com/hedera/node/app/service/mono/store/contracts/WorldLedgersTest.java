@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
@@ -103,12 +104,12 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.fchashmap.FCHashMap;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -462,7 +463,7 @@ class WorldLedgersTest {
     void staticNftTokenInfoWorks() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
 
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
 
@@ -488,7 +489,7 @@ class WorldLedgersTest {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         tokenAccessor();
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
         final var nftAddr = asTypedEvmAddress(nftTokenId);
 
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
@@ -512,7 +513,7 @@ class WorldLedgersTest {
     void staticEvmNftTokenInfoEmpty() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
         given(staticEntityAccess.infoForNft(nftId)).willReturn(Optional.empty());
         final var tokenNftInfo = worldLedgers.evmNftInfo(nftId, ledgerId);
 
@@ -522,7 +523,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorks() {
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         given(nftsLedger.contains(targetKey)).willReturn(true);
         given(nftsLedger.getImmutableRef(targetKey)).willReturn(targetNft);
@@ -540,7 +541,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorksForMissingSerialNumber() {
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         given(nftsLedger.contains(targetKey)).willReturn(false);
 
@@ -552,7 +553,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorksForWildCardOwner() {
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         targetNft.setOwner(MISSING_ENTITY_ID);
         given(nftsLedger.contains(targetKey)).willReturn(true);
@@ -572,7 +573,7 @@ class WorldLedgersTest {
     @Test
     void nonStaticNftTokenInfoWorksForWildCardOwnerWithMissingToken() {
         final var nftId =
-                NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();
+                NftID.newBuilder().setTokenId(nftTokenId).setSerialNumber(1L).build();
         final var targetKey = NftId.withDefaultShardRealm(nftTokenId.getTokenNum(), 1L);
         targetNft.setOwner(MISSING_ENTITY_ID);
         given(nftsLedger.contains(targetKey)).willReturn(true);
@@ -655,7 +656,7 @@ class WorldLedgersTest {
     }
 
     @Test
-    void nonStaticKeyInfoWorks() throws DecoderException {
+    void nonStaticKeyInfoWorks() throws InvalidKeyException {
         given(tokensLedger.get(fungibleToken, TokenProperty.ADMIN_KEY))
                 .willReturn(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
         given(tokensLedger.get(fungibleToken, TokenProperty.FREEZE_KEY))
@@ -704,8 +705,15 @@ class WorldLedgersTest {
     }
 
     @Test
+    void notInUseAliasIsStillCanonicalAddress() {
+        assertSame(alias, worldLedgers.canonicalAddress(alias));
+        verifyNoInteractions(accountsLedger);
+    }
+
+    @Test
     void mirrorNoAliasIsCanonicalSourceWithLedgers() {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.EMPTY);
 
@@ -726,6 +734,7 @@ class WorldLedgersTest {
     @Test
     void mirrorNoAliasIsCanonicalSourceWithStaticAccess() {
         worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(staticEntityAccess.isExtant(sponsor)).willReturn(true);
         given(staticEntityAccess.alias(sponsor)).willReturn(ByteString.EMPTY);
 
@@ -734,6 +743,7 @@ class WorldLedgersTest {
 
     @Test
     void mirrorWithAliasUsesEvmAddressAliasAsCanonicalSource() {
+        given(aliases.isMirror(sponsor)).willReturn(true);
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
@@ -743,6 +753,7 @@ class WorldLedgersTest {
     @Test
     void mirrorWithAliasUsesECDSAKeyAliasAsCanonicalSource() {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(pkAlias);
         assertEquals(pkAddress, worldLedgers.canonicalAddress(sponsor));
@@ -751,6 +762,7 @@ class WorldLedgersTest {
     @Test
     void mirrorWithAliasSkipsUnsupportedAliasAsCanonicalSource() {
         final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
+        given(aliases.isMirror(sponsor)).willReturn(true);
         given(accountsLedger.exists(id)).willReturn(true);
         given(accountsLedger.get(id, ALIAS)).willReturn(unsupportedAlias, pkAliasBadProtobuf, pkAliasBadFormat);
         assertEquals(sponsor, worldLedgers.canonicalAddress(sponsor));
@@ -1005,7 +1017,7 @@ class WorldLedgersTest {
         assertEquals(FUNGIBLE_COMMON, tokenAccessor.typeOf(fungibleTokenAddress));
     }
 
-    private void setUpToken(final MerkleToken token) throws DecoderException {
+    private void setUpToken(final MerkleToken token) throws InvalidKeyException {
         token.setMemo(tokenMemo);
         token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
         token.setDeleted(true);

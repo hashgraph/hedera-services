@@ -46,7 +46,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -389,7 +389,6 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 && this.deleted == that.deleted
                 && this.smartContract == that.smartContract
                 && this.receiverSigRequired == that.receiverSigRequired
-                && Objects.equals(this.proxy, that.proxy)
                 && this.nftsOwned == that.nftsOwned
                 && this.numContractKvPairs == that.numContractKvPairs
                 && this.ethereumNonce == that.ethereumNonce
@@ -405,7 +404,13 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 && this.numPositiveBalances == that.numPositiveBalances
                 && this.headTokenId == that.headTokenId
                 && this.numTreasuryTitles == that.numTreasuryTitles
-                && Objects.equals(this.autoRenewAccount, that.autoRenewAccount)
+                // Note that we this is temporary solution till we have an AccountId in place
+                && Optional.ofNullable(this.autoRenewAccount).stream()
+                        .mapToLong(EntityId::num)
+                        .findAny()
+                        .equals(Optional.ofNullable(that.autoRenewAccount).stream()
+                                .mapToLong(EntityId::num)
+                                .findAny())
                 && this.headNftId == that.headNftId
                 && this.headNftSerialNum == that.headNftSerialNum
                 && this.stakedToMe == that.stakedToMe

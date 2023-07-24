@@ -153,9 +153,9 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
                                 .build()));
                 ownershipChanges.entrySet().stream()
                         .sorted(comparingLong(
-                                entry -> entry.getKey().getTokenID().getTokenNum()))
+                                entry -> entry.getKey().getTokenId().getTokenNum()))
                         .forEach(entry -> xfers.addTokenTransfers(TokenTransferList.newBuilder()
-                                .setToken(entry.getKey().getTokenID())
+                                .setToken(entry.getKey().getTokenId())
                                 .addNftTransfers(entry.getValue())));
                 xfers.setTransfers(TransferList.newBuilder().addAllAccountAmounts(hbarAdjustments));
                 adjustmentsAreSet = true;

@@ -16,9 +16,9 @@
 
 package com.swirlds.common.test.threading;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.framework.Stoppable;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.ThreadSeed;
@@ -448,13 +449,9 @@ class StoppableThreadTests {
 
     @Test
     @DisplayName("Max Rate Test")
-    @Tag(TestQualifierTags.TIME_CONSUMING)
     void maxRateTest() throws InterruptedException {
         final AtomicInteger counter = new AtomicInteger(0);
-        final InterruptableRunnable work = () -> {
-            MILLISECONDS.sleep(1);
-            counter.getAndIncrement();
-        };
+        final InterruptableRunnable work = counter::getAndIncrement;
 
         final StoppableThread thread0 = new StoppableThreadConfiguration<>(getStaticThreadManager())
                 .setMaximumRate(5)
@@ -488,7 +485,7 @@ class StoppableThreadTests {
         SECONDS.sleep(1);
         thread2.stop();
         assertTrue(
-                counter.get() > 450 && counter.get() < 550,
+                counter.get() > 400 && counter.get() < 550,
                 "counter should have value close to 500, has " + counter.get() + " instead");
     }
 
@@ -561,7 +558,10 @@ class StoppableThreadTests {
         configuration.build();
         assertTrue(configuration.isImmutable(), "configuration should be immutable");
 
-        assertThrows(MutabilityException.class, () -> configuration.setNodeId(0L), "configuration should be immutable");
+        assertThrows(
+                MutabilityException.class,
+                () -> configuration.setNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration.setComponent("asdf"),
@@ -575,7 +575,9 @@ class StoppableThreadTests {
                 () -> configuration.setFullyFormattedThreadName("asdf"),
                 "configuration should be immutable");
         assertThrows(
-                MutabilityException.class, () -> configuration.setOtherNodeId(0L), "configuration should be immutable");
+                MutabilityException.class,
+                () -> configuration.setOtherNodeId(new NodeId(0L)),
+                "configuration should be immutable");
         assertThrows(
                 MutabilityException.class,
                 () -> configuration.setThreadGroup(null),

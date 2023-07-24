@@ -18,13 +18,14 @@ package com.swirlds.platform.dispatch.triggers.transaction;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.dispatch.types.TriggerFour;
 
 /**
  * Sends dispatches for pre-consensus state signatures.
  */
 @FunctionalInterface
-public interface PreConsensusStateSignatureTrigger extends TriggerFour<Long, Long, Hash, Signature> {
+public interface PreConsensusStateSignatureTrigger extends TriggerFour<Long, NodeId, Hash, Signature> {
 
     /**
      * Signal that a pre-consensus state signature is ready to be handled.
@@ -39,5 +40,5 @@ public interface PreConsensusStateSignatureTrigger extends TriggerFour<Long, Lon
      * 		the signature on the hash
      */
     @Override
-    void dispatch(Long round, Long signerId, Hash hash, Signature signature);
+    void dispatch(Long round, NodeId signerId, Hash hash, Signature signature);
 }

@@ -18,6 +18,8 @@ package com.swirlds.platform.test.utils;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
@@ -72,7 +74,8 @@ public final class EqualsVerifier {
         }
 
         final BaseEventHashedData data = new BaseEventHashedData(
-                r.nextLong(Long.MAX_VALUE),
+                new BasicSoftwareVersion(1),
+                new NodeId(r.nextLong(Long.MAX_VALUE)),
                 r.nextLong(Long.MAX_VALUE),
                 r.nextLong(Long.MAX_VALUE),
                 randomHash(r),
@@ -94,7 +97,7 @@ public final class EqualsVerifier {
         final int SIZE = 48;
         byte[] value = new byte[SIZE];
         r.nextBytes(value);
-        return new BaseEventUnhashedData(r.nextLong(Long.MAX_VALUE), value);
+        return new BaseEventUnhashedData(new NodeId(r.nextLong(Long.MAX_VALUE)), value);
     }
 
     public static Hash randomHash(final RandomGenerator r) {

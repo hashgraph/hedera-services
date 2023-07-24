@@ -16,16 +16,17 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.system.InitTrigger;
-import com.swirlds.common.system.Platform;
+import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Responsible for building the genesis state.
@@ -66,10 +67,10 @@ public final class GenesisStateBuilder {
      * @param configuration configuration for the platform
      * @return a genesis dual state
      */
-    private static DualStateImpl buildGenesisDualState(final Configuration configuration) {
+    private static DualStateImpl buildGenesisDualState(final BasicConfig configuration) {
         final DualStateImpl dualState = new DualStateImpl();
 
-        final long genesisFreezeTime = configuration.getValue("genesisFreezeTime", Long.class, 0L);
+        final long genesisFreezeTime = configuration.genesisFreezeTime();
         if (genesisFreezeTime > 0) {
             dualState.setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
@@ -80,27 +81,25 @@ public final class GenesisStateBuilder {
     /**
      * Build and initialize a genesis state.
      *
-     * @param platform                  the platform running this node
-     * @param addressBook               the current address book
-     * @param appVersion                the software version of the app
-     * @param genesisSwirldStateBuilder builds the genesis application state
-     * @return a genesis state
+     * @param platformContext the platform context
+     * @param addressBook     the current address book
+     * @param appVersion      the software version of the app
+     * @param swirldState     the application's genesis state
+     * @return a reserved genesis signed state
      */
-    public static State buildGenesisState(
-            final Platform platform,
-            final AddressBook addressBook,
-            final SoftwareVersion appVersion,
-            final Supplier<SwirldState> genesisSwirldStateBuilder) {
+    public static ReservedSignedState buildGenesisState(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final AddressBook addressBook,
+            @NonNull final SoftwareVersion appVersion,
+            @NonNull final SwirldState swirldState) {
 
+        final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final State state = new State();
         state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
-        state.setSwirldState(genesisSwirldStateBuilder.get());
-        state.setDualState(buildGenesisDualState(platform.getContext().getConfiguration()));
+        state.setSwirldState(swirldState);
+        state.setDualState(buildGenesisDualState(basicConfig));
 
-        state.getSwirldState()
-                .init(platform, state.getSwirldDualState(), InitTrigger.GENESIS, SoftwareVersion.NO_VERSION);
-        state.markAsInitialized();
-
-        return state;
+        final SignedState signedState = new SignedState(platformContext, state, "genesis state");
+        return signedState.reserve("initial reservation on genesis state");
     }
 }

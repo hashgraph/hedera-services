@@ -16,13 +16,14 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomInstant;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.test.event.RandomEventUtils.randomEvent;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MinGenInfo;
 import com.swirlds.platform.state.PlatformData;
@@ -66,7 +67,7 @@ public final class PlatformStateUtils {
         if (generateEventList) {
             final EventImpl[] events = new EventImpl[10];
             for (int index = 0; index < events.length; index++) {
-                events[index] = randomEvent(random, random.nextInt(), null, null);
+                events[index] = randomEvent(random, new NodeId(random.nextLong(Long.MAX_VALUE)), null, null);
             }
             platformState.getPlatformData().setEvents(events);
         }

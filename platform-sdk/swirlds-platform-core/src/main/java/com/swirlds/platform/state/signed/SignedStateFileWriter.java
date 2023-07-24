@@ -20,26 +20,30 @@ import static com.swirlds.common.io.utility.FileUtils.executeAndRename;
 import static com.swirlds.common.io.utility.FileUtils.writeAndFlush;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.config.internal.PlatformConfigUtils.writeSettingsUsed;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.FILE_VERSION;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.HASH_INFO_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.SIGNED_STATE_FILE_NAME;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.VERSIONED_FILE_BYTE;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.logging.payloads.StateSavedToDiskPayload;
-import com.swirlds.platform.Settings;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,9 +65,10 @@ public final class SignedStateFileWriter {
      * @param directory the directory where the state is being written
      */
     public static void writeHashInfoFile(final Path directory, final State state) throws IOException {
+        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
         final String platformInfo = state.getPlatformState().getInfoString();
         final String hashInfo = new MerkleTreeVisualizer(state)
-                .setDepth(StateSettings.getDebugHashDepth())
+                .setDepth(stateConfig.debugHashDepth())
                 .render();
         logger.info(
                 STATE_TO_DISK.getMarker(), "Information for state written to disk:\n{}\n{}", platformInfo, hashInfo);
@@ -82,8 +87,11 @@ public final class SignedStateFileWriter {
      * @param directory     the directory to write to
      * @param signedState   the signed state being written
      */
-    public static void writeMetadataFile(final long selfId, final Path directory, final SignedState signedState)
+    public static void writeMetadataFile(
+            @Nullable final NodeId selfId, @NonNull final Path directory, @NonNull final SignedState signedState)
             throws IOException {
+        Objects.requireNonNull(directory, "directory must not be null");
+        Objects.requireNonNull(signedState, "signedState must not be null");
 
         final Path metadataFile = directory.resolve(SavedStateMetadata.FILE_NAME);
 
@@ -126,14 +134,17 @@ public final class SignedStateFileWriter {
      * @param signedState   the signed state being written to disk
      */
     public static void writeSignedStateFilesToDirectory(
-            final long selfId, final Path directory, final SignedState signedState) throws IOException {
+            @Nullable NodeId selfId, @NonNull final Path directory, @NonNull final SignedState signedState)
+            throws IOException {
+        Objects.requireNonNull(directory, "directory must not be null");
+        Objects.requireNonNull(signedState, "signedState must not be null");
 
         writeStateFile(directory, signedState);
         writeHashInfoFile(directory, signedState.getState());
         writeMetadataFile(selfId, directory, signedState);
         writeEmergencyRecoveryFile(directory, signedState);
-        Settings.getInstance().writeSettingsUsed(directory);
         writeStateAddressBookFile(directory, signedState.getAddressBook());
+        writeSettingsUsed(directory);
     }
 
     /**
@@ -161,18 +172,22 @@ public final class SignedStateFileWriter {
      * @param taskDescription     a description of the task
      */
     public static void writeSignedStateToDisk(
-            final long selfId,
-            final Path savedStateDirectory,
-            final SignedState signedState,
-            final String taskDescription)
+            @Nullable final NodeId selfId,
+            @NonNull final Path savedStateDirectory,
+            @NonNull final SignedState signedState,
+            @NonNull final String taskDescription)
             throws IOException {
+        Objects.requireNonNull(savedStateDirectory, "savedStateDirectory must not be null");
+        Objects.requireNonNull(signedState, "signedState must not be null");
+        Objects.requireNonNull(taskDescription, "taskDescription must not be null");
 
         try {
             logger.info(
                     STATE_TO_DISK.getMarker(),
-                    "Started writing round {} state to disk. Reason: {}",
+                    "Started writing round {} state to disk. Reason: {}, directory: {}",
                     signedState.getRound(),
-                    taskDescription);
+                    taskDescription,
+                    savedStateDirectory);
 
             executeAndRename(
                     savedStateDirectory, directory -> writeSignedStateFilesToDirectory(selfId, directory, signedState));

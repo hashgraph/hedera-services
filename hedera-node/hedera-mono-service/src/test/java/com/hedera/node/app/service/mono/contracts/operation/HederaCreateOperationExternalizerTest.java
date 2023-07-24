@@ -17,13 +17,12 @@
 package com.hedera.node.app.service.mono.contracts.operation;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.*;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -49,12 +48,7 @@ import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -72,6 +66,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationExternalizerTest {
+    static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
+    private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
+    private static final EntityId autoRenewId = new EntityId(0, 0, 8);
+    private static final JKey nonEmptyKey = MiscUtils.asFcKeyUnchecked(Key.newBuilder()
+            .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
+            .build());
+
     @Mock
     private SyntheticTxnFactory syntheticTxnFactory;
 
@@ -102,16 +103,7 @@ class HederaCreateOperationExternalizerTest {
     @Mock
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
 
-    private static final ContractID lastAllocated = IdUtils.asContract("0.0.1234");
-
-    private static final EntityId autoRenewId = new EntityId(0, 0, 8);
-
-    private static final JKey nonEmptyKey = MiscUtils.asFcKeyUnchecked(Key.newBuilder()
-            .setEd25519(ByteString.copyFrom("01234567890123456789012345678901".getBytes()))
-            .build());
     private HederaCreateOperationExternalizer subject;
-
-    static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
 
     @BeforeEach
     void setUp() {
@@ -219,6 +211,7 @@ class HederaCreateOperationExternalizerTest {
         final var initCode = "initCode".getBytes();
         final var newContractMock = mock(Account.class);
         final var runtimeCode = "runtimeCode".getBytes();
+        given(newContractMock.getNonce()).willReturn(1L);
         given(newContractMock.getCode()).willReturn(Bytes.of(runtimeCode));
         given(updater.get(PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
         final var sidecarRecord = TransactionSidecarRecord.newBuilder()
@@ -238,7 +231,6 @@ class HederaCreateOperationExternalizerTest {
         // then:
         verify(creator)
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);
@@ -271,6 +263,9 @@ class HederaCreateOperationExternalizerTest {
         given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
         given(dynamicProperties.enabledSidecars()).willReturn(Set.of());
         given(childFrame.getContractAddress()).willReturn(PRETEND_CONTRACT_ADDRESS);
+        final var newContractMock = mock(Account.class);
+        given(newContractMock.getNonce()).willReturn(1L);
+        given(updater.get(PRETEND_CONTRACT_ADDRESS)).willReturn(newContractMock);
 
         // when:
         subject.externalize(frame, childFrame);
@@ -278,7 +273,6 @@ class HederaCreateOperationExternalizerTest {
         // then:
         verify(creator)
                 .createSuccessfulSyntheticRecord(eq(Collections.emptyList()), trackerCaptor.capture(), eq(EMPTY_MEMO));
-        verify(updater).reclaimLatestContractId();
         verify(updater.trackingAccounts()).set(hollowAccountId, IS_SMART_CONTRACT, true);
         verify(updater.trackingAccounts()).set(hollowAccountId, KEY, STANDIN_CONTRACT_ID_KEY);
         verify(updater.trackingAccounts()).set(hollowAccountId, ETHEREUM_NONCE, 1L);

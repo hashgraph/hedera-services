@@ -17,13 +17,14 @@
 package com.swirlds.demo.migration;
 
 import static com.swirlds.demo.migration.MigrationTestingToolMain.MARKER;
+import static com.swirlds.demo.migration.MigrationTestingToolMain.PREVIOUS_SOFTWARE_VERSION;
 
-import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
@@ -39,7 +40,7 @@ import com.swirlds.demo.migration.virtual.AccountVirtualMapKeySerializer;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValue;
 import com.swirlds.demo.migration.virtual.AccountVirtualMapValueBuilder;
 import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
+import com.swirlds.jasperdb.VirtualHashRecordSerializer;
 import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -48,11 +49,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MigrationTestingToolState extends PartialNaryMerkleInternal implements MerkleInternal, SwirldState {
-
     private static final Logger logger = LogManager.getLogger(MigrationTestingToolState.class);
 
     /**
@@ -92,7 +93,7 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         public static final int CHILD_COUNT = 3;
     }
 
-    public long selfId;
+    public NodeId selfId;
 
     public MigrationTestingToolState() {
         super(ChildIndices.CHILD_COUNT);
@@ -100,8 +101,12 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
 
     private MigrationTestingToolState(final MigrationTestingToolState that) {
         super(that);
-        setMerkleMap(that.getMerkleMap().copy());
-        setVirtualMap(that.getVirtualMap().copy());
+        if (that.getMerkleMap() != null) {
+            setMerkleMap(that.getMerkleMap().copy());
+        }
+        if (that.getVirtualMap() != null) {
+            setVirtualMap(that.getVirtualMap().copy());
+        }
         that.setImmutable(true);
         this.setImmutable(false);
         this.selfId = that.selfId;
@@ -202,8 +207,6 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         final VirtualLeafRecordSerializer<AccountVirtualMapKey, AccountVirtualMapValue> leafRecordSerializer =
                 new VirtualLeafRecordSerializer<>(
                         (short) 1,
-                        DigestType.SHA_384,
-                        (short) 1,
                         keySerializer.getSerializedSize(),
                         new AccountVirtualMapKeyBuilder(),
                         (short) 1,
@@ -214,14 +217,14 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         final JasperDbBuilder<AccountVirtualMapKey, AccountVirtualMapValue> jasperDbBuilder = new JasperDbBuilder<
                         AccountVirtualMapKey, AccountVirtualMapValue>()
                 .virtualLeafRecordSerializer(leafRecordSerializer)
-                .virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+                .virtualInternalRecordSerializer(new VirtualHashRecordSerializer())
                 .keySerializer(keySerializer)
                 .maxNumOfKeys(Integer.MAX_VALUE)
-                .internalHashesRamToDiskThreshold(0)
+                .hashesRamToDiskThreshold(0)
                 .preferDiskBasedIndexes(false);
 
         setVirtualMap(new VirtualMap<>("virtualMap", jasperDbBuilder));
-        selfId = platform.getSelfId().getId();
+        selfId = platform.getSelfId();
     }
 
     /**
@@ -242,21 +245,22 @@ public class MigrationTestingToolState extends PartialNaryMerkleInternal impleme
         if (virtualMap != null) {
             logger.info(MARKER, "VirtualMap initialized with {} values", virtualMap.size());
         }
-        selfId = platform.getSelfId().getId();
+        selfId = platform.getSelfId();
 
         if (trigger == InitTrigger.GENESIS) {
             logger.error(MARKER, "InitTrigger was {} when expecting RESTART or RECONNECT", trigger);
         }
 
-        // FUTURE WORK: this needs to be updated once we create the next saved state for the MigrationTestingTool
-        if (previousSoftwareVersion != SoftwareVersion.NO_VERSION) {
+        if (!Objects.equals(previousSoftwareVersion, PREVIOUS_SOFTWARE_VERSION)) {
             logger.error(
                     MARKER,
-                    "previousSoftwareVersion was {} when expecting SoftwareVersion.NO_VERSION",
-                    previousSoftwareVersion);
+                    "previousSoftwareVersion was {} when expecting it to be {}",
+                    previousSoftwareVersion,
+                    PREVIOUS_SOFTWARE_VERSION);
         }
 
         if (trigger == InitTrigger.GENESIS) {
+            logger.info(MARKER, "Doing genesis initialization");
             genesisInit(platform);
         }
     }

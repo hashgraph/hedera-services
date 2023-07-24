@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static java.util.Collections.emptyList;
-
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -29,10 +27,11 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.codec.DecoderException;
 
 /** Maps to proto Key. */
 public abstract class JKey implements HederaKey {
@@ -46,13 +45,22 @@ public abstract class JKey implements HederaKey {
     private boolean forScheduledTxn = false;
 
     /**
+     * Returns whether the given key denotes an immutable entity. (I.e., is exactly an empty key list.)
+     * @param key the key to check
+     * @return whether the key denotes an immutable entity
+     */
+    public static boolean denotesImmutableEntity(@NonNull final JKey key) {
+        return key instanceof JKeyList keyList && keyList.isEmpty();
+    }
+
+    /**
      * Maps a proto Key to Jkey.
      *
      * @param key the proto Key to be converted
      * @return the generated JKey instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type
      */
-    public static JKey mapKey(Key key) throws DecoderException {
+    public static JKey mapKey(Key key) throws InvalidKeyException {
         return convertKey(key, 1);
     }
 
@@ -61,9 +69,8 @@ public abstract class JKey implements HederaKey {
      *
      * @param key the proto Key to be converted
      * @return the generated JKey instance
-     * @throws DecoderException on an inconvertible given key
      */
-    public static JKey mapKey(@NonNull final com.hedera.hapi.node.base.Key key) throws DecoderException {
+    public static JKey mapKey(@NonNull final com.hedera.hapi.node.base.Key key) throws InvalidKeyException {
         return convertKey(key, 1);
     }
 
@@ -74,11 +81,11 @@ public abstract class JKey implements HederaKey {
      * @param key the current proto Key to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
      * @return the converted JKey instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type or exceeds the allowable depth of nesting.
      */
-    public static JKey convertKey(Key key, int depth) throws DecoderException {
+    public static JKey convertKey(Key key, int depth) throws InvalidKeyException {
         if (depth > MAX_KEY_DEPTH) {
-            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+            throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
         if (!(key.hasThresholdKey() || key.hasKeyList())) {
@@ -111,12 +118,12 @@ public abstract class JKey implements HederaKey {
      * @param key the current proto Key to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
      * @return the converted JKey instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type or exceeds the allowable depth of nesting.
      */
     public static JKey convertKey(@NonNull final com.hedera.hapi.node.base.Key key, final int depth)
-            throws DecoderException {
+            throws InvalidKeyException {
         if (depth > MAX_KEY_DEPTH) {
-            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+            throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
         if (!(key.hasThresholdKey() || key.hasKeyList())) {
@@ -125,7 +132,7 @@ public abstract class JKey implements HederaKey {
 
         if (key.hasThresholdKey()) {
             final var thresholdKey = key.thresholdKeyOrThrow();
-            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keysOrElse(emptyList());
+            List<com.hedera.hapi.node.base.Key> tKeys = thresholdKey.keys().keysOrElse(Collections.emptyList());
             List<JKey> jkeys = new ArrayList<>();
             for (var aKey : tKeys) {
                 JKey res = convertKey(aKey, depth + 1);
@@ -151,9 +158,9 @@ public abstract class JKey implements HederaKey {
      *
      * @param key proto Key to be converted
      * @return the converted JKey instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type
      */
-    private static JKey convertBasic(Key key) throws DecoderException {
+    private static JKey convertBasic(Key key) throws InvalidKeyException {
         JKey rv;
         if (!key.getEd25519().isEmpty()) {
             byte[] pubKeyBytes = key.getEd25519().toByteArray();
@@ -176,7 +183,7 @@ public abstract class JKey implements HederaKey {
         } else if (!key.getDelegatableContractId().getEvmAddress().isEmpty()) {
             rv = new JDelegatableContractAliasKey(key.getDelegatableContractId());
         } else {
-            throw new DecoderException("Key type not implemented: key=" + key);
+            throw new InvalidKeyException("Key type not implemented: key=" + key);
         }
 
         return rv;
@@ -187,9 +194,9 @@ public abstract class JKey implements HederaKey {
      *
      * @param key proto Key to be converted
      * @return the converted JKey instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type
      */
-    private static JKey convertBasic(final com.hedera.hapi.node.base.Key key) throws DecoderException {
+    private static JKey convertBasic(final com.hedera.hapi.node.base.Key key) throws InvalidKeyException {
         final var oneOf = key.key();
         return switch (oneOf.kind()) {
             case ED25519 -> {
@@ -220,7 +227,7 @@ public abstract class JKey implements HederaKey {
                             .build();
                     yield new JContractIDKey(proto);
                 } else {
-                    throw new DecoderException("Unable to decode contract key=" + key);
+                    throw new InvalidKeyException("Unable to decode contract key=" + key);
                 }
             }
             case DELEGATABLE_CONTRACT_ID -> {
@@ -235,10 +242,10 @@ public abstract class JKey implements HederaKey {
                             .build();
                     yield new JDelegatableContractIDKey(proto);
                 } else {
-                    throw new DecoderException("Unable to decode contract key=" + key);
+                    throw new InvalidKeyException("Unable to decode contract key=" + key);
                 }
             }
-            default -> throw new DecoderException("Key type not implemented: key=" + key);
+            default -> throw new InvalidKeyException("Key type not implemented: key=" + key);
         };
     }
 
@@ -247,9 +254,9 @@ public abstract class JKey implements HederaKey {
      *
      * @param jkey JKey object to be converted
      * @return the converted proto Key instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type
      */
-    static Key convertJKeyBasic(JKey jkey) throws DecoderException {
+    static Key convertJKeyBasic(JKey jkey) throws InvalidKeyException {
         Key rv;
         if (jkey.hasEd25519Key()) {
             rv = Key.newBuilder()
@@ -285,9 +292,11 @@ public abstract class JKey implements HederaKey {
                             jkey.getDelegatableContractAliasKey().getContractID())
                     .build();
         } else {
-            throw new DecoderException("Key type not implemented: key=" + jkey);
+            // Warning: Do Not allow anything that calls toString, equals, or hashCode on JKey here.
+            //          Object.toString calls hashCode, and equals and hashCode both call this method
+            //          so you would create an infinite recursion.
+            throw new InvalidKeyException("Key type not implemented.");
         }
-
         return rv;
     }
 
@@ -297,14 +306,15 @@ public abstract class JKey implements HederaKey {
      * @param jkey the current JKey to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
      * @return the converted proto Key instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type or exceeds the allowable depth of nesting.
      */
-    public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
+    public static Key convertJKey(JKey jkey, int depth) throws InvalidKeyException {
         if (depth > MAX_KEY_DEPTH) {
-            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+            throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
-
-        if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
+        if (jkey.isEmpty()) {
+            return jkey.convertJKeyEmpty();
+        } else if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
             return convertJKeyBasic(jkey);
         } else if (jkey.hasThresholdKey()) {
             List<JKey> jKeys = jkey.getThresholdKey().getKeys().getKeysList();
@@ -318,8 +328,8 @@ public abstract class JKey implements HederaKey {
             Key result = Key.newBuilder()
                     .setThresholdKey(ThresholdKey.newBuilder().setKeys(keys).setThreshold(thd))
                     .build();
-            return (result);
-        } else {
+            return result;
+        } else if (jkey.hasKeyList()) {
             List<JKey> jKeys = jkey.getKeyList().getKeysList();
             List<Key> tkeys = new ArrayList<>();
             for (JKey aKey : jKeys) {
@@ -327,9 +337,19 @@ public abstract class JKey implements HederaKey {
                 tkeys.add(res);
             }
             KeyList keys = KeyList.newBuilder().addAllKeys(tkeys).build();
-            Key result = Key.newBuilder().setKeyList(keys).build();
-            return (result);
+            return Key.newBuilder().setKeyList(keys).build();
+        } else {
+            return Key.newBuilder().build();
         }
+    }
+
+    /**
+     * Convert an empty JKey to an appropriate empty Key.
+     * Typically this just creates a new Key, but subclasses may override with specific behavior.
+     * @return An empty Key.
+     */
+    protected Key convertJKeyEmpty() {
+        return Key.newBuilder().build();
     }
 
     public static boolean equalUpToDecodability(JKey a, JKey b) {
@@ -346,14 +366,38 @@ public abstract class JKey implements HederaKey {
         return Objects.equals(aKey, bKey);
     }
 
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        try {
+            return Objects.equals(mapJKey(this), mapJKey((JKey) other));
+        } catch (InvalidKeyException ignore) {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        try {
+            return Objects.hashCode(mapJKey(this));
+        } catch (InvalidKeyException ignore) {
+            return Integer.MIN_VALUE;
+        }
+    }
+
     /**
      * Maps a JKey instance to a proto Key instance.
      *
      * @param jkey the JKey to be converted
      * @return the converted proto Key instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException If the key is not a valid key type
      */
-    public static Key mapJKey(JKey jkey) throws DecoderException {
+    public static Key mapJKey(JKey jkey) throws InvalidKeyException {
         return convertJKey(jkey, 1);
     }
 

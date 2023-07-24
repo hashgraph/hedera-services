@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -62,14 +62,14 @@ class MerkleDbDataSourceSnapshotMergeTest {
     @MethodSource("provideParameters")
     @Disabled
     void createMergeSnapshotReadBack(
-            final TestType testType, final int internalHashesRamToDiskThreshold, final boolean preferDiskBasedIndexes)
+            final TestType testType, final int hashesRamToDiskThreshold, final boolean preferDiskBasedIndexes)
             throws Exception {
         // Keep track of direct memory used already, so we can check if we leek over and above what we started with
         final long directMemoryUsedAtStart = getDirectMemoryUsedBytes();
         // run test in background thread
         final ExecutorService executorService = Executors.newSingleThreadExecutor();
         final var future = executorService.submit(() -> {
-            createMergeSnapshotReadBackImpl(testType, internalHashesRamToDiskThreshold, preferDiskBasedIndexes);
+            createMergeSnapshotReadBackImpl(testType, hashesRamToDiskThreshold, preferDiskBasedIndexes);
             return null;
         });
         future.get(10, TimeUnit.MINUTES);
@@ -78,21 +78,20 @@ class MerkleDbDataSourceSnapshotMergeTest {
         assertTrue(
                 checkDirectMemoryIsCleanedUpToLessThanBaseUsage(directMemoryUsedAtStart),
                 "Direct Memory used is more than base usage even after 20 gc() calls. At start was "
-                        + (directMemoryUsedAtStart * Units.BYTES_TO_MEBIBYTES) + "MB and is now "
-                        + (getDirectMemoryUsedBytes() * Units.BYTES_TO_MEBIBYTES)
+                        + (directMemoryUsedAtStart * UnitConstants.BYTES_TO_MEBIBYTES) + "MB and is now "
+                        + (getDirectMemoryUsedBytes() * UnitConstants.BYTES_TO_MEBIBYTES)
                         + "MB");
         // check db count
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");
     }
 
     void createMergeSnapshotReadBackImpl(
-            final TestType testType, final int internalHashesRamToDiskThreshold, final boolean preferDiskBasedIndexes)
+            final TestType testType, final int hashesRamToDiskThreshold, final boolean preferDiskBasedIndexes)
             throws IOException, InterruptedException {
         final Path storeDir = Files.createTempDirectory("createMergeSnapshotReadBackImpl");
         final String tableName = "mergeSnapshotReadBack";
         final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource = testType.dataType()
-                .createDataSource(
-                        storeDir, tableName, COUNT, internalHashesRamToDiskThreshold, false, preferDiskBasedIndexes);
+                .createDataSource(storeDir, tableName, COUNT, hashesRamToDiskThreshold, false, preferDiskBasedIndexes);
         final ExecutorService exec = Executors.newCachedThreadPool();
         try {
             // create some internal and leaf nodes in batches
@@ -120,7 +119,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
             exec.submit(() -> {
                 // do a good snapshot
                 try {
-                    dataSource.getDatabase().snapshot(snapshotDir);
+                    dataSource.getDatabase().snapshot(snapshotDir, dataSource);
                 } finally {
                     countDownLatch.countDown();
                 }
@@ -132,7 +131,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                 try {
                     assertThrows(
                             IllegalStateException.class,
-                            () -> dataSource.getDatabase().snapshot(snapshotDir),
+                            () -> dataSource.getDatabase().snapshot(snapshotDir, dataSource),
                             "Snapshot while doing a snapshot should throw a IllegalStateException");
                 } finally {
                     countDownLatch.countDown();
@@ -309,10 +308,8 @@ class MerkleDbDataSourceSnapshotMergeTest {
                 + ((count * 2) - 1));
         // check all the node hashes
         for (int i = 0; i < count; i++) {
-            assertEquals(
-                    hash(i),
-                    dataSource.loadInternalRecord(i).getHash(),
-                    "The hash should not have changed since it was created");
+            final var hash = dataSource.loadHash(i);
+            assertEquals(hash(i), hash, "The hash for [" + i + "] should not have changed since it was created");
         }
         // check all the leaf data
         for (int i = count; i < (count * 2); i++) {

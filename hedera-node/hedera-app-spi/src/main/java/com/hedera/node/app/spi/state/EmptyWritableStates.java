@@ -22,29 +22,36 @@ import java.util.Objects;
 import java.util.Set;
 
 /** An implementation of {@link WritableStates} that is always empty. */
-public final class EmptyWritableStates implements WritableStates {
+public class EmptyWritableStates implements WritableStates {
     @NonNull
     @Override
-    public <K extends Comparable<? super K>, V> WritableKVState<K, V> get(@NonNull String stateKey) {
+    public final <K, V> WritableKVState<K, V> get(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no k/v states");
     }
 
     @NonNull
     @Override
-    public <T> WritableSingletonState<T> getSingleton(@NonNull String stateKey) {
+    public final <T> WritableSingletonState<T> getSingleton(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         throw new IllegalArgumentException("There are no singleton states");
     }
 
+    @NonNull
     @Override
-    public boolean contains(@NonNull String stateKey) {
+    public final <E> WritableQueueState<E> getQueue(@NonNull final String stateKey) {
+        Objects.requireNonNull(stateKey);
+        throw new IllegalArgumentException("There are no queue states");
+    }
+
+    @Override
+    public final boolean contains(@NonNull final String stateKey) {
         return false;
     }
 
     @NonNull
     @Override
-    public Set<String> stateKeys() {
+    public final Set<String> stateKeys() {
         return Collections.emptySet();
     }
 }

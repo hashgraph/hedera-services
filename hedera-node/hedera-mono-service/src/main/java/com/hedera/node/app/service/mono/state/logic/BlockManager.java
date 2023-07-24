@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ethHashFrom;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION;
-import static com.hedera.node.app.spi.config.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class BlockManager {
-    public static final int UNKNOWN_BLOCK_NO = 0;
+    public static final int UNKNOWN_BLOCK_NO = -1;
     private static final Logger log = LogManager.getLogger(BlockManager.class);
 
     private final long blockPeriodMs;

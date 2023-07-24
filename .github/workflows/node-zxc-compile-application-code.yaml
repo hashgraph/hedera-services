@@ -48,6 +48,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-dependency-check:
+        description: "Dependency Scope Check Enabled"
+        type: boolean
+        required: false
+        default: false
       enable-snyk-scan:
         description: "Snyk Scan Enabled"
         type: boolean
@@ -156,13 +161,21 @@ jobs:
           gradle-version: ${{ inputs.gradle-version }}
           arguments: spotlessCheck --scan
 
+      - name: Gradle Dependency Scopes Check
+        uses: gradle/gradle-build-action@v2
+        if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        with:
+          build-root-directory: ${{ github.workspace }}/platform-sdk
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: checkAllModuleInfo --scan --continue
+
       - name: Unit Testing
         id: gradle-test
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: check --scan
+          arguments: check --continue --scan
 
       - name: Publish Unit Test Report
         uses: actionite/publish-unit-test-result-action@1e01e49081c6c4073913aa4b7980fa83e709f322 # pin@v2
@@ -172,6 +185,12 @@ jobs:
           check_run_disabled: true
           json_thousands_separator: ','
           junit_files: "**/build/test-results/test/TEST-*.xml"
+
+      - name: Setup Docker BuildX
+        if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: v0.11.0
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
@@ -355,9 +374,14 @@ jobs:
             !cancelled()
           }}
         run: |
-          snyk-to-html -i snyk-test.json -o snyk-test.html --summary
-          html-to-markdown snyk-test.html -o snyk
-          cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
-          snyk-to-html -i snyk-code.json -o snyk-code.html --summary
-          html-to-markdown snyk-code.html -o snyk
-          cat snyk/snyk-code.html.md >> $GITHUB_STEP_SUMMARY
+          if [[ -f "snyk-test.json" ]]; then
+            snyk-to-html -i snyk-test.json -o snyk-test.html --summary
+            html-to-markdown snyk-test.html -o snyk
+            cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ -f "snyk-code.json" ]]; then
+            snyk-to-html -i snyk-code.json -o snyk-code.html --summary
+            html-to-markdown snyk-code.html -o snyk
+            cat snyk/snyk-code.html.md >> $GITHUB_STEP_SUMMARY
+          fi

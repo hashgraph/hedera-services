@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DUR
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_START;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
@@ -33,12 +34,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -53,19 +53,26 @@ import com.hedera.hapi.node.consensus.ConsensusCreateTopicTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
@@ -80,7 +87,7 @@ final class TransactionCheckerTest extends AppTestBase {
     /** The standard {@link TransactionBody#transactionValidDuration()} for most tests */
     private static final Duration ONE_MINUTE = Duration.newBuilder().seconds(60).build();
 
-    private GlobalDynamicProperties props;
+    private ConfigProvider props;
 
     private Transaction tx;
     private SignatureMap signatureMap;
@@ -113,8 +120,15 @@ final class TransactionCheckerTest extends AppTestBase {
     }
 
     private SignatureMap.Builder sigMapBuilder() {
-        final var sigPair = SignaturePair.newBuilder().ed25519(randomBytes(64)).build();
-        return SignatureMap.newBuilder().sigPair(sigPair);
+        final var sigPair = SignaturePair.newBuilder()
+                .pubKeyPrefix(Bytes.wrap(new byte[] {1, 2, 3, 4, 5}))
+                .ed25519(randomBytes(64))
+                .build();
+        final var sigPair2 = SignaturePair.newBuilder()
+                .pubKeyPrefix(Bytes.wrap(new byte[] {1, 2, 7}))
+                .ed25519(randomBytes(64))
+                .build();
+        return SignatureMap.newBuilder().sigPair(sigPair, sigPair2);
     }
 
     private SignedTransaction.Builder signedTxBuilder(TransactionBody.Builder txBody, SignatureMap.Builder sigMap) {
@@ -151,11 +165,14 @@ final class TransactionCheckerTest extends AppTestBase {
         inputBuffer = Bytes.wrap(asByteArray(tx));
 
         // Set up the properties
-        props = mock(GlobalDynamicProperties.class);
-        when(props.maxMemoUtf8Bytes()).thenReturn(MAX_MEMO_SIZE);
-        when(props.minTxnDuration()).thenReturn(MIN_DURATION);
-        when(props.maxTxnDuration()).thenReturn(MAX_DURATION);
-        when(props.minValidityBuffer()).thenReturn(MIN_VALIDITY_BUFFER);
+        props = () -> new VersionedConfigImpl(
+                HederaTestConfigBuilder.create()
+                        .withValue("hedera.transaction.maxMemoUtf8Bytes", MAX_MEMO_SIZE)
+                        .withValue("hedera.transaction.minValidityBufferSecs", MIN_VALIDITY_BUFFER)
+                        .withValue("hedera.transaction.minValidDuration", MIN_DURATION)
+                        .withValue("hedera.transaction.maxValidDuration", MAX_DURATION)
+                        .getOrCreateConfig(),
+                1);
 
         // And create the checker itself
         checker = new TransactionChecker(MAX_TX_SIZE, nodeSelfAccountId, props, metrics);
@@ -505,6 +522,55 @@ final class TransactionCheckerTest extends AppTestBase {
                 // And the deprecation counter is incremented, but not the super-deprecation counter
                 assertThat(counterMetric("DeprTxnsRcv").get()).isEqualTo(1);
                 assertThat(counterMetric("SuperDeprTxnsRcv").get()).isZero();
+            }
+        }
+
+        @Nested
+        @DisplayName("Signing Key  Mismatch Tests")
+        final class MismatchTests {
+
+            static Stream<Arguments> badPrefixesInSigMap() {
+                return Stream.of(
+                        Arguments.of(Named.of("Two empty prefixes", (Object) new byte[][] {{}, {}})),
+                        Arguments.of(Named.of("Duplicate prefixes", (Object) new byte[][] {{1, 2, 3}, {1, 2, 3}})),
+                        Arguments.of(Named.of("Duplicate prefixes with unique prefix between", (Object)
+                                new byte[][] {{1, 2, 3}, {7, 8, 9}, {1, 2, 3}})),
+                        Arguments.of(Named.of("Unique prefix followed by two duplicate prefixes", (Object)
+                                new byte[][] {{7, 8, 9}, {1, 2, 3}, {1, 2, 3}})),
+                        Arguments.of(Named.of("Duplicate prefixes followed by a unique prefix", (Object)
+                                new byte[][] {{1, 2, 3}, {1, 2, 3}, {7, 8, 9}})),
+                        Arguments.of(Named.of(
+                                "Prefix P followed by a prefix of P", (Object) new byte[][] {{1, 2, 3}, {1, 2}})),
+                        Arguments.of(Named.of("Prefix P followed by unique prefix followed by prefix of P", (Object)
+                                new byte[][] {{1, 2, 3}, {6, 7, 8}, {1, 2}})),
+                        Arguments.of(Named.of(
+                                "Prefix P preceded by a prefix of P", (Object) new byte[][] {{1, 2}, {1, 2, 3}})),
+                        Arguments.of(Named.of("Little prefix of prefix P, unique prefix, then prefix P", (Object)
+                                new byte[][] {{1, 2}, {6, 7, 8}, {1, 2, 3}})),
+                        Arguments.of(Named.of(
+                                "Empty Prefix followed by non-empty Prefix", (Object) new byte[][] {{}, {6, 7, 8}})));
+            }
+
+            @ParameterizedTest
+            @DisplayName("Duplicate Prefixes and Prefixes of Prefixes")
+            @MethodSource("badPrefixesInSigMap")
+            void badPrefixes(byte[]... prefixes) {
+                // Given a signature map with some prefixes that are identical
+                final var localSignatureMap = SignatureMap.newBuilder()
+                        .sigPair(Arrays.stream(prefixes)
+                                .map(prefix -> SignaturePair.newBuilder()
+                                        .pubKeyPrefix(Bytes.wrap(prefix))
+                                        .ed25519(randomBytes(64))
+                                        .build())
+                                .collect(toList()))
+                        .build();
+                final var localTx =
+                        txBuilder(signedTxBuilder(txBody, localSignatureMap)).build();
+
+                // When we check the transaction, we find it is invalid due to duplicate prefixes
+                assertThatThrownBy(() -> checker.check(localTx))
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(KEY_PREFIX_MISMATCH));
             }
         }
 

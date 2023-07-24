@@ -19,13 +19,15 @@ package com.swirlds.platform.state.iss;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_HASH;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.sequence.map.ConcurrentSequenceMap;
 import com.swirlds.common.sequence.map.SequenceMap;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.Time;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.logging.payloads.IssPayload;
 import com.swirlds.platform.dispatch.DispatchBuilder;
@@ -39,7 +41,9 @@ import com.swirlds.platform.dispatch.triggers.flow.StateHashedTrigger;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.iss.internal.RoundHashValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,12 +85,9 @@ public class ConsensusHashManager {
     /**
      * Create an object that tracks reported hashes and detects ISS events.
      *
-     * @param dispatchBuilder
-     * 		responsible for building dispatchers
-     * @param addressBook
-     * 		the address book for the network
-     * @param consensusConfig
-     * 		consensus configuration
+     * @param dispatchBuilder responsible for building dispatchers
+     * @param addressBook     the address book for the network
+     * @param consensusConfig consensus configuration
      */
     public ConsensusHashManager(
             final Time time,
@@ -116,8 +117,7 @@ public class ConsensusHashManager {
     /**
      * Observes when a round has been completed.
      *
-     * @param round
-     * 		the round that was just completed
+     * @param round the round that was just completed
      */
     public void roundCompleted(final long round) {
         if (round <= previousRound) {
@@ -144,10 +144,8 @@ public class ConsensusHashManager {
     /**
      * Handle a round that has become old enough that we want to stop tracking data on it.
      *
-     * @param round
-     * 		the round that is old
-     * @param roundHashValidator
-     * 		the hash validator for the round
+     * @param round              the round that is old
+     * @param roundHashValidator the hash validator for the round
      */
     private void handleRemovedRound(final long round, final RoundHashValidator roundHashValidator) {
         final boolean justDecided = roundHashValidator.outOfTime();
@@ -176,30 +174,30 @@ public class ConsensusHashManager {
      * </p>
      *
      * <p>
-     * Since it is only possible to sign a round after it has reached consensus,
-     * it is guaranteed that any valid signature transaction observed here
-     * (post consensus) will be for a round in the past.
+     * Since it is only possible to sign a round after it has reached consensus, it is guaranteed that any valid
+     * signature transaction observed here (post consensus) will be for a round in the past.
      * </p>
      *
-     * @param round
-     * 		the round that was signed
-     * @param signerId
-     * 		the ID of the signer
-     * @param hash
-     * 		the hash that was signed
+     * @param signerId             the ID of the node that signed the state
+     * @param signatureTransaction the signature transaction
      */
-    public void postConsensusSignatureObserver(final Long round, final Long signerId, final Hash hash) {
+    public void handlePostconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
+
+        Objects.requireNonNull(signerId);
+        Objects.requireNonNull(signatureTransaction);
 
         final long nodeWeight = addressBook.getAddress(signerId).getWeight();
 
-        final RoundHashValidator roundValidator = roundData.get(round);
+        final RoundHashValidator roundValidator = roundData.get(signatureTransaction.getRound());
         if (roundValidator == null) {
             // We are being asked to validate a signature from the far future or far past, or a round that has already
             // been decided.
             return;
         }
 
-        final boolean decided = roundValidator.reportHashFromNetwork(signerId, nodeWeight, hash);
+        final boolean decided =
+                roundValidator.reportHashFromNetwork(signerId, nodeWeight, signatureTransaction.getStateHash());
         if (decided) {
             checkValidity(roundValidator);
         }
@@ -208,10 +206,8 @@ public class ConsensusHashManager {
     /**
      * Observe when this node finishes hashing a state.
      *
-     * @param round
-     * 		the round of the state
-     * @param hash
-     * 		the hash of the state
+     * @param round the round of the state
+     * @param hash  the hash of the state
      */
     @Observer(value = StateHashedTrigger.class, comment = "check hash derived by this node")
     public void stateHashedObserver(final Long round, final Hash hash) {
@@ -230,10 +226,8 @@ public class ConsensusHashManager {
     /**
      * Observe when an overriding state is obtained, i.e. via reconnect or state loading.
      *
-     * @param round
-     * 		the round of the state that was obtained
-     * @param stateHash
-     * 		the hash of the state that was obtained
+     * @param round     the round of the state that was obtained
+     * @param stateHash the hash of the state that was obtained
      */
     @Observer(
             value = {DiskStateLoadedTrigger.class, ReconnectStateLoadedTrigger.class},
@@ -246,8 +240,7 @@ public class ConsensusHashManager {
     /**
      * Called once the validity has been decided. Take action based on the validity status.
      *
-     * @param roundValidator
-     * 		the validator for the round
+     * @param roundValidator the validator for the round
      */
     private void checkValidity(final RoundHashValidator roundValidator) {
         final long round = roundValidator.getRound();
@@ -270,8 +263,7 @@ public class ConsensusHashManager {
     /**
      * This node doesn't agree with the consensus hash.
      *
-     * @param roundHashValidator
-     * 		the validator responsible for validating the round with a self ISS
+     * @param roundHashValidator the validator responsible for validating the round with a self ISS
      */
     private void handleSelfIss(final RoundHashValidator roundHashValidator) {
         final long round = roundHashValidator.getRound();
@@ -279,7 +271,7 @@ public class ConsensusHashManager {
         final Hash consensusHash = roundHashValidator.getConsensusHash();
 
         final long skipCount = selfIssRateLimiter.getDeniedRequests();
-        if (selfIssRateLimiter.request()) {
+        if (selfIssRateLimiter.requestAndTrigger()) {
 
             final StringBuilder sb = new StringBuilder();
             sb.append("Invalid State Signature (ISS): this node has the wrong hash for round ")
@@ -300,8 +292,7 @@ public class ConsensusHashManager {
     /**
      * There has been a catastrophic ISS or a catastrophic lack of data.
      *
-     * @param roundHashValidator
-     * 		information about the round, including the signatures that were gathered
+     * @param roundHashValidator information about the round, including the signatures that were gathered
      */
     private void handleCatastrophic(final RoundHashValidator roundHashValidator) {
 
@@ -310,7 +301,7 @@ public class ConsensusHashManager {
         final Hash selfHash = roundHashValidator.getSelfStateHash();
 
         final long skipCount = catastrophicIssRateLimiter.getDeniedRequests();
-        if (catastrophicIssRateLimiter.request()) {
+        if (catastrophicIssRateLimiter.requestAndTrigger()) {
 
             final StringBuilder sb = new StringBuilder();
             sb.append("Catastrophic Invalid State Signature (ISS)\n");
@@ -329,12 +320,11 @@ public class ConsensusHashManager {
     /**
      * We are not getting the signatures we need to be getting. ISS events may be going undetected.
      *
-     * @param roundHashValidator
-     * 		information about the round
+     * @param roundHashValidator information about the round
      */
     private void handleLackOfData(final RoundHashValidator roundHashValidator) {
         final long skipCount = lackingSignaturesRateLimiter.getDeniedRequests();
-        if (!lackingSignaturesRateLimiter.request()) {
+        if (!lackingSignaturesRateLimiter.requestAndTrigger()) {
             return;
         }
 

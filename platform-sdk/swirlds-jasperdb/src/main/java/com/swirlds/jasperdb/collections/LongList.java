@@ -16,7 +16,7 @@
 
 package com.swirlds.jasperdb.collections;
 
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.jasperdb.utilities.JasperDBFileUtils;

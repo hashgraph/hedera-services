@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -364,7 +365,7 @@ public class Token {
         validateTrue(
                 treasuryRel.hasInvolvedIds(id, treasury.getId()),
                 FAIL_INVALID,
-                "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
+                () -> "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
@@ -374,7 +375,7 @@ public class Token {
             validateTrue(
                     maxSupply >= newTotalSupply,
                     TOKEN_MAX_SUPPLY_REACHED,
-                    "Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
+                    () -> "Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
         }
         final var treasuryAccount = treasuryRel.getAccount();
         final long newTreasuryBalance = treasuryRel.getBalance() + amount;
@@ -410,8 +411,8 @@ public class Token {
         validateTrue(newAccountBalance >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate account balance");
     }
 
-    private String errorMessage(final String op, final long amount, final TokenRelationship rel) {
-        return "Cannot " + op + " " + amount + " units of " + this + " from " + rel;
+    private Supplier<String> errorMessage(final String op, final long amount, final TokenRelationship rel) {
+        return () -> "Cannot " + op + " " + amount + " units of " + this + " from " + rel;
     }
 
     public Account getTreasury() {

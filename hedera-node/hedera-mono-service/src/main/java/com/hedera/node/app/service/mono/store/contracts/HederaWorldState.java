@@ -34,14 +34,17 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -73,12 +76,13 @@ public class HederaWorldState implements HederaMutableWorldState {
     private final FunctionalityThrottling handleThrottling;
     private final SigImpactHistorian sigImpactHistorian;
     private final List<ContractID> provisionalContractCreations = new LinkedList<>();
+    private final Map<ContractID, Long> contractNonces =
+            new TreeMap<>(Comparator.comparingLong(ContractID::getContractNum));
     private final GlobalDynamicProperties dynamicProperties;
-
+    private final RecordsHistorian recordsHistorian;
+    private final CodeCache codeCache;
     // If non-null, the new contract customizations requested by the HAPI contractCreate sender
     private ContractCustomizer hapiSenderCustomizer;
-
-    private final CodeCache codeCache;
 
     @Inject
     public HederaWorldState(
@@ -88,7 +92,8 @@ public class HederaWorldState implements HederaMutableWorldState {
             final CodeCache codeCache,
             final SigImpactHistorian sigImpactHistorian,
             final GlobalDynamicProperties dynamicProperties,
-            final @HandleThrottle FunctionalityThrottling handleThrottling) {
+            final @HandleThrottle FunctionalityThrottling handleThrottling,
+            @NonNull final RecordsHistorian recordsHistorian) {
         this.ids = ids;
         this.usageLimits = usageLimits;
         this.entityAccess = entityAccess;
@@ -96,6 +101,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.sigImpactHistorian = sigImpactHistorian;
         this.dynamicProperties = dynamicProperties;
         this.handleThrottling = handleThrottling;
+        this.recordsHistorian = recordsHistorian;
     }
 
     /* Used to manage static calls. */
@@ -109,6 +115,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         this.usageLimits = null;
         this.handleThrottling = null;
         this.sigImpactHistorian = null;
+        this.recordsHistorian = null;
         this.codeCache = codeCache;
         this.dynamicProperties = dynamicProperties;
     }
@@ -127,25 +134,38 @@ public class HederaWorldState implements HederaMutableWorldState {
         return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ContractCustomizer hapiSenderCustomizer() {
         return hapiSenderCustomizer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void clearProvisionalContractCreations() {
         provisionalContractCreations.clear();
     }
 
-    /** {@inheritDoc} */
+    @Override
+    public void clearContractNonces() {
+        contractNonces.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setHapiSenderCustomizer(final ContractCustomizer customizer) {
         hapiSenderCustomizer = customizer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void resetHapiSenderCustomizer() {
         hapiSenderCustomizer = null;
@@ -160,6 +180,11 @@ public class HederaWorldState implements HederaMutableWorldState {
         final var copy = new ArrayList<>(provisionalContractCreations);
         copy.sort(CONTRACT_ID_COMPARATOR);
         return copy;
+    }
+
+    @Override
+    public Map<ContractID, Long> getContractNonces() {
+        return contractNonces;
     }
 
     @Override
@@ -297,6 +322,7 @@ public class HederaWorldState implements HederaMutableWorldState {
             trackNewlyCreatedAccounts(
                     entityAccess,
                     wrapped.provisionalContractCreations,
+                    wrapped.contractNonces,
                     impactHistorian,
                     getDeletedAccountAddresses(),
                     updatedAccounts);
@@ -309,6 +335,9 @@ public class HederaWorldState implements HederaMutableWorldState {
                     validateResourceLimit(creationCapacity, CONSENSUS_GAS_EXHAUSTED);
                 }
             }
+            final var consThrottleCapacityIsAvailable =
+                    Objects.requireNonNull(wrapped.recordsHistorian).hasThrottleCapacityForChildTransactions();
+            validateResourceLimit(consThrottleCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
             // Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
             commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
             entityAccess.recordNewKvUsageTo(trackingAccounts());
@@ -322,6 +351,7 @@ public class HederaWorldState implements HederaMutableWorldState {
         private void trackNewlyCreatedAccounts(
                 final EntityAccess entityAccess,
                 final List<ContractID> provisionalCreations,
+                final Map<ContractID, Long> contractNonces,
                 final SigImpactHistorian impactHistorian,
                 final Collection<Address> deletedAddresses,
                 final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
@@ -338,6 +368,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 
                 final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
                 trackIfNewlyCreated(accountId, entityAccess, provisionalCreations);
+
+                if (dynamicProperties.isContractsNoncesExternalizationEnabled()) {
+                    trackContractNonces(accountId, entityAccess, contractNonces);
+                }
             }
         }
 
@@ -353,6 +387,29 @@ public class HederaWorldState implements HederaMutableWorldState {
             final var isSmartContract = (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
             if (Boolean.TRUE.equals(isSmartContract) && !entityAccess.isExtant(asTypedEvmAddress(accountId))) {
                 provisionalContractCreations.add(asContract(accountId));
+            }
+        }
+
+        void trackContractNonces(
+                final AccountID accountId,
+                final EntityAccess entityAccess,
+                final Map<ContractID, Long> contractNonces) {
+            final var accounts = trackingAccounts();
+            if (!accounts.contains(accountId)) {
+                log.error("Account {} missing in tracking ledgers", accountId);
+                return;
+            }
+            final var isSmartContract = (Boolean) trackingAccounts().get(accountId, AccountProperty.IS_SMART_CONTRACT);
+            if (Boolean.TRUE.equals(isSmartContract)) {
+                final var trackingNonce = ((long) trackingAccounts().get(accountId, AccountProperty.ETHEREUM_NONCE));
+                if (entityAccess.isExtant(asTypedEvmAddress(accountId))) {
+                    final var stateNonce = entityAccess.getNonce(asTypedEvmAddress(accountId));
+                    if (trackingNonce > stateNonce) {
+                        contractNonces.put(asContract(accountId), trackingNonce);
+                    }
+                } else {
+                    contractNonces.put(asContract(accountId), trackingNonce);
+                }
             }
         }
 

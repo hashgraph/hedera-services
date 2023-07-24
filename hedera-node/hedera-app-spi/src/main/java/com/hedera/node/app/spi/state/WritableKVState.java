@@ -29,7 +29,7 @@ import java.util.Set;
  * @param <V> The value, which must be of the appropriate kind depending on whether it is stored in
  *     memory, or on disk.
  */
-public interface WritableKVState<K extends Comparable<? super K>, V> extends ReadableKVState<K, V> {
+public interface WritableKVState<K, V> extends ReadableKVState<K, V> {
 
     /**
      * Gets the value associated with the given key in a <strong>READ-WRITE</strong> way. The
@@ -44,6 +44,17 @@ public interface WritableKVState<K extends Comparable<? super K>, V> extends Rea
     V getForModify(@NonNull K key);
 
     /**
+     * Gets the original value associated with the given key before any modifications were made to
+     * it. The returned value will be {@code null} if the key does not exist.
+     *
+     * @param key The key. Cannot be null, otherwise an exception is thrown.
+     * @return The original value, or null if there is no such key in the state
+     * @throws NullPointerException if the key is null.
+     */
+    @Nullable
+    V getOriginalValue(@NonNull K key);
+
+    /**
      * Adds a new value to the store, or updates an existing value. It is generally preferred to use
      * {@link #getForModify(K)} to get a writable value, and only use this method if the key does
      * not already exist in the store.
@@ -56,8 +67,8 @@ public interface WritableKVState<K extends Comparable<? super K>, V> extends Rea
 
     /**
      * Removes the given key and its associated value from the map. Subsequent calls to {@link
-     * #contains(Comparable)} with the given key will return false, and subsequent calls to {@link
-     * #get(Comparable)} and {@link #getForModify(Comparable)} will return empty optionals.
+     * #contains} with the given key will return false, and subsequent calls to {@link
+     * #get} and {@link #getForModify} will return empty optionals.
      *
      * @param key The key representing the key/value to remove. Cannot be null.
      * @throws NullPointerException if the key or value is null.
@@ -89,4 +100,13 @@ public interface WritableKVState<K extends Comparable<? super K>, V> extends Rea
      */
     @NonNull
     Set<K> modifiedKeys();
+
+    /**
+     * Returns {@code true} if this {@link WritableKVState} has been modified since it was created
+     *
+     * @return {@code true} if this {@link WritableKVState} has been modified since it was created
+     */
+    default boolean isModified() {
+        return !modifiedKeys().isEmpty();
+    }
 }

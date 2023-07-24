@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.test.event.generator;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.test.event.IndexedEvent;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -45,7 +47,7 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
     private Random random;
 
     /** A map that holds the maximum event generation for each creator */
-    private final Map<Long, Long> maxGenerationPerCreator;
+    private final Map<NodeId, Long> maxGenerationPerCreator;
 
     protected AbstractGraphGenerator(final long initialSeed) {
         this.initialSeed = initialSeed;
@@ -122,7 +124,7 @@ public abstract class AbstractGraphGenerator<T extends AbstractGraphGenerator<T>
      * {@inheritDoc}
      */
     @Override
-    public long getMaxGeneration(final long creatorId) {
+    public long getMaxGeneration(@Nullable final NodeId creatorId) {
         return maxGenerationPerCreator.getOrDefault(creatorId, EventConstants.GENERATION_UNDEFINED);
     }
 

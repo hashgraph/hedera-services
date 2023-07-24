@@ -40,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -49,11 +52,11 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.AssertionUtils;
-import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.test.fixtures.AssertionUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
-import com.swirlds.platform.state.StateSettings;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
@@ -77,7 +80,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("SignedState Read/Write Test")
 class SignedStateFileReadWriteTest {
 
-    private static final NodeId SELF_ID = new NodeId(false, 1234);
+    private static final NodeId SELF_ID = new NodeId(1234);
     private static final String MAIN_CLASS_NAME = "com.swirlds.foobar";
     private static final String SWIRLD_NAME = "mySwirld";
     /**
@@ -102,12 +105,14 @@ class SignedStateFileReadWriteTest {
 
         final State state = new RandomSignedStateGenerator().build().getState();
         writeHashInfoFile(testDirectory, state);
+        final StateConfig stateConfig =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
         final Path hashInfoFile = testDirectory.resolve(SignedStateFileUtils.HASH_INFO_FILE_NAME);
         assertTrue(exists(hashInfoFile), "file should exist");
 
         final String hashInfoString = new MerkleTreeVisualizer(state)
-                .setDepth(StateSettings.getDebugHashDepth())
+                .setDepth(stateConfig.debugHashDepth())
                 .render();
 
         final StringBuilder sb = new StringBuilder();
@@ -129,17 +134,19 @@ class SignedStateFileReadWriteTest {
         writeStateFile(testDirectory, signedState);
         assertTrue(exists(stateFile), "signed state file should be present");
 
-        final DeserializedSignedState deserializedSignedState = readStateFile(stateFile);
+        final DeserializedSignedState deserializedSignedState =
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
         MerkleCryptoFactory.getInstance()
-                .digestTreeSync(deserializedSignedState.signedState().getState());
+                .digestTreeSync(
+                        deserializedSignedState.reservedSignedState().get().getState());
 
         assertNotNull(deserializedSignedState.originalHash(), "hash should not be null");
         assertEquals(signedState.getState().getHash(), deserializedSignedState.originalHash(), "hash should match");
         assertEquals(
                 signedState.getState().getHash(),
-                deserializedSignedState.signedState().getState().getHash(),
+                deserializedSignedState.reservedSignedState().get().getState().getHash(),
                 "hash should match");
-        assertNotSame(signedState, deserializedSignedState.signedState(), "state should be a different object");
+        assertNotSame(signedState, deserializedSignedState.reservedSignedState(), "state should be a different object");
     }
 
     @Test
@@ -154,7 +161,7 @@ class SignedStateFileReadWriteTest {
         final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-        writeSignedStateToDisk(0, directory, signedState, "test");
+        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test");
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
@@ -165,95 +172,95 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("getSignedStateBaseDirectory() Test")
     void getSignedStateBaseDirectoryTest() {
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
 
         assertEquals(getAbsolutePath("./data/saved"), getSignedStatesBaseDirectory(), "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
+        changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(getAbsolutePath("./foo/bar/baz"), getSignedStatesBaseDirectory(), "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
     }
 
     @Test
     @DisplayName("getSignedStatesDirectoryForApp() Test")
     void getSignedStatesDirectoryForAppTest() {
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar"),
                 getSignedStatesDirectoryForApp("com.swirlds.foobar"),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
+        changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo"),
                 getSignedStatesDirectoryForApp("com.swirlds.barfoo"),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
     }
 
     @Test
     @DisplayName("getSignedStatesDirectoryForNode() Test")
     void getSignedStatesDirectoryForNodeTest() {
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234"),
-                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(false, 1234)),
+                getSignedStatesDirectoryForNode("com.swirlds.foobar", new NodeId(1234)),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
+        changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321"),
-                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(false, 4321)),
+                getSignedStatesDirectoryForNode("com.swirlds.barfoo", new NodeId(4321)),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
     }
 
     @Test
     @DisplayName("getSignedStatesDirectoryForSwirld() Test")
     void getSignedStatesDirectoryForSwirldTest() {
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(false, 1234), "mySwirld"),
+                getSignedStatesDirectoryForSwirld("com.swirlds.foobar", new NodeId(1234), "mySwirld"),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
+        changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld"),
-                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(false, 4321), "myOtherSwirld"),
+                getSignedStatesDirectoryForSwirld("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld"),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
     }
 
     @Test
     @DisplayName("getSignedStateDirectory() Test")
     void getSignedStateDirectoryTest() {
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
 
         assertEquals(
                 getAbsolutePath("./data/saved/com.swirlds.foobar/1234/mySwirld/1337"),
-                getSignedStateDirectory("com.swirlds.foobar", new NodeId(false, 1234), "mySwirld", 1337),
+                getSignedStateDirectory("com.swirlds.foobar", new NodeId(1234), "mySwirld", 1337),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "foo/bar/baz";
+        changeConfigAndConfigHolder("foo/bar/baz");
 
         assertEquals(
                 getAbsolutePath("./foo/bar/baz/com.swirlds.barfoo/4321/myOtherSwirld/42"),
-                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(false, 4321), "myOtherSwirld", 42),
+                getSignedStateDirectory("com.swirlds.barfoo", new NodeId(4321), "myOtherSwirld", 42),
                 "unexpected saved state file");
 
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
     }
 
     @SuppressWarnings("resource")
@@ -262,14 +269,10 @@ class SignedStateFileReadWriteTest {
     void cleanStateDirectoryTest() throws IOException {
 
         // The saved state directory is still accessed through settings, so set both here
-        Settings.getInstance().getState().savedStateDirectory =
-                testDirectory.resolve("data/saved").toString();
-        final TestConfigBuilder configBuilder = new TestConfigBuilder()
-                .withValue(
-                        "state.savedStateDirectory",
-                        testDirectory.resolve("data/saved").toString());
+
         final PlatformContext context = TestPlatformContextBuilder.create()
-                .withConfigBuilder(configBuilder)
+                .withConfiguration(changeConfigAndConfigHolder(
+                        testDirectory.resolve("data/saved").toString()))
                 .build();
 
         final SignedStateMetrics signedStateMetrics = mock(SignedStateMetrics.class);
@@ -285,7 +288,8 @@ class SignedStateFileReadWriteTest {
                 SELF_ID,
                 SWIRLD_NAME,
                 (ss, path, success) -> {},
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         final int rounds = 3;
@@ -347,6 +351,14 @@ class SignedStateFileReadWriteTest {
             assertTrue(Files.exists(stateFile), "Signed state file " + stateFile + " does not exist");
         }
 
-        Settings.getInstance().getState().savedStateDirectory = "data/saved";
+        changeConfigAndConfigHolder("data/saved");
+    }
+
+    private Configuration changeConfigAndConfigHolder(String directory) {
+        final Configuration config = new TestConfigBuilder()
+                .withValue("state.savedStateDirectory", directory)
+                .getOrCreateConfig();
+        ConfigurationHolder.getInstance().setConfiguration(config);
+        return config;
     }
 }

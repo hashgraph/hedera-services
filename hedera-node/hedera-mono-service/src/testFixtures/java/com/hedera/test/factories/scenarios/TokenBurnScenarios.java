@@ -18,12 +18,18 @@ package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.TokenBurnFactory.newSignedTokenBurn;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 public enum TokenBurnScenarios implements TxnHandlingScenario {
     BURN_WITH_SUPPLY_KEYED_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(newSignedTokenBurn()
                     .burning(KNOWN_TOKEN_WITH_SUPPLY)
                     .nonPayerKts(TOKEN_SUPPLY_KT)
@@ -32,14 +38,18 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
     },
     BURN_WITH_MISSING_TOKEN {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
                     newSignedTokenBurn().burning(MISSING_TOKEN).get());
         }
     },
     BURN_FOR_TOKEN_WITHOUT_SUPPLY {
         @Override
-        public PlatformTxnAccessor platformTxn() throws Throwable {
+        public PlatformTxnAccessor platformTxn()
+                throws InvalidProtocolBufferException, SignatureException, NoSuchAlgorithmException,
+                        InvalidKeyException {
             return PlatformTxnAccessor.from(
                     newSignedTokenBurn().burning(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
         }

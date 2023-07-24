@@ -1658,7 +1658,9 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                         getAccountBalance(SENDER).hasTinyBars(transferAmount),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance),
                         getScheduleInfo(BASIC_XFER).isExecuted(),
-                        getTxnRecord(CREATE_TXN).scheduled().hasCostAnswerPrecheck(ACCOUNT_DELETED));
+                        getTxnRecord(CREATE_TXN)
+                                .scheduled()
+                                .hasPriority(recordWith().status(INSUFFICIENT_PAYER_BALANCE)));
     }
 
     public HapiSpec executionWithCustomPayerButAccountDeletedFails() {

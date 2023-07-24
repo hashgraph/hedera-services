@@ -16,14 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -38,19 +43,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WritableTokenRelationStoreTest {
     private static final long TOKEN_10 = 10L;
+    private static final TokenID TOKEN_10_ID =
+            TokenID.newBuilder().tokenNum(TOKEN_10).build();
     private static final long ACCOUNT_20 = 20L;
+    private static final AccountID ACCOUNT_20_ID =
+            AccountID.newBuilder().accountNum(ACCOUNT_20).build();
 
     @Mock
     private WritableStates states;
 
     @Mock
-    private WritableKVStateBase<EntityNumPair, TokenRelation> tokenRelState;
+    private WritableKVStateBase<EntityIDPair, TokenRelation> tokenRelState;
 
     private WritableTokenRelationStore subject;
 
     @BeforeEach
     void setUp() {
-        given(states.<EntityNumPair, TokenRelation>get("TOKEN_RELATIONS")).willReturn(tokenRelState);
+        given(states.<EntityIDPair, TokenRelation>get(TokenServiceImpl.TOKEN_RELS_KEY))
+                .willReturn(tokenRelState);
 
         subject = new WritableTokenRelationStore(states);
     }
@@ -64,13 +74,18 @@ class WritableTokenRelationStoreTest {
     @Test
     void testPut() {
         final var expectedTokenRel = TokenRelation.newBuilder()
-                .tokenNumber(TOKEN_10)
-                .accountNumber(ACCOUNT_20)
+                .accountId(ACCOUNT_20_ID)
+                .tokenId(TOKEN_10_ID)
                 .build();
-        final var expectedEntityNumPair = EntityNumPair.fromLongs(TOKEN_10, ACCOUNT_20);
 
         subject.put(expectedTokenRel);
-        verify(tokenRelState).put(expectedEntityNumPair, expectedTokenRel);
+        verify(tokenRelState)
+                .put(
+                        EntityIDPair.newBuilder()
+                                .accountId(ACCOUNT_20_ID)
+                                .tokenId(TOKEN_10_ID)
+                                .build(),
+                        expectedTokenRel);
     }
 
     @Test
@@ -80,46 +95,54 @@ class WritableTokenRelationStoreTest {
     }
 
     @Test
-    void testCommit() {
-        subject.commit();
-        verify(tokenRelState).commit();
-    }
-
-    @Test
     void testGet() {
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(TOKEN_10)
-                .accountNumber(ACCOUNT_20)
+                .tokenId(TOKEN_10_ID)
+                .accountId(ACCOUNT_20_ID)
                 .build();
-        given(tokenRelState.get(notNull())).willReturn(tokenRelation);
+        given(tokenRelState.get(EntityIDPair.newBuilder()
+                        .accountId(ACCOUNT_20_ID)
+                        .tokenId(TOKEN_10_ID)
+                        .build()))
+                .willReturn(tokenRelation);
 
-        final var result = subject.get(TOKEN_10, ACCOUNT_20);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
+        final var result = subject.get(ACCOUNT_20_ID, TOKEN_10_ID);
+        Assertions.assertThat(result).isEqualTo(tokenRelation);
     }
 
     @Test
     void testGetEmpty() {
         given(tokenRelState.get(notNull())).willReturn(null);
 
-        final var result = subject.get(-1L, ACCOUNT_20);
-        Assertions.assertThat(result).isEmpty();
+        final var result =
+                subject.get(ACCOUNT_20_ID, TokenID.newBuilder().tokenNum(-1L).build());
+        Assertions.assertThat(result).isNull();
     }
 
     @Test
     void testGetForModify() {
         TokenRelation tokenRelation = mock(TokenRelation.class);
-        given(tokenRelState.getForModify(notNull())).willReturn(tokenRelation);
+        given(tokenRelState.getForModify(EntityIDPair.newBuilder()
+                        .accountId(ACCOUNT_20_ID)
+                        .tokenId(TOKEN_10_ID)
+                        .build()))
+                .willReturn(tokenRelation);
 
-        final var result = subject.getForModify(TOKEN_10, ACCOUNT_20);
-        Assertions.assertThat(result.orElseThrow()).isEqualTo(tokenRelation);
+        final var result = subject.getForModify(ACCOUNT_20_ID, TOKEN_10_ID);
+        Assertions.assertThat(result).isEqualTo(tokenRelation);
     }
 
     @Test
     void testGetForModifyEmpty() {
-        given(tokenRelState.getForModify(notNull())).willReturn(null);
+        given(tokenRelState.getForModify(EntityIDPair.newBuilder()
+                        .accountId(asAccount(-2L))
+                        .tokenId(TOKEN_10_ID)
+                        .build()))
+                .willReturn(null);
 
-        final var result = subject.getForModify(TOKEN_10, -2L);
-        Assertions.assertThat(result).isEmpty();
+        final var result =
+                subject.getForModify(AccountID.newBuilder().accountNum(-2L).build(), TOKEN_10_ID);
+        Assertions.assertThat(result).isNull();
     }
 
     @Test
@@ -133,7 +156,15 @@ class WritableTokenRelationStoreTest {
 
     @Test
     void testModifiedTokens() {
-        final var modifiedKeys = Set.of(EntityNumPair.fromLongs(TOKEN_10, ACCOUNT_20), EntityNumPair.fromLongs(1L, 2L));
+        final var modifiedKeys = Set.of(
+                EntityIDPair.newBuilder()
+                        .accountId(ACCOUNT_20_ID)
+                        .tokenId(TOKEN_10_ID)
+                        .build(),
+                EntityIDPair.newBuilder()
+                        .accountId(asAccount(1L))
+                        .tokenId(asToken(2L))
+                        .build());
         given(tokenRelState.modifiedKeys()).willReturn(modifiedKeys);
 
         final var result = subject.modifiedTokens();

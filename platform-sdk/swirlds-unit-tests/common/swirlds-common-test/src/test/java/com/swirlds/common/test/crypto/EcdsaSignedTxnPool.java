@@ -17,13 +17,14 @@
 package com.swirlds.common.test.crypto;
 
 import static com.swirlds.common.crypto.engine.EcdsaSecp256k1Verifier.EC_COORD_SIZE;
-import static com.swirlds.common.test.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
-import static com.swirlds.common.test.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
+import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.asRawEcdsaSecp256k1Key;
+import static com.swirlds.common.test.fixtures.crypto.EcdsaUtils.signDigestWithEcdsaSecp256k1;
 
 import com.goterl.lazysodium.interfaces.Sign;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import com.swirlds.common.test.fixtures.crypto.EcdsaUtils;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;

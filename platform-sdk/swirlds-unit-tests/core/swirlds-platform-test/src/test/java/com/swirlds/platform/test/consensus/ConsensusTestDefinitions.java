@@ -16,7 +16,9 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.common.test.RandomUtils.initRandom;
+import static com.swirlds.common.test.fixtures.RandomUtils.initRandom;
+import static com.swirlds.common.utility.Threshold.STRONG_MINORITY;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.applyEventsToConsensus;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.buildSimpleConsensus;
 import static com.swirlds.platform.test.consensus.ConsensusUtils.isRestartConsensusEquivalent;
@@ -39,13 +41,13 @@ import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.WeightGenerator;
-import com.swirlds.common.test.WeightGenerators;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerator;
+import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.common.threading.utility.AtomicDouble;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.Utilities;
 import com.swirlds.platform.eventhandling.SignedStateEventsAndGenerations;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
@@ -131,7 +133,8 @@ public final class ConsensusTestDefinitions {
         // events again. Event X will not have any children, because the node is shunned after event X is
         // created.
         for (int i = 0; i < standardGenerator.getNumberOfSources(); i++) {
-            final EventSource<?> source = standardGenerator.getSource(i);
+            final NodeId nodeId = standardGenerator.getAddressBook().getNodeId(i);
+            final EventSource<?> source = standardGenerator.getSource(nodeId);
 
             // This is the last source. Force it to stop creating events (go to sleep) after the event X
             if (i == standardGenerator.getNumberOfSources() - 1) {
@@ -190,7 +193,7 @@ public final class ConsensusTestDefinitions {
             int forkingNodeId = -1;
             for (int i = 0; i < nodeWeights.size(); i++) {
                 final long weight = nodeWeights.get(i);
-                if (!Utilities.isStrongMinority(weight, totalWeight)) {
+                if (!STRONG_MINORITY.isSatisfiedBy(weight, totalWeight)) {
                     forkingNodeId = i;
                     break;
                 }
@@ -469,11 +472,10 @@ public final class ConsensusTestDefinitions {
     }
 
     /**
-     * Get a set of node ids such that their weight is at least a strong minority but not a super majority. Each group of
-     * nodes (the partitioned node and non-partitions nodes) has a strong minority.
+     * Get a set of node ids such that their weight is at least a strong minority but not a super majority. Each group
+     * of nodes (the partitioned node and non-partitions nodes) has a strong minority.
      *
-     * @param nodeWeights
-     * 		the weights of each node in the network
+     * @param nodeWeights the weights of each node in the network
      * @return the list of node ids
      */
     private static Set<Integer> getStrongMinorityNodes(final List<Long> nodeWeights) {
@@ -482,12 +484,12 @@ public final class ConsensusTestDefinitions {
         long partitionedWeight = 0L;
         for (int i = 0; i < nodeWeights.size(); i++) {
             // If we have enough partitioned nodes to make a strong minority, stop and return
-            if (Utilities.isStrongMinority(partitionedWeight, totalWeight)) {
+            if (STRONG_MINORITY.isSatisfiedBy(partitionedWeight, totalWeight)) {
                 break;
             }
             // If adding this node to the partition would give the partition a super majority, skip this node because
             // the remaining group of nodes would not have a strong minority
-            if (Utilities.isSuperMajority(partitionedWeight + nodeWeights.get(i), totalWeight)) {
+            if (SUPER_MAJORITY.isSatisfiedBy(partitionedWeight + nodeWeights.get(i), totalWeight)) {
                 continue;
             }
             partitionedNodes.add(i);
@@ -504,8 +506,7 @@ public final class ConsensusTestDefinitions {
      * Get a set of node ids such that their weight is less than a strong minority. Nodes not in the returned set will
      * have a super majority and can continue to reach consensus.
      *
-     * @param nodeWeights
-     * 		the weights of each node in the network
+     * @param nodeWeights the weights of each node in the network
      * @return the list of node ids
      */
     private static Set<Integer> getSubStrongMinorityNodes(final List<Long> nodeWeights) {
@@ -520,7 +521,7 @@ public final class ConsensusTestDefinitions {
             }
             // If adding this node to the partition would give the partition a strong minority, skip this node because
             // the remaining group of nodes would not have a super majority
-            if (Utilities.isStrongMinority(partitionedWeight + nodeWeights.get(i), totalWeight)) {
+            if (STRONG_MINORITY.isSatisfiedBy(partitionedWeight + nodeWeights.get(i), totalWeight)) {
                 continue;
             }
             partitionedNodes.add(i);
@@ -634,7 +635,7 @@ public final class ConsensusTestDefinitions {
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
             generator
-                    .getSource(staleNodeProvider)
+                    .getSourceByIndex(staleNodeProvider)
                     .setRecentEventRetentionSize(5000)
                     .setRequestedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
 
@@ -672,7 +673,7 @@ public final class ConsensusTestDefinitions {
             final StandardGraphGenerator generator = new StandardGraphGenerator(0, eventSources);
 
             generator
-                    .getSource(staleNodeProvider)
+                    .getSourceByIndex(staleNodeProvider)
                     .setRecentEventRetentionSize(5000)
                     .setProvidedOtherParentAgeDistribution(integerPowerDistribution(0.002, 300));
 
@@ -789,10 +790,8 @@ public final class ConsensusTestDefinitions {
     /**
      * Verifies that the created round of new events does not advance when a quorum of nodes is down.
      *
-     * @param consensusEvents
-     * 		events that reached consensus in the test sequence
-     * @param allEvents
-     * 		all events created in the test sequence
+     * @param consensusEvents events that reached consensus in the test sequence
+     * @param allEvents       all events created in the test sequence
      */
     private static void createdRoundDoesNotAdvance(
             final List<IndexedEvent> consensusEvents, final List<IndexedEvent> allEvents) {
@@ -911,18 +910,12 @@ public final class ConsensusTestDefinitions {
      * Simulates a consensus restart. The number of nodes and number of events is chosen randomly between the supplied
      * bounds
      *
-     * @param seed
-     * 		a seed to use for a random generator
-     * @param stateDir
-     * 		the directory where saved states can be written (this method uses merkle serialization)
-     * @param minNodes
-     * 		minimum number of nodes
-     * @param maxNodes
-     * 		maximum number of nodes
-     * @param minPerSeq
-     * 		minimum number of events to generate
-     * @param maxPerSeq
-     * 		maximum number of events to generate
+     * @param seed      a seed to use for a random generator
+     * @param stateDir  the directory where saved states can be written (this method uses merkle serialization)
+     * @param minNodes  minimum number of nodes
+     * @param maxNodes  maximum number of nodes
+     * @param minPerSeq minimum number of events to generate
+     * @param maxPerSeq maximum number of events to generate
      */
     public static void restart(
             final Long seed,
@@ -963,7 +956,7 @@ public final class ConsensusTestDefinitions {
         areAllEventsReturned(numberOfNodes, weightGenerator, new Random().nextLong());
     }
 
-    // TODO convert to new framework
+    // FUTURE WORK convert to new framework
     public static void areAllEventsReturned(
             final int numberOfNodes, final WeightGenerator weightGenerator, final long seed) {
         final int numEventsBeforeExclude = 50000;
@@ -978,24 +971,23 @@ public final class ConsensusTestDefinitions {
         final Random random = new Random(seed);
 
         final List<Long> nodeWeights = weightGenerator.getWeights(seed, numberOfNodes);
-
+        final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
-                .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
         // create an empty intake object
         final TestIntake intake = new TestIntake(ab);
 
-        final SimpleEventGenerator gen = new SimpleEventGenerator(numberOfNodes, random);
+        final SimpleEventGenerator gen = new SimpleEventGenerator(ab, random);
 
         final AtomicInteger numReturned = new AtomicInteger();
 
         addAndUpdate(numEventsBeforeExclude, gen, intake, eventsNotReturned, consEvents, staleEvents, numReturned);
 
-        gen.excludeOtherParent(0);
+        gen.excludeOtherParent(new NodeId(0));
 
         addAndUpdate(numEventsAfterExclude, gen, intake, eventsNotReturned, consEvents, staleEvents, numReturned);
 
@@ -1061,7 +1053,7 @@ public final class ConsensusTestDefinitions {
         }
     }
 
-    // TODO Finish and convert to new framework. As it is, this does not verify anything.
+    // FUTURE WORK Finish and convert to new framework. As it is, this does not verify anything.
     public static void staleEvent(
             final int numberOfNodes, final WeightGenerator weightGenerator, final int iterations, final long... seeds) {
         if (seeds != null) {
@@ -1086,36 +1078,36 @@ public final class ConsensusTestDefinitions {
         final Random random = initRandom(seedToUse);
 
         final List<Long> nodeWeights = weightGenerator.getWeights(seedToUse, numberOfNodes);
+        final AtomicInteger index = new AtomicInteger(0);
         final AddressBook ab = new RandomAddressBookGenerator(random)
-                .setSequentialIds(true)
                 .setSize(numberOfNodes)
-                .setCustomWeightGenerator(id -> nodeWeights.get((int) id))
+                .setCustomWeightGenerator(id -> nodeWeights.get(index.getAndIncrement()))
                 .setHashStrategy(RandomAddressBookGenerator.HashStrategy.FAKE_HASH)
                 .build();
 
         // create an empty consensus object
         final Consensus cons = buildSimpleConsensus(ab);
 
-        final SimpleEventGenerator gen = new SimpleEventGenerator(numberOfNodes, random);
+        final SimpleEventGenerator gen = new SimpleEventGenerator(ab, random);
 
         for (int i = 0; i < numEventsBeforeExclude; i++) {
             cons.addEvent(gen.nextEvent(), ab);
         }
 
-        gen.excludeOtherParent(0);
+        gen.excludeOtherParent(new NodeId(0));
 
         for (int i = 0; i < numEventsAfterExclude; i++) {
             cons.addEvent(gen.nextEvent(), ab);
         }
 
-        gen.includeOtherParent(0);
+        gen.includeOtherParent(new NodeId(0));
 
         for (int i = 0; i < numEventsAfterInclude; i++) {
             cons.addEvent(gen.nextEvent(), ab);
         }
     }
 
-    // TODO convert to new framework
+    // FUTURE WORK convert to new framework
     public static void reconnectSimulation(
             final Path stateDir,
             final int numberOfNodes,
@@ -1183,11 +1175,11 @@ public final class ConsensusTestDefinitions {
         // --------------- NOTE --------------
         // This will not work if there are any forks in the state events
         // -----------------------------------
-        final long[] lastGenInState = getLastGenerationInState(signedState.getEvents(), numberOfNodes);
+        final Map<NodeId, Long> lastGenInState = getLastGenerationInState(signedState.getEvents(), numberOfNodes);
         final StandardEventEmitter restartEmitter = emitter.cleanCopy();
         for (int i = 0; i < numEventsBeforeRestart; i++) {
             final EventImpl event = restartEmitter.emitEvent();
-            if (lastGenInState[(int) event.getCreatorId()] >= event.getGeneration()) {
+            if (lastGenInState.get(event.getCreatorId()) >= event.getGeneration()) {
                 // we dont add events that are already in the state or older
                 continue;
             }

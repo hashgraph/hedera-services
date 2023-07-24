@@ -19,8 +19,10 @@ package com.hedera.node.app.workflows.query;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.transaction.Query;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,17 +32,26 @@ public class QueryContextImpl implements QueryContext {
 
     private final ReadableStoreFactory storeFactory;
     private final Query query;
+    private final Configuration configuration;
+    private final RecordCache recordCache;
 
     /**
      * Constructor of {@code QueryContextImpl}.
      *
      * @param storeFactory the {@link ReadableStoreFactory} used to create the stores
      * @param query the query that is currently being processed
+     * @param configuration the current {@link Configuration}
      * @throws NullPointerException if {@code query} is {@code null}
      */
-    public QueryContextImpl(@NonNull final ReadableStoreFactory storeFactory, @NonNull final Query query) {
+    public QueryContextImpl(
+            @NonNull final ReadableStoreFactory storeFactory,
+            @NonNull final Query query,
+            @NonNull final Configuration configuration,
+            @NonNull final RecordCache recordCache) {
         this.storeFactory = requireNonNull(storeFactory, "The supplied argument 'storeFactory' cannot be null!");
         this.query = requireNonNull(query, "The supplied argument 'query' cannot be null!");
+        this.configuration = requireNonNull(configuration, "The supplied argument 'configuration' cannot be null!");
+        this.recordCache = requireNonNull(recordCache, "The supplied argument 'recordCache' cannot be null!");
     }
 
     @Override
@@ -52,6 +63,18 @@ public class QueryContextImpl implements QueryContext {
     @Override
     @NonNull
     public <C> C createStore(@NonNull Class<C> storeInterface) {
-        return storeFactory.createStore(storeInterface);
+        return storeFactory.getStore(storeInterface);
+    }
+
+    @NonNull
+    @Override
+    public Configuration configuration() {
+        return configuration;
+    }
+
+    @NonNull
+    @Override
+    public RecordCache recordCache() {
+        return recordCache;
     }
 }

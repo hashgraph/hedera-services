@@ -18,12 +18,11 @@ package com.swirlds.platform.test.consensus;
 
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.time.OSTime;
-import com.swirlds.common.time.Time;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.components.EventIntake;
@@ -31,6 +30,8 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.linking.EventLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
 import com.swirlds.platform.event.linking.ParentFinder;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
+import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
@@ -39,8 +40,6 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.StaleEventObserver;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.sync.ShadowGraph;
-import com.swirlds.platform.sync.ShadowGraphEventObserver;
 import com.swirlds.platform.test.event.IndexedEvent;
 import java.util.Arrays;
 import java.util.Deque;
@@ -70,7 +69,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     public TestIntake(final AddressBook ab, final BiConsumer<Long, Long> minGenConsumer) {
-        this(ab, minGenConsumer, OSTime.getInstance());
+        this(ab, minGenConsumer, Time.getCurrent());
     }
 
     public TestIntake(final AddressBook ab, final Time time) {
@@ -82,7 +81,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
     }
 
     public TestIntake(final AddressBook ab, final ConsensusConfig consensusConfig) {
-        this(ab, NOOP_MINGEN, OSTime.getInstance(), consensusConfig);
+        this(ab, NOOP_MINGEN, Time.getCurrent(), consensusConfig);
     }
 
     /**
@@ -105,12 +104,12 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
-        final EventLinker linker =
-                new InOrderLinker(ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
+        final EventLinker linker = new InOrderLinker(
+                Time.getCurrent(), ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
         intake = new EventIntake(
-                NodeId.createMain(0), // only used for logging
+                new NodeId(0L), // only used for logging
                 linker,
                 this::getConsensus,
                 ab,

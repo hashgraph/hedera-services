@@ -16,14 +16,16 @@
 
 package com.swirlds.platform;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator.WeightDistributionStrategy;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.test.framework.ResourceLoader;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -44,14 +46,14 @@ public class CryptoArgsProvider {
 
         Instant start = Instant.now();
         final AddressBook loadedAB = createAddressBook();
-        final KeysAndCerts[] loadedC =
+        final Map<NodeId, KeysAndCerts> loadedC =
                 CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
         System.out.println(
                 "Key loading took " + Duration.between(start, Instant.now()).toMillis());
 
         start = Instant.now();
         final AddressBook genAB = createAddressBook();
-        final KeysAndCerts[] genC = CryptoStatic.generateKeysAndCerts(genAB, threadPool);
+        final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB, threadPool);
         System.out.println(
                 "Key generating took " + Duration.between(start, Instant.now()).toMillis());
         return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));
@@ -61,11 +63,12 @@ public class CryptoArgsProvider {
         final AddressBook addresses = new RandomAddressBookGenerator()
                 .setSize(NUMBER_OF_ADDRESSES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
-                .setSequentialIds(true)
                 .build();
 
         for (int i = 0; i < addresses.getSize(); i++) {
-            addresses.add(addresses.getAddress(i).copySetSelfName(memberName(i)).copySetOwnHost(true));
+            final NodeId nodeId = addresses.getNodeId(i);
+            addresses.add(
+                    addresses.getAddress(nodeId).copySetSelfName(memberName(i)).copySetHostnameInternal("127.0.0.1"));
         }
 
         return addresses;

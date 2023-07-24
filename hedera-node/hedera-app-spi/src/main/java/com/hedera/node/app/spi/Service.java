@@ -16,8 +16,12 @@
 
 package com.hedera.node.app.spi;
 
+import static java.util.Collections.emptySet;
+
 import com.hedera.node.app.spi.state.SchemaRegistry;
+import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * A definition of an interface that will be implemented by each conceptual "service" like
@@ -34,15 +38,15 @@ public interface Service {
     String getServiceName();
 
     /**
-     * Registers the schemas this service uses when running with {@code mono-service} adapters
-     * with the given {@link SchemaRegistry}. We can remove this method once we are no longer
-     * relying on EET's with {@code workflows.enabled} to validate behavior.
+     * If this service exposes RPC endpoints, then this method returns the RPC service definitions.
+     * Otherwise, it returns an empty set.
      *
-     * @deprecated because this method is only used when running with {@code mono-service} adapters
-     * @param registry the registry to register the schemas with
-     * */
-    @Deprecated(forRemoval = true)
-    void registerMonoAdapterSchemas(@NonNull SchemaRegistry registry);
+     * @return The RPC service definitions if this service is exposed via RPC.
+     */
+    @NonNull
+    default Set<RpcServiceDefinition> rpcDefinitions() {
+        return emptySet();
+    }
 
     /**
      * Registers the schemas this service really uses with the given {@link SchemaRegistry}.

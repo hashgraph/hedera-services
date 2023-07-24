@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -29,6 +29,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.state.signed.SigSet;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -44,18 +45,18 @@ import org.junit.jupiter.api.Test;
 @DisplayName("SigSet Tests")
 class SigSetTests {
 
-    private static Set<Long> getSigningNodes(final SigSet sigSet) {
-        final Set<Long> nodes = new HashSet<>();
+    private static Set<NodeId> getSigningNodes(final SigSet sigSet) {
+        final Set<NodeId> nodes = new HashSet<>();
         sigSet.iterator().forEachRemaining(nodes::add);
         return nodes;
     }
 
-    private static Map<Long, Signature> generateSignatureMap(final Random random) {
-        final Map<Long, Signature> signatures = new HashMap<>();
+    private static Map<NodeId, Signature> generateSignatureMap(final Random random) {
+        final Map<NodeId, Signature> signatures = new HashMap<>();
 
         for (int i = 0; i < 1_000; i++) {
             // There will be a few duplicates, but that doesn't really matter
-            final long nodeId = random.nextLong(0, 10_000);
+            final NodeId nodeId = new NodeId(random.nextLong(0, 10_000));
             final Signature signature = randomSignature(random);
             signatures.put(nodeId, signature);
         }
@@ -68,12 +69,12 @@ class SigSetTests {
     void basicOperationTest() {
         final Random random = getRandomPrintSeed();
 
-        final Map<Long, Signature> signatures = generateSignatureMap(random);
+        final Map<NodeId, Signature> signatures = generateSignatureMap(random);
 
         final SigSet sigSet = new SigSet();
-        final Set<Long> addedNodes = new HashSet<>();
+        final Set<NodeId> addedNodes = new HashSet<>();
 
-        for (final long node : signatures.keySet()) {
+        for (final NodeId node : signatures.keySet()) {
 
             sigSet.addSignature(node, signatures.get(node));
             addedNodes.add(node);
@@ -85,7 +86,7 @@ class SigSetTests {
 
             assertEquals(addedNodes.size(), sigSet.size());
 
-            for (final long metaNode : signatures.keySet()) {
+            for (final NodeId metaNode : signatures.keySet()) {
                 if (addedNodes.contains(metaNode)) {
                     assertTrue(sigSet.hasSignature(metaNode));
                     assertSame(signatures.get(metaNode), sigSet.getSignature(metaNode));
@@ -122,7 +123,7 @@ class SigSetTests {
         assertEquals(sigSet.size(), deserializedSigSet.size());
         assertEquals(getSigningNodes(sigSet), getSigningNodes(deserializedSigSet));
 
-        for (final long node : sigSet) {
+        for (final NodeId node : sigSet) {
             assertEquals(sigSet.getSignature(node), deserializedSigSet.getSignature(node));
         }
     }

@@ -18,11 +18,13 @@ package com.swirlds.platform.test.event;
 
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
+import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.GossipEvent;
@@ -31,7 +33,7 @@ import java.util.Random;
 
 public class GossipEventBuilder {
     private Random random;
-    private long creatorId;
+    private NodeId creatorId;
     private Instant timestamp;
     private int numberOfTransactions;
     private int transactionSize;
@@ -46,7 +48,7 @@ public class GossipEventBuilder {
 
     public GossipEventBuilder setDefaults() {
         random = new Random();
-        creatorId = 0;
+        creatorId = NodeId.FIRST_NODE_ID;
         timestamp = Instant.ofEpochMilli(1588771316678L);
         numberOfTransactions = 0;
         transactionSize = 4;
@@ -62,7 +64,7 @@ public class GossipEventBuilder {
         return this;
     }
 
-    public GossipEventBuilder setCreatorId(final long creatorId) {
+    public GossipEventBuilder setCreatorId(final NodeId creatorId) {
         this.creatorId = creatorId;
         return this;
     }
@@ -115,6 +117,7 @@ public class GossipEventBuilder {
                 ? fakeGeneration - 1
                 : otherParent != null ? otherParent.getGeneration() : -1;
         final BaseEventHashedData hashedData = new BaseEventHashedData(
+                new BasicSoftwareVersion(1),
                 creatorId,
                 selfParentGen,
                 otherParentGen,
@@ -133,7 +136,7 @@ public class GossipEventBuilder {
         random.nextBytes(sig);
 
         final BaseEventUnhashedData unhashedData = new BaseEventUnhashedData(
-                otherParent != null ? otherParent.getHashedData().getCreatorId() : -1, sig);
+                otherParent != null ? otherParent.getHashedData().getCreatorId() : NodeId.UNDEFINED_NODE_ID, sig);
         final GossipEvent gossipEvent = new GossipEvent(hashedData, unhashedData);
         gossipEvent.buildDescriptor();
         return gossipEvent;

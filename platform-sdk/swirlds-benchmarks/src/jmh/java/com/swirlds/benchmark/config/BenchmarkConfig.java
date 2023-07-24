@@ -31,15 +31,19 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * 		parameter had no description in the old settings
  * @param verifyResult
  * 		parameter had no description in the old settings
+ * @param enableSnapshots
+ *      Indicates whether to take snapshots periodically during benchmarks
  * @param printHistogram
  * 		parameter had no description in the old settings
  * @param csvOutputFolder
  * 		The absolute or relative folder path where all the statistics CSV files will be written. If this value is null
  * 		or an empty string, the current folder selection behavior will be used (ie: the SDK base
  * 		path).
- * @param csvFileName
- * 		The prefix of the name of the CSV file that the platform will write statistics to. If this value is null or an
+ * @param csvMetricsFileName
+ * 		CSV file name that the platform will write statistics to. If this value is null or an
  * 		empty string, the platform will not write any statistics.
+ * @param csvMetricNamesFileName
+ * 		CSV file name that the platform will write all metric names to.
  * @param csvWriteFrequency
  * 		The frequency, in milliseconds, at which values are written to the statistics CSV file.
  * @param csvAppend
@@ -50,9 +54,11 @@ public record BenchmarkConfig(
         @ConfigProperty(defaultValue = "") String benchmarkData,
         @ConfigProperty(defaultValue = "false") boolean saveDataDirectory,
         @ConfigProperty(defaultValue = "true") boolean verifyResult,
+        @ConfigProperty(defaultValue = "false") boolean enableSnapshots,
         @ConfigProperty(defaultValue = "false") boolean printHistogram,
         @ConfigProperty(defaultValue = "") String csvOutputFolder,
-        @ConfigProperty(defaultValue = "BenchmarkMetrics.csv") String csvFileName,
+        @ConfigProperty(defaultValue = "BenchmarkMetrics.csv") String csvMetricsFileName,
+        @ConfigProperty(defaultValue = "BenchmarkMetricNames.csv") String csvMetricNamesFileName,
         @ConfigProperty(defaultValue = "0") int csvWriteFrequency,
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @ConfigProperty(defaultValue = "sda") String deviceName) {
@@ -61,9 +67,11 @@ public record BenchmarkConfig(
                 .append("benchmarkData", benchmarkData)
                 .append("saveDataDirectory", saveDataDirectory)
                 .append("verifyResult", verifyResult)
+                .append("enableSnapshots", enableSnapshots)
                 .append("printHistogram", printHistogram)
                 .append("csvOutputFolder", csvOutputFolder)
-                .append("csvFileName", csvFileName)
+                .append("csvMetricsFileName", csvMetricsFileName)
+                .append("csvMetricNamesFileName", csvMetricNamesFileName)
                 .append("csvWriteFrequency", csvWriteFrequency)
                 .append("csvAppend", csvAppend)
                 .append("deviceName", deviceName)

@@ -16,24 +16,21 @@
 
 package com.swirlds.platform.test.eventflow;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SystemTransactionPing;
-import com.swirlds.common.test.TransactionUtils;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionTypedHandler;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionTypedHandler;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.state.State;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-public class SystemTransactionTracker
-        implements PreConsensusSystemTransactionConsumer, PostConsensusSystemTransactionConsumer, Failable {
+public class SystemTransactionTracker implements Failable {
 
-    private final Map<Long, Integer> preConsByCreator = new HashMap<>();
+    private final Map<NodeId, Integer> preConsByCreator = new HashMap<>();
     private final Set<Transaction> preConsensusTransactions = new HashSet<>();
     private final Set<Transaction> consensusTransactions = new HashSet<>();
     private final StringBuilder failureMsg = new StringBuilder();
@@ -52,7 +49,10 @@ public class SystemTransactionTracker
      * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
-    public void handlePreConsensusSystemTransaction(final long creatorId, final SystemTransactionPing transaction) {
+    public void handlePreConsensusSystemTransaction(
+            @NonNull final NodeId creatorId, @NonNull final SystemTransactionPing transaction) {
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
         preConsByCreator.putIfAbsent(creatorId, 0);
 
         final int prevVal = preConsByCreator.get(creatorId);
@@ -73,8 +73,13 @@ public class SystemTransactionTracker
      * @param transaction the transaction to consume. of type {@link SystemTransactionPing}, since
      *                    {@link TransactionUtils#incrementingSystemTransaction()} uses them
      */
-    public void handlePostConsensusSystemTransaction(
-            final State state, final long creatorId, final SystemTransactionPing transaction) {
+    public void handlePostconsensusSystemTransaction(
+            @NonNull final State state,
+            @NonNull final NodeId creatorId,
+            @NonNull final SystemTransactionPing transaction) {
+        Objects.requireNonNull(state, "state must not be null");
+        Objects.requireNonNull(creatorId, "creatorId must not be null");
+        Objects.requireNonNull(transaction, "transaction must not be null");
 
         if (!consensusTransactions.add(transaction)) {
             addFailure(String.format(
@@ -102,17 +107,5 @@ public class SystemTransactionTracker
     @Override
     public String getFailure() {
         return failureMsg.toString();
-    }
-
-    @Override
-    public List<PreConsensusSystemTransactionTypedHandler<?>> getPreConsensusHandleMethods() {
-        return List.of(new PreConsensusSystemTransactionTypedHandler<>(
-                SystemTransactionPing.class, this::handlePreConsensusSystemTransaction));
-    }
-
-    @Override
-    public List<PostConsensusSystemTransactionTypedHandler<?>> getPostConsensusHandleMethods() {
-        return List.of(new PostConsensusSystemTransactionTypedHandler<>(
-                SystemTransactionPing.class, this::handlePostConsensusSystemTransaction));
     }
 }

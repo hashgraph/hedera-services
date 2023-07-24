@@ -21,19 +21,21 @@ import static com.swirlds.logging.LogMarker.NETWORK;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.TCP_CONNECT_EXCEPTIONS;
 
+import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.SettingsProvider;
-import com.swirlds.platform.SocketConnection;
+import com.swirlds.platform.gossip.sync.SyncInputStream;
+import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.NetworkUtils;
+import com.swirlds.platform.network.SocketConnection;
 import com.swirlds.platform.network.connection.NotConnectedConnection;
-import com.swirlds.platform.sync.SyncInputStream;
-import com.swirlds.platform.sync.SyncOutputStream;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -48,9 +50,9 @@ import org.apache.logging.log4j.Logger;
  */
 public class OutboundConnectionCreator {
     private static final Logger logger = LogManager.getLogger(OutboundConnectionCreator.class);
-    private static final byte[] LOCALHOST = new byte[] {127, 0, 0, 1};
+    private static final String LOCALHOST = "127.0.0.1";
     private final NodeId selfId;
-    private final SettingsProvider settings;
+    private final SocketConfig socketConfig;
     private final ConnectionTracker connectionTracker;
     private final SocketFactory socketFactory;
     private final AddressBook addressBook;
@@ -58,18 +60,18 @@ public class OutboundConnectionCreator {
     private final SoftwareVersion softwareVersion;
 
     public OutboundConnectionCreator(
-            final NodeId selfId,
-            final SettingsProvider settings,
-            final ConnectionTracker connectionTracker,
-            final SocketFactory socketFactory,
-            final AddressBook addressBook,
+            @NonNull final NodeId selfId,
+            @NonNull final SocketConfig socketConfig,
+            @NonNull final ConnectionTracker connectionTracker,
+            @NonNull final SocketFactory socketFactory,
+            @NonNull final AddressBook addressBook,
             final boolean doVersionCheck,
-            final SoftwareVersion softwareVersion) {
-        this.selfId = selfId;
-        this.settings = settings;
-        this.connectionTracker = connectionTracker;
-        this.socketFactory = socketFactory;
-        this.addressBook = addressBook;
+            @NonNull final SoftwareVersion softwareVersion) {
+        this.selfId = Objects.requireNonNull(selfId);
+        this.socketConfig = Objects.requireNonNull(socketConfig);
+        this.connectionTracker = Objects.requireNonNull(connectionTracker);
+        this.socketFactory = Objects.requireNonNull(socketFactory);
+        this.addressBook = Objects.requireNonNull(addressBook);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
     }
@@ -82,23 +84,20 @@ public class OutboundConnectionCreator {
      * @return the new connection, or a connection that is not connected if it couldn't connect on the first try
      */
     public Connection createConnection(final NodeId otherId) {
-        final Address other = addressBook.getAddress(otherId.getId());
-        final Address ownAddress = addressBook.getAddress(selfId.getId());
-        final int port = other.getConnectPortIpv4(ownAddress);
-        final byte[] ip = getConnectAddressIpv4(ownAddress, other);
-        final String ipAddress = Address.ipString(ip);
+        final Address other = addressBook.getAddress(otherId);
+        final Address ownAddress = addressBook.getAddress(selfId);
+        final int port = other.getConnectPort(ownAddress);
+        final String hostname = getConnectHostname(ownAddress, other);
 
         Socket clientSocket = null;
         SyncOutputStream dos = null;
         SyncInputStream dis = null;
 
         try {
-            clientSocket = socketFactory.createClientSocket(ipAddress, port);
+            clientSocket = socketFactory.createClientSocket(hostname, port);
 
-            dos = SyncOutputStream.createSyncOutputStream(
-                    clientSocket.getOutputStream(), settings.connectionStreamBufferSize());
-            dis = SyncInputStream.createSyncInputStream(
-                    clientSocket.getInputStream(), settings.connectionStreamBufferSize());
+            dos = SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
+            dis = SyncInputStream.createSyncInputStream(clientSocket.getInputStream(), socketConfig.bufferSize());
 
             if (doVersionCheck) {
                 dos.writeSerializable(softwareVersion, true);
@@ -113,7 +112,7 @@ public class OutboundConnectionCreator {
                 }
             }
 
-            dos.writeUTF(addressBook.getAddress(selfId.getId()).getNickname());
+            dos.writeUTF(addressBook.getAddress(selfId).getNickname());
             dos.flush();
 
             final int ack = dis.readInt(); // read the ACK for creating the connection
@@ -156,13 +155,15 @@ public class OutboundConnectionCreator {
      * @param to   the address to connect to
      * @return the IP address to connect to
      */
-    private byte[] getConnectAddressIpv4(final Address from, final Address to) {
-        if (from.isOwnHost() && to.isOwnHost() && settings.useLoopbackIp()) {
+    private String getConnectHostname(final Address from, final Address to) {
+        final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
+        final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
+        if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
-            return to.getAddressInternalIpv4();
+            return to.getHostnameInternal();
         } else {
-            return to.getAddressExternalIpv4();
+            return to.getHostnameExternal();
         }
     }
 }

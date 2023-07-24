@@ -20,10 +20,13 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEvent;
-import com.swirlds.platform.chatter.protocol.messages.ChatterEventDescriptor;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.platform.event.EventDescriptor;
+import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -37,7 +40,7 @@ public class SimulatedEvent implements ChatterEvent {
         public static final int ORIGINAL = 1;
     }
 
-    private ChatterEventDescriptor descriptor;
+    private EventDescriptor descriptor;
     private byte[] data;
     private Instant timeReceived;
 
@@ -59,27 +62,38 @@ public class SimulatedEvent implements ChatterEvent {
      * @param size
      * 		the size of the event
      */
-    public SimulatedEvent(final Random random, final long creator, final long round, final int size) {
+    public SimulatedEvent(
+            @NonNull final Random random, @NonNull final NodeId creator, final long round, final int size) {
+        Objects.requireNonNull(random, "random must not be null");
+        Objects.requireNonNull(creator, "creator must not be null");
         this.data = new byte[size];
 
         final byte[] hashBytes = new byte[DigestType.SHA_384.digestLength()];
         random.nextBytes(hashBytes);
         final Hash hash = new Hash(hashBytes, DigestType.SHA_384);
 
-        this.descriptor = new ChatterEventDescriptor(hash, creator, round);
+        this.descriptor = new EventDescriptor(hash, creator, round);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public ChatterEventDescriptor getDescriptor() {
+    public EventDescriptor getDescriptor() {
         return descriptor;
     }
 
     @Override
     public Instant getTimeReceived() {
         return timeReceived;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getGeneration() {
+        return descriptor.getGeneration();
     }
 
     public void setTimeReceived(final Instant timeReceived) {
@@ -117,7 +131,7 @@ public class SimulatedEvent implements ChatterEvent {
      */
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        descriptor = in.readSerializable(false, ChatterEventDescriptor::new);
+        descriptor = in.readSerializable(false, EventDescriptor::new);
         data = in.readByteArray(Integer.MAX_VALUE);
     }
 

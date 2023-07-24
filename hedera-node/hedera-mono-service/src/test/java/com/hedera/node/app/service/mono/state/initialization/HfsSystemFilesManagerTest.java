@@ -16,17 +16,17 @@
 
 package com.hedera.node.app.service.mono.state.initialization;
 
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
-import static com.hedera.node.app.spi.config.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_CENT_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_CENT_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,19 +77,20 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.codec.DecoderException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -160,7 +161,7 @@ class HfsSystemFilesManagerTest {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void setup() throws DecoderException {
+    void setup() throws InvalidKeyException {
         final var keyBytes = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes();
         masterKey = new JEd25519Key(keyBytes);
         expectedInfo = new HFileMeta(
@@ -175,8 +176,8 @@ class HfsSystemFilesManagerTest {
         addressA = mock(Address.class);
         final var aIpv4 = new byte[] {(byte) 1, (byte) 2, (byte) 3, (byte) 4};
         final var memoA = "A new memo that is not the node account ID.";
-        given(addressA.getId()).willReturn(111L);
         given(addressA.getMemo()).willReturn(memoA);
+        given(addressA.getNodeId()).willReturn(new NodeId(0));
         given(addressA.getAddressExternalIpv4()).willReturn(aIpv4);
         given(addressA.getSigPublicKey()).willReturn(keyA);
 
@@ -185,14 +186,16 @@ class HfsSystemFilesManagerTest {
         addressB = mock(Address.class);
         final var bIpv4 = new byte[] {(byte) 2, (byte) 3, (byte) 4, (byte) 5};
         final var memoB = "0.0.3";
-        given(addressB.getId()).willReturn(222L);
         given(addressB.getMemo()).willReturn(memoB);
+        given(addressB.getNodeId()).willReturn(new NodeId(1));
         given(addressB.getAddressExternalIpv4()).willReturn(bIpv4);
         given(addressB.getSigPublicKey()).willReturn(keyB);
 
         currentBook = mock(AddressBook.class);
-        given(currentBook.getAddress(0L)).willReturn(addressA);
-        given(currentBook.getAddress(1L)).willReturn(addressB);
+        given(currentBook.getNodeId(0)).willReturn(new NodeId(0));
+        given(currentBook.getNodeId(1)).willReturn(new NodeId(1));
+        given(currentBook.getAddress(new NodeId(0))).willReturn(addressA);
+        given(currentBook.getAddress(new NodeId(1))).willReturn(addressB);
         given(currentBook.getSize()).willReturn(2);
 
         data = mock(Map.class);
@@ -249,8 +252,8 @@ class HfsSystemFilesManagerTest {
         final var book = legacyBookConstruction(currentBook);
         given(data.get(detailsId)).willReturn(book.toByteArray());
 
-        given(addressA.getStake()).willReturn(123L);
-        given(addressB.getStake()).willReturn(456L);
+        given(addressA.getWeight()).willReturn(123L);
+        given(addressB.getWeight()).willReturn(456L);
 
         subject.updateStakeDetails();
 
@@ -678,7 +681,8 @@ class HfsSystemFilesManagerTest {
     private static NodeAddressBook legacyBookConstruction(final AddressBook fromBook) {
         final var builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < fromBook.getSize(); i++) {
-            final var address = fromBook.getAddress(i);
+            final var nodeId = fromBook.getNodeId(i);
+            final var address = fromBook.getAddress(nodeId);
             final var publicKey = address.getSigPublicKey();
             final var nodeIP = address.getAddressExternalIpv4();
             final var nodeIPStr = Address.ipString(nodeIP);
@@ -687,8 +691,8 @@ class HfsSystemFilesManagerTest {
                     .setIpAddress(ByteString.copyFromUtf8(nodeIPStr))
                     .setMemo(ByteString.copyFromUtf8(memo))
                     .setRSAPubKey(CommonUtils.hex(publicKey.getEncoded()))
-                    .setNodeId(address.getId())
-                    .setStake(address.getStake());
+                    .setNodeId(nodeId.id())
+                    .setStake(address.getWeight());
 
             final var serviceEndpoint = ServiceEndpoint.newBuilder()
                     .setIpAddressV4(ByteString.copyFrom(address.getAddressExternalIpv4()))

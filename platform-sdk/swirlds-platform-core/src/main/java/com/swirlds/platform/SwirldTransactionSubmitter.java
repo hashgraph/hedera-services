@@ -16,30 +16,31 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.base.function.BooleanFunction;
+import com.swirlds.common.config.TransactionConfig;
+import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusGetter;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.utility.BooleanFunction;
 import com.swirlds.platform.metrics.TransactionMetrics;
-import java.util.function.Supplier;
 
 /**
  * Submits valid transactions received from the application to a consumer. Invalid transactions are rejected.
  */
 public class SwirldTransactionSubmitter {
 
-    private final Supplier<PlatformStatus> platformStatusSupplier;
-    private final SettingsProvider settings;
+    private final PlatformStatusGetter platformStatusGetter;
+    private final TransactionConfig transactionConfig;
     private final BooleanFunction<SwirldTransaction> addToTransactionPool;
     private final TransactionMetrics transactionMetrics;
 
     /**
      * Creates a new instance.
      *
-     * @param platformStatusSupplier
+     * @param platformStatusGetter
      * 		supplier of the current status of the platform
-     * @param settings
+     * @param transactionConfig
      * 		provider of static settings
      * @param addToTransactionPool
      * 		a function that adds the transaction to the transaction pool, if room is available
@@ -47,13 +48,13 @@ public class SwirldTransactionSubmitter {
      * 		stats relevant to transactions
      */
     public SwirldTransactionSubmitter(
-            final Supplier<PlatformStatus> platformStatusSupplier,
-            final SettingsProvider settings,
+            final PlatformStatusGetter platformStatusGetter,
+            final TransactionConfig transactionConfig,
             final BooleanFunction<SwirldTransaction> addToTransactionPool,
             final TransactionMetrics transactionMetrics) {
 
-        this.platformStatusSupplier = platformStatusSupplier;
-        this.settings = settings;
+        this.platformStatusGetter = platformStatusGetter;
+        this.transactionConfig = transactionConfig;
         this.addToTransactionPool = addToTransactionPool;
         this.transactionMetrics = transactionMetrics;
     }
@@ -68,7 +69,7 @@ public class SwirldTransactionSubmitter {
     public boolean submitTransaction(final SwirldTransaction trans) {
 
         // if the platform is not active, it is better to reject transactions submitted by the app
-        if (platformStatusSupplier.get() != PlatformStatus.ACTIVE) {
+        if (platformStatusGetter.getCurrentStatus() != PlatformStatus.ACTIVE) {
             return false;
         }
 
@@ -77,7 +78,7 @@ public class SwirldTransactionSubmitter {
         }
 
         // check if system transaction serialized size is above the required threshold
-        if (trans.getSize() > settings.getTransactionMaxBytes()) {
+        if (trans.getSize() > transactionConfig.transactionMaxBytes()) {
             return false;
         }
 

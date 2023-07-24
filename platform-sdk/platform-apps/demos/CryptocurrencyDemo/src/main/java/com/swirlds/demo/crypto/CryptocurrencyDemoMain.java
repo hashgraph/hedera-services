@@ -40,7 +40,7 @@ import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
@@ -114,7 +114,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     private void generateTransactions() {
         int numStocks = CryptocurrencyDemoState.NUM_STOCKS;
         byte[] price = new byte[numStocks];
-        try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper = platform.getLatestImmutableState()) {
+        try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper =
+                platform.getLatestImmutableState("CryptocurrencyDemoMain.generateTransactions()")) {
             final CryptocurrencyDemoState state = wrapper.get();
             state.getPriceCopy(price);
         }
@@ -142,7 +143,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         this.platform = platform;
         this.selfId = id;
         this.console = createConsole(platform, true); // create the window, make it visible
-        SwirldsGui.setAbout(platform.getSelfId().getId(), "Cryptocurrency and stock market demo v. 1.0\n");
+        GuiPlatformAccessor.getInstance()
+                .setAbout(platform.getSelfId(), "Cryptocurrency and stock market demo v. 1.0\n");
         this.console.addKeyListener(keyListener);
     }
 
@@ -152,7 +154,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
         this.transactionGenerator.start();
         // print the latest trades to the console, 4 times a second, forever
         while (true) {
-            try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper = platform.getLatestImmutableState()) {
+            try (final AutoCloseableWrapper<CryptocurrencyDemoState> wrapper =
+                    platform.getLatestImmutableState("CryptocurrencyDemoMain.run()")) {
                 final CryptocurrencyDemoState state = wrapper.get();
                 console.setHeading(" Cryptocurrency and Stock Market Demo\n"
                         + " Press F for fast sync, S for slow, (currently "

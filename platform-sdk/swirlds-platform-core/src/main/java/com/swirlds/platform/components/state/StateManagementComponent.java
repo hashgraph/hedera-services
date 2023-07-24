@@ -16,17 +16,19 @@
 
 package com.swirlds.platform.components.state;
 
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.platform.components.PlatformComponent;
 import com.swirlds.platform.components.common.output.NewSignedStateFromTransactionsConsumer;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
 import com.swirlds.platform.components.common.output.SignedStateToLoadConsumer;
 import com.swirlds.platform.components.state.query.LatestSignedStateProvider;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionConsumer;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionConsumer;
-import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.state.iss.ConsensusHashManager;
+import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFinder;
 import com.swirlds.platform.state.signed.SignedStateInfo;
+import com.swirlds.platform.state.signed.SignedStateManager;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -46,17 +48,17 @@ public interface StateManagementComponent
                 RoundAppliedToStateConsumer,
                 SignedStateToLoadConsumer,
                 NewSignedStateFromTransactionsConsumer,
-                LatestSignedStateProvider,
-                PreConsensusSystemTransactionConsumer,
-                PostConsensusSystemTransactionConsumer {
+                LatestSignedStateProvider {
 
     /**
-     * Get a wrapper containing the latest immutable signed state. May be unhashed, may or may not have all required
+     * Get a reserved instance of the latest immutable signed state. May be unhashed, may or may not have all required
      * signatures. State is returned with a reservation.
      *
-     * @return a wrapper with the latest signed state, or null if none are complete
+     * @param reason a short description of why this SignedState is being reserved. Each location where a SignedState is
+     *               reserved should attempt to use a unique reason, as this makes debugging reservation bugs easier.
+     * @return a reserved signed state, may contain null if none currently in memory are complete
      */
-    AutoCloseableWrapper<SignedState> getLatestImmutableState();
+    ReservedSignedState getLatestImmutableState(@NonNull final String reason);
 
     /**
      * Returns the latest round for which there is a complete signed state.
@@ -75,4 +77,42 @@ public interface StateManagementComponent
      */
     @Deprecated
     List<SignedStateInfo> getSignedStateInfo();
+
+    /**
+     * Get the consensus timestamp of the first state ingested by the signed state manager. Useful for computing the
+     * total consensus time that this node has been operating for.
+     *
+     * @return the consensus timestamp of the first state ingested by the signed state manager, or null if no states
+     * have been ingested yet
+     */
+    @Nullable
+    Instant getFirstStateTimestamp();
+
+    /**
+     * Get the round of the first state ingested by the signed state manager. Useful for computing the total number of
+     * elapsed rounds since startup.
+     *
+     * @return the round of the first state ingested by the signed state manager, or -1 if no states have been ingested
+     */
+    long getFirstStateRound();
+
+    /**
+     * Get the round of the latest state written to disk, or {@link com.swirlds.common.system.UptimeData#NO_ROUND} if no
+     * states have been written to disk since booting up.
+     *
+     * @return the latest saved state round
+     */
+    long getLatestSavedStateRound();
+
+    /**
+     * Get the signed state manager.
+     */
+    @NonNull
+    SignedStateManager getSignedStateManager();
+
+    /**
+     * Get the consensus hash manager.
+     */
+    @NonNull
+    ConsensusHashManager getConsensusHashManager();
 }

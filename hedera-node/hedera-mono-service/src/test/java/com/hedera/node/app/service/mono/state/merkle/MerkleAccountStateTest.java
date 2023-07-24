@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.common.exceptions.MutabilityException;
+import com.swirlds.base.state.MutabilityException;
 import java.util.Collections;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -422,13 +422,6 @@ class MerkleAccountStateTest {
     void equalsWorksForNumber() {
         final var otherSubject = subject.copy();
         otherSubject.setNumber(otherNumber);
-        assertNotEquals(subject, otherSubject);
-    }
-
-    @Test
-    void equalsWorksForProxy() {
-        final var otherSubject = subject.copy();
-        otherSubject.setProxy(otherProxy);
         assertNotEquals(subject, otherSubject);
     }
 

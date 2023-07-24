@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
+import com.hedera.node.app.service.mono.state.migration.TokenStateTranslator;
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -33,7 +36,15 @@ public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> 
     }
 
     @Override
-    protected MerkleToken getExpectedObject(final SeededPropertySource propertySource) {
+    protected MerkleToken getExpectedObject(
+            final SeededPropertySource propertySource, @NonNull final EqualityType equalityType) {
+        final var strictExpectation = getExpectedObject(propertySource);
+        final var pbjToken = TokenStateTranslator.tokenFromMerkle(strictExpectation);
+        return TokenStateTranslator.merkleTokenFromToken(pbjToken);
+    }
+
+    @Override
+    protected MerkleToken getExpectedObject(@NonNull final SeededPropertySource propertySource) {
         return propertySource.nextToken();
     }
 }

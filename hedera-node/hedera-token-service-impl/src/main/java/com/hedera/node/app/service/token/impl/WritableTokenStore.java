@@ -18,11 +18,10 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -36,9 +35,9 @@ import java.util.Set;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  * This class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableTokenStore {
+public class WritableTokenStore extends ReadableTokenStoreImpl {
     /** The underlying data storage class that holds the token data. */
-    private final WritableKVState<EntityNum, Token> tokenState;
+    private final WritableKVState<TokenID, Token> tokenState;
 
     /**
      * Create a new {@link WritableTokenStore} instance.
@@ -46,9 +45,8 @@ public class WritableTokenStore {
      * @param states The state to use.
      */
     public WritableTokenStore(@NonNull final WritableStates states) {
-        requireNonNull(states);
-
-        this.tokenState = states.get("TOKENS");
+        super(states);
+        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
     }
 
     /**
@@ -59,36 +57,18 @@ public class WritableTokenStore {
      */
     public void put(@NonNull final Token token) {
         Objects.requireNonNull(token);
-        tokenState.put(EntityNum.fromLong(token.tokenNumber()), Objects.requireNonNull(token));
+        tokenState.put(token.tokenId(), Objects.requireNonNull(token));
     }
 
     /**
-     * Commits the changes to the underlying data storage.
-     */
-    public void commit() {
-        ((WritableKVStateBase) tokenState).commit();
-    }
-
-    /**
-     * Returns the {@link Token} with the given number. If no such Token exists, returns {@code Optional.empty()}
-     * @param tokenNum - the number of the Token to be retrieved.
-     */
-    @NonNull
-    public Optional<Token> get(final long tokenNum) {
-        requireNonNull(tokenNum);
-        final var token = tokenState.get(EntityNum.fromLong(tokenNum));
-        return Optional.ofNullable(token);
-    }
-
-    /**
-     * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify(Comparable K)}.
+     * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
-     * @param tokenNum - the number of the token to be retrieved.
+     * @param tokenId - the id of the token to be retrieved.
      */
     @NonNull
-    public Optional<Token> getForModify(final long tokenNum) {
-        requireNonNull(tokenNum);
-        final var token = tokenState.getForModify(EntityNum.fromLong(tokenNum));
+    public Optional<Token> getForModify(final TokenID tokenId) {
+        requireNonNull(tokenId);
+        final var token = tokenState.getForModify(tokenId);
         return Optional.ofNullable(token);
     }
 
@@ -105,7 +85,7 @@ public class WritableTokenStore {
      * @return the set of tokens modified in existing state
      */
     @NonNull
-    public Set<EntityNum> modifiedTokens() {
+    public Set<TokenID> modifiedTokens() {
         return tokenState.modifiedKeys();
     }
 }

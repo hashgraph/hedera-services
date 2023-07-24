@@ -71,47 +71,51 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
-import com.hedera.hapi.node.state.token.AccountTokenAllowance;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleDeleteHandler;
-import com.hedera.node.app.spi.accounts.AccountAccess;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableKVStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TestFixturesKeyLookup;
+import java.security.InvalidKeyException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ScheduleDeleteHandlerParityTest {
     static final KeyTree ADMIN_KEY = KeyTree.withRoot(ed25519());
     private final ScheduleDeleteHandler subject = new ScheduleDeleteHandler();
-    private AccountAccess keyLookup;
+    private ReadableAccountStore accountStore;
     private ReadableScheduleStore scheduleStore;
 
     @BeforeEach
     void setUp() {
-        keyLookup = AdapterUtils.wellKnownKeyLookupAt();
+        accountStore = AdapterUtils.wellKnownKeyLookupAt();
     }
 
     @Test
@@ -119,9 +123,10 @@ class ScheduleDeleteHandlerParityTest {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
                 999L, ADMIN_KEY, theTxn); // use any schedule id that does not match UNKNOWN_SCHEDULE_ID
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), INVALID_SCHEDULE_ID);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_SCHEDULE_ID);
     }
 
     @Test
@@ -129,9 +134,10 @@ class ScheduleDeleteHandlerParityTest {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY);
         scheduleStore = AdapterUtils.mockSchedule(
                 IdUtils.asSchedule(KNOWN_SCHEDULE_IMMUTABLE_ID).getScheduleNum(), null, theTxn);
-        final var context = new PreHandleContext(keyLookup, theTxn);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
 
-        assertThrowsPreCheck(() -> subject.preHandle(context, scheduleStore), SCHEDULE_IS_IMMUTABLE);
+        assertThrowsPreCheck(() -> subject.preHandle(context), SCHEDULE_IS_IMMUTABLE);
     }
 
     @Test
@@ -139,8 +145,10 @@ class ScheduleDeleteHandlerParityTest {
         final var theTxn = txnFrom(SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE);
         scheduleStore = AdapterUtils.mockSchedule(
                 IdUtils.asSchedule(KNOWN_SCHEDULE_WITH_ADMIN_ID).getScheduleNum(), ADMIN_KEY, theTxn);
-        final var context = new PreHandleContext(keyLookup, theTxn);
-        subject.preHandle(context, scheduleStore);
+        final var context = new FakePreHandleContext(accountStore, theTxn);
+        context.registerStore(ReadableScheduleStore.class, scheduleStore);
+
+        subject.preHandle(context);
 
         assertTrue(context.requiredNonPayerKeys().contains(ADMIN_KEY.asPbjKey()));
     }
@@ -160,6 +168,9 @@ class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final ScheduleVirtualValue schedule = mock(ScheduleVirtualValue.class);
 
+    private static final OneOf<Account.StakedIdOneOfType> UNSET_STAKED_ID =
+            new OneOf<>(Account.StakedIdOneOfType.UNSET, null);
+
     @SuppressWarnings("unchecked")
     private static final ReadableKVStateBase<Long, ScheduleVirtualValue> schedulesById =
             (ReadableKVStateBase<Long, ScheduleVirtualValue>) mock(ReadableKVStateBase.class);
@@ -169,13 +180,13 @@ class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountAccess} containing the "well-known" accounts that exist in a
+     * Returns the {@link ReadableAccountStore} containing the "well-known" accounts that exist in a
      * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests
-     * that require an {@link AccountAccess}.
+     * that require an {@link ReadableAccountStore}.
      *
      * @return the well-known account store
      */
-    public static AccountAccess wellKnownKeyLookupAt() {
+    public static ReadableAccountStore wellKnownKeyLookupAt() {
         return new TestFixturesKeyLookup(mockStates(Map.of(ACCOUNTS_KEY, wellKnownAccountsState())));
     }
 
@@ -187,17 +198,17 @@ class AdapterUtils {
     }
 
     public static ReadableScheduleStore mockSchedule(Long schedId, KeyTree key, TransactionBody txnBody)
-            throws DecoderException {
+            throws InvalidKeyException {
         final ScheduleID scheduleID =
                 ScheduleID.newBuilder().scheduleNum(schedId).build();
         given(schedule.hasAdminKey()).willReturn(key == null ? false : true);
         given(schedule.adminKey()).willReturn(key == null ? Optional.empty() : Optional.of(key.asJKey()));
         given(schedule.ordinaryViewOfScheduledTxn()).willReturn(PbjConverter.fromPbj(txnBody));
         given(schedulesById.get(scheduleID.scheduleNum())).willReturn(schedule);
-        return new ReadableScheduleStore(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
+        return new ReadableScheduleStoreImpl(new MapReadableStates(Map.of("SCHEDULES_BY_ID", schedulesById)));
     }
 
-    private static ReadableKVState<EntityNumVirtualKey, Account> wellKnownAccountsState() {
+    private static ReadableKVState<AccountID, Account> wellKnownAccountsState() {
         return new MapReadableKVState<>(ACCOUNTS_KEY, wellKnownAccountStoreAt());
     }
 
@@ -205,67 +216,63 @@ class AdapterUtils {
         private static final String ACCOUNTS_KEY = "ACCOUNTS";
 
         private static AccountCryptoAllowance cryptoAllowances = AccountCryptoAllowance.newBuilder()
-                .accountNum(DEFAULT_PAYER.getAccountNum())
+                .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                 .amount(500L)
                 .build();
         private static AccountFungibleTokenAllowance fungibleTokenAllowances =
                 AccountFungibleTokenAllowance.newBuilder()
-                        .tokenAllowanceKey(AccountTokenAllowance.newBuilder()
-                                .tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum())
-                                .accountNum(DEFAULT_PAYER.getAccountNum())
-                                .build())
+                        .tokenId(TokenID.newBuilder().tokenNum(KNOWN_TOKEN_NO_SPECIAL_KEYS.getTokenNum()))
+                        .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                         .amount(10_000L)
                         .build();
 
-        private static AccountTokenAllowance nftAllowances = AccountTokenAllowance.newBuilder()
-                .tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum())
-                .accountNum(DEFAULT_PAYER.getAccountNum())
+        private static AccountApprovalForAllAllowance nftAllowances = AccountApprovalForAllAllowance.newBuilder()
+                .tokenId(TokenID.newBuilder().tokenNum(KNOWN_TOKEN_WITH_WIPE.getTokenNum()))
+                .spenderId(AccountID.newBuilder().accountNum(DEFAULT_PAYER.getAccountNum()))
                 .build();
 
-        public static Map<EntityNumVirtualKey, Account> wellKnownAccountStoreAt() {
-            final var destination = new HashMap<EntityNumVirtualKey, Account>();
+        public static Map<AccountID, Account> wellKnownAccountStoreAt() {
+            final var destination = new HashMap<AccountID, Account>();
             destination.put(
-                    EntityNumVirtualKey.fromLong(FIRST_TOKEN_SENDER.getAccountNum()),
+                    toPbj(FIRST_TOKEN_SENDER),
                     toPbjAccount(FIRST_TOKEN_SENDER.getAccountNum(), FIRST_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(SECOND_TOKEN_SENDER.getAccountNum()),
+                    toPbj(SECOND_TOKEN_SENDER),
                     toPbjAccount(SECOND_TOKEN_SENDER.getAccountNum(), SECOND_TOKEN_SENDER_KT.asPbjKey(), 10_000L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(TOKEN_RECEIVER.getAccountNum()),
-                    toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
+                    toPbj(TOKEN_RECEIVER), toPbjAccount(TOKEN_RECEIVER.getAccountNum(), TOKEN_WIPE_KT.asPbjKey(), 0L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DEFAULT_NODE.getAccountNum()),
-                    toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
+                    toPbj(DEFAULT_NODE), toPbjAccount(DEFAULT_NODE.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), 0L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DEFAULT_PAYER.getAccountNum()),
+                    toPbj(DEFAULT_PAYER),
                     toPbjAccount(DEFAULT_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(STAKING_FUND.getAccountNum()),
+                    toPbj(STAKING_FUND),
                     toPbjAccount(STAKING_FUND.getAccountNum(), toPbj(asKeyUnchecked(EMPTY_KEY)), 0L));
             destination.put(
-                    EntityNumVirtualKey.fromLong(MASTER_PAYER.getAccountNum()),
+                    toPbj(MASTER_PAYER),
                     toPbjAccount(MASTER_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(TREASURY_PAYER.getAccountNum()),
+                    toPbj(TREASURY_PAYER),
                     toPbjAccount(TREASURY_PAYER.getAccountNum(), DEFAULT_PAYER_KT.asPbjKey(), DEFAULT_PAYER_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(NO_RECEIVER_SIG.getAccountNum()),
+                    toPbj(NO_RECEIVER_SIG),
                     toPbjAccount(NO_RECEIVER_SIG.getAccountNum(), NO_RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(RECEIVER_SIG.getAccountNum()),
+                    toPbj(RECEIVER_SIG),
                     toPbjAccount(RECEIVER_SIG.getAccountNum(), RECEIVER_SIG_KT.asPbjKey(), DEFAULT_BALANCE, true));
             destination.put(
-                    EntityNumVirtualKey.fromLong(SYS_ACCOUNT.getAccountNum()),
+                    toPbj(SYS_ACCOUNT),
                     toPbjAccount(SYS_ACCOUNT.getAccountNum(), SYS_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(MISC_ACCOUNT.getAccountNum()),
+                    toPbj(MISC_ACCOUNT),
                     toPbjAccount(MISC_ACCOUNT.getAccountNum(), MISC_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(CUSTOM_PAYER_ACCOUNT.getAccountNum()),
+                    toPbj(CUSTOM_PAYER_ACCOUNT),
                     toPbjAccount(
                             CUSTOM_PAYER_ACCOUNT.getAccountNum(), CUSTOM_PAYER_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(OWNER_ACCOUNT.getAccountNum()),
+                    toPbj(OWNER_ACCOUNT),
                     toPbjAccount(
                             OWNER_ACCOUNT.getAccountNum(),
                             OWNER_ACCOUNT_KT.asPbjKey(),
@@ -275,7 +282,7 @@ class AdapterUtils {
                             List.of(fungibleTokenAllowances),
                             List.of(nftAllowances)));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DELEGATING_SPENDER.getAccountNum()),
+                    toPbj(DELEGATING_SPENDER),
                     toPbjAccount(
                             DELEGATING_SPENDER.getAccountNum(),
                             DELEGATING_SPENDER_KT.asPbjKey(),
@@ -285,20 +292,20 @@ class AdapterUtils {
                             List.of(fungibleTokenAllowances),
                             List.of(nftAllowances)));
             destination.put(
-                    EntityNumVirtualKey.fromLong(COMPLEX_KEY_ACCOUNT.getAccountNum()),
+                    toPbj(COMPLEX_KEY_ACCOUNT),
                     toPbjAccount(
                             COMPLEX_KEY_ACCOUNT.getAccountNum(), COMPLEX_KEY_ACCOUNT_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(TOKEN_TREASURY.getAccountNum()),
+                    toPbj(TOKEN_TREASURY),
                     toPbjAccount(TOKEN_TREASURY.getAccountNum(), TOKEN_TREASURY_KT.asPbjKey(), DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(DILIGENT_SIGNING_PAYER.getAccountNum()),
+                    toPbj(DILIGENT_SIGNING_PAYER),
                     toPbjAccount(
                             DILIGENT_SIGNING_PAYER.getAccountNum(),
                             DILIGENT_SIGNING_PAYER_KT.asPbjKey(),
                             DEFAULT_BALANCE));
             destination.put(
-                    EntityNumVirtualKey.fromLong(FROM_OVERLAP_PAYER.getAccountNum()),
+                    toPbj(FROM_OVERLAP_PAYER),
                     toPbjAccount(
                             FROM_OVERLAP_PAYER.getAccountNum(), FROM_OVERLAP_PAYER_KT.asPbjKey(), DEFAULT_BALANCE));
             return destination;
@@ -320,9 +327,9 @@ class AdapterUtils {
                 boolean receiverSigRequired,
                 List<AccountCryptoAllowance> cryptoAllowances,
                 List<AccountFungibleTokenAllowance> fungibleTokenAllowances,
-                List<AccountTokenAllowance> nftTokenAllowances) {
+                List<AccountApprovalForAllAllowance> nftTokenAllowances) {
             return new Account(
-                    number,
+                    AccountID.newBuilder().accountNum(number).build(),
                     Bytes.EMPTY,
                     key,
                     10_000L,
@@ -331,11 +338,13 @@ class AdapterUtils {
                     false,
                     1_234_567L,
                     1_234_567L,
-                    0L,
+                    UNSET_STAKED_ID,
                     false,
                     receiverSigRequired,
-                    3L,
-                    2L,
+                    TokenID.newBuilder().tokenNum(3L).build(),
+                    NftID.newBuilder()
+                            .tokenId(TokenID.newBuilder().tokenNum(2L))
+                            .build(),
                     1L,
                     2,
                     3,
@@ -345,14 +354,15 @@ class AdapterUtils {
                     3,
                     0,
                     1_234_5678L,
-                    2,
+                    AccountID.newBuilder().accountNum(2L).build(),
                     76_000L,
                     0,
                     cryptoAllowances,
                     nftTokenAllowances,
                     fungibleTokenAllowances,
                     2,
-                    false);
+                    false,
+                    null);
         }
     }
 }

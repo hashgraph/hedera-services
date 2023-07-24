@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.mono.stream;
 
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -43,8 +44,8 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public class RecordStreamObject extends AbstractSerializableHashable
         implements Timestamped, RunningHashable, SerializableHashable, StreamAligned {
-    private static final long CLASS_ID = 0xe370929ba5429d8bL;
-    static final int CLASS_VERSION = 1;
+    public static final long CLASS_ID = 0xe370929ba5429d8bL;
+    public static final int CLASS_VERSION = 1;
 
     private static final int MAX_RECORD_LENGTH = 64 * 1024;
     private static final int MAX_TRANSACTION_LENGTH = 64 * 1024;
@@ -56,7 +57,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
     // Whether this is the first record in a block (i.e., .rcd file)
     private boolean writeNewFile;
     // The number of the ETH JSON-RPC bridge block containing this record
-    private long blockNumber;
+    private long blockNumber = BlockManager.UNKNOWN_BLOCK_NO;
 
     /* The gRPC transaction and records for the record stream file */
     private Transaction transaction;
@@ -90,6 +91,19 @@ public class RecordStreamObject extends AbstractSerializableHashable
         this.transaction = transaction;
         this.consensusTimestamp = consensusTimestamp;
         this.fcTransactionRecord = fcTransactionRecord;
+        this.sidecars = sidecars;
+
+        runningHash = new RunningHash();
+    }
+
+    public RecordStreamObject(
+            final TransactionRecord transactionRecord,
+            final Transaction transaction,
+            final Instant consensusTimestamp,
+            final List<TransactionSidecarRecord.Builder> sidecars) {
+        this.transaction = transaction;
+        this.consensusTimestamp = consensusTimestamp;
+        this.transactionRecord = transactionRecord;
         this.sidecars = sidecars;
 
         runningHash = new RunningHash();
@@ -183,6 +197,7 @@ public class RecordStreamObject extends AbstractSerializableHashable
                 .append(this.transactionRecord, that.transactionRecord)
                 .append(this.transaction, that.transaction)
                 .append(this.consensusTimestamp, that.consensusTimestamp)
+                .append(this.writeNewFile, that.writeNewFile)
                 .isEquals();
     }
 
@@ -234,5 +249,6 @@ public class RecordStreamObject extends AbstractSerializableHashable
         this.transactionRecord = transactionRecord;
 
         runningHash = new RunningHash();
+        sidecars = Collections.emptyList();
     }
 }

@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
-import com.swirlds.common.test.io.SerializationUtils;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.test.utils.EqualsVerifier;
 import com.swirlds.test.framework.config.TestConfigBuilder;
@@ -41,12 +41,10 @@ class GossipEventTest {
 
     @Test
     void test() throws IOException, ConstructableRegistryException {
-        final IndexedEvent indexedEvent = RandomEventUtils.randomEvent(new Random(), 0, null, null);
+        final IndexedEvent indexedEvent = RandomEventUtils.randomEvent(new Random(), new NodeId(0), null, null);
         final GossipEvent gossipEvent =
                 new GossipEvent(indexedEvent.getBaseEventHashedData(), indexedEvent.getBaseEventUnhashedData());
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        SettingsCommon.maxTransactionCountPerEvent = 1000;
-        SettingsCommon.transactionMaxBytes = 1000;
         final GossipEvent copy = SerializationUtils.serializeDeserialize(gossipEvent);
         assertEquals(gossipEvent, copy, "deserialized version should be the same");
     }

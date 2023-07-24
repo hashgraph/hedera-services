@@ -28,11 +28,10 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -41,9 +40,10 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.time.Duration;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +77,7 @@ public abstract class VirtualMapReconnectTestBase {
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
+    protected BooleanSupplier requestTeacherToStop;
 
     protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
 
@@ -89,6 +90,7 @@ public abstract class VirtualMapReconnectTestBase {
         learnerBuilder = createBrokenBuilder(dataSourceBuilder);
         teacherMap = new VirtualMap<>("Teacher", teacherBuilder);
         learnerMap = new VirtualMap<>("Learner", learnerBuilder);
+        requestTeacherToStop = () -> false; // don't interrupt teaching by default
     }
 
     @BeforeAll
@@ -109,53 +111,12 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
 
-        ReconnectSettingsFactory.configure(new ReconnectSettings() {
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-
-            @Override
-            public int getReconnectWindowSeconds() {
-                return -1;
-            }
-
-            @Override
-            public double getFallenBehindThreshold() {
-                return 0.5;
-            }
-
-            @Override
-            public int getAsyncStreamTimeoutMilliseconds() {
+        new TestConfigBuilder()
+                .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                return 5000;
-            }
-
-            @Override
-            public int getAsyncOutputStreamFlushMilliseconds() {
-                return 100;
-            }
-
-            @Override
-            public int getAsyncStreamBufferSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getMaxAckDelayMilliseconds() {
-                return 1000;
-            }
-
-            @Override
-            public int getMaximumReconnectFailuresBeforeShutdown() {
-                return 10;
-            }
-
-            @Override
-            public Duration getMinimumTimeBetweenReconnects() {
-                return Duration.ofMinutes(10);
-            }
-        });
+                .withValue("reconnect.asyncStreamTimeout", "5000ms")
+                .withValue("reconnect.maxAckDelay", "1000ms")
+                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(final MerkleNode map) {
@@ -176,10 +137,8 @@ public abstract class VirtualMapReconnectTestBase {
     /**
      * The number of reconnect attempts. Only the last attempt should succeed.
      *
-     * @param attempts
-     * 		the number of times reconnect will be attempted
-     * @param brokenTeacherMapBuilder
-     * 		builds the teacher map to be used on all but the last attempt
+     * @param attempts                the number of times reconnect will be attempted
+     * @param brokenTeacherMapBuilder builds the teacher map to be used on all but the last attempt
      */
     protected void reconnectMultipleTimes(
             final int attempts, final Function<VirtualMap<TestKey, TestValue>, MerkleNode> brokenTeacherMapBuilder) {
@@ -205,9 +164,11 @@ public abstract class VirtualMapReconnectTestBase {
 
                 try {
                     final MerkleNode node = MerkleTestUtils.hashAndTestSynchronization(
-                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree);
+                            learnerTree, failureExpected ? brokenTeacherTree : teacherTree, requestTeacherToStop);
                     node.release();
                     assertFalse(failureExpected, "We should only succeed on the last try");
+                    final VirtualRoot root = learnerMap.getRight();
+                    assertTrue(root.isHashed(), "Learner root node must be hashed");
                 } catch (Exception e) {
                     assertTrue(failureExpected, "We did not expect an exception on this reconnect attempt! " + e);
                 }

@@ -22,14 +22,16 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.dispatch.Observer;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Metrics for ISS events.
@@ -102,7 +104,7 @@ public class IssMetrics {
     /**
      * The current ISS status of nodes.
      */
-    private final Map<Long /* node ID */, IssStatus> issDataByNode = new HashMap<>();
+    private final Map<NodeId, IssStatus> issDataByNode = new HashMap<>();
 
     /**
      * Constructor of {@code IssMetrics}
@@ -112,9 +114,9 @@ public class IssMetrics {
      * @throws IllegalArgumentException
      * 		if {@code metrics} is {@code null}
      */
-    public IssMetrics(final Metrics metrics, final AddressBook addressBook) {
-        CommonUtils.throwArgNull(metrics, "metrics");
-        this.addressBook = CommonUtils.throwArgNull(addressBook, "addressBook");
+    public IssMetrics(@NonNull final Metrics metrics, @NonNull final AddressBook addressBook) {
+        Objects.requireNonNull(metrics, "metrics must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
 
         issCountGauge = metrics.getOrCreate(new IntegerGauge.Config(INTERNAL_CATEGORY, "issCount")
                 .withDescription("the number of nodes that currently disagree with the consensus hash"));
@@ -123,7 +125,7 @@ public class IssMetrics {
                 .withDescription("the amount of weight tied up by ISS events"));
 
         for (final Address address : addressBook) {
-            issDataByNode.put(address.getId(), new IssStatus());
+            issDataByNode.put(address.getNodeId(), new IssStatus());
         }
     }
 
@@ -155,7 +157,14 @@ public class IssMetrics {
      */
     @Observer(StateHashValidityTrigger.class)
     public void stateHashValidityObserver(
-            final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) {
+            @NonNull final Long round,
+            @NonNull final NodeId nodeId,
+            @NonNull final Hash nodeHash,
+            @NonNull final Hash consensusHash) {
+        Objects.requireNonNull(round, "round must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(nodeHash, "nodeHash must not be null");
+        Objects.requireNonNull(consensusHash, "consensusHash must not be null");
 
         final boolean hasIss = !nodeHash.equals(consensusHash);
 

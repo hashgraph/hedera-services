@@ -28,12 +28,12 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.threading.utility.ThrowingRunnable;
-import com.swirlds.platform.Connection;
-import com.swirlds.platform.chatter.communication.ChatterProtocol;
-import com.swirlds.platform.chatter.protocol.MessageProvider;
-import com.swirlds.platform.chatter.protocol.peer.CommunicationState;
-import com.swirlds.platform.chatter.protocol.peer.PeerGossipState;
-import com.swirlds.platform.chatter.protocol.peer.PeerInstance;
+import com.swirlds.platform.gossip.chatter.communication.ChatterProtocol;
+import com.swirlds.platform.gossip.chatter.protocol.MessageProvider;
+import com.swirlds.platform.gossip.chatter.protocol.peer.CommunicationState;
+import com.swirlds.platform.gossip.chatter.protocol.peer.PeerGossipState;
+import com.swirlds.platform.gossip.chatter.protocol.peer.PeerInstance;
+import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.sync.ConnectionFactory;
 import java.io.IOException;
 import java.util.Queue;
@@ -78,7 +78,7 @@ class ChatterNetworkTest {
         final ChatterNetworkTester peer2 = new ChatterNetworkTester(numberOfMessages, parallelExecutor, true);
 
         final Pair<Connection, Connection> connections =
-                ConnectionFactory.createLocalConnections(NodeId.createMain(0), NodeId.createMain(1));
+                ConnectionFactory.createLocalConnections(new NodeId(0L), new NodeId(1));
 
         final Future<Void> future1 = executor.submit(peer1.getProtocolRunnable(connections.getLeft()));
         final Future<Void> future2 = executor.submit(peer2.getProtocolRunnable(connections.getRight()));

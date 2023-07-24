@@ -18,6 +18,7 @@ package com.swirlds.virtualmap.internal.reconnect;
 
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -28,27 +29,26 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettings;
-import com.swirlds.common.merkle.synchronization.settings.ReconnectSettingsFactory;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.InMemoryKeySet;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
-import com.swirlds.virtualmap.datasource.VirtualInternalRecord;
+import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualKeySet;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -114,53 +114,11 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
 
-        ReconnectSettingsFactory.configure(new ReconnectSettings() {
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-
-            @Override
-            public int getReconnectWindowSeconds() {
-                return -1;
-            }
-
-            @Override
-            public double getFallenBehindThreshold() {
-                return 0.5;
-            }
-
-            @Override
-            public int getAsyncStreamTimeoutMilliseconds() {
+        new TestConfigBuilder()
+                .withValue("reconnect.active", "true")
                 // This is lower than the default, helps test that is supposed to fail to finish faster.
-                return 5000;
-            }
-
-            @Override
-            public int getAsyncOutputStreamFlushMilliseconds() {
-                return 100;
-            }
-
-            @Override
-            public int getAsyncStreamBufferSize() {
-                return 10_000;
-            }
-
-            @Override
-            public int getMaxAckDelayMilliseconds() {
-                return 1000;
-            }
-
-            @Override
-            public int getMaximumReconnectFailuresBeforeShutdown() {
-                return 10;
-            }
-
-            @Override
-            public Duration getMinimumTimeBetweenReconnects() {
-                return Duration.ofMinutes(10);
-            }
-        });
+                .withValue("reconnect.asyncStreamTimeout", "5000ms")
+                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
@@ -184,6 +142,8 @@ public abstract class VirtualMapReconnectTestBase {
                     final var node = MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
                     node.release();
                     assertEquals(attempts - 1, i, "We should only succeed on the last try");
+                    final VirtualRoot root = learnerMap.getRight();
+                    assertTrue(root.isHashed(), "Learner root node must be hashed");
                 } catch (Exception e) {
                     if (i == attempts - 1) {
                         fail("We did not expect an exception on this reconnect attempt!", e);
@@ -285,7 +245,7 @@ public abstract class VirtualMapReconnectTestBase {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualInternalRecord> internalRecords,
+                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
                 final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
                 throws IOException {
@@ -303,7 +263,8 @@ public abstract class VirtualMapReconnectTestBase {
                 }
             }
 
-            delegate.saveRecords(firstLeafPath, lastLeafPath, internalRecords, leaves.stream(), leafRecordsToDelete);
+            delegate.saveRecords(
+                    firstLeafPath, lastLeafPath, pathHashRecordsToUpdate, leaves.stream(), leafRecordsToDelete);
         }
 
         @Override
@@ -322,18 +283,13 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public VirtualInternalRecord loadInternalRecord(final long path, final boolean deserialize) throws IOException {
-            return delegate.loadInternalRecord(path, deserialize);
-        }
-
-        @Override
         public long findKey(final TestKey key) throws IOException {
             return delegate.findKey(key);
         }
 
         @Override
-        public Hash loadLeafHash(final long path) throws IOException {
-            return delegate.loadLeafHash(path);
+        public Hash loadHash(final long path) throws IOException {
+            return delegate.loadHash(path);
         }
 
         @Override
@@ -342,14 +298,33 @@ public abstract class VirtualMapReconnectTestBase {
         }
 
         @Override
-        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {}
+        public void copyStatisticsFrom(final VirtualDataSource<TestKey, TestValue> that) {
+            delegate.copyStatisticsFrom(that);
+        }
 
         @Override
-        public void registerMetrics(final Metrics metrics) {}
+        public void registerMetrics(final Metrics metrics) {
+            delegate.registerMetrics(metrics);
+        }
 
         @Override
         public VirtualKeySet<TestKey> buildKeySet() {
             return new InMemoryKeySet<>();
+        }
+
+        @Override
+        public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
+            return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
+        }
+
+        @Override
+        public long getFirstLeafPath() {
+            return delegate.getFirstLeafPath();
+        }
+
+        @Override
+        public long getLastLeafPath() {
+            return delegate.getLastLeafPath();
         }
     }
 }

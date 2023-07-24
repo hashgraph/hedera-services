@@ -16,16 +16,17 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.time.OSTime;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.state.output.IssConsumer;
@@ -67,17 +68,17 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
-        handler.stateHashValidityObserver(1234L, selfId, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId), randomHash(), randomHash());
 
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
@@ -114,24 +115,24 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
@@ -167,24 +168,24 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Throttle should prevent double dumping
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
@@ -216,17 +217,17 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(0, dumpCount.get(), "unexpected dump count");
         assertEquals(0, freezeCount.get(), "unexpected freeze count");
@@ -262,24 +263,24 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
 
         dispatchBuilder.start();
 
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
         assertEquals(0, shutdownCount.get(), "unexpected shutdown count");
 
         // Once frozen, this should become a no-op
-        handler.stateHashValidityObserver(1234L, selfId + 1, randomHash(), randomHash());
+        handler.stateHashValidityObserver(1234L, new NodeId(selfId + 1), randomHash(), randomHash());
 
         assertEquals(1, dumpCount.get(), "unexpected dump count");
         assertEquals(1, freezeCount.get(), "unexpected freeze count");
@@ -316,10 +317,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -359,10 +360,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -406,10 +407,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -460,10 +461,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -510,10 +511,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -557,10 +558,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -611,10 +612,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -665,10 +666,10 @@ class IssHandlerTests {
         final FatalErrorConsumer fatalErrorConsumer = (msg, t, code) -> shutdownCount.getAndIncrement();
 
         final IssHandler handler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                selfId,
+                new NodeId(selfId),
                 haltRequestedConsumer,
                 fatalErrorConsumer,
                 (r, type, otherId) -> {});
@@ -707,10 +708,10 @@ class IssHandlerTests {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final IssHandler issHandler = new IssHandler(
-                OSTime.getInstance(),
+                Time.getCurrent(),
                 dispatchBuilder,
                 stateConfig,
-                0L,
+                new NodeId(0L),
                 (reason) -> {},
                 (msg, t, code) -> {},
                 issConsumer);
@@ -725,12 +726,12 @@ class IssHandlerTests {
         assertEquals(0, catastrophicIssCount.get(), "incorrect catastrophic ISS count");
 
         // This method should not trigger notification when called with the "self" node ID
-        issHandler.stateHashValidityObserver(4321L, 0L, randomHash(), randomHash());
+        issHandler.stateHashValidityObserver(4321L, new NodeId(0L), randomHash(), randomHash());
         assertEquals(1, selfIssCount.get(), "incorrect self ISS count");
         assertEquals(0, otherIssCount.get(), "incorrect other ISS count");
         assertEquals(0, catastrophicIssCount.get(), "incorrect catastrophic ISS count");
 
-        issHandler.stateHashValidityObserver(4321L, 7L, randomHash(), randomHash());
+        issHandler.stateHashValidityObserver(4321L, new NodeId(7L), randomHash(), randomHash());
         assertEquals(1, selfIssCount.get(), "incorrect self ISS count");
         assertEquals(1, otherIssCount.get(), "incorrect other ISS count");
         assertEquals(0, catastrophicIssCount.get(), "incorrect catastrophic ISS count");

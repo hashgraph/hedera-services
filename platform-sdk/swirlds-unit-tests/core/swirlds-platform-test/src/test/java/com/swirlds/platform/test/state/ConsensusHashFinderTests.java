@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.platform.Utilities.isMajority;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.CATASTROPHIC_ISS;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.DECIDED;
 import static com.swirlds.platform.state.iss.internal.ConsensusHashStatus.UNDECIDED;
@@ -29,8 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
 import com.swirlds.platform.state.iss.internal.ConsensusHashFinder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -56,7 +58,7 @@ class ConsensusHashFinderTests {
     /**
      * A node to be added to a consensus hash builder.
      */
-    private record NodeToAdd(long nodeId, long weight, Hash stateHash) {}
+    private record NodeToAdd(@NonNull NodeId nodeId, long weight, @NonNull Hash stateHash) {}
 
     /**
      * A description of a desired partition
@@ -66,30 +68,27 @@ class ConsensusHashFinderTests {
     /**
      * Generate a list of nodes for a given partition
      *
-     * @param random
-     * 		a source of randomness
-     * @param firstNodeId
-     * 		the first node ID. Node IDs are generated sequentially starting with this node ID.
-     * @param partition
-     * 		a description of the partition
+     * @param random      a source of randomness
+     * @param firstNodeId the first node ID. Node IDs are generated sequentially starting with this node ID.
+     * @param partition   a description of the partition
      */
     private List<NodeToAdd> getPartitionNodes(
             final Random random,
             final long averageWeight,
             final long standardDeviationWeight,
-            final long firstNodeId,
+            final NodeId firstNodeId,
             final PartitionDescription partition) {
         final List<NodeToAdd> nodes = new ArrayList<>();
         if (partition.totalWeight > 0) {
             long remainingWeight = partition.totalWeight;
-            long nextNodeId = firstNodeId;
+            NodeId nextNodeId = firstNodeId;
 
             while (remainingWeight > 0) {
                 final long nextNodeWeight = Math.min(remainingWeight, Math.max(1L, (long)
                         (averageWeight + random.nextGaussian() * standardDeviationWeight)));
 
                 nodes.add(new NodeToAdd(nextNodeId, nextNodeWeight, partition.hash));
-                nextNodeId++;
+                nextNodeId = new NodeId(nextNodeId.id() + 1);
                 remainingWeight -= nextNodeWeight;
             }
         }
@@ -100,14 +99,10 @@ class ConsensusHashFinderTests {
     /**
      * Given a list of partitions, return a list of nodes from those partitions.
      *
-     * @param random
-     * 		a source of randomness
-     * @param averageWeight
-     * 		the average weight per node
-     * @param standardDeviationWeight
-     * 		the standard deviation of the weight per node
-     * @param partitions
-     * 		a list of partitions
+     * @param random                  a source of randomness
+     * @param averageWeight           the average weight per node
+     * @param standardDeviationWeight the standard deviation of the weight per node
+     * @param partitions              a list of partitions
      */
     private List<NodeToAdd> getNodes(
             final Random random,
@@ -116,11 +111,11 @@ class ConsensusHashFinderTests {
             final List<PartitionDescription> partitions) {
 
         final List<NodeToAdd> nodes = new ArrayList<>();
-        long nextNodeId = 0;
+        NodeId nextNodeId = new NodeId(0);
         for (final PartitionDescription partition : partitions) {
             final List<NodeToAdd> partitionNodes =
                     getPartitionNodes(random, averageWeight, standardDeviationWeight, nextNodeId, partition);
-            nextNodeId += partitionNodes.size();
+            nextNodeId = new NodeId(nextNodeId.id() + partitionNodes.size());
             nodes.addAll(partitionNodes);
         }
         return nodes;
@@ -137,7 +132,7 @@ class ConsensusHashFinderTests {
         final Hash hash = randomHash(random);
 
         final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) ->
+                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
                         assertEquals(nodeHash, consensusHash, "no disagreements expected");
 
         final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
@@ -146,8 +141,8 @@ class ConsensusHashFinderTests {
         assertEquals(0, hashFinder.getPartitionMap().size(), "there shouldn't be any partitions yet");
 
         // Add weight up until >1/2, but as soon as we meet or exceed 1/2 exit the loop
-        long nextNodeId = 0;
-        while (!isMajority(hashFinder.getHashReportedWeight(), totalWeight)) {
+        NodeId nextNodeId = new NodeId(0L);
+        while (!MAJORITY.isSatisfiedBy(hashFinder.getHashReportedWeight(), totalWeight)) {
             assertEquals(UNDECIDED, hashFinder.getStatus(), "status should not yet be decided");
 
             final long nextNodeWeight =
@@ -163,16 +158,16 @@ class ConsensusHashFinderTests {
             hashFinder.addHash(nextNodeId, nextNodeWeight, randomHash(random));
             assertEquals(currentAccumulatedWeight, hashFinder.getHashReportedWeight(), "duplicates should be no-ops");
 
-            nextNodeId++;
+            nextNodeId = new NodeId(nextNodeId.id() + 1L);
 
             assertEquals(1, hashFinder.getPartitionMap().size(), "there should only be 1 partition");
             assertTrue(hashFinder.getPartitionMap().containsKey(hash), "invalid partition map");
             assertEquals(
-                    nextNodeId,
+                    nextNodeId.id(),
                     hashFinder.getPartitionMap().get(hash).getNodes().size(),
                     "incorrect partition size");
             assertTrue(
-                    hashFinder.getPartitionMap().get(hash).getNodes().contains(nextNodeId - 1),
+                    hashFinder.getPartitionMap().get(hash).getNodes().contains(new NodeId(nextNodeId.id() - 1)),
                     "could not find node that was just added");
         }
 
@@ -190,10 +185,10 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
         final Hash expectedConsensusHash = randomHash(random);
 
-        final Set<Long> disagreeingNodes = new HashSet<>();
-        final Set<Long> expectedDisagreeingNodes = new HashSet<>();
+        final Set<NodeId> disagreeingNodes = new HashSet<>();
+        final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
         final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) -> {
+                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) -> {
                     assertEquals(consensusHash, expectedConsensusHash, "unexpected consensus hash");
 
                     if (!nodeHash.equals(consensusHash)) {
@@ -246,7 +241,7 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
 
         final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) ->
+                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
                         fail("no disagreement expected");
 
         final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
@@ -290,7 +285,7 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
 
         final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) ->
+                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
                         fail("no disagreement expected");
 
         final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
@@ -328,7 +323,7 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
 
         final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) ->
+                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) ->
                         fail("no consensus hash should be found");
 
         final ConsensusHashFinder hashFinder = new ConsensusHashFinder(stateHashValidityDispatcher, 0, totalWeight);
@@ -348,14 +343,14 @@ class ConsensusHashFinderTests {
             smallPartitions.add(new PartitionDescription(randomHash(random), partitionWeight));
         }
 
-        long nextNodeId = 0;
+        NodeId nextNodeId = new NodeId(0);
         final List<NodeToAdd> nodes = new ArrayList<>();
 
         // Add the nodes from the small partitions
         for (final PartitionDescription partition : smallPartitions) {
             final List<NodeToAdd> partitionNodes =
                     getPartitionNodes(random, averageWeight, standardDeviationWeight, nextNodeId, partition);
-            nextNodeId += partitionNodes.size();
+            nextNodeId = new NodeId(nextNodeId.id() + partitionNodes.size());
             nodes.addAll(partitionNodes);
         }
 
@@ -380,10 +375,10 @@ class ConsensusHashFinderTests {
         final long standardDeviationWeight = totalWeight / 200;
         final Hash expectedConsensusHash = randomHash(random);
 
-        final Set<Long> disagreeingNodes = new HashSet<>();
-        final Set<Long> expectedDisagreeingNodes = new HashSet<>();
+        final Set<NodeId> disagreeingNodes = new HashSet<>();
+        final Set<NodeId> expectedDisagreeingNodes = new HashSet<>();
         final StateHashValidityTrigger stateHashValidityDispatcher =
-                (final Long round, final Long nodeId, final Hash nodeHash, final Hash consensusHash) -> {
+                (final Long round, final NodeId nodeId, final Hash nodeHash, final Hash consensusHash) -> {
                     assertEquals(consensusHash, expectedConsensusHash, "unexpected consensus hash");
 
                     if (!nodeHash.equals(consensusHash)) {
@@ -410,14 +405,14 @@ class ConsensusHashFinderTests {
             smallPartitions.add(new PartitionDescription(randomHash(random), partitionWeight));
         }
 
-        long nextNodeId = 0;
+        NodeId nextNodeId = new NodeId(0);
         final List<NodeToAdd> nodes = new ArrayList<>();
 
         // Add the nodes from the small partitions
         for (final PartitionDescription partition : smallPartitions) {
             final List<NodeToAdd> partitionNodes =
                     getPartitionNodes(random, averageWeight, standardDeviationWeight, nextNodeId, partition);
-            nextNodeId += partitionNodes.size();
+            nextNodeId = new NodeId(nextNodeId.id() + partitionNodes.size());
             nodes.addAll(partitionNodes);
         }
 

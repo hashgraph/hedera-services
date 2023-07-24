@@ -54,6 +54,9 @@ public class EntityAutoExpiry {
     private int maxIdsToScan;
     private int maxEntitiesToProcess;
 
+    /** This class manages the system tasks that do a little bit of background work as each
+     * consensus transaction is incorporated into the hashgraph.
+     */
     @Inject
     public EntityAutoExpiry(
             final ExpiryStats expiryStats,
@@ -128,6 +131,12 @@ public class EntityAutoExpiry {
 
     private boolean canContinueGiven(
             final @Nullable SystemTaskResult result, final int idsScanned, final int entitiesProcessed) {
+        // You can do some more work during this consensus transaction if
+        // * you haven't exceeded the max number of ids to just look at AND
+        // * you haven't exceeded the max number of things to actually handle AND
+        // * you've got remaining capacity in the overall throttle AND
+        // * you've got remaining capacity in the per-task-type throttle (`NEEDS_DIFFERENT_CONTEXT`) AND
+        // * you still have remaining allowed clock-time in this consensus transaction.
         return idsScanned < maxIdsToScan
                 && entitiesProcessed < maxEntitiesToProcess
                 && result != NO_CAPACITY_LEFT
@@ -136,8 +145,13 @@ public class EntityAutoExpiry {
     }
 
     private boolean canDoWorkGiven(final long wrapNum, final Instant now) {
+        // You can do any work during this consensus transaction if all of:
+        // * you still have entities you haven't considered (i.e., have not wrapped around the count) AND
+        // * you still have remaining allowed clock-time in this consensus transaction AND
+        // * the next system transaction has been generated (i.e., because you know its id) AND
+        // * you've got remaining capacity in the overall throttle.
+
         return wrapNum != firstEntityToScan
-                && dynamicProps.shouldAutoRenewSomeEntityType()
                 && consensusTimeTracker.hasMoreStandaloneRecordTime()
                 && !recordsHistorian.nextSystemTransactionIdIsUnknown()
                 && !expiryThrottle.stillLacksMinFreeCapAfterLeakingUntil(now);

@@ -21,6 +21,7 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -51,7 +52,8 @@ public final class ConfigurationHolder implements Supplier<Configuration> {
     }
 
     public void reset() {
-        this.configuration = ConfigUtils.scanAndRegisterAllConfigTypes(ConfigurationBuilder.create())
+        this.configuration = ConfigUtils.scanAndRegisterAllConfigTypes(
+                        ConfigurationBuilder.create(), Set.of("com.swirlds"))
                 .build();
     }
 

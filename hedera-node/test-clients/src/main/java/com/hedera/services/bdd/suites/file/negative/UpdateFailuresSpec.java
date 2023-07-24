@@ -88,7 +88,7 @@ public class UpdateFailuresSpec extends HapiSuite {
     }
 
     private HapiSpec precheckRejectsUnauthorized() {
-        return defaultHapiSpec("PrecheckRejectsUnauthAddressBookUpdate")
+        return defaultHapiSpec("precheckRejectsUnauthorized")
                 .given(cryptoCreate(CIVILIAN))
                 .when()
                 .then(

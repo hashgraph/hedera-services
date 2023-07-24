@@ -19,22 +19,22 @@ package com.hedera.node.app.service.consensus.impl.test.handlers;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CUSTOM_PAYER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.EXISTING_TOPIC;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.ThresholdKey;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.consensus.impl.ReadableTopicStore;
-import com.hedera.node.app.spi.accounts.AccountAccess;
-import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.OptionalLong;
-import org.assertj.core.api.Assertions;
 
 public final class ConsensusTestUtils {
 
@@ -45,14 +45,21 @@ public final class ConsensusTestUtils {
             .ed25519(Bytes.wrap("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
             .build();
     static final Key A_NONNULL_KEY = Key.DEFAULT;
+    static final Key EMPTY_KEYLIST = Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    static final Key EMPTY_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder().keys(Key.DEFAULT, Key.DEFAULT).build())
+                    .build())
+            .build();
 
     private ConsensusTestUtils() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    static Key mockPayerLookup(Key key, AccountID accountId, AccountAccess keyLookup) throws PreCheckException {
+    static Key mockPayerLookup(Key key, AccountID accountId, ReadableAccountStore accountStore) {
         final var account = mock(Account.class);
-        given(keyLookup.getAccountById(accountId)).willReturn(account);
+        given(accountStore.getAccountById(accountId)).willReturn(account);
         given(account.key()).willReturn(key);
         return key;
     }
@@ -66,25 +73,25 @@ public final class ConsensusTestUtils {
     }
 
     static void assertPayer(Key expected, PreHandleContext context) {
-        Assertions.assertThat(context.payerKey()).isEqualTo(expected);
+        assertThat(context.payerKey()).isEqualTo(expected);
     }
 
-    static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) throws PreCheckException {
-        given(topicStore.getTopicMetadata(notNull()))
-                .willReturn(newTopicMeta(adminKey != null ? adminKey : null, submitKey != null ? submitKey : null));
+    static void mockTopicLookup(Key adminKey, Key submitKey, ReadableTopicStore topicStore) {
+        given(topicStore.getTopic(notNull()))
+                .willReturn(newTopic(adminKey != null ? adminKey : null, submitKey != null ? submitKey : null));
     }
 
-    static ReadableTopicStore.TopicMetadata newTopicMeta(Key admin, Key submit) {
-        return new ReadableTopicStore.TopicMetadata(
-                Optional.of(Instant.now() + ""),
-                admin,
-                submit,
+    static Topic newTopic(Key admin, Key submit) {
+        return new Topic(
+                TopicID.newBuilder().topicNum(EXISTING_TOPIC.getTopicNum()).build(),
                 -1L,
-                OptionalLong.of(1234567L),
+                0L,
+                -1L,
+                AccountID.newBuilder().accountNum(1234567L).build(),
+                false,
                 null,
-                -1,
-                null,
-                EXISTING_TOPIC.getTopicNum(),
-                false);
+                "memo",
+                admin,
+                submit);
     }
 }

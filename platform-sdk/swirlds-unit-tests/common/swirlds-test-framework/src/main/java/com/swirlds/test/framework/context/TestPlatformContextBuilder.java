@@ -16,24 +16,32 @@
 
 package com.swirlds.test.framework.context;
 
+import static com.swirlds.common.config.ConfigUtils.scanAndRegisterAllConfigTypes;
+
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.test.framework.config.TestConfigBuilder;
+import com.swirlds.config.api.ConfigurationBuilder;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A simple builder to create a {@link PlatformContext} for unit tests.
  */
 public final class TestPlatformContextBuilder {
 
-    private TestConfigBuilder testConfigBuilder;
-    private Metrics metrics;
+    private static final Metrics defaultMetrics = new NoOpMetrics();
+    private static final Configuration defaultConfig =
+            scanAndRegisterAllConfigTypes(ConfigurationBuilder.create()).build();
+    private static final Cryptography defaultCryptography = CryptographyHolder.get();
 
-    private TestPlatformContextBuilder() {
-        this.testConfigBuilder = new TestConfigBuilder();
-    }
+    private Configuration configuration;
+    private Metrics metrics;
+    private Cryptography cryptography;
+
+    private TestPlatformContextBuilder() {}
 
     /**
      * Creates a new builder instance
@@ -45,19 +53,33 @@ public final class TestPlatformContextBuilder {
     }
 
     /**
-     * Adds a {@link Configuration} builder
+     * Set the {@link Configuration} to use. If null or not set, uses a default configuration.
      *
-     * @param testConfigBuilder
-     * 		the config builder
+     * @param configuration the configuration to use
      * @return the builder instance
      */
-    public TestPlatformContextBuilder withConfigBuilder(final TestConfigBuilder testConfigBuilder) {
-        this.testConfigBuilder = testConfigBuilder;
+    public TestPlatformContextBuilder withConfiguration(@Nullable final Configuration configuration) {
+        this.configuration = configuration;
         return this;
     }
 
-    public TestPlatformContextBuilder withMetrics(final Metrics metrics) {
+    /**
+     * Set the {@link Metrics} to use. If null or not set, uses a default metrics instance.
+     *
+     * @param metrics the metrics to use
+     */
+    public TestPlatformContextBuilder withMetrics(@Nullable final Metrics metrics) {
         this.metrics = metrics;
+        return this;
+    }
+
+    /**
+     * Set the {@link Cryptography} to use. If null or not set, uses a default cryptography instance.
+     *
+     * @param cryptography the cryptography to use
+     */
+    public TestPlatformContextBuilder withCryptography(@Nullable final Cryptography cryptography) {
+        this.cryptography = cryptography;
         return this;
     }
 
@@ -67,12 +89,20 @@ public final class TestPlatformContextBuilder {
      * @return a new {@link PlatformContext}
      */
     public PlatformContext build() {
-        final Configuration orCreateConfig = testConfigBuilder.getOrCreateConfig();
-        final Cryptography cryptography = CryptographyHolder.get();
+        if (configuration == null) {
+            configuration = defaultConfig;
+        }
+        if (metrics == null) {
+            metrics = defaultMetrics; // FUTURE WORK: replace this with NoOp Metrics
+        }
+        if (this.cryptography == null) {
+            this.cryptography = defaultCryptography;
+        }
+
         return new PlatformContext() {
             @Override
             public Configuration getConfiguration() {
-                return orCreateConfig;
+                return configuration;
             }
 
             @Override

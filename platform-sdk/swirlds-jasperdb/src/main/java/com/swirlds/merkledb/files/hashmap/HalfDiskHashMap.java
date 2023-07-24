@@ -22,36 +22,40 @@ import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
+import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.merkledb.settings.MerkleDbSettings;
-import com.swirlds.merkledb.settings.MerkleDbSettingsFactory;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.DoubleConsumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
@@ -94,6 +98,8 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private static final long GOOD_AVERAGE_BUCKET_ENTRY_COUNT = 20;
     /** how full should all available bins be if we are at the specified map size */
     public static final double LOADING_FACTOR = 0.6;
+    /** The limit on the number of concurrent read tasks in {@code endWriting()} */
+    private static final int MAX_IN_FLIGHT = 64;
     /**
      * Long list used for mapping bucketIndex(index into list) to disk location for latest copy of
      * bucket
@@ -129,11 +135,11 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     private Thread writingThread;
 
     /** MerkleDb settings */
-    private static final MerkleDbSettings settings = MerkleDbSettingsFactory.get();
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
 
     /** Executor for parallel bucket reads/updates in {@link #endWriting()} */
     private static final ExecutorService flushExecutor = Executors.newFixedThreadPool(
-            settings.getNumHalfDiskHashMapFlushThreads(),
+            config.getNumHalfDiskHashMapFlushThreads(),
             new ThreadConfiguration(getStaticThreadManager())
                     .setComponent(MERKLEDB_COMPONENT)
                     .setThreadName("HalfDiskHashMap Flushing")
@@ -153,10 +159,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      * @param legacyStoreName Base name for the data store. If not null, the store will process
      *     files with this prefix at startup. New files in the store will be prefixed with {@code
      *     storeName}
-     * @param preferDiskBasedIndexes When true we will use disk based indexes rather than ram where
+     * @param preferDiskBasedIndex When true we will use disk based index rather than ram where
      *     possible. This will come with a significant performance cost, especially for writing. It
-     *     is possible to load a data source that was written with memory indexes with disk based
-     *     indexes and via versa.
+     *     is possible to load a data source that was written with memory index with disk based
+     *     index and vice versa.
      * @throws IOException If there was a problem creating or opening a set of data files.
      */
     public HalfDiskHashMap(
@@ -165,7 +171,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final boolean preferDiskBasedIndexes)
+            final boolean preferDiskBasedIndex)
             throws IOException {
         this.mapSize = mapSize;
         this.storeName = storeName;
@@ -202,22 +208,22 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             } else {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Loading existing set of data files but now metadata file was found in [{}]",
+                        "Loading existing set of data files but no metadata file was found in [{}]",
                         storeDir.toAbsolutePath());
                 throw new IOException("Can not load an existing HalfDiskHashMap from ["
                         + storeDir.toAbsolutePath()
                         + "] because metadata file is missing");
             }
             // load or rebuild index
-            final boolean forceIndexRebuilding = settings.isIndexRebuildingEnforced();
+            final boolean forceIndexRebuilding = config.indexRebuildingEnforced();
             if (Files.exists(indexFile) && !forceIndexRebuilding) {
                 bucketIndexToBucketLocation =
-                        preferDiskBasedIndexes ? new LongListDisk(indexFile) : new LongListOffHeap(indexFile);
+                        preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap(indexFile);
                 loadedDataCallback = null;
             } else {
                 // create new index and setup call back to rebuild
                 bucketIndexToBucketLocation =
-                        preferDiskBasedIndexes ? new LongListDisk(indexFile) : new LongListOffHeap();
+                        preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
                 loadedDataCallback =
                         (key, dataLocation, dataValue) -> bucketIndexToBucketLocation.put(key, dataLocation);
             }
@@ -225,7 +231,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             // create store dir
             Files.createDirectories(storeDir);
             // create new index
-            bucketIndexToBucketLocation = preferDiskBasedIndexes ? new LongListDisk(indexFile) : new LongListOffHeap();
+            bucketIndexToBucketLocation = preferDiskBasedIndex ? new LongListDisk(indexFile) : new LongListOffHeap();
             // calculate number of entries we can store in a disk page
             minimumBuckets = (int) Math.ceil((mapSize / LOADING_FACTOR) / GOOD_AVERAGE_BUCKET_ENTRY_COUNT);
             // numOfBuckets is the nearest power of two greater than minimumBuckets with a min of
@@ -259,48 +265,66 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      * contiguous in time otherwise the merged data will be invalid.
      *
      * @param filterForFilesToMerge filter to choose which subset of files to merge
+     * @param minNumberOfFilesToMerge the minimum number of files to consider for a merge
+     * @param reportDurationMetricFunction function to report how long compaction took, in ms
+     * @param reportSavedSpaceMetricFunction function to report how much space was compacted, in Mb
      * @throws IOException if there was a problem merging
      * @throws InterruptedException If the merge thread was interupted
      */
     public void merge(
             final Function<List<DataFileReader<Bucket<K>>>, List<DataFileReader<Bucket<K>>>> filterForFilesToMerge,
-            final int minNumberOfFilesToMerge)
+            final int minNumberOfFilesToMerge,
+            @Nullable final LongConsumer reportDurationMetricFunction,
+            @Nullable final DoubleConsumer reportSavedSpaceMetricFunction)
             throws IOException, InterruptedException {
-        final long START = System.currentTimeMillis();
         final List<DataFileReader<Bucket<K>>> allFilesBefore = fileCollection.getAllCompletedFiles();
         final List<DataFileReader<Bucket<K>>> filesToMerge = filterForFilesToMerge.apply(allFilesBefore);
         if (filesToMerge == null) {
             // nothing to do
             return;
         }
-        final int size = filesToMerge.size();
-        if (size < minNumberOfFilesToMerge) {
+        final int filesCount = filesToMerge.size();
+        if (filesCount < minNumberOfFilesToMerge) {
             logger.debug(
                     MERKLE_DB.getMarker(),
                     "[{}] No need to merge as {} is less than the minimum {} files to merge.",
                     storeName,
-                    size,
+                    filesCount,
                     minNumberOfFilesToMerge);
             return;
         }
+
+        final long start = System.currentTimeMillis();
+
         final long filesToMergeSize = getSizeOfFiles(filesToMerge);
         logger.debug(
                 MERKLE_DB.getMarker(),
                 "[{}] Starting merging {} files / {}",
                 storeName,
-                size,
+                filesCount,
                 formatSizeBytes(filesToMergeSize));
         final List<Path> newFilesCreated = fileCollection.compactFiles(bucketIndexToBucketLocation, filesToMerge);
-        final long END = System.currentTimeMillis();
-        final double tookSeconds = (END - START) * Units.MILLISECONDS_TO_SECONDS;
-        logMergeStats(storeName, tookSeconds, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
+
+        final long end = System.currentTimeMillis();
+        final long tookMillis = end - start;
+        if (reportDurationMetricFunction != null) {
+            reportDurationMetricFunction.accept(tookMillis);
+        }
+
+        final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
+        if (reportSavedSpaceMetricFunction != null) {
+            reportSavedSpaceMetricFunction.accept(
+                    (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
+        }
+
+        logMergeStats(storeName, tookMillis, filesToMerge, filesToMergeSize, newFilesCreated, fileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),
-                "[{}] Finished merging {} files / {} in {} seconds",
+                "[{}] Finished merging {} files / {} in {} ms",
                 storeName,
-                size,
+                filesCount,
                 formatSizeBytes(filesToMergeSize),
-                tookSeconds);
+                tookMillis);
     }
 
     /**
@@ -342,6 +366,13 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         }
     }
 
+    public long getOffHeapConsumption() {
+        if (bucketIndexToBucketLocation instanceof LongListOffHeap offheapIndex) {
+            return offheapIndex.getOffHeapConsumption();
+        }
+        return 0;
+    }
+
     /**
      * Get statistics for sizes of all files
      *
@@ -378,7 +409,7 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
 
     /**
      * Put a key/value during the current writing session. The value will not be retrievable until
-     * it is committed in the endWriting() call.
+     * it is committed in the {@link #endWriting()} call.
      *
      * @param key the key to store the value for
      * @param value the value to store for given key
@@ -413,40 +444,51 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
     /**
      * End current writing session, committing all puts to data store.
      *
+     * @return Data file reader for the file written
      * @throws IOException If there was a problem committing data to store
      */
-    public void endWriting() throws IOException {
+    @Nullable
+    public DataFileReader<Bucket<K>> endWriting() throws IOException {
         /* FUTURE WORK - https://github.com/swirlds/swirlds-platform/issues/3943 */
         if (Thread.currentThread() != writingThread) {
             throw new IllegalStateException("Tried calling endWriting with different thread to startWriting()");
         }
         writingThread = null;
+        final int size = oneTransactionsData.size();
         logger.info(
                 MERKLE_DB.getMarker(),
                 "Finishing writing to {}, num of changed bins = {}, num of changed keys = {}",
                 storeName,
-                oneTransactionsData.size(),
+                size,
                 oneTransactionsData.stream().mapToLong(BucketMutation::size).sum());
-        // iterate over transaction cache and save it all to file
-        if (!oneTransactionsData.isEmpty()) {
-            // for each changed bucket, write the new buckets to file but do not update index yet
-            final MutableList<IntObjectPair<BucketMutation<K>>> bucketUpdates =
-                    oneTransactionsData.keyValuesView().toList();
-            final int size = bucketUpdates.size();
+
+        final DataFileReader<Bucket<K>> dataFileReader;
+        if (size > 0) {
             final Queue<ReadBucketResult<K>> queue = new ConcurrentLinkedQueue<>();
-            for (final IntObjectPair<BucketMutation<K>> keyValue : bucketUpdates) {
-                final int bucketIndex = keyValue.getOne();
-                final BucketMutation<K> bucketMap = keyValue.getTwo();
-                flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
-            }
-            //  write to files
+            final Iterator<IntObjectPair<BucketMutation<K>>> iterator =
+                    oneTransactionsData.keyValuesView().iterator();
+
+            // read and update all buckets in parallel, write sequentially in random order
             fileCollection.startWriting();
             int processed = 0;
+            int inFlight = 0;
             while (processed < size) {
+                // submit read tasks
+                while (inFlight < MAX_IN_FLIGHT && iterator.hasNext()) {
+                    IntObjectPair<BucketMutation<K>> keyValue = iterator.next();
+                    final int bucketIndex = keyValue.getOne();
+                    final BucketMutation<K> bucketMap = keyValue.getTwo();
+                    flushExecutor.execute(() -> readUpdateQueueBucket(bucketIndex, bucketMap, queue));
+                    ++inFlight;
+                }
+
                 final ReadBucketResult<K> res = queue.poll();
                 if (res == null) {
+                    Thread.onSpinWait();
                     continue;
                 }
+                --inFlight;
+
                 if (res.error != null) {
                     throw new RuntimeException(res.error);
                 }
@@ -462,16 +504,21 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
                         bucketIndexToBucketLocation.put(bucketIndex, bucketLocation);
                     }
                 } finally {
-                    processed++;
+                    ++processed;
                 }
             }
             // close files session
-            final DataFileReader<Bucket<K>> dataFileReader = fileCollection.endWriting(0, numOfBuckets);
+            dataFileReader = fileCollection.endWriting(0, numOfBuckets);
             // we have updated all indexes so the data file can now be included in merges
             dataFileReader.setFileCompleted();
+            return dataFileReader;
+        } else {
+            dataFileReader = null;
         }
+
         // clear put cache
         oneTransactionsData = null;
+        return dataFileReader;
     }
 
     /**
@@ -495,10 +542,10 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
             }
             // for each changed key in bucket, update bucket
             keyUpdates.forEachKeyValue(bucket::putValue);
-            queue.add(new ReadBucketResult<>(bucket, null));
+            queue.offer(new ReadBucketResult<>(bucket, null));
         } catch (final Exception e) {
             logger.error(MERKLE_DB.getMarker(), "Failed to read / update bucket", e);
-            queue.add(new ReadBucketResult<>(null, e));
+            queue.offer(new ReadBucketResult<>(null, e));
         }
     }
 
@@ -536,12 +583,12 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
         logger.info(
                 MERKLE_DB.getMarker(),
                 """
-				HalfDiskHashMap Stats {
-					mapSize = {}
-					minimumBuckets = {}
-					numOfBuckets = {}
-					GOOD_AVERAGE_BUCKET_ENTRY_COUNT = {}
-				}""",
+                        HalfDiskHashMap Stats {
+                        	mapSize = {}
+                        	minimumBuckets = {}
+                        	numOfBuckets = {}
+                        	GOOD_AVERAGE_BUCKET_ENTRY_COUNT = {}
+                        }""",
                 mapSize,
                 minimumBuckets,
                 numOfBuckets,

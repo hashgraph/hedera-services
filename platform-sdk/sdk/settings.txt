@@ -6,12 +6,47 @@
 # All other values are true.
 #######################################################################################
 
-maxOutgoingSyncs,                 1
-state.saveStatePeriod,            0
-showInternalStats,                true
-doUpnp,                           false
-useLoopbackIp,                    false
-csvFileName,                      PlatformTesting
-checkSignedStateFromDisk,         true
-loadKeysFromPfxFiles,             false
-event.preconsensus.enableStorage, false
+
+                                          #############################
+                                          #    Gossip / Networking    #
+                                          #############################
+
+chatter.useChatter,                       false
+sync.maxOutgoingSyncs,                    1
+sync.syncAsProtocolEnabled,               true
+sync.syncProtocolPermitCount,             2
+
+                                          #############################
+                                          #      Event Creation       #
+                                          #############################
+
+freezeSecondsAfterStartup,                0
+event.creation.maxCreationRate,           5
+event.creation.useTipsetAlgorithm,        true
+
+                                          #############################
+                                          #        Event Stream       #
+                                          #############################
+
+event.enableEventStreaming,               false
+event.preconsensus.enableReplay,          true
+event.preconsensus.enableStorage,         true
+
+                                          #############################
+                                          #          Metrics          #
+                                          #############################
+
+metrics.csvFileName,                      PlatformTesting
+
+                                          #############################
+                                          #           State           #
+                                          #############################
+
+state.saveReconnectStateToDisk,           true
+state.saveStatePeriod,                    60
+
+                                          #############################
+                                          #           Misc.           #
+                                          #############################
+
+loadKeysFromPfxFiles,                     false

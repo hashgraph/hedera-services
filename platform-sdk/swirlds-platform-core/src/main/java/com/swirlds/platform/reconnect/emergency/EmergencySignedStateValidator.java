@@ -18,11 +18,12 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.SIGNED_STATE;
 
+import com.swirlds.common.config.StateConfig;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.state.EmergencyRecoveryFile;
-import com.swirlds.platform.state.StateSettings;
+import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
 import com.swirlds.platform.state.signed.SignedStateValidationData;
@@ -39,6 +40,8 @@ import org.apache.logging.log4j.Logger;
 public class EmergencySignedStateValidator implements SignedStateValidator {
     private static final Logger logger = LogManager.getLogger(EmergencySignedStateValidator.class);
     private final EmergencyRecoveryFile emergencyRecoveryFile;
+    private static final int DEBUG_HASH_DEPTH =
+            ConfigurationHolder.getConfigData(StateConfig.class).debugHashDepth();
 
     /**
      * @param emergencyRecoveryFile
@@ -51,7 +54,7 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
     /**
      * {@inheritDoc}
      *
-     * If the {@code signedState} is matches the request round and hash exactly, this method updates the next epoch hash
+     * If the {@code reservedSignedState} is matches the request round and hash exactly, this method updates the next epoch hash
      * via {@link com.swirlds.platform.state.PlatformData#setNextEpochHash(Hash)}. Doing so does not modify the hash,
      * but will trigger the epoch hash to update when the next round reaches consensus.
      * Note: the previous state is ignored by this validator.  Emergency round, emergency state hash, and epoch hash
@@ -82,17 +85,18 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
 
     private void verifyStateHashMatches(final SignedState signedState) {
         if (!signedState.getState().getHash().equals(emergencyRecoveryFile.hash())) {
+
             logger.error(
                     SIGNED_STATE.getMarker(),
                     """
-							Emergency recovery signed state round matches the request but hash does not.
-							Failed emergency reconnect state:
-							{}
-							{}
-							""",
+                            Emergency recovery signed state round matches the request but hash does not.
+                            Failed emergency reconnect state:
+                            {}
+                            {}
+                            """,
                     () -> signedState.getState().getPlatformState().getInfoString(),
                     () -> new MerkleTreeVisualizer(signedState.getState())
-                            .setDepth(StateSettings.getDebugHashDepth())
+                            .setDepth(DEBUG_HASH_DEPTH)
                             .render());
 
             throw new SignedStateInvalidException("Emergency recovery signed state is for the requested round but "
@@ -116,12 +120,12 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
         logger.error(
                 SIGNED_STATE.getMarker(),
                 """
-						State is too old. Failed emergency reconnect state:
-						{}
-						{}""",
+                        State is too old. Failed emergency reconnect state:
+                        {}
+                        {}""",
                 () -> signedState.getState().getPlatformState().getInfoString(),
                 () -> new MerkleTreeVisualizer(signedState.getState())
-                        .setDepth(StateSettings.getDebugHashDepth())
+                        .setDepth(DEBUG_HASH_DEPTH)
                         .render());
 
         throw new SignedStateInvalidException(String.format(
@@ -153,19 +157,19 @@ public class EmergencySignedStateValidator implements SignedStateValidator {
             logger.error(
                     SIGNED_STATE.getMarker(),
                     """
-						State is fully signed but has an incorrect epoch hash. Failed emergency recovery state:
-						{}
-						{}""",
+                            State is fully signed but has an incorrect epoch hash. Failed emergency recovery state:
+                            {}
+                            {}""",
                     () -> signedState.getState().getPlatformState().getInfoString(),
                     () -> new MerkleTreeVisualizer(signedState.getState())
-                            .setDepth(StateSettings.getDebugHashDepth())
+                            .setDepth(DEBUG_HASH_DEPTH)
                             .render());
 
             throw new SignedStateInvalidException(
                     """
-						Emergency recovery signed state has an incorrect epoch hash!
-						Expected:\t%s
-						Was:\t%s"""
+                            Emergency recovery signed state has an incorrect epoch hash!
+                            Expected:\t%s
+                            Was:\t%s"""
                             .formatted(emergencyRecoveryFile.hash(), epochHash));
         }
     }

@@ -1,11 +1,18 @@
-module com.hedera.services.cli {
-    exports com.hedera.services.cli;
+module com.hedera.node.services.cli {
+    exports com.hedera.services.cli.sign;
+    exports com.hedera.services.cli.signedstate;
 
-    requires static com.github.spotbugs.annotations;
+    requires transitive com.swirlds.cli;
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.platform;
+    requires transitive info.picocli;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.app.service.mono;
-    requires com.swirlds.cli;
+    requires com.hedera.node.hapi;
+    requires com.google.common;
+    requires com.google.protobuf;
+    requires com.swirlds.config;
     requires com.swirlds.virtualmap;
-    requires com.swirlds.platform;
-    requires com.swirlds.common;
-    requires info.picocli;
+    requires org.apache.commons.lang3;
+    requires static com.github.spotbugs.annotations;
 }

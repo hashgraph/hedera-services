@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -38,7 +39,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.google.common.primitives.Longs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -48,11 +48,9 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
 public class CreateOperationSuite extends HapiSuite {
@@ -80,7 +78,7 @@ public class CreateOperationSuite extends HapiSuite {
                 inheritanceOfNestedCreatedContracts(),
                 factoryAndSelfDestructInConstructorContract(),
                 factoryQuickSelfDestructContract(),
-                contractCreateWithNewOpInConstructor(),
+                contractCreateWithNewOpInConstructorAbandoningParent(),
                 childContractStorageWorks());
     }
 
@@ -92,20 +90,28 @@ public class CreateOperationSuite extends HapiSuite {
     private HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
+        final var sender = "sender";
         return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
-                .given(uploadInitCode(contract), contractCreate(contract).balance(10))
-                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED))
+                .given(
+                        uploadInitCode(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS),
+                        contractCreate(contract).balance(10).payingWith(sender))
+                .when(contractCall(contract).hasKnownStatus(CONTRACT_DELETED).payingWith(sender))
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
     private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
-
+        final var sender = "sender";
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
-                .given(uploadInitCode(contract), contractCreate(contract))
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(sender).balance(ONE_HUNDRED_HBARS))
                 .when(contractCall(contract, "createAndDeleteChild")
                         .gas(4_000_000)
-                        .via(CALL_RECORD_TRANSACTION_NAME))
+                        .via(CALL_RECORD_TRANSACTION_NAME)
+                        .payingWith(sender))
                 .then(getTxnRecord(CALL_RECORD_TRANSACTION_NAME)
                         .hasPriority(recordWith()
                                 .contractCallResult(resultWith()
@@ -134,7 +140,7 @@ public class CreateOperationSuite extends HapiSuite {
     }
 
     HapiSpec simpleFactoryWorks() {
-        return defaultHapiSpec("ContractFactoryWorksHappyPath")
+        return defaultHapiSpec("simpleFactoryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, DEPLOYMENT_SUCCESS_FUNCTION)
                         .gas(780_000)
@@ -266,9 +272,9 @@ public class CreateOperationSuite extends HapiSuite {
                 }));
     }
 
-    private HapiSpec contractCreateWithNewOpInConstructor() {
+    private HapiSpec contractCreateWithNewOpInConstructorAbandoningParent() {
         final var contract = "AbandoningParent";
-        return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
+        return defaultHapiSpec("contractCreateWithNewOpInConstructorAbandoningParent")
                 .given(uploadInitCode(contract), contractCreate(contract).via("AbandoningParentTxn"))
                 .when()
                 .then(
@@ -331,12 +337,8 @@ public class CreateOperationSuite extends HapiSuite {
                     final var retResults = function.decodeReturn(resultBytes);
                     String contractIDString = null;
                     if (retResults != null && retResults.size() > 0) {
-                        final var retValHex = ((Address) retResults.get(0)).toString();
-                        final var retVal = Bytes.fromHexString(retValHex).toArray();
-
-                        final var realm = Longs.fromByteArray(Arrays.copyOfRange(retVal, 4, 12));
-                        final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(retVal, 12, 20));
-                        contractIDString = String.format("%d.%d.%d", realm, 0, accountNum);
+                        contractIDString =
+                                ((Address) retResults.get(0)).toString().substring(2);
                     }
                     ctxLog.info("The created contract ID {}", contractIDString);
                     Assertions.assertNotEquals(

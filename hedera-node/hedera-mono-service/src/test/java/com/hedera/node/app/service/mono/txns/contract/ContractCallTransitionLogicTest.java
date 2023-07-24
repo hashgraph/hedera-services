@@ -18,10 +18,12 @@ package com.hedera.node.app.service.mono.txns.contract;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_34Module.EVM_VERSION_0_34;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -43,13 +45,19 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
@@ -58,14 +66,18 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,13 +92,27 @@ class ContractCallTransitionLogicTest {
             ContractID.newBuilder().setContractNum(9_999L).build();
     private final ByteString alias = ByteStringUtils.wrapUnsafely(
             new byte[] {48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49, 50});
-    private long gas = 1_234;
-    private long sent = 1_234L;
+    private long gas = 21_000;
+    private long sent = 21_000L;
     private static final long maxGas = 666_666L;
     private static final BigInteger biOfferedGasPrice = BigInteger.valueOf(111L);
 
+    private static final Map<ContractID, Long> targetContractNonces =
+            new TreeMap<>(Comparator.comparingLong(ContractID::getContractNum)) {
+                {
+                    put(new EntityId(5L, 6L, 7L).toGrpcContractId(), 2L);
+                }
+
+                {
+                    put(new EntityId(8L, 9L, 10L).toGrpcContractId(), 1L);
+                }
+            };
+
     @Mock
     private TransactionContext txnCtx;
+
+    @Mock
+    private EvmSigsVerifier sigsVerifier;
 
     @Mock
     private PlatformTxnAccessor accessor;
@@ -118,10 +144,21 @@ class ContractCallTransitionLogicTest {
     @Mock
     private EntityAccess entityAccess;
 
+    @Mock
+    private WorldLedgers worldLedgers;
+
+    @Mock
+    UsagePricesProvider usagePricesProvider;
+
+    @Mock
+    HbarCentExchange hbarCentExchange;
+
     private TransactionBody contractCallTxn;
     private final Account senderAccount = new Account(new Id(0, 0, 1002));
     private final Account relayerAccount = new Account(new Id(0, 0, 1003));
     private final Account contractAccount = new Account(new Id(0, 0, 1006));
+    private final GasCalculator gasCalculator =
+            new GasCalculatorHederaV22(properties, usagePricesProvider, hbarCentExchange);
     ContractCallTransitionLogic subject;
 
     @BeforeEach
@@ -136,7 +173,12 @@ class ContractCallTransitionLogicTest {
                 codeCache,
                 sigImpactHistorian,
                 aliasManager,
-                entityAccess);
+                entityAccess,
+                sigsVerifier,
+                worldLedgers,
+                gasCalculator);
+        // reset the gas value for each test.
+        gas = 21_000;
     }
 
     @Test
@@ -152,6 +194,7 @@ class ContractCallTransitionLogicTest {
     void verifyExternaliseContractResultCall() {
         // setup:
         givenValidTxnCtx();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -173,13 +216,18 @@ class ContractCallTransitionLogicTest {
                         Bytes.EMPTY,
                         txnCtx.consensusTime()))
                 .willReturn(results);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+        given(worldState.getContractNonces()).willReturn(targetContractNonces);
         // when:
         subject.doStateTransition();
 
         // then:
         verify(recordService).externaliseEvmCallTransaction(any());
         verify(worldState).getCreatedContractIds();
+        verify(worldState).getContractNonces();
         verify(txnCtx).setTargetedContract(target);
     }
 
@@ -188,6 +236,7 @@ class ContractCallTransitionLogicTest {
         InOrder inOrder = Mockito.inOrder(worldState);
         // setup:
         givenValidTxnCtx();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
@@ -196,6 +245,9 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
         given(accountStore.loadAccount(relayerAccount.getId())).willReturn(relayerAccount);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
         // and:
         var results = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
@@ -211,6 +263,7 @@ class ContractCallTransitionLogicTest {
                         maxGas))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+        given(worldState.getContractNonces()).willReturn(targetContractNonces);
         // when:
         subject.doStateTransitionOperation(
                 accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice);
@@ -219,7 +272,58 @@ class ContractCallTransitionLogicTest {
         verify(recordService).externaliseEvmCallTransaction(any());
         verify(txnCtx).setTargetedContract(target);
         inOrder.verify(worldState).clearProvisionalContractCreations();
+        inOrder.verify(worldState).clearContractNonces();
         inOrder.verify(worldState).getCreatedContractIds();
+        inOrder.verify(worldState).getContractNonces();
+    }
+
+    @Test
+    void failsOnMissingReceiverSigReq() {
+        givenValidTxnCtx();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        senderAccount.initBalance(1234L);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+                .willReturn(contractAccount);
+
+        final var txn = accessor.getTxn();
+        final var id = senderAccount.getId();
+        // when:
+        assertFailsWith(
+                () -> subject.doStateTransitionOperation(txn, id, null, maxGas, biOfferedGasPrice), INVALID_SIGNATURE);
+    }
+
+    @Test
+    void executesAsExpectedWithReceiverSigReqPresent() {
+        givenValidTxnCtx();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        senderAccount.initBalance(1234L);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+                .willReturn(contractAccount);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
+        var results = TransactionProcessingResult.successful(
+                null, 1234L, 0L, 124L, Bytes.EMPTY, Address.wrap(Bytes.wrap(alias.toByteArray())), Map.of(), List.of());
+        given(evmTxProcessor.executeEth(
+                        senderAccount,
+                        contractAccount.getId().asEvmAddress(),
+                        gas,
+                        sent,
+                        Bytes.EMPTY,
+                        txnCtx.consensusTime(),
+                        biOfferedGasPrice,
+                        null,
+                        maxGas))
+                .willReturn(results);
+
+        assertDoesNotThrow(() -> subject.doStateTransitionOperation(
+                accessor.getTxn(), senderAccount.getId(), relayerAccount.getId(), maxGas, biOfferedGasPrice));
     }
 
     @Test
@@ -304,6 +408,7 @@ class ContractCallTransitionLogicTest {
 
         // then:
         verify(worldState, never()).getCreatedContractIds();
+        verify(worldState, never()).getContractNonces();
         verify(txnCtx, never()).setTargetedContract(any());
         verify(recordService).externaliseEvmCallTransaction(any());
     }
@@ -475,6 +580,7 @@ class ContractCallTransitionLogicTest {
         // then:
         verify(recordService, never()).externaliseEvmCallTransaction(any());
         verify(worldState, never()).getCreatedContractIds();
+        verify(worldState, never()).getContractNonces();
         verify(txnCtx, never()).setTargetedContract(IdUtils.asContract("0.0." + 666L));
         verifyNoMoreInteractions(evmTxProcessor);
     }
@@ -483,6 +589,7 @@ class ContractCallTransitionLogicTest {
     void verifyAccountStoreNotQueriedForTokenAddress() {
         // setup:
         givenValidTxnCtx();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.accessor()).willReturn(accessor);
@@ -490,6 +597,9 @@ class ContractCallTransitionLogicTest {
         // and:
         given(entityAccess.isTokenAccount(any())).willReturn(true);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
 
         // and:
         var results = TransactionProcessingResult.successful(
@@ -504,6 +614,7 @@ class ContractCallTransitionLogicTest {
                         txnCtx.consensusTime()))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+        given(worldState.getContractNonces()).willReturn(targetContractNonces);
         // when:
         subject.doStateTransition();
 
@@ -512,6 +623,7 @@ class ContractCallTransitionLogicTest {
 
         verify(recordService).externaliseEvmCallTransaction(any());
         verify(worldState).getCreatedContractIds();
+        verify(worldState).getContractNonces();
         verify(txnCtx).setTargetedContract(target);
     }
 
@@ -526,6 +638,7 @@ class ContractCallTransitionLogicTest {
                         .setFunctionParameters(functionParams)
                         .setContractID(target));
         contractCallTxn = op.build();
+        given(properties.isContractsNoncesExternalizationEnabled()).willReturn(true);
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -534,6 +647,9 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
         // and:
         var results = TransactionProcessingResult.successful(
                 null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress(), Map.of(), List.of());
@@ -546,6 +662,7 @@ class ContractCallTransitionLogicTest {
                         txnCtx.consensusTime()))
                 .willReturn(results);
         given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+        given(worldState.getContractNonces()).willReturn(targetContractNonces);
         // when:
         subject.doStateTransition();
 
@@ -622,14 +739,14 @@ class ContractCallTransitionLogicTest {
     }
 
     @Test
-    void rejectsNegativeGas() {
+    void rejectsInsufficientGas() {
         // setup:
-        gas = -1;
+        gas = gas - 1;
 
         givenValidTxnCtx();
 
         // expect:
-        assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
+        assertEquals(INSUFFICIENT_GAS, subject.semanticCheck().apply(contractCallTxn));
     }
 
     @Test
@@ -643,7 +760,9 @@ class ContractCallTransitionLogicTest {
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
                 .willReturn(contractAccount);
-
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+                        false, asTypedEvmAddress(target), Address.ZERO, worldLedgers, HederaFunctionality.ContractCall))
+                .willReturn(true);
         given(evmTxProcessor.executeEth(any(), any(), anyLong(), anyLong(), any(), any(), any(), any(), anyLong()))
                 .willThrow(InvalidTransactionException.class);
         // then:

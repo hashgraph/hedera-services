@@ -16,12 +16,14 @@
 
 package com.swirlds.platform.state.iss.internal;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
+import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.Utilities.isSuperMajority;
 
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -126,11 +128,11 @@ public class RoundHashValidator {
      * 		method returns true, then {@link #getStatus()} will return a value that is not
      *        {@link HashValidityStatus#UNDECIDED}.
      */
-    public synchronized boolean reportSelfHash(final Hash selfStateHash) {
+    public synchronized boolean reportSelfHash(@NonNull final Hash selfStateHash) {
         if (this.selfStateHash != null) {
             throw new IllegalStateException("self hash reported more than once");
         }
-        this.selfStateHash = throwArgNull(selfStateHash, "selfStateHash");
+        this.selfStateHash = Objects.requireNonNull(selfStateHash, "selfStateHash must not be null");
 
         return decide();
     }
@@ -150,8 +152,10 @@ public class RoundHashValidator {
      * 		method returns true, then {@link #getStatus()} will return a value that is not
      *        {@link HashValidityStatus#UNDECIDED}.
      */
-    public synchronized boolean reportHashFromNetwork(final long nodeId, final long nodeWeight, final Hash stateHash) {
-        throwArgNull(stateHash, "stateHash");
+    public synchronized boolean reportHashFromNetwork(
+            @NonNull final NodeId nodeId, final long nodeWeight, @NonNull final Hash stateHash) {
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
+        Objects.requireNonNull(stateHash, "stateHash must not be null");
         hashFinder.addHash(nodeId, nodeWeight, stateHash);
         return decide();
     }
@@ -209,7 +213,7 @@ public class RoundHashValidator {
                         + "a conclusion about this node's hash validity should have already been reached");
             }
         } else if (hashFinder.getStatus() == ConsensusHashStatus.UNDECIDED) {
-            if (isSuperMajority(hashFinder.getHashReportedWeight(), hashFinder.getTotalWeight())) {
+            if (SUPER_MAJORITY.isSatisfiedBy(hashFinder.getHashReportedWeight(), hashFinder.getTotalWeight())) {
                 // We have collected many signatures, but were still unable to find a consensus hash.
                 status = HashValidityStatus.CATASTROPHIC_LACK_OF_DATA;
             } else {

@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatus;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,7 @@ class TransactionPrecheckTest {
 
     @Test
     void abortsOnInactivePlatform() {
-        given(currentPlatformStatus.get()).willReturn(PlatformStatus.MAINTENANCE);
+        given(currentPlatformStatus.get()).willReturn(PlatformStatus.CHECKING);
 
         final var topLevelResponse = subject.performForTopLevel(Transaction.getDefaultInstance());
         final var queryPaymentResponse = subject.performForQueryPayment(Transaction.getDefaultInstance());

@@ -38,6 +38,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
@@ -57,7 +58,6 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.spi.config.PropertyNames;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -77,11 +77,11 @@ import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.codec.DecoderException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,7 +130,7 @@ class MigrationRecordsManagerTest {
             genesisKey = JKey.mapKey(Key.newBuilder()
                     .setKeyList(KeyList.newBuilder().addKeys(MiscUtils.asKeyUnchecked(systemAccountKey)))
                     .build());
-        } catch (DecoderException e) {
+        } catch (InvalidKeyException e) {
             throw new RuntimeException(e);
         }
     }
@@ -323,7 +323,7 @@ class MigrationRecordsManagerTest {
     }
 
     @Test
-    void streamsBlocklistedAccountWhenFeatureFlagIsEnabled() throws DecoderException {
+    void streamsBlocklistedAccountWhenFeatureFlagIsEnabled() throws InvalidKeyException {
         final var bodyCaptor = forClass(TransactionBody.Builder.class);
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
         given(bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED))
@@ -592,7 +592,7 @@ class MigrationRecordsManagerTest {
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(systemAccounts);
     }
 
-    private void givenBlocklistedAccountsCreated() throws DecoderException {
+    private void givenBlocklistedAccountsCreated() throws InvalidKeyException {
         blocklistedAccounts.addAll(List.of(
                 blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_1), MEMO_1),
                 blockedAccount(ByteString.copyFromUtf8(EVM_ADDRESS_2), MEMO_2)));
@@ -601,7 +601,7 @@ class MigrationRecordsManagerTest {
         given(blocklistAccountCreator.getBlockedAccountsCreated()).willReturn(blocklistedAccounts);
     }
 
-    private HederaAccount blockedAccount(ByteString evmAddress, String memo) throws DecoderException {
+    private HederaAccount blockedAccount(ByteString evmAddress, String memo) throws InvalidKeyException {
         return new HederaAccountCustomizer()
                 .isReceiverSigRequired(true)
                 .isDeclinedReward(true)

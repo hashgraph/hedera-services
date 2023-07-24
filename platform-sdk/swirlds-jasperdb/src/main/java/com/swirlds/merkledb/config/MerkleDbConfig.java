@@ -33,8 +33,8 @@ import java.time.temporal.ChronoUnit;
  * 		Get the maximum number of unique keys we expect to be stored in this database. This is used for
  * 		calculating in memory index sizes. IMPORTANT: This can only be set before a new database is created, changing
  * 		on an existing database will break it.
- * @param internalHashesRamToDiskThreshold
- * 		Get threshold where we switch from storing internal hashes in ram to
+ * @param hashesRamToDiskThreshold
+ * 		Get threshold where we switch from storing node hashes in ram to
  * 		storing them on disk. If it is 0 then everything is on disk, if it is Long.MAX_VALUE then everything is in ram.
  * 		Any value in the middle is the path value at
  * 		which we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram
@@ -64,22 +64,6 @@ import java.time.temporal.ChronoUnit;
  * 		The minimum elapsed time in merge period units between medium merges.
  * @param fullMergePeriod
  * 		The minimum elapsed time in merge period units between full merges.
- * @param maxDataFileBytes
- * 		Chosen max size for a data file, this is a balance as fewer bigger files are faster to read
- * 		from but large files are extensive to merge. It must be less than 1024GB (as determined by
- *        {@code DataFileCommon#MAX_ADDRESSABLE_DATA_FILE_SIZE_BYTES})
- * @param moveListChunkSize
- * 		This is the size of each sub array chunk allocated as the moves list grows. It wants to be
- * 		big enough that we don't have too many arrays but small enough to not use a crazy amount of RAM for small
- * 		virtual merkle trees and in unit tests etc. Default of 500_000 seems an ok compromise at 11.5Mb.
- * @param maxRamUsedForMergingGb
- * 		Maximum amount of RAM that can be used for the moves map during merging of files.
- * 		This is for a single merge. If we do more than 1 merge at a time then this will be multiplied by number of
- * 		active merges. This directly dictates the max number of items that can be stored in a data file.
- * @param iteratorInputBufferBytes
- * 		Size of the buffered input stream (in bytes) underlying a {@link com.swirlds.jasperdb.files.DataFileIterator}.
- * @param writerOutputBufferBytes
- * 		Size of the buffered output stream (in bytes) used by a {@link com.swirlds.jasperdb.files.DataFileWriter}.
  * @param reconnectKeyLeakMitigationEnabled
  * 		There currently exists a bug when a virtual map is reconnected that can
  * 		cause some deleted keys to leak into the datasource. If this method returns true then a mitigation strategy is
@@ -115,11 +99,16 @@ import java.time.temporal.ChronoUnit;
  * @param numHalfDiskHashMapFlushThreads
  *      Number of threads to use for half disk hash map background flushing. If set to a negative value, the number of
  *      threads to use is calculated based on {@link #percentHalfDiskHashMapFlushThreads}
+ * @param reservedBufferLengthForLeafList
+ *      Length of a reserved buffer in a LongList used to store leafs. Value in bytes.
+ * @param leafRecordCacheSize
+ *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB config.
+ *      If the value is zero, leaf records cache isn't used.
  */
 @ConfigData("merkleDb")
 public record MerkleDbConfig(
         @Positive @ConfigProperty(defaultValue = "500000000") long maxNumOfKeys,
-        @Min(0) @ConfigProperty(defaultValue = "0") long internalHashesRamToDiskThreshold,
+        @Min(0) @ConfigProperty(defaultValue = "8388608") long hashesRamToDiskThreshold,
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
@@ -130,11 +119,7 @@ public record MerkleDbConfig(
         @Min(0) @ConfigProperty(defaultValue = "1") long mergeActivatePeriod,
         @Min(0) @ConfigProperty(defaultValue = "60") long mediumMergePeriod,
         @Min(0) @ConfigProperty(defaultValue = "1440") long fullMergePeriod,
-        @Min(0) @ConfigProperty(defaultValue = "68719476736") long maxDataFileBytes,
-        @Positive @ConfigProperty(defaultValue = "500000") int moveListChunkSize,
-        @Min(0) @ConfigProperty(defaultValue = "10") int maxRamUsedForMergingGb,
-        @Positive @ConfigProperty(defaultValue = "1048576") int iteratorInputBufferBytes,
-        @Positive @ConfigProperty(defaultValue = "4194304") int writerOutputBufferBytes,
+        @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,
         @ConfigProperty(defaultValue = "2147483648") long keySetBloomFilterSizeInBytes,
@@ -142,7 +127,11 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "1000000") int keySetHalfDiskHashMapBuffer,
         @ConfigProperty(defaultValue = "false") boolean indexRebuildingEnforced,
         @ConfigProperty(defaultValue = "50.0") double percentHalfDiskHashMapFlushThreads,
-        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads) {
+        @ConfigProperty(defaultValue = "-1") int numHalfDiskHashMapFlushThreads,
+        @ConfigProperty(defaultValue = "262144") int reservedBufferLengthForLeafList,
+        @ConfigProperty(defaultValue = "1048576") int leafRecordCacheSize) {
+
+    static double UNIT_FRACTION_PERCENT = 100.0;
 
     public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
         final long maxNumberOfFilesInMerge =
@@ -152,7 +141,7 @@ public record MerkleDbConfig(
         if (maxNumberOfFilesInMerge <= minNumberOfFilesInMerge) {
             return new DefaultConfigViolation(
                     "maxNumberOfFilesInMerge",
-                    maxNumberOfFilesInMerge + "",
+                    "%d".formatted(maxNumberOfFilesInMerge),
                     true,
                     "Cannot configure maxNumberOfFilesInMerge to " + maxNumberOfFilesInMerge + ", it must be > "
                             + minNumberOfFilesInMerge);
@@ -168,10 +157,18 @@ public record MerkleDbConfig(
         if (minNumberOfFilesInMerge < 2) {
             return new DefaultConfigViolation(
                     "maxNumberOfFilesInMerge",
-                    maxNumberOfFilesInMerge + "",
+                    "%d".formatted(maxNumberOfFilesInMerge),
                     true,
                     "Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge + ", it must be >= 2");
         }
         return null;
+    }
+
+    public int getNumHalfDiskHashMapFlushThreads() {
+        final int numProcessors = Runtime.getRuntime().availableProcessors();
+        final int threads = (numHalfDiskHashMapFlushThreads() == -1)
+                ? (int) (numProcessors * (percentHalfDiskHashMapFlushThreads() / UNIT_FRACTION_PERCENT))
+                : numHalfDiskHashMapFlushThreads();
+        return Math.max(1, threads);
     }
 }

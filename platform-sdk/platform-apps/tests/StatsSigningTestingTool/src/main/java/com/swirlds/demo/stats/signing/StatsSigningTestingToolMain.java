@@ -27,9 +27,9 @@ package com.swirlds.demo.stats.signing;
  */
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.metrics.Metrics;
@@ -37,7 +37,6 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformWithDeprecatedMethods;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
@@ -46,7 +45,8 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.demo.stats.signing.algorithms.ECSecP256K1Algorithm;
 import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.SwirldsGui;
+import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.gui.GuiPlatformAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,10 +87,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
      * the size of the signed transaction pool
      */
     private int signedTransPoolSize = 1024;
-    /**
-     * ID number for this member
-     */
-    private long selfId;
     /**
      * the app is run by this
      */
@@ -152,19 +148,10 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public void init(final Platform platform, final NodeId id) {
-
-        if (!(platform instanceof PlatformWithDeprecatedMethods)) {
-            // Don't bother with setup while in recovery mode
-            return;
-        }
-
-        final long syncDelay;
         this.platform = platform;
-        selfId = id.getId();
         // parse the config.txt parameters, and allow optional _ as in 1_000_000
-        final String[] parameters = ((PlatformWithDeprecatedMethods) platform).getParameters();
+        final String[] parameters = ParameterProvider.getInstance().getParameters();
         headless = (parameters[0].equals("1"));
-        syncDelay = Integer.parseInt(parameters[2].replaceAll("_", ""));
         bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
         transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
         transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
@@ -183,14 +170,14 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             // they shouldn't both be -1, so set one of them
             transPerEventMax = 1024;
         }
-        SwirldsGui.setAbout(
-                platform.getSelfId().getId(),
-                "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
-                        + " such as the number of transactions per second.");
-        ((PlatformWithDeprecatedMethods) platform).setSleepAfterSync(syncDelay);
+        GuiPlatformAccessor.getInstance()
+                .setAbout(
+                        platform.getSelfId(),
+                        "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
+                                + " such as the number of transactions per second.");
 
         transactionPool = new TransactionPool(
-                platform.getSelfId().getId(),
+                platform.getSelfId(),
                 signedTransPoolSize,
                 bytesPerTrans,
                 true,
@@ -205,7 +192,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
     public void run() {
         final Thread shutdownHook = new ThreadConfiguration(getStaticThreadManager())
                 .setDaemon(false)
-                .setNodeId(platform.getSelfId().getId())
+                .setNodeId(platform.getSelfId())
                 .setComponent("app")
                 .setThreadName("demo_log_time_pulse")
                 .setRunnable(() -> {
@@ -261,7 +248,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             if (((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_MICROSECONDS > tps_measure_window_milliseconds) {
                 toCreate = ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
                 lastTPSMeasureTime = now;
-                logger.info(STARTUP.getMarker(), "rampUpTPS {}", rampUpTPS);
             }
         }
 
@@ -290,7 +276,7 @@ public class StatsSigningTestingToolMain implements SwirldMain {
 
     @Override
     public SwirldState newState() {
-        return new StatsSigningTestingToolState(selfId, () -> transactionPool);
+        return new StatsSigningTestingToolState(() -> transactionPool);
     }
 
     /**

@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.internal.SettingsCommon;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -36,8 +36,8 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
+import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.sync.ShadowEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
@@ -219,8 +219,6 @@ public class SyncTests {
         new TestConfigBuilder().getOrCreateConfig();
 
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
-        SettingsCommon.maxTransactionCountPerEvent = 1000;
-        SettingsCommon.transactionMaxBytes = 10000;
 
         if (platformLoggingEnabled) {
             loadLog4jContext();
@@ -521,7 +519,8 @@ public class SyncTests {
         });
 
         // Do not add events created by the unknown creator to the caller graph to fulfill the premise of this test
-        executor.setCallerAddToGraphTest((indexedEvent -> indexedEvent.getCreatorId() != unknownCallerCreator));
+        executor.setCallerAddToGraphTest(
+                (indexedEvent -> indexedEvent.getCreatorId().id() != unknownCallerCreator));
 
         executor.execute();
 
@@ -614,7 +613,7 @@ public class SyncTests {
         executor.setGenerationDefinitions((caller, listener) -> {
             long listenerMaxGen = SyncUtils.getMaxGen(listener.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
-            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen/10);
+            long listenerMinNonAncient = listenerMaxGen - (listenerMaxGen / 10);
             long listenerMinGen = SyncUtils.getMinGen(listener.getShadowGraph()
                     .findAncestors(listener.getShadowGraph().getTips(), (e) -> true));
 
@@ -624,7 +623,7 @@ public class SyncTests {
 
             long callerMaxGen = SyncUtils.getMaxGen(caller.getShadowGraph().getTips());
             // make the min non-ancient gen slightly below the max gen
-            long callerMinNonAncient = callerMaxGen - (callerMaxGen/10);
+            long callerMinNonAncient = callerMaxGen - (callerMaxGen / 10);
             long callerMinGen = SyncUtils.getMinGen(caller.getShadowGraph()
                     .findAncestors(caller.getShadowGraph().getTips(), (e) -> true));
 
@@ -686,13 +685,15 @@ public class SyncTests {
     @ParameterizedTest
     @MethodSource({"tenNodeGraphParams", "tenNodeBigGraphParams", "tipExpiresBreakingSeed"})
     void tipExpiresAfterPhase1(final SyncTestParams params) throws Exception {
-        final long creatorIdToExpire = 0;
         final SyncTestExecutor executor = new SyncTestExecutor(params);
         final AtomicLong maxGen = new AtomicLong(EventConstants.GENERATION_UNDEFINED);
 
+        final int creatorIndexToExpire = 0;
+        final NodeId creatorIdToExpire = executor.getAddressBook().getNodeId(creatorIndexToExpire);
+
         // node 0 should not create any events after CommonEvents
-        executor.setFactoryConfig(
-                (factory) -> factory.getSourceFactory().addCustomSource((index) -> index == creatorIdToExpire, () -> {
+        executor.setFactoryConfig((factory) -> factory.getSourceFactory()
+                .addCustomSource((index) -> index == creatorIndexToExpire, () -> {
                     final StandardEventSource source0 = new StandardEventSource(false);
                     source0.setNewEventWeight((r, index, prev) -> {
                         if (index <= params.getNumCommonEvents() / 2) {
@@ -826,10 +827,12 @@ public class SyncTests {
         final SyncTestExecutor executor = new SyncTestExecutor(params);
         final AtomicLong genToExpire = new AtomicLong(0);
 
+        final NodeId creatorId = executor.getAddressBook().getNodeId(0);
+
         // Set the generation to expire such that half the listener's graph, and therefore some events that need
         // to be sent to the caller, will be expired
         executor.setCustomPreSyncConfiguration(
-                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(0) / 2));
+                (c, l) -> genToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
 
         // Expire events from the listener's graph after the supplied phase
         final Runnable expireEvents =
@@ -1000,6 +1003,13 @@ public class SyncTests {
         // the caller will have only signed state events
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
             caller.getGeneratedEvents().forEach(EventImpl::markAsSignedStateEvent);
+
+            // a signed sent event needs to be identified as needed by the peer
+            // if it is ancient, it will not be marked as needed, so need to make sure no events are ancient
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
         });
 
         executor.execute();

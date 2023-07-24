@@ -20,15 +20,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.state.DummySwirldState;
-import com.swirlds.platform.SettingsProvider;
 import com.swirlds.platform.SwirldsPlatform;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,16 +45,23 @@ public class SwirldStateManagerImplTests {
     @BeforeEach
     void setup() {
         final SwirldsPlatform platform = mock(SwirldsPlatform.class);
-        when(platform.getAddressBook()).thenReturn(mock(AddressBook.class));
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+        when(platform.getAddressBook()).thenReturn(addressBook);
         initialState = newState();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         swirldStateManagerImpl = new SwirldStateManagerImpl(
-                new NodeId(false, 0L),
-                mock(PreConsensusSystemTransactionManager.class),
-                mock(PostConsensusSystemTransactionManager.class),
+                platformContext,
+                addressBook,
+                new NodeId(0L),
+                mock(PreconsensusSystemTransactionManager.class),
+                mock(ConsensusSystemTransactionManager.class),
                 mock(SwirldStateMetrics.class),
-                mock(SettingsProvider.class),
+                mock(StatusActionSubmitter.class),
                 () -> false,
-                initialState);
+                initialState,
+                new BasicSoftwareVersion(1));
     }
 
     @Test
@@ -104,15 +115,26 @@ public class SwirldStateManagerImplTests {
     private static State newState() {
         final State state = new State();
         state.setSwirldState(new DummySwirldState());
+
+        final PlatformState platformState = mock(PlatformState.class);
+        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
+        when(platformState.copy()).thenReturn(platformState);
+
+        final PlatformData platformData = mock(PlatformData.class);
+        when(platformState.getPlatformData()).thenReturn(platformData);
+
+        state.setPlatformState(platformState);
+
         assertEquals(0, state.getReservationCount(), "A brand new state should have no references.");
         return state;
     }
 
     private static SignedState newSignedState() {
-        final State state = newState();
-        final SignedState ss = new SignedState(state);
+        final SignedState ss = new RandomSignedStateGenerator().build();
         assertEquals(
-                1, state.getReservationCount(), "Creating a signed state should increment the state reference count.");
+                1,
+                ss.getSwirldState().getReservationCount(),
+                "Creating a signed state should increment the state reference count.");
         return ss;
     }
 }

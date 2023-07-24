@@ -16,11 +16,21 @@
 
 package com.hedera.node.app.spi;
 
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -28,13 +38,87 @@ import java.util.Set;
  * Utility class for working with the HAPI. We might move this to the HAPI project.
  */
 public class HapiUtils {
+    private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
+    private static final Key EMPTY_KEY_LIST =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
+    /** A {@link Comparator} for {@link AccountID}s. Sorts first by account number, then by alias. */
+    public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = (o1, o2) -> {
+        if (o1 == o2) return 0;
+        if (o1.hasAccountNum() && !o2.hasAccountNum()) return -1;
+        if (!o1.hasAccountNum() && o2.hasAccountNum()) return 1;
+        if (o1.hasAccountNum()) {
+            return Long.compare(o1.accountNumOrThrow(), o2.accountNumOrThrow());
+        } else {
+            final var alias1 = o1.aliasOrElse(Bytes.EMPTY);
+            final var alias2 = o2.aliasOrElse(Bytes.EMPTY);
+            // FUTURE: Can replace with Bytes.compare or a built-in Bytes comparator when available
+            final var diff = alias1.length() - alias2.length();
+            if (diff < 0) return -1;
+            if (diff > 0) return 1;
+            for (long i = 0; i < alias1.length(); i++) {
+                final var b1 = alias1.getByte(i);
+                final var b2 = alias2.getByte(i);
+                if (b1 < b2) return -1;
+                if (b1 > b2) return 1;
+            }
+        }
+        return 0;
+    };
+
+    /** A simple {@link Comparator} for {@link Timestamp}s. */
+    public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
+            Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
+
+    /** A {@link Comparator} for {@link SemanticVersion}s. */
+    public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
+                    SemanticVersion::major)
+            .thenComparingInt(SemanticVersion::minor)
+            .thenComparingInt(SemanticVersion::patch)
+            .thenComparing(SemanticVersion::pre)
+            .thenComparing(SemanticVersion::build);
+
     private HapiUtils() {}
 
-    public static Timestamp asTimestamp(final Instant instant) {
+    /**
+     * Determines whether the given account is a "hollow" account, i.e., one that has no keys and has an alias
+     * that matches the length of an EVM address.
+     *
+     * @param account The account to check
+     * @return {@code true} if the account is a hollow account, {@code false} otherwise.
+     */
+    public static boolean isHollow(@NonNull final Account account) {
+        requireNonNull(account);
+        return (account.accountIdOrThrow().accountNum() > 1000
+                && account.keyOrElse(EMPTY_KEY_LIST).equals(EMPTY_KEY_LIST)
+                && account.alias() != null
+                && account.alias().length() == EVM_ADDRESS_ALIAS_LENGTH);
+    }
+
+    /** Converts the given {@link Instant} into a {@link Timestamp}. */
+    public static Timestamp asTimestamp(@NonNull final Instant instant) {
         return Timestamp.newBuilder()
                 .seconds(instant.getEpochSecond())
                 .nanos(instant.getNano())
                 .build();
+    }
+
+    /** Converts the given {@link Timestamp} into an {@link Instant}. */
+    public static Instant asInstant(@NonNull final Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.seconds(), timestamp.nanos());
+    }
+
+    /** Subtracts the given number of seconds from the given {@link Timestamp}, returning a new {@link Timestamp}. */
+    public static Timestamp minus(@NonNull final Timestamp ts, @NonNull final long seconds) {
+        return Timestamp.newBuilder()
+                .seconds(ts.seconds() - seconds)
+                .nanos(ts.nanos())
+                .build();
+    }
+
+    /** Determines whether the first timestamp is before the second timestamp. Think of it as, "Is t1 before t2?" */
+    public static boolean isBefore(@NonNull final Timestamp t1, @NonNull final Timestamp t2) {
+        return TIMESTAMP_COMPARATOR.compare(t1, t2) < 0;
     }
 
     public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
@@ -141,5 +225,68 @@ public class HapiUtils {
             case TRANSACTION_GET_FAST_RECORD -> throw new UnknownHederaFunctionality();
             case UNSET -> throw new UnknownHederaFunctionality();
         };
+    }
+
+    /**
+     * Utility to convert a {@link SemanticVersion} into a nicely formatted String.
+     * @param version The version to convert
+     * @return The string representation
+     */
+    public static String toString(@NonNull final SemanticVersion version) {
+        var baseVersion = new StringBuilder("v");
+        baseVersion
+                .append(version.major())
+                .append(".")
+                .append(version.minor())
+                .append(".")
+                .append(version.patch());
+        if (version.pre() != null && !version.pre().isBlank()) {
+            baseVersion.append("-").append(version.pre());
+        }
+        if (version.build() != null && !version.build().isBlank()) {
+            baseVersion.append("+").append(version.build());
+        }
+        return baseVersion.toString();
+    }
+
+    /**
+     * Parses an account from a string of the form shardNum.realmNum.accountNum
+     * @param string The input string
+     * @return The corresponding {@link AccountID}
+     * @throws IllegalArgumentException if the string is not a dot-separated triplet of numbers
+     */
+    public static AccountID parseAccount(@NonNull final String string) {
+        try {
+            final var parts = string.split("\\.");
+            return AccountID.newBuilder()
+                    .shardNum(Long.parseLong(parts[0]))
+                    .realmNum(Long.parseLong(parts[1]))
+                    .accountNum(Long.parseLong(parts[2]))
+                    .build();
+        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(String.format("'%s' is not a dot-separated triplet", string));
+        }
+    }
+
+    /**
+     * Utility to convert an {@link AccountID} into a nicely formatted String.
+     * @param id The id to convert
+     * @return The string representation
+     */
+    public static String toString(@NonNull final AccountID id) {
+        var builder = new StringBuilder()
+                .append(id.shardNum())
+                .append(".")
+                .append(id.realmNum())
+                .append(".");
+
+        if (id.hasAccountNum()) {
+            builder.append(id.accountNum());
+        } else if (id.hasAlias()) {
+            builder.append(id.alias());
+        } else {
+            builder.append("-");
+        }
+        return builder.toString();
     }
 }

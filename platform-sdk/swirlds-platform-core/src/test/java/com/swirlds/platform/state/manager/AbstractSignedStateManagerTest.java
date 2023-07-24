@@ -16,21 +16,25 @@
 
 package com.swirlds.platform.state.manager;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyDoesNotThrow;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,7 +82,10 @@ public class AbstractSignedStateManagerTest {
     /**
      * Add a signature for a node on a state from a given round.
      */
-    protected void addSignature(final SignedStateManager manager, final long round, final long nodeId) {
+    protected void addSignature(
+            @NonNull final SignedStateManager manager, final long round, @NonNull final NodeId nodeId) {
+        Objects.requireNonNull(manager, "manager must not be null");
+        Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         final SignedState signedState = signedStates.get(round);
 
@@ -92,8 +99,11 @@ public class AbstractSignedStateManagerTest {
 
         // Although we normally want to avoid rebuilding the dispatcher over and over, the slight
         // performance overhead is worth the convenience during unit tests
-        manager.preConsensusSignatureObserver(
-                round, nodeId, buildFakeSignature(addressBook.getAddress(nodeId).getSigPublicKey(), hash));
+
+        final StateSignatureTransaction transaction = new StateSignatureTransaction(
+                round, buildFakeSignature(addressBook.getAddress(nodeId).getSigPublicKey(), hash), hash);
+
+        manager.handlePreconsensusSignatureTransaction(nodeId, transaction);
     }
 
     /**

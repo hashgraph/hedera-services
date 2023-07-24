@@ -27,7 +27,7 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 
-public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends VirtualValue> {
+public interface VirtualMapLike<K extends VirtualKey, V extends VirtualValue> {
     void registerMetrics(Metrics metrics);
 
     long size();
@@ -51,11 +51,15 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
     @SuppressWarnings("rawtypes")
     VirtualDataSource getDataSource();
 
+    void warm(K key);
+
     void extractVirtualMapData(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
             throws InterruptedException;
 
-    static <K extends VirtualKey<? super K>, V extends VirtualValue> VirtualMapLike<K, V> from(
-            final VirtualMap<K, V> real) {
+    void extractVirtualMapDataC(ThreadManager threadManager, InterruptableConsumer<Pair<K, V>> handler, int threadCount)
+            throws InterruptedException;
+
+    static <K extends VirtualKey, V extends VirtualValue> VirtualMapLike<K, V> from(final VirtualMap<K, V> real) {
         return new VirtualMapLike<>() {
             @Override
             public VirtualDataSource<K, V> getDataSource() {
@@ -69,6 +73,15 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
                     final int threadCount)
                     throws InterruptedException {
                 VirtualMapMigration.extractVirtualMapData(threadManager, real, handler, threadCount);
+            }
+
+            @Override
+            public void extractVirtualMapDataC(
+                    final ThreadManager threadManager,
+                    final InterruptableConsumer<Pair<K, V>> handler,
+                    final int threadCount)
+                    throws InterruptedException {
+                VirtualMapMigration.extractVirtualMapDataC(threadManager, real, handler, threadCount);
             }
 
             @Override
@@ -119,6 +132,11 @@ public interface VirtualMapLike<K extends VirtualKey<? super K>, V extends Virtu
             @Override
             public Hash getHash() {
                 return real.getHash();
+            }
+
+            @Override
+            public void warm(K key) {
+                real.warm(key);
             }
         };
     }
