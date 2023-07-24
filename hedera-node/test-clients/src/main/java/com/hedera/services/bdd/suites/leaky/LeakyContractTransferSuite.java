@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
-import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -51,7 +50,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LeakyContractTransferSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
+    private static final Logger log = LogManager.getLogger(LeakyContractTransferSuite.class);
+    private static final long GAS_TO_OFFER = 1_000_000L;
+    private static final String TRANSFER_FROM_PUBLIC = "transferFromPublic";
 
     public static void main(String... args) {
         new LeakyContractTransferSuite().runSuiteSync();
@@ -114,7 +115,7 @@ public class LeakyContractTransferSuite extends HapiSuite {
                                 spec,
                                 contractCall(
                                                 contractB,
-                                                "transferFromPublic",
+                                                TRANSFER_FROM_PUBLIC,
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
                                                         spec.registry().getTokenID(VANILLA_TOKEN))),
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
@@ -144,7 +145,7 @@ public class LeakyContractTransferSuite extends HapiSuite {
                                 spec,
                                 contractCall(
                                                 contractB,
-                                                "transferFromPublic",
+                                                TRANSFER_FROM_PUBLIC,
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
                                                         spec.registry().getTokenID(VANILLA_TOKEN))),
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
@@ -160,7 +161,7 @@ public class LeakyContractTransferSuite extends HapiSuite {
                                 spec,
                                 contractCall(
                                                 contractC,
-                                                "transferFromPublic",
+                                                TRANSFER_FROM_PUBLIC,
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
                                                         spec.registry().getTokenID(VANILLA_TOKEN))),
                                                 HapiParserUtil.asHeadlongAddress(asAddress(
