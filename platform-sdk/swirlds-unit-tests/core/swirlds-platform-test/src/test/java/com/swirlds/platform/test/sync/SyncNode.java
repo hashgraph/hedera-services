@@ -196,6 +196,10 @@ public class SyncNode {
      */
     public ShadowGraphSynchronizer getSynchronizer() {
         final Consumer<GossipEvent> eventHandler = event -> {
+            if (event.getHashedData().getHash() == null) {
+                throw new IllegalStateException("expected event to be hashed on the gossip thread");
+            }
+
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
