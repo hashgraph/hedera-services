@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.state;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -157,12 +158,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
-        throw new AssertionError("Not implemented");
+        // TODO - finalize how to collect fees
     }
 
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
-        throw new AssertionError("Not implemented");
+        // TODO - finalize how to refund fees
     }
 
     /**
@@ -183,7 +184,16 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public Optional<ExceptionalHaltReason> tryLazyCreation(
             @NonNull final Address recipient, @NonNull final MessageFrame frame) {
-        throw new AssertionError("Not implemented");
+        final var gasCost = scope.fees().lazyCreationCostInGas();
+        if (gasCost > frame.getRemainingGas()) {
+            return Optional.of(INSUFFICIENT_GAS);
+        }
+        final var maybeHaltReason = evmFrameState.tryLazyCreation(recipient);
+        if (maybeHaltReason.isPresent()) {
+            return maybeHaltReason;
+        }
+        frame.decrementRemainingGas(gasCost);
+        return Optional.empty();
     }
 
     /**
@@ -230,7 +240,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public Optional<ExceptionalHaltReason> tryTrackingDeletion(
             @NonNull final Address deleted, @NonNull final Address beneficiary) {
-        throw new AssertionError("Not implemented");
+        return evmFrameState.tryTrackingDeletion(deleted, beneficiary);
     }
 
     /**
@@ -318,8 +328,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * Returns the accounts that have been touched (i.e., created or maybe mutated but <i>not</i> deleted)
      * within the scope of this updater.
      *
-     * <p>TODO - we may not need this; only used in Besu by
-     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to just deal
+     * <p>We may not actually need this, as Besu only uses it in
+     * {@code AbstractMessageProcessor.clearAccumulatedStateBesidesGasAndOutput()}, which seems to deal
      * with side-effects of an Ethereum consensus bug.
      *
      * @return the accounts that have been touched

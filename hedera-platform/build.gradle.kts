@@ -102,6 +102,7 @@ dependencies.constraints {
         api(gav("org.hyperledger.besu.secp256k1", besuNativeVersion))
         api(gav("org.json", "20230227"))
         api(gav("org.junit.jupiter.api", "5.9.0"))
+        api(gav("org.junit.platform.engine", "1.9.3"))
         api(gav("org.junitpioneer", "2.0.1"))
         api(gav("org.mockito", mockitoVersion))
         api(gav("org.mockito.inline", mockitoVersion))
