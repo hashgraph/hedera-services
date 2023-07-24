@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.gui.internal;
 
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
 import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.system.SystemExitCode;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;

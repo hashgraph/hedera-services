@@ -19,6 +19,8 @@ package com.swirlds.platform.reconnect;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.locks.locked.LockedResource;
@@ -27,8 +29,6 @@ import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
