@@ -18,7 +18,6 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -27,15 +26,14 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.FilesConfig;
@@ -50,12 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileAppendTest extends FileTestBase {
-    private static final FileID WELL_KNOWN_FILE_ID =
-            FileID.newBuilder().fileNum(1L).build();
-
     private final FileAppendTransactionBody.Builder OP_BUILDER = FileAppendTransactionBody.newBuilder();
-
-    private final ExpiryMeta currentExpiryMeta = new ExpiryMeta(expirationTime, NA, null);
 
     @Mock
     private Account account;
@@ -78,7 +71,7 @@ class FileAppendTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileAppendHandler();
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
     }
@@ -181,16 +174,36 @@ class FileAppendTest extends FileTestBase {
         assertEquals(status, ex.getStatus());
     }
 
-    private TransactionBody txnWith(final FileAppendTransactionBody op) {
-        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
-        final var appendFileBuilder = FileAppendTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
-        return TransactionBody.newBuilder()
-                .transactionID(txnId)
-                .fileAppend(appendFileBuilder.build())
+    @Test
+    void appliesUpgradeFileNewContent() {
+        final var additionalContent = "contents".getBytes();
+        var bytesNewContent = Bytes.wrap(additionalContent);
+        givenValidFile(false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        var bytesNewContentExpected = Bytes.wrap(additionalContent);
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
                 .build();
+        given(handleContext.body()).willReturn(txBody);
+        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+
+        subject.handle(handleContext);
+        final var iterator = writableUpgradeStates.iterator();
+        Bytes file = null;
+
+        while (iterator.hasNext()) {
+            file = iterator.next();
+        }
+        assertEquals(bytesNewContentExpected, file);
     }
 
     private FileID wellKnownId() {
-        return FileID.newBuilder().fileNum(fileId.fileNum()).build();
+        return fileId;
+    }
+
+    private FileID wellKnowUpgradeId() {
+
+        return fileUpgradeFileId;
     }
 }
