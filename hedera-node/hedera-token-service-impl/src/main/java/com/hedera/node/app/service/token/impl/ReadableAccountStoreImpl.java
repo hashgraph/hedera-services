@@ -62,6 +62,14 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
         this.aliases = states.get("ALIASES");
     }
 
+    protected <T extends ReadableKVState<AccountID, Account>> T accountState() {
+        return (T) accountState;
+    }
+
+    protected <T extends ReadableKVState<Bytes, AccountID>> T aliases() {
+        return (T) aliases;
+    }
+
     public static boolean isMirror(final Bytes bytes) {
         return bytes.matchesPrefix(MIRROR_PREFIX);
     }

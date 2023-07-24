@@ -31,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -62,7 +63,9 @@ public class WritableStoreFactory {
             FileService.NAME,
             Map.of(WritableFileStore.class, WritableFileStore::new),
             EntityIdService.NAME,
-            Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new));
+            Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new),
+            UtilService.NAME,
+            Map.of());
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

@@ -657,8 +657,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             for (final ReadableSingletonState s : singletonInstances.values()) {
                 ((WritableSingletonStateBase) s).commit();
             }
-            for (final ReadableQueueState s : queueInstances.values()) {
-                ((WritableQueueStateBase) s).commit();
+            for (final ReadableQueueState q : queueInstances.values()) {
+                ((WritableQueueStateBase) q).commit();
             }
         }
     }
