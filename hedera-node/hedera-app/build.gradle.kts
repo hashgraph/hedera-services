@@ -23,7 +23,7 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
-    itestImplementation(testFixtures(project(":app")))
+    xtestImplementation(testFixtures(project(":app")))
 
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
@@ -48,7 +48,6 @@ dependencies {
         testImplementation(gav("uk.org.webcompere.systemstubs.core"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
 
-        itestAnnotationProcessor(gav("dagger.compiler"))
         itestImplementation(project(":app"))
         itestImplementation(project(":app-spi"))
         itestImplementation(project(":config"))
@@ -65,10 +64,30 @@ dependencies {
         itestImplementation(gav("org.bouncycastle.provider"))
         itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.junit.jupiter.params"))
-        itestImplementation(gav("org.mockito"))
-        itestImplementation(gav("org.mockito.junit.jupiter"))
         itestImplementation(gav("io.netty.transport.classes.epoll"))
         itestImplementation(gav("io.netty.transport.epoll"))
+
+        xtestAnnotationProcessor(gav("dagger.compiler"))
+        xtestImplementation(project(":app"))
+        xtestImplementation(project(":app-spi"))
+        xtestImplementation(project(":config"))
+        xtestImplementation(project(":hapi"))
+        xtestImplementation(testFixtures(project(":app-spi")))
+        xtestImplementation(testFixtures(project(":config")))
+        xtestImplementation(gav("com.github.spotbugs.annotations"))
+        xtestImplementation(gav("com.hedera.pbj.runtime"))
+        xtestImplementation(gav("com.swirlds.common"))
+        xtestImplementation(gav("com.swirlds.config"))
+        xtestImplementation(gav("io.grpc"))
+        xtestImplementation(gav("org.apache.logging.log4j"))
+        xtestImplementation(gav("org.assertj.core"))
+        xtestImplementation(gav("org.bouncycastle.provider"))
+        xtestImplementation(gav("org.junit.jupiter.api"))
+        xtestImplementation(gav("org.junit.jupiter.params"))
+        xtestImplementation(gav("org.mockito"))
+        xtestImplementation(gav("org.mockito.junit.jupiter"))
+        xtestImplementation(gav("io.netty.transport.classes.epoll"))
+        xtestImplementation(gav("io.netty.transport.epoll"))
 
         jmhImplementation(project(":app"))
         jmhImplementation(project(":app-service-mono"))
