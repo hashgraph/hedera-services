@@ -162,32 +162,4 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         preConsensusEventHandler.preConsensusEvent(emptyEvent);
         assertEquals(0, preConsensusEventHandler.getQueueSize(), "Empty events should not be added to the queue");
     }
-
-    /**
-     * Test that events are discarded if the {@link SwirldStateManager} says they should be.
-     */
-    @Test
-    void testEventsDiscarded() {
-        final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
-        when(swirldStateManager.discardPreConsensusEvent(any(EventImpl.class))).thenReturn(true);
-
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
-
-        preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusMetrics,
-                threadConfig);
-        preConsensusEventHandler.start();
-
-        final List<EventImpl> events = createEvents(10, 10, false);
-        events.forEach(preConsensusEventHandler::preConsensusEvent);
-        assertEquals(
-                0,
-                preConsensusEventHandler.getQueueSize(),
-                "queue should be empty because all events should be discarded");
-    }
 }

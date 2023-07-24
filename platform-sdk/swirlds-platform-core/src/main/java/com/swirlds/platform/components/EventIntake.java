@@ -20,8 +20,11 @@ import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.event.GossipEvent;
@@ -37,6 +40,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,30 +70,52 @@ public class EventIntake {
     /** Stores events, expires them, provides event lookup methods */
     private final ShadowGraph shadowGraph;
 
+    private final ExecutorService prehandlePool;
+    private final Consumer<EventImpl> prehandleEvent;
+
     /**
      * Constructor
      *
-     * @param selfId                        the ID of this node
-     * @param consensusSupplier             a functor which provides access to the {@code Consensus} interface
-     * @param addressBook                   the current address book
-     * @param dispatcher                    an event observer dispatcher
+     * @param platformContext   the platform context
+     * @param threadManager     creates new threading resources
+     * @param eventLinker       links events together, holding orphaned events until their parents are found (if
+     *                          operating with the orphan buffer enabled)
+     * @param consensusSupplier provides the current consensus instance
+     * @param addressBook       the current address book
+     * @param dispatcher        invokes event related callbacks
+     * @param selfId            the ID of this node
+     * @param consensusSupplier a functor which provides access to the {@code Consensus} interface
+     * @param addressBook       the current address book
+     * @param dispatcher        an event observer dispatcher
      */
     public EventIntake(
+            @NonNull final PlatformContext platformContext,
+            @NonNull final ThreadManager threadManager,
             @NonNull final NodeId selfId,
             @NonNull final EventLinker eventLinker,
             @NonNull final Supplier<Consensus> consensusSupplier,
             @NonNull final AddressBook addressBook,
             @NonNull final EventObserverDispatcher dispatcher,
             @NonNull final IntakeCycleStats stats,
-            @NonNull final ShadowGraph shadowGraph) {
-        this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
-        this.eventLinker = Objects.requireNonNull(eventLinker, "eventLinker must not be null");
-        this.consensusSupplier = Objects.requireNonNull(consensusSupplier, "consensusSupplier must not be null");
+            @NonNull final ShadowGraph shadowGraph,
+            @NonNull final Consumer<EventImpl> prehandleEvent) {
+        this.selfId = Objects.requireNonNull(selfId);
+        this.eventLinker = Objects.requireNonNull(eventLinker);
+        this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
         this.consensusWrapper = new ConsensusWrapper(consensusSupplier);
-        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
-        this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher must not be null");
-        this.stats = Objects.requireNonNull(stats, "stats must not be null");
-        this.shadowGraph = Objects.requireNonNull(shadowGraph, "shadowGraph must not be null");
+        this.addressBook = Objects.requireNonNull(addressBook);
+        this.dispatcher = Objects.requireNonNull(dispatcher);
+        this.stats = Objects.requireNonNull(stats);
+        this.shadowGraph = Objects.requireNonNull(shadowGraph);
+        this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
+
+        final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+        if (eventConfig.asyncPrehandle()) {
+            prehandlePool = Executors.newFixedThreadPool(
+                    eventConfig.prehandlePoolSize(), threadManager.createThreadFactory("platform", "txn-prehandle"));
+        } else {
+            prehandlePool = null;
+        }
     }
 
     /**
@@ -143,6 +171,11 @@ public class EventIntake {
                         event::toMediumString);
             }
         }
+
+        if (prehandlePool != null) {
+            prehandlePool.submit(buildPrehandleTask(event));
+        }
+
         // record the event in the hashgraph, which results in the events in consEvent reaching consensus
         final List<ConsensusRound> consRounds = consensusWrapper.addEvent(event, addressBook);
         // #5762 after we calculate roundCreated, se set its value in GossipEvent so that it can be shared with other
@@ -162,6 +195,17 @@ public class EventIntake {
             stats.dispatchedStale();
         }
         stats.doneIntakeAddEvent();
+    }
+
+    /**
+     * Build a task that will prehandle transactions in an event. Executed on a thread pool.
+     */
+    @NonNull
+    private Runnable buildPrehandleTask(@NonNull final EventImpl event) {
+        return () -> {
+            prehandleEvent.accept(event);
+            event.signalPrehandleCompletion();
+        };
     }
 
     /**
@@ -190,6 +234,14 @@ public class EventIntake {
      */
     private void handleConsensus(final ConsensusRound consensusRound) {
         if (consensusRound != null) {
+
+            // If we are asynchronously prehandling transactions, we need to
+            // wait for prehandles to finish before proceeding. It is critically
+            // important that prehandle is always called prior to handleConsensusRound().
+            if (prehandlePool != null) {
+                consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+            }
+
             eventLinker.updateGenerations(consensusRound.getGenerations());
             dispatcher.consensusRound(consensusRound);
         }

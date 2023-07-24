@@ -507,13 +507,16 @@ public class SwirldsPlatform implements Platform, Startable {
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
         final EventIntake eventIntake = new EventIntake(
+                platformContext,
+                threadManager,
                 selfId,
                 eventLinker,
                 consensusRef::get,
                 initialAddressBook,
                 eventObserverDispatcher,
                 intakeCycleStats,
-                shadowGraph);
+                shadowGraph,
+                swirldStateManager::preHandle);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);

@@ -145,10 +145,7 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     }
 
     /**
-     * Do pre-handle processing on the pre-consensus event and add it to the queue (q1) for handling. Events that are
-     * null or empty are discarded immediately. All other events go through pre-handle processing. Events that should
-     * not be handled pre-consensus according to {@link SwirldStateManager#discardPreConsensusEvent(EventImpl)} are not
-     * added to the queue.
+     * Prehandle application transactions.
      */
     @Override
     public void preConsensusEvent(final EventImpl event) {
@@ -159,11 +156,6 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
 
         // All events are supplied for preHandle
         swirldStateManager.preHandle(event);
-
-        // some events should not be applied as pre-consensus, so discard them
-        if (swirldStateManager.discardPreConsensusEvent(event)) {
-            return;
-        }
 
         try {
             // update the estimate now, so the queue can sort on it

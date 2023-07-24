@@ -16,10 +16,12 @@
 
 package com.swirlds.platform.test.event.intake;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -37,6 +39,7 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,7 +95,12 @@ class OrphanEventsIntakeTest {
                     ConfigurationHolder.getConfigData(ConsensusConfig.class),
                     new ParentFinder(linkedEventMap::get),
                     100_000);
+
+            final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+
             intake = new EventIntake(
+                    platformContext,
+                    getStaticThreadManager(),
                     new NodeId(0L),
                     orphanBuffer,
                     () -> consensus,
@@ -101,7 +109,8 @@ class OrphanEventsIntakeTest {
                             (EventAddedObserver) e -> linkedEventMap.put(e.getBaseHash(), e),
                             (ConsensusRoundObserver) rnd -> consensusEvents.addAll(rnd.getConsensusEvents())),
                     mock(IntakeCycleStats.class),
-                    mock(ShadowGraph.class));
+                    mock(ShadowGraph.class),
+                    e -> {});
         }
 
         public void generateAndFeed(final int numEvents) {
