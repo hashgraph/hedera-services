@@ -30,7 +30,6 @@ event.enableEventStreaming,                    true
 event.eventsLogDir,                            /opt/hgcapp/eventsStreams
 event.eventsLogPeriod,                         5
 event.maxEventQueueForCons,                    1000
-event.creation.maxCreationRate,                1
 
                                           #############################
                                           #         Reconnect         #
