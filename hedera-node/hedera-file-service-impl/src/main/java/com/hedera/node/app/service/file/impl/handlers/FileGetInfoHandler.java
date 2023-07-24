@@ -114,7 +114,7 @@ public class FileGetInfoHandler extends FileQueryBase {
      * @param ledgerConfig
      * @return the information about the file
      */
-    private static Optional<FileInfo> infoForFile(
+    private Optional<FileInfo> infoForFile(
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final LedgerConfig ledgerConfig,

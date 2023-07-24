@@ -176,7 +176,7 @@ class FileAppendTest extends FileTestBase {
 
     @Test
     void appliesUpgradeFileNewContent() {
-        final var additionalContent = "STUFF".getBytes();
+        final var additionalContent = "contents".getBytes();
         var bytesNewContent = Bytes.wrap(additionalContent);
         givenValidFile(false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();

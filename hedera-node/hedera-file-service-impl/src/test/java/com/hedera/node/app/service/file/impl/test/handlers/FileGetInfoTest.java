@@ -189,15 +189,15 @@ class FileGetInfoTest extends FileTestBase {
 
     @Test
     void getsResponseIfOkResponseUpgradeFile() {
-        givenValidFile(false);
+        givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         final var responseHeader = ResponseHeader.newBuilder()
                 .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
                 .build();
-        final var expectedInfo = getExpectedSystemInfo();
+        final var expectedInfo = getExpectedUpgradeInfo();
 
-        final var query = createGetFileInfoQuery(fileSystemFileId.fileNum());
+        final var query = createGetFileInfoQuery(fileUpgradeFileId.fileNum());
         when(context.query()).thenReturn(query);
         when(context.createStore(ReadableUpgradeStoreImpl.class)).thenReturn(readableUpgradeStore);
         final var response = subject.findResponse(context, responseHeader);
@@ -224,6 +224,20 @@ class FileGetInfoTest extends FileTestBase {
         return FileInfo.newBuilder()
                 .memo(upgradeHash)
                 .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
+                .keys(keys)
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .ledgerId(ledgerId)
+                .deleted(false)
+                .size(8)
+                .build();
+    }
+
+    private FileInfo getExpectedUpgradeInfo() {
+        final var upgradeHash =
+                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        return FileInfo.newBuilder()
+                .memo(upgradeHash)
+                .fileID(FileID.newBuilder().fileNum(fileUpgradeFileId.fileNum()).build())
                 .keys(keys)
                 .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
                 .ledgerId(ledgerId)

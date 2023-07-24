@@ -83,7 +83,7 @@ public class FileTestBase {
     protected final FileID WELL_KNOWN_UPGRADE_FILE_ID =
             FileID.newBuilder().fileNum(150L).shardNum(0L).realmNum(0L).build();
     protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
-            FileID.newBuilder().fileNum(150L).shardNum(0L).realmNum(0L).build();
+            FileID.newBuilder().fileNum(122L).shardNum(0L).realmNum(0L).build();
     protected final FileID fileId = WELL_KNOWN_FILE_ID;
     protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
     protected final FileID fileUpgradeFileId = WELL_KNOWN_UPGRADE_FILE_ID;
@@ -296,7 +296,7 @@ public class FileTestBase {
 
     protected File createUpgradeFile() {
         return new File.Builder()
-                .fileId(fileSystemFileId)
+                .fileId(fileUpgradeFileId)
                 .expirationTime(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))

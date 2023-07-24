@@ -133,7 +133,7 @@ public class FileAppendHandler implements TransactionHandler {
         fileStore.put(fileBuilder.build());
     }
 
-    private static void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
+    private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
         final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
         File file = fileStore.peek();
         if (file == null) {

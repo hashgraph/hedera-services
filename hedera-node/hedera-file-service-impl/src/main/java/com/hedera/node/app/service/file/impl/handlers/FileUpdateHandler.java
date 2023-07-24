@@ -120,13 +120,13 @@ public class FileUpdateHandler implements TransactionHandler {
         fileStore.put(builder.build());
     }
 
-    private static void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
+    private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
         final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
         // empty old upgrade file
         fileStore.resetFileContents();
         final var file = new File.Builder()
                 .fileId(FileID.newBuilder()
-                        .fileNum(fileUpdate.fileIDOrElse(FileID.DEFAULT).fileNum())
+                        .fileNum(fileUpdate.fileIDOrThrow().fileNum())
                         .build())
                 .contents(fileUpdate.contents())
                 .deleted(false)
@@ -136,7 +136,7 @@ public class FileUpdateHandler implements TransactionHandler {
         fileStore.add(file);
     }
 
-    private static void resolveMutableBuilderAttributes(
+    private void resolveMutableBuilderAttributes(
             @NonNull final FileUpdateTransactionBody op,
             @NonNull final File.Builder builder,
             @NonNull final FilesConfig fileServiceConfig,
@@ -173,7 +173,7 @@ public class FileUpdateHandler implements TransactionHandler {
         return op.hasMemo() || op.hasKeys();
     }
 
-    private static void validateMaybeNewMemo(
+    private void validateMaybeNewMemo(
             @NonNull final AttributeValidator attributeValidator, @NonNull final FileUpdateTransactionBody op) {
         if (op.hasMemo()) {
             attributeValidator.validateMemo(op.memo());
