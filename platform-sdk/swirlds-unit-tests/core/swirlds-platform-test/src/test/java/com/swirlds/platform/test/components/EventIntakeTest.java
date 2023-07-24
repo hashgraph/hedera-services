@@ -63,7 +63,8 @@ class EventIntakeTest {
         final ArgumentCaptor<ConsensusRound> roundCaptor = ArgumentCaptor.forClass(ConsensusRound.class);
         final ShadowGraph shadowGraph = mock(ShadowGraph.class);
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         final EventIntake intake = new EventIntake(
                 platformContext,

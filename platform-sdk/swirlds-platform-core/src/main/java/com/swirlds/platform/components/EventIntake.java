@@ -172,7 +172,12 @@ public class EventIntake {
             }
         }
 
-        if (prehandlePool != null) {
+        if (prehandlePool == null) {
+            // Prehandle transactions on the thread pool.
+            prehandleEvent.accept(event);
+            event.signalPrehandleCompletion();
+        } else {
+            // Prehandle transactions on the intake thread (i.e. this thread).
             prehandlePool.submit(buildPrehandleTask(event));
         }
 

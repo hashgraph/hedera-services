@@ -73,5 +73,4 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "./eventstreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "true") boolean asyncPrehandle,
-        @ConfigProperty(defaultValue = "8") int prehandlePoolSize) {
-}
+        @ConfigProperty(defaultValue = "8") int prehandlePoolSize) {}

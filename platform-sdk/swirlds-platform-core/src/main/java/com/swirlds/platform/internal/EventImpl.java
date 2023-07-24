@@ -127,7 +127,6 @@ public class EventImpl extends AbstractSerializableHashable
      */
     private long streamSequenceNumber = NO_STREAM_SEQUENCE_NUMBER; // needs to be atomic, thread will mark as stale
 
-
     /**
      * This latch counts down when prehandle has been called on all application transactions contained in this event.
      */

@@ -96,7 +96,8 @@ class OrphanEventsIntakeTest {
                     new ParentFinder(linkedEventMap::get),
                     100_000);
 
-            final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+            final PlatformContext platformContext =
+                    TestPlatformContextBuilder.create().build();
 
             intake = new EventIntake(
                     platformContext,

@@ -35,7 +35,6 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
@@ -51,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * SwirldState implemented). It contains a thread queue that contains a queue of pre-consensus events (q1) and a
  * SwirldStateManager which applies those events to the state
  */
-public class PreConsensusEventHandler implements PreConsensusEventObserver, Clearable, Startable {
+public class PreConsensusEventHandler implements Clearable, Startable {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(PreConsensusEventHandler.class);
@@ -71,18 +70,12 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     private final SwirldStateManager swirldStateManager;
 
     /**
-     * @param metrics
-     *      metrics system
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		the ID of this node
-     * @param swirldStateManager
-     * 		manages states
-     * @param consensusMetrics
-     * 		metrics relating to consensus
-     * @param threadConfig
-     *      configuration for the thread system
+     * @param metrics            metrics system
+     * @param threadManager      responsible for managing thread lifecycles
+     * @param selfId             the ID of this node
+     * @param swirldStateManager manages states
+     * @param consensusMetrics   metrics relating to consensus
+     * @param threadConfig       configuration for the thread system
      */
     public PreConsensusEventHandler(
             @NonNull final Metrics metrics,
@@ -145,10 +138,9 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     }
 
     /**
-     * Prehandle application transactions.
+     * Prehandle application transactions, and enqueue platform transactions for prehandling.
      */
-    @Override
-    public void preConsensusEvent(final EventImpl event) {
+    public void prehandleTransactions(final EventImpl event) {
         // we don't need empty pre-consensus events
         if (event == null || event.isEmpty()) {
             return;

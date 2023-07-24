@@ -477,7 +477,6 @@ public class SwirldsPlatform implements Platform, Startable {
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
-                preConsensusEventHandler,
                 eventMapper,
                 addedEventMetrics,
                 eventIntakeMetrics,
@@ -516,7 +515,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 intakeCycleStats,
                 shadowGraph,
-                swirldStateManager::preHandle);
+                preConsensusEventHandler::prehandleTransactions);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);

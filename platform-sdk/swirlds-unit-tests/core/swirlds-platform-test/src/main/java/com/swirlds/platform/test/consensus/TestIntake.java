@@ -112,7 +112,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
 
-        final PlatformContext platformContext = TestPlatformContextBuilder.create().build();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         intake = new EventIntake(
                 platformContext,

@@ -116,7 +116,7 @@ public class EventFlowWrapper {
     }
 
     /**
-     * Generates and applies pre-consensus events to {@link PreConsensusEventHandler#preConsensusEvent(EventImpl)} such
+     * Generates and applies pre-consensus events to {@link PreConsensusEventHandler#prehandleTransactions(EventImpl)} such
      * that a minimum number of transactions is achieved, then waits for the events to be processed. Events are only
      * applied if they pass the {@code shouldApplyEvent} check.
      *
@@ -146,7 +146,7 @@ public class EventFlowWrapper {
 
         try {
             completeBeforeTimeout(
-                    () -> eventsToApply.forEach(preConsensusEventHandler::preConsensusEvent),
+                    () -> eventsToApply.forEach(preConsensusEventHandler::prehandleTransactions),
                     Duration.ofSeconds(1),
                     "Thread is blocked trying to add events to the pre-consensus event queue. Unable to complete test.");
         } catch (final InterruptedException e) {
