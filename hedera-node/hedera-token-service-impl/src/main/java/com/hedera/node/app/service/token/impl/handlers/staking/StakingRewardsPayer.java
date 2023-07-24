@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -30,12 +31,15 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Helper class for paying out staking rewards.
  */
 @Singleton
 public class StakingRewardsPayer {
+    private static final Logger log = LogManager.getLogger(StakingRewardsPayer.class);
     private StakingRewardsHelper stakingRewardHelper;
     private StakeRewardCalculatorImpl rewardCalculator;
 
@@ -49,6 +53,7 @@ public class StakingRewardsPayer {
 
     public Map<AccountID, Long> payRewardsIfPending(
             @NonNull final Set<AccountID> possibleRewardReceivers,
+            @NonNull final ReadableAccountStore readableStore,
             @NonNull final WritableAccountStore writableStore,
             @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
             @NonNull final WritableStakingInfoStore stakingInfoStore,
@@ -57,21 +62,42 @@ public class StakingRewardsPayer {
 
         final Map<AccountID, Long> rewardsPaid = new HashMap<>();
         for (final var receiver : possibleRewardReceivers) {
-            var receiverAccount = writableStore.get(receiver);
+            final var originalAccount = readableStore.getAccountById(receiver);
+            final var modifiedAccount = writableStore.get(receiver);
             final var reward = rewardCalculator.computePendingReward(
-                    receiverAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
-            rewardsPaid.merge(receiver, reward, Long::sum);
+                    originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
 
             if (reward <= 0) {
                 continue;
             }
             stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
-            if (receiverAccount.deleted()) {
-                // TODO: If the account is deleted transfer reward to beneficiary.
-                // Will be a loop for ContractCalls. Need to check if it is a contract call.
+
+            var receiverId = receiver;
+            var beneficiary = originalAccount;
+
+            // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
+            // accounts until we find a non-deleted account to try to reward (it may still decline)
+            if (originalAccount.deleted()) {
+                // TODO: need to get this info ?
+                final var maxRedirects = 0;
+                var j = 1;
+                do {
+                    if (j++ > maxRedirects) {
+                        log.error(
+                                "With {} accounts deleted, last redirect in modifications led to deleted"
+                                        + " beneficiary 0.0.{}",
+                                maxRedirects,
+                                receiverId);
+                        throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
+                    }
+                    // TODO: need to get this info ?
+                    //                    receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
+                    beneficiary = writableStore.get(receiverId);
+                } while (beneficiary.deleted());
             }
-            if (!receiverAccount.declineReward()) {
-                applyReward(reward, receiverAccount, writableStore);
+            if (!originalAccount.declineReward()) {
+                applyReward(reward, modifiedAccount, writableStore);
+                rewardsPaid.merge(receiver, reward, Long::sum);
             }
         }
         return rewardsPaid;

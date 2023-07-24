@@ -40,9 +40,12 @@ import java.util.Map;
 import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
+    private static final Logger log = LogManager.getLogger(StakingRewardsHandlerImpl.class);
     private final StakingRewardsPayer rewardsPayer;
     private final StakingRewardsHelper stakingRewardHelper;
     private final StakePeriodManager stakePeriodManager;
@@ -78,7 +81,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var rewardReceivers = stakingRewardHelper.getPossibleRewardReceivers(writableStore, readableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
-                rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow);
+                rewardReceivers, readableStore, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow);
         // Adjust stakes for nodes
         adjustStakeMetadata(
                 writableStore, readableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
@@ -186,6 +189,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // If account chose to change decline reward field or stakeId field, we don't need
             // to update stakeAtStartOfLastRewardedPeriod because it is not rewarded for that period
             // Check if the stakeAtStartOfLastRewardedPeriod needs to be updated
+            // If the account is autoCreated containStakeMetaChanges will not be true
             if (!containStakeMetaChanges
                     && shouldUpdateStakeStart(originalAccount, isRewarded, reward, stakingRewardStore, consensusNow)) {
                 final var copy = modifiedAccount.copyBuilder();
@@ -195,6 +199,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
             // Update stakePeriodStart if account is rewarded or if reward is zero and account
             // has zero stake
+            // If the account is autoCreated it will not be rewarded
             final var wasRewarded = isRewarded
                     && (reward > 0
                             || (reward == 0

@@ -200,7 +200,7 @@ public class StakePeriodManager {
             final Instant consensusNow) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (modifiedAccount.hasStakedNodeId()) {
-            if (originalAccount.hasStakedAccountId() || stakeMetaChanged) {
+            if ((originalAccount != null && originalAccount.hasStakedAccountId()) || stakeMetaChanged) {
                 // We just started staking to a node today
                 return currentStakePeriod(consensusNow);
             } else if (rewarded) {
