@@ -637,4 +637,49 @@ class TipsetEventCreatorImplTests {
         // doing it at least some of the time.
         assertTrue(zeroWeightNodeOtherParentCount > 1);
     }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("Size One Network Test")
+    void sizeOneNetworkTest(final boolean advancingClock) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 1;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        final Map<NodeId, SimulatedNode> nodes =
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+
+        final Map<Hash, EventImpl> events = new HashMap<>();
+
+        final Address address = addressBook.getAddress(addressBook.getNodeId(0));
+
+        for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+            if (advancingClock) {
+                time.tick(Duration.ofMillis(10));
+            }
+
+            transactionSupplier.set(generateRandomTransactions(random));
+
+            final NodeId nodeId = address.getNodeId();
+            final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+
+            final GossipEvent event = eventCreator.maybeCreateEvent();
+
+            // In this test, it should be impossible for a node to be unable to create an event.
+            assertNotNull(event);
+
+            linkAndDistributeEvent(nodes, events, event);
+
+            if (advancingClock) {
+                assertEquals(event.getHashedData().getTimeCreated(), time.now());
+            }
+        }
+    }
 }

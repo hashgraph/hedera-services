@@ -26,6 +26,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
@@ -116,7 +117,7 @@ public final class Hedera implements SwirldMain {
     private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
     private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
-    // This should come from configuration, NOT be hardcoded.
+    // FUTURE: This should come from configuration, NOT be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
     /**
@@ -192,7 +193,8 @@ public final class Hedera implements SwirldMain {
                 new TokenServiceImpl(),
                 new UtilServiceImpl(),
                 new RecordCacheService(),
-                new BlockRecordService()));
+                new BlockRecordService(),
+                new EntityIdService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info

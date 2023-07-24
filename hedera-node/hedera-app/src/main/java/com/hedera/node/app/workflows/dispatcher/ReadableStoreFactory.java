@@ -103,7 +103,7 @@ public class ReadableStoreFactory {
             assert storeInterface.isInstance(store); // This needs to be ensured while stores are registered
             return storeInterface.cast(store);
         }
-        throw new IllegalArgumentException("No store of the given class is available");
+        throw new IllegalArgumentException("No store of class " + storeInterface + " is available");
     }
 
     private record StoreEntry(@NonNull String name, @NonNull Function<ReadableStates, ?> factory) {}

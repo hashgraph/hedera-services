@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -32,7 +33,9 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -43,21 +46,25 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -83,7 +90,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
-    private SingleTransactionRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
 
     @Mock(strictness = LENIENT)
     private SavepointStackImpl stack;
@@ -106,6 +113,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     @Mock
     private BlockRecordInfo blockRecordInfo;
 
+    @Mock
+    private RecordCache recordCache;
+
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
@@ -124,7 +134,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 checker,
                 dispatcher,
                 serviceScopeLookup,
-                blockRecordInfo);
+                blockRecordInfo,
+                recordCache);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -144,7 +155,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -158,7 +170,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -172,7 +185,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -186,7 +200,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -200,7 +215,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -214,7 +230,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -228,7 +245,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -242,7 +260,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -256,7 +275,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         null,
                         dispatcher,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -270,7 +290,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         null,
                         serviceScopeLookup,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -284,7 +305,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         null,
-                        blockRecordInfo))
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
@@ -298,8 +320,85 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         checker,
                         dispatcher,
                         serviceScopeLookup,
+                        null,
+                        recordCache))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup,
+                        blockRecordInfo,
                         null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Nested
+    @DisplayName("Handling new EntityNumber")
+    final class EntityIdNumTest {
+
+        @Mock
+        private WritableStates writableStates;
+
+        @Mock
+        private WritableSingletonState<EntityNumber> entityNumberState;
+
+        private HandleContext handleContext;
+
+        @BeforeEach
+        void setup() {
+            final var payer = ALICE.accountID();
+            final var payerKey = ALICE.account().keyOrThrow();
+            when(writableStates.<EntityNumber>getSingleton(anyString())).thenReturn(entityNumberState);
+            when(stack.createWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
+            handleContext = new HandleContextImpl(
+                    TransactionBody.DEFAULT,
+                    payer,
+                    payerKey,
+                    TransactionCategory.USER,
+                    recordBuilder,
+                    stack,
+                    verifier,
+                    recordListBuilder,
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup,
+                    blockRecordInfo,
+                    recordCache);
+        }
+
+        @Test
+        void testNewEntityNumWithInitialState() {
+            // when
+            final var actual = handleContext.newEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(1L);
+            verify(entityNumberState).get();
+            verify(entityNumberState).put(EntityNumber.newBuilder().number(1L).build());
+        }
+
+        @Test
+        void testNewEntityNum() {
+            // given
+            when(entityNumberState.get())
+                    .thenReturn(EntityNumber.newBuilder().number(42L).build());
+
+            // when
+            final var actual = handleContext.newEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(43L);
+            verify(entityNumberState).get();
+            verify(entityNumberState).put(EntityNumber.newBuilder().number(43L).build());
+        }
     }
 
     @Nested
@@ -359,24 +458,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             // then
             assertThat(actual1).isSameAs(configuration1);
             assertThat(actual2).isSameAs(configuration2);
-        }
-
-        @Test
-        void testNewEntityNum() {
-            // given
-            when(savepoint1.newEntityNum()).thenReturn(1L);
-            when(savepoint2.newEntityNum()).thenReturn(2L);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.newEntityNum();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.newEntityNum();
-
-            // then
-            assertThat(actual1).isSameAs(1L);
-            assertThat(actual2).isSameAs(2L);
         }
 
         @Test
@@ -578,7 +659,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilder childRecordBuilder) {
+        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(TransactionBody.DEFAULT);
@@ -591,7 +672,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
-        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilder childRecordBuilder) {
+        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(TransactionBody.DEFAULT);
@@ -624,7 +705,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         private HederaState baseState;
 
         @Mock(strictness = LENIENT)
-        private SingleTransactionRecordBuilder childRecordBuilder;
+        private SingleTransactionRecordBuilderImpl childRecordBuilder;
 
         private SavepointStackImpl stack;
 
@@ -672,7 +753,8 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     checker,
                     dispatcher,
                     serviceScopeLookup,
-                    blockRecordInfo);
+                    blockRecordInfo,
+                    recordCache);
         }
 
         @SuppressWarnings("ConstantConditions")

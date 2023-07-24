@@ -400,7 +400,7 @@ class AddressBookTests {
     @DisplayName("Out Of Order add() Test")
     void outOfOrderAddTest() {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(100);
-        final AddressBook addressBook = new AddressBook();
+        final AddressBook addressBook = generator.build();
 
         // The address book has gaps. Make sure we can't insert anything into those gaps.
         for (int i = 0; i < addressBook.getNextNodeId().id(); i++) {
@@ -413,7 +413,7 @@ class AddressBookTests {
             } else {
                 // We can't add something into a gap
                 assertThrows(
-                        IllegalStateException.class,
+                        IllegalArgumentException.class,
                         () -> addressBook.add(address),
                         "shouldn't be able to add this address");
             }
@@ -447,14 +447,15 @@ class AddressBookTests {
         final AddressBook addressBook = generator.build();
 
         final NodeId nextId = addressBook.getNextNodeId();
-        addressBook.setNextNodeId(nextId.id() + 10);
+        addressBook.setNextNodeId(nextId.getOffset(10));
 
-        assertEquals(nextId.id() + 10, addressBook.getNextNodeId().id(), "node ID should have been updated");
+        assertEquals(nextId.getOffset(10), addressBook.getNextNodeId(), "node ID should have been updated");
 
+        final NodeId lastNodeId = addressBook.getNodeId(addressBook.getSize() - 1);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> addressBook.setNextNodeId(0),
-                "node ID shouldn't be able to be set to a value less than an existing address book");
+                () -> addressBook.setNextNodeId(lastNodeId.getOffset(-1)),
+                "the next node ID should not be able to be set to a value less than or equal to the last node id in the address book");
     }
 
     @Test
