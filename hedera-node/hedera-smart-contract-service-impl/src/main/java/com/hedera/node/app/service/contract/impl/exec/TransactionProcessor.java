@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
@@ -32,19 +40,10 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-
-import java.util.function.Supplier;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult.resourceExhaustionFrom;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isEvmAddress;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToBesuAddress;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Modeled after the Besu {@code MainnetTransactionProcessor}, so that all four HAPI
@@ -71,6 +70,9 @@ public class TransactionProcessor {
         this.contractCreation = requireNonNull(contractCreation);
     }
 
+    private record InvolvedParties(
+            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
+
     /**
      * Process the given transaction, returning the result of running it to completion
      * and committing to the given updater.
@@ -96,7 +98,6 @@ public class TransactionProcessor {
         try {
             parties = computeInvolvedParties(transaction, updater, config);
             gasCharges = gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
-            // Build the initial frame for the transaction
             initialFrame = frameBuilder.buildInitialFrameWith(
                     transaction,
                     updater,
@@ -117,7 +118,8 @@ public class TransactionProcessor {
         } catch (ResourceExhaustedException e) {
             return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
-        // Adjust the pending commit based on the result
+
+        // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
                 transaction.unusedGas(result.gasUsed()),
                 gasCharges.relayerAllowanceUsed(),
@@ -127,7 +129,7 @@ public class TransactionProcessor {
                 updater);
         initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-        // Returns this result if we can commit it without resource exhaustion, otherwise returns a fees-only result
+        // Tries to commit and return the original result; returns a fees-only result on resource exhaustion
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
     }
 
@@ -152,15 +154,12 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ResponseCodeEnum reason,
             @NonNull final Configuration config) {
-        // Note these calls cannot fail, or processTransaction() would have aborted immediately
+        // Note these calls cannot fail, or processTransaction() above would have aborted right away
         final var parties = computeInvolvedParties(transaction, updater, config);
         gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
         updater.commit();
         return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), reason);
     }
-
-    private record InvolvedParties(
-            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
 
     /**
      * Given an input {@link HederaEvmTransaction}, the {@link HederaWorldUpdater} for the transaction, and the

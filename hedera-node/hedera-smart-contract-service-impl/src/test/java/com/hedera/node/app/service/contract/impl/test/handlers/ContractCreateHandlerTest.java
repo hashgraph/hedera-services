@@ -16,14 +16,25 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
+import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -33,19 +44,34 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-
-class ContractCreateHandlerTest extends ContractHandlerTestBase {
+public class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private BaseProxyWorldUpdater baseProxyWorldUpdater;
+
     @Mock
     private TransactionComponent component;
+
     @Mock
     private HandleContext handleContext;
+
     @Mock
     private TransactionComponent.Factory factory;
+
+    @Mock
+    private ContextTransactionProcessor processor;
+
+    @Mock
+    private HevmTransactionFactory hevmTransactionFactory;
+
+    @Mock
+    private ContractCreateRecordBuilder recordBuilder;
+
+    private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
+            .memo("Something to think about")
+            .build();
+    private static final TransactionBody MOCK_CREATION = TransactionBody.newBuilder()
+            .contractCreateInstance(MOCK_CREATE_BODY)
+            .build();
 
     private ContractCreateHandler subject;
 
@@ -57,9 +83,16 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Test
     void delegatesToCreatedComponent() {
         given(factory.create(handleContext)).willReturn(component);
-        given(component.baseProxyWorldUpdater()).willReturn(baseProxyWorldUpdater);
+        given(component.contextTransactionProcessor()).willReturn(processor);
+        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
+        final var expectedResult = SUCCESS_RESULT.asProtoResultForBase(baseProxyWorldUpdater);
+        given(processor.call()).willReturn(expectedResult);
 
-        subject.handle(handleContext);
+        given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
+        given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
+        given(recordBuilder.contractCreateResult(expectedResult)).willReturn(recordBuilder);
+
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test

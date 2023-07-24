@@ -33,9 +33,11 @@ public class FakeNetworkInfo implements NetworkInfo {
     private static final Bytes DEV_LEDGER_ID = Bytes.wrap(new byte[] {0x03});
 
     private static final List<NodeInfo> FAKE_NODE_INFOS = List.of(
-            fakeInfoWith(false, 2L, "Alpha", AccountID.newBuilder().accountNum(3).build()),
+            fakeInfoWith(
+                    false, 2L, "Alpha", AccountID.newBuilder().accountNum(3).build()),
             fakeInfoWith(true, 4L, "Bravo", AccountID.newBuilder().accountNum(4).build()),
-            fakeInfoWith(false, 8L, "Charlie", AccountID.newBuilder().accountNum(5).build()));
+            fakeInfoWith(
+                    false, 8L, "Charlie", AccountID.newBuilder().accountNum(5).build()));
 
     @NonNull
     @Override

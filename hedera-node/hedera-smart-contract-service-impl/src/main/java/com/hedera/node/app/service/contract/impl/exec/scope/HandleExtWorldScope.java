@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
@@ -25,10 +26,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
 import java.util.List;
-import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * A fully mutable {@link ExtWorldScope} implementation based on a {@link HandleContext}.
@@ -111,6 +110,14 @@ public class HandleExtWorldScope implements ExtWorldScope {
      * {@inheritDoc}
      */
     @Override
+    public long gasPriceInTinybars() {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public long valueInTinybars(final long tinycents) {
         return 0;
     }
@@ -184,7 +191,7 @@ public class HandleExtWorldScope implements ExtWorldScope {
      * {@inheritDoc}
      */
     @Override
-    public List<ContractID> getCreatedContractIds() {
+    public List<ContractID> createdContractIds() {
         throw new AssertionError("Not implemented");
     }
 
@@ -192,7 +199,7 @@ public class HandleExtWorldScope implements ExtWorldScope {
      * {@inheritDoc}
      */
     @Override
-    public Map<ContractID, Long> getUpdatedContractNonces() {
+    public List<ContractNonceInfo> updatedContractNonces() {
         throw new AssertionError("Not implemented");
     }
 

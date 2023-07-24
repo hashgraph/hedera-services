@@ -87,7 +87,7 @@ public class FrameRunner {
         }
         tracer.sanitizeTracedActions(frame);
 
-        // And package up its result
+        // And return the result, success or failure
         final var gasUsed = effectiveGasUsed(gasLimit, frame);
         if (frame.getState() == COMPLETED_SUCCESS) {
             return successFrom(gasUsed, recipientId, asEvmContractId(recipientAddress), frame);

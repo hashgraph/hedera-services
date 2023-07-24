@@ -17,11 +17,14 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isSuccess;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -43,7 +46,26 @@ public class ContractCreateHandler implements TransactionHandler {
 
     @Inject
     public ContractCreateHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
-        this.provider = provider;
+        this.provider = requireNonNull(provider);
+    }
+
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        // Create the transaction-scoped component
+        final var component = provider.get().create(context);
+
+        // Run its in-scope transaction to completion and get the result
+        final var result = component.contextTransactionProcessor().call();
+
+        // Assemble the appropriate top-level record for the result
+        final var recordBuilder =
+                context.recordBuilder(ContractCreateRecordBuilder.class).contractCreateResult(result);
+        if (isSuccess(result)) {
+            recordBuilder.status(SUCCESS);
+            recordBuilder.contractID(result.contractIDOrThrow());
+        } else {
+            throw new AssertionError("Not implemented");
+        }
     }
 
     @Override
@@ -69,10 +91,5 @@ public class ContractCreateHandler implements TransactionHandler {
                 context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
             }
         }
-    }
-
-    @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
     }
 }

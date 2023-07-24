@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.spi;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -27,13 +29,10 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Utility class for working with the HAPI. We might move this to the HAPI project.

@@ -16,15 +16,28 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHILD_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCES;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TWO_STORAGE_ACCESSES;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_NETWORK_GAS_PRICE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import java.util.List;
@@ -43,6 +56,9 @@ class HederaEvmTransactionResultTest {
     private ProxyWorldUpdater proxyWorldUpdater;
 
     @Mock
+    private BaseProxyWorldUpdater committedUpdater;
+
+    @Mock
     private StorageAccessTracker accessTracker;
 
     @Test
@@ -53,17 +69,31 @@ class HederaEvmTransactionResultTest {
     }
 
     @Test
-    void givenAccessTrackerIncludesFullContractStorageChangesOnSuccess() {
+    void givenAccessTrackerIncludesFullContractStorageChangesAndNonNullNoncesOnSuccess() {
         given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(accessTracker);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         final var pendingWrites = List.of(TWO_STORAGE_ACCESSES);
         given(proxyWorldUpdater.pendingStorageUpdates()).willReturn(pendingWrites);
         given(accessTracker.getReadsMergedWith(pendingWrites)).willReturn(SOME_STORAGE_ACCESSES);
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getLogs()).willReturn(BESU_LOGS);
         given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
+        final var createdIds = List.of(CALLED_CONTRACT_ID, CHILD_CONTRACT_ID);
+        given(committedUpdater.getCreatedContractIds()).willReturn(createdIds);
+        given(committedUpdater.getUpdatedContractNonces()).willReturn(NONCES);
 
         final var result = HederaEvmTransactionResult.successFrom(
                 GAS_LIMIT / 2, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
+        final var protoResult = result.asProtoResultForBase(committedUpdater);
+        assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
+        assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());
+        assertEquals(OUTPUT_DATA, protoResult.contractCallResult());
+        assertNull(protoResult.errorMessage());
+        assertEquals(CALLED_CONTRACT_ID, protoResult.contractID());
+        assertEquals(pbjLogsFrom(BESU_LOGS), protoResult.logInfo());
+        assertEquals(createdIds, protoResult.createdContractIDs());
+        assertEquals(CALLED_CONTRACT_EVM_ADDRESS.evmAddressOrThrow(), protoResult.evmAddress());
+        assertEquals(NONCES, protoResult.contractNonces());
 
         final var expectedChanges = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
         assertEquals(expectedChanges, result.stateChanges());

@@ -16,8 +16,25 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import java.util.Map;
+
 public enum HederaEvmVersion {
-    VERSION_030,
-    VERSION_034,
-    VERSION_038
+    VERSION_030("v0.30"),
+    VERSION_034("v0.34"),
+    VERSION_038("v0.38");
+
+    public static final Map<String, HederaEvmVersion> EVM_VERSIONS = Map.of(
+            VERSION_030.key(), VERSION_030,
+            VERSION_034.key(), VERSION_034,
+            VERSION_038.key(), VERSION_038);
+
+    HederaEvmVersion(String key) {
+        this.key = key;
+    }
+
+    private final String key;
+
+    public String key() {
+        return key;
+    }
 }

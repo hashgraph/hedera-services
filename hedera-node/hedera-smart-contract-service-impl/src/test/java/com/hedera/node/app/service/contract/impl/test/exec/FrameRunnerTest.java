@@ -17,9 +17,25 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_MAX_REFUND_QUOTIENT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEDERA_MAX_REFUND_PERCENTAGE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK_GAS_PRICE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_REVERT_REASON;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
 
@@ -34,7 +50,11 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -94,7 +114,7 @@ class FrameRunnerTest {
 
         assertTrue(result.isSuccess());
         assertEquals(expectedGasUsed(frame), result.gasUsed());
-        assertEquals(pbjLogsFrom(List.of(BESU_LOG)), result.logs());
+        assertEquals(List.of(BESU_LOG), result.logs());
         assertEquals(CALLED_CONTRACT_ID, result.recipientId());
         assertEquals(CALLED_CONTRACT_EVM_ADDRESS, result.recipientEvmAddress());
 
@@ -166,7 +186,7 @@ class FrameRunnerTest {
             @NonNull final HederaEvmTransactionResult result) {
         assertTrue(result.isSuccess());
         assertEquals(expectedGasUsed(frame), result.gasUsed());
-        assertEquals(pbjLogsFrom(List.of(BESU_LOG)), result.logs());
+        assertEquals(List.of(BESU_LOG), result.logs());
         assertEquals(expectedReceiverId, result.recipientId());
         assertEquals(expectedReceiverAddress, result.recipientEvmAddress());
         assertEquals(OUTPUT_DATA, result.output());

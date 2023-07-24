@@ -16,7 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -26,6 +30,8 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtFrameScope;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -34,12 +40,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Some utility methods for converting between PBJ and Besu types and the various kinds of addresses and ids.
@@ -314,6 +314,27 @@ public class ConversionUtils {
      */
     public static @NonNull UInt256 pbjToTuweniUInt256(@NonNull final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         return (bytes.length() == 0) ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(clampedBytes(bytes, 0, 32)));
+    }
+
+    /**
+     * Returns the PBJ bloom for a list of Besu {@link Log}s.
+     *
+     * @param logs the Besu {@link Log}s
+     * @return the PBJ bloom
+     */
+    public static com.hedera.pbj.runtime.io.buffer.Bytes bloomForAll(@NonNull final List<Log> logs) {
+        return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                LogsBloomFilter.builder().insertLogs(logs).build().toArray());
+    }
+
+    /**
+     * Returns whether the given {@link ContractFunctionResult} is a success.
+     *
+     * @param result the {@link ContractFunctionResult}
+     * @return whether it is a success
+     */
+    public static boolean isSuccess(@NonNull final ContractFunctionResult result) {
+        return result.errorMessage() == null;
     }
 
     private static byte[] clampedBytes(

@@ -27,9 +27,8 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
 import java.util.Objects;
+import javax.inject.Inject;
 
 /**
  * Provides the "extended" scope a Hedera system contract needs to perform its operations.

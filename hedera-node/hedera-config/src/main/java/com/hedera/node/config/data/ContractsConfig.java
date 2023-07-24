@@ -40,6 +40,8 @@ public record ContractsConfig(
         @ConfigProperty(defaultValue = "0") long maxNumWithHapiSigsAccess,
         // @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
         @ConfigProperty(defaultValue = "false") boolean enforceCreationThrottle,
+        @ConfigProperty(value = "nonces.externalization.enabled", defaultValue = "true")
+                boolean noncesExternalizationEnabled,
         @ConfigProperty(defaultValue = "15000000") long maxGasPerSec,
         @ConfigProperty(value = "maxKvPairs.aggregate", defaultValue = "500000000") long maxKvPairsAggregate,
         @ConfigProperty(value = "maxKvPairs.individual", defaultValue = "163840") int maxKvPairsIndividual,
@@ -69,4 +71,4 @@ public record ContractsConfig(
         @ConfigProperty(value = "precompile.hrcFacade.associate.enabled", defaultValue = "true")
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") boolean evmVersionDynamic,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.34") String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.38") String evmVersion) {}

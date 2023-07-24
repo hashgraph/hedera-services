@@ -17,19 +17,17 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
-import com.hedera.node.app.service.contract.impl.state.BaseProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Subcomponent(modules = {TransactionModule.class})
 @TransactionScope
 public interface TransactionComponent {
     @Subcomponent.Factory
     interface Factory {
-        TransactionComponent create(@BindsInstance @NonNull HandleContext context);
+        TransactionComponent create(@BindsInstance HandleContext context);
     }
 
-    BaseProxyWorldUpdater baseProxyWorldUpdater();
+    ContextTransactionProcessor contextTransactionProcessor();
 }

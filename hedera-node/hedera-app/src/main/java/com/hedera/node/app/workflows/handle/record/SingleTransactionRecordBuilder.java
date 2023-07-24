@@ -44,6 +44,7 @@ import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
@@ -85,7 +86,8 @@ public final class SingleTransactionRecordBuilder
                 CryptoTransferRecordBuilder,
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
-                TokenCreateRecordBuilder {
+                TokenCreateRecordBuilder,
+                ContractCreateRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes;
@@ -230,7 +232,9 @@ public final class SingleTransactionRecordBuilder
         return this;
     }
 
-    public SingleTransactionRecordBuilder contractCreateResult(ContractFunctionResult contractCreateResult) {
+    @Override
+    public @NonNull SingleTransactionRecordBuilder contractCreateResult(
+            @NonNull ContractFunctionResult contractCreateResult) {
         this.contractCreateResult = contractCreateResult;
         return this;
     }
@@ -317,7 +321,8 @@ public final class SingleTransactionRecordBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionReceipt
 
-    public SingleTransactionRecordBuilder status(ResponseCodeEnum status) {
+    @Override
+    public @NonNull SingleTransactionRecordBuilder status(@NonNull final ResponseCodeEnum status) {
         this.status = status;
         return this;
     }
@@ -356,7 +361,9 @@ public final class SingleTransactionRecordBuilder
         return this;
     }
 
-    public SingleTransactionRecordBuilder contractID(ContractID contractID) {
+    @NonNull
+    @Override
+    public SingleTransactionRecordBuilder contractID(@NonNull ContractID contractID) {
         this.contractID = contractID;
         return this;
     }

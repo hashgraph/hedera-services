@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec.v030;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
@@ -59,7 +59,7 @@ class Version030AddressChecksTest {
     @BeforeEach
     void setUp() {
         subject = new Version030AddressChecks(Map.of(
-                HTS_PRECOMPILE_ADDRESS,
+                HTS_SYSTEM_CONTRACT_ADDRESS,
                 mockHtsPrecompile,
                 Address.fromHexString("0x168"),
                 mockRatesPrecompile,
@@ -69,7 +69,7 @@ class Version030AddressChecksTest {
 
     @Test
     void classifiesPrecompiles() {
-        assertTrue(subject.isHederaPrecompile(HTS_PRECOMPILE_ADDRESS));
+        assertTrue(subject.isHederaPrecompile(HTS_SYSTEM_CONTRACT_ADDRESS));
         assertTrue(subject.isHederaPrecompile(Address.fromHexString("0x168")));
         assertTrue(subject.isHederaPrecompile(Address.fromHexString("0x169")));
         assertFalse(subject.isHederaPrecompile(Address.fromHexString("0x16a")));
@@ -78,7 +78,7 @@ class Version030AddressChecksTest {
     @Test
     void precompilesAlwaysPresent() {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        assertTrue(subject.isPresent(HTS_PRECOMPILE_ADDRESS, frame));
+        assertTrue(subject.isPresent(HTS_SYSTEM_CONTRACT_ADDRESS, frame));
         assertTrue(subject.isPresent(Address.fromHexString("0x168"), frame));
         assertTrue(subject.isPresent(Address.fromHexString("0x169"), frame));
         assertFalse(subject.isPresent(Address.fromHexString("0x16a"), frame));
@@ -93,6 +93,6 @@ class Version030AddressChecksTest {
 
     @Test
     void nothingIsSystemAccount() {
-        assertFalse(subject.isSystemAccount(HTS_PRECOMPILE_ADDRESS));
+        assertFalse(subject.isSystemAccount(HTS_SYSTEM_CONTRACT_ADDRESS));
     }
 }

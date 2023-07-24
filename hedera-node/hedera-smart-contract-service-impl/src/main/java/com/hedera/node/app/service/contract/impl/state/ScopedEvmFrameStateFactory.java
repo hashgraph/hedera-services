@@ -20,9 +20,8 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.ExtFrameScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.util.Objects;
+import javax.inject.Inject;
 
 /**
  * A factory for {@link EvmFrameState} instances that are scoped to the current state of the world in

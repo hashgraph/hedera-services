@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.contract.impl.state;
 
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
@@ -24,12 +25,12 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HandleExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
@@ -40,20 +41,24 @@ import java.util.Map;
 @TransactionScope
 public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
     private final RentCalculator rentCalculator;
+    private final ContractsConfig contractsConfig;
     private final LegibleStorageManager storageManager;
     private final StorageSizeValidator storageSizeValidator;
 
-    private List<ContractID> createdContractIds = null;
-    private Map<ContractID, Long> updatedContractNonces = null;
+    private boolean committed = false;
+    private List<ContractID> createdContractIds;
+    private List<ContractNonceInfo> updatedContractNonces;
 
     @Inject
     public BaseProxyWorldUpdater(
             @NonNull final ExtWorldScope extWorldScope,
+            @NonNull final Configuration configuration,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final LegibleStorageManager storageManager,
             @NonNull final StorageSizeValidator storageSizeValidator) {
         super(extWorldScope, evmFrameStateFactory, null);
+        this.contractsConfig = configuration.getConfigData(ContractsConfig.class);
         this.storageManager = storageManager;
         this.rentCalculator = rentCalculator;
         this.storageSizeValidator = storageSizeValidator;
@@ -83,13 +88,11 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record
-        final var pendingCreatedContractIds = extWorldScope.getCreatedContractIds();
-        final var pendingUpdatedContractNonces = extWorldScope.getUpdatedContractNonces();
+        createdContractIds = extWorldScope.createdContractIds();
+        updatedContractNonces = extWorldScope.updatedContractNonces();
         super.commit();
-        // The above call should only fail on an internal error; but just to be extra safe, we don't
-        // officially record its created contract ids or updated contract nonces until after
-        createdContractIds = pendingCreatedContractIds;
-        updatedContractNonces = pendingUpdatedContractNonces;
+        // Be sure not to externalize contract ids or nonces without a successful commit
+        committed = true;
     }
 
     /**
@@ -98,8 +101,8 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
      * @return the list of contract ids created during the transaction
      * @throws IllegalStateException if a commit has not been made successfully
      */
-    public List<ContractID> getCreatedContractIds() {
-        if (createdContractIds == null) {
+    public @NonNull List<ContractID> getCreatedContractIds() {
+        if (!committed) {
             throw new IllegalStateException("No successful commit has been made");
         }
         return createdContractIds;
@@ -111,8 +114,8 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
      * @return the map of contract ids to nonces updated during the transaction
      * @throws IllegalStateException if a commit has not been made successfully
      */
-    public Map<ContractID, Long> getUpdatedContractNonces() {
-        if (updatedContractNonces == null) {
+    public List<ContractNonceInfo> getUpdatedContractNonces() {
+        if (!committed) {
             throw new IllegalStateException("No successful commit has been made");
         }
         return updatedContractNonces;

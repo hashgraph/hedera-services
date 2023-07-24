@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
@@ -27,8 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class HandleSystemContractScopeTest {

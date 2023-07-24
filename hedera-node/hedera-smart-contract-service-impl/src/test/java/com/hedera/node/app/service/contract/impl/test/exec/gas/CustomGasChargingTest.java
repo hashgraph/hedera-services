@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec.gas;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MAX_GAS_ALLOWANCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK_GAS_PRICE;
@@ -209,7 +208,7 @@ class CustomGasChargingTest {
         final var transaction = wellKnownRelayedHapiCallWithUserGasPriceAndMaxAllowance(0, Long.MAX_VALUE);
         final var gasCost = transaction.gasCostGiven(NETWORK_GAS_PRICE);
         given(relayer.getBalance()).willReturn(Wei.of(gasCost));
-        given(relayer.getAddress()).willReturn(EIP_1014_ADDRESS);
+        given(relayer.hederaId()).willReturn(RELAYER_ID);
         final var chargingResult =
                 subject.chargeForGas(sender, relayer, wellKnownContextWith(blocks), worldUpdater, transaction);
         assertEquals(gasCost, chargingResult.relayerAllowanceUsed());

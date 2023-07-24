@@ -57,7 +57,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private final FeatureFlags featureFlags;
     private final AddressChecks addressChecks;
     private final PrecompileContractRegistry precompiles;
-    private final Map<Address, PrecompiledContract> hederaPrecompiles;
+    private final Map<Address, PrecompiledContract> systemContracts;
 
     private enum ForLazyCreation {
         YES,
@@ -69,12 +69,12 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final FeatureFlags featureFlags,
             @NonNull final PrecompileContractRegistry precompiles,
             @NonNull final AddressChecks addressChecks,
-            @NonNull final Map<Address, PrecompiledContract> hederaPrecompiles) {
+            @NonNull final Map<Address, PrecompiledContract> systemContracts) {
         super(evm, precompiles);
         this.featureFlags = Objects.requireNonNull(featureFlags);
         this.precompiles = Objects.requireNonNull(precompiles);
         this.addressChecks = Objects.requireNonNull(addressChecks);
-        this.hederaPrecompiles = Objects.requireNonNull(hederaPrecompiles);
+        this.systemContracts = Objects.requireNonNull(systemContracts);
     }
 
     /**
@@ -83,7 +83,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
      *
      * <p>This contract address may reference,
      * <ol>
-     *     <li>A Hedera precompile.</li>
+     *     <li>A Hedera system contract.</li>
      *     <li>A native EVM precompile.</li>
      *     <li>A Hedera system account (up to {@code 0.0.750}).</li>
      *     <li>A valid lazy-creation target address.</li>
@@ -97,7 +97,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-        if (hederaPrecompiles.containsKey(codeAddress)) {
+        if (systemContracts.containsKey(codeAddress)) {
             throw new UnsupportedOperationException("Hedera precompiles");
         } else if (addressChecks.isSystemAccount(codeAddress)) {
             doHaltIfInvalidSystemCall(codeAddress, frame, tracer);

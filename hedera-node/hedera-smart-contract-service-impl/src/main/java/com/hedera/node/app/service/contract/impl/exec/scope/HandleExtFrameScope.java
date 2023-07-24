@@ -25,9 +25,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
 import java.util.Objects;
+import javax.inject.Inject;
 
 /**
  * A fully mutable {@link ExtFrameScope} based on a {@link HandleContext}.

@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+
+import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
 import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
@@ -27,22 +33,17 @@ import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class BaseProxyWorldUpdaterTest {
@@ -77,20 +78,19 @@ class BaseProxyWorldUpdaterTest {
 
     private BaseProxyWorldUpdater subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new BaseProxyWorldUpdater(
-                extWorldScope, () -> evmFrameState, rentCalculator, storageManager, storageSizeValidator);
-    }
-
     @Test
     void refusesToReturnCommittedChangesWithoutSucessfulCommit() {
+        givenSubjectWith(HederaTestConfigBuilder.create().getOrCreateConfig());
         assertThrows(IllegalStateException.class, subject::getUpdatedContractNonces);
         assertThrows(IllegalStateException.class, subject::getCreatedContractIds);
     }
 
     @Test
     void performsAdditionalCommitActionsInOrder() {
+        givenSubjectWith(HederaTestConfigBuilder.create()
+                .withValue("contracts.nonces.externalization.enabled", false)
+                .getOrCreateConfig());
+
         InOrder inOrder = BDDMockito.inOrder(storageSizeValidator, storageManager, rentCalculator, extWorldScope);
 
         final var aExpiry = 1_234_567;
@@ -111,9 +111,9 @@ class BaseProxyWorldUpdaterTest {
 
         given(extWorldScope.getStore()).willReturn(store);
         final var createdIds = List.of(CALLED_CONTRACT_ID);
-        final var updatedNonces = Map.of(CALLED_CONTRACT_ID, 1L);
-        given(extWorldScope.getCreatedContractIds()).willReturn(createdIds);
-        given(extWorldScope.getUpdatedContractNonces()).willReturn(updatedNonces);
+        final var updatedNonces = List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L));
+        given(extWorldScope.createdContractIds()).willReturn(createdIds);
+        given(extWorldScope.updatedContractNonces()).willReturn(updatedNonces);
 
         subject.commit();
 
@@ -125,6 +125,16 @@ class BaseProxyWorldUpdaterTest {
 
         assertSame(createdIds, subject.getCreatedContractIds());
         assertSame(updatedNonces, subject.getUpdatedContractNonces());
+    }
+
+    private void givenSubjectWith(@NonNull final Configuration configuration) {
+        subject = new BaseProxyWorldUpdater(
+                extWorldScope,
+                configuration,
+                () -> evmFrameState,
+                rentCalculator,
+                storageManager,
+                storageSizeValidator);
     }
 
     private List<StorageAccesses> pendingChanges() {

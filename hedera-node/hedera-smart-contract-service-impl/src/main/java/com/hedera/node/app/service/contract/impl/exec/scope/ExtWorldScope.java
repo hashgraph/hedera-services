@@ -1,34 +1,50 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
-import java.util.Map;
 
 /**
  * The "extended" world scope that a {@link ProxyWorldUpdater} needs to perform all required operations.
  */
 public interface ExtWorldScope {
     /**
-     * Creates a new {@link HandleExtWorldScope} that is a child of this {@link HandleExtWorldScope}.
+     * Creates a new {@link ExtWorldScope} that is a child of this {@link ExtWorldScope}.
      *
-     * @return a nested {@link HandleExtWorldScope}
+     * @return a nested {@link ExtWorldScope}
      */
-    @NonNull ExtWorldScope begin();
+    @NonNull
+    ExtWorldScope begin();
 
     /**
-     * Commits all changes made within this {@link HandleExtWorldScope} to the parent {@link HandleExtWorldScope}. For
+     * Commits all changes made within this {@link ExtWorldScope} to the parent {@link ExtWorldScope}. For
      * everything except records, these changes will only affect state if every ancestor up to
-     * and including the root {@link HandleExtWorldScope} is also committed. Records are a bit different,
-     * as even if the root {@link HandleExtWorldScope} reverts, any records created within this
-     * {@link HandleExtWorldScope} will still appear in state; but those with status {@code SUCCESS} will
+     * and including the root {@link ExtWorldScope} is also committed. Records are a bit different,
+     * as even if the root {@link ExtWorldScope} reverts, any records created within this
+     * {@link ExtWorldScope} will still appear in state; but those with status {@code SUCCESS} will
      * have with their stateful effects cleared from the record and their status replaced with
      * {@code REVERTED_SUCCESS}.
      */
@@ -42,9 +58,9 @@ public interface ExtWorldScope {
 
     /**
      * Returns the {@link WritableStates} the {@code ContractService} can use to update
-     * its own state within this {@link HandleExtWorldScope}.
+     * its own state within this {@link ExtWorldScope}.
      *
-     * @return the contract state reflecting all changes made up to this {@link HandleExtWorldScope}
+     * @return the contract state reflecting all changes made up to this {@link ExtWorldScope}
      */
     ContractStateStore getStore();
 
@@ -68,7 +84,8 @@ public interface ExtWorldScope {
      *
      * @return the available entropy
      */
-    @NonNull Bytes entropy();
+    @NonNull
+    Bytes entropy();
 
     /**
      * Returns the lazy creation cost within this scope.
@@ -76,6 +93,13 @@ public interface ExtWorldScope {
      * @return the lazy creation cost in gas
      */
     long lazyCreationCostInGas();
+
+    /**
+     * Returns the gas price in tinybars within this scope.
+     *
+     * @return the gas price in tinybars
+     */
+    long gasPriceInTinybars();
 
     /**
      * Given an amount in tinycents, return the equivalent value in tinybars at the
@@ -170,14 +194,14 @@ public interface ExtWorldScope {
      *
      * @return the list of created contract numbers
      */
-    List<ContractID> getCreatedContractIds();
+    List<ContractID> createdContractIds();
 
     /**
-     * Returns the contract nonces updated in this scope.
+     * Returns the contract nonces updated in this scope, in increasing id order.
      *
-     * @return the map of updated contract nonces
+     * @return the list of updated contract nonces, in increasing id order
      */
-    Map<ContractID, Long> getUpdatedContractNonces();
+    List<ContractNonceInfo> updatedContractNonces();
 
     /**
      * Returns number of slots used by the contract with the given number, ignoring any uncommitted

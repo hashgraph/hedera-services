@@ -14,31 +14,38 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.test.infra;
+package com.hedera.node.app.service.contract.impl.test.exec;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
+import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope;
-import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
-import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import java.util.List;
+import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class LegibleStorageManagerTest {
+class TransactionModuleTest {
     @Mock
     private ExtWorldScope extWorldScope;
 
     @Mock
-    private ContractStateStore store;
-
-    private final LegibleStorageManager subject = new LegibleStorageManager();
+    private EvmFrameStateFactory factory;
 
     @Test
-    void rewriteIsNoopForNow() {
-        assertDoesNotThrow(() -> subject.rewrite(extWorldScope, List.of(), List.of(), store));
+    void createsEvmActionTracer() {
+        assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer());
+    }
+
+    @Test
+    void feesOnlyUpdaterIsProxyUpdater() {
+        assertInstanceOf(
+                ProxyWorldUpdater.class,
+                TransactionModule.feesOnlyUpdater(extWorldScope, factory).get());
     }
 }
