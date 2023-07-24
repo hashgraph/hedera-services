@@ -173,12 +173,12 @@ public class EventIntake {
         }
 
         if (prehandlePool == null) {
-            // Prehandle transactions on the thread pool.
-            prehandleEvent.accept(event);
-            event.signalPrehandleCompletion();
-        } else {
             // Prehandle transactions on the intake thread (i.e. this thread).
+            prehandleEvent.accept(event);
+        } else {
+            // Prehandle transactions on the thread pool.
             prehandlePool.submit(buildPrehandleTask(event));
+            event.signalPrehandleCompletion();
         }
 
         // record the event in the hashgraph, which results in the events in consEvent reaching consensus
