@@ -52,6 +52,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,6 +108,7 @@ class FileSystemUndeleteTest extends FileTestBase {
 
     @Test
     @DisplayName("File without keys returns error")
+    @Disabled("Revisit after fix for https://github.com/hashgraph/hedera-services/issues/7646")
     void noFileKeys() throws PreCheckException {
         // given:
         mockPayerLookup();
@@ -188,7 +190,7 @@ class FileSystemUndeleteTest extends FileTestBase {
     void handleWorksAsExpectedWhenExpirationTimeIsNotExpired() {
         given(handleContext.body()).willReturn(newFileDeleteTxn());
 
-        final var existingFile = writableStore.get(fileSystemfileId);
+        final var existingFile = writableStore.get(fileSystemFileId);
         assertTrue(existingFile.isPresent());
         assertFalse(existingFile.get().deleted());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
@@ -197,7 +199,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
         subject.handle(handleContext);
 
-        final var changedFile = writableStore.get(fileSystemfileId);
+        final var changedFile = writableStore.get(fileSystemFileId);
 
         assertTrue(changedFile.isPresent());
         assertFalse(changedFile.get().deleted());

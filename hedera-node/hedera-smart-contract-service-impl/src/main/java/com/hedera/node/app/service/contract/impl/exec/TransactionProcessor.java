@@ -41,6 +41,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
@@ -89,27 +90,22 @@ public class TransactionProcessor {
             @NonNull final Configuration config) {
         final InvolvedParties parties;
         final GasCharges gasCharges;
+        final MessageFrame initialFrame;
         try {
-            // Compute the sender, relayer, and to address (throws if invalid)
-            parties = setup(transaction, updater, config);
-            if (transaction.isEthereumTransaction()) {
-                parties.sender().incrementNonce();
-            }
-            // Charge gas and return intrinsic gas and relayer allowance used (throws on failure)
+            parties = computeInvolvedParties(transaction, updater, config);
             gasCharges = gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
-        } catch (final HandleException failure) {
+            // Build the initial frame for the transaction
+            initialFrame = frameBuilder.buildInitialFrameWith(
+                    transaction,
+                    updater,
+                    context,
+                    config,
+                    parties.sender().getAddress(),
+                    parties.receiverAddress(),
+                    gasCharges.intrinsicGas());
+        } catch (HandleException failure) {
             return HederaEvmTransactionResult.abortFor(failure.getStatus());
         }
-
-        // Build the initial frame for the transaction
-        final var initialFrame = frameBuilder.buildInitialFrameWith(
-                transaction,
-                updater,
-                context,
-                config,
-                parties.sender().getAddress(),
-                parties.receiverAddress(),
-                gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
         final HederaEvmTransactionResult result;
@@ -130,7 +126,7 @@ public class TransactionProcessor {
         initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
         // Returns this result if we can commit it without resource exhaustion, otherwise returns a fees-only result
-        return safeCommit(result, transaction, updater, feesOnlyUpdater, context);
+        return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
     }
 
     private HederaEvmTransactionResult safeCommit(
@@ -138,11 +134,16 @@ public class TransactionProcessor {
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
-            @NonNull final HederaEvmContext context) {
+            @NonNull final HederaEvmContext context,
+            @NonNull final Configuration config) {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
-            // TODO - increment sender nonce and re-charge gas using feesOnlyUpdater
+            final var fallbackUpdater = feesOnlyUpdater.get();
+            // Note these calls cannot fail, or processTransaction() would have aborted immediately
+            final var parties = computeInvolvedParties(transaction, fallbackUpdater, config);
+            gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, fallbackUpdater, transaction);
+            fallbackUpdater.commit();
             return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), e.getStatus());
         }
         return result;
@@ -169,11 +170,10 @@ public class TransactionProcessor {
      * @param config the current node configuration
      * @return the involved parties determined while setting up the transaction
      */
-    private InvolvedParties setup(
+    private InvolvedParties computeInvolvedParties(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
             @NonNull final Configuration config) {
-
         final var sender = updater.getHederaAccount(transaction.senderId());
         validateTrue(sender != null, INVALID_ACCOUNT_ID);
         HederaEvmAccount relayer = null;
@@ -181,6 +181,7 @@ public class TransactionProcessor {
             relayer = updater.getHederaAccount(requireNonNull(transaction.relayerId()));
             validateTrue(relayer != null, INVALID_ACCOUNT_ID);
         }
+        final InvolvedParties parties;
         if (transaction.isCreate()) {
             final Address to;
             if (transaction.isEthereumTransaction()) {
@@ -190,7 +191,7 @@ public class TransactionProcessor {
             } else {
                 to = updater.setupCreate(Address.ZERO);
             }
-            return new InvolvedParties(sender, relayer, to);
+            parties = new InvolvedParties(sender, relayer, to);
         } else {
             final var to = updater.getHederaAccount(transaction.contractIdOrThrow());
             if (maybeLazyCreate(transaction, to, config)) {
@@ -199,12 +200,17 @@ public class TransactionProcessor {
                 validateTrue(transaction.hasValue(), INVALID_CONTRACT_ID);
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
                 validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
-                return new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
+                parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
             } else {
                 validateTrue(to != null, INVALID_CONTRACT_ID);
-                return new InvolvedParties(sender, relayer, requireNonNull(to).getAddress());
+                parties =
+                        new InvolvedParties(sender, relayer, requireNonNull(to).getAddress());
             }
         }
+        if (transaction.isEthereumTransaction()) {
+            parties.sender().incrementNonce();
+        }
+        return parties;
     }
 
     private boolean maybeLazyCreate(

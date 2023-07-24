@@ -31,4 +31,17 @@ public class ResourceExhaustedException extends HandleException {
     public ResourceExhaustedException(@NonNull final ResponseCodeEnum status) {
         super(requireNonNull(status));
     }
+
+    /**
+     * Asserts that a resource is not exhausted.
+     *
+     * @param flag the flag to check
+     * @param code the status to throw if the flag is false
+     */
+    public static void validateResource(final boolean flag, @NonNull final ResponseCodeEnum code) {
+        requireNonNull(code);
+        if (!flag) {
+            throw new ResourceExhaustedException(code);
+        }
+    }
 }

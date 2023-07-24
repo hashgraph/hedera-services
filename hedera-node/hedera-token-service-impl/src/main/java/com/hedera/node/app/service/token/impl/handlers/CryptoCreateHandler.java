@@ -139,7 +139,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // put if any new alias is associated with the account into account store
         if (op.alias() != Bytes.EMPTY) {
-            accountStore.putAlias(op.alias().toString(), createdAccountID);
+            accountStore.putAlias(op.alias(), createdAccountID);
         }
     }
 

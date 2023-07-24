@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.test;
+package com.hedera.node.app.service.file.impl.test.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.file.impl.codec.EntityNumCodec;
-import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.file.impl.codec.BytesCodec;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -32,24 +32,25 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class EntityNumCodecTest {
-    private static final EntityNum SOME_NUM = EntityNum.fromLong(666L);
+class BytesCodecTest {
 
-    final EntityNumCodec subject = new EntityNumCodec();
+    private static final Bytes SOME_DATA = Bytes.wrap("HELLO");
+
+    final BytesCodec subject = new BytesCodec();
 
     @Test
-    void doesntSupportUnnecessary() {
+    void doesntSupport() {
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_NUM, null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_DATA, null));
     }
 
     @Test
     void codecWorks() throws IOException {
-        final var subject = new EntityNumCodec();
+        final var subject = new BytesCodec();
 
         final var baos = new ByteArrayOutputStream();
         final var out = new WritableStreamingData(new SerializableDataOutputStream(baos));
-        final var item = EntityNum.fromLong(666L);
+        final var item = Bytes.wrap("HELLO");
 
         subject.write(item, out);
 
@@ -58,8 +59,5 @@ class EntityNumCodecTest {
 
         final var parsedItem = subject.parse(in);
         assertEquals(item, parsedItem);
-
-        assertThrows(UnsupportedOperationException.class, () -> subject.measure(in));
-        assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(item, in));
     }
 }
