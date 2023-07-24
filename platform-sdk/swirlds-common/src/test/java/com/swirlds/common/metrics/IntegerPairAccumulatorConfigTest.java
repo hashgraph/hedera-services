@@ -61,23 +61,23 @@ class IntegerPairAccumulatorConfigTest {
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameter() {
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(null, NAME, Double.class, AVERAGE))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>("", NAME, Double.class, AVERAGE))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(" \t\n", NAME, Double.class, AVERAGE))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, null, Double.class, AVERAGE))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, "", Double.class, AVERAGE))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, " \t\n", Double.class, AVERAGE))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, CATEGORY, null, AVERAGE))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new IntegerPairAccumulator.Config<>(CATEGORY, CATEGORY, Double.class, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -129,20 +129,20 @@ class IntegerPairAccumulatorConfigTest {
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
-        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withDescription("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(" \t\n")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(longDescription)).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withLeftAccumulator(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withLeftAccumulator(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> config.withRightAccumulator(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withRightAccumulator(null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")

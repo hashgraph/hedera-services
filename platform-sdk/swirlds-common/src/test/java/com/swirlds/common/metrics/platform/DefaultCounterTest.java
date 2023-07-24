@@ -138,7 +138,7 @@ class DefaultCounterTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class, () -> counter.get(null), "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> counter.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> counter.get(Metric.ValueType.MIN),

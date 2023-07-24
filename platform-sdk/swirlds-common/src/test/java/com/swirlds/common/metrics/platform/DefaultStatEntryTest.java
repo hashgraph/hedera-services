@@ -209,9 +209,7 @@ class DefaultStatEntryTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> statEntry.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> statEntry.get(null), "Calling get() with null should throw an IAE");
     }
 
     @SuppressWarnings({"unchecked", "removal"})
@@ -224,9 +222,7 @@ class DefaultStatEntryTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> statEntry.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> statEntry.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> statEntry.get(Metric.ValueType.MIN),

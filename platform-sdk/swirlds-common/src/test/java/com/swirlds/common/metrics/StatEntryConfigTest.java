@@ -69,23 +69,23 @@ class StatEntryConfigTest {
 
         // when
         assertThatThrownBy(() -> new StatEntry.Config(null, NAME, Object.class, getter))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new StatEntry.Config("", NAME, Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new StatEntry.Config(" \t\n", NAME, Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, null, Object.class, getter))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, "", Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, " \t\n", Object.class, getter))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, NAME, null, getter))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new StatEntry.Config(CATEGORY, NAME, Object.class, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -143,19 +143,18 @@ class StatEntryConfigTest {
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
-        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withDescription("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(" \t\n")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(longDescription)).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withResetStatsStringSupplier(null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withResetStatsStringSupplier(null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")

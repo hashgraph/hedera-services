@@ -124,8 +124,7 @@ class DefaultDoubleGaugeTest {
         final DoubleGauge gauge = new DefaultDoubleGauge(config);
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> gauge.get(Metric.ValueType.MIN),
