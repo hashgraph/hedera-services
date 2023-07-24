@@ -20,13 +20,13 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Provides Hedera operations using PBJ types to allow a {@link ProxyEvmFrameState} to access and change
+ * Provides Hedera operations using PBJ types to allow a {@link DispatchingEvmFrameState} to access and change
  * the state of the world (including all changes up to and including the current frame).
  */
 public interface HederaNativeOperations {

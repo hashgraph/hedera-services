@@ -41,6 +41,6 @@ public class ScopedEvmFrameStateFactory implements EvmFrameStateFactory {
 
     @Override
     public EvmFrameState get() {
-        return new ProxyEvmFrameState(extFrameScope, hederaOperations.getStore());
+        return new DispatchingEvmFrameState(extFrameScope, hederaOperations.getStore());
     }
 }

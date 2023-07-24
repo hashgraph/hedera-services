@@ -59,7 +59,7 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmFrameState;
+import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.RentFactors;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
@@ -82,7 +82,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ProxyEvmFrameStateTest {
+class DispatchingEvmFrameStateTest {
     private static final int REDIRECT_CODE_FIXED_PREFIX_LEN =
             "6080604052348015600f57600080fd5b506000610167905077618dc65e".length();
     private static final int NUM_KV_SLOTS = 42;
@@ -120,11 +120,11 @@ class ProxyEvmFrameStateTest {
     @Mock
     private ContractStateStore contractStateStore;
 
-    private ProxyEvmFrameState subject;
+    private DispatchingEvmFrameState subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyEvmFrameState(extFrameScope, contractStateStore);
+        subject = new DispatchingEvmFrameState(extFrameScope, contractStateStore);
     }
 
     @Test
@@ -675,7 +675,7 @@ class ProxyEvmFrameStateTest {
 
     @Test
     void getAccountDelegatesToGetMutableAccount() {
-        final var mockSubject = mock(ProxyEvmFrameState.class);
+        final var mockSubject = mock(DispatchingEvmFrameState.class);
         final var mockAccount = mock(TokenEvmAccount.class);
 
         given(mockSubject.getMutableAccount(TOKEN_ADDRESS)).willReturn(mockAccount);
