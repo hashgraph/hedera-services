@@ -13,4 +13,4 @@ useLoopbackIp,                                 false
 waitAtStartup,                                 false
 jasperDb.storagePath,                          /opt/hedera/services/data/saved
 jasperDb.iteratorInputBufferBytes,             16777216
-event.creation.maxCreationRate,                20
+event.creation.maxCreationRate,                1
