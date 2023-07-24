@@ -124,8 +124,8 @@ public class FileGetInfoHandler extends FileQueryBase {
 
         FileMetadata meta = null;
         long contentSize = 0L;
-        // the update file always will be for the entire network, not a particular ledger that's why we just compare the
-        // num
+        // upgrade is for the entire network, not a node. It's across shards and realms, however, which is why we ignore
+        // the shard and realm values.
         if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
             final var file = upgradeStore.peek();
             if (file != null) {
