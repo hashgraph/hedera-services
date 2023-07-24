@@ -21,6 +21,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.ReadableContractStateStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
@@ -60,18 +63,27 @@ public class ReadableStoreFactory {
 
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
-    private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
-            ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
-            ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new),
-            ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new),
-            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
-            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
-            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
-            ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new),
-            ReadableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new),
-            ReadableRunningHashLeafStore.class,
-                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new),
-            ReadableTokenRelationStore.class, new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
+    private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.ofEntries(
+            Map.entry(ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new)),
+            Map.entry(ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new)),
+            Map.entry(
+                    ReadableStakingInfoStore.class,
+                    new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new)),
+            Map.entry(ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new)),
+            Map.entry(ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new)),
+            Map.entry(
+                    ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new)),
+            Map.entry(ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new)),
+            Map.entry(
+                    ReadableUpdateFileStore.class,
+                    new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new)),
+            Map.entry(
+                    ReadableRunningHashLeafStore.class,
+                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new)),
+            Map.entry(
+                    ReadableTokenRelationStore.class,
+                    new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new)),
+            Map.entry(ContractStateStore.class, new StoreEntry(ContractService.NAME, ReadableContractStateStore::new)));
 
     private final HederaState state;
 
@@ -88,10 +100,10 @@ public class ReadableStoreFactory {
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
-     * @param <C> Interface class for a Store
+     * @param <C>            Interface class for a Store
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     * @throws NullPointerException     if {@code storeInterface} is {@code null}
      */
     @NonNull
     public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {

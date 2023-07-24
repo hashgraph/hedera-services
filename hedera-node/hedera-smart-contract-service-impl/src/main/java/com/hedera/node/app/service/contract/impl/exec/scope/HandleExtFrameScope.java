@@ -29,7 +29,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 /**
- * A fully mutable {@link ExtFrameScope} based on a {@link HandleContext}.
+ * TODO - a fully mutable {@link ExtFrameScope} based on a {@link HandleContext}.
  */
 @TransactionScope
 public class HandleExtFrameScope implements ExtFrameScope {

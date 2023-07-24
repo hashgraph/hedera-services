@@ -57,6 +57,7 @@ public record HederaEvmTransactionResult(
     }
 
     public @Nullable String maybeErrorMessage() {
+        // TODO - convert any abort, revert, or halt reason if present to an error message
         return null;
     }
 

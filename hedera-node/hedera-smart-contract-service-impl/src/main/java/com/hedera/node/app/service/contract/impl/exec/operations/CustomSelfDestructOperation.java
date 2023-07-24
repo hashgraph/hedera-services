@@ -16,6 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.SELFDESTRUCT;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
+import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,13 +39,6 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
-
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.SELFDESTRUCT;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
-import static java.util.Objects.requireNonNull;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 /**
  * Hedera {@link SelfDestructOperation} that checks whether there is a Hedera-specific reason to halt
