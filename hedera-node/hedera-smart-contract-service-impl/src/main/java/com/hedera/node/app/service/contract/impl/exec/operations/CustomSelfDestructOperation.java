@@ -16,18 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.SELFDESTRUCT;
-import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
-import static java.util.Objects.requireNonNull;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-
 import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
-import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
@@ -40,10 +33,17 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.MISSING_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.exec.operations.CustomizedOpcodes.SELFDESTRUCT;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.isDelegateCall;
+import static java.util.Objects.requireNonNull;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+
 /**
  * Hedera {@link SelfDestructOperation} that checks whether there is a Hedera-specific reason to halt
  * execution before proceeding with a self-destruct that uses
- * {@link com.hedera.node.app.spi.meta.bni.Dispatch#transferWithReceiverSigCheck(long, long, long, VerificationStrategy)}.
+ * {@link ProxyWorldUpdater#tryTransferFromContract(Address, Address, long, boolean)}.
  * instead of direct {@link org.hyperledger.besu.evm.account.MutableAccount#setBalance(Wei)} calls to
  * ensure Hedera signing requirements are enforced.
  */

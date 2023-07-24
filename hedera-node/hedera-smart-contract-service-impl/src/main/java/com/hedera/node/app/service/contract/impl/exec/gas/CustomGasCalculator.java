@@ -21,8 +21,8 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
 /**
- * Need to clean up and refactor {@link com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22}
- * to get its price and exchange rate from the transaction's {@link com.hedera.node.app.spi.meta.bni.Scope}.
+ * TODO - Refactor as a transaction-scope {@link com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22}
+ * that gets its price and exchange rate from the {@link com.hedera.node.app.service.contract.impl.exec.scope.ExtWorldScope}.
  */
 @Singleton
 public class CustomGasCalculator extends LondonGasCalculator {
