@@ -25,9 +25,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
@@ -171,6 +175,23 @@ public class TestHelpers {
             .recipientContract(CALLED_CONTRACT_ID)
             .gas(REMAINING_GAS)
             .build();
+    private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
+            .memo("Something to think about")
+            .build();
+    public static final TransactionBody MOCK_CREATION = TransactionBody.newBuilder()
+            .contractCreateInstance(MOCK_CREATE_BODY)
+            .build();
+
+    private static final ContractCallTransactionBody MOCK_CALL_BODY = ContractCallTransactionBody.newBuilder()
+            .contractID(CALLED_CONTRACT_ID)
+            .build();
+    public static final TransactionBody MOCK_CALL =
+            TransactionBody.newBuilder().contractCall(MOCK_CALL_BODY).build();
+
+    private static final EthereumTransactionBody MOCK_ETH_BODY =
+            EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
+    public static final TransactionBody MOCK_ETH =
+            TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {

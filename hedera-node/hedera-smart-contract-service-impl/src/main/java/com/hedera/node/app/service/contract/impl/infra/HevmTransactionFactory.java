@@ -40,36 +40,25 @@ public class HevmTransactionFactory {
      * @throws IllegalArgumentException if the {@link TransactionBody} is not a contract operation
      */
     public HederaEvmTransaction fromHapiTransaction(@NonNull final TransactionBody body) {
+        return switch (body.data().kind()) {
+            case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(body.contractCreateInstanceOrThrow());
+            case CONTRACT_CALL -> fromHapiCall(body.contractCallOrThrow());
+            case ETHEREUM_TRANSACTION -> fromHapiEthereum(body.ethereumTransactionOrThrow());
+            default -> {
+                throw new IllegalArgumentException("Not a contract operation");
+            }
+        };
+    }
+
+    private HederaEvmTransaction fromHapiCall(@NonNull final ContractCallTransactionBody body) {
         throw new AssertionError("Not implemented");
     }
 
-    /**
-     * Given a {@link ContractCallTransactionBody}, creates the implied {@link HederaEvmTransaction}.
-     *
-     * @param body the {@link ContractCallTransactionBody} to convert
-     * @return the implied {@link HederaEvmTransaction}
-     */
-    public HederaEvmTransaction fromHapiCall(@NonNull final ContractCallTransactionBody body) {
+    private HederaEvmTransaction fromHapiCreate(@NonNull final ContractCreateTransactionBody body) {
         throw new AssertionError("Not implemented");
     }
 
-    /**
-     * Given a {@link ContractCreateTransactionBody}, creates the implied {@link HederaEvmTransaction}.
-     *
-     * @param body the {@link ContractCreateTransactionBody} to convert
-     * @return the implied {@link HederaEvmTransaction}
-     */
-    public HederaEvmTransaction fromHapiCreate(@NonNull final ContractCreateTransactionBody body) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * Given a {@link EthereumTransactionBody}, creates the implied {@link HederaEvmTransaction}.
-     *
-     * @param body the {@link EthereumTransactionBody} to convert
-     * @return the implied {@link HederaEvmTransaction}
-     */
-    public HederaEvmTransaction fromHapiEthereum(@NonNull final EthereumTransactionBody body) {
+    private HederaEvmTransaction fromHapiEthereum(@NonNull final EthereumTransactionBody body) {
         throw new AssertionError("Not implemented");
     }
 }

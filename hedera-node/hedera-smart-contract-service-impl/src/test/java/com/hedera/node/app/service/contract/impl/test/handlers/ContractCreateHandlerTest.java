@@ -66,13 +66,6 @@ public class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private ContractCreateRecordBuilder recordBuilder;
 
-    private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
-            .memo("Something to think about")
-            .build();
-    private static final TransactionBody MOCK_CREATION = TransactionBody.newBuilder()
-            .contractCreateInstance(MOCK_CREATE_BODY)
-            .build();
-
     private ContractCreateHandler subject;
 
     @BeforeEach

@@ -18,12 +18,18 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,10 +38,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TransactionModuleTest {
     @Mock
-    private HederaOperations extWorldScope;
+    private HederaOperations hederaOperations;
 
     @Mock
     private EvmFrameStateFactory factory;
+
+    @Mock
+    private HandleContext context;
 
     @Test
     void createsEvmActionTracer() {
@@ -46,6 +55,21 @@ class TransactionModuleTest {
     void feesOnlyUpdaterIsProxyUpdater() {
         assertInstanceOf(
                 ProxyWorldUpdater.class,
-                TransactionModule.feesOnlyUpdater(extWorldScope, factory).get());
+                TransactionModule.provideFeesOnlyUpdater(hederaOperations, factory)
+                        .get());
+    }
+
+    @Test
+    void providesExpectedConfig() {
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
+        assertSame(config, TransactionModule.provideConfiguration(context));
+        assertNotNull(TransactionModule.provideContractsConfig(config));
+    }
+
+    @Test
+    void providesExpectedConsTime() {
+        given(context.consensusNow()).willReturn(Instant.MAX);
+        assertSame(Instant.MAX, TransactionModule.provideConsensusTime(context));
     }
 }

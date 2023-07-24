@@ -132,8 +132,9 @@ class ActiveContractVerificationStrategyTest {
     void doesNotSupportAmendingTransfer() {
         final var subject = new ActiveContractVerificationStrategy(ACTIVE_NUMBER, ACTIVE_ADDRESS, true);
 
+        final List<Long> noInvalidSigners = List.of();
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.maybeAmendTransfer(CryptoTransferTransactionBody.DEFAULT, List.of()));
+                () -> subject.maybeAmendTransfer(CryptoTransferTransactionBody.DEFAULT, noInvalidSigners));
     }
 }

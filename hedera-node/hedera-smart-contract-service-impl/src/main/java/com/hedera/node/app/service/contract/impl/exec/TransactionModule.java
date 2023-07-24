@@ -46,19 +46,19 @@ import java.util.function.Supplier;
 public interface TransactionModule {
     @Provides
     @TransactionScope
-    static Configuration configuration(@NonNull final HandleContext context) {
+    static Configuration provideConfiguration(@NonNull final HandleContext context) {
         return requireNonNull(context).configuration();
     }
 
     @Provides
     @TransactionScope
-    static ContractsConfig contractsConfig(@NonNull final Configuration configuration) {
+    static ContractsConfig provideContractsConfig(@NonNull final Configuration configuration) {
         return requireNonNull(configuration).getConfigData(ContractsConfig.class);
     }
 
     @Provides
     @TransactionScope
-    static Instant consensusTime(@NonNull final HandleContext context) {
+    static Instant provideConsensusTime(@NonNull final HandleContext context) {
         return requireNonNull(context).consensusNow();
     }
 
@@ -77,7 +77,7 @@ public interface TransactionModule {
 
     @Provides
     @TransactionScope
-    static Supplier<HederaWorldUpdater> feesOnlyUpdater(
+    static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
             @NonNull final HederaOperations extWorldScope, @NonNull final EvmFrameStateFactory factory) {
         return () -> new ProxyWorldUpdater(requireNonNull(extWorldScope), requireNonNull(factory), null);
     }
