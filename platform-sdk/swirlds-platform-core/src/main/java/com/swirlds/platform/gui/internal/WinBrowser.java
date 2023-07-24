@@ -21,6 +21,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 
+import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.system.SystemExitCode;
 import java.awt.BorderLayout;

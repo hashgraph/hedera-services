@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
+import com.swirlds.gui.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;

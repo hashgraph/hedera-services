@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.PrePaintableJPanel;
 import javax.swing.JLabel;
 
 /**

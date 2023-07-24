@@ -18,6 +18,7 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
+import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import javax.swing.JTextArea;
