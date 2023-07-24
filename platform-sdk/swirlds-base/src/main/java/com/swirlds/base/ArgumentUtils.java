@@ -17,7 +17,6 @@
 package com.swirlds.base;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 
 /**
@@ -33,23 +32,6 @@ public final class ArgumentUtils {
      */
     private ArgumentUtils() throws IllegalAccessException {
         throw new IllegalAccessException("Cannot instantiate utility class!");
-    }
-
-    /**
-     * Throw an {@link NullPointerException} if the supplied argument is {@code null}.
-     *
-     * @param argument     the argument to check
-     * @param argumentName the name of the argument
-     * @deprecated use {@link Objects#requireNonNull(Object, String)} instead
-     */
-    @NonNull
-    @Deprecated(forRemoval = true)
-    public static <T> T throwArgNull(@Nullable final T argument, @NonNull final String argumentName)
-            throws NullPointerException {
-        if (argument == null) {
-            throw new NullPointerException(ERROR_ARGUMENT_NULL.formatted(argumentName));
-        }
-        return argument;
     }
 
     /**

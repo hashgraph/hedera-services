@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.base.test.fixtures;
+package com.swirlds.base.test.fixtures.time;
 
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MILLISECONDS;
 
