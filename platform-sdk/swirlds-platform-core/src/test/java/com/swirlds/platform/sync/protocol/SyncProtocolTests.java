@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.base.test.fixtures.FakeTime;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncPermitProvider;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
@@ -158,10 +157,8 @@ class SyncProtocolTests {
 
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain the only existing permit, so it isn't available to the protocol
-        final MaybeLocked wastedPermit1 = permitProvider.tryAcquire();
-        final MaybeLocked wastedPermit2 = permitProvider.tryAcquire();
-        assertTrue(wastedPermit1.isLockAcquired());
-        assertTrue(wastedPermit2.isLockAcquired());
+        assertTrue(permitProvider.tryAcquire());
+        assertTrue(permitProvider.tryAcquire());
         assertEquals(0, permitProvider.getNumAvailable());
 
         assertFalse(protocol.shouldInitiate());
@@ -281,8 +278,7 @@ class SyncProtocolTests {
     void shouldAccept() {
         assertEquals(2, permitProvider.getNumAvailable());
         // obtain the 1 of the permits, but 1 will still be available to accept
-        final MaybeLocked wastedPermit = permitProvider.tryAcquire();
-        assertTrue(wastedPermit.isLockAcquired());
+        assertTrue(permitProvider.tryAcquire());
         assertEquals(1, permitProvider.getNumAvailable());
 
         final SyncProtocol protocol = new SyncProtocol(
@@ -345,10 +341,8 @@ class SyncProtocolTests {
         assertEquals(2, permitProvider.getNumAvailable());
 
         // waste both available permits
-        final MaybeLocked wastedPermit1 = permitProvider.tryAcquire();
-        assertTrue(wastedPermit1.isLockAcquired());
-        final MaybeLocked wastedPermit2 = permitProvider.tryAcquire();
-        assertTrue(wastedPermit2.isLockAcquired());
+        assertTrue(permitProvider.tryAcquire());
+        assertTrue(permitProvider.tryAcquire());
 
         assertEquals(0, permitProvider.getNumAvailable());
 

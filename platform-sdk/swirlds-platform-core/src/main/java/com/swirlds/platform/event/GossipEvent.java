@@ -23,6 +23,7 @@ import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -39,6 +40,12 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
     private Instant timeReceived;
     private long roundCreated = ROUND_CREATED_UNDEFINED;
 
+    /**
+     * If not null, this method is called when this event has been fully ingested (i.e. it has passed through the event
+     * intake queue and been added to the shadowgraph, or if it has been discarded for any reason).
+     */
+    private Runnable ingestCompleteCallback;
+
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public GossipEvent() {}
 
@@ -50,6 +57,26 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
         this.hashedData = hashedData;
         this.unhashedData = unhashedData;
         this.timeReceived = Instant.now();
+    }
+
+    /**
+     * Set a callback that is invoked when event ingestion is complete. Must be set before the event is passed to the
+     * intake queue (for thread safety).
+     *
+     * @param ingestCompleteCallback the callback to invoke
+     */
+    public void setIngestCompleteCallback(@NonNull final Runnable ingestCompleteCallback) {
+        this.ingestCompleteCallback = Objects.requireNonNull(ingestCompleteCallback);
+    }
+
+    /**
+     * Mark this event as fully ingested. Should be called both on events that are rejected (either due to duplication
+     * or invalidity), and events that are accepted and inserted into the shadowgraph.
+     */
+    public void ingestionCompleted() {
+        if (ingestCompleteCallback != null) {
+            ingestCompleteCallback.run();
+        }
     }
 
     /**

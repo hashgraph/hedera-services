@@ -16,9 +16,6 @@
 
 package com.swirlds.common.threading;
 
-import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
-import com.swirlds.common.threading.locks.locked.MaybeLocked;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -30,11 +27,6 @@ public class SyncPermitProvider {
      * A semaphore that is used to manage the number of concurrent syncs
      */
     private final Semaphore syncPermits;
-
-    /**
-     * The object returned when a permit is successfully obtained
-     */
-    private final AcquiredOnTry acquired;
 
     /**
      * The number of permits this provider has available to distribute
@@ -49,7 +41,6 @@ public class SyncPermitProvider {
     public SyncPermitProvider(final int numPermits) {
         this.numPermits = numPermits;
         this.syncPermits = new Semaphore(numPermits);
-        this.acquired = new AcquiredOnTry(syncPermits::release);
     }
 
     /**
@@ -63,14 +54,18 @@ public class SyncPermitProvider {
      * Attempts to acquire a sync permit. This method returns immediately and never blocks, even if no permit is
      * available.
      *
-     * @return an autocloseable instance that tells the caller if the permit has been acquired and will automatically
-     * release the permit when used in a try-with-resources block
+     * @return true if the permit was acquired, otherwise false
      */
-    public @NonNull MaybeLocked tryAcquire() {
-        if (syncPermits.tryAcquire()) {
-            return acquired;
-        }
-        return MaybeLocked.NOT_ACQUIRED;
+    public boolean tryAcquire() {
+        return syncPermits.tryAcquire();
+    }
+
+    /**
+     * Release a previously acquired permit. Should only be called if {@link #tryAcquire()} was called and returned
+     * true.
+     */
+    public void release() {
+        syncPermits.release();
     }
 
     /**
