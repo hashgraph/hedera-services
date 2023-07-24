@@ -58,6 +58,11 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
         writableUpgradeFileState.put(file);
     }
 
+    public void append(@NonNull Bytes bytes) {
+        requireNonNull(bytes);
+        writableUpgradeState.add(bytes);
+    }
+
     public void resetFileContents() {
         while (writableUpgradeState.removeIf(TRUE_PREDICATE) != null)
             ;

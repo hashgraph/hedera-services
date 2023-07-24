@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.valid
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
@@ -139,18 +138,6 @@ public class FileAppendHandler implements TransactionHandler {
         if (file == null) {
             throw new HandleException(INVALID_FILE_ID);
         }
-        final var appendedFile = new File.Builder()
-                // copy over just the fileNum from the update file
-                // leave shard and realm at zero
-                // this ensures that shard and realm are clamped to zero
-                .fileId(FileID.newBuilder()
-                        .fileNum(fileAppend.fileIDOrThrow().fileNum())
-                        .build())
-                .contents(fileAppend.contents())
-                .deleted(false)
-                .expirationTime(file.expirationTime())
-                .memo(file.memo())
-                .build();
-        fileStore.add(appendedFile);
+        fileStore.append(fileAppend.contents());
     }
 }
