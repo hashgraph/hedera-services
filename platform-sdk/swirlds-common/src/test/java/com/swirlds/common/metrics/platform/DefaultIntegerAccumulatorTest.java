@@ -208,7 +208,7 @@ class DefaultIntegerAccumulatorTest {
     void testGetStatBuffered() {
         // given
         final IntegerAccumulator.Config config = new IntegerAccumulator.Config(CATEGORY, NAME);
-        final IntegerAccumulator accumulator = new DefaultIntegerAccumulator(config);
+        final DefaultIntegerAccumulator accumulator = new DefaultIntegerAccumulator(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

@@ -76,7 +76,7 @@ class DefaultStatEntryTest {
                 .withInit(init)
                 .withReset(reset)
                 .withResetStatsStringSupplier(getAndReset);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final DefaultStatEntry statEntry = new DefaultStatEntry(config);
 
         // then
         assertEquals(CATEGORY, statEntry.getCategory(), "The category was not set correctly in the constructor");

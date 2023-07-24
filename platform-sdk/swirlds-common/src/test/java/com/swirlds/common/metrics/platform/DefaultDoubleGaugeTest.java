@@ -155,7 +155,7 @@ class DefaultDoubleGaugeTest {
     void testGetStatBuffered() {
         // given
         final DoubleGauge.Config config = new DoubleGauge.Config(CATEGORY, NAME);
-        final DoubleGauge gauge = new DefaultDoubleGauge(config);
+        final DefaultDoubleGauge gauge = new DefaultDoubleGauge(config);
 
         // when
         final StatsBuffered actual = gauge.getStatsBuffered();

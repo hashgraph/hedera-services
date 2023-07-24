@@ -174,7 +174,7 @@ class DefaultLongAccumulatorTest {
     void testGetStatBuffered() {
         // given
         final LongAccumulator.Config config = new LongAccumulator.Config(CATEGORY, NAME);
-        final LongAccumulator accumulator = new DefaultLongAccumulator(config);
+        final DefaultLongAccumulator accumulator = new DefaultLongAccumulator(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

@@ -134,7 +134,7 @@ class DefaultLongGaugeTest {
     void testGetStatBuffered() {
         // given
         final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME);
-        final LongGauge gauge = new DefaultLongGauge(config);
+        final DefaultLongGauge gauge = new DefaultLongGauge(config);
 
         // when
         final StatsBuffered actual = gauge.getStatsBuffered();

@@ -32,6 +32,7 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
+import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
@@ -61,15 +62,17 @@ class NoOpMetricsTest {
         assertNotNull(metric.getFormat());
         assertNotNull(metric.getValueTypes());
         metric.reset();
-        final StatsBuffered statsBuffered = metric.getStatsBuffered();
-        assertNotNull(statsBuffered);
-        assertNotNull(statsBuffered.getAllHistory());
-        assertNotNull(statsBuffered.getRecentHistory());
-        statsBuffered.reset(0);
-        statsBuffered.getMean();
-        statsBuffered.getMax();
-        statsBuffered.getMin();
-        statsBuffered.getStdDev();
+        if (metric instanceof LegacyMetric legacyMetric) {
+            final StatsBuffered statsBuffered = legacyMetric.getStatsBuffered();
+            assertNotNull(statsBuffered);
+            assertNotNull(statsBuffered.getAllHistory());
+            assertNotNull(statsBuffered.getRecentHistory());
+            statsBuffered.reset(0);
+            statsBuffered.getMean();
+            statsBuffered.getMax();
+            statsBuffered.getMin();
+            statsBuffered.getStdDev();
+        }
     }
 
     @Test
@@ -252,7 +255,9 @@ class NoOpMetricsTest {
                     metrics.getOrCreate(new StatEntry.Config<>("asdf", "asdf", Integer.class, () -> 0));
 
             assertNotNull(metric.getDataType());
-            assertNotNull(metric.getStatsBuffered());
+            if (metric instanceof LegacyMetric legacyMetric) {
+                assertNotNull(legacyMetric.getStatsBuffered());
+            }
             assertNotNull(metric.getReset());
             metric.getReset().accept(0.0);
             assertNotNull(metric.getStatsStringSupplier());

@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import java.awt.Color;
@@ -288,11 +289,16 @@ class WinTab2Stats extends PrePaintableJPanel {
             super.paintComponent(g);
             try {
                 StatsBuffer buffer;
-                if (allHistory) {
-                    buffer = metric.getStatsBuffered().getAllHistory();
+                if (metric instanceof LegacyMetric legacyMetric) {
+                    if (allHistory) {
+                        buffer = legacyMetric.getStatsBuffered().getAllHistory();
+                    } else {
+                        buffer = legacyMetric.getStatsBuffered().getRecentHistory();
+                    }
                 } else {
-                    buffer = metric.getStatsBuffered().getRecentHistory();
+                    buffer = new StatsBuffer(0, 0, 0);
                 }
+
                 minXs = 120;
                 maxXs = getWidth() - 55;
                 minYs = 40;
@@ -510,7 +516,9 @@ class WinTab2Stats extends PrePaintableJPanel {
                 c.gridwidth = GridBagConstraints.REMAINDER; // end of row
                 boxesPanel.add(spacer2, c);
             }
-            if (metric.getStatsBuffered() == null || metric.getStatsBuffered().getAllHistory() == null) {
+            if (metric instanceof LegacyMetric legacyMetric
+                    && (legacyMetric.getStatsBuffered() == null
+                            || legacyMetric.getStatsBuffered().getAllHistory() == null)) {
                 // if no history, then box is gray, and not clickable
                 statBoxes[i].setBackground(LIGHT_GRAY);
                 statBoxes[i].setOpaque(true);

@@ -19,7 +19,6 @@ package com.swirlds.common.metrics;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.state.Startable;
-import com.swirlds.common.system.NodeId;
 import java.util.Collection;
 
 /**
@@ -36,35 +35,6 @@ public interface Metrics extends Startable {
     String INTERNAL_CATEGORY = "internal";
     String PLATFORM_CATEGORY = "platform";
     String INFO_CATEGORY = "platform.info";
-
-    /**
-     * Returns the {@link NodeId} which metrics this {@code Metrics} manages. If this {@code Metrics}
-     * manages the global metrics, this method returns {@code null}.
-     *
-     * @return
-     * 		The {@code NodeId} or {@code null}
-     */
-    NodeId getNodeId();
-
-    /**
-     * Checks if this {@code Metrics} manages global metrics.
-     *
-     * @return
-     * 		{@code true} if this {@code Metrics} manages global metrics, {@code false} otherwise
-     */
-    default boolean isGlobalMetrics() {
-        return getNodeId() == null;
-    }
-
-    /**
-     * Checks if this {@code Metrics} manages platform metrics.
-     *
-     * @return
-     * 		{@code true} if this {@code Metrics} manages platform metrics, {@code false} otherwise
-     */
-    default boolean isPlatformMetrics() {
-        return getNodeId() != null;
-    }
 
     /**
      * Get a single {@link Metric} identified by its category and name

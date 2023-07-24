@@ -167,7 +167,7 @@ class DefaultDoubleAccumulatorTest {
     void testGetStatBuffered() {
         // given
         final DoubleAccumulator.Config config = new DoubleAccumulator.Config(CATEGORY, NAME);
-        final DoubleAccumulator accumulator = new DefaultDoubleAccumulator(config);
+        final DefaultDoubleAccumulator accumulator = new DefaultDoubleAccumulator(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

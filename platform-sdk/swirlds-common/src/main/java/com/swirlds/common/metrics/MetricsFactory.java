@@ -16,7 +16,7 @@
 
 package com.swirlds.common.metrics;
 
-import com.swirlds.common.utility.CommonUtils;
+import java.util.Objects;
 
 /**
  * Factory for all {@link Metric}-implementations
@@ -180,7 +180,7 @@ public interface MetricsFactory {
      * @param <T> sub-interface of the generated {@code Metric}
      */
     default <T extends Metric> T createMetric(final MetricConfig<T, ?> config) {
-        CommonUtils.throwArgNull(config, "config");
+        Objects.requireNonNull(config, "config");
 
         // We use the double-dispatch pattern to create a Metric. This simplifies the API, because it allows us
         // to have a single method for all types of metrics. (The alternative would have been a method like

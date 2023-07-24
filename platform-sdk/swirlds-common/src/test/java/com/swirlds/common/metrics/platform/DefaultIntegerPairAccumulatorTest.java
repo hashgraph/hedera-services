@@ -216,7 +216,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final DefaultIntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

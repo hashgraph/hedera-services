@@ -16,10 +16,10 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.ArgumentUtils;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -78,17 +78,17 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
             final String unit,
             final String format) {
 
-        this.category = throwArgBlank(category, "category");
-        this.name = throwArgBlank(name, "name");
-        this.description = throwArgBlank(description, "description");
+        this.category = ArgumentUtils.throwArgBlank(category, "category");
+        this.name = ArgumentUtils.throwArgBlank(name, "name");
+        this.description = ArgumentUtils.throwArgBlank(description, "description");
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
             throw new IllegalArgumentException(
                     "Description has " + description.length() + " characters, must not be longer than "
                             + MAX_DESCRIPTION_LENGTH + " characters: "
                             + description);
         }
-        this.unit = throwArgNull(unit, "unit");
-        this.format = throwArgBlank(format, "format");
+        this.unit = Objects.requireNonNull(unit, "unit");
+        this.format = ArgumentUtils.throwArgBlank(format, "format");
     }
 
     /**

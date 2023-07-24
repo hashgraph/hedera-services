@@ -60,7 +60,7 @@ class DefaultRunningAverageMetricTest {
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
                 .withHalfLife(Math.PI);
-        final RunningAverageMetric metric = new DefaultRunningAverageMetric(config);
+        final DefaultRunningAverageMetric metric = new DefaultRunningAverageMetric(config);
 
         // then
         assertEquals(CATEGORY, metric.getCategory(), "The category was not set correctly");

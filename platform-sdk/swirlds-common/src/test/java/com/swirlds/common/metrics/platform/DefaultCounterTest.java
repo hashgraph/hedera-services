@@ -167,7 +167,7 @@ class DefaultCounterTest {
     void testGetStatBuffered() {
         // given
         final Counter.Config config = new Counter.Config(CATEGORY, NAME);
-        final Counter counter = new DefaultCounter(config);
+        final DefaultCounter counter = new DefaultCounter(config);
 
         // when
         final StatsBuffered actual = counter.getStatsBuffered();

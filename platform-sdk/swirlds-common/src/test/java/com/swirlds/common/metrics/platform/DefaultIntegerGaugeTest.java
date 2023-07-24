@@ -134,7 +134,7 @@ class DefaultIntegerGaugeTest {
     void testGetStatBuffered() {
         // given
         final IntegerGauge.Config config = new IntegerGauge.Config(CATEGORY, NAME);
-        final IntegerGauge gauge = new DefaultIntegerGauge(config);
+        final DefaultIntegerGauge gauge = new DefaultIntegerGauge(config);
 
         // when
         final StatsBuffered actual = gauge.getStatsBuffered();

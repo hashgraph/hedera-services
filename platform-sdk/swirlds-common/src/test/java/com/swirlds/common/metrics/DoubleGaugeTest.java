@@ -28,7 +28,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.swirlds.common.metrics.statistics.StatsBuffered;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -71,11 +70,6 @@ class DoubleGaugeTest {
 
         @Override
         public void reset() {}
-
-        @Override
-        public StatsBuffered getStatsBuffered() {
-            return null;
-        }
     };
 
     @Test

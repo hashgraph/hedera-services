@@ -148,7 +148,7 @@ class DefaultFunctionGaugeTest {
         // given
         final Supplier<String> supplier = mock(Supplier.class);
         final FunctionGauge.Config<String> config = new FunctionGauge.Config<>(CATEGORY, NAME, String.class, supplier);
-        final FunctionGauge<String> gauge = new DefaultFunctionGauge<>(config);
+        final DefaultFunctionGauge<String> gauge = new DefaultFunctionGauge<>(config);
 
         // when
         final StatsBuffered actual = gauge.getStatsBuffered();
