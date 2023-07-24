@@ -37,6 +37,8 @@ import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
@@ -192,6 +194,9 @@ public class TestHelpers {
             EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
     public static final TransactionBody MOCK_ETH =
             TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
+
+    public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
+            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true);
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {

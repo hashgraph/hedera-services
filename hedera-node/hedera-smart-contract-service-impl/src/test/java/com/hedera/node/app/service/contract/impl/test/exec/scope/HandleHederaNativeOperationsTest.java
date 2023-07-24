@@ -18,8 +18,8 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,8 +84,7 @@ class HandleHederaNativeOperationsTest {
     void transferWithReceiverSigCheckNotImplemented() {
         assertThrows(
                 AssertionError.class,
-                () -> subject.transferWithReceiverSigCheck(
-                        1L, 2L, 3L, new ActiveContractVerificationStrategy(4L, Bytes.EMPTY, false)));
+                () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, TestHelpers.MOCK_VERIFICATION_STRATEGY));
     }
 
     @Test

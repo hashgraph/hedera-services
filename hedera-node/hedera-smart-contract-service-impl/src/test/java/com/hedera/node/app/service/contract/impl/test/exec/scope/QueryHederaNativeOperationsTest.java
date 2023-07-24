@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaNativeOperations;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -50,8 +50,7 @@ class QueryHederaNativeOperationsTest {
         assertThrows(UnsupportedOperationException.class, () -> subject.refundFee(1L, 2L));
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.transferWithReceiverSigCheck(
-                        1L, 2L, 3L, new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true)));
+                () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, MOCK_VERIFICATION_STRATEGY));
         assertThrows(UnsupportedOperationException.class, () -> subject.trackDeletion(1L, 2L));
     }
 }

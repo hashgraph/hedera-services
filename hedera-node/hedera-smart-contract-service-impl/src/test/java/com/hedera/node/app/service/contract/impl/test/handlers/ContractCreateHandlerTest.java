@@ -44,7 +44,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class ContractCreateHandlerTest extends ContractHandlerTestBase {
+class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 

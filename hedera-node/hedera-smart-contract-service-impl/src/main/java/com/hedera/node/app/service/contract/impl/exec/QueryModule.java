@@ -25,7 +25,6 @@ import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperatio
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.swirlds.config.api.Configuration;
 import dagger.Binds;
@@ -38,14 +37,14 @@ import java.time.Instant;
 public interface QueryModule {
     @Provides
     @QueryScope
-    static Configuration configuration(@NonNull final QueryContext context) {
+    static Configuration provideConfiguration(@NonNull final QueryContext context) {
         return requireNonNull(context).configuration();
     }
 
     @Provides
     @QueryScope
-    static Instant consensusTime(@NonNull final HandleContext context) {
-        return requireNonNull(context).consensusNow();
+    static Instant provideConsensusTime() {
+        return Instant.now();
     }
 
     @Binds

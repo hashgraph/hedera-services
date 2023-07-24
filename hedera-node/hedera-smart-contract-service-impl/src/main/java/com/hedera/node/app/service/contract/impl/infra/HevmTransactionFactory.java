@@ -44,9 +44,7 @@ public class HevmTransactionFactory {
             case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(body.contractCreateInstanceOrThrow());
             case CONTRACT_CALL -> fromHapiCall(body.contractCallOrThrow());
             case ETHEREUM_TRANSACTION -> fromHapiEthereum(body.ethereumTransactionOrThrow());
-            default -> {
-                throw new IllegalArgumentException("Not a contract operation");
-            }
+            default -> throw new IllegalArgumentException("Not a contract operation");
         };
     }
 

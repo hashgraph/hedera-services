@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_VERIFICATION_STRATEGY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -68,9 +68,6 @@ class HandleSystemContractScopeTest {
 
     @Test
     void dispatchNotImplementedYet() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.dispatch(
-                        TransactionBody.DEFAULT, new ActiveContractVerificationStrategy(1L, Bytes.EMPTY, false)));
+        assertThrows(AssertionError.class, () -> subject.dispatch(TransactionBody.DEFAULT, MOCK_VERIFICATION_STRATEGY));
     }
 }

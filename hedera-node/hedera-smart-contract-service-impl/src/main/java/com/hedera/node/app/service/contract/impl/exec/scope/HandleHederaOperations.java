@@ -55,7 +55,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void commit() {
-        throw new UnsupportedOperationException();
+        throw new AssertionError("Not implemented");
     }
 
     /**
@@ -103,7 +103,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long lazyCreationCostInGas() {
-        return 0;
+        throw new AssertionError("Not implemented");
     }
 
     /**
@@ -111,7 +111,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        return 0;
+        throw new AssertionError("Not implemented");
     }
 
     /**
@@ -119,7 +119,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        return 0;
+        throw new AssertionError("Not implemented");
     }
 
     /**
