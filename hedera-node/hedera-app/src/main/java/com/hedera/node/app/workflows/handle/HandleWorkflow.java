@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -32,13 +33,15 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.verifier.BaseHandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -79,6 +82,7 @@ public class HandleWorkflow {
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
+    private final HederaRecordCache recordCache;
 
     @Inject
     public HandleWorkflow(
@@ -91,7 +95,8 @@ public class HandleWorkflow {
             @NonNull final TransactionChecker checker,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final HederaRecordCache recordCache) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -102,6 +107,7 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
+        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
     }
 
     /**
@@ -143,15 +149,16 @@ public class HandleWorkflow {
 
         // Setup record builder list
         blockRecordManager.startUserTransaction(consensusNow, state);
-        final var recordBuilder = new SingleTransactionRecordBuilder(consensusNow);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
         final var recordListBuilder = new RecordListBuilder(recordBuilder);
 
+        PreHandleResult preHandleResult = null;
         try {
             // Setup configuration
             var configuration = configProvider.getConfiguration();
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
-            final var preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
+            preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             final var transactionInfo = preHandleResult.txInfo();
             final var txBody = transactionInfo.txBody();
             recordBuilder
@@ -159,6 +166,16 @@ public class HandleWorkflow {
                     .transactionBytes(transactionInfo.signedBytes())
                     .transactionID(txBody.transactionID())
                     .memo(txBody.memo());
+
+            // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
+            switch (preHandleResult.status()) {
+                case SO_FAR_SO_GOOD -> {
+                    /* All good nothing to do */
+                }
+                case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
+                case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
+                default -> throw new PreCheckException(preHandleResult.responseCode());
+            }
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
@@ -181,7 +198,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                     txBody,
                     preHandleResult.payer(),
@@ -194,12 +211,15 @@ public class HandleWorkflow {
                     checker,
                     dispatcher,
                     serviceScopeLookup,
-                    blockRecordManager);
+                    blockRecordManager,
+                    recordCache);
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction with the help of the token service
+
+            recordBuilder.status(SUCCESS);
 
             // commit state
             stack.commit();
@@ -226,14 +246,22 @@ public class HandleWorkflow {
 
         // store all records at once
         final var recordListResult = recordListBuilder.build();
-        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
 
-        // TODO: handle system tasks
+        if (preHandleResult != null) {
+            // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
+            // https://github.com/hashgraph/hedera-services/pull/7473
+            recordCache.add(
+                    0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
+        } else {
+            throw new IllegalStateException("pre handle result was null!");
+        }
+
+        blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
     }
 
     private void recordFailedTransaction(
             @NonNull final ResponseCodeEnum status,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final RecordListBuilder recordListBuilder) {
         recordBuilder.status(status);
         recordListBuilder.revertChildRecordBuilders(recordBuilder);
@@ -278,15 +306,7 @@ public class HandleWorkflow {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var creator = networkInfo.nodeInfo(platformEvent.getCreatorId().id());
         final var creatorId = creator == null ? null : creator.accountId();
-        final var result = preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
-
-        // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
-        return switch (result.status()) {
-            case SO_FAR_SO_GOOD -> result;
-            case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
-            case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
-            default -> throw new PreCheckException(result.responseCode());
-        };
+        return preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
     }
 
     @NonNull

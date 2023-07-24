@@ -17,19 +17,25 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.*;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.node.app.service.contract.impl.state.*;
 import com.hedera.node.app.spi.meta.bni.Dispatch;
+import com.hedera.node.app.spi.meta.bni.Fees;
 import com.hedera.node.app.spi.meta.bni.Scope;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +44,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +78,12 @@ class ProxyWorldUpdaterTest {
     private ProxyEvmAccount proxyEvmAccount;
 
     @Mock
+    private Fees fees;
+
+    @Mock
+    private MessageFrame frame;
+
+    @Mock
     private Scope scope;
 
     @Mock
@@ -91,6 +105,13 @@ class ProxyWorldUpdaterTest {
         given(evmFrameStateFactory.createIn(scope)).willReturn(evmFrameState);
 
         subject = new ProxyWorldUpdater(scope, evmFrameStateFactory, null);
+    }
+
+    @Test
+    void collectingAndRefundingFeesNoop() {
+        subject.collectFee(RELAYER_ID, 1L);
+        subject.refundFee(RELAYER_ID, 1L);
+        verifyNoInteractions(dispatch);
     }
 
     @Test
@@ -342,6 +363,42 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void abortsLazyCreationIfRemainingGasInsufficient() {
+        final var pretendCost = 1_234L;
+        given(scope.fees()).willReturn(fees);
+        given(fees.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(frame.getRemainingGas()).willReturn(pretendCost - 1);
+        final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
+        assertTrue(maybeHaltReason.isPresent());
+        assertEquals(INSUFFICIENT_GAS, maybeHaltReason.get());
+    }
+
+    @Test
+    void delegatesLazyCreationAndDecrementsGasCostOnSuccess() {
+        final var pretendCost = 1_234L;
+        given(scope.fees()).willReturn(fees);
+        given(fees.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(frame.getRemainingGas()).willReturn(pretendCost * 2);
+        given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(Optional.empty());
+        final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
+        assertTrue(maybeHaltReason.isEmpty());
+        verify(frame).decrementRemainingGas(pretendCost);
+    }
+
+    @Test
+    void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
+        final var pretendCost = 1_234L;
+        final var haltReason = Optional.<ExceptionalHaltReason>of(INVALID_VALUE_TRANSFER);
+        given(scope.fees()).willReturn(fees);
+        given(fees.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(frame.getRemainingGas()).willReturn(pretendCost * 2);
+        given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
+        final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
+        assertEquals(haltReason, maybeHaltReason);
+        verify(frame, never()).decrementRemainingGas(pretendCost);
+    }
+
+    @Test
     void onlyReturnsNonDeletedAccountsAsTouched() {
         givenDispatch();
         given(dispatch.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
@@ -359,6 +416,14 @@ class ProxyWorldUpdaterTest {
     @Test
     void doesntSupportDeletedAccountAddresses() {
         assertThrows(UnsupportedOperationException.class, subject::getDeletedAccountAddresses);
+    }
+
+    @Test
+    void delegatesDeletionTrackingAttempt() {
+        final var haltReason = Optional.<ExceptionalHaltReason>of(SELFDESTRUCT_TO_SELF);
+        given(evmFrameState.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS))
+                .willReturn(haltReason);
+        assertSame(haltReason, subject.tryTrackingDeletion(SOME_EVM_ADDRESS, OTHER_EVM_ADDRESS));
     }
 
     @Test

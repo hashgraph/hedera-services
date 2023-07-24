@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.contract.impl.hevm;
+package com.hedera.services.cli.signedstate;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.account.Account;
+import com.swirlds.cli.PlatformCli;
+import com.swirlds.cli.utility.AbstractCommand;
+import com.swirlds.cli.utility.SubcommandOf;
+import picocli.CommandLine;
 
 /**
- * TODO - not sure this makes sense, why can't we just call {@link Account#getCode()} directly?
- *
- * (Answer: we probably can. This class should be deleted in upcoming PR.)
+ * A subcommand of the {@link PlatformCli}, for dealing with signed state files
  */
-public interface HederaEvmCode {
-    Code load(@NonNull Address contract);
-
-    Code loadIfPresent(@NonNull Address contract);
+@CommandLine.Command(
+        name = "signed-state",
+        mixinStandardHelpOptions = true,
+        description = "Operations on signed-state files.")
+@SubcommandOf(PlatformCli.class)
+public final class SignedStateCommand extends AbstractCommand {
+    private SignedStateCommand() {}
 }
