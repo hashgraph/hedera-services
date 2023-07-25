@@ -23,6 +23,7 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.ReadableUpgradeStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.NetworkService;
@@ -47,6 +48,8 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -60,18 +63,28 @@ public class ReadableStoreFactory {
 
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
-    private static final Map<Class<?>, StoreEntry> STORE_FACTORY = Map.of(
-            ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new),
-            ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new),
-            ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new),
-            ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new),
-            ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new),
-            ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new),
-            ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new),
-            ReadableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new),
-            ReadableRunningHashLeafStore.class,
-                    new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new),
-            ReadableTokenRelationStore.class, new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
+    private static final Map<Class<?>, StoreEntry> STORE_FACTORY = createFactoryMap();
+
+    private static final Map<Class<?>, StoreEntry> createFactoryMap() {
+        Map<Class<?>, StoreEntry> newMap = new HashMap<>();
+        newMap.put(ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new));
+        newMap.put(ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new));
+        newMap.put(
+                ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new));
+        newMap.put(ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new));
+        newMap.put(ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new));
+        newMap.put(ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new));
+        newMap.put(ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new));
+        newMap.put(ReadableUpgradeStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new));
+        newMap.put(ReadableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new));
+        newMap.put(
+                ReadableRunningHashLeafStore.class,
+                new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
+        newMap.put(
+                ReadableTokenRelationStore.class,
+                new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
+        return Collections.unmodifiableMap(newMap);
+    }
 
     private final HederaState state;
 

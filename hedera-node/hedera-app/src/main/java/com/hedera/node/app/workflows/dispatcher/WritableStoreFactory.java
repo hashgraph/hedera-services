@@ -24,6 +24,7 @@ import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -60,7 +61,11 @@ public class WritableStoreFactory {
             FreezeService.NAME,
             Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
             FileService.NAME,
-            Map.of(WritableFileStore.class, WritableFileStore::new),
+            Map.of(
+                    WritableFileStore.class,
+                    WritableFileStore::new,
+                    WritableUpgradeStore.class,
+                    WritableUpgradeStore::new),
             EntityIdService.NAME,
             Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new));
 
