@@ -21,6 +21,7 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.state.Startable;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.SocketConfig;
@@ -135,6 +136,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param time                          the time object used to get the current time
      */
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
@@ -154,13 +156,14 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
-
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final Time time) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
+        Objects.requireNonNull(time);
 
         threadConfig = platformContext.getConfiguration().getConfigData(ThreadConfig.class);
         criticalQuorum = buildCriticalQuorum();
@@ -186,7 +189,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 connectionManagers::newConnection,
                 socketConfig,
                 shouldDoVersionCheck(),
-                appVersion);
+                appVersion,
+                time);
         // allow other members to create connections to me
         final Address address = addressBook.getAddress(selfId);
         final ConnectionServer connectionServer = new ConnectionServer(

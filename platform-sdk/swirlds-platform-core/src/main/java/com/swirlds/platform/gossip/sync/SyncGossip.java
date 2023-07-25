@@ -175,7 +175,8 @@ public class SyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
-                clearAllPipelinesForReconnect);
+                clearAllPipelinesForReconnect,
+                time);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);

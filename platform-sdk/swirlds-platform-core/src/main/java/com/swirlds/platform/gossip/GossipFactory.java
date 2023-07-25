@@ -206,7 +206,8 @@ public final class GossipFactory {
                         syncMetrics,
                         statusActionSubmitter,
                         loadReconnectState,
-                        clearAllPipelinesForReconnect);
+                        clearAllPipelinesForReconnect,
+                        time);
             } else {
                 logger.info(STARTUP.getMarker(), "Using SyncGossip");
                 return new SyncGossip(
@@ -258,7 +259,8 @@ public final class GossipFactory {
                     syncMetrics,
                     statusActionSubmitter,
                     loadReconnectState,
-                    clearAllPipelinesForReconnect);
+                    clearAllPipelinesForReconnect,
+                    time);
         }
     }
 }

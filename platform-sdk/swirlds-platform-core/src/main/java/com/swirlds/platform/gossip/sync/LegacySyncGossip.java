@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
@@ -114,6 +115,7 @@ public class LegacySyncGossip extends AbstractGossip {
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
+     * @param time                          the time object used to get the current time
      */
     public LegacySyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -136,7 +138,8 @@ public class LegacySyncGossip extends AbstractGossip {
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect) {
+            @NonNull final Runnable clearAllPipelinesForReconnect,
+            @NonNull final Time time) {
         super(
                 platformContext,
                 threadManager,
@@ -155,7 +158,8 @@ public class LegacySyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
-                clearAllPipelinesForReconnect);
+                clearAllPipelinesForReconnect,
+                time);
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
