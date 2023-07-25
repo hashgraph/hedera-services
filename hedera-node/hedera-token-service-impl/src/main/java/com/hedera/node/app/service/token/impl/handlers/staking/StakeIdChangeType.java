@@ -131,6 +131,7 @@ public enum StakeIdChangeType {
                 return FROM_NODE_TO_ACCOUNT;
             }
         } else {
+            // We are in the newStakedIdCase == UNSET branch now
             if (curStakedIdCase.equals(UNSET)) {
                 return FROM_ABSENT_TO_ABSENT;
             } else if (curStakedIdCase.equals(STAKED_ACCOUNT_ID)) {

@@ -545,7 +545,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         // No rewards rewarded
         assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isEqualTo(0L);
+        assertThat(rewards.get(payerId)).isZero();
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
@@ -589,7 +589,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoAfter = writableStakingInfoState.get(1L);
 
         assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isEqualTo(0L);
+        assertThat(rewards.get(payerId)).isZero();
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());

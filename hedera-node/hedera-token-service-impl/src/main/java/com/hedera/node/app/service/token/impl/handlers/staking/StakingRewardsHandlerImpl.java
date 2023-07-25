@@ -96,7 +96,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * Iterates through all modifications in state and sees if any account is staked to an account.
      * If there is an account X that staked to account Y. If account Y is staked to a node, then
      * change in X balance will contribute to Y's stakedToMe balance. This function will update
-     * Y's stakedToMe balance which will add Y to the state modifications. In the next step, we will
+     * Y's stakedToMe balance which will add Y to the state modifications. In adjustStakeMetadata step, we will
      * assess if Y is staked to a node, and if so, we will update the node stake metadata.
      *
      * @param writableStore The store to write to for updated values
@@ -137,7 +137,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 if (scenario.awardsToAccount()) {
                     final var newStakedAccountId = modifiedAccount.stakedAccountId();
                     // Always trigger a reward situation for the new stakee when they are
-                    // losing an indirect staker, even if it doesn't change their total stake
+                    // gaining an indirect staker, even if it doesn't change their total stake
                     final var roundedFinalBalance = roundedToHbar(originalAccount.tinybarBalance());
                     updateStakedToMeFor(newStakedAccountId, roundedFinalBalance, writableStore);
                 }
@@ -348,8 +348,11 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             final AccountID stakingRewardAccountId,
             final WritableAccountStore writableAccountStore) {
         if (!rewardsPaid.isEmpty()) {
-            final var totalPaidRewards =
-                    rewardsPaid.values().stream().mapToLong(Long::longValue).sum();
+            long totalPaidRewards = 0L;
+            for (final var value : rewardsPaid.values()) {
+                totalPaidRewards += value;
+            }
+
             final var stakingRewardAccount = writableAccountStore.get(stakingRewardAccountId);
             final var finalBalance = stakingRewardAccount.tinybarBalance() - totalPaidRewards;
             // At this place it is not possible for the staking reward account balance to be less than total rewards
