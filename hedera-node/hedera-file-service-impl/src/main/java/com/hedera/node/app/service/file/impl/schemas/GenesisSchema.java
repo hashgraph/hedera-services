@@ -19,7 +19,6 @@ package com.hedera.node.app.service.file.impl.schemas;
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_FILE_KEY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -87,8 +86,7 @@ public class GenesisSchema extends Schema {
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT),
-                StateDefinition.queue(UPGRADE_DATA_KEY, new BytesCodec()),
-                StateDefinition.singleton(UPGRADE_FILE_KEY, File.PROTOBUF));
+                StateDefinition.queue(UPGRADE_DATA_KEY, new BytesCodec()));
     }
 
     @Override
