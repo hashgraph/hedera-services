@@ -47,7 +47,8 @@ public interface StakeRewardCalculator {
             @NonNull final Instant consensusNow);
 
     /**
-     * Estimate the pending rewards for the given account. This method is called only on {@link CryptoGetAccountInfo} query
+     * Estimate the pending rewards for the given account. This method is called only on
+     * {@link com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler} query
      * and when recomputing node stakes and pending rewards during upgrade house-keeping.
      * @param account The account for which the pending rewards are to be calculated.
      * @param nodeStakingInfo The staking info of the node to which the account is staked.
