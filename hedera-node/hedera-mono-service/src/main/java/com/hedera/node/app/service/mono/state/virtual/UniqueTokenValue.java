@@ -26,8 +26,13 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer2;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer2E;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumerE;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
+import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplierE;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -36,6 +41,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Represents the information stored in the virtualized merkle node associated with a unique token
@@ -153,11 +159,11 @@ public class UniqueTokenValue implements VirtualValue {
     }
 
     // Keep it in sync with getSerializedSize()
-    /* package */ void serializeTo(
-            final CheckedConsumer<Byte> writeByteFn,
-            final CheckedConsumer<Long> writeLongFn,
-            final CheckedConsumer2<byte[], Integer> writeBytesFn)
-            throws IOException {
+    /* package */ <E extends Exception> void serializeTo(
+            final CheckedConsumerE<Byte, E> writeByteFn,
+            final CheckedConsumerE<Long, E> writeLongFn,
+            final CheckedConsumer2E<byte[], Integer, E> writeBytesFn)
+            throws E {
         writeLongFn.accept(ownerAccountNum);
         writeLongFn.accept(spenderAccountNum);
         writeLongFn.accept(packedCreationTime);
@@ -166,21 +172,24 @@ public class UniqueTokenValue implements VirtualValue {
         writeNftNumPair(next, writeLongFn);
     }
 
-    private static NftNumPair readNftNumPair(final CheckedSupplier<Long> readLongFn) throws IOException {
+    private static <E extends Exception> NftNumPair readNftNumPair(
+            final CheckedSupplierE<Long, E> readLongFn)
+            throws E {
         final var tokenNum = readLongFn.get();
         final var tokenSerial = readLongFn.get();
         return new NftNumPair(tokenNum, tokenSerial);
     }
 
-    private static void writeNftNumPair(final NftNumPair nftNumPair, final CheckedConsumer<Long> writeLongFn)
-            throws IOException {
+    private static <E extends Exception> void writeNftNumPair(
+            final NftNumPair nftNumPair, final CheckedConsumerE<Long, E> writeLongFn)
+            throws E {
         writeLongFn.accept(nftNumPair.tokenNum());
         writeLongFn.accept(nftNumPair.serialNum());
     }
 
-    private static byte[] readBytes(
-            final CheckedSupplier<Byte> readByteFn, final CheckedConsumer<byte[]> readBytesFn, final int maxBytes)
-            throws IOException {
+    private static <E extends Exception> byte[] readBytes(
+            final CheckedSupplierE<Byte, E> readByteFn, final CheckedConsumerE<byte[], E> readBytesFn, final int maxBytes)
+            throws E {
         // Guard against mal-formed data by capping the max length.
         final int len = min(readByteFn.get(), maxBytes);
 
@@ -193,12 +202,12 @@ public class UniqueTokenValue implements VirtualValue {
         return data;
     }
 
-    private static void writeBytes(
+    private static <E extends Exception> void writeBytes(
             final byte[] data,
             final int maxBytes,
-            final CheckedConsumer<Byte> writeByteFn,
-            final CheckedConsumer2<byte[], Integer> writeBytesFn)
-            throws IOException {
+            final CheckedConsumerE<Byte, E> writeByteFn,
+            final CheckedConsumer2E<byte[], Integer, E> writeBytesFn)
+            throws E {
         // Cap the maximum metadata bytes to avoid malformed inputs with too many metadata bytes.
         final int len = min(maxBytes, data.length);
         writeByteFn.accept((byte) len);
@@ -207,11 +216,11 @@ public class UniqueTokenValue implements VirtualValue {
         }
     }
 
-    /* package */ void deserializeFrom(
-            final CheckedSupplier<Byte> readByteFn,
-            final CheckedSupplier<Long> readLongFn,
-            final CheckedConsumer<byte[]> readBytesFn)
-            throws IOException {
+    /* package */ <E extends Exception> void deserializeFrom(
+            final CheckedSupplierE<Byte, E> readByteFn,
+            final CheckedSupplierE<Long, E> readLongFn,
+            final CheckedConsumerE<byte[], E> readBytesFn)
+            throws E {
         throwIfImmutable();
         ownerAccountNum = readLongFn.get();
         spenderAccountNum = readLongFn.get();
@@ -231,6 +240,10 @@ public class UniqueTokenValue implements VirtualValue {
         deserializeFrom(byteBuffer::get, byteBuffer::getLong, byteBuffer::get);
     }
 
+    public void deserialize(final ReadableSequentialData in) {
+        deserializeFrom(in::readByte, in::readLong, in::readBytes);
+    }
+
     @Override
     public void serialize(final SerializableDataOutputStream output) throws IOException {
         serializeTo(output::writeByte, output::writeLong, (data, len) -> output.write(data, 0, len));
@@ -239,6 +252,10 @@ public class UniqueTokenValue implements VirtualValue {
     @Override
     public void serialize(final ByteBuffer byteBuffer) throws IOException {
         serializeTo(byteBuffer::put, byteBuffer::putLong, (data, len) -> byteBuffer.put(data, 0, len));
+    }
+
+    public void serialize(final WritableSequentialData out) {
+        serializeTo(out::writeByte, out::writeLong, (data, len) -> out.writeBytes(data, 0, len));
     }
 
     @Override

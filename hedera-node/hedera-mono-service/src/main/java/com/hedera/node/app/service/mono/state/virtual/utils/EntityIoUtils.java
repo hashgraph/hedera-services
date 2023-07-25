@@ -16,22 +16,21 @@
 
 package com.hedera.node.app.service.mono.state.virtual.utils;
 
-import java.io.IOException;
-
 public final class EntityIoUtils {
     private EntityIoUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 
-    public static void writeBytes(
-            final byte[] data, final CheckedConsumer<Integer> writeIntFn, final CheckedConsumer<byte[]> writeBytesFn)
-            throws IOException {
+    public static <E extends Exception> void writeBytes(
+            final byte[] data, final CheckedConsumerE<Integer, E> writeIntFn, final CheckedConsumerE<byte[], E> writeBytesFn)
+            throws E {
         writeIntFn.accept(data.length);
         writeBytesFn.accept(data);
     }
 
-    public static byte[] readBytes(final CheckedSupplier<Integer> readIntFn, final CheckedConsumer<byte[]> readBytesFn)
-            throws IOException {
+    public static <E extends Exception> byte[] readBytes(
+            final CheckedSupplierE<Integer, E> readIntFn, final CheckedConsumerE<byte[], E> readBytesFn)
+            throws E {
         final var len = readIntFn.get();
         final var data = new byte[len];
         readBytesFn.accept(data);

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -64,6 +66,10 @@ public class VirtualBlobValue implements VirtualValue {
         return 5120; // estimated based on mainnet state as of 05/2023
     }
 
+    public int getSizeInBytes() {
+        return Integer.BYTES + data.length;
+    }
+
     @Override
     public void deserialize(SerializableDataInputStream in, int version) throws IOException {
         data = in.readByteArray(Integer.MAX_VALUE);
@@ -81,11 +87,22 @@ public class VirtualBlobValue implements VirtualValue {
         buffer.put(data);
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeInt(data.length);
+        out.writeBytes(data);
+    }
+
     @Override
     public void deserialize(ByteBuffer buffer, int version) throws IOException {
         final var n = buffer.getInt();
         data = new byte[n];
         buffer.get(data);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        final int size = in.readInt();
+        data = new byte[size];
+        in.readBytes(data);
     }
 
     @Override

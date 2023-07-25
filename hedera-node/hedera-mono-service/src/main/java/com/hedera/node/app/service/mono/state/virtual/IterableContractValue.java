@@ -18,8 +18,11 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToPbj;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
@@ -392,6 +395,12 @@ public class IterableContractValue implements VirtualValue {
         serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeBytes(uint256Value);
+        serializePossiblyMissingKeyToBuffer(prevUint256Key, prevUint256KeyNonZeroBytes, out);
+        serializePossiblyMissingKeyToBuffer(nextUint256Key, nextUint256KeyNonZeroBytes, out);
+    }
+
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         if (isImmutable) {
@@ -411,9 +420,18 @@ public class IterableContractValue implements VirtualValue {
         deserializeKeys(buffer, ByteBuffer::get);
     }
 
+    public void deserialize(final ReadableSequentialData in) {
+        if (isImmutable) {
+            throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
+        }
+        in.readBytes(this.uint256Value);
+        deserializeKeys(in, ReadableSequentialData::readByte);
+    }
+
     // --- Internal helpers
-    private <D> void deserializeKeys(final D in, final KeyPackingUtils.ByteReaderFunction<D> reader)
-            throws IOException {
+    private <D, E extends Exception> void deserializeKeys(
+            final D in, final KeyPackingUtils.ByteReaderFunction<D, E> reader)
+            throws E {
         byte marker = reader.read(in);
         if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
             prevUint256KeyNonZeroBytes = marker;
@@ -447,6 +465,16 @@ public class IterableContractValue implements VirtualValue {
         } else {
             out.put(nonZeroBytes);
             serializePackedBytesToBuffer(key, nonZeroBytes, out);
+        }
+    }
+
+    private void serializePossiblyMissingKeyToBuffer(
+            final @Nullable int[] key, final byte nonZeroBytes, final WritableSequentialData out) {
+        if (key == null) {
+            out.writeByte(KeyPackingUtils.MISSING_KEY_SENTINEL);
+        } else {
+            out.writeByte(nonZeroBytes);
+            serializePackedBytesToPbj(key, nonZeroBytes, out);
         }
     }
 

@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,6 +62,11 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
+    public int getSerializedSize(UniqueTokenKey key) {
+        return key.getSerializedSizeInBytes();
+    }
+
+    @Override
     public int getTypicalSerializedSize() {
         return UniqueTokenKey.ESTIMATED_SIZE_BYTES;
     }
@@ -70,25 +78,38 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
         return key.serializeTo(buffer::put);
     }
 
-    // Key deserialization
-
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        Objects.requireNonNull(buffer);
-        return UniqueTokenKey.deserializeKeySize(buffer);
+    public void serialize(final UniqueTokenKey key, final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serializeTo(out::writeByte);
     }
 
     @Override
     public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
-        tokenKey.deserialize(buffer, (int) dataVersion);
+        tokenKey.deserialize(buffer);
+        return tokenKey;
+    }
+
+    @Override
+    public UniqueTokenKey deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final UniqueTokenKey tokenKey = new UniqueTokenKey();
+        tokenKey.deserialize(in);
         return tokenKey;
     }
 
     @Override
     public boolean equals(final ByteBuffer buffer, final int version, final UniqueTokenKey key) throws IOException {
         Objects.requireNonNull(buffer);
-        return key.equalsTo(buffer);
+        return key.equalsTo(buffer::get);
+    }
+
+    @Override
+    public boolean equals(final BufferedData buffer, UniqueTokenKey key) throws IOException {
+        Objects.requireNonNull(buffer);
+        return key.equalsTo(buffer::readByte);
     }
 }

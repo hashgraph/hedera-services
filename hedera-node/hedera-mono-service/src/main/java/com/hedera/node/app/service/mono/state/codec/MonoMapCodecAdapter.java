@@ -118,7 +118,7 @@ public class MonoMapCodecAdapter {
                     // TODO: Remove the following line once this was fixed in BufferedData
                     dataBuffer.skip(dataBuffer.remaining());
                     byteBuffer.rewind();
-                    item.deserialize(byteBuffer, version);
+                    item.deserialize(byteBuffer);
                 } else {
                     throw new IllegalArgumentException(
                             "Unsupported DataInput type: " + input.getClass().getName());

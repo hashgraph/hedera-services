@@ -52,7 +52,7 @@ public class ScheduleEqualityVirtualKeySerializer implements KeySerializer<Sched
     @Override
     public ScheduleEqualityVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
         final var key = new ScheduleEqualityVirtualKey();
-        key.deserialize(byteBuffer, (int) version);
+        key.deserialize(byteBuffer);
         return key;
     }
 

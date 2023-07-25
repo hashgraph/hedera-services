@@ -85,7 +85,7 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     public ContractKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         final ContractKey contractKey = new ContractKey();
-        contractKey.deserialize(buffer, (int) dataVersion);
+        contractKey.deserialize(buffer);
         return contractKey;
     }
 

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,6 +58,11 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
         return VARIABLE_DATA_SIZE;
     }
 
+    @Override
+    public int getSerializedSize(UniqueTokenValue value) {
+        return value.getSerializedSize();
+    }
+
     // FUTURE WORK: mark it as @Override after migration to platform 0.39
     public int getTypicalSerializedSize() {
         return UniqueTokenValue.getTypicalSerializedSize();
@@ -71,6 +78,13 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
         return value.getSerializedSize();
     }
 
+    @Override
+    public void serialize(final UniqueTokenValue value, final WritableSequentialData out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
+    }
+
     // Value deserialization
 
     @Override
@@ -78,6 +92,14 @@ public class UniqueTokenMerkleDbValueSerializer implements ValueSerializer<Uniqu
         Objects.requireNonNull(buffer);
         final UniqueTokenValue value = new UniqueTokenValue();
         value.deserialize(buffer, (int) version);
+        return value;
+    }
+
+    @Override
+    public UniqueTokenValue deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final UniqueTokenValue value = new UniqueTokenValue();
+        value.deserialize(in);
         return value;
     }
 }

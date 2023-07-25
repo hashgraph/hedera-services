@@ -51,7 +51,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     public UniqueTokenKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
-        tokenKey.deserialize(buffer, (int) dataVersion);
+        tokenKey.deserialize(buffer);
         return tokenKey;
     }
 
@@ -71,7 +71,7 @@ public class UniqueTokenKeySerializer implements KeySerializer<UniqueTokenKey> {
     @Override
     public boolean equals(final ByteBuffer byteBuffer, final int dataVersion, final UniqueTokenKey uniqueTokenKey)
             throws IOException {
-        return uniqueTokenKey.equalsTo(byteBuffer);
+        return uniqueTokenKey.equalsTo(byteBuffer::get);
     }
 
     @Override

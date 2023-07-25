@@ -52,7 +52,7 @@ public class EntityNumVirtualKeySerializer implements KeySerializer<EntityNumVir
     @Override
     public EntityNumVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
         final var key = new EntityNumVirtualKey();
-        key.deserialize(byteBuffer, (int) version);
+        key.deserialize(byteBuffer);
         return key;
     }
 

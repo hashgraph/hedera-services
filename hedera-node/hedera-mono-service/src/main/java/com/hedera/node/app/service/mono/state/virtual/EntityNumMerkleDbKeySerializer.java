@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
@@ -75,19 +78,26 @@ public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVi
         return EntityNumVirtualKey.sizeInBytes();
     }
 
-    // Key deserialization
-
     @Override
-    public int deserializeKeySize(ByteBuffer buffer) {
-        Objects.requireNonNull(buffer);
-        return EntityNumVirtualKey.sizeInBytes();
+    public void serialize(final EntityNumVirtualKey key, final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
     }
 
     @Override
     public EntityNumVirtualKey deserialize(ByteBuffer buffer, long version) throws IOException {
         Objects.requireNonNull(buffer);
         final var key = new EntityNumVirtualKey();
-        key.deserialize(buffer, (int) version);
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public EntityNumVirtualKey deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final var key = new EntityNumVirtualKey();
+        key.deserialize(in);
         return key;
     }
 
@@ -95,5 +105,11 @@ public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVi
     public boolean equals(ByteBuffer buffer, int version, EntityNumVirtualKey key) throws IOException {
         Objects.requireNonNull(buffer);
         return key.equals(buffer, version);
+    }
+
+    @Override
+    public boolean equals(final BufferedData buf, EntityNumVirtualKey key) throws IOException {
+        Objects.requireNonNull(buf);
+        return key.equals(buf);
     }
 }

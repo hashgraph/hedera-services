@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,6 +61,11 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
         return VARIABLE_DATA_SIZE;
     }
 
+    @Override
+    public int getSerializedSize(OnDiskAccount value) {
+        return value.getSerializedSizeInBytes();
+    }
+
     // FUTURE WORK: mark it as @Override after migration to platform 0.39
     public int getTypicalSerializedSize() {
         return OnDiskAccount.getTypicalSerializedSize();
@@ -68,7 +75,17 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
     public int serialize(final OnDiskAccount value, final ByteBuffer out) throws IOException {
         Objects.requireNonNull(value);
         Objects.requireNonNull(out);
-        return value.serializeTo(out::put, out::putInt, out::putLong, out::put);
+        value.serialize(out);
+        // Future work: variable part is serialized to an array twice, in serialize() above and
+        // getSerializedSizeInBytes() below
+        return value.getSerializedSizeInBytes();
+    }
+
+    @Override
+    public void serialize(final OnDiskAccount value, final WritableSequentialData out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
     }
 
     // Value deserializatioin
@@ -78,6 +95,14 @@ public class OnDiskAccountMerkleDbValueSerializer implements ValueSerializer<OnD
         Objects.requireNonNull(buffer);
         final OnDiskAccount value = new OnDiskAccount();
         value.deserialize(buffer, (int) version);
+        return value;
+    }
+
+    @Override
+    public OnDiskAccount deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final OnDiskAccount value = new OnDiskAccount();
+        value.deserialize(in);
         return value;
     }
 }

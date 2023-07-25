@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -53,6 +55,11 @@ public class IterableContractMerkleDbValueSerializer implements ValueSerializer<
         return VARIABLE_DATA_SIZE;
     }
 
+    @Override
+    public int getSerializedSize(IterableContractValue value) {
+        return value.getSerializedSize();
+    }
+
     // FUTURE WORK: mark it as @Override after migration to platform 0.39
     public int getTypicalSerializedSize() {
         return IterableContractValue.getTypicalSerializedSize();
@@ -68,6 +75,13 @@ public class IterableContractMerkleDbValueSerializer implements ValueSerializer<
         return value.getSerializedSize();
     }
 
+    @Override
+    public void serialize(final IterableContractValue value, final WritableSequentialData out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
+    }
+
     // Value deserialization
 
     @Override
@@ -75,6 +89,14 @@ public class IterableContractMerkleDbValueSerializer implements ValueSerializer<
         Objects.requireNonNull(buffer);
         final IterableContractValue value = new IterableContractValue();
         value.deserialize(buffer, (int) version);
+        return value;
+    }
+
+    @Override
+    public IterableContractValue deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final IterableContractValue value = new IterableContractValue();
+        value.deserialize(in);
         return value;
     }
 }

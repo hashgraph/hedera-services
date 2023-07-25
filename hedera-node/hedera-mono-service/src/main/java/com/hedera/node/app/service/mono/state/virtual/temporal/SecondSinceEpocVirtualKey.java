@@ -90,7 +90,7 @@ public final class SecondSinceEpocVirtualKey implements VirtualLongKey {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    public void deserialize(final ByteBuffer buffer) throws IOException {
         value = buffer.getLong();
     }
     /** {@inheritDoc} */

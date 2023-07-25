@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -66,19 +69,26 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
         return getSerializedSize();
     }
 
-    // Key deserialization
-
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        Objects.requireNonNull(buffer);
-        return VirtualBlobKey.sizeInBytes();
+    public void serialize(final VirtualBlobKey key, final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
     }
 
     @Override
     public VirtualBlobKey deserialize(final ByteBuffer buffer, final long version) throws IOException {
         Objects.requireNonNull(buffer);
         final var key = new VirtualBlobKey();
-        key.deserialize(buffer, (int) version);
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public VirtualBlobKey deserialize(final ReadableSequentialData out) {
+        Objects.requireNonNull(out);
+        final var key = new VirtualBlobKey();
+        key.deserialize(out);
         return key;
     }
 
@@ -86,5 +96,11 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     public boolean equals(final ByteBuffer buffer, final int version, final VirtualBlobKey key) throws IOException {
         Objects.requireNonNull(buffer);
         return key.equals(buffer, version);
+    }
+
+    @Override
+    public boolean equals(final BufferedData buffer, VirtualBlobKey key) throws IOException {
+        Objects.requireNonNull(buffer);
+        return key.equals(buffer);
     }
 }

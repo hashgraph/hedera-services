@@ -23,7 +23,8 @@ import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<SecondSinceEpocVirtualKey> {
+public class
+SecondSinceEpocVirtualKeySerializer implements KeySerializer<SecondSinceEpocVirtualKey> {
     static final long CLASS_ID = 0xced4f0425c211ba2L;
     static final int CURRENT_VERSION = 1;
 
@@ -52,7 +53,7 @@ public class SecondSinceEpocVirtualKeySerializer implements KeySerializer<Second
     @Override
     public SecondSinceEpocVirtualKey deserialize(ByteBuffer byteBuffer, long version) throws IOException {
         final var key = new SecondSinceEpocVirtualKey();
-        key.deserialize(byteBuffer, (int) version);
+        key.deserialize(byteBuffer);
         return key;
     }
 

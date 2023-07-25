@@ -19,6 +19,9 @@ package com.hedera.node.app.service.mono.state.virtual;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -122,11 +125,20 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
         buffer.putLong(value);
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeLong(value);
+    }
+
     /** {@inheritDoc} */
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    public void deserialize(final ByteBuffer buffer) throws IOException {
         value = buffer.getLong();
     }
+
+    public void deserialize(final ReadableSequentialData in) {
+        value = in.readLong();
+    }
+
     /** {@inheritDoc} */
     @Override
     public boolean equals(final Object o) {
@@ -154,6 +166,10 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return buffer.getLong() == this.value;
+    }
+
+    public boolean equals(final BufferedData buffer) {
+        return buffer.readLong() == this.value;
     }
 
     /** {@inheritDoc} */

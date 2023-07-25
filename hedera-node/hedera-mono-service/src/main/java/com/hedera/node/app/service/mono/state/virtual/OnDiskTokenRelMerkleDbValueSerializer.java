@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -71,6 +73,13 @@ public class OnDiskTokenRelMerkleDbValueSerializer implements ValueSerializer<On
         return getSerializedSize();
     }
 
+    @Override
+    public void serialize(final OnDiskTokenRel value, final WritableSequentialData out) {
+        Objects.requireNonNull(value);
+        Objects.requireNonNull(out);
+        value.serialize(out);
+    }
+
     // Value deserialization
 
     @Override
@@ -78,6 +87,14 @@ public class OnDiskTokenRelMerkleDbValueSerializer implements ValueSerializer<On
         Objects.requireNonNull(buffer);
         final OnDiskTokenRel value = new OnDiskTokenRel();
         value.deserialize(buffer, (int) version);
+        return value;
+    }
+
+    @Override
+    public OnDiskTokenRel deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        final OnDiskTokenRel value = new OnDiskTokenRel();
+        value.deserialize(in);
         return value;
     }
 }

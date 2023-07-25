@@ -21,6 +21,9 @@ import static java.lang.Long.parseLong;
 
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -73,10 +76,20 @@ public class VirtualBlobKey implements VirtualKey {
         buffer.putInt(entityNumCode);
     }
 
+    public void serialize(final WritableSequentialData out) {
+        out.writeByte((byte) type.ordinal());
+        out.writeInt(entityNumCode);
+    }
+
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
+    public void deserialize(final ByteBuffer buffer) throws IOException {
         type = BLOB_TYPES[0xff & buffer.get()];
         entityNumCode = buffer.getInt();
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        type = BLOB_TYPES[0xff & in.readByte()];
+        entityNumCode = in.readInt();
     }
 
     @Override
@@ -147,5 +160,9 @@ public class VirtualBlobKey implements VirtualKey {
      */
     public boolean equals(final ByteBuffer buffer, final int version) throws IOException {
         return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
+    }
+
+    public boolean equals(final BufferedData buffer) throws IOException {
+        return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
     }
 }

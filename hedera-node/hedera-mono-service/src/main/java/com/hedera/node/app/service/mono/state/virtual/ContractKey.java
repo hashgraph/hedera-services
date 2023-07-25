@@ -19,7 +19,10 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToPbj;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -159,6 +162,12 @@ public final class ContractKey implements VirtualKey {
                 + ")}";
     }
 
+    int getSerializedSizeInBytes() {
+        return 1 // total non-zero bytes count
+                + contractIdNonZeroBytes // non-zero contractId bytes
+                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
+    }
+
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         serializeReturningBytesWritten(out);
@@ -177,18 +186,19 @@ public final class ContractKey implements VirtualKey {
 
     @Override
     public void serialize(final ByteBuffer buffer) throws IOException {
-        serializeReturningBytesWritten(buffer);
-    }
-
-    public int serializeReturningBytesWritten(final ByteBuffer buffer) {
         buffer.put(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             buffer.put((byte) (contractId >> (b * 8)));
         }
         serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, buffer);
-        return 1 // total non-zero bytes count
-                + contractIdNonZeroBytes // non-zero contractId bytes
-                + uint256KeyNonZeroBytes; // non-zero uint256Key bytes
+    }
+
+    public void serialize(final WritableSequentialData out) {
+        out.writeByte(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
+        for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
+            out.writeByte((byte) (contractId >> (b * 8)));
+        }
+        serializePackedBytesToPbj(uint256Key, uint256KeyNonZeroBytes, out);
     }
 
     @Override
@@ -201,12 +211,20 @@ public final class ContractKey implements VirtualKey {
     }
 
     @Override
-    public void deserialize(final ByteBuffer buf, final int i) throws IOException {
+    public void deserialize(final ByteBuffer buf) {
         final byte packedSize = buf.get();
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
         this.contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
         this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+    }
+
+    public void deserialize(final ReadableSequentialData in) {
+        final byte packedSize = in.readByte();
+        this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
+        this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
+        this.contractId = deserializeContractID(contractIdNonZeroBytes, in, ReadableSequentialData::readByte);
+        this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, in, ReadableSequentialData::readByte);
     }
 
     @Override
@@ -237,11 +255,11 @@ public final class ContractKey implements VirtualKey {
      * @param reader function to read a byte from the data source
      * @param <D> type for data source, e.g. ByteBuffer or InputStream
      * @return long contract id read
-     * @throws IOException If there was a problem reading
+     * @throws E If there was a problem reading
      */
-    static <D> long deserializeContractID(
-            final byte contractIdNonZeroBytes, final D dataSource, final KeyPackingUtils.ByteReaderFunction<D> reader)
-            throws IOException {
+    static <D, E extends Exception> long deserializeContractID(
+            final byte contractIdNonZeroBytes, final D dataSource, final KeyPackingUtils.ByteReaderFunction<D, E> reader)
+            throws E {
         long contractId = 0;
         /* Bytes are encountered in order of significance (big-endian) */
         for (int byteI = 0, shiftI = contractIdNonZeroBytes - 1; byteI < contractIdNonZeroBytes; byteI++, shiftI--) {

@@ -21,6 +21,9 @@ import static com.hedera.node.app.service.mono.state.virtual.ContractKey.getCont
 import static com.hedera.node.app.service.mono.state.virtual.ContractKey.getUint256KeyNonZeroBytesFromPacked;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -63,6 +66,11 @@ public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey>
     }
 
     @Override
+    public int getSerializedSize(final ContractKey key) {
+        return key.getSerializedSizeInBytes();
+    }
+
+    @Override
     public int getTypicalSerializedSize() {
         return ContractKey.ESTIMATED_AVERAGE_SIZE;
     }
@@ -71,22 +79,32 @@ public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey>
     public int serialize(final ContractKey key, ByteBuffer out) throws IOException {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
-        return key.serializeReturningBytesWritten(out);
+        key.serialize(out);
+        return key.getSerializedSizeInBytes();
+    }
+
+    @Override
+    public void serialize(final ContractKey key, final WritableSequentialData out) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(out);
+        key.serialize(out);
     }
 
     // Key deserialization
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        Objects.requireNonNull(buffer);
-        return ContractKey.readKeySize(buffer);
-    }
-
-    @Override
     public ContractKey deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
         Objects.requireNonNull(buffer);
         ContractKey key = new ContractKey();
-        key.deserialize(buffer, (int) dataVersion);
+        key.deserialize(buffer);
+        return key;
+    }
+
+    @Override
+    public ContractKey deserialize(final ReadableSequentialData in) {
+        Objects.requireNonNull(in);
+        ContractKey key = new ContractKey();
+        key.deserialize(in);
         return key;
     }
 
@@ -100,6 +118,19 @@ public class ContractMerkleDbKeySerializer implements KeySerializer<ContractKey>
         final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
         if (contractId != contractKey.getContractId()) return false;
         final int[] uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+        return Arrays.equals(uint256Key, contractKey.getKey());
+    }
+
+    @Override
+    public boolean equals(final BufferedData buf, final ContractKey contractKey) throws IOException {
+        byte packedSize = buf.readByte();
+        final byte contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
+        if (contractIdNonZeroBytes != contractKey.getContractIdNonZeroBytes()) return false;
+        final byte uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
+        if (uint256KeyNonZeroBytes != contractKey.getUint256KeyNonZeroBytes()) return false;
+        final long contractId = deserializeContractID(contractIdNonZeroBytes, buf, BufferedData::readByte);
+        if (contractId != contractKey.getContractId()) return false;
+        final int[] uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, BufferedData::readByte);
         return Arrays.equals(uint256Key, contractKey.getKey());
     }
 }
