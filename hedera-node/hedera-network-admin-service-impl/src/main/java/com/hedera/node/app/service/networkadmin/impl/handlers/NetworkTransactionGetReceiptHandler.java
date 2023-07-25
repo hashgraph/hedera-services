@@ -84,7 +84,7 @@ public class NetworkTransactionGetReceiptHandler extends FreeQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
         final var query = context.query();
-        final var recordCache = context.createStore(RecordCache.class);
+        final var recordCache = context.recordCache();
         final var transactionGetReceiptQuery = query.transactionGetReceiptOrThrow();
         final var responseBuilder = TransactionGetReceiptResponse.newBuilder();
         final var transactionId = transactionGetReceiptQuery.transactionIDOrThrow();

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredPbjTransfer;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,12 +45,14 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.crypto.CryptographyHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,7 +111,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryWhenValidFile() throws Throwable {
+    void validatesQueryWhenValidFile() {
         givenValidFile();
 
         final var query = createGetFileInfoQuery(fileId.fileNum());
@@ -184,10 +187,57 @@ class FileGetInfoTest extends FileTestBase {
         assertEquals(expectedInfo, fileInfoResponse.fileInfo());
     }
 
+    @Test
+    void getsResponseIfOkResponseUpgradeFile() {
+        givenValidUpgradeFile(false, true);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var responseHeader = ResponseHeader.newBuilder()
+                .nodeTransactionPrecheckCode(ResponseCodeEnum.OK)
+                .build();
+        final var expectedInfo = getExpectedUpgradeInfo();
+
+        final var query = createGetFileInfoQuery(fileUpgradeFileId.fileNum());
+        when(context.query()).thenReturn(query);
+        when(context.createStore(ReadableUpgradeStoreImpl.class)).thenReturn(readableUpgradeStore);
+        final var response = subject.findResponse(context, responseHeader);
+        final var fileInfoResponse = response.fileGetInfoOrThrow();
+        assertEquals(ResponseCodeEnum.OK, fileInfoResponse.header().nodeTransactionPrecheckCode());
+        assertEquals(expectedInfo, fileInfoResponse.fileInfo());
+    }
+
     private FileInfo getExpectedInfo() {
         return FileInfo.newBuilder()
                 .memo(file.memo())
                 .fileID(fileId)
+                .keys(keys)
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .ledgerId(ledgerId)
+                .deleted(false)
+                .size(8)
+                .build();
+    }
+
+    private FileInfo getExpectedSystemInfo() {
+        final var upgradeHash =
+                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        return FileInfo.newBuilder()
+                .memo(upgradeHash)
+                .fileID(FileID.newBuilder().fileNum(fileSystemFileId.fileNum()).build())
+                .keys(keys)
+                .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
+                .ledgerId(ledgerId)
+                .deleted(false)
+                .size(8)
+                .build();
+    }
+
+    private FileInfo getExpectedUpgradeInfo() {
+        final var upgradeHash =
+                hex(CryptographyHolder.get().digestSync(contents).getValue());
+        return FileInfo.newBuilder()
+                .memo(upgradeHash)
+                .fileID(FileID.newBuilder().fileNum(fileUpgradeFileId.fileNum()).build())
                 .keys(keys)
                 .expirationTime(Timestamp.newBuilder().seconds(file.expirationTime()))
                 .ledgerId(ledgerId)

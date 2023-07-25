@@ -254,7 +254,7 @@ public interface Dispatch {
      * @param amount                 the amount to charge
      * @param itemizeStoragePayments whether to itemize storage payments in the record
      */
-    ResponseCodeEnum chargeStorageRent(long contractNumber, long amount, boolean itemizeStoragePayments);
+    void chargeStorageRent(long contractNumber, long amount, boolean itemizeStoragePayments);
 
     // --- (SECTION III) A state mutation method that dispatches a synthetic {@code TransactionBody} within
     // --- the context of the current {@code Scope}, performing signature verification with priority given to the
@@ -295,6 +295,16 @@ public interface Dispatch {
      */
     @Nullable
     Account getAccount(long number);
+
+    /**
+     * Returns number of slots used by the contract with the given number, ignoring any uncommitted
+     * modifications already dispatched. If the contract did not exist before the transaction, returns
+     * zero.
+     *
+     * @param contractNumber the contract number
+     * @return the number of storage slots used by the contract, ignoring any uncommitted modifications
+     */
+    int getOriginalSlotsUsed(long contractNumber);
 
     /**
      * Returns a list of the account numbers that have been modified in this scope.

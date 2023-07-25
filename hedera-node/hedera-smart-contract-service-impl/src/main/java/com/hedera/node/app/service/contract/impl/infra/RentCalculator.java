@@ -52,6 +52,7 @@ public class RentCalculator {
             final int contractSlotsAdded,
             final int contractSlotsAlreadyUsed,
             final long expectedSlotExpiry) {
-        throw new AssertionError("Not implemented");
+        // TODO - fix this before expiry and rent are enabled
+        return 0L;
     }
 }

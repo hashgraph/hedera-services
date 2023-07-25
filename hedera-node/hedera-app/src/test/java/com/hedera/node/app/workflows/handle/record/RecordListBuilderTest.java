@@ -54,7 +54,7 @@ class RecordListBuilderTest {
     @Test
     void testInitialRecordListBuilder() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
 
         // when
         final var recordListBuilder = new RecordListBuilder(base);
@@ -66,7 +66,7 @@ class RecordListBuilderTest {
     @Test
     void testAddSinglePreceding() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
@@ -89,7 +89,7 @@ class RecordListBuilderTest {
                 .withValue("consensus.message.maxPrecedingRecords", maxPreceding)
                 .withValue("consensus.message.maxFollowingRecords", MAX_CHILDREN)
                 .getOrCreateConfig();
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
@@ -111,7 +111,7 @@ class RecordListBuilderTest {
     @Test
     void testAddSingleChild() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
@@ -134,7 +134,7 @@ class RecordListBuilderTest {
                 .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
                 .withValue("consensus.message.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
@@ -156,7 +156,7 @@ class RecordListBuilderTest {
     @Test
     void testRevertSingleChild() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
         final var child1 = recordListBuilder.addChild(CONFIGURATION);
 
@@ -180,19 +180,19 @@ class RecordListBuilderTest {
     @Test
     void testRevertNotFound() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
         assertThatException()
-                .isThrownBy(() ->
-                        recordListBuilder.revertChildRecordBuilders(new SingleTransactionRecordBuilder(Instant.EPOCH)));
+                .isThrownBy(() -> recordListBuilder.revertChildRecordBuilders(
+                        new SingleTransactionRecordBuilderImpl(Instant.EPOCH)));
     }
 
     @Test
     void testRevertMultipleChildren() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
         final var child1 = recordListBuilder.addChild(CONFIGURATION);
         final var child2 = recordListBuilder.addChild(CONFIGURATION);
@@ -224,7 +224,7 @@ class RecordListBuilderTest {
     @Test
     void testAddSingleRemovableChild() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
@@ -247,7 +247,7 @@ class RecordListBuilderTest {
                 .withValue("consensus.message.maxPrecedingRecords", MAX_PRECEDING)
                 .withValue("consensus.message.maxFollowingRecords", maxChildren)
                 .getOrCreateConfig();
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when
@@ -270,7 +270,7 @@ class RecordListBuilderTest {
     @Test
     void testRevertSingleRemovableChild() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
         recordListBuilder.addRemovableChild(CONFIGURATION);
 
@@ -291,7 +291,7 @@ class RecordListBuilderTest {
     @Test
     void testRevertMultipleRemovableChildren() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
         final var child1 = recordListBuilder.addRemovableChild(CONFIGURATION);
         recordListBuilder.addRemovableChild(CONFIGURATION);
@@ -318,7 +318,7 @@ class RecordListBuilderTest {
     @Test
     void testRevertMultipleMixedChildren() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
         final var child1 = recordListBuilder.addRemovableChild(CONFIGURATION);
         final var child2 = recordListBuilder.addChild(CONFIGURATION);
@@ -365,7 +365,7 @@ class RecordListBuilderTest {
     @Test
     void testAddMultipleRecordBuilders() {
         // given
-        final var base = new SingleTransactionRecordBuilder(CONSENSUS_NOW);
+        final var base = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
         final var recordListBuilder = new RecordListBuilder(base);
 
         // when

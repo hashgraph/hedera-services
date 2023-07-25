@@ -84,7 +84,7 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
 
-        final var recordCache = context.createStore(RecordCache.class);
+        final var recordCache = context.recordCache();
         final var record = recordCache.getReceipt(txnId);
         mustExist(record, INVALID_TRANSACTION_ID);
     }
@@ -100,7 +100,7 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == ResponseCodeEnum.OK && responseType != COST_ANSWER) {
-            final var recordCache = context.createStore(RecordCache.class);
+            final var recordCache = context.recordCache();
             final var transactionRecordPrimary = recordCache.getRecord(transactionId);
             if (transactionRecordPrimary == null) {
                 responseBuilder.header(header.copyBuilder()

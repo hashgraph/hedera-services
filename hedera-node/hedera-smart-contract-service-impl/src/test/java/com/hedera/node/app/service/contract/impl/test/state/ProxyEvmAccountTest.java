@@ -32,6 +32,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,6 +109,13 @@ class ProxyEvmAccountTest {
         final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
         given(hederaState.getCode(ACCOUNT_NUM)).willReturn(code);
         assertEquals(code, subject.getCode());
+    }
+
+    @Test
+    void returnsEvmCode() {
+        final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
+        given(hederaState.getCode(ACCOUNT_NUM)).willReturn(code);
+        assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode());
     }
 
     @Test

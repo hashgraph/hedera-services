@@ -63,6 +63,7 @@ dependencies {
         api(gav("org.testcontainers"))
         api(gav("org.yaml.snakeyaml"))
         api(gav("tuweni.bytes"))
+        api(gav("org.junit.platform.engine"))
 
         implementation(project(":app-service-evm"))
         implementation(gav("com.fasterxml.jackson.core"))
@@ -81,10 +82,11 @@ dependencies {
         implementation(gav("org.json"))
         implementation(gav("org.opentest4j"))
         implementation(gav("tuweni.units"))
+        implementation(gav("com.swirlds.platform.core"))
+        implementation(project(":app"))
 
         itestImplementation(project(path))
         itestImplementation(project(":hapi"))
-        itestImplementation(project(":app"))
         itestImplementation(project(":config"))
         itestImplementation(gav("org.junit.jupiter.api"))
         itestImplementation(gav("org.testcontainers"))
@@ -92,7 +94,6 @@ dependencies {
         itestImplementation(gav("org.apache.commons.lang3"))
         itestImplementation(gav("org.apache.logging.log4j.core"))
         itestImplementation(gav("org.apache.logging.log4j.jul"))
-        itestImplementation(gav("com.swirlds.platform.core"))
         itestImplementation(gav("com.github.spotbugs.annotations"))
 
         eetImplementation(project(path))

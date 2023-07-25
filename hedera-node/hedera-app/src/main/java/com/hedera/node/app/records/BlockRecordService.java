@@ -68,7 +68,8 @@ public final class BlockRecordService implements Service {
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
                 final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
-                final var runningHashes = new RunningHashes(GENESIS_HASH, null, null, null);
+                final var runningHashes =
+                        RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
                 runningHashState.put(runningHashes);
 
                 final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
