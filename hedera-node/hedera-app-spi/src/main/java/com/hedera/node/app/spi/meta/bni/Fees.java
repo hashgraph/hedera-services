@@ -33,7 +33,7 @@ public interface Fees {
     /**
      * Returns the lazy creation cost within this scope.
      *
-     * @return the lazy creation cost in tinybars
+     * @return the lazy creation cost in gas
      */
     long lazyCreationCostInGas();
 

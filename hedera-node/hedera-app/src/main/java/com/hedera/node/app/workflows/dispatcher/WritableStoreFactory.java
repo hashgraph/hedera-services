@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
@@ -29,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -58,7 +61,11 @@ public class WritableStoreFactory {
             FreezeService.NAME,
             Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
             FileService.NAME,
-            Map.of(WritableFileStore.class, WritableFileStore::new));
+            Map.of(WritableFileStore.class, WritableFileStore::new),
+            EntityIdService.NAME,
+            Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new),
+            UtilService.NAME,
+            Map.of());
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

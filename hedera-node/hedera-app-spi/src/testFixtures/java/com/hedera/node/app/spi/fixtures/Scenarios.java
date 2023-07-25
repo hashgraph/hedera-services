@@ -268,60 +268,65 @@ public interface Scenarios extends TransactionFactory {
                 null)
     };
 
-    TestNode NODE_1 = new TestNode(
+    final AccountID account3 = AccountID.newBuilder().accountNum(3L).build();
+    final TestNode NODE_1 = new TestNode(
             0L,
-            AccountID.newBuilder().accountNum(3L).build(),
+            account3,
             Account.newBuilder()
-                    .accountNumber(3L)
+                    .accountId(account3)
                     .key(FAKE_ECDSA_KEY_INFOS[0].publicKey())
                     .declineReward(true)
                     .build(),
             FAKE_ECDSA_KEY_INFOS[0]);
 
-    TestNode NODE_2 = new TestNode(
+    final AccountID account4 = AccountID.newBuilder().accountNum(4L).build();
+    final TestNode NODE_2 = new TestNode(
             0L,
-            AccountID.newBuilder().accountNum(4L).build(),
+            account4,
             Account.newBuilder()
-                    .accountNumber(4L)
+                    .accountId(account4)
                     .key(FAKE_ED25519_KEY_INFOS[0].publicKey())
                     .declineReward(true)
                     .build(),
             FAKE_ED25519_KEY_INFOS[0]);
 
-    TestUser STAKING_REWARD_ACCOUNT = new TestUser(
-            AccountID.newBuilder().accountNum(800L).build(),
-            Account.newBuilder().accountNumber(800L).build(),
-            null);
+    final AccountID account800 = AccountID.newBuilder().accountNum(800L).build();
+    final TestUser STAKING_REWARD_ACCOUNT =
+            new TestUser(account800, Account.newBuilder().accountId(account800).build(), null);
 
-    TestUser ALICE = new TestUser(
-            AccountID.newBuilder().accountNum(1002L).build(),
+    final AccountID account1002 = AccountID.newBuilder().accountNum(1002L).build();
+    final TestUser ALICE = new TestUser(
+            account1002,
             Account.newBuilder()
-                    .accountNumber(1002L)
+                    .accountId(account1002)
                     .key(FAKE_ECDSA_KEY_INFOS[2].publicKey())
                     .build(),
             FAKE_ECDSA_KEY_INFOS[2]);
 
-    TestUser BOB = new TestUser(
-            AccountID.newBuilder().accountNum(1003L).build(),
+    final AccountID account1003 = AccountID.newBuilder().accountNum(1003L).build();
+    final TestUser BOB = new TestUser(
+            account1003,
             Account.newBuilder()
-                    .accountNumber(1003L)
+                    .accountId(account1003)
                     .key(FAKE_ED25519_KEY_INFOS[1].publicKey())
                     .build(),
             FAKE_ED25519_KEY_INFOS[1]);
 
-    TestUser CAROL = new TestUser(
-            AccountID.newBuilder().accountNum(1004L).build(),
+    final AccountID account1004 = AccountID.newBuilder().accountNum(1004L).build();
+    final TestUser CAROL = new TestUser(
+            account1004,
             Account.newBuilder()
-                    .accountNumber(1004L)
+                    .accountId(account1004)
                     .key(FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0].publicKey())
                     .alias(hexBytes("67d8d32e9bf1a9968a5ff53b87d777aa8ebbee69"))
                     .build(),
             FAKE_ECDSA_WITH_ALIAS_KEY_INFOS[0]);
 
-    TestUser ERIN = new TestUser(
-            AccountID.newBuilder().accountNum(1006L).build(),
+    final AccountID account1006 = AccountID.newBuilder().accountNum(1006L).build();
+    final TestUser ERIN = new TestUser(
+            account1006,
             Account.newBuilder()
-                    .accountNumber(1006L)
+                    .accountId(account1006)
                     .key(Key.newBuilder().keyList(KeyList.DEFAULT).build())
                     .alias(hexBytes("0b75f0b70076fab3f18f94700ecaf3b00fe528e7"))
                     .build(),

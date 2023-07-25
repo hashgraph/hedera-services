@@ -26,6 +26,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -33,6 +35,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class UtilPrngSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
@@ -78,6 +81,7 @@ public class UtilPrngSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(

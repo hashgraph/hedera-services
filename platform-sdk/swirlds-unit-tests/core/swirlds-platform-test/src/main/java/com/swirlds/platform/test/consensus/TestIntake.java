@@ -104,8 +104,8 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         consensus = new ConsensusImpl(consensusConfig, ConsensusUtils.NOOP_CONSENSUS_METRICS, minGenConsumer, ab);
         shadowGraph = new ShadowGraph(mock(SyncMetrics.class));
         final ParentFinder parentFinder = new ParentFinder(shadowGraph::hashgraphEvent);
-        final EventLinker linker =
-                new InOrderLinker(ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
+        final EventLinker linker = new InOrderLinker(
+                Time.getCurrent(), ConfigurationHolder.getConfigData(ConsensusConfig.class), parentFinder, l -> null);
         final EventObserverDispatcher dispatcher =
                 new EventObserverDispatcher(new ShadowGraphEventObserver(shadowGraph), this);
         intake = new EventIntake(

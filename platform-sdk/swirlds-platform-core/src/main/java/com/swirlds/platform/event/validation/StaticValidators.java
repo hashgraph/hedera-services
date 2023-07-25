@@ -19,7 +19,6 @@ package com.swirlds.platform.event.validation;
 import static com.swirlds.logging.LogMarker.INVALID_EVENT_ERROR;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.internal.EventImpl;
@@ -37,10 +36,8 @@ public final class StaticValidators {
     /**
      * Determine whether a given event has a valid creation time.
      *
-     * @param event
-     * 		the event to be validated
-     * @return true iff the creation time of the event is strictly after the
-     * 		creation time of its self-parent
+     * @param event the event to be validated
+     * @return true iff the creation time of the event is strictly after the creation time of its self-parent
      */
     public static boolean isValidTimeCreated(final EventImpl event) {
         if (event.getSelfParent() != null) {
@@ -63,33 +60,34 @@ public final class StaticValidators {
     }
 
     /**
-     * Validates if an event's parent data is correct
+     * Creates a validator that checks if an event's parent data is correct
      *
-     * @param event
-     * 		the event to validate
-     * @return true if the event is valid, false otherwise
+     * @param networkSize the size of the network
+     * @return an event validator that checks if the parent data is valid
      */
-    public static boolean isParentDataValid(final BaseEvent event) {
-        final BaseEventHashedData hashedData = event.getHashedData();
-        final Hash spHash = hashedData.getSelfParentHash();
-        final Hash opHash = hashedData.getOtherParentHash();
-        final boolean hasSpHash = spHash != null;
-        final boolean hasOpHash = opHash != null;
-        final boolean hasSpGen = hashedData.getSelfParentGen() >= GraphGenerations.FIRST_GENERATION;
-        final boolean hasOpGen = hashedData.getOtherParentGen() >= GraphGenerations.FIRST_GENERATION;
+    public static GossipEventValidator buildParentValidator(final int networkSize) {
+        return event -> {
+            final BaseEventHashedData hashedData = event.getHashedData();
+            final Hash spHash = hashedData.getSelfParentHash();
+            final Hash opHash = hashedData.getOtherParentHash();
+            final boolean hasSpHash = spHash != null;
+            final boolean hasOpHash = opHash != null;
+            final boolean hasSpGen = hashedData.getSelfParentGen() >= GraphGenerations.FIRST_GENERATION;
+            final boolean hasOpGen = hashedData.getOtherParentGen() >= GraphGenerations.FIRST_GENERATION;
 
-        if (hasSpGen != hasSpHash) {
-            logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid self-parent: {} ", event::toString);
-            return false;
-        }
-        if (hasOpGen != hasOpHash) {
-            logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid other-parent: {} ", event::toString);
-            return false;
-        }
-        if (hasSpHash && hasOpHash && spHash.equals(opHash)) {
-            logger.error(INVALID_EVENT_ERROR.getMarker(), "both parents have the same hash: {} ", event::toString);
-            return false;
-        }
-        return true;
+            if (hasSpGen != hasSpHash) {
+                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid self-parent: {} ", event::toString);
+                return false;
+            }
+            if (hasOpGen != hasOpHash) {
+                logger.error(INVALID_EVENT_ERROR.getMarker(), "invalid other-parent: {} ", event::toString);
+                return false;
+            }
+            if (networkSize > 1 && hasOpHash && hasSpHash && spHash.equals(opHash)) {
+                logger.error(INVALID_EVENT_ERROR.getMarker(), "both parents have the same hash: {} ", event::toString);
+                return false;
+            }
+            return true;
+        };
     }
 }

@@ -23,6 +23,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -272,16 +273,17 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * An observer of pre-consensus state signatures.
      *
-     * @param round     the round that was signed
-     * @param signerId  the ID of the signer
-     * @param signature the signature on the hash
+     * @param signerId             the node that created the signature
+     * @param signatureTransaction the signature transaction
      */
-    public synchronized void preConsensusSignatureObserver(
-            @NonNull final Long round, @NonNull final NodeId signerId, @NonNull final Signature signature) {
+    public synchronized void handlePreconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
 
-        Objects.requireNonNull(round, "round must not be null");
-        Objects.requireNonNull(signerId, "signerId must not be null");
-        Objects.requireNonNull(signature, "signature must not be null");
+        Objects.requireNonNull(signerId);
+        Objects.requireNonNull(signatureTransaction);
+
+        final long round = signatureTransaction.getRound();
+        final Signature signature = signatureTransaction.getStateSignature();
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
 

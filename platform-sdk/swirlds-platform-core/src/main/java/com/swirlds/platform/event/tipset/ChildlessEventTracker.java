@@ -81,4 +81,19 @@ public class ChildlessEventTracker {
     public List<EventDescriptor> getChildlessEvents() {
         return new ArrayList<>(childlessEvents);
     }
+
+    @NonNull
+    public String toString() {
+        if (childlessEvents.isEmpty()) {
+            return "Childless events: none\n";
+        }
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Childless events:\n");
+
+        for (final EventDescriptor event : childlessEvents) {
+            sb.append("  - ").append(event).append("\n");
+        }
+        return sb.toString();
+    }
 }

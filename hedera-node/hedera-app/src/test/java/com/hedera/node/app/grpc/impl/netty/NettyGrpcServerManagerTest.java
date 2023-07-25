@@ -24,8 +24,6 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.GrpcConfig;
-import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,10 +46,7 @@ final class NettyGrpcServerManagerTest {
 
     @BeforeEach
     void setUp(@Mock @NonNull final Metrics metrics) {
-        final var config = HederaTestConfigBuilder.create(false)
-                .withConfigDataType(GrpcConfig.class)
-                .withConfigDataType(NettyConfig.class)
-                .getOrCreateConfig();
+        final var config = HederaTestConfigBuilder.createConfig();
 
         this.configProvider = () -> new VersionedConfigImpl(config, 1);
         this.metrics = metrics;

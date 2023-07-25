@@ -60,14 +60,14 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));
@@ -123,7 +123,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(hbarReceiver)
+                            .accountId(hbarReceiverId)
                             .alias(evmAddressAlias1)
                             .build();
                     writableAccountStore.put(copy);
@@ -132,7 +132,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(tokenReceiver)
+                            .accountId(tokenReceiverId)
                             .alias(evmAddressAlias2)
                             .build();
                     writableAccountStore.put(copy);
@@ -141,7 +141,7 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(hbarReceiver + 2)
+                            .accountId(AccountID.newBuilder().accountNum(hbarReceiver + 2))
                             .alias(evmAddressAlias3)
                             .build();
                     writableAccountStore.put(copy);
@@ -223,14 +223,14 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));
@@ -262,14 +262,14 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
                     return recordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return recordBuilder.accountID(asAccount(tokenReceiver));
@@ -339,11 +339,11 @@ class ReplaceAliasesWithIDsInOpTest extends StepsBase {
         writableAccountStore = new WritableAccountStore(writableStates);
 
         writableAccountStore.put(account.copyBuilder()
-                .accountNumber(hbarReceiver)
+                .accountId(hbarReceiverId)
                 .alias(ecKeyAlias)
                 .build());
         writableAccountStore.put(account.copyBuilder()
-                .accountNumber(tokenReceiver)
+                .accountId(tokenReceiverId)
                 .alias(edKeyAlias)
                 .build());
 

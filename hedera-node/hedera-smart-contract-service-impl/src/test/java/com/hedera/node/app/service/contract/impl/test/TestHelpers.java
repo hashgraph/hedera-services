@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.hevm.*;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
@@ -232,18 +233,23 @@ public class TestHelpers {
                 maxGasAllowance);
     }
 
-    public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmCode code, @NonNull final HederaEvmBlocks blocks) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, false, code, blocks);
+    public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, false, blocks);
     }
 
     public static HederaEvmContext wellKnownContextWith(
-            @NonNull final HederaEvmCode code, @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
-        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, code, blocks);
+            @NonNull final HederaEvmBlocks blocks, final boolean staticCall) {
+        return new HederaEvmContext(NETWORK_GAS_PRICE, staticCall, blocks);
     }
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
         final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
+    }
+
+    public static void assertExhaustsResourceLimit(
+            @NonNull final Runnable something, @NonNull final ResponseCodeEnum status) {
+        final var ex = assertThrows(ResourceExhaustedException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 }

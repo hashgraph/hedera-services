@@ -16,10 +16,12 @@
 
 package com.swirlds.common.system.status;
 
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.PLATFORM_STATUS;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
@@ -41,13 +43,17 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * The platform status state machine
+ * <p>
+ * NOTE: Processing of {@link PlatformStatusAction}s is not thread-safe. It is assumed that the caller will ensure that
+ * only one thread is calling {@link #processStatusAction(PlatformStatusAction)} at a time.
  */
-public class PlatformStatusStateMachine {
+public class PlatformStatusStateMachine implements PlatformStatusGetter {
     private static final Logger logger = LogManager.getLogger(PlatformStatusStateMachine.class);
 
     /**
@@ -66,6 +72,11 @@ public class PlatformStatusStateMachine {
     private PlatformStatusLogic currentStatusLogic;
 
     /**
+     * The current platform status, to be accessed in a thread safe manner
+     */
+    private final AtomicReference<PlatformStatus> currentStatus;
+
+    /**
      * The time at which the current status started
      */
     private Instant currentStatusStartTime;
@@ -79,12 +90,13 @@ public class PlatformStatusStateMachine {
      */
     public PlatformStatusStateMachine(
             @NonNull final Time time,
-            @NonNull PlatformStatusConfig config,
+            @NonNull final PlatformStatusConfig config,
             @NonNull final NotificationEngine notificationEngine) {
 
         this.time = Objects.requireNonNull(time);
         this.notificationEngine = Objects.requireNonNull(notificationEngine);
         this.currentStatusLogic = new StartingUpStatusLogic(config);
+        this.currentStatus = new AtomicReference<>(currentStatusLogic.getStatus());
         this.currentStatusStartTime = time.now();
     }
 
@@ -151,31 +163,34 @@ public class PlatformStatusStateMachine {
             return;
         }
 
-        if (logger.isInfoEnabled()) {
-            final String previousStatusName = currentStatusLogic.getStatus().name();
-            final String newStatusName = newLogic.getStatus().name();
+        final String previousStatusName = currentStatusLogic.getStatus().name();
+        final String newStatusName = newLogic.getStatus().name();
 
-            final String statusChangeMessage = "Platform spent %s time in %s. Now in %s"
-                    .formatted(Duration.between(currentStatusStartTime, time.now()), previousStatusName, newStatusName);
+        final Duration statusDuration = Duration.between(currentStatusStartTime, time.now());
+        final UnitFormatter unitFormatter = new UnitFormatter(statusDuration.toMillis(), UNIT_MILLISECONDS);
 
-            logger.info(
-                    PLATFORM_STATUS.getMarker(),
-                    () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
-        }
+        final String statusChangeMessage = "Platform spent %s in %s. Now in %s"
+                .formatted(unitFormatter.render(), previousStatusName, newStatusName);
+
+        logger.info(
+                PLATFORM_STATUS.getMarker(),
+                () -> new PlatformStatusPayload(statusChangeMessage, previousStatusName, newStatusName).toString());
+
+        currentStatusLogic = newLogic;
+        currentStatus.set(currentStatusLogic.getStatus());
+
+        currentStatusStartTime = time.now();
 
         notificationEngine.dispatch(
                 PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
-
-        currentStatusLogic = newLogic;
-        currentStatusStartTime = time.now();
     }
 
     /**
-     * Get the current platform status
-     *
-     * @return the current platform status
+     * {@inheritDoc}
      */
+    @Override
+    @NonNull
     public PlatformStatus getCurrentStatus() {
-        return currentStatusLogic.getStatus();
+        return currentStatus.get();
     }
 }

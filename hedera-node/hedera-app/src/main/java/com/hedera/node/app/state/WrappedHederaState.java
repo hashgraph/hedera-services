@@ -49,7 +49,7 @@ public class WrappedHederaState implements HederaState {
      * @return {@code true}, if the state has been modified; otherwise {@code false}
      */
     public boolean isModified() {
-        for (final WrappedWritableStates writableStates : writableStatesMap.values()) {
+        for (final var writableStates : writableStatesMap.values()) {
             if (writableStates.isModified()) {
                 return true;
             }
@@ -80,7 +80,7 @@ public class WrappedHederaState implements HederaState {
      * Writes all modifications to the underlying {@link HederaState}.
      */
     public void commit() {
-        for (final WrappedWritableStates writableStates : writableStatesMap.values()) {
+        for (final var writableStates : writableStatesMap.values()) {
             writableStates.commit();
         }
     }

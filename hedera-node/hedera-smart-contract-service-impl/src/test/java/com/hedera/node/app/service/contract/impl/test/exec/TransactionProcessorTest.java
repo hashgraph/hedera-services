@@ -64,9 +64,6 @@ class TransactionProcessorTest {
     private ContractCreationProcessor contractCreationProcessor;
 
     @Mock
-    private HederaEvmCode code;
-
-    @Mock
     private HederaEvmBlocks blocks;
 
     @Mock
@@ -154,7 +151,7 @@ class TransactionProcessorTest {
         givenSenderAccount();
         givenRelayerAccount();
 
-        final var context = wellKnownContextWith(code, blocks);
+        final var context = wellKnownContextWith(blocks);
         final var transaction = wellKnownRelayedHapiCreate();
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -214,7 +211,7 @@ class TransactionProcessorTest {
 
         givenSenderAccount();
 
-        final var context = wellKnownContextWith(code, blocks);
+        final var context = wellKnownContextWith(blocks);
         final var transaction = wellKnownHapiCreate();
 
         given(gasCharging.chargeForGas(senderAccount, null, context, worldUpdater, transaction))
@@ -271,7 +268,7 @@ class TransactionProcessorTest {
         givenRelayerAccount();
         givenReceiverAccount();
 
-        final var context = wellKnownContextWith(code, blocks);
+        final var context = wellKnownContextWith(blocks);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -328,8 +325,9 @@ class TransactionProcessorTest {
         givenSenderAccount();
         givenRelayerAccount();
         givenReceiverAccount();
+        givenFeeOnlyParties();
 
-        final var context = wellKnownContextWith(code, blocks);
+        final var context = wellKnownContextWith(blocks);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -356,9 +354,9 @@ class TransactionProcessorTest {
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        // TODO - verify sender nonce is incremented and fees are re-charged with the fees-only updater
-
         assertResourceExhaustion(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES, result);
+        verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, feesOnlyUpdater, transaction);
+        verify(feesOnlyUpdater).commit();
     }
 
     @Test
@@ -368,7 +366,7 @@ class TransactionProcessorTest {
         givenRelayerAccount();
         givenReceiverAccount();
 
-        final var context = wellKnownContextWith(code, blocks);
+        final var context = wellKnownContextWith(blocks);
         final var transaction = wellKnownRelayedHapiCall(0);
 
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
@@ -412,8 +410,14 @@ class TransactionProcessorTest {
     private void assertAbortsWith(
             @NonNull final HederaEvmTransaction transaction, @NonNull final ResponseCodeEnum reason) {
         final var result = subject.processTransaction(
-                transaction, worldUpdater, () -> feesOnlyUpdater, wellKnownContextWith(code, blocks), tracer, config);
+                transaction, worldUpdater, () -> feesOnlyUpdater, wellKnownContextWith(blocks), tracer, config);
         assertEquals(reason, result.abortReason());
+    }
+
+    private void givenFeeOnlyParties() {
+        given(feesOnlyUpdater.getHederaAccount(SENDER_ID)).willReturn(senderAccount);
+        given(feesOnlyUpdater.getHederaAccount(RELAYER_ID)).willReturn(relayerAccount);
+        given(feesOnlyUpdater.getHederaAccount(CALLED_CONTRACT_ID)).willReturn(receiverAccount);
     }
 
     private void givenSenderAccount() {

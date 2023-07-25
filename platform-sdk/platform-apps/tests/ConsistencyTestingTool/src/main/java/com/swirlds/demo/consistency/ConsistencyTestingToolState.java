@@ -75,14 +75,14 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * number, since we don't call {@link #handleConsensusRound(Round, SwirldDualState)} for rounds with no events.
      *
      * <p>
-     * Effects the hash of this node.
+     * Affects the hash of this node.
      */
     private long roundsHandled = 0;
 
     /**
-     * If not zero and we are handling the first round after genesis, configure a freeze this many seconds later.
+     * If not zero and we are handling the first round after genesis, configure a freeze this duration later.
      * <p>
-     * Does not affect the hash of this node (although actions may be taken based on this info that DO effect the
+     * Does not affect the hash of this node (although actions may be taken based on this info that DO affect the
      * hash).
      */
     private Duration freezeAfterGenesis = null;

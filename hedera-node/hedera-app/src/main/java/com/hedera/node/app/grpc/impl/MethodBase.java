@@ -41,7 +41,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
     private static final int MAX_MESSAGE_SIZE = Hedera.MAX_SIGNED_TXN_SIZE;
     // To be set by configuration. See Issue #4294. Originally this was intended to be the same max size as
     // a transaction, but some files and other responses are much larger. So we had to set this larger.
-    private static final int MAX_RESPONSE_SIZE = 1024 * 100;
+    private static final int MAX_RESPONSE_SIZE = 1024 * 1024 * 2;
 
     // Constants for metric names and descriptions
     private static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
