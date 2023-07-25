@@ -6,6 +6,9 @@ module com.hedera.node.app.spi {
     requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.spi;
+    exports com.hedera.node.app.spi.ids to
+            com.hedera.node.app.service.contract.impl,
+            com.hedera.node.app;
     exports com.hedera.node.app.spi.info;
     exports com.hedera.node.app.spi.state;
     exports com.hedera.node.app.spi.key;
@@ -16,4 +19,5 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.validation;
     exports com.hedera.node.app.spi.meta.bni;
     exports com.hedera.node.app.spi.workflows.record;
+    exports com.hedera.node.app.spi.store;
 }

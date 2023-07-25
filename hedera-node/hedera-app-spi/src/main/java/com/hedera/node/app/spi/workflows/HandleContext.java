@@ -229,6 +229,19 @@ public interface HandleContext {
     <T> T writableStore(@NonNull Class<T> storeInterface);
 
     /**
+     * Return a service API given the API's interface. This permits use of another service
+     * that doesn't have a corresponding HAPI {@link TransactionBody}.
+     *
+     * @param apiInterface The API interface to find and create an implementation of
+     * @param <T> Interface class for an API
+     * @return An implementation of the provided API interface
+     * @throws IllegalArgumentException if the apiInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code apiInterface} is {@code null}
+     */
+    @NonNull
+    <T> T serviceApi(@NonNull Class<T> apiInterface);
+
+    /**
      * Returns a record builder for the given record builder subtype.
      *
      * @param recordBuilderClass the record type

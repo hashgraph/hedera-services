@@ -30,6 +30,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.store.WritableStoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -39,8 +40,9 @@ import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactoryImpl;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
@@ -72,6 +74,7 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
     private final ServiceScopeLookup serviceScopeLookup;
+    private final ServiceApiFactory serviceApiFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final BlockRecordInfo blockRecordInfo;
     private final RecordCache recordCache;
@@ -124,7 +127,8 @@ public class HandleContextImpl implements HandleContext {
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
+        this.writableStoreFactory = new WritableStoreFactoryImpl(stack, serviceScope);
+        this.serviceApiFactory = new ServiceApiFactory(this::configuration, writableStoreFactory);
     }
 
     private Savepoint current() {
@@ -175,7 +179,7 @@ public class HandleContextImpl implements HandleContext {
      */
     @Override
     public long newEntityNum() {
-        final var writableStoreFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        final var writableStoreFactory = new WritableStoreFactoryImpl(stack, EntityIdService.NAME);
         return writableStoreFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
@@ -256,6 +260,12 @@ public class HandleContextImpl implements HandleContext {
     public <C> C writableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return writableStoreFactory.getStore(storeInterface);
+    }
+
+    @Override
+    public <T> @NonNull T serviceApi(@NonNull final Class<T> apiInterface) {
+        requireNonNull(apiInterface, "apiInterface must not be null");
+        return serviceApiFactory.getApi(apiInterface);
     }
 
     @Override

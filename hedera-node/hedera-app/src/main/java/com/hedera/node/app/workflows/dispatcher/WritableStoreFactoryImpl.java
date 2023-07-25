@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.store.WritableStoreFactory;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,7 +46,7 @@ import java.util.function.Function;
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
  */
-public class WritableStoreFactory {
+public class WritableStoreFactoryImpl implements WritableStoreFactory {
 
     // This is the hard-coded part that needs to be replaced by a dynamic approach later,
     // e.g. services have to register their stores
@@ -78,7 +79,7 @@ public class WritableStoreFactory {
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws IllegalArgumentException if the service name is unknown
      */
-    public WritableStoreFactory(@NonNull final SavepointStackImpl stack, @NonNull final String serviceName) {
+    public WritableStoreFactoryImpl(@NonNull final SavepointStackImpl stack, @NonNull final String serviceName) {
         requireNonNull(stack, "The argument 'stack' cannot be null!");
         requireNonNull(serviceName, "The argument 'serviceName' cannot be null!");
 

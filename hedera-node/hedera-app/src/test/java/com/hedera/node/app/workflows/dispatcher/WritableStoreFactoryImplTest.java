@@ -45,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableStoreFactoryTest {
+class WritableStoreFactoryImplTest {
 
     @Mock
     private WritableStates writableStates;
@@ -77,7 +77,7 @@ class WritableStoreFactoryTest {
     void returnCorrectStoreClass(final String serviceName, final Class<?> storeClass) {
         // given
         given(stack.createWritableStates(serviceName)).willReturn(writableStates);
-        final WritableStoreFactory subject = new WritableStoreFactory(stack, serviceName);
+        final WritableStoreFactoryImpl subject = new WritableStoreFactoryImpl(stack, serviceName);
 
         // given
         final var store = subject.getStore(storeClass);
