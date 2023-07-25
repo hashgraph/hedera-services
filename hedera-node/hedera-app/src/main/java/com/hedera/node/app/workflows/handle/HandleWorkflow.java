@@ -254,7 +254,6 @@ public class HandleWorkflow {
                 }
 
             // Setup context
-            final var stack = new SavepointStackImpl(state, configuration);
             final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                     txBody,
