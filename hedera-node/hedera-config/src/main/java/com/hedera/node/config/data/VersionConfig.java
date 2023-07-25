@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
@@ -29,5 +30,5 @@ import com.swirlds.config.api.ConfigProperty;
  */
 @ConfigData("version")
 public record VersionConfig(
-        @ConfigProperty(value = "services", defaultValue = "0.0.0") SemanticVersion servicesVersion,
-        @ConfigProperty(value = "hapi", defaultValue = "0.0.0") SemanticVersion hapiVersion) {}
+        @ConfigProperty(value = "services", defaultValue = "0.0.0") @NetworkProperty SemanticVersion servicesVersion,
+        @ConfigProperty(value = "hapi", defaultValue = "0.0.0") @NetworkProperty SemanticVersion hapiVersion) {}
