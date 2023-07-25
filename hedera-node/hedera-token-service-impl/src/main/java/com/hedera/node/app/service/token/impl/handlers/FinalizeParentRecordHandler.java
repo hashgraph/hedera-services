@@ -59,7 +59,7 @@ import javax.inject.Singleton;
  * Finalization in this context means summing the net changes to make to each account's hbar balance and token
  * balances, and assigning the final owner of an nft after an arbitrary number of ownership changes.
  * Based on issue https://github.com/hashgraph/hedera-services/issues/7084 the modularized
- * transaction record for NFT transfer chain A -> B -> C, will look different rom mono-service record.
+ * transaction record for NFT transfer chain A -> B -> C, will look different from mono-service record.
  * This is because mono-service will record both ownership changes from A -> b and then B-> C.
  *
  * In this finalizer, we will:

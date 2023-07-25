@@ -263,7 +263,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                         currentStakedNodeId, effectiveStakeRewardStart, stakingInfoStore);
             }
         }
-        // If account chose to
+        // If account chose to stake to a node, the new node's stake will be increased
+        // by the account's stake amount
         if (scenario.awardsToNode() && !modifiedAccount.deleted()) {
             final var modifiedStakedNodeId = modifiedAccount.stakedNodeId();
             // We need the latest updates to balance and stakedToMe for the account in modifications also
