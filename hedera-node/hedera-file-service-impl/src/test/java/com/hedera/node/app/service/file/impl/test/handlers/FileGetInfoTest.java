@@ -44,7 +44,7 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.ReadableUpgradeStore;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
@@ -199,7 +199,7 @@ class FileGetInfoTest extends FileTestBase {
 
         final var query = createGetFileInfoQuery(fileUpgradeFileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableUpgradeStore.class)).thenReturn(readableUpgradeStore);
+        when(context.createStore(ReadableUpgradeFileStore.class)).thenReturn(readableUpgradeFileStore);
         final var response = subject.findResponse(context, responseHeader);
         final var fileInfoResponse = response.fileGetInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, fileInfoResponse.header().nodeTransactionPrecheckCode());

@@ -33,9 +33,9 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
@@ -140,8 +140,8 @@ public class FileTestBase {
     protected ReadableFileStoreImpl readableStore;
     protected WritableFileStore writableStore;
 
-    protected ReadableUpgradeStoreImpl readableUpgradeStore;
-    protected WritableUpgradeStore writableUpgradeStore;
+    protected ReadableUpgradeFileStoreImpl readableUpgradeFileStore;
+    protected WritableUpgradeFileStore writableUpgradeFileStore;
 
     @BeforeEach
     void commonSetUp() {
@@ -165,11 +165,11 @@ public class FileTestBase {
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStore(writableStates);
-        readableUpgradeStore = new ReadableUpgradeStoreImpl(filteredReadableStates);
-        writableUpgradeStore = new WritableUpgradeStore(filteredWritableStates);
+        readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
+        writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
@@ -187,11 +187,11 @@ public class FileTestBase {
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStore(writableStates);
-        readableUpgradeStore = new ReadableUpgradeStoreImpl(filteredReadableStates);
-        writableUpgradeStore = new WritableUpgradeStore(filteredWritableStates);
+        readableUpgradeFileStore = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
+        writableUpgradeFileStore = new WritableUpgradeFileStore(filteredWritableStates);
 
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
     }
 
     @NonNull

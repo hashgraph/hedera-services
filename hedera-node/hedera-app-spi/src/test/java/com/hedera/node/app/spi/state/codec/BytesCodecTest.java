@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.test.codec;
+package com.hedera.node.app.spi.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.file.impl.codec.BytesCodec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;

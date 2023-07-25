@@ -16,38 +16,16 @@
 
 package com.hedera.node.app.service.networkadmin;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with update files used in freeze transactions.
+ * Provides a read-only method to retrieve the hash of the network upgrade file
+ * which is set in a freeze transaction and used to verify the upgrade file.
  * <br/>
  */
-// This is a temporary location for this interface. It will be replaced by a new interface in FileService.
-// @todo('Issue #6856')
-public interface ReadableUpdateFileStore {
-
-    /**
-     * Gets the freeze file with the given FileID. If there is no file with given FileID then
-     * returns {@link Optional#empty()}.
-     *
-     * @param fileId given id for the file
-     * @return the file with the given id
-     */
-    @NonNull
-    Optional<byte[]> get(FileID fileId);
-
-    /**
-     * Get the file ID of the prepared update file. If no prepared update file has been set
-     * (i.e. if the network is not in the process of an upgrade), this method will return {@link Optional#empty()}.
-     * @return the file ID of the prepared update file, or {@link Optional#empty()} if no prepared update file has been set
-     */
-    @NonNull
-    Optional<FileID> updateFileID();
-
+public interface ReadableUpgradeStore {
     /**
      * Get the hash of the prepared update file. If no prepared update file has been set
      * (i.e. if the network is not in the process of an upgrade), this method will return {@link Optional#empty()}.
