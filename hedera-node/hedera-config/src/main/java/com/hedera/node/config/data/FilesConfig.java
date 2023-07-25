@@ -31,4 +31,5 @@ public record FilesConfig(
         // @ConfigProperty(defaultValue = "150-159") Pair<Long, Long> softwareUpdateRange,
         @ConfigProperty(defaultValue = "123") @NetworkProperty long throttleDefinitions,
         @ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber,
-        @ConfigProperty(defaultValue = "1024") @NetworkProperty int maxSizeKb) {}
+        @ConfigProperty(defaultValue = "1024") @NetworkProperty int maxSizeKb,
+        @ConfigProperty(defaultValue = "150") @NetworkProperty long upgradeFileNumber) {}

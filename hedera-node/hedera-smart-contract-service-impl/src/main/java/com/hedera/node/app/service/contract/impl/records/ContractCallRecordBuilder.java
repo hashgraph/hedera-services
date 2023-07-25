@@ -23,34 +23,34 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Exposes the record customizations needed for a HAPI contract create transaction.
+ * Exposes the record customizations needed for a HAPI contract call transaction.
  */
-public interface ContractCreateRecordBuilder {
+public interface ContractCallRecordBuilder {
 
     /**
-     * Tracks the final status of a top-level contract creation.
+     * Tracks the final status of a top-level contract call.
      *
-     * @param status the final status of the contract creation
+     * @param status the final status of the contract call
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder status(@NonNull ResponseCodeEnum status);
+    ContractCallRecordBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * Tracks the contract id created by a successful top-level contract creation.
+     * Tracks the contract id called.
      *
-     * @param contractId the {@link ContractID} of the new top-level contract
+     * @param contractId the {@link ContractID} called
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractID(@Nullable final ContractID contractId);
+    ContractCallRecordBuilder contractID(@Nullable final ContractID contractId);
 
     /**
-     * Tracks the result of a top-level contract creation.
+     * Tracks the result of a top-level contract call.
      *
-     * @param result the {@link ContractFunctionResult} of the contract creation
+     * @param result the {@link ContractFunctionResult} of the contract call
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractCreateResult(@Nullable final ContractFunctionResult result);
+    ContractCallRecordBuilder contractCallResult(@Nullable final ContractFunctionResult result);
 }

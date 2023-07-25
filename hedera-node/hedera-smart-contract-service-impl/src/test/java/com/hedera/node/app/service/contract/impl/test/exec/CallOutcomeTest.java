@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,5 +48,18 @@ class CallOutcomeTest {
     void recognizesNoCreatedIdWhenEvmAddressNotSet() {
         final var outcome = new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultForBase(updater), SUCCESS);
         assertNull(outcome.recipientIdIfCreated());
+    }
+
+    @Test
+    void calledIdIsNullIfNoResult() {
+        final var outcome = new CallOutcome(null, INVALID_CONTRACT_ID);
+        assertNull(outcome.recipientIdIfCalled());
+    }
+
+    @Test
+    void calledIdIsFromResultIfExtant() {
+        final var outcome =
+                new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultForBase(updater), INVALID_CONTRACT_ID);
+        assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCalled());
     }
 }

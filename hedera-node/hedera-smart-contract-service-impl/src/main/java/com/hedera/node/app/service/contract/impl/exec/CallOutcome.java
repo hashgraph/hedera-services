@@ -30,6 +30,10 @@ public record CallOutcome(@Nullable ContractFunctionResult result, @NonNull Resp
         return status == SUCCESS;
     }
 
+    public @Nullable ContractID recipientIdIfCalled() {
+        return result == null ? null : result.contractIDOrThrow();
+    }
+
     public @Nullable ContractID recipientIdIfCreated() {
         return representsTopLevelCreation() ? requireNonNull(result).contractIDOrThrow() : null;
     }
