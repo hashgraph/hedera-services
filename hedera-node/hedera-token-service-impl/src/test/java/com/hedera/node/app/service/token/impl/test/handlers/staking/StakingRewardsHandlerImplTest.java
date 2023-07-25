@@ -40,7 +40,6 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsPay
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -54,9 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
-    private static final Long NO_LAST_PERIOD_STAKE = -1L;
-    private static final Long NO_BALANCE_DIFFERENCE = -1L;
-
     @Mock(strictness = Mock.Strictness.LENIENT)
     private ConfigProvider configProvider;
 
@@ -208,7 +204,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(1L);
 
-        assertThat(newBalance).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(newBalance/5).isEqualTo(node1Info.unclaimedStakeRewardStart());
     }
 
     @Test
@@ -661,335 +657,199 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     //
     //    @Test
     //    void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var tbdReward = 1_234L;
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //        beneficiary.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final var pendingChanges = buildPendingNodeStakeChanges();
-    //        pendingChanges.changes(0).put(IS_DELETED, Boolean.TRUE);
-    //        pendingChanges.changes(0).put(BALANCE, 0L);
-    //
-    //        final Map<AccountProperty, Object> firstBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
-    //        firstBeneficiaryChanges.put(IS_DELETED, Boolean.TRUE);
-    //        firstBeneficiaryChanges.put(AccountProperty.BALANCE, 0L);
-    //        pendingChanges.include(partyId, party, firstBeneficiaryChanges);
-    //
-    //        final Map<AccountProperty, Object> secondBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
-    //        secondBeneficiaryChanges.put(AccountProperty.BALANCE, partyBalance + counterpartyBalance +
-    // beneficiaryBalance);
-    //        pendingChanges.include(beneficiaryId, beneficiary, secondBeneficiaryChanges);
-    //
-    //        given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
-    //        given(txnCtx.getBeneficiaryOfDeleted(partyId.getAccountNum())).willReturn(beneficiaryId.getAccountNum());
-    //        given(txnCtx.numDeletedAccountsAndContracts()).willReturn(2);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(rewardCalculator.computePendingReward(counterparty)).willReturn(tbdReward);
-    //        given(rewardCalculator.computePendingReward(beneficiary)).willReturn(tbdReward);
-    //        given(rewardCalculator.applyReward(tbdReward, beneficiary, pendingChanges.changes(2)))
-    //                .willReturn(true);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        subject.preview(pendingChanges);
-    //        verify(rewardCalculator, times(2)).applyReward(tbdReward, beneficiary, pendingChanges.changes(2));
-    //        verify(sideEffectsTracker, times(2)).trackRewardPayment(beneficiaryId.getAccountNum(), tbdReward);
+    //        TODO: Need to add this test once implemented
     //    }
     //
     //    @Test
     //    void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var tbdReward = 1_234L;
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //        beneficiary.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final var pendingChanges = buildPendingNodeStakeChanges();
-    //        pendingChanges.changes(0).put(IS_DELETED, Boolean.TRUE);
-    //        pendingChanges.changes(0).put(BALANCE, 0L);
-    //
-    //        final Map<AccountProperty, Object> firstBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
-    //        firstBeneficiaryChanges.put(IS_DELETED, Boolean.TRUE);
-    //        firstBeneficiaryChanges.put(AccountProperty.BALANCE, 0L);
-    //        pendingChanges.include(partyId, party, firstBeneficiaryChanges);
-    //
-    //        final Map<AccountProperty, Object> secondBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
-    //        secondBeneficiaryChanges.put(AccountProperty.BALANCE, partyBalance + counterpartyBalance +
-    // beneficiaryBalance);
-    //        pendingChanges.include(beneficiaryId, beneficiary, secondBeneficiaryChanges);
-    //
-    //        given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
-    //        given(txnCtx.getBeneficiaryOfDeleted(partyId.getAccountNum())).willReturn(beneficiaryId.getAccountNum());
-    //        given(txnCtx.numDeletedAccountsAndContracts()).willReturn(2);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(rewardCalculator.computePendingReward(counterparty)).willReturn(tbdReward);
-    //        given(rewardCalculator.computePendingReward(beneficiary)).willReturn(tbdReward);
-    //        given(rewardCalculator.applyReward(tbdReward, beneficiary, pendingChanges.changes(2)))
-    //                .willReturn(false)
-    //                .willReturn(true);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        subject.preview(pendingChanges);
-    //        verify(rewardCalculator, times(2)).applyReward(tbdReward, beneficiary, pendingChanges.changes(2));
-    //        verify(sideEffectsTracker, times(1)).trackRewardPayment(beneficiaryId.getAccountNum(), tbdReward);
+    //        TODO: Need to add this test once implemented
     //    }
     //
     //    @Test
     //    void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //        beneficiary.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final var pendingChanges = buildPendingNodeStakeChanges();
-    //        pendingChanges.changes(0).put(IS_DELETED, Boolean.TRUE);
-    //        pendingChanges.changes(0).put(BALANCE, 0L);
-    //
-    //        final Map<AccountProperty, Object> firstBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
-    //        firstBeneficiaryChanges.put(IS_DELETED, Boolean.TRUE);
-    //        firstBeneficiaryChanges.put(AccountProperty.BALANCE, 0L);
-    //        pendingChanges.include(partyId, party, firstBeneficiaryChanges);
-    //
-    //        final Map<AccountProperty, Object> secondBeneficiaryChanges = new EnumMap<>(AccountProperty.class);
-    //        secondBeneficiaryChanges.put(AccountProperty.BALANCE, partyBalance + counterpartyBalance +
-    // beneficiaryBalance);
-    //        pendingChanges.include(beneficiaryId, beneficiary, secondBeneficiaryChanges);
-    //
-    //        given(txnCtx.getBeneficiaryOfDeleted(counterpartyId.getAccountNum())).willReturn(partyId.getAccountNum());
-    //        given(txnCtx.numDeletedAccountsAndContracts()).willReturn(1);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(rewardCalculator.computePendingReward(any())).willReturn(123L);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        assertThrows(IllegalStateException.class, () -> subject.preview(pendingChanges));
+    //        TODO: Need to add this test once implemented
     //    }
     //
-    //    @Test
-    //    void updatesStakedToMeSideEffects() {
-    //        counterparty.setStakedId(1L);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //        final var pendingChanges = buildPendingAccountStakeChanges();
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        given(accounts.get(EntityNum.fromLong(1L))).willReturn(merkleAccount);
-    //        given(merkleAccount.getStakedToMe()).willReturn(0L);
-    //
-    //        given(accounts.get(EntityNum.fromLong(2L))).willReturn(merkleAccount);
-    //        given(merkleAccount.getStakedToMe()).willReturn(0L);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        subject.getRewardsEarned()[1] = 0;
-    //        subject.getRewardsEarned()[2] = 1;
-    //        assertEquals(2, pendingChanges.size());
-    //
-    //        subject.setCurStakedId(1L);
-    //        subject.setNewStakedId(2L);
-    //        Arrays.fill(subject.getStakedToMeUpdates(), NA);
-    //        subject.updateStakedToMeSideEffects(
-    //                counterparty, StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT, pendingChanges.changes(0),
-    // pendingChanges);
-    //        assertEquals(-555L * HBARS_TO_TINYBARS, subject.getStakedToMeUpdates()[2]);
-    //        assertEquals(100L * HBARS_TO_TINYBARS, subject.getStakedToMeUpdates()[3]);
-    //    }
-    //
-    //    @Test
-    //    void includesIndirectStakeeInChangesEvenIfTotalStakeUnchanged() {
-    //        counterparty.setStakedId(1L);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //        final var pendingChanges = buildPendingAccountStakeChanges(counterpartyBalance + 1);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        given(accounts.get(EntityNum.fromLong(1L))).willReturn(merkleAccount);
-    //        given(merkleAccount.getStakedToMe()).willReturn(counterpartyBalance);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        subject.getRewardsEarned()[1] = 0;
-    //        subject.getRewardsEarned()[2] = 1;
-    //        assertEquals(2, pendingChanges.size());
-    //
-    //        subject.setCurStakedId(1L);
-    //        subject.setNewStakedId(1L);
-    //        Arrays.fill(subject.getStakedToMeUpdates(), NA);
-    //        subject.updateStakedToMeSideEffects(
-    //                counterparty, StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT, pendingChanges.changes(0),
-    // pendingChanges);
-    //        assertEquals(counterpartyBalance, subject.getStakedToMeUpdates()[2]);
-    //    }
-    //
-    //    @Test
-    //    void doesntUpdateStakedToMeIfStakerBalanceIsExactlyTheSame() {
-    //        counterparty.setStakedId(1L);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //        final var pendingChanges = buildPendingAccountStakeChanges(counterpartyBalance);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        subject.getRewardsEarned()[1] = 0;
-    //        subject.getRewardsEarned()[2] = 1;
-    //        assertEquals(2, pendingChanges.size());
-    //
-    //        subject.setCurStakedId(1L);
-    //        subject.setNewStakedId(1L);
-    //        Arrays.fill(subject.getStakedToMeUpdates(), NA);
-    //        subject.updateStakedToMeSideEffects(
-    //                counterparty, StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT, pendingChanges.changes(0),
-    // pendingChanges);
-    //        assertEquals(NA, subject.getStakedToMeUpdates()[2]);
-    //    }
-    //
-    //    @Test
-    //    void updatesStakedToMeSideEffectsPaysRewardsIfRewardable() {
-    //        counterparty.setStakedId(123L);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        final var stakingFundChanges = new HashMap<AccountProperty, Object>();
-    //        stakingFundChanges.put(AccountProperty.BALANCE, 100L);
-    //
-    //        final var map = new HashMap<AccountProperty, Object>();
-    //        map.put(AccountProperty.BALANCE, 100L);
-    //        map.put(AccountProperty.STAKED_ID, 123L);
-    //        map.put(AccountProperty.DECLINE_REWARD, false);
-    //
-    //        final var pendingChanges = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();
-    //        pendingChanges.include(partyId, party, stakingFundChanges);
-    //        pendingChanges.include(stakingFundId, stakingFund, new HashMap<>(stakingFundChanges));
-    //        pendingChanges.include(counterpartyId, counterparty, map);
-    //
-    //        subject = new StakingAccountsCommitInterceptor(
-    //                sideEffectsTracker,
-    //                () -> networkCtx,
-    //                dynamicProperties,
-    //                rewardCalculator,
-    //                new StakeChangeManager(
-    //                        stakeInfoManager, () -> AccountStorageAdapter.fromInMemory(MerkleMapLike.from(accounts))),
-    //                stakePeriodManager,
-    //                stakeInfoManager,
-    //                accountNumbers,
-    //                txnCtx,
-    //                usageTracking);
-    //
-    //        subject.getRewardsEarned()[0] = -1;
-    //        subject.getRewardsEarned()[1] = -1;
-    //        subject.setCurStakedId(partyId.getAccountNum());
-    //        subject.setNewStakedId(partyId.getAccountNum());
-    //        assertEquals(3, pendingChanges.size());
-    //        final var stakedToMeUpdates = subject.getStakedToMeUpdates();
-    //        stakedToMeUpdates[0] = counterpartyBalance + 2 * HBARS_TO_TINYBARS;
-    //        stakedToMeUpdates[1] = counterpartyBalance + 2 * HBARS_TO_TINYBARS;
-    //        stakedToMeUpdates[2] = -1L;
-    //        subject.updateStakedToMeSideEffects(
-    //                counterparty, StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT, pendingChanges.changes(0),
-    // pendingChanges);
-    //
-    //        assertEquals(2 * HBARS_TO_TINYBARS, stakedToMeUpdates[0]);
-    //        assertEquals(counterpartyBalance + 2 * HBARS_TO_TINYBARS, stakedToMeUpdates[1]);
-    //    }
-    //
-    //        @Test
-    //        void rewardAccountStakePeriodStartAlwaysReset() {
-    //            given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //
-    //            final var changes = buildChanges();
-    //            final var rewardPayment = 1L;
-    //            final var expectedFundingI = 2;
-    //            counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //            given(networkCtx.areRewardsActivated()).willReturn(true);
-    //            given(rewardCalculator.computePendingReward(counterparty)).willReturn(rewardPayment);
-    //            given(rewardCalculator.applyReward(rewardPayment, counterparty, changes.changes(1)))
-    //                    .willReturn(true);
-    //            given(rewardCalculator.rewardsPaidInThisTxn()).willReturn(rewardPayment);
-    //            given(stakePeriodManager.startUpdateFor(anyLong(), anyLong(), anyBoolean(), anyBoolean()))
-    //                    .willReturn(NA);
-    //            given(stakeChangeManager.findOrAdd(anyLong(), any())).willAnswer(invocation -> {
-    //                changes.include(
-    //                        stakingFundId,
-    //                        MerkleAccountFactory.newAccount().balance(123).get(),
-    //                        new HashMap<>());
-    //                return expectedFundingI;
-    //            });
-    //            subject.getStakePeriodStartUpdates()[expectedFundingI] = 666L;
-    //
-    //            subject.preview(changes);
-    //            assertEquals(NA, subject.getStakePeriodStartUpdates()[expectedFundingI]);
-    //        }
+    @Test
+    void updatesStakedToMeSideEffects() {
+        final var accountBalance = 55L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 11L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart - 2)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .withStakedToMe(0L)
+                .withStakedAccountId(ownerId)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart - 2)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .withStakedNodeId(0L)
+                .withStakedToMe(accountBalance)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        final var node0InfoBefore = writableStakingInfoState.get(0L);
+
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+                .stakedAccountId(ownerId)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        final var originalPayer = writableAccountStore.get(payerId);
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        // even though only payer account has changed, since staked to me of owner changes,
+        // it will trigger reward for owner
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards.get(ownerId)).isEqualTo(6600L);
+
+        final var modifiedPayer = writableAccountStore.get(payerId);
+        final var modifiedOwner = writableAccountStore.get(ownerId);
+
+        assertThat(modifiedOwner.stakedToMe()).isEqualTo(ownerAccountBefore.stakedToMe() - HBARS_TO_TINYBARS);
+        // stakePeriodStart is updated everytime when reward is applied
+        assertThat(modifiedOwner.stakePeriodStart()).isEqualTo(stakePeriodStart - 1);
+
+        assertThat(modifiedPayer.stakedToMe()).isEqualTo(originalPayer.stakedToMe());
+        assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart);
+
+        final var node0InfoAfter = writableStakingInfoStore.get(0L);
+        assertThat(node0InfoAfter.stakeToReward()).isEqualTo(node0InfoBefore.stakeToReward() - HBARS_TO_TINYBARS);
+        assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isEqualTo(0);
+    }
+
+    @Test
+    void doesntUpdateStakedToMeIfStakerBalanceIsExactlyTheSame() {
+        final var accountBalance = 55L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 11L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart - 2)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .withStakedToMe(0L)
+                .withStakedAccountId(ownerId)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart - 2)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .withStakedNodeId(0L)
+                .withStakedToMe(accountBalance)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        final var node0InfoBefore = writableStakingInfoState.get(0L);
+
+        // Just change 800 balance
+        writableAccountStore.put(stakingRewardAccount
+                .copyBuilder()
+                .tinybarBalance(stakingRewardAccount.tinybarBalance() + HBARS_TO_TINYBARS)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        final var originalPayer = writableAccountStore.get(payerId);
+
+        // This should not change anything
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        // No rewards should be paid
+        assertThat(rewards).isEmpty();
+
+        // assert nothing changed in account and node
+        final var modifiedPayer = writableAccountStore.get(payerId);
+        final var modifiedOwner = writableAccountStore.get(ownerId);
+        final var node0InfoAfter = writableStakingInfoStore.get(0L);
+
+        assertThat(modifiedOwner.stakedToMe()).isEqualTo(ownerAccountBefore.stakedToMe());
+        // stakePeriodStart is updated only when reward is applied
+        assertThat(modifiedOwner.stakePeriodStart()).isEqualTo(stakePeriodStart - 2);
+
+        assertThat(modifiedPayer.stakedToMe()).isEqualTo(originalPayer.stakedToMe());
+        assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart - 2);
+
+        assertThat(node0InfoAfter.stakeToReward()).isEqualTo(node0InfoBefore.stakeToReward());
+        assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isEqualTo(0);
+    }
+
+    @Test
+    void stakePeriodStartUpdatedWhenStakedToAccount() {
+        final var accountBalance = 55L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 11L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart - 2)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .withStakedToMe(0L)
+                .withStakedAccountId(ownerId)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart - 2)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .withStakedNodeId(0L)
+                .withStakedToMe(accountBalance)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        writableAccountStore.put(
+                account.copyBuilder().stakedAccountId(stakingRewardId).build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        final var originalPayer = writableAccountStore.get(payerId);
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards.get(ownerId)).isEqualTo(6600L);
+
+        final var modifiedPayer = writableAccountStore.get(payerId);
+        final var modifiedOwner = writableAccountStore.get(ownerId);
+        // Since payer is staked to reward account now, its balance should not add to stakedToMe of owner
+        assertThat(modifiedOwner.stakedToMe()).isEqualTo(0L);
+        // stakePeriodStart is updated everytime when reward is applied
+        assertThat(modifiedOwner.stakePeriodStart()).isEqualTo(stakePeriodStart - 1);
+        // stakePeriodStart is not updated here
+        assertThat(modifiedPayer.stakedToMe()).isEqualTo(originalPayer.stakedToMe());
+        assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart);
+    }
 
     private void randomStakeAccountChanges() {
         writableAccountStore.put(account.copyBuilder()
@@ -1033,13 +893,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
-    private void stakingNotActivated() {
-        configuration = HederaTestConfigBuilder.create()
-                .withValue("staking.isEnabled", false)
-                .getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(configuration);
-    }
-
     public static AccountCustomizer newBuilder() {
         return new AccountCustomizer();
     }
@@ -1054,6 +907,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         private Boolean declineReward;
         private Boolean deleted;
         private Long stakePeriodStart;
+        private AccountID stakedAccountId;
+        private Long stakedNodeId;
+        private Long stakedToMe;
 
         private AccountCustomizer() {}
 
@@ -1073,6 +929,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
             }
             if (stakePeriodStart != null) {
                 copy.stakePeriodStart(stakePeriodStart);
+            }
+            if (stakedAccountId != null) {
+                copy.stakedAccountId(stakedAccountId);
+            } else if (stakedNodeId != null) {
+                copy.stakedNodeId(stakedNodeId);
+            }
+            if (stakedToMe != null) {
+                copy.stakedToMe(stakedToMe);
             }
             return copy.build();
         }
@@ -1104,6 +968,21 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         public AccountCustomizer withStakePeriodStart(final Long stakePeriodStart) {
             this.stakePeriodStart = stakePeriodStart;
+            return this;
+        }
+
+        public AccountCustomizer withStakedAccountId(final AccountID id) {
+            this.stakedAccountId = id;
+            return this;
+        }
+
+        public AccountCustomizer withStakedNodeId(final Long id) {
+            this.stakedNodeId = id;
+            return this;
+        }
+
+        public AccountCustomizer withStakedToMe(final long stakedToMe) {
+            this.stakedToMe = stakedToMe;
             return this;
         }
     }

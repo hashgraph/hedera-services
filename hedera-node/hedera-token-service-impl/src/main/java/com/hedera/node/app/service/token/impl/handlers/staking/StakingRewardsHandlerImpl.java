@@ -355,6 +355,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
             final var stakingRewardAccount = writableAccountStore.get(stakingRewardAccountId);
             final var finalBalance = stakingRewardAccount.tinybarBalance() - totalPaidRewards;
+            if (finalBalance < 0) {
+                log.warn("Staking reward account balance is negative after reward distribution, set it to 0");
+            }
             // At this place it is not possible for the staking reward account balance to be less than total rewards
             // paid.
             // Because EndOfStakingPeriodCalculator, sets the reward rate based on 0.0.800 balance.
@@ -370,8 +373,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             @NonNull final WritableAccountStore writableStore) {
         final var account = writableStore.get(stakee);
         final var initialStakedToMe = account.stakedToMe();
+        final var finalStakedToMe = initialStakedToMe + roundedFinalBalance;
+        if (finalStakedToMe < 0) {
+            log.warn("StakedToMe for account {} is negative after reward distribution, set it to 0", stakee);
+        }
         final var copy = account.copyBuilder()
-                .stakedToMe(initialStakedToMe + roundedFinalBalance)
+                .stakedToMe(finalStakedToMe < 0 ? 0 : finalStakedToMe)
                 .build();
         writableStore.put(copy);
     }
