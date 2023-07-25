@@ -300,8 +300,7 @@ public final class FileUtils {
      */
     public static List<Path> findFiles(final Path dir, final String suffix) throws IOException {
         try (Stream<Path> files = Files.walk(dir)) {
-            return files
-                    .filter(Files::isRegularFile)
+            return files.filter(Files::isRegularFile)
                     .filter(f -> f.toString().endsWith(suffix))
                     .toList();
         }
