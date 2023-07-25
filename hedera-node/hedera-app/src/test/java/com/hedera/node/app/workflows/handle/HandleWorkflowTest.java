@@ -348,6 +348,7 @@ class HandleWorkflowTest extends AppTestBase {
                         signatureVerifier,
                         checker,
                         serviceLookup,
+                        configProvider,
                         null,
                         instantSource,
                         hederaRecordCache,

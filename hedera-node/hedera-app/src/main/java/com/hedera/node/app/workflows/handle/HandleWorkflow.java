@@ -180,6 +180,16 @@ public class HandleWorkflow {
                 default -> throw new PreCheckException(preHandleResult.responseCode());
             }
 
+            // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
+            switch (preHandleResult.status()) {
+                case SO_FAR_SO_GOOD -> {
+                    /* All good nothing to do */
+                }
+                case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
+                case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
+                default -> throw new PreCheckException(preHandleResult.responseCode());
+            }
+
             // Check the payer signature. Whether this is a duplicate transaction or not, we need to have the payer
             // information to proceed. Also perform a solvency check on the account to make sure the account has not
             // been deleted, it does exist, and it has sufficient funds to pay for the transaction. If any of those
@@ -243,22 +253,23 @@ public class HandleWorkflow {
                     }
                 }
 
-                // Setup context
-                final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
-                final var context = new HandleContextImpl(
-                        txBody,
-                        preHandleResult.payer(),
-                        preHandleResult.payerKey(),
-                        TransactionCategory.USER,
-                        recordBuilder,
-                        stack,
-                        verifier,
-                        recordListBuilder,
-                        checker,
-                        dispatcher,
-                        serviceScopeLookup,
-                        blockRecordManager,
-                        hederaRecordCache);
+            // Setup context
+            final var stack = new SavepointStackImpl(state, configuration);
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+            final var context = new HandleContextImpl(
+                    txBody,
+                    preHandleResult.payer(),
+                    preHandleResult.payerKey(),
+                    TransactionCategory.USER,
+                    recordBuilder,
+                    stack,
+                    verifier,
+                    recordListBuilder,
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup,
+                    blockRecordManager,
+                    hederaRecordCache);
 
                 // Dispatch the transaction to the handler
                 dispatcher.dispatchHandle(context);
