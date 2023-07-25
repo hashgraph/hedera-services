@@ -34,7 +34,7 @@ import java.util.function.Predicate;
  * <p>This class is not exported from the module. It is an internal implementation detail. This
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
+public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableQueueState<Bytes> writableUpgradeState;
 
@@ -43,11 +43,11 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
     private static final Predicate<Bytes> TRUE_PREDICATE = new TruePredicate();
 
     /**
-     * Create a new {@link WritableUpgradeStore} instance.
+     * Create a new {@link WritableUpgradeFileStore} instance.
      *
      * @param states The state to use.
      */
-    public WritableUpgradeStore(@NonNull final WritableStates states) {
+    public WritableUpgradeFileStore(@NonNull final WritableStates states) {
         super(states);
         this.writableUpgradeState = requireNonNull(states.getQueue(getStateKey()));
         this.writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));

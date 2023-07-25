@@ -24,25 +24,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableUpgradeStoreTest extends FileTestBase {
+class WritableUpgradeFileStoreTest extends FileTestBase {
     private File file;
     protected final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableUpgradeStore(null));
-        assertThrows(NullPointerException.class, () -> writableUpgradeStore.add(null));
+        assertThrows(NullPointerException.class, () -> new WritableUpgradeFileStore(null));
+        assertThrows(NullPointerException.class, () -> writableUpgradeFileStore.add(null));
     }
 
     @Test
     void constructorCreatesUpgradeFileState() {
-        final var store = new WritableUpgradeStore(filteredWritableStates);
+        final var store = new WritableUpgradeFileStore(filteredWritableStates);
         assertNotNull(store);
     }
 

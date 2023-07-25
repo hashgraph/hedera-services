@@ -398,7 +398,9 @@ public final class Hedera implements SwirldMain {
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 switch (notification.getNewStatus()) {
                     case ACTIVE -> {
-                        run();
+                        // TODO: This is also called from ServicesMain#run() when the node is restarted.
+                        // Need to confirm if this is needed
+                        // run();
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                     }
                     case BEHIND -> {

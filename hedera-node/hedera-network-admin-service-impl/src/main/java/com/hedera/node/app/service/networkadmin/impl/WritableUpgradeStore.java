@@ -18,7 +18,6 @@ package com.hedera.node.app.service.networkadmin.impl;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -30,33 +29,19 @@ import java.util.Optional;
  * Provides write methods for modifying underlying data storage mechanisms for
  * working with freeze states.
  */
-// This is a temporary location for this class. It will be moved to FileService.
-// @todo('Issue #6856')
-public class WritableUpdateFileStore extends ReadableUpdateFileStoreImpl {
-    /** The underlying data storage class that holds the update file number. */
-    private final WritableSingletonState<FileID> updateFileID;
+public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
     /** The underlying data storage class that holds the update file hash. */
     private final WritableSingletonState<Bytes> updateFileHash;
 
     /**
-     * Create a new {@link WritableUpdateFileStore} instance.
+     * Create a new {@link WritableUpgradeStore} instance.
      *
      * @param states The state to use.
      */
-    public WritableUpdateFileStore(@NonNull final WritableStates states) {
+    public WritableUpgradeStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
-        updateFileID = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_ID_KEY);
         updateFileHash = states.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY);
-    }
-
-    /**
-     * Sets or clears the update file ID.
-     *
-     * @param updateFileID The update file ID to set. If null, clears the update file ID.
-     */
-    public void updateFileID(@Nullable final FileID updateFileID) {
-        this.updateFileID.put(updateFileID);
     }
 
     /**
@@ -66,13 +51,6 @@ public class WritableUpdateFileStore extends ReadableUpdateFileStoreImpl {
      */
     public void updateFileHash(@Nullable final Bytes updateFileHash) {
         this.updateFileHash.put(updateFileHash);
-    }
-
-    @Override
-    @NonNull
-    public Optional<FileID> updateFileID() {
-        FileID fileId = updateFileID.get();
-        return (fileId == null ? Optional.empty() : Optional.of(fileId));
     }
 
     @Override

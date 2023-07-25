@@ -17,12 +17,9 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_ID_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
+import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -30,46 +27,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
- * Implementation of {@link ReadableUpdateFileStore}
+ * Implementation of {@link ReadableUpgradeStore}
  */
-// This is a temporary location for this class. It will be moved to FileService.
-// @todo('Issue #6856')
-public class ReadableUpdateFileStoreImpl implements ReadableUpdateFileStore {
-    /** The underlying data storage class that holds the file data. */
-    private final ReadableKVState<FileID, byte[]> freezeFilesById;
-
-    /** The underlying data storage class that holds the prepared update file number.
-     * If null, no prepared update file has been set. */
-    private final ReadableSingletonState<FileID> updateFileID;
+public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
     /** The underlying data storage class that holds the prepared update file hash.
      * May be null if no prepared update file has been set. */
     private final ReadableSingletonState<Bytes> updateFileHash;
 
     /**
-     * Create a new {@link ReadableUpdateFileStoreImpl} instance.
+     * Create a new {@link ReadableUpgradeStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableUpdateFileStoreImpl(@NonNull final ReadableStates states) {
+    public ReadableUpgradeStoreImpl(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.freezeFilesById = states.get(FreezeServiceImpl.UPGRADE_FILES_KEY);
-        this.updateFileID = states.getSingleton(UPGRADE_FILE_ID_KEY);
         this.updateFileHash = states.getSingleton(UPGRADE_FILE_HASH_KEY);
-    }
-
-    @Override
-    @NonNull
-    public Optional<byte[]> get(@NonNull FileID fileId) {
-        requireNonNull(fileId);
-        final var file = freezeFilesById.get(fileId);
-        return Optional.ofNullable(file);
-    }
-
-    @Override
-    @NonNull
-    public Optional<FileID> updateFileID() {
-        FileID fileId = updateFileID.get();
-        return (fileId == null ? Optional.empty() : Optional.of(fileId));
     }
 
     @Override

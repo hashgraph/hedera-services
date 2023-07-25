@@ -31,7 +31,7 @@ import java.util.Iterator;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public interface ReadableUpgradeStore {
+public interface ReadableUpgradeFileStore {
 
     /**
      * Gets the "state key" that uniquely identifies this {@link ReadableQueueState} within the {@link
