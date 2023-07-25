@@ -118,6 +118,7 @@ public class TestIntake implements ConsensusRoundObserver, StaleEventObserver, L
         intake = new EventIntake(
                 platformContext,
                 getStaticThreadManager(),
+                Time.getCurrent(),
                 new NodeId(0L), // only used for logging
                 linker,
                 this::getConsensus,

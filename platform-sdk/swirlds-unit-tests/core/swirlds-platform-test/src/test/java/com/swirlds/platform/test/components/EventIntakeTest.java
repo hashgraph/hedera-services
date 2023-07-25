@@ -26,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -69,6 +70,7 @@ class EventIntakeTest {
         final EventIntake intake = new EventIntake(
                 platformContext,
                 getStaticThreadManager(),
+                Time.getCurrent(),
                 new NodeId(0L),
                 mock(EventLinker.class),
                 () -> consensus,

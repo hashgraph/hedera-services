@@ -46,9 +46,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Created by a Platform to manage the flow of pre-consensus events to SwirldState (1 instance or 3 depending on the
- * SwirldState implemented). It contains a thread queue that contains a queue of pre-consensus events (q1) and a
- * SwirldStateManager which applies those events to the state
+ * Prehandles transactions (both system and application). Ensures that application transactions are prehandled before
+ * handling the consensus round containing the transactions. There is currently no requirement for strong ordering
+ * between prehandling and handling of system transactions, and so none is currently enforced.
  */
 public class PreConsensusEventHandler implements Clearable, Startable {
 
@@ -138,9 +138,9 @@ public class PreConsensusEventHandler implements Clearable, Startable {
     }
 
     /**
-     * Prehandle application transactions, and enqueue platform transactions for prehandling.
+     * Do prehandle processing on the preconsensus event and add it to the queue (q1) for handling.
      */
-    public void prehandleTransactions(final EventImpl event) {
+    public void preconsensusEvent(final EventImpl event) {
         // we don't need empty pre-consensus events
         if (event == null || event.isEmpty()) {
             return;

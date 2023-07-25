@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.INTAKE_EVENT;
 import static com.swirlds.logging.LogMarker.STALE_EVENTS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
@@ -37,11 +38,16 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -73,11 +79,15 @@ public class EventIntake {
     private final ExecutorService prehandlePool;
     private final Consumer<EventImpl> prehandleEvent;
 
+    private final EventIntakeMetrics metrics;
+    private final Time time;
+
     /**
      * Constructor
      *
      * @param platformContext   the platform context
      * @param threadManager     creates new threading resources
+     * @param time              provides the wall clock time
      * @param selfId            the ID of this node
      * @param eventLinker       links events together, holding orphaned events until their parents are found (if
      *                          operating with the orphan buffer enabled)
@@ -91,6 +101,7 @@ public class EventIntake {
     public EventIntake(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull final NodeId selfId,
             @NonNull final EventLinker eventLinker,
             @NonNull final Supplier<Consensus> consensusSupplier,
@@ -99,6 +110,8 @@ public class EventIntake {
             @NonNull final IntakeCycleStats stats,
             @NonNull final ShadowGraph shadowGraph,
             @NonNull final Consumer<EventImpl> prehandleEvent) {
+
+        this.time = Objects.requireNonNull(time);
         this.selfId = Objects.requireNonNull(selfId);
         this.eventLinker = Objects.requireNonNull(eventLinker);
         this.consensusSupplier = Objects.requireNonNull(consensusSupplier);
@@ -110,12 +123,23 @@ public class EventIntake {
         this.prehandleEvent = Objects.requireNonNull(prehandleEvent);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+        final Supplier<Integer> prehandlePoolSize;
         if (eventConfig.asyncPrehandle()) {
-            prehandlePool = Executors.newFixedThreadPool(
-                    eventConfig.prehandlePoolSize(), threadManager.createThreadFactory("platform", "txn-prehandle"));
+            final BlockingQueue<Runnable> prehandlePoolQueue = new LinkedBlockingQueue<>();
+            prehandlePoolSize = prehandlePoolQueue::size;
+            prehandlePool = new ThreadPoolExecutor(
+                    eventConfig.prehandlePoolSize(),
+                    eventConfig.prehandlePoolSize(),
+                    0L,
+                    TimeUnit.MILLISECONDS,
+                    prehandlePoolQueue,
+                    threadManager.createThreadFactory("platform", "txn-prehandle"));
         } else {
             prehandlePool = null;
+            prehandlePoolSize = () -> 0;
         }
+
+        metrics = new EventIntakeMetrics(platformContext, prehandlePoolSize);
     }
 
     /**
@@ -243,7 +267,10 @@ public class EventIntake {
             // wait for prehandles to finish before proceeding. It is critically
             // important that prehandle is always called prior to handleConsensusRound().
             if (prehandlePool != null) {
+                final Instant start = time.now();
                 consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
+                final Instant end = time.now();
+                metrics.reportTimeWaitedForPrehandlingTransaction(Duration.between(start, end));
             }
 
             eventLinker.updateGenerations(consensusRound.getGenerations());

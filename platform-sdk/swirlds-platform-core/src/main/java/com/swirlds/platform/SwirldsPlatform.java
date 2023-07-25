@@ -508,6 +508,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final EventIntake eventIntake = new EventIntake(
                 platformContext,
                 threadManager,
+                time,
                 selfId,
                 eventLinker,
                 consensusRef::get,
@@ -515,7 +516,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 eventObserverDispatcher,
                 intakeCycleStats,
                 shadowGraph,
-                preConsensusEventHandler::prehandleTransactions);
+                preConsensusEventHandler::preconsensusEvent);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);

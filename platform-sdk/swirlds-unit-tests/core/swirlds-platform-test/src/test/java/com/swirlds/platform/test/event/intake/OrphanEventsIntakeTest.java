@@ -19,6 +19,7 @@ package com.swirlds.platform.test.event.intake;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.PlatformContext;
@@ -102,6 +103,7 @@ class OrphanEventsIntakeTest {
             intake = new EventIntake(
                     platformContext,
                     getStaticThreadManager(),
+                    Time.getCurrent(),
                     new NodeId(0L),
                     orphanBuffer,
                     () -> consensus,
