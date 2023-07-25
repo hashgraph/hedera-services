@@ -306,4 +306,17 @@ public final class FileUtils {
                     .toList();
         }
     }
+
+    /**
+     * Delete files in the given directory that end with the given suffix.
+     * @param dir the directory to search
+     * @param suffix the suffix to match
+     * @throws IOException if there is a problem walking the directory or deleting
+     */
+    public static void deleteFiles(final Path dir, final String suffix) throws IOException {
+        final List<Path> files = findFiles(dir, suffix);
+        for (final Path file : files) {
+            Files.delete(file);
+        }
+    }
 }

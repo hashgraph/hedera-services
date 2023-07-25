@@ -62,6 +62,20 @@ public class ParameterizedClass {
     }
 
     /**
+     * Ensure that a path from the command line exists and that it is a directory.
+     *
+     * @param path a path from the command line
+     * @return the path if it passes validation
+     */
+    protected Path dirMustExist(final Path path) {
+        pathMustExist(path);
+        if (!Files.isDirectory(path)) {
+            throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " is not a directory");
+        }
+        return path;
+    }
+
+    /**
      * Ensure that a path from the command line does not exist.
      *
      * @param path a path from the command line
