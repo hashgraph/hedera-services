@@ -90,9 +90,11 @@ public class StakeInfoHelper {
         final var stakingInfo = stakingInfoStore.get(nodeId);
         final var copy = stakingInfo.copyBuilder();
         if (isDeclineReward) {
-            copy.stakeToNotReward(stakingInfo.stakeToNotReward() + stakeToAward);
+            final var stakedToNotReward = stakingInfo.stakeToNotReward() + stakeToAward;
+            copy.stakeToNotReward(stakedToNotReward);
         } else {
-            copy.stakeToReward(stakingInfo.stakeToReward() + stakeToAward);
+            final var stakedToReward = stakingInfo.stakeToReward() + stakeToAward;
+            copy.stakeToReward(stakedToReward);
         }
         stakingInfoStore.put(nodeId, copy.build());
     }
@@ -119,9 +121,27 @@ public class StakeInfoHelper {
         final var stakingInfo = stakingInfoStore.get(nodeId);
         final var copy = stakingInfo.copyBuilder();
         if (isDeclineReward) {
-            copy.stakeToNotReward(stakingInfo.stakeToNotReward() - stakeToWithdraw);
+            final var stakedToNotReward = stakingInfo.stakeToNotReward() - stakeToWithdraw;
+            if (stakedToNotReward < 0) {
+                log.warn(
+                        "Asked to withdraw {} more stake for node{} (now {}), but only {} was staked",
+                        stakeToWithdraw,
+                        nodeId,
+                        stakedToNotReward,
+                        stakingInfo.stakeToNotReward());
+            }
+            copy.stakeToNotReward(Math.max(0, stakedToNotReward));
         } else {
-            copy.stakeToReward(stakingInfo.stakeToReward() - stakeToWithdraw);
+            final var stakeToReward = stakingInfo.stakeToReward() - stakeToWithdraw;
+            if (stakeToReward < 0) {
+                log.warn(
+                        "Asked to withdraw {} more stake for node{} (now {}), but only {} was staked",
+                        stakeToWithdraw,
+                        nodeId,
+                        stakeToReward,
+                        stakingInfo.stakeToReward());
+            }
+            copy.stakeToReward(Math.max(0, stakeToReward));
         }
         stakingInfoStore.put(nodeId, copy.build());
     }

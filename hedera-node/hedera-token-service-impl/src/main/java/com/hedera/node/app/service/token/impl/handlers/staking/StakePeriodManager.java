@@ -26,6 +26,7 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -118,6 +119,9 @@ public class StakePeriodManager {
         // The earliest period by which an account can have started staking, _without_ becoming
         // eligible for a reward; if staking is not active, this will return Long.MIN_VALUE so
         // no account can ever be eligible.
+        // Remember that accounts are only rewarded for _full_ periods;
+        // so if Alice started staking in the previous period (current - 1), she will not have
+        // completed a full period until current has ended
         return rewardsStore.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
     }
 
@@ -193,11 +197,11 @@ public class StakePeriodManager {
      * @return either NA for no new stakePeriodStart, or the new value
      */
     public long startUpdateFor(
-            final Account originalAccount,
-            final Account modifiedAccount,
+            @Nullable final Account originalAccount,
+            @NonNull final Account modifiedAccount,
             final boolean rewarded,
             final boolean stakeMetaChanged,
-            final Instant consensusNow) {
+            @NonNull final Instant consensusNow) {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         if (modifiedAccount.hasStakedNodeId()) {
             if ((originalAccount != null && originalAccount.hasStakedAccountId()) || stakeMetaChanged) {

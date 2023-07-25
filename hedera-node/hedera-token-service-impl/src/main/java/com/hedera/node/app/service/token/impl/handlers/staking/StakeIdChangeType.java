@@ -25,9 +25,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * If there is a stakedId change in current transaction provides the type of change.
- * This scenario type is used to determine if the change could trigger reward if an account is
- * staked to an account, which is staked to a node.
+ * Represents an account's previous and current types of staking election.
+ * NODE_TO_NODE can mean same or different node. It doesn't denote if stakedNodeId has changed or not.
+ * Similarly, ACCOUNT_TO_ACCOUNT can mean same or different account. It doesn't denote if stakedAccountId has
+ * changed or not.
+ * ABSENT_TO_ABSENT also means that the account was never staked before and not staked now.
  */
 public enum StakeIdChangeType {
     /* ---  Cases ending with staking to a node */

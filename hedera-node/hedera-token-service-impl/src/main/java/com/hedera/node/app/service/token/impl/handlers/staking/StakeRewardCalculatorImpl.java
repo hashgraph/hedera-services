@@ -52,7 +52,9 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
             return 0;
         }
 
-        final var nodeId = account.stakedNodeId();
+        // At this point all the accounts that are eligible for computing rewards should have a
+        // staked to a node
+        final var nodeId = account.stakedNodeIdOrThrow();
         final var stakingInfo = stakingInfoStore.get(nodeId);
         final var rewardOffered = computeRewardFromDetails(
                 account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);

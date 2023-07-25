@@ -67,35 +67,35 @@ public class StakingRewardsPayer {
             final var reward = rewardCalculator.computePendingReward(
                     originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
 
-            if (reward <= 0) {
-                continue;
-            }
-            stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
-
             var receiverId = receiver;
             var beneficiary = originalAccount;
+            if (reward > 0) {
+                stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
 
-            // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
-            // accounts until we find a non-deleted account to try to reward (it may still decline)
-            if (originalAccount.deleted()) {
-                // TODO: need to get this info ?
-                final var maxRedirects = 0;
-                var j = 1;
-                do {
-                    if (j++ > maxRedirects) {
-                        log.error(
-                                "With {} accounts deleted, last redirect in modifications led to deleted"
-                                        + " beneficiary 0.0.{}",
-                                maxRedirects,
-                                receiverId);
-                        throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
-                    }
+                // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
+                // accounts until we find a non-deleted account to try to reward (it may still decline)
+                if (originalAccount.deleted()) {
                     // TODO: need to get this info ?
-                    //                    receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
-                    beneficiary = writableStore.get(receiverId);
-                } while (beneficiary.deleted());
+                    final var maxRedirects = 0;
+                    var j = 1;
+                    do {
+                        if (j++ > maxRedirects) {
+                            log.error(
+                                    "With {}5 accounts deleted, last redirect in modifications led to deleted"
+                                            + " beneficiary 0.0.{}",
+                                    maxRedirects,
+                                    receiverId);
+                            throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
+                        }
+                        // TODO: need to get this info ?
+                        //                    receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
+                        beneficiary = writableStore.get(receiverId);
+                    } while (beneficiary.deleted());
+                }
             }
-            if (!originalAccount.declineReward()) {
+
+            if (!beneficiary.declineReward() && reward >= 0) {
+                // even if reward is zero it will be added to rewardsPaid
                 applyReward(reward, modifiedAccount, writableStore);
                 rewardsPaid.merge(receiver, reward, Long::sum);
             }

@@ -62,6 +62,7 @@ public class StakingRewardsHelper {
         final var possibleRewardReceivers = new HashSet<AccountID>();
         for (final AccountID modifiedId : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.get(modifiedId);
+            // TODO: change to use originalValue
             final var originalAcct = readableAccountStore.getAccountById(modifiedId);
             // It is possible that original account is null if the account was created in this transaction
             // In that case it is not a reward situation
@@ -98,7 +99,15 @@ public class StakingRewardsHelper {
                 || (isStakedToNode && (hasStakedToMeUpdate || hasBalanceChange || hasStakeMetaChanges));
     }
 
-    public void decreasePendingRewardsBy(final WritableNetworkStakingRewardsStore stakingRewardsStore, long amount) {
+    /**
+     * Decrease pending rewards on the network staking rewards store by the given amount.
+     * Once we pay reward to an account, the pending rewards on the network should be
+     * reduced by that amount, since they no more need to be paid.
+     * @param stakingRewardsStore The store to write to for updated values
+     * @param amount The amount to decrease by
+     */
+    public void decreasePendingRewardsBy(
+            final WritableNetworkStakingRewardsStore stakingRewardsStore, final long amount) {
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards - amount;
         if (newPendingRewards < 0) {
@@ -113,6 +122,13 @@ public class StakingRewardsHelper {
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
     }
 
+    /**
+     * Increase pending rewards on the network staking rewards store by the given amount.
+     * This is called in EndOdStakingPeriod when we calculate the pending rewards on the network
+     * to be paid in next staking period
+     * @param stakingRewardsStore The store to write to for updated values
+     * @param amount The amount to increase by
+     */
     public void increasePendingRewardsBy(final WritableNetworkStakingRewardsStore stakingRewardsStore, long amount) {
         final var currentPendingRewards = stakingRewardsStore.pendingRewards();
         var newPendingRewards = currentPendingRewards + amount;
@@ -128,7 +144,12 @@ public class StakingRewardsHelper {
         stakingRewardsStore.put(copy.pendingRewards(newPendingRewards).build());
     }
 
-    public static List<AccountAmount> asAccountAmounts(final Map<AccountID, Long> rewardsPaid) {
+    /**
+     * Display the rewards paid map values as AccountAmounts
+     * @param rewardsPaid The rewards paid
+     * @return The rewards paid as AccountAmounts
+     */
+    public static List<AccountAmount> asAccountAmounts(@NonNull final Map<AccountID, Long> rewardsPaid) {
         final var accountAmounts = new ArrayList<AccountAmount>();
         for (final var entry : rewardsPaid.entrySet()) {
             accountAmounts.add(AccountAmount.newBuilder()

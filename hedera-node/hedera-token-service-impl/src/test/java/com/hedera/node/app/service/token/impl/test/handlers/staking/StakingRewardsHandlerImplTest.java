@@ -34,7 +34,6 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsPayer;
@@ -64,7 +63,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
 
-    private StakingRewardsHandler subject;
+    private StakingRewardsHandlerImpl subject;
     private StakePeriodManager stakePeriodManager;
     private StakingRewardsPayer rewardsPayer;
     private StakeInfoHelper stakeInfoHelper;
@@ -143,8 +142,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void anAccountThatStartedStakingBeforeCurrentPeriodAndHasntBeenRewardedUnclaimsStakeWhenChangingElection() {
-        final var copy = customizeAccount(account, 555L * HBARS_TO_TINYBARS, -1L, false, false);
-        addToState(Map.of(payerId, copy));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(555L * HBARS_TO_TINYBARS)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
 
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
@@ -173,8 +179,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Test
     void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedDaysAgoUnclaimsStakeWhenChangingElection() {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
-        final var copy = customizeAccount(account, newBalance, newBalance / 5, false, false);
-        addToState(Map.of(payerId, copy));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(newBalance)
+                .withStakeAtStartOfLastRewardPeriod(newBalance / 5)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
 
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
@@ -201,8 +214,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Test
     void anAccountThatStartedStakingBeforeCurrentPeriodAndWasRewardedTodayUnclaimsStakeStartWhenChangingElection() {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
-        final var copy = customizeAccount(account, newBalance, newBalance / 5, false, false);
-        addToState(Map.of(payerId, copy));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(newBalance)
+                .withStakeAtStartOfLastRewardPeriod(newBalance / 5)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
 
         // Change node, so to trigger rewards
         writableAccountStore.put(writableAccountStore
@@ -229,8 +249,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Test
     void anAccountThatStartedStakingAtCurrentPeriodDoesntUnclaimStakeWhenChangingElection() {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
-        final var copy = customizeAccount(account, newBalance, -1L, false, false);
-        addToState(Map.of(payerId, copy));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(newBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
 
         // Change node, so to trigger rewards
         writableAccountStore.put(account.copyBuilder().stakedNodeId(0L).build());
@@ -249,8 +276,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Test
     void anAccountThatDeclineRewardsDoesntUnclaimStakeWhenChangingElection() {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
-        final var copy = customizeAccount(account, newBalance, -1L, true, false);
-        addToState(Map.of(payerId, copy));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(newBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(true)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
 
         // Change node, so to trigger rewards
         writableAccountStore.put(
@@ -299,8 +333,15 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Test
     void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
         final var newBalance = 555L * HBARS_TO_TINYBARS;
-        final var copy = customizeAccount(account, newBalance, newBalance - 1, true, false);
-        addToState(Map.of(payerId, copy));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(newBalance)
+                .withStakeAtStartOfLastRewardPeriod(newBalance - 1)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
 
         writableAccountStore.put(writableAccountStore
                 .get(payerId)
@@ -320,12 +361,26 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void calculatesRewardIfNeeded() {
+    void calculatesRewardIfNeededStakingToNode() {
         final var accountBalance = 555L * HBARS_TO_TINYBARS;
         final var ownerBalance = 111L * HBARS_TO_TINYBARS;
-        final var copy1 = customizeAccount(account, accountBalance, -1L, false, false);
-        final var copy2 = customizeAccount(ownerAccount, ownerBalance, -1L, false, false);
-        addToState(Map.of(payerId, copy1, ownerId, copy2));
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
 
         final var node1InfoBefore = writableStakingInfoState.get(1L);
         final var node0InfoBefore = writableStakingInfoState.get(0L);
@@ -372,12 +427,23 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     void doesNotAwardStakeFromDeletedAccount() {
         final var accountBalance = 555L * HBARS_TO_TINYBARS;
         final var ownerBalance = 111L * HBARS_TO_TINYBARS;
-        final var copy1 = customizeAccount(account, accountBalance, -1L, false, true);
-        final var copy2 = customizeAccount(ownerAccount, ownerBalance, -1L, false, false);
-        addToState(Map.of(payerId, copy1, ownerId, copy2));
-
-        final var node1InfoBefore = writableStakingInfoState.get(1L);
-        final var node0InfoBefore = writableStakingInfoState.get(0L);
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
 
         writableAccountStore.put(account.copyBuilder()
                 .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
@@ -399,191 +465,199 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // TODO: this will change once transfer to beneficiary is implemented
         assertThatThrownBy(() -> subject.applyStakingRewards(handleContext)).isInstanceOf(IllegalStateException.class);
     }
-    //
-    //    @Test
-    //    void checksIfRewardableIfChangesHaveStakingFields() {
-    //        counterparty.setStakePeriodStart(-1);
-    //        counterparty.setStakedId(-1);
-    //        final var changes = randomStakedNodeChanges(100L);
-    //
-    //        subject.setRewardsActivated(true);
-    //
-    //        // has changes to StakeMeta,
-    //        assertTrue(subject.isRewardSituation(counterparty, -1, changes));
-    //
-    //        // valid fields, plus a ledger-managed staking field change
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //        assertTrue(subject.isRewardSituation(counterparty, -1, changes));
-    //
-    //        // valid fields, plus a stakedToMe updated
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //        assertTrue(subject.isRewardSituation(counterparty, 1_234_567, Collections.emptyMap()));
-    //
-    //        // rewards not activated
-    //        subject.setRewardsActivated(false);
-    //        assertFalse(subject.isRewardSituation(counterparty, -1, changes));
-    //
-    //        // declined reward on account, but changes have it as false
-    //        counterparty.setDeclineReward(true);
-    //        subject.setRewardsActivated(true);
-    //        assertTrue(subject.isRewardSituation(counterparty, -1, changes));
-    //
-    //        // staked to account
-    //        counterparty.setStakedId(2L);
-    //        assertFalse(subject.isRewardSituation(counterparty, -1, changes));
-    //    }
-    //
-    //
-    //    @Test
-    //    void stakingEffectsWorkAsExpectedWhenStakingToNode() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var inorderST = inOrder(sideEffectsTracker);
-    //        final var inorderM = inOrder(stakeChangeManager);
-    //
-    //        final var pendingChanges = buildPendingNodeStakeChanges();
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //
-    //        given(rewardCalculator.computePendingReward(any())).willReturn(10L);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(rewardCalculator.applyReward(10L, counterparty, pendingChanges.changes(0)))
-    //                .willReturn(true);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        subject.preview(pendingChanges);
-    //
-    //        inorderST.verify(sideEffectsTracker).trackRewardPayment(321L, 10L);
-    //
-    //        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
-    //        inorderM.verify(stakeChangeManager).awardStake(1L, 0, false);
-    //        // StakingMeta changes
-    //        assertEquals(-1, subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
-    //    }
-    //
-    //    @Test
-    //    void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChanges() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var inorderST = inOrder(sideEffectsTracker);
-    //        final var inorderM = inOrder(stakeChangeManager);
-    //
-    //        final var pendingChanges = changesWithNoStakingMetaUpdates();
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //
-    //        given(rewardCalculator.computePendingReward(any())).willReturn(10L);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(rewardCalculator.applyReward(10L, counterparty, pendingChanges.changes(0)))
-    //                .willReturn(true);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        subject.preview(pendingChanges);
-    //
-    //        inorderST.verify(sideEffectsTracker).trackRewardPayment(321L, 10L);
-    //
-    //        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
-    //        inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
-    //        // StakingMeta changes
-    //        assertEquals(
-    //                counterpartyBalance + counterparty.getStakedToMe(),
-    //                subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
-    //    }
-    //
-    //    @Test
-    //    void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var inorderST = inOrder(sideEffectsTracker);
-    //        final var inorderM = inOrder(stakeChangeManager);
-    //
-    //        final var pendingChanges = changesWithNoStakingMetaUpdates();
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //        final var stakePeriodStart = 12345678L;
-    //        counterparty.setStakePeriodStart(stakePeriodStart);
-    //
-    //        given(rewardCalculator.computePendingReward(any())).willReturn(0L);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
-    //        given(stakePeriodManager.startUpdateFor(-1L, -1L, true, false)).willReturn(stakePeriodStart);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        subject.preview(pendingChanges);
-    //
-    //        inorderST.verify(sideEffectsTracker, never()).trackRewardPayment(anyLong(), anyLong());
-    //
-    //        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
-    //        inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
-    //        // StakingMeta changes
-    //        assertEquals(
-    //                counterpartyBalance + counterparty.getStakedToMe(),
-    //                subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
-    //        assertEquals(stakePeriodStart, subject.getStakePeriodStartUpdates()[0]);
-    //    }
-    //
-    //    @Test
-    //    void sasolarpMgmtWorksAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var inorderST = inOrder(sideEffectsTracker);
-    //        final var inorderM = inOrder(stakeChangeManager);
-    //
-    //        final var pendingChanges = changesWithNoStakingMetaUpdates();
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //        final var stakePeriodStart = 12345678L;
-    //        counterparty.setStakePeriodStart(stakePeriodStart);
-    //
-    //        given(rewardCalculator.computePendingReward(any())).willReturn(0L);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 1);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        subject.preview(pendingChanges);
-    //
-    //        inorderST.verify(sideEffectsTracker, never()).trackRewardPayment(anyLong(), anyLong());
-    //
-    //        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
-    //        inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
-    //        // StakingMeta changes
-    //        assertEquals(
-    //                counterpartyBalance + counterparty.getStakedToMe(),
-    //                subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
-    //    }
-    //
-    //    @Test
-    //    void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
-    //        given(dynamicProperties.isStakingEnabled()).willReturn(true);
-    //        final var inorderST = inOrder(sideEffectsTracker);
-    //        final var inorderM = inOrder(stakeChangeManager);
-    //        final var rewardPayment = HBARS_TO_TINYBARS + 100;
-    //
-    //        final var pendingChanges = buildPendingAccountStakeChanges();
-    //        final Map<AccountProperty, Object> stakingFundChanges = Map.of(AccountProperty.BALANCE, 100L);
-    //
-    //        given(stakePeriodManager.startUpdateFor(-1L, 2L, true, true)).willReturn(13L);
-    //        given(stakePeriodManager.startUpdateFor(0L, 0L, false, false)).willReturn(666L);
-    //        given(rewardCalculator.applyReward(anyLong(), any(), any())).willReturn(true);
-    //
-    //        given(rewardCalculator.computePendingReward(any())).willReturn(rewardPayment);
-    //        given(networkCtx.areRewardsActivated()).willReturn(true);
-    //        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
-    //        stakingFund.setStakePeriodStart(-1);
-    //        counterparty.setStakePeriodStart(stakePeriodStart - 2);
-    //
-    //        subject.preview(pendingChanges);
-    //
-    //        inorderST.verify(sideEffectsTracker).trackRewardPayment(321L, rewardPayment);
-    //
-    //        inorderM.verify(stakeChangeManager).findOrAdd(anyLong(), any());
-    //        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
-    //        inorderM.verify(stakeChangeManager, never()).awardStake(2L, 0L, false);
-    //
-    //        final var updatedStakePeriodStarts = subject.getStakePeriodStartUpdates();
-    //        assertEquals(13L, updatedStakePeriodStarts[0]);
-    //        assertEquals(666L, updatedStakePeriodStarts[1]);
-    //    }
+
+    @Test
+    void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChanges() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
+        final var initialStakePeriodStart = payerAccountBefore.stakePeriodStart();
+
+        final var node1InfoBefore = writableStakingInfoState.get(1L);
+
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        final var node1InfoAfter = writableStakingInfoState.get(1L);
+
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards.get(payerId)).isEqualTo(55500L);
+        assertThat(rewards.get(ownerId)).isEqualTo(null);
+
+        assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
+        assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
+        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+
+        final var modifiedAccount = writableAccountStore.get(payerId);
+        assertThat(modifiedAccount.tinybarBalance())
+                .isEqualTo(accountBalance - HBARS_TO_TINYBARS + rewards.get(payerId));
+        assertThat(modifiedAccount.stakePeriodStart()).isNotEqualTo(initialStakePeriodStart);
+        assertThat(modifiedAccount.stakePeriodStart()).isNotEqualTo(stakePeriodStart + 2);
+    }
+
+    @Test
+    void stakingEffectsWorkAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
+        final var initialStakePeriodStart = payerAccountBefore.stakePeriodStart();
+
+        final var node1InfoBefore = writableStakingInfoState.get(1L);
+
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        final var node1InfoAfter = writableStakingInfoState.get(1L);
+
+        // No rewards rewarded
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards.get(payerId)).isEqualTo(0L);
+
+        assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
+        assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
+        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+
+        final var modifiedAccount = writableAccountStore.get(payerId);
+        assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
+        assertThat(modifiedAccount.stakePeriodStart()).isEqualTo(initialStakePeriodStart);
+    }
+
+    @Test
+    void sasolarpMgmtWorksAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(true)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore));
+
+        final var initialStakePeriodStart = payerAccountBefore.stakePeriodStart();
+
+        final var node1InfoBefore = writableStakingInfoState.get(1L);
+
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 1)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+        // No rewards rewarded
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        final var node1InfoAfter = writableStakingInfoState.get(1L);
+
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards.get(payerId)).isEqualTo(0L);
+
+        assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
+        assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
+        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+
+        final var modifiedAccount = writableAccountStore.get(payerId);
+        assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
+        assertThat(modifiedAccount.stakePeriodStart()).isEqualTo(initialStakePeriodStart);
+        assertThat(modifiedAccount.stakeAtStartOfLastRewardedPeriod())
+                .isEqualTo(modifiedAccount.tinybarBalance() + modifiedAccount.stakedToMe());
+    }
+
+    @Test
+    void stakingEffectsWorkAsExpectedWhenStakingToAccount() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        final var node1InfoBefore = writableStakingInfoState.get(1L);
+
+        writableAccountStore.put(account.copyBuilder()
+                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+                .stakedAccountId(ownerId)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        final var rewards = subject.applyStakingRewards(handleContext);
+
+        final var node1InfoAfter = writableStakingInfoState.get(1L);
+
+        assertThat(rewards).hasSize(1);
+        assertThat(rewards.get(payerId)).isEqualTo(55500L);
+
+        assertThat(node1InfoAfter.stakeToReward()).isEqualTo(node1InfoBefore.stakeToReward() - accountBalance);
+        assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(accountBalance);
+        // stake field of the account is updated once a day
+
+        final var modifiedOwner = writableAccountStore.get(ownerId);
+        assertThat(modifiedOwner.stakedToMe()).isEqualTo(ownerAccountBefore.stakedToMe() + accountBalance);
+        // stakePeriodStart is updated only when reward is applied
+        assertThat(modifiedOwner.stakePeriodStart()).isEqualTo(stakePeriodStart);
+
+        final var modifiedPayer = writableAccountStore.get(payerId);
+        assertThat(modifiedPayer.stakedToMe()).isEqualTo(payerAccountBefore.stakedToMe());
+        assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart + 2);
+    }
     //
     //    @Test
     //    void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
@@ -940,28 +1014,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }
 
-    private Account customizeAccount(
-            final Account account,
-            final Long amount,
-            final Long stakeAtStartOfLastRewardPeriod,
-            final Boolean declineReward,
-            final Boolean deleted) {
-        final var copy = account.copyBuilder();
-        if (amount != null) {
-            copy.tinybarBalance(amount);
-        }
-        if (stakeAtStartOfLastRewardPeriod != null) {
-            copy.stakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardPeriod);
-        }
-        if (declineReward != null) {
-            copy.declineReward(declineReward);
-        }
-        if (deleted != null) {
-            copy.deleted(deleted);
-        }
-        return copy.build();
-    }
-
     private void addToState(Map<AccountID, Account> idsToAccounts) {
         final var readableBuilder = emptyReadableAccountStateBuilder().value(stakingRewardId, stakingRewardAccount);
         final var writableBuilder = emptyWritableAccountStateBuilder().value(stakingRewardId, stakingRewardAccount);
@@ -986,5 +1038,73 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .withValue("staking.isEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
+    }
+
+    public static AccountCustomizer newBuilder() {
+        return new AccountCustomizer();
+    }
+
+    /**
+     * A builder for {@link Account} instances.
+     */
+    private static final class AccountCustomizer {
+        private Account accountOfInterest;
+        private Long amount;
+        private Long stakeAtStartOfLastRewardPeriod;
+        private Boolean declineReward;
+        private Boolean deleted;
+        private Long stakePeriodStart;
+
+        private AccountCustomizer() {}
+
+        public Account build() {
+            final var copy = accountOfInterest.copyBuilder();
+            if (amount != null) {
+                copy.tinybarBalance(amount);
+            }
+            if (stakeAtStartOfLastRewardPeriod != null) {
+                copy.stakeAtStartOfLastRewardedPeriod(stakeAtStartOfLastRewardPeriod);
+            }
+            if (declineReward != null) {
+                copy.declineReward(declineReward);
+            }
+            if (deleted != null) {
+                copy.deleted(deleted);
+            }
+            if (stakePeriodStart != null) {
+                copy.stakePeriodStart(stakePeriodStart);
+            }
+            return copy.build();
+        }
+
+        public AccountCustomizer withAccount(final Account accountOfInterest) {
+            this.accountOfInterest = accountOfInterest;
+            return this;
+        }
+
+        public AccountCustomizer withBalance(final Long amount) {
+            this.amount = amount;
+            return this;
+        }
+
+        public AccountCustomizer withStakeAtStartOfLastRewardPeriod(final Long stakeAtStartOfLastRewardPeriod) {
+            this.stakeAtStartOfLastRewardPeriod = stakeAtStartOfLastRewardPeriod;
+            return this;
+        }
+
+        public AccountCustomizer withDeclineReward(final Boolean declineReward) {
+            this.declineReward = declineReward;
+            return this;
+        }
+
+        public AccountCustomizer withDeleted(final Boolean deleted) {
+            this.deleted = deleted;
+            return this;
+        }
+
+        public AccountCustomizer withStakePeriodStart(final Long stakePeriodStart) {
+            this.stakePeriodStart = stakePeriodStart;
+            return this;
+        }
     }
 }

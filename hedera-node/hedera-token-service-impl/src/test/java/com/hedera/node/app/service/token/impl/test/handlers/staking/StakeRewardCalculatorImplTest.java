@@ -43,7 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RewardCalculatorTest {
+class StakeRewardCalculatorImplTest {
     private static final Instant consensusTime = Instant.ofEpochSecond(12345678910L);
     private static final long TODAY_NUMBER =
             LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
