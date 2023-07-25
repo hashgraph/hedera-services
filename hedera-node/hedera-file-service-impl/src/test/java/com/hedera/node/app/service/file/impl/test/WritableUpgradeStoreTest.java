@@ -52,7 +52,7 @@ class WritableUpgradeStoreTest extends FileTestBase {
         writableUpgradeStates.add(file.contents());
         writableUpgradeFileStates.put(file.fileId(), file);
 
-        assertTrue(writableUpgradeFileStates.get(fileUpgradeFileId).fileId().fileNum() == 150L);
+        assertTrue(writableUpgradeFileStates.get(fileUpgradeFileId).fileId().fileNum() == fileUpgradeFileId.fileNum());
         final var writtenFile = writableUpgradeFileStates.get(fileUpgradeFileId);
         assertEquals(file, writtenFile);
         assertEquals(file.contents(), writableUpgradeStates.peek());
