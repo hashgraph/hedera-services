@@ -284,8 +284,6 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
     }
 
-    private void abortAndLogIfInterrupted(Object setMinimumGenerationToStore, long g, String s) {}
-
     /**
      * Handles a signed state that is now complete by saving it to disk, if it should be saved.
      *
