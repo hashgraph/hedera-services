@@ -3,12 +3,16 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.common.config.EventConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.AddressBookConfig;
+import com.swirlds.platform.util.BootstrapUtils;
 import picocli.CommandLine;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 @CommandLine.Command(
 		name = "clean",
@@ -19,20 +23,36 @@ public final class CleanCommand extends AbstractCommand {
 	/** The path to the sdk directory */
 	private Path sdkPath;
 
-	/**
-	 * Set the path to state A.
-	 */
-	@CommandLine.Parameters(description = "the path to the first SignedState.swh that is being compared")
-	private void setStateAPath(final Path sdkPath) {
+	/** Set the path to the sdk directory */
+	@CommandLine.Parameters(description = "the path to the sdk directory")
+	private void setSdkPath(final Path sdkPath) {
 		this.sdkPath = dirMustExist(sdkPath.toAbsolutePath());
 	}
 
 	@Override
 	public Integer call() throws Exception {
-		// logs
+		final Configuration configuration = BootstrapUtils.loadConfiguration(
+				List.of(
+						sdkPath.resolve("config.txt"),
+						sdkPath.resolve("settings.txt")
+				)
+		);
+
+		// delete all logs
 		FileUtils.deleteFiles(sdkPath, ".log");
 		// metrics
 		FileUtils.deleteFiles(sdkPath, ".csv");
+		// metricsDoc is written to user.dir, deleteFiles() will look for it in sdkPath
+		FileUtils.deleteFiles(sdkPath, "metricsDoc.tsv");
+		// settings used
+		FileUtils.deleteFiles(sdkPath, "settingsUsed.txt");
+		// address books
+		FileUtils.deleteDirectory(sdkPath.resolve(configuration.getConfigData(AddressBookConfig.class).addressBookDirectory()));
+		// saved states, PCES & recycle bin
+		// (the latter two are saved in the saved state directory, so deleting the saved state directory will delete them)
+		FileUtils.deleteDirectory(sdkPath.resolve(configuration.getConfigData(StateConfig.class).savedStateDirectory()));
+		// event streams
+		FileUtils.deleteDirectory(sdkPath.resolve(configuration.getConfigData(EventConfig.class).eventsLogDir()));
 
 		return 0;
 	}
