@@ -232,6 +232,12 @@ class TokenServiceApiImplTest {
     }
 
     @Test
+    void refusesToTransferNegativeAmount() {
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.transferFromTo(EOA_ACCOUNT_ID, CONTRACT_ACCOUNT_ID, -1L));
+    }
+
+    @Test
     void refusesToSetSenderBalanceNegative() {
         given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()

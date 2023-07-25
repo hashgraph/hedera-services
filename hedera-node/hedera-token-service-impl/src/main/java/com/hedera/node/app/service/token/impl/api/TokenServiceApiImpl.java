@@ -112,6 +112,10 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public void transferFromTo(@NonNull AccountID fromId, @NonNull AccountID toId, long amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException(
+                    "Cannot transfer negative value (" + amount + " tinybars) from " + fromId + " to " + toId);
+        }
         final var store = storeFactory.getStore(WritableAccountStore.class);
         final var from = requireNonNull(store.get(fromId));
         final var to = requireNonNull(store.get(toId));
