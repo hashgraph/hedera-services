@@ -57,7 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SingleTransactionRecordBuilderTest {
     public static final Instant CONSENSUS_TIME = Instant.now();
-    public static final Instant PARENT_CONSENSUS_TIME = Instant.now();
+    public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;
     public static final int ENTROPY_NUMBER = 87372879;
     public static final long TOPIC_SEQUENCE_NUMBER = 928782L;

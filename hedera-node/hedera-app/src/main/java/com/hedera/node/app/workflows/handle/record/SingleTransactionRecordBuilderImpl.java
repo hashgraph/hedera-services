@@ -131,13 +131,15 @@ public class SingleTransactionRecordBuilderImpl
     public final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this(requireNonNull(consensusNow, "consensusNow must not be null"), null);
+        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.parentConsensusTimestamp = null;
     }
 
     public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow, @Nullable final Instant parentConsensusTimestamp) {
+            @NonNull final Instant consensusNow, @NonNull final Instant parentConsensusTimestamp) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.parentConsensusTimestamp = parentConsensusTimestamp;
+        this.parentConsensusTimestamp =
+                requireNonNull(parentConsensusTimestamp, "parentConsensusTimestamp must not be null");
     }
 
     @SuppressWarnings("DataFlowIssue")
