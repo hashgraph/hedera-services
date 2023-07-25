@@ -328,4 +328,11 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
             Thread.currentThread().interrupt();
         }
     }
+
+    /**
+     * Wait until the handle thread is not busy. May block indefinitely if work is continuously added.
+     */
+    public void waitUntilNotBusy() throws InterruptedException {
+        handleThread.waitUntilNotBusy();
+    }
 }
