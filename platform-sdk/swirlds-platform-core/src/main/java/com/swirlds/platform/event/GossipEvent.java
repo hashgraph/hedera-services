@@ -65,7 +65,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      *
      * @param ingestCompleteCallback the callback to invoke
      */
-    public void setIngestCompleteCallback(@NonNull final Runnable ingestCompleteCallback) {
+    public void setIngestionCompleteCallback(@NonNull final Runnable ingestCompleteCallback) {
         this.ingestCompleteCallback = Objects.requireNonNull(ingestCompleteCallback);
     }
 
