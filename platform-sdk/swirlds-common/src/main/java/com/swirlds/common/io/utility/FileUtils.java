@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -288,5 +289,21 @@ public final class FileUtils {
      */
     public static String getUserDir() {
         return System.getProperty("user.dir");
+    }
+
+    /**
+     * Find files in the given directory that end with the given suffix.
+     * @param dir the directory to search
+     * @param suffix the suffix to match
+     * @return a list of paths to files that match the given suffix
+     * @throws IOException if there is a problem walking the directory
+     */
+    public static List<Path> findFiles(final Path dir, final String suffix) throws IOException {
+        try (Stream<Path> files = Files.walk(dir)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .filter(f -> f.toString().endsWith(suffix))
+                    .toList();
+        }
     }
 }
