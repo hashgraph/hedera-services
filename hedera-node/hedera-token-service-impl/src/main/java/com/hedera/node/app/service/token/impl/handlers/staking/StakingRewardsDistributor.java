@@ -38,13 +38,13 @@ import org.apache.logging.log4j.Logger;
  * Helper class for paying out staking rewards.
  */
 @Singleton
-public class StakingRewardsPayer {
-    private static final Logger log = LogManager.getLogger(StakingRewardsPayer.class);
+public class StakingRewardsDistributor {
+    private static final Logger log = LogManager.getLogger(StakingRewardsDistributor.class);
     private StakingRewardsHelper stakingRewardHelper;
     private StakeRewardCalculatorImpl rewardCalculator;
 
     @Inject
-    public StakingRewardsPayer(
+    public StakingRewardsDistributor(
             @NonNull final StakingRewardsHelper stakingRewardHelper,
             @NonNull final StakeRewardCalculatorImpl rewardCalculator) {
         this.stakingRewardHelper = stakingRewardHelper;

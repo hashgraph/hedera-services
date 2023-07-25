@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.getPossibleRewardReceivers;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.hasStakeMetaChanges;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
@@ -46,14 +47,14 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private static final Logger log = LogManager.getLogger(StakingRewardsHandlerImpl.class);
-    private final StakingRewardsPayer rewardsPayer;
+    private final StakingRewardsDistributor rewardsPayer;
     private final StakingRewardsHelper stakingRewardHelper;
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
     public StakingRewardsHandlerImpl(
-            @NonNull final StakingRewardsPayer rewardsPayer,
+            @NonNull final StakingRewardsDistributor rewardsPayer,
             @NonNull final StakingRewardsHelper stakingRewardHelper,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final StakeInfoHelper stakeInfoHelper) {
@@ -78,7 +79,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         // for all accounts staking to an account
         adjustStakedToMeForAccountStakees(writableStore, readableStore);
         // Get list of possible reward receivers and pay rewards to them
-        final var rewardReceivers = stakingRewardHelper.getPossibleRewardReceivers(writableStore, readableStore);
+        final var rewardReceivers = getPossibleRewardReceivers(writableStore, readableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, readableStore, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow);

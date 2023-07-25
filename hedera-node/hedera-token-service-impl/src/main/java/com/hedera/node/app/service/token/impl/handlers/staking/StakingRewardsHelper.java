@@ -57,8 +57,9 @@ public class StakingRewardsHelper {
      * @param readableAccountStore The store to read from for original values
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
-    public Set<AccountID> getPossibleRewardReceivers(
-            final WritableAccountStore writableAccountStore, final ReadableAccountStore readableAccountStore) {
+    public static Set<AccountID> getPossibleRewardReceivers(
+            final WritableAccountStore writableAccountStore,
+            final ReadableAccountStore readableAccountStore) {
         final var possibleRewardReceivers = new HashSet<AccountID>();
         for (final AccountID modifiedId : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.get(modifiedId);
@@ -84,7 +85,7 @@ public class StakingRewardsHelper {
      * @param originalAccount the account before the current transaction
      * @return true if the account is staked to a node and the current transaction modified the stakedToMe field
      */
-    private boolean isRewardSituation(@NonNull final Account modifiedAccount, @Nullable final Account originalAccount) {
+    private static boolean isRewardSituation(@NonNull final Account modifiedAccount, @Nullable final Account originalAccount) {
         requireNonNull(modifiedAccount);
         if (originalAccount == null) {
             return false;

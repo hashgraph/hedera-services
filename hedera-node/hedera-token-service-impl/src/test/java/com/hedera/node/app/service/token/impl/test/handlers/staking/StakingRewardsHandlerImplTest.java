@@ -34,7 +34,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManage
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
-import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsPayer;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsDistributor;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
@@ -59,7 +59,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
     private StakingRewardsHandlerImpl subject;
     private StakePeriodManager stakePeriodManager;
-    private StakingRewardsPayer rewardsPayer;
+    private StakingRewardsDistributor rewardsPayer;
     private StakeInfoHelper stakeInfoHelper;
     private StakeRewardCalculatorImpl stakeRewardCalculator;
     private StakingRewardsHelper stakingRewardHelper;
@@ -80,7 +80,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         stakingRewardHelper = new StakingRewardsHelper();
         stakePeriodManager = new StakePeriodManager(configProvider);
         stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
-        rewardsPayer = new StakingRewardsPayer(stakingRewardHelper, stakeRewardCalculator);
+        rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
         subject = new StakingRewardsHandlerImpl(rewardsPayer, stakingRewardHelper, stakePeriodManager, stakeInfoHelper);
     }
