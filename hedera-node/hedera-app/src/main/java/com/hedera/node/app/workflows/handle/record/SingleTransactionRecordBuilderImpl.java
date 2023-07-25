@@ -253,7 +253,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @Override
     public @NonNull SingleTransactionRecordBuilderImpl contractCreateResult(
-            @NonNull ContractFunctionResult contractCreateResult) {
+            @Nullable ContractFunctionResult contractCreateResult) {
         this.contractCreateResult = contractCreateResult;
         return this;
     }

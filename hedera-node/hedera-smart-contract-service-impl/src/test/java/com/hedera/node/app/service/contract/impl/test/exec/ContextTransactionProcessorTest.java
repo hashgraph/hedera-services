@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
@@ -94,6 +96,7 @@ class ContextTransactionProcessorTest {
                         HEVM_CREATION, baseProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
 
-        assertEquals(SUCCESS_RESULT.asProtoResultForBase(baseProxyWorldUpdater), subject.call());
+        final var expectedResult = new CallOutcome(SUCCESS_RESULT.asProtoResultForBase(baseProxyWorldUpdater), SUCCESS);
+        assertEquals(expectedResult, subject.call());
     }
 }

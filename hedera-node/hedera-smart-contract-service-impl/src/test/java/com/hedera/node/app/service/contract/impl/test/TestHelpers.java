@@ -50,6 +50,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -139,6 +140,18 @@ public class TestHelpers {
             CALLED_CONTRACT_EVM_ADDRESS,
             pbjToTuweniBytes(CALL_DATA),
             List.of(BESU_LOG),
+            null);
+
+    public static final HederaEvmTransactionResult FAILURE_RESULT = new HederaEvmTransactionResult(
+            GAS_LIMIT / 2,
+            NETWORK_GAS_PRICE,
+            null,
+            null,
+            Bytes.EMPTY,
+            "I prefer not to",
+            null,
+            null,
+            Collections.emptyList(),
             null);
 
     public static final StorageAccesses ONE_STORAGE_ACCESSES =

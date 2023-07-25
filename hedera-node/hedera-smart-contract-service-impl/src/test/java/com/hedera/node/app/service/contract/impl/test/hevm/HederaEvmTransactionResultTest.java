@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
@@ -33,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
@@ -63,9 +64,10 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void abortsWithTranslatedStatus() {
-        var subject = HederaEvmTransactionResult.abortFor(ResponseCodeEnum.INVALID_SIGNATURE);
+        var subject = HederaEvmTransactionResult.abortFor(INVALID_SIGNATURE);
 
-        assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, subject.abortReason());
+        assertEquals(INVALID_SIGNATURE, subject.abortReason());
+        assertEquals(INVALID_SIGNATURE, subject.finalStatus());
     }
 
     @Test
@@ -97,6 +99,7 @@ class HederaEvmTransactionResultTest {
 
         final var expectedChanges = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
         assertEquals(expectedChanges, result.stateChanges());
+        assertEquals(SUCCESS, result.finalStatus());
     }
 
     @Test

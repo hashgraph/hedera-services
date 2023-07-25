@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
@@ -56,17 +57,24 @@ public record HederaEvmTransactionResult(
         requireNonNull(logs);
     }
 
-    public @Nullable String maybeErrorMessage() {
-        // TODO - convert any abort, revert, or halt reason if present to an error message
-        return null;
-    }
-
     public ContractFunctionResult asProtoResultForBase(@NonNull final RootProxyWorldUpdater updater) {
         final var errorMessage = maybeErrorMessage();
         if (errorMessage == null) {
             return asSuccessResultForCommitted(updater);
         } else {
             throw new AssertionError("Not implemented");
+        }
+    }
+
+    public ResponseCodeEnum finalStatus() {
+        if (abortReason != null) {
+            return abortReason;
+        } else if (haltReason != null) {
+            throw new AssertionError("Not implemented");
+        } else if (revertReason != null) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return SUCCESS;
         }
     }
 
@@ -181,6 +189,11 @@ public record HederaEvmTransactionResult(
         return contractIds.contains(recipientId)
                 ? requireNonNull(recipientEvmAddress).evmAddressOrThrow()
                 : null;
+    }
+
+    private @Nullable String maybeErrorMessage() {
+        // TODO - convert any abort, revert, or halt reason if present to an error message
+        return null;
     }
 
     public boolean isSuccess() {

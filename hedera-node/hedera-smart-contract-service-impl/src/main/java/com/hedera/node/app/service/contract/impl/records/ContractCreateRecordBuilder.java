@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public interface ContractCreateRecordBuilder {
 
@@ -39,7 +40,7 @@ public interface ContractCreateRecordBuilder {
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractID(@NonNull final ContractID contractId);
+    ContractCreateRecordBuilder contractID(@Nullable final ContractID contractId);
 
     /**
      * Tracks the result of a top-level contract creation.
@@ -48,5 +49,5 @@ public interface ContractCreateRecordBuilder {
      * @return this builder
      */
     @NonNull
-    ContractCreateRecordBuilder contractCreateResult(@NonNull final ContractFunctionResult result);
+    ContractCreateRecordBuilder contractCreateResult(@Nullable final ContractFunctionResult result);
 }

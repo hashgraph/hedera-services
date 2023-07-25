@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.contract.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isSuccess;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -54,18 +52,14 @@ public class ContractCreateHandler implements TransactionHandler {
         // Create the transaction-scoped component
         final var component = provider.get().create(context);
 
-        // Run its in-scope transaction to completion and get the result
-        final var result = component.contextTransactionProcessor().call();
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        final var recordBuilder =
-                context.recordBuilder(ContractCreateRecordBuilder.class).contractCreateResult(result);
-        if (isSuccess(result)) {
-            recordBuilder.status(SUCCESS);
-            recordBuilder.contractID(result.contractIDOrThrow());
-        } else {
-            throw new AssertionError("Not implemented");
-        }
+        context.recordBuilder(ContractCreateRecordBuilder.class)
+                .contractCreateResult(outcome.result())
+                .contractID(outcome.recipientIdIfCreated())
+                .status(outcome.status());
     }
 
     @Override

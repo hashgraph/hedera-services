@@ -18,7 +18,6 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
 
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -43,7 +42,7 @@ import javax.inject.Inject;
  * call implied by the in-scope {@link HandleContext}.
  */
 @TransactionScope
-public class ContextTransactionProcessor implements Callable<ContractFunctionResult> {
+public class ContextTransactionProcessor implements Callable<CallOutcome> {
     private final HandleContext context;
     private final ContractsConfig contractsConfig;
     private final Configuration configuration;
@@ -77,7 +76,7 @@ public class ContextTransactionProcessor implements Callable<ContractFunctionRes
     }
 
     @Override
-    public ContractFunctionResult call() {
+    public CallOutcome call() {
         // Translate the HAPI operation to a Hedera EVM transaction
         final var hevmTransaction = hevmTransactionFactory.fromHapiTransaction(context.body());
 
@@ -89,6 +88,6 @@ public class ContextTransactionProcessor implements Callable<ContractFunctionRes
                 hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 
         // Return the EVM result, maybe enriched with details of the base commit()
-        return result.asProtoResultForBase(worldUpdater);
+        return new CallOutcome(result.asProtoResultForBase(worldUpdater), result.finalStatus());
     }
 }

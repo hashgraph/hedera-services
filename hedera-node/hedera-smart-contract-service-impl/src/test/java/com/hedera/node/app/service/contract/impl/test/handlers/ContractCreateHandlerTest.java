@@ -30,15 +30,16 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
-import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,9 +62,6 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     private ContextTransactionProcessor processor;
 
     @Mock
-    private HevmTransactionFactory hevmTransactionFactory;
-
-    @Mock
     private ContractCreateRecordBuilder recordBuilder;
 
     private ContractCreateHandler subject;
@@ -74,12 +72,14 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     }
 
     @Test
-    void delegatesToCreatedComponent() {
+    void delegatesToCreatedComponentAndExposesSuccess() {
         given(factory.create(handleContext)).willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
+        given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultForBase(baseProxyWorldUpdater);
-        given(processor.call()).willReturn(expectedResult);
+        final var expectedOutcome = new CallOutcome(expectedResult, SUCCESS_RESULT.finalStatus());
+        given(processor.call()).willReturn(expectedOutcome);
 
         given(recordBuilder.status(SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(CALLED_CONTRACT_ID)).willReturn(recordBuilder);
