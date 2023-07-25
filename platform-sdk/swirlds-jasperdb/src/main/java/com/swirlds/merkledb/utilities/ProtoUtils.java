@@ -10,6 +10,7 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.function.CheckedFunction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public class ProtoUtils {
 
@@ -107,8 +108,7 @@ public class ProtoUtils {
     }
 
     public static <T extends WritableSequentialData> void writeBytes(
-            final T out, final FieldDefinition field, final int size, final CheckedConsumer<T, IOException> writer)
-        throws IOException {
+            final T out, final FieldDefinition field, final int size, final Consumer<T> writer) {
         out.writeVarInt(field.number() << ProtoParserTools.TAG_FIELD_OFFSET | WIRE_TYPE_DELIMITED, false);
         out.writeVarInt(size, false);
         writer.accept(out);

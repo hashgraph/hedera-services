@@ -37,7 +37,7 @@ public class BenchmarkRecordMerkleDbSerializer implements DataItemSerializer<Ben
     }
 
     @Override
-    public BenchmarkRecord deserialize(final ReadableSequentialData in) throws IOException {
+    public BenchmarkRecord deserialize(final ReadableSequentialData in) {
         BenchmarkRecord data = new BenchmarkRecord();
         data.deserialize(in);
         return data;
@@ -49,7 +49,7 @@ public class BenchmarkRecordMerkleDbSerializer implements DataItemSerializer<Ben
     }
 
     @Override
-    public void serialize(BenchmarkRecord data, WritableSequentialData out) throws IOException {
+    public void serialize(BenchmarkRecord data, WritableSequentialData out) {
         out.writeInt(getSerializedSize());
         data.serialize(out);
     }

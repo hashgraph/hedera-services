@@ -72,7 +72,7 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    public void serialize(final long[] data, final WritableSequentialData out) throws IOException {
+    public void serialize(final long[] data, final WritableSequentialData out) {
         int dataSizeBytes = Long.BYTES + (Long.BYTES * data.length); // Size + data
         out.writeLong(dataSizeBytes);
         for (long d : data) {
@@ -92,7 +92,7 @@ public class ExampleVariableSizeDataSerializer implements DataItemSerializer<lon
     }
 
     @Override
-    public long[] deserialize(ReadableSequentialData in) throws IOException {
+    public long[] deserialize(ReadableSequentialData in) {
         int dataSize = (int) in.readLong(); // int stored as long
         int repeats = (dataSize - Long.BYTES) / Long.BYTES;
         long[] dataItem = new long[repeats];

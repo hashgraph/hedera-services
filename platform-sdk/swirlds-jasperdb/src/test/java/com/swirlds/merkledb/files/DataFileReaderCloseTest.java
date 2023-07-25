@@ -112,15 +112,38 @@ class DataFileReaderCloseTest {
         }
 
         @Override
-        public void serialize(long[] data, WritableSequentialData out) throws IOException {
+        public int getHeaderSize() {
+            return Long.BYTES;
+        }
+
+        @Override
+        public DataItemHeader deserializeHeader(ByteBuffer buffer) {
+            return new DataItemHeader(getSerializedSize(), buffer.getLong());
+        }
+
+        @Override
+        public void serialize(long[] data, WritableSequentialData out) {
             assert data.length == 2;
             out.writeLong(data[0]);
             out.writeLong(data[1]);
         }
 
         @Override
-        public long[] deserialize(ReadableSequentialData in) throws IOException {
+        public int serialize(long[] data, ByteBuffer buffer) throws IOException {
+            assert data.length == 2;
+            buffer.putLong(data[0]);
+            buffer.putLong(data[1]);
+            return getSerializedSize();
+        }
+
+        @Override
+        public long[] deserialize(ReadableSequentialData in) {
             return new long[] {in.readLong(), in.readLong()};
+        }
+
+        @Override
+        public long[] deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+            return new long[] {buffer.getLong(), buffer.getLong()};
         }
 
         @Override

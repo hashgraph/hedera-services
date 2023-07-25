@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Writer for creating a data file. A data file contains a number of data items. Each data item can

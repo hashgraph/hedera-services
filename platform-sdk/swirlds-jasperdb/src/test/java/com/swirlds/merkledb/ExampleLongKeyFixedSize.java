@@ -154,7 +154,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         }
 
         @Override
-        public ExampleLongKeyFixedSize deserialize(ReadableSequentialData in) throws IOException {
+        public ExampleLongKeyFixedSize deserialize(ReadableSequentialData in) {
             final long value = in.readLong();
             return new ExampleLongKeyFixedSize(value);
         }
@@ -175,7 +175,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         }
 
         @Override
-        public void serialize(ExampleLongKeyFixedSize data, WritableSequentialData out) throws IOException {
+        public void serialize(ExampleLongKeyFixedSize data, WritableSequentialData out) {
             out.writeLong(data.getKeyAsLong());
         }
 

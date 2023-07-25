@@ -88,7 +88,7 @@ public class AccountVirtualMapKey implements VirtualKey {
         this.accountID = in.readLong();
     }
 
-    public void serialize(final WritableSequentialData out) throws IOException {
+    public void serialize(final WritableSequentialData out) {
         out.writeLong(realmID);
         out.writeLong(shardId);
         out.writeLong(accountID);
@@ -105,7 +105,7 @@ public class AccountVirtualMapKey implements VirtualKey {
         buffer.putLong(accountID);
     }
 
-    public void deserialize(final ReadableSequentialData in) throws IOException {
+    public void deserialize(final ReadableSequentialData in) {
         this.realmID = in.readLong();
         this.shardId = in.readLong();
         this.accountID = in.readLong();
@@ -126,7 +126,7 @@ public class AccountVirtualMapKey implements VirtualKey {
         return realmID == buffer.getLong() && shardId == buffer.getLong() && accountID == buffer.getLong();
     }
 
-    public boolean equals(final BufferedData buffer) throws IOException {
+    public boolean equals(final BufferedData buffer) {
         return realmID == buffer.readLong() && shardId == buffer.readLong() && accountID == buffer.readLong();
     }
 

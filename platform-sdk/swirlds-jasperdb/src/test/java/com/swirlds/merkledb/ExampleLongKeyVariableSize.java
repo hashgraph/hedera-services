@@ -62,7 +62,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
     }
 
-    public void serialize(final WritableSequentialData out) throws IOException {
+    public void serialize(final WritableSequentialData out) {
         final int numOfBytes = computeNonZeroBytes(value);
         out.writeByte((byte) numOfBytes);
         for (int b = numOfBytes - 1; b >= 0; b--) {
@@ -99,7 +99,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         setValue(value);
     }
 
-    public void deserialize(final ReadableSequentialData in) throws IOException {
+    public void deserialize(final ReadableSequentialData in) {
         byte numOfBytes = in.readByte();
         long value = 0;
         if (numOfBytes >= 8) value |= ((long) in.readByte() & 255) << 56;
@@ -256,7 +256,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
 
         @Override
-        public ExampleLongKeyVariableSize deserialize(ReadableSequentialData in) throws IOException {
+        public ExampleLongKeyVariableSize deserialize(ReadableSequentialData in) {
             final ExampleLongKeyVariableSize key = new ExampleLongKeyVariableSize();
             key.deserialize(in);
             return key;
@@ -270,7 +270,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         }
 
         @Override
-        public void serialize(ExampleLongKeyVariableSize data, WritableSequentialData out) throws IOException {
+        public void serialize(ExampleLongKeyVariableSize data, WritableSequentialData out) {
             data.serialize(out);
         }
 

@@ -47,12 +47,12 @@ public final class SmartContractMapKeySerializerMerkleDb extends AbstractFixedSi
     }
 
     @Override
-    public void serialize(final SmartContractMapKey key, final WritableSequentialData out) throws IOException {
+    public void serialize(final SmartContractMapKey key, final WritableSequentialData out) {
         key.serialize(out);
     }
 
     @Override
-    public SmartContractMapKey deserialize(final ReadableSequentialData in) throws IOException {
+    public SmartContractMapKey deserialize(final ReadableSequentialData in) {
         final SmartContractMapKey key = new SmartContractMapKey();
         key.deserialize(in);
         return key;

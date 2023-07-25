@@ -63,7 +63,10 @@ public final class DataFileCommon {
 
     private static final Logger logger = LogManager.getLogger(DataFileCommon.class);
 
-    /** Access to sun.misc.Unsafe required for atomic compareAndSwapLong on off-heap memory */
+    /**
+     * Access to sun.misc.Unsafe required to close mapped byte buffers explicitly rather than
+     * to rely on GC to collect them.
+     */
     private static final Unsafe UNSAFE;
 
     static {

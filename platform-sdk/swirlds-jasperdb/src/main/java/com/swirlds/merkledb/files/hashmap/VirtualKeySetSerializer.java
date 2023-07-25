@@ -41,7 +41,7 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
     }
 
     @Override
-    public void serialize(VirtualLongKey data, WritableSequentialData out) throws IOException {
+    public void serialize(VirtualLongKey data, WritableSequentialData out) {
         out.writeLong(data.getKeyAsLong());
     }
 
@@ -54,7 +54,7 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
     }
 
     @Override
-    public VirtualLongKey deserialize(ReadableSequentialData in) throws IOException {
+    public VirtualLongKey deserialize(ReadableSequentialData in) {
         throw new UnsupportedOperationException();
     }
 

@@ -96,7 +96,7 @@ public final class SmartContractMapKey implements VirtualKey {
         return 2 * Long.BYTES;
     }
 
-    public void serialize(final WritableSequentialData out) throws IOException {
+    public void serialize(final WritableSequentialData out) {
         out.writeLong(contractId);
         out.writeLong(keyValuePairIndex);
     }
@@ -111,7 +111,7 @@ public final class SmartContractMapKey implements VirtualKey {
         buffer.putLong(keyValuePairIndex);
     }
 
-    public void deserialize(final ReadableSequentialData in) throws IOException {
+    public void deserialize(final ReadableSequentialData in) {
         contractId = in.readLong();
         keyValuePairIndex = in.readLong();
     }

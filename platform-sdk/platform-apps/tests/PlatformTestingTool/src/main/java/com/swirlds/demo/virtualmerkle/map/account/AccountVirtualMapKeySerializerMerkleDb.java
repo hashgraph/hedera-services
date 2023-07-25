@@ -39,12 +39,12 @@ public class AccountVirtualMapKeySerializerMerkleDb extends AbstractFixedSizeKey
     }
 
     @Override
-    public void serialize(AccountVirtualMapKey dataItem, WritableSequentialData out) throws IOException {
+    public void serialize(AccountVirtualMapKey dataItem, WritableSequentialData out) {
         dataItem.serialize(out);
     }
 
     @Override
-    public AccountVirtualMapKey deserialize(ReadableSequentialData in) throws IOException {
+    public AccountVirtualMapKey deserialize(ReadableSequentialData in) {
         final AccountVirtualMapKey key = new AccountVirtualMapKey();
         key.deserialize(in);
         return key;

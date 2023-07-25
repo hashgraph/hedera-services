@@ -23,6 +23,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
 
@@ -58,7 +59,7 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public void serialize(final TestValue data, final WritableSequentialData out) throws IOException {
+    public void serialize(final TestValue data, final WritableSequentialData out) {
         final String s = data.getValue();
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
         out.writeInt(bytes.length);
@@ -66,10 +67,30 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public TestValue deserialize(final ReadableSequentialData in) throws IOException {
+    @Deprecated(forRemoval = true)
+    public int serialize(TestValue data, ByteBuffer buffer) throws IOException {
+        final String s = data.getValue();
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
+        return Integer.BYTES + bytes.length;
+    }
+
+    @Override
+    public TestValue deserialize(final ReadableSequentialData in) {
         final int length = in.readInt();
         final byte[] bytes = new byte[length];
         in.readBytes(bytes);
+        final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
+        return new TestValue(s);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public TestValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        final int length = buffer.getInt();
+        final byte[] bytes = new byte[length];
+        buffer.get(bytes);
         final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(s);
     }

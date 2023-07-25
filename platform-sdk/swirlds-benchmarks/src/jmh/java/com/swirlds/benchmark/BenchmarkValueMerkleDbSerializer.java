@@ -60,14 +60,29 @@ public class BenchmarkValueMerkleDbSerializer implements ValueSerializer<Benchma
     }
 
     @Override
-    public void serialize(BenchmarkValue data, WritableSequentialData out) throws IOException {
+    public void serialize(BenchmarkValue data, WritableSequentialData out) {
         data.serialize(out);
     }
 
     @Override
-    public BenchmarkValue deserialize(ReadableSequentialData in) throws IOException {
+    @Deprecated(forRemoval = true)
+    public int serialize(BenchmarkValue data, ByteBuffer buffer) throws IOException {
+        data.serialize(buffer);
+        return BenchmarkValue.getSerializedSize();
+    }
+
+    @Override
+    public BenchmarkValue deserialize(ReadableSequentialData in) {
         final BenchmarkValue value = new BenchmarkValue();
         value.deserialize(in);
+        return value;
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public BenchmarkValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        final BenchmarkValue value = new BenchmarkValue();
+        value.deserialize(buffer, (int) dataVersion);
         return value;
     }
 }

@@ -144,12 +144,12 @@ public class DataFileReaderHammerTest {
         }
 
         @Override
-        public void serialize(byte[] data, WritableSequentialData out) throws IOException {
+        public void serialize(byte[] data, WritableSequentialData out) {
             out.writeBytes(data);
         }
 
         @Override
-        public byte[] deserialize(ReadableSequentialData in) throws IOException {
+        public byte[] deserialize(ReadableSequentialData in) {
             final byte[] r = new byte[size];
             in.readBytes(r);
             return r;

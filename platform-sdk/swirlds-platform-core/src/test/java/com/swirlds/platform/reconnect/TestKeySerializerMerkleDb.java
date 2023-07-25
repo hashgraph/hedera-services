@@ -58,7 +58,7 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public TestKey deserialize(final ReadableSequentialData in) throws IOException {
+    public TestKey deserialize(final ReadableSequentialData in) {
         final TestKey key = new TestKey();
         key.deserialize(in);
         return key;
@@ -73,7 +73,7 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public void serialize(final TestKey data, WritableSequentialData out) throws IOException {
+    public void serialize(final TestKey data, WritableSequentialData out) {
         data.serialize(out);
     }
 

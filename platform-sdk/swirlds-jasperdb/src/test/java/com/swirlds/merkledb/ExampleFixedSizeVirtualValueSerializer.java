@@ -69,17 +69,31 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
     }
 
     @Override
-    public void serialize(final ExampleFixedSizeVirtualValue data, final WritableSequentialData out) throws IOException {
+    public void serialize(final ExampleFixedSizeVirtualValue data, final WritableSequentialData out) {
         out.writeInt(data.getId());
         out.writeBytes(data.getData());
     }
 
     @Override
-    public ExampleFixedSizeVirtualValue deserialize(final ReadableSequentialData in)
-            throws IOException {
+    public int serialize(ExampleFixedSizeVirtualValue data, ByteBuffer buffer) throws IOException {
+        buffer.putInt(data.getId());
+        buffer.put(data.getData());
+        return getSerializedSize();
+    }
+
+    @Override
+    public ExampleFixedSizeVirtualValue deserialize(final ReadableSequentialData in) {
         final int id = in.readInt();
         final byte[] bytes = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
         in.readBytes(bytes);
+        return new ExampleFixedSizeVirtualValue(id, bytes);
+    }
+
+    @Override
+    public ExampleFixedSizeVirtualValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        final int id = buffer.getInt();
+        final byte[] bytes = new byte[ExampleFixedSizeVirtualValue.RANDOM_BYTES];
+        buffer.get(bytes);
         return new ExampleFixedSizeVirtualValue(id, bytes);
     }
 

@@ -64,15 +64,14 @@ public final class SmartContractByteCodeMapValueSerializerMerkleDb
 
     @Override
     public void serialize(
-            final SmartContractByteCodeMapValue data, final WritableSequentialData out) throws IOException {
+            final SmartContractByteCodeMapValue data, final WritableSequentialData out) {
         final int size = data.getSize();
         out.writeInt(size);
         out.writeBytes(data.getByteCode());
     }
 
     @Override
-    public SmartContractByteCodeMapValue deserialize(final ReadableSequentialData in)
-            throws IOException {
+    public SmartContractByteCodeMapValue deserialize(final ReadableSequentialData in) {
         final int size = in.readInt();
         final byte[] byteCode = new byte[size];
         in.readBytes(byteCode);

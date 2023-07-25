@@ -52,12 +52,12 @@ public class AccountVirtualMapValueSerializerMerkleDb implements ValueSerializer
     }
 
     @Override
-    public void serialize(final AccountVirtualMapValue data, final WritableSequentialData out) throws IOException {
+    public void serialize(final AccountVirtualMapValue data, final WritableSequentialData out) {
         data.serialize(out);
     }
 
     @Override
-    public AccountVirtualMapValue deserialize(final ReadableSequentialData in) throws IOException {
+    public AccountVirtualMapValue deserialize(final ReadableSequentialData in) {
         final AccountVirtualMapValue data = new AccountVirtualMapValue();
         data.deserialize(in);
         return data;

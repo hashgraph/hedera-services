@@ -67,7 +67,7 @@ public final class ExampleVariableSizeVirtualValueSerializer
 
     @Override
     public void serialize(
-            final ExampleVariableSizeVirtualValue data, final WritableSequentialData out) throws IOException {
+            final ExampleVariableSizeVirtualValue data, final WritableSequentialData out) {
         out.writeInt(data.getId());
         final int dataLength = data.getDataLength();
         out.writeInt(dataLength);
@@ -75,12 +75,31 @@ public final class ExampleVariableSizeVirtualValueSerializer
     }
 
     @Override
-    public ExampleVariableSizeVirtualValue deserialize(final ReadableSequentialData in)
-            throws IOException {
+    public int serialize(ExampleVariableSizeVirtualValue data, ByteBuffer buffer) throws IOException {
+        buffer.putInt(data.getId());
+        final int dataLength = data.getDataLength();
+        buffer.putInt(dataLength);
+        buffer.put(data.getData());
+        return Integer.BYTES + Integer.BYTES + data.getData().length;
+    }
+
+    @Override
+    public ExampleVariableSizeVirtualValue deserialize(final ReadableSequentialData in) {
         final int id = in.readInt();
         final int dataLength = in.readInt();
         final byte[] bytes = new byte[dataLength];
         in.readBytes(bytes);
+        return new ExampleVariableSizeVirtualValue(id, bytes);
+    }
+
+    @Override
+    public ExampleVariableSizeVirtualValue deserialize(final ByteBuffer buffer, final long dataVersion)
+            throws IOException {
+        assert dataVersion == getCurrentDataVersion();
+        final int id = buffer.getInt();
+        final int dataLength = buffer.getInt();
+        final byte[] bytes = new byte[dataLength];
+        buffer.get(bytes);
         return new ExampleVariableSizeVirtualValue(id, bytes);
     }
 

@@ -48,12 +48,12 @@ public final class SmartContractByteCodeMapKeySerializerMerkleDb
     }
 
     @Override
-    public void serialize(final SmartContractByteCodeMapKey key, final WritableSequentialData out) throws IOException {
+    public void serialize(final SmartContractByteCodeMapKey key, final WritableSequentialData out) {
         key.serialize(out);
     }
 
     @Override
-    public SmartContractByteCodeMapKey deserialize(final ReadableSequentialData in) throws IOException {
+    public SmartContractByteCodeMapKey deserialize(final ReadableSequentialData in) {
         final SmartContractByteCodeMapKey key = new SmartContractByteCodeMapKey();
         key.deserialize(in);
         return key;

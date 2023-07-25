@@ -85,7 +85,7 @@ public interface BaseSerializer<T> {
         throw new RuntimeException("TO IMPLEMENT");
     }
 
-    void serialize(T dataItem, WritableSequentialData out) throws IOException;
+    void serialize(T dataItem, WritableSequentialData out);
 
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version.
@@ -99,5 +99,5 @@ public interface BaseSerializer<T> {
         throw new RuntimeException("TO IMPLEMENT");
     }
 
-    T deserialize(ReadableSequentialData in) throws IOException;
+    T deserialize(ReadableSequentialData in);
 }

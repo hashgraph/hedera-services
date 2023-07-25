@@ -73,17 +73,36 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public void serialize(final TestValue data, final WritableSequentialData out) throws IOException {
+    public void serialize(final TestValue data, final WritableSequentialData out) {
         final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
         out.writeInt(bytes.length);
         out.writeBytes(bytes);
     }
 
     @Override
-    public TestValue deserialize(final ReadableSequentialData in) throws IOException {
+    @Deprecated(forRemoval = true)
+    public int serialize(TestValue data, ByteBuffer buffer) throws IOException {
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
+        return Integer.BYTES + bytes.length;
+    }
+
+    @Override
+    public TestValue deserialize(final ReadableSequentialData in) {
         final int size = in.readInt();
         final byte[] bytes = new byte[size];
         in.readBytes(bytes);
+        final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
+        return new TestValue(value);
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public TestValue deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        final int size = buffer.getInt();
+        final byte[] bytes = new byte[size];
+        buffer.get(bytes);
         final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(value);
     }

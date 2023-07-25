@@ -66,13 +66,13 @@ public class ExampleFixedSizeDataSerializer implements DataItemSerializer<long[]
     }
 
     @Override
-    public void serialize(final long[] data, final WritableSequentialData out) throws IOException {
+    public void serialize(final long[] data, final WritableSequentialData out) {
         out.writeLong(data[0]);
         out.writeLong(data[1]);
     }
 
     @Override
-    public long[] deserialize(final ReadableSequentialData in) throws IOException {
+    public long[] deserialize(final ReadableSequentialData in) {
         return new long[] {in.readLong(), in.readLong()};
     }
 

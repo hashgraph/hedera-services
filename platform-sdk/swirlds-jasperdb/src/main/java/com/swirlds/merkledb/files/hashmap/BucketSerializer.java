@@ -19,10 +19,12 @@ package com.swirlds.merkledb.files.hashmap;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Serializer for writing buckets into a DataFile.
@@ -102,9 +104,40 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
     }
 
     @Override
-    public Bucket<K> deserialize(ReadableSequentialData in) throws IOException {
+    @Deprecated(forRemoval = true)
+    public int getHeaderSize() {
+        return Integer.BYTES + Integer.BYTES; // bucket index + bucket size
+    }
+
+    @Override
+    @Deprecated(forRemoval = true)
+    public DataItemHeader deserializeHeader(final ByteBuffer buffer) {
+        int bucketIndex = buffer.getInt();
+        int size = buffer.getInt();
+        return new DataItemHeader(size, bucketIndex);
+    }
+
+    @Override
+    public void serialize(final Bucket<K> bucket, final WritableSequentialData out) {
+        bucket.writeTo(out);
+    }
+
+    @Override
+    public int serialize(Bucket<K> bucket, ByteBuffer buffer) throws IOException {
+        return bucket.writeTo(buffer);
+    }
+
+    @Override
+    public Bucket<K> deserialize(ReadableSequentialData in) {
         final Bucket<K> bucket = reusableBucketPool.getBucket();
         bucket.readFrom(in);
+        return bucket;
+    }
+
+    @Override
+    public Bucket<K> deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        final Bucket<K> bucket = reusableBucketPool.getBucket();
+        bucket.readFrom(buffer);
         return bucket;
     }
 
@@ -113,8 +146,4 @@ public class BucketSerializer<K extends VirtualKey> implements DataItemSerialize
         return Bucket.extractKey(dataItemData);
     }
 
-    @Override
-    public void serialize(final Bucket<K> bucket, final WritableSequentialData out) throws IOException {
-        bucket.writeTo(out);
-    }
 }

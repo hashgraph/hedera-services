@@ -57,13 +57,13 @@ public final class SmartContractMapValueSerializerMerkleDb implements ValueSeria
     }
 
     @Override
-    public void serialize(final SmartContractMapValue data, final WritableSequentialData out) throws IOException {
+    public void serialize(final SmartContractMapValue data, final WritableSequentialData out) {
         final byte[] value = data.getValue();
         out.writeBytes(value);
     }
 
     @Override
-    public SmartContractMapValue deserialize(final ReadableSequentialData in) throws IOException {
+    public SmartContractMapValue deserialize(final ReadableSequentialData in) {
         final byte[] value = new byte[SmartContractMapValue.getSizeInBytes()];
         in.readBytes(value);
         return new SmartContractMapValue(value);

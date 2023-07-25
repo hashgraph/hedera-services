@@ -118,7 +118,7 @@ public class AccountVirtualMapValue implements VirtualValue {
         buffer.putLong(uid);
     }
 
-    public void serialize(final WritableSequentialData out) throws IOException {
+    public void serialize(final WritableSequentialData out) {
         out.writeLong(balance);
         out.writeLong(sendThreshold);
         out.writeLong(receiveThreshold);
@@ -138,7 +138,7 @@ public class AccountVirtualMapValue implements VirtualValue {
         this.uid = buffer.getLong();
     }
 
-    public void deserialize(final ReadableSequentialData in) throws IOException {
+    public void deserialize(final ReadableSequentialData in) {
         this.balance = in.readLong();
         this.sendThreshold = in.readLong();
         this.receiveThreshold = in.readLong();

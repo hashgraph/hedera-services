@@ -97,7 +97,7 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         contractId = in.readLong();
     }
 
-    public void serialize(final WritableSequentialData out) throws IOException {
+    public void serialize(final WritableSequentialData out) {
         out.writeLong(contractId);
     }
 
@@ -110,7 +110,7 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
         buffer.putLong(contractId);
     }
 
-    public void deserialize(final ReadableSequentialData in) throws IOException {
+    public void deserialize(final ReadableSequentialData in) {
         contractId = in.readLong();
     }
 
@@ -119,7 +119,7 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
      */
     @Override
     @Deprecated(forRemoval = true)
-    public void deserialize(final ByteBuffer buffer) throws IOException {
+    public void deserialize(final ByteBuffer buffer) {
         contractId = buffer.getLong();
     }
 

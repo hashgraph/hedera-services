@@ -26,6 +26,7 @@ import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import com.swirlds.virtualmap.VirtualKey;
@@ -33,8 +34,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
@@ -206,10 +207,7 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 entry.setValue(value);
                 return;
             }
-            final int keyBytesSize = keySerializer.getSerializedSize(key);
-            final BufferedData keyBytes = BufferedData.allocate(keyBytesSize);
-            keySerializer.serialize(key, keyBytes);
-            final BucketEntry newEntry = new BucketEntry(keyHashCode, value, keyBytes);
+            final BucketEntry newEntry = new BucketEntry(keyHashCode, value, key);
             entries.add(newEntry);
 
             checkLargestBucket();
@@ -243,7 +241,16 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         checkLargestBucket();
     }
 
-    public void writeTo(final WritableSequentialData out) throws IOException {
+    void readFrom(final ByteBuffer buffer) throws IOException {
+        bucketIndex.set(buffer.getInt());
+        buffer.getInt(); // skip the size
+        final int entriesCount = buffer.getInt();
+        for (int i = 0; i < entriesCount; i++) {
+            entries.add(new BucketEntry(buffer));
+        }
+    }
+
+    public void writeTo(final WritableSequentialData out) {
         if (bucketIndex.get() > 0) {
             ProtoUtils.writeTag(out, FIELD_BUCKET_INDEX);
             out.writeVarInt(bucketIndex.get(), false);
@@ -253,6 +260,22 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             out.writeVarInt(entry.sizeInBytes(), false);
             entry.writeTo(out);
         }
+    }
+
+    int writeTo(final ByteBuffer buffer) throws IOException {
+        final int initialPos = buffer.position();
+        buffer.putInt(bucketIndex.get());
+        buffer.putInt(0); // size, will be updated later
+        buffer.putInt(entries.size());
+        for (final BucketEntry entry : entries) {
+            buffer.putInt(entry.getHashCode());
+            buffer.putLong(entry.getValue());
+            keySerializer.serialize(entry.getKey(), buffer);
+        }
+        final int finalPos = buffer.position();
+        final int serializedSize = finalPos - initialPos;
+        buffer.putInt(initialPos + Integer.BYTES, serializedSize);
+        return serializedSize;
     }
 
     public static long extractKey(final BufferedData bucketBytes) {
@@ -297,24 +320,20 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         final int size = sizeInBytes();
         final StringBuilder sb = new StringBuilder(
                 "Bucket{bucketIndex=" + getBucketIndex() + ", entryCount=" + entryCount + ", size=" + size + "\n");
-        try {
-            for (int i = 0; i < entryCount; i++) {
-                final BucketEntry entry = entries.get(i);
-                final int hashCode = entry.getHashCode();
-                final long value = entry.getValue();
-                final K key = keySerializer.deserialize(entry.getKeyBytes());
-                sb.append("    ENTRY["
-                        + i
-                        + "] value= "
-                        + value
-                        + " keyHashCode="
-                        + hashCode
-                        + " key="
-                        + key
-                        + "\n");
-            }
-        } catch (IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Failed enumerating bucket entries", e);
+        for (int i = 0; i < entryCount; i++) {
+            final BucketEntry entry = entries.get(i);
+            final int hashCode = entry.getHashCode();
+            final long value = entry.getValue();
+            final K key = keySerializer.deserialize(entry.getKeyBytes());
+            sb.append("    ENTRY["
+                    + i
+                    + "] value= "
+                    + value
+                    + " keyHashCode="
+                    + hashCode
+                    + " key="
+                    + key
+                    + "\n");
         }
         sb.append("}");
         return sb.toString();
@@ -334,21 +353,25 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
         private int hashCode;
         /** Long value */
         private long value;
+        /** Key */
+        private K key;
         /** Serialized key */
         private BufferedData keyBytes;
 
         /** Creates new bucket entry from hash code, value, and serialized key bytes */
-        public BucketEntry(final int hashCode, final long value, @NonNull final BufferedData keyBytes) {
+        public BucketEntry(final int hashCode, final long value, @NonNull final K key) {
             this.hashCode = hashCode;
             this.value = value;
-            this.keyBytes = Objects.requireNonNull(keyBytes);
+            this.key = key;
+            this.keyBytes = null;
         }
 
-        /** Creates new bucket entry by reading its fields from the given buffer */
+        /** Creates new bucket entry by reading its fields from the given protobuf buffer */
         public BucketEntry(final BufferedData entryData) {
             // defaults
             hashCode = 0;
             value = 0;
+            key = null;
             keyBytes = null;
 
             // read fields
@@ -374,6 +397,18 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             }
         }
 
+        /** Creates new bucket entry by reading its fields from the given binary buffer */
+        public BucketEntry(final ByteBuffer buffer) throws IOException {
+            hashCode = buffer.getInt();
+            value = buffer.getLong();
+            // This is going to be somewhat slow. A possible workaround is to re-introduce
+            // KeySerializer.deserializeKeySize() method and use it here to read raw key bytes
+            // as a byte buffer. In this case, either entry key is not null, or key bytes as
+            // BufferedData is not null, or key bytes as ByteBuffer is not null
+            key = keySerializer.deserialize(buffer, 0);
+            keyBytes = null;
+        }
+
         public int getHashCode() {
             return hashCode;
         }
@@ -386,8 +421,23 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
             this.value = value;
         }
 
+        public K getKey() {
+            if (key == null) {
+                assert keyBytes != null;
+                key = keySerializer.deserialize(keyBytes);
+            }
+            return key;
+        }
+
         public BufferedData getKeyBytes() {
-            keyBytes.reset();
+            if (keyBytes == null) {
+                assert key != null;
+                final int size = keySerializer.getSerializedSize(key);
+                keyBytes = BufferedData.allocate(size);
+                keySerializer.serialize(key, keyBytes);
+            } else {
+                keyBytes.reset();
+            }
             return keyBytes;
         }
 
@@ -399,25 +449,31 @@ public final class Bucket<K extends VirtualKey> implements Closeable {
                 size += ProtoUtils.sizeOfTag(FIELD_BUCKETENTRY_VALUE, ProtoUtils.WIRE_TYPE_VARINT) +
                         ProtoUtils.sizeOfVarInt64(value);
             }
-            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, (int) keyBytes.capacity());
+            final BufferedData keyb = getKeyBytes();
+            size += ProtoUtils.sizeOfDelimited(FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity());
             return size;
         }
 
-        public void writeTo(final WritableSequentialData out) throws IOException {
+        public void writeTo(final WritableSequentialData out) {
             ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_HASHCODE);
             out.writeVarInt(hashCode, false);
             if (value != 0) {
                 ProtoUtils.writeTag(out, FIELD_BUCKETENTRY_VALUE);
                 out.writeVarLong(value, false);
             }
-            keyBytes.reset();
-            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, (int) keyBytes.capacity(),
-                    o -> o.writeBytes(keyBytes));
+            final BufferedData keyb = getKeyBytes();
+            ProtoUtils.writeBytes(out, FIELD_BUCKETENTRY_KEYBYTES, (int) keyb.capacity(),
+                    o -> o.writeBytes(keyb));
         }
 
         public boolean equals(final KeySerializer<K> keySerializer, final K key) throws IOException {
-            keyBytes.reset();
-            return keySerializer.equals(keyBytes, key);
+            if (this.key != null) {
+                return this.key.equals(key);
+            } else {
+                assert keyBytes != null;
+                keyBytes.reset();
+                return keySerializer.equals(keyBytes, key);
+            }
         }
     }
 }
