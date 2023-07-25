@@ -25,7 +25,6 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -58,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class SingleTransactionRecordBuilderTest {
     public static final Instant CONSENSUS_TIME = Instant.now();
+    public static final Instant PARENT_CONSENSUS_TIME = CONSENSUS_TIME.plusNanos(1L);
     public static final long TRANSACTION_FEE = 6846513L;
     public static final int ENTROPY_NUMBER = 87372879;
     public static final long TOPIC_SEQUENCE_NUMBER = 928782L;
@@ -67,7 +67,7 @@ public class SingleTransactionRecordBuilderTest {
     private @Mock Transaction transaction;
     private @Mock TransactionBody transactionBody;
     private @Mock TransactionID transactionID;
-    private Bytes transactionBytes = Bytes.wrap("Hello Tester");
+    private final Bytes transactionBytes = Bytes.wrap("Hello Tester");
     private @Mock ContractFunctionResult contractCallResult;
     private @Mock ContractFunctionResult contractCreateResult;
     private @Mock TransferList transferList;
@@ -75,7 +75,6 @@ public class SingleTransactionRecordBuilderTest {
     private @Mock ScheduleID scheduleRef;
     private @Mock AssessedCustomFee assessedCustomFee;
     private @Mock TokenAssociation tokenAssociation;
-    private @Mock Timestamp parentConsensusTimestamp;
     private @Mock Bytes alias;
     private @Mock Bytes ethereumHash;
     private @Mock Bytes prngBytes;
@@ -109,7 +108,7 @@ public class SingleTransactionRecordBuilderTest {
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
         SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
+                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME, PARENT_CONSENSUS_TIME);
         assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
 
         singleTransactionRecordBuilder
@@ -125,7 +124,6 @@ public class SingleTransactionRecordBuilderTest {
                 .scheduleRef(scheduleRef)
                 .assessedCustomFees(assessedCustomFees)
                 .automaticTokenAssociations(automaticTokenAssociations)
-                .parentConsensusTimestamp(parentConsensusTimestamp)
                 .alias(alias)
                 .ethereumHash(ethereumHash)
                 .paidStakingRewards(paidStakingRewards)
@@ -196,7 +194,9 @@ public class SingleTransactionRecordBuilderTest {
         assertEquals(assessedCustomFees, singleTransactionRecord.record().assessedCustomFees());
         assertEquals(
                 automaticTokenAssociations, singleTransactionRecord.record().automaticTokenAssociations());
-        assertEquals(parentConsensusTimestamp, singleTransactionRecord.record().parentConsensusTimestamp());
+        assertEquals(
+                HapiUtils.asTimestamp(PARENT_CONSENSUS_TIME),
+                singleTransactionRecord.record().parentConsensusTimestamp());
         assertEquals(alias, singleTransactionRecord.record().alias());
         assertEquals(ethereumHash, singleTransactionRecord.record().ethereumHash());
         assertEquals(paidStakingRewards, singleTransactionRecord.record().paidStakingRewards());

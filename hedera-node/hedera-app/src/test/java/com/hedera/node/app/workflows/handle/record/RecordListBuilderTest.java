@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -75,6 +76,7 @@ class RecordListBuilderTest {
         assertThat(preceding.consensusNow())
                 .isAfterOrEqualTo(base.consensusNow().minusNanos(MAX_PRECEDING))
                 .isBefore(base.consensusNow());
+        assertNull(preceding.parentConsensusTimestamp());
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(preceding, base);
     }
@@ -99,7 +101,9 @@ class RecordListBuilderTest {
         assertThat(preceding1.consensusNow())
                 .isAfterOrEqualTo(base.consensusNow().minusNanos(maxPreceding))
                 .isBefore(preceding2.consensusNow());
+        assertNull(preceding1.parentConsensusTimestamp());
         assertThat(preceding2.consensusNow()).isBefore(base.consensusNow());
+        assertNull(preceding2.parentConsensusTimestamp());
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(preceding1, preceding2, base);
     }
@@ -118,6 +122,7 @@ class RecordListBuilderTest {
         assertThat(child.consensusNow())
                 .isAfter(base.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(base, child);
     }
 
@@ -140,9 +145,11 @@ class RecordListBuilderTest {
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.consensusNow())
                 .isAfter(child1.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(maxChildren));
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(base, child1, child2);
     }
 
@@ -160,10 +167,12 @@ class RecordListBuilderTest {
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.status()).isEqualTo(REVERTED_SUCCESS);
         assertThat(child2.consensusNow())
                 .isAfter(child1.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.status()).isEqualTo(OK);
         assertThat(recordListBuilder.builders()).containsExactly(base, child1, child2);
     }
@@ -197,10 +206,13 @@ class RecordListBuilderTest {
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.status()).isEqualTo(OK);
         assertThat(child2.consensusNow()).isAfter(child1.consensusNow());
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.status()).isEqualTo(REVERTED_SUCCESS);
         assertThat(child3.consensusNow()).isAfter(child2.consensusNow());
+        assertThat(child3.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child3.status()).isEqualTo(ACCOUNT_ID_DOES_NOT_EXIST);
         assertThat(child4.consensusNow())
                 .isAfter(child3.consensusNow())
@@ -223,6 +235,7 @@ class RecordListBuilderTest {
         assertThat(child.consensusNow())
                 .isAfter(base.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(base, child);
     }
 
@@ -246,9 +259,11 @@ class RecordListBuilderTest {
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.consensusNow())
                 .isAfter(child1.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(maxChildren));
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(base, child1, child2);
     }
 
@@ -268,6 +283,7 @@ class RecordListBuilderTest {
         assertThat(child2.consensusNow())
                 .isAfter(base.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.status()).isEqualTo(OK);
         assertThat(recordListBuilder.builders()).containsExactly(base, child2);
     }
@@ -289,10 +305,12 @@ class RecordListBuilderTest {
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.status()).isEqualTo(OK);
         assertThat(child4.consensusNow())
                 .isAfter(child1.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child4.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child4.status()).isEqualTo(OK);
         assertThat(recordListBuilder.builders()).containsExactly(base, child1, child4);
     }
@@ -318,20 +336,27 @@ class RecordListBuilderTest {
         // then
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.status()).isEqualTo(OK);
         assertThat(child2.consensusNow()).isAfter(child1.consensusNow());
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.status()).isEqualTo(OK);
         assertThat(child3.consensusNow()).isAfter(child2.consensusNow());
+        assertThat(child3.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child3.status()).isEqualTo(OK);
         assertThat(child5.consensusNow()).isAfter(child3.consensusNow());
+        assertThat(child5.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child5.status()).isEqualTo(REVERTED_SUCCESS);
         assertThat(child6.consensusNow()).isAfter(child5.consensusNow());
+        assertThat(child6.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child6.status()).isEqualTo(REVERTED_SUCCESS);
         assertThat(child8.consensusNow()).isAfter(child6.consensusNow());
+        assertThat(child8.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child8.status()).isEqualTo(OK);
         assertThat(child9.consensusNow())
                 .isAfter(child8.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child9.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child9.status()).isEqualTo(OK);
         assertThat(recordListBuilder.builders())
                 .containsExactly(base, child1, child2, child3, child5, child6, child8, child9);
@@ -353,12 +378,16 @@ class RecordListBuilderTest {
         assertThat(preceding1.consensusNow())
                 .isAfterOrEqualTo(base.consensusNow().minusNanos(MAX_PRECEDING))
                 .isBefore(preceding2.consensusNow());
+        assertNull(preceding1.parentConsensusTimestamp());
         assertThat(preceding2.consensusNow()).isBefore(base.consensusNow());
+        assertNull(preceding2.parentConsensusTimestamp());
         assertThat(base.consensusNow()).isEqualTo(CONSENSUS_NOW);
         assertThat(child1.consensusNow()).isAfter(base.consensusNow());
+        assertThat(child1.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(child2.consensusNow())
                 .isAfter(child1.consensusNow())
                 .isBeforeOrEqualTo(base.consensusNow().plusNanos(MAX_CHILDREN));
+        assertThat(child2.parentConsensusTimestamp()).isEqualTo(CONSENSUS_NOW);
         assertThat(recordListBuilder.builders()).containsExactly(preceding1, preceding2, base, child1, child2);
     }
 }
