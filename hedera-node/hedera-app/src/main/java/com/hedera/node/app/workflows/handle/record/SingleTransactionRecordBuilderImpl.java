@@ -38,7 +38,6 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -91,25 +90,12 @@ public class SingleTransactionRecordBuilderImpl
                 TokenCreateRecordBuilder {
     // base transaction data
     private Transaction transaction;
-    private TransactionID transactionID;
-    private String memo;
     private Bytes transactionBytes = Bytes.EMPTY;
     // fields needed for TransactionRecord
     private final Instant consensusNow;
-    private long transactionFee;
-    private ContractFunctionResult contractCallResult;
-    private ContractFunctionResult contractCreateResult;
-    private TransferList transferList;
-    private List<TokenTransferList> tokenTransferLists = emptyList();
-    private ScheduleID scheduleRef;
-    private List<AssessedCustomFee> assessedCustomFees = emptyList();
-    private List<TokenAssociation> automaticTokenAssociations = emptyList();
-    private final Instant parentConsensusTimestamp;
-    private Bytes alias = Bytes.EMPTY;
-    private Bytes ethereumHash = Bytes.EMPTY;
-    private List<AccountAmount> paidStakingRewards = emptyList();
-    private OneOf<TransactionRecord.EntropyOneOfType> entropy = new OneOf<>(EntropyOneOfType.UNSET, null);
-    private Bytes evmAddress = Bytes.EMPTY;
+    private final Instant parentConsensus;
+    private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
+
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
     private AccountID accountID;
@@ -132,20 +118,35 @@ public class SingleTransactionRecordBuilderImpl
 
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.parentConsensusTimestamp = null;
+        this.parentConsensus = null;
     }
 
     public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow, @NonNull final Instant parentConsensusTimestamp) {
+            @NonNull final Instant consensusNow, @NonNull final Instant parentConsensus) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.parentConsensusTimestamp =
-                requireNonNull(parentConsensusTimestamp, "parentConsensusTimestamp must not be null");
+        this.parentConsensus = requireNonNull(parentConsensus, "parentConsensusTimestamp must not be null");
     }
 
     @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
+        // build
+        final var transactionReceipt = new TransactionReceipt(
+                status,
+                accountID,
+                fileID,
+                contractID,
+                exchangeRate,
+                topicID,
+                topicSequenceNumber,
+                topicRunningHash,
+                topicRunningHashVersion,
+                tokenID,
+                newTotalSupply,
+                scheduleID,
+                scheduledTransactionID,
+                serialNumbers);
+
         // compute transaction hash: TODO could pass in if we have it calculated else where
-        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
         final Bytes transactionHash;
         try {
             final MessageDigest digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
@@ -153,69 +154,40 @@ public class SingleTransactionRecordBuilderImpl
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-        // create body one of
-        OneOf<TransactionRecord.BodyOneOfType> body = new OneOf<>(TransactionRecord.BodyOneOfType.UNSET, null);
-        if (contractCallResult != null)
-            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CALL_RESULT, contractCallResult);
-        if (contractCreateResult != null)
-            body = new OneOf<>(TransactionRecord.BodyOneOfType.CONTRACT_CREATE_RESULT, contractCreateResult);
+
+        final Timestamp consensusTimestamp = HapiUtils.asTimestamp(consensusNow);
+        final Timestamp parentConsensusTimestamp =
+                parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
+
+        this.transactionRecordBuilder.receipt(transactionReceipt);
+        this.transactionRecordBuilder.transactionHash(transactionHash);
+        this.transactionRecordBuilder.consensusTimestamp(consensusTimestamp);
+        this.transactionRecordBuilder.parentConsensusTimestamp(parentConsensusTimestamp);
+
+        final var transactionRecord = this.transactionRecordBuilder.build();
+
         // create list of sidecar records
         List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
         contractStateChanges.stream()
                 .map(pair -> new TransactionSidecarRecord(
-                        consensusTimestamp,
+                        transactionRecord.consensusTimestamp(),
                         pair.getValue(),
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
         contractActions.stream()
                 .map(pair -> new TransactionSidecarRecord(
-                        consensusTimestamp,
+                        transactionRecord.consensusTimestamp(),
                         pair.getValue(),
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
         contractBytecodes.stream()
                 .map(pair -> new TransactionSidecarRecord(
-                        consensusTimestamp,
+                        transactionRecord.consensusTimestamp(),
                         pair.getValue(),
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, pair.getKey())))
                 .forEach(transactionSidecarRecords::add);
-        // build
-        return new SingleTransactionRecord(
-                transaction,
-                new TransactionRecord(
-                        new TransactionReceipt(
-                                status,
-                                accountID,
-                                fileID,
-                                contractID,
-                                exchangeRate,
-                                topicID,
-                                topicSequenceNumber,
-                                topicRunningHash,
-                                topicRunningHashVersion,
-                                tokenID,
-                                newTotalSupply,
-                                scheduleID,
-                                scheduledTransactionID,
-                                serialNumbers),
-                        transactionHash,
-                        consensusTimestamp,
-                        transactionID,
-                        memo,
-                        transactionFee,
-                        body,
-                        transferList,
-                        tokenTransferLists,
-                        scheduleRef,
-                        assessedCustomFees,
-                        automaticTokenAssociations,
-                        parentConsensusTimestamp != null ? HapiUtils.asTimestamp(parentConsensusTimestamp) : null,
-                        alias,
-                        ethereumHash,
-                        paidStakingRewards,
-                        entropy,
-                        evmAddress),
-                transactionSidecarRecords);
+
+        return new SingleTransactionRecord(transaction, transactionRecord, transactionSidecarRecords);
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
@@ -231,12 +203,12 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     public SingleTransactionRecordBuilderImpl transactionID(TransactionID transactionID) {
-        this.transactionID = transactionID;
+        this.transactionRecordBuilder.transactionID(transactionID);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl memo(String memo) {
-        this.memo = memo;
+        this.transactionRecordBuilder.memo(memo);
         return this;
     }
 
@@ -249,81 +221,81 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     public SingleTransactionRecordBuilderImpl transactionFee(long transactionFee) {
-        this.transactionFee = transactionFee;
+        this.transactionRecordBuilder.transactionFee(transactionFee);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl contractCallResult(ContractFunctionResult contractCallResult) {
-        this.contractCallResult = contractCallResult;
+        this.transactionRecordBuilder.contractCallResult(contractCallResult);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl contractCreateResult(ContractFunctionResult contractCreateResult) {
-        this.contractCreateResult = contractCreateResult;
+        this.transactionRecordBuilder.contractCreateResult(contractCreateResult);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl transferList(@NonNull TransferList transferList) {
-        this.transferList = transferList;
+        this.transactionRecordBuilder.transferList(transferList);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
-        this.tokenTransferLists = tokenTransferLists;
+        this.transactionRecordBuilder.tokenTransferLists(tokenTransferLists);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl scheduleRef(ScheduleID scheduleRef) {
-        this.scheduleRef = scheduleRef;
+        this.transactionRecordBuilder.scheduleRef(scheduleRef);
         return this;
     }
 
     @NonNull
     @Override
     public SingleTransactionRecordBuilderImpl assessedCustomFees(List<AssessedCustomFee> assessedCustomFees) {
-        this.assessedCustomFees = assessedCustomFees;
+        this.transactionRecordBuilder.assessedCustomFees(assessedCustomFees);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl automaticTokenAssociations(
             List<TokenAssociation> automaticTokenAssociations) {
-        this.automaticTokenAssociations = automaticTokenAssociations;
+        this.transactionRecordBuilder.automaticTokenAssociations(automaticTokenAssociations);
         return this;
     }
 
     @Nullable
     public Instant parentConsensusTimestamp() {
-        return parentConsensusTimestamp;
+        return parentConsensus;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl alias(Bytes alias) {
-        this.alias = alias;
+        this.transactionRecordBuilder.alias(alias);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl ethereumHash(Bytes ethereumHash) {
-        this.ethereumHash = ethereumHash;
+        this.transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
     }
 
     public SingleTransactionRecordBuilderImpl paidStakingRewards(List<AccountAmount> paidStakingRewards) {
-        this.paidStakingRewards = paidStakingRewards;
+        this.transactionRecordBuilder.paidStakingRewards(paidStakingRewards);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl entropyNumber(final int num) {
-        this.entropy = new OneOf<>(EntropyOneOfType.PRNG_NUMBER, num);
+        this.transactionRecordBuilder.prngNumber(num);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl entropyBytes(@NonNull final Bytes prngBytes) {
         requireNonNull(prngBytes, "The argument 'entropyBytes' must not be null");
-        this.entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, prngBytes);
+        this.transactionRecordBuilder.prngBytes(prngBytes);
         return this;
     }
 
@@ -333,13 +305,13 @@ public class SingleTransactionRecordBuilderImpl
     @Deprecated(forRemoval = true)
     @Nullable
     public OneOf<TransactionRecord.EntropyOneOfType> entropy() {
-        return entropy;
+        return this.transactionRecordBuilder.build().entropy();
     }
 
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl evmAddress(@NonNull Bytes evmAddress) {
-        this.evmAddress = evmAddress;
+        this.transactionRecordBuilder.evmAddress(evmAddress);
         return this;
     }
 
