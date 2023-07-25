@@ -192,77 +192,35 @@ public class SingleTransactionRecordBuilderImpl
 
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
-    public SingleTransactionRecordBuilderImpl transaction(Transaction transaction) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl transaction(@NonNull final Transaction transaction) {
         this.transaction = transaction;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl transactionBytes(Bytes transactionBytes) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl transactionBytes(@NonNull final Bytes transactionBytes) {
         this.transactionBytes = transactionBytes;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl transactionID(TransactionID transactionID) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
         this.transactionRecordBuilder.transactionID(transactionID);
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl memo(String memo) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl memo(@NonNull final String memo) {
         this.transactionRecordBuilder.memo(memo);
         return this;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
-
     @NonNull
     public Instant consensusNow() {
         return consensusNow;
-    }
-
-    public SingleTransactionRecordBuilderImpl transactionFee(long transactionFee) {
-        this.transactionRecordBuilder.transactionFee(transactionFee);
-        return this;
-    }
-
-    public SingleTransactionRecordBuilderImpl contractCallResult(ContractFunctionResult contractCallResult) {
-        this.transactionRecordBuilder.contractCallResult(contractCallResult);
-        return this;
-    }
-
-    public SingleTransactionRecordBuilderImpl contractCreateResult(ContractFunctionResult contractCreateResult) {
-        this.transactionRecordBuilder.contractCreateResult(contractCreateResult);
-        return this;
-    }
-
-    @NonNull
-    public SingleTransactionRecordBuilderImpl transferList(@NonNull TransferList transferList) {
-        this.transactionRecordBuilder.transferList(transferList);
-        return this;
-    }
-
-    @NonNull
-    public SingleTransactionRecordBuilderImpl tokenTransferLists(@NonNull List<TokenTransferList> tokenTransferLists) {
-        this.transactionRecordBuilder.tokenTransferLists(tokenTransferLists);
-        return this;
-    }
-
-    public SingleTransactionRecordBuilderImpl scheduleRef(ScheduleID scheduleRef) {
-        this.transactionRecordBuilder.scheduleRef(scheduleRef);
-        return this;
-    }
-
-    @NonNull
-    @Override
-    public SingleTransactionRecordBuilderImpl assessedCustomFees(List<AssessedCustomFee> assessedCustomFees) {
-        this.transactionRecordBuilder.assessedCustomFees(assessedCustomFees);
-        return this;
-    }
-
-    public SingleTransactionRecordBuilderImpl automaticTokenAssociations(
-            List<TokenAssociation> automaticTokenAssociations) {
-        this.transactionRecordBuilder.automaticTokenAssociations(automaticTokenAssociations);
-        return this;
     }
 
     @Nullable
@@ -271,17 +229,74 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @NonNull
-    public SingleTransactionRecordBuilderImpl alias(Bytes alias) {
+    public SingleTransactionRecordBuilderImpl transactionFee(final long transactionFee) {
+        this.transactionRecordBuilder.transactionFee(transactionFee);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl contractCallResult(
+            @NonNull final ContractFunctionResult contractCallResult) {
+        this.transactionRecordBuilder.contractCallResult(contractCallResult);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl contractCreateResult(
+            @NonNull final ContractFunctionResult contractCreateResult) {
+        this.transactionRecordBuilder.contractCreateResult(contractCreateResult);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
+        this.transactionRecordBuilder.transferList(transferList);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl tokenTransferLists(
+            @NonNull final List<TokenTransferList> tokenTransferLists) {
+        this.transactionRecordBuilder.tokenTransferLists(tokenTransferLists);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl scheduleRef(@NonNull final ScheduleID scheduleRef) {
+        this.transactionRecordBuilder.scheduleRef(scheduleRef);
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public SingleTransactionRecordBuilderImpl assessedCustomFees(
+            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
+        this.transactionRecordBuilder.assessedCustomFees(assessedCustomFees);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl automaticTokenAssociations(
+            @NonNull final List<TokenAssociation> automaticTokenAssociations) {
+        this.transactionRecordBuilder.automaticTokenAssociations(automaticTokenAssociations);
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl alias(@NonNull final Bytes alias) {
         this.transactionRecordBuilder.alias(alias);
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl ethereumHash(Bytes ethereumHash) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl ethereumHash(@NonNull final Bytes ethereumHash) {
         this.transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl paidStakingRewards(List<AccountAmount> paidStakingRewards) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl paidStakingRewards(
+            @NonNull final List<AccountAmount> paidStakingRewards) {
         this.transactionRecordBuilder.paidStakingRewards(paidStakingRewards);
         return this;
     }
@@ -310,7 +325,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl evmAddress(@NonNull Bytes evmAddress) {
+    public SingleTransactionRecordBuilderImpl evmAddress(@NonNull final Bytes evmAddress) {
         this.transactionRecordBuilder.evmAddress(evmAddress);
         return this;
     }
@@ -355,16 +370,20 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     public SingleTransactionRecordBuilderImpl fileID(FileID fileID) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl fileID(@NonNull final FileID fileID) {
         this.fileID = fileID;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl contractID(ContractID contractID) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl contractID(@NonNull final ContractID contractID) {
         this.contractID = contractID;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl exchangeRate(ExchangeRateSet exchangeRate) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         this.exchangeRate = exchangeRate;
         return this;
     }
@@ -385,7 +404,7 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @NonNull
-    public SingleTransactionRecordBuilderImpl topicSequenceNumber(long topicSequenceNumber) {
+    public SingleTransactionRecordBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
         this.topicSequenceNumber = topicSequenceNumber;
         return this;
     }
@@ -414,32 +433,38 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @NonNull
-    public SingleTransactionRecordBuilderImpl topicRunningHashVersion(long topicRunningHashVersion) {
+    public SingleTransactionRecordBuilderImpl topicRunningHashVersion(final long topicRunningHashVersion) {
         this.topicRunningHashVersion = topicRunningHashVersion;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl tokenID(TokenID tokenID) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         this.tokenID = tokenID;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl newTotalSupply(long newTotalSupply) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl scheduleID(ScheduleID scheduleID) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl scheduleID(@NonNull final ScheduleID scheduleID) {
         this.scheduleID = scheduleID;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl scheduledTransactionID(TransactionID scheduledTransactionID) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl scheduledTransactionID(
+            @NonNull final TransactionID scheduledTransactionID) {
         this.scheduledTransactionID = scheduledTransactionID;
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl serialNumbers(List<Long> serialNumbers) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
         this.serialNumbers = serialNumbers;
         return this;
     }
@@ -455,19 +480,23 @@ public class SingleTransactionRecordBuilderImpl
 
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
+    @NonNull
     public SingleTransactionRecordBuilderImpl addContractStateChanges(
-            ContractStateChanges contractStateChanges, boolean isMigration) {
+            @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl addContractAction(ContractActions contractAction, boolean isMigration) {
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addContractAction(
+            @NonNull final ContractActions contractAction, final boolean isMigration) {
         contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
         return this;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilderImpl addContractBytecode(
-            ContractBytecode contractBytecode, boolean isMigration) {
+            @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
         return this;
     }
