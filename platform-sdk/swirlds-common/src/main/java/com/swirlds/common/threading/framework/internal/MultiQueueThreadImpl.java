@@ -247,4 +247,12 @@ public class MultiQueueThreadImpl implements MultiQueueThread {
     public void clear() {
         queueThread.clear();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void waitUntilNotBusy() throws InterruptedException {
+        queueThread.waitUntilNotBusy();
+    }
 }
