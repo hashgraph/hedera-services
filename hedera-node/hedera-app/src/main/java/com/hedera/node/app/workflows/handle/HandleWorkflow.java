@@ -260,8 +260,7 @@ public class HandleWorkflow {
               }
 
               // Setup context
-              final var txBody = preHandleResult.txInfo().txBody();
-              final var verifier = new HandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+              final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
               final var context = new HandleContextImpl(
                   txBody,
                   preHandleResult.payer(),
@@ -273,7 +272,9 @@ public class HandleWorkflow {
                   recordListBuilder,
                   checker,
                   dispatcher,
-                  serviceScopeLookup);
+                  serviceScopeLookup,
+                  blockRecordManager,
+                  hederaRecordCache);
 
               // Dispatch the transaction to the handler
               dispatcher.dispatchHandle(context);
