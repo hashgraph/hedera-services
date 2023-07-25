@@ -45,6 +45,7 @@ import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
@@ -90,7 +91,8 @@ public class SingleTransactionRecordBuilderImpl
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
                 TokenCreateRecordBuilder,
-                ContractCreateRecordBuilder {
+                ContractCreateRecordBuilder,
+                ContractCallRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private TransactionID transactionID;
@@ -391,9 +393,8 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    @NonNull
     @Override
-    public SingleTransactionRecordBuilderImpl contractID(@NonNull ContractID contractID) {
+    public @NonNull SingleTransactionRecordBuilderImpl contractID(@Nullable ContractID contractID) {
         this.contractID = contractID;
         return this;
     }

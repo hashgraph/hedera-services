@@ -22,13 +22,15 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 
 @Subcomponent(modules = {QueryModule.class})
 @QueryScope
 public interface QueryComponent {
     @Subcomponent.Factory
     interface Factory {
-        QueryComponent create(@BindsInstance @NonNull QueryContext context);
+        QueryComponent create(
+                @BindsInstance @NonNull QueryContext context, @BindsInstance @NonNull Instant approxConsensusTime);
     }
 
     RootProxyWorldUpdater baseProxyWorldUpdater();

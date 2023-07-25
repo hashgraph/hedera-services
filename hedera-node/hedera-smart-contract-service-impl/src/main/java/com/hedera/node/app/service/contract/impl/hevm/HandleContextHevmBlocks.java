@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ethHashFrom;
+
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,6 +26,10 @@ import javax.inject.Inject;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
+/**
+ * A {@link HederaEvmBlocks} implementation that uses the {@link HandleContext} to get
+ * block information.
+ */
 @TransactionScope
 public class HandleContextHevmBlocks implements HederaEvmBlocks {
     private final HandleContext context;
@@ -38,7 +44,8 @@ public class HandleContextHevmBlocks implements HederaEvmBlocks {
      */
     @Override
     public Hash blockHashOf(final long blockNo) {
-        throw new AssertionError("Not implemented");
+        final var hederaBlockHash = context.blockRecordInfo().blockHashByBlockNumber(blockNo);
+        return hederaBlockHash == null ? UNAVAILABLE_BLOCK_HASH : ethHashFrom(hederaBlockHash);
     }
 
     /**
@@ -46,6 +53,6 @@ public class HandleContextHevmBlocks implements HederaEvmBlocks {
      */
     @Override
     public BlockValues blockValuesOf(final long gasLimit) {
-        throw new AssertionError("Not implemented");
+        return new HevmBlockValues(gasLimit, context.blockRecordInfo().lastBlockNo(), context.consensusNow());
     }
 }

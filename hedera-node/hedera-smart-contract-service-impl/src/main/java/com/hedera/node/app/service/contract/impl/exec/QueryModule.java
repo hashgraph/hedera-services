@@ -31,7 +31,6 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 
 @Module
 public interface QueryModule {
@@ -39,12 +38,6 @@ public interface QueryModule {
     @QueryScope
     static Configuration provideConfiguration(@NonNull final QueryContext context) {
         return requireNonNull(context).configuration();
-    }
-
-    @Provides
-    @QueryScope
-    static Instant provideConsensusTime() {
-        return Instant.now();
     }
 
     @Binds

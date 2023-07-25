@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HandleHederaOperationsTest {
     @Mock
     private HandleContext.SavepointStack savepointStack;
+
+    @Mock
+    private BlockRecordInfo blockRecordInfo;
 
     @Mock
     private HandleContext context;
@@ -58,6 +62,20 @@ class HandleHederaOperationsTest {
     }
 
     @Test
+    void delegatesEntropyToBlockRecordInfo() {
+        final var pretendEntropy = Bytes.fromHex("0123456789");
+        given(context.blockRecordInfo()).willReturn(blockRecordInfo);
+        given(blockRecordInfo.getNMinus3RunningHash()).willReturn(pretendEntropy);
+        assertSame(pretendEntropy, subject.entropy());
+    }
+
+    @Test
+    void returnsZeroEntropyIfNMinus3HashMissing() {
+        given(context.blockRecordInfo()).willReturn(blockRecordInfo);
+        assertSame(HandleHederaOperations.ZERO_ENTROPY, subject.entropy());
+    }
+
+    @Test
     void createsNewSavepointWhenBeginningScope() {
         given(context.savepointStack()).willReturn(savepointStack);
 
@@ -74,6 +92,16 @@ class HandleHederaOperationsTest {
         subject.revert();
 
         verify(savepointStack).rollback();
+    }
+
+    @Test
+    void peekNumberIsNotImplemented() {
+        assertThrows(AssertionError.class, subject::peekNextEntityNumber);
+    }
+
+    @Test
+    void useNumberIsNotImplemented() {
+        assertThrows(AssertionError.class, subject::useNextEntityNumber);
     }
 
     @Test
@@ -128,7 +156,7 @@ class HandleHederaOperationsTest {
 
     @Test
     void deleteUnaliasedContractNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.deleteAliasedContract(Bytes.EMPTY));
+        assertThrows(AssertionError.class, () -> subject.deleteUnaliasedContract(123L));
     }
 
     @Test

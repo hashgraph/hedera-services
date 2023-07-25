@@ -50,6 +50,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -64,6 +65,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 
 public class TestHelpers {
     public static final int HEDERA_MAX_REFUND_PERCENTAGE = 20;
+    public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final long REQUIRED_GAS = 123L;
     public static final long NONCE = 678;
     public static final long VALUE = 999_999;

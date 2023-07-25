@@ -27,6 +27,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Inject;
 
 /**
@@ -34,6 +35,8 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
+    public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
     private final HandleContext context;
 
     @Inject
@@ -95,7 +98,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public @NonNull Bytes entropy() {
-        throw new AssertionError("Not implemented");
+        return Optional.ofNullable(context.blockRecordInfo().getNMinus3RunningHash())
+                .orElse(ZERO_ENTROPY);
     }
 
     /**

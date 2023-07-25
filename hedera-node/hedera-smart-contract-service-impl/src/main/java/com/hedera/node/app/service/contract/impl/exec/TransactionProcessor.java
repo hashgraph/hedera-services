@@ -70,6 +70,13 @@ public class TransactionProcessor {
         this.contractCreation = requireNonNull(contractCreation);
     }
 
+    /**
+     * Records the two or three parties involved in a transaction.
+     *
+     * @param sender the externally-operated account that signed the transaction (AKA the "origin")
+     * @param relayer if non-null, the account relayed an Ethereum transaction on behalf of the sender
+     * @param receiverAddress the address of the account receiving the top-level call
+     */
     private record InvolvedParties(
             @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
 

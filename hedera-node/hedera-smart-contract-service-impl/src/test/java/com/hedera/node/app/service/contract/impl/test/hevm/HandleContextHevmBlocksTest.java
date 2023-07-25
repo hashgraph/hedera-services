@@ -16,10 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETERNAL_NOW;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,20 +41,39 @@ class HandleContextHevmBlocksTest {
     @Mock
     private HandleContext context;
 
+    @Mock
+    private BlockRecordInfo blockRecordInfo;
+
     private HandleContextHevmBlocks subject;
 
     @BeforeEach
     void setUp() {
         subject = new HandleContextHevmBlocks(context);
+        given(context.blockRecordInfo()).willReturn(blockRecordInfo);
     }
 
     @Test
-    void blockHashOfNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.blockHashOf(1L));
+    void blockHashDelegates() {
+        given(blockRecordInfo.blockHashByBlockNumber(123L)).willReturn(ConversionUtils.tuweniToPbjBytes(Hash.EMPTY));
+        assertEquals(Hash.EMPTY, subject.blockHashOf(123L));
     }
 
     @Test
-    void blockValuesOfNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.blockValuesOf(1L));
+    void returnsUnavailableHashIfNecessary() {
+        assertSame(UNAVAILABLE_BLOCK_HASH, subject.blockHashOf(123L));
+    }
+
+    @Test
+    void blockValuesHasExpectedValues() {
+        given(blockRecordInfo.lastBlockNo()).willReturn(123L);
+        given(context.consensusNow()).willReturn(ETERNAL_NOW);
+
+        final var blockValues = subject.blockValuesOf(456L);
+
+        assertEquals(456L, blockValues.getGasLimit());
+        assertEquals(123L, blockValues.getNumber());
+        assertEquals(ETERNAL_NOW.getEpochSecond(), blockValues.getTimestamp());
+        assertEquals(Optional.of(Wei.ZERO), blockValues.getBaseFee());
+        assertSame(Bytes.EMPTY, blockValues.getDifficultyBytes());
     }
 }

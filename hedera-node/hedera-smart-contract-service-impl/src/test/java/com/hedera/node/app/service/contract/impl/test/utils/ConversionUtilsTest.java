@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.utils;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
@@ -43,6 +44,7 @@ import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
@@ -60,6 +62,11 @@ class ConversionUtilsTest {
     @Test
     void numberedIdsRequireLongZeroAddress() {
         assertThrows(IllegalArgumentException.class, () -> asNumberedContractId(EIP_1014_ADDRESS));
+    }
+
+    @Test
+    void wrapsExpectedHashPrefix() {
+        assertEquals(Bytes32.leftPad(Bytes.EMPTY, (byte) 0), ConversionUtils.ethHashFrom(ZERO_ENTROPY));
     }
 
     @Test

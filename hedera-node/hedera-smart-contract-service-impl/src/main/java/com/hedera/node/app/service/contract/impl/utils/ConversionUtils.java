@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.pr
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -66,6 +65,20 @@ public class ConversionUtils {
             pbjLogs.add(pbjLogFrom(log));
         }
         return pbjLogs;
+    }
+
+    /**
+     * Wraps the first 32 bytes of the given SHA-384 {@link com.swirlds.common.crypto.Hash hash} in a Besu {@link Hash}.
+     *
+     * @param sha384Hash the SHA-384 hash
+     * @return the first 32 bytes as a Besu {@link Hash}
+     */
+    public static org.hyperledger.besu.datatypes.Hash ethHashFrom(
+            @NonNull final com.hedera.pbj.runtime.io.buffer.Bytes sha384Hash) {
+        requireNonNull(sha384Hash);
+        final byte[] prefixBytes = new byte[32];
+        sha384Hash.getBytes(0, prefixBytes, 0, prefixBytes.length);
+        return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
     }
 
     /**
@@ -325,16 +338,6 @@ public class ConversionUtils {
     public static com.hedera.pbj.runtime.io.buffer.Bytes bloomForAll(@NonNull final List<Log> logs) {
         return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
                 LogsBloomFilter.builder().insertLogs(logs).build().toArray());
-    }
-
-    /**
-     * Returns whether the given {@link ContractFunctionResult} is a success.
-     *
-     * @param result the {@link ContractFunctionResult}
-     * @return whether it is a success
-     */
-    public static boolean isSuccess(@NonNull final ContractFunctionResult result) {
-        return result.errorMessage() == null;
     }
 
     private static byte[] clampedBytes(

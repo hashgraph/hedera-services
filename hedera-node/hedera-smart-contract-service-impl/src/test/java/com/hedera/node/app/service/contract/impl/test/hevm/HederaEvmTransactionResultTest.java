@@ -33,6 +33,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
@@ -42,6 +43,9 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import java.util.List;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,10 +68,26 @@ class HederaEvmTransactionResultTest {
 
     @Test
     void abortsWithTranslatedStatus() {
-        var subject = HederaEvmTransactionResult.abortFor(INVALID_SIGNATURE);
+        final var subject = HederaEvmTransactionResult.abortFor(INVALID_SIGNATURE);
 
         assertEquals(INVALID_SIGNATURE, subject.abortReason());
         assertEquals(INVALID_SIGNATURE, subject.finalStatus());
+    }
+
+    @Test
+    void finalStatusFromHaltNotImplemented() {
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, frame);
+        assertThrows(AssertionError.class, subject::finalStatus);
+    }
+
+    @Test
+    void finalStatusFromRevertNotImplemented() {
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getRevertReason()).willReturn(Optional.of(Bytes.of("MAX_CHILD_RECORDS_EXCEEDED".getBytes())));
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, frame);
+        assertThrows(AssertionError.class, subject::finalStatus);
     }
 
     @Test
