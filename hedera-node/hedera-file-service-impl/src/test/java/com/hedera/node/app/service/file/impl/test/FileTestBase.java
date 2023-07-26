@@ -278,8 +278,6 @@ public class FileTestBase {
         fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
         fileSystem =
                 new File(fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
-        upgradeFile = new File(
-                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
     }
 
     protected void givenValidUpgradeFile(boolean deleted, boolean withKeys) {
