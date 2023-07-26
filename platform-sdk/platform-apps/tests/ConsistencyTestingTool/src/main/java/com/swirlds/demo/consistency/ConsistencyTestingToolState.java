@@ -231,8 +231,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
             if (!transactionsAwaitingPostHandle.add(transactionContents)) {
                 logger.error(
-                        EXCEPTION.getMarker(),
-                        "Transaction {} was prehandled more than once.", transactionContents);
+                        EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
             }
         });
     }
