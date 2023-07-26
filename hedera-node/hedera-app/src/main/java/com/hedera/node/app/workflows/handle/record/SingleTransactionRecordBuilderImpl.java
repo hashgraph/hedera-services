@@ -167,24 +167,26 @@ public class SingleTransactionRecordBuilderImpl
     // base transaction data
     @NonNull
     public SingleTransactionRecordBuilderImpl transaction(@NonNull final Transaction transaction) {
-        this.transaction = transaction;
+        this.transaction = requireNonNull(transaction, "transaction must not be null");
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl transactionBytes(@NonNull final Bytes transactionBytes) {
-        this.transactionBytes = transactionBytes;
+        this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
+        requireNonNull(transactionID, "transactionID must not be null");
         this.transactionRecordBuilder.transactionID(transactionID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl memo(@NonNull final String memo) {
+        requireNonNull(memo, "memo must not be null");
         this.transactionRecordBuilder.memo(memo);
         return this;
     }
@@ -223,6 +225,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
+        requireNonNull(transferList, "transferList must not be null");
         this.transactionRecordBuilder.transferList(transferList);
         return this;
     }
@@ -236,6 +239,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl scheduleRef(@NonNull final ScheduleID scheduleRef) {
+        requireNonNull(scheduleRef, "scheduleRef must not be null");
         this.transactionRecordBuilder.scheduleRef(scheduleRef);
         return this;
     }
@@ -257,12 +261,14 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl alias(@NonNull final Bytes alias) {
+        requireNonNull(alias, "alias must not be null");
         this.transactionRecordBuilder.alias(alias);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl ethereumHash(@NonNull final Bytes ethereumHash) {
+        requireNonNull(ethereumHash, "ethereumHash must not be null");
         this.transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
     }
@@ -282,7 +288,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl entropyBytes(@NonNull final Bytes prngBytes) {
-        requireNonNull(prngBytes, "The argument 'entropyBytes' must not be null");
+        requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
         this.transactionRecordBuilder.prngBytes(prngBytes);
         return this;
     }
@@ -290,6 +296,7 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl evmAddress(@NonNull final Bytes evmAddress) {
+        requireNonNull(evmAddress, "evmAddress must not be null");
         this.transactionRecordBuilder.evmAddress(evmAddress);
         return this;
     }
@@ -311,30 +318,35 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
+        requireNonNull(accountID, "accountID must not be null");
         this.transactionReceiptBuilder.accountID(accountID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl fileID(@NonNull final FileID fileID) {
+        requireNonNull(fileID, "fileID must not be null");
         this.transactionReceiptBuilder.fileID(fileID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl contractID(@NonNull final ContractID contractID) {
+        requireNonNull(contractID, "contractID must not be null");
         this.transactionReceiptBuilder.contractID(contractID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
+        requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.transactionReceiptBuilder.exchangeRate(exchangeRate);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl topicID(@NonNull final TopicID topicID) {
+        requireNonNull(topicID, "topicID must not be null");
         this.transactionReceiptBuilder.topicID(topicID);
         return this;
     }
@@ -347,6 +359,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
+        requireNonNull(topicRunningHash, "topicRunningHash must not be null");
         this.transactionReceiptBuilder.topicRunningHash(topicRunningHash);
         return this;
     }
@@ -359,6 +372,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
+        requireNonNull(tokenID, "tokenID must not be null");
         this.transactionReceiptBuilder.tokenID(tokenID);
         return this;
     }
@@ -371,6 +385,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl scheduleID(@NonNull final ScheduleID scheduleID) {
+        requireNonNull(scheduleID, "scheduleID must not be null");
         this.transactionReceiptBuilder.scheduleID(scheduleID);
         return this;
     }
@@ -384,6 +399,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
+        requireNonNull(serialNumbers, "serialNumbers must not be null");
         this.transactionReceiptBuilder.serialNumbers(serialNumbers);
         return this;
     }
