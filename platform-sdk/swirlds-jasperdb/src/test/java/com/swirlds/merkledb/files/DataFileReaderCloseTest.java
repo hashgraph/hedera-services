@@ -27,10 +27,13 @@ import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -97,6 +100,42 @@ class DataFileReaderCloseTest {
             final long[] item = collection.readDataItemUsingIndex(index, i);
             Assertions.assertEquals(i, item[0]);
             Assertions.assertEquals(i + 1, item[1]);
+        }
+    }
+
+    @Test
+    void readWhileFinishWritingTest() throws IOException {
+        final Path tmpDir = TemporaryFileBuilder.buildTemporaryDirectory("readWhileFinishWritingTest");
+        for (int i = 0; i < 100; i++) {
+            Path filePath = null;
+            try {
+                final DataFileWriterPbj<long[]> writer = new DataFileWriterPbj<>("test", tmpDir, i,
+                        serializer, Instant.now());
+                filePath = writer.getPath();
+                final DataFileMetadata metadata = writer.getMetadata();
+                final LongList index = new LongListOffHeap();
+                index.put(0, writer.storeDataItem(new long[]{i, i * 2 + 1}));
+                final DataFileReaderPbj<long[]> reader = new DataFileReaderPbj<>(filePath, serializer, metadata);
+                final int fi = i;
+                // Check the item in parallel to finish writing
+                IntStream.of(0, 1).parallel().forEach(t -> {
+                    try {
+                        if (t == 1) {
+                            writer.finishWriting();
+                        } else {
+                            final long[] item = reader.readDataItem(index.get(0));
+                            Assertions.assertEquals(fi, item[0]);
+                            Assertions.assertEquals(fi * 2 + 1, item[1]);
+                        }
+                    } catch (final IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            } finally {
+                if (filePath != null) {
+                    Files.delete(filePath);
+                }
+            }
         }
     }
 

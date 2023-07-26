@@ -276,12 +276,28 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
 
     private BufferedData getReadBuffer(final int index) throws IOException {
         final long bufOffset = (long) index * (MMAP_BUF_SIZE / 2);
-        final long bufSize = Math.min(MMAP_BUF_SIZE, fileChannel.size() - bufOffset);
+        long bufSize = Math.min(MMAP_BUF_SIZE, fileChannel.size() - bufOffset);
         MappedByteBuffer buf = readingMmaps.get(index);
         if ((buf == null) || (buf.capacity() < bufSize)) {
-            final MappedByteBuffer newBuf = fileChannel.map(MapMode.READ_ONLY, bufOffset, bufSize);
+            MappedByteBuffer newBuf;
+            try {
+                newBuf = fileChannel.map(MapMode.READ_ONLY, bufOffset, bufSize);
+            } catch (final IOException e) {
+                // In very rare cases, the file may be being written in parallel in a different
+                // thread. If the writer finishes writing between the call to fileChannel.size()
+                // and fileChannel.map(), bufOffset + bufSize may exceed total file size. It
+                // happens because writers truncate file to actual size in finishWriting(). In
+                // this case, fileChannel.map() fails with an exception. There is no clean way
+                // to sync data file readers and writers, but fortunately it's enough to just
+                // retry with updated file size
+                bufSize = Math.min(MMAP_BUF_SIZE, fileChannel.size() - bufOffset);
+                newBuf = fileChannel.map(MapMode.READ_ONLY, bufOffset, bufSize);
+            }
             if (readingMmaps.compareAndSet(index, buf, newBuf)) {
                 mmapsToClean.add(newBuf);
+                if (buf != null) {
+                    DataFileCommon.closeMmapBuffer(buf);
+                }
                 buf = newBuf;
             } else {
                 DataFileCommon.closeMmapBuffer(newBuf);
