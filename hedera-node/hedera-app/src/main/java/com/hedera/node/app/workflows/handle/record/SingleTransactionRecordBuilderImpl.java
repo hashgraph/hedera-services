@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -93,15 +94,20 @@ public class SingleTransactionRecordBuilderImpl
     // fields needed for TransactionRecord
     private final Instant consensusNow;
     private final Instant parentConsensus;
+    private List<TokenTransferList> tokenTransferLists = emptyList();
+    private List<AssessedCustomFee> assessedCustomFees = emptyList();
+    private List<TokenAssociation> automaticTokenAssociations = emptyList();
+    private List<AccountAmount> paidStakingRewards = emptyList();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
+    private List<Long> serialNumbers = emptyList();
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
-    public final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new ArrayList<>();
-    public final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new ArrayList<>();
-    public final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
+    private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new ArrayList<>();
+    private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new ArrayList<>();
+    private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
@@ -115,7 +121,9 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     public SingleTransactionRecord build() {
-        final var transactionReceipt = this.transactionReceiptBuilder.build();
+        final var transactionReceipt =
+                this.transactionReceiptBuilder.serialNumbers(this.serialNumbers).build();
+
         final Bytes transactionHash;
         try {
             final MessageDigest digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
@@ -128,13 +136,16 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
-        this.transactionRecordBuilder
+        final var transactionRecord = this.transactionRecordBuilder
                 .receipt(transactionReceipt)
                 .transactionHash(transactionHash)
                 .consensusTimestamp(consensusTimestamp)
-                .parentConsensusTimestamp(parentConsensusTimestamp);
-
-        final var transactionRecord = this.transactionRecordBuilder.build();
+                .parentConsensusTimestamp(parentConsensusTimestamp)
+                .tokenTransferLists(this.tokenTransferLists)
+                .assessedCustomFees(this.assessedCustomFees)
+                .automaticTokenAssociations(this.automaticTokenAssociations)
+                .paidStakingRewards(this.paidStakingRewards)
+                .build();
 
         // create list of sidecar records
         List<TransactionSidecarRecord> transactionSidecarRecords = new ArrayList<>();
@@ -230,7 +241,15 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenTransferLists(
             @NonNull final List<TokenTransferList> tokenTransferLists) {
-        this.transactionRecordBuilder.tokenTransferLists(tokenTransferLists);
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.tokenTransferLists = tokenTransferLists;
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
+        requireNonNull(tokenTransferList, "tokenTransferList must not be null");
+        this.tokenTransferLists.add(tokenTransferList);
         return this;
     }
 
@@ -245,14 +264,31 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     public SingleTransactionRecordBuilderImpl assessedCustomFees(
             @NonNull final List<AssessedCustomFee> assessedCustomFees) {
-        this.transactionRecordBuilder.assessedCustomFees(assessedCustomFees);
+        requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
+        this.assessedCustomFees = assessedCustomFees;
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addAssessedCustomFee(@NonNull final AssessedCustomFee assessedCustomFee) {
+        requireNonNull(assessedCustomFee, "assessedCustomFee must not be null");
+        this.assessedCustomFees.add(assessedCustomFee);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl automaticTokenAssociations(
             @NonNull final List<TokenAssociation> automaticTokenAssociations) {
-        this.transactionRecordBuilder.automaticTokenAssociations(automaticTokenAssociations);
+        requireNonNull(automaticTokenAssociations, "automaticTokenAssociations must not be null");
+        this.automaticTokenAssociations = automaticTokenAssociations;
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addAutomaticTokenAssociation(
+            @NonNull final TokenAssociation automaticTokenAssociation) {
+        requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
+        this.automaticTokenAssociations.add(automaticTokenAssociation);
         return this;
     }
 
@@ -273,7 +309,15 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl paidStakingRewards(
             @NonNull final List<AccountAmount> paidStakingRewards) {
-        this.transactionRecordBuilder.paidStakingRewards(paidStakingRewards);
+        requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
+        this.paidStakingRewards = paidStakingRewards;
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addPaidStakingReward(@NonNull final AccountAmount paidStakingReward) {
+        requireNonNull(paidStakingReward, "paidStakingReward must not be null");
+        this.paidStakingRewards.add(paidStakingReward);
         return this;
     }
 
@@ -398,29 +442,62 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
         requireNonNull(serialNumbers, "serialNumbers must not be null");
-        this.transactionReceiptBuilder.serialNumbers(serialNumbers);
+        this.serialNumbers = serialNumbers;
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addSerialNumber(final long serialNumber) {
+        this.serialNumbers.add(serialNumber);
         return this;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
     @NonNull
+    public SingleTransactionRecordBuilderImpl contractStateChanges(
+            @NonNull final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges) {
+        requireNonNull(contractStateChanges, "contractStateChanges must not be null");
+        this.contractStateChanges = contractStateChanges;
+        return this;
+    }
+
+    @NonNull
     public SingleTransactionRecordBuilderImpl addContractStateChanges(
             @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
+        requireNonNull(contractStateChanges, "contractStateChanges must not be null");
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
         return this;
     }
 
     @NonNull
-    public SingleTransactionRecordBuilderImpl addContractAction(
-            @NonNull final ContractActions contractAction, final boolean isMigration) {
-        this.contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
+    public SingleTransactionRecordBuilderImpl contractActions(
+            @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions) {
+        requireNonNull(contractActions, "contractActions must not be null");
+        this.contractActions = contractActions;
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl addContractActions(
+            @NonNull final ContractActions contractActions, final boolean isMigration) {
+        requireNonNull(contractActions, "contractActions must not be null");
+        this.contractActions.add(new AbstractMap.SimpleEntry<>(contractActions, isMigration));
+        return this;
+    }
+
+    @NonNull
+    public SingleTransactionRecordBuilderImpl contractBytecodes(
+            @NonNull final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes) {
+        requireNonNull(contractBytecodes, "contractBytecodes must not be null");
+        this.contractBytecodes = contractBytecodes;
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
+        requireNonNull(contractBytecode, "contractBytecode must not be null");
         this.contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
         return this;
     }

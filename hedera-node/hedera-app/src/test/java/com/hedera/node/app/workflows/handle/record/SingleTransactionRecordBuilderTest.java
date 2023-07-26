@@ -144,7 +144,7 @@ public class SingleTransactionRecordBuilderTest {
                 .scheduledTransactionID(scheduledTransactionID)
                 .serialNumbers(serialNumbers)
                 .addContractStateChanges(contractStateChanges, false)
-                .addContractAction(contractAction, false)
+                .addContractActions(contractAction, false)
                 .addContractBytecode(contractBytecode, false);
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
