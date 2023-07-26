@@ -25,6 +25,7 @@ This code is maintained by the "Platform Hashgraph" team.
 
 - [System Startup Sequence](./core/system-startup-sequence.svg)
 - [Platform Status](./core/platform-status.md)
+- [Threads](./core/core-platform-threads.drawio.svg)
 - Components
     - Gossip
         - Sync gossip algorithm
@@ -42,7 +43,7 @@ This code is maintained by the "Platform Hashgraph" team.
     - Application Communication
 - Event Flow
     - Event Intake
-    - Pre-consensus event stream
+    - [Pre-consensus event stream](core/preconsensusEventStream.svg)
     - Post-consensus event stream
     - Threading Diagram
 
