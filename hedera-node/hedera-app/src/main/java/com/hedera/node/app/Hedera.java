@@ -118,7 +118,7 @@ public final class Hedera implements SwirldMain {
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
     private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
     // FUTURE: This should come from configuration, NOT be hardcoded.
-    public static final int MAX_SIGNED_TXN_SIZE = 6145;
+    public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
     /**
      * Defines the registration information for a service.
