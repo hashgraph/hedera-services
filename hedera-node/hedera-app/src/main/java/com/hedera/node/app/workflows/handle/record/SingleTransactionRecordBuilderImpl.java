@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -98,19 +97,7 @@ public class SingleTransactionRecordBuilderImpl
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
-    private AccountID accountID;
-    private FileID fileID;
-    private ContractID contractID;
-    private ExchangeRateSet exchangeRate;
-    private TopicID topicID;
-    private long topicSequenceNumber;
-    private Bytes topicRunningHash = Bytes.EMPTY;
-    private long topicRunningHashVersion;
-    private TokenID tokenID;
-    private long newTotalSupply;
-    private ScheduleID scheduleID;
-    private TransactionID scheduledTransactionID;
-    private List<Long> serialNumbers = emptyList();
+    private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
     public final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new ArrayList<>();
     public final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new ArrayList<>();
@@ -130,21 +117,8 @@ public class SingleTransactionRecordBuilderImpl
     @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
         // build
-        final var transactionReceipt = new TransactionReceipt(
-                status,
-                accountID,
-                fileID,
-                contractID,
-                exchangeRate,
-                topicID,
-                topicSequenceNumber,
-                topicRunningHash,
-                topicRunningHashVersion,
-                tokenID,
-                newTotalSupply,
-                scheduleID,
-                scheduledTransactionID,
-                serialNumbers);
+        this.transactionReceiptBuilder.status(status);
+        final var transactionReceipt = this.transactionReceiptBuilder.build();
 
         // compute transaction hash: TODO could pass in if we have it calculated else where
         final Bytes transactionHash;
@@ -338,80 +312,80 @@ public class SingleTransactionRecordBuilderImpl
 
     @NonNull
     public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
-        this.accountID = accountID;
+        this.transactionReceiptBuilder.accountID(accountID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl fileID(@NonNull final FileID fileID) {
-        this.fileID = fileID;
+        this.transactionReceiptBuilder.fileID(fileID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl contractID(@NonNull final ContractID contractID) {
-        this.contractID = contractID;
+        this.transactionReceiptBuilder.contractID(contractID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
-        this.exchangeRate = exchangeRate;
+        this.transactionReceiptBuilder.exchangeRate(exchangeRate);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl topicID(@NonNull final TopicID topicID) {
-        this.topicID = topicID;
+        this.transactionReceiptBuilder.topicID(topicID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
-        this.topicSequenceNumber = topicSequenceNumber;
+        this.transactionReceiptBuilder.topicSequenceNumber(topicSequenceNumber);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
-        this.topicRunningHash = topicRunningHash;
+        this.transactionReceiptBuilder.topicRunningHash(topicRunningHash);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl topicRunningHashVersion(final long topicRunningHashVersion) {
-        this.topicRunningHashVersion = topicRunningHashVersion;
+        this.transactionReceiptBuilder.topicRunningHashVersion(topicRunningHashVersion);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
-        this.tokenID = tokenID;
+        this.transactionReceiptBuilder.tokenID(tokenID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
-        this.newTotalSupply = newTotalSupply;
+        this.transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl scheduleID(@NonNull final ScheduleID scheduleID) {
-        this.scheduleID = scheduleID;
+        this.transactionReceiptBuilder.scheduleID(scheduleID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl scheduledTransactionID(
             @NonNull final TransactionID scheduledTransactionID) {
-        this.scheduledTransactionID = scheduledTransactionID;
+        this.transactionReceiptBuilder.scheduledTransactionID(scheduledTransactionID);
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
-        this.serialNumbers = serialNumbers;
+        this.transactionReceiptBuilder.serialNumbers(serialNumbers);
         return this;
     }
 
