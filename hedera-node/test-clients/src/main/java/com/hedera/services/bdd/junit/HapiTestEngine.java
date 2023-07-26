@@ -304,16 +304,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 // 6. Create an Address Book
                 final var addressBook = new AddressBook();
-                addressBook.add(new Address(
-                        nodeId,
-                        "TEST0",
-                        "TEST0",
-                        1,
-                        new byte[] {127, 0, 0, 1},
-                        port,
-                        new byte[] {127, 0, 0, 1},
-                        port,
-                        "0.0.3"));
+                addressBook.add(
+                        new Address(nodeId, "TEST0", "TEST0", 1, "127.0.0.1", port, "127.0.0.1", port, "0.0.3"));
 
                 // 7. Setup some cryptography
                 //        final var crypto = CryptoSetup.initNodeSecurity(addressBook, config)[0];
@@ -343,7 +335,8 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 final var initialState = GenesisStateBuilder.buildGenesisState(
                         platformContext, addressBook, new BasicSoftwareVersion(Long.MAX_VALUE), hedera.newState());
-                final var initialSignedState = new SignedState(platformContext, initialState, "Genesis");
+                final var initialSignedState =
+                        new SignedState(platformContext, initialState.get().getState(), "Genesis");
 
                 final SwirldsPlatform platform = (SwirldsPlatform) constructor.newInstance(
                         platformContext,

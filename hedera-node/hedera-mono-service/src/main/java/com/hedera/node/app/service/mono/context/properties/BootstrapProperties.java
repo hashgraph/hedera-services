@@ -387,10 +387,10 @@ public final class BootstrapProperties implements PropertySource {
     }
 
     private static final Set<String> BOOTSTRAP_PROPS = Set.of(
-            BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE,
+            BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE, // possibly node property
             BOOTSTRAP_GENESIS_PUBLIC_KEY,
-            BOOTSTRAP_HAPI_PERMISSIONS_PATH,
-            BOOTSTRAP_NETWORK_PROPERTIES_PATH,
+            BOOTSTRAP_HAPI_PERMISSIONS_PATH, // possibly node property
+            BOOTSTRAP_NETWORK_PROPERTIES_PATH, // possibly node property
             BOOTSTRAP_RATES_CURRENT_HBAR_EQUIV,
             BOOTSTRAP_RATES_CURRENT_CENT_EQUIV,
             BOOTSTRAP_RATES_CURRENT_EXPIRY,
@@ -443,7 +443,7 @@ public final class BootstrapProperties implements PropertySource {
             AUTO_CREATION_ENABLED,
             LAZY_CREATION_ENABLED,
             CRYPTO_CREATE_WITH_ALIAS_ENABLED,
-            BALANCES_EXPORT_DIR_PATH,
+            BALANCES_EXPORT_DIR_PATH, // possibly node property
             BALANCES_EXPORT_ENABLED,
             BALANCES_EXPORT_PERIOD_SECS,
             BALANCES_EXPORT_TOKEN_BALANCES,
@@ -561,7 +561,7 @@ public final class BootstrapProperties implements PropertySource {
             CONSENSUS_MESSAGE_MAX_BYTES_ALLOWED,
             CONSENSUS_HANDLE_MAX_PRECEDING_RECORDS,
             CONSENSUS_HANDLE_MAX_FOLLOWING_RECORDS,
-            UPGRADE_ARTIFACTS_PATH,
+            UPGRADE_ARTIFACTS_PATH, // possibly node property
             HEDERA_ALLOWANCES_MAX_TXN_LIMIT,
             HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT,
             HEDERA_ALLOWANCES_IS_ENABLED,
@@ -580,17 +580,17 @@ public final class BootstrapProperties implements PropertySource {
             GRPC_WORKFLOWS_PORT,
             GRPC_WORKFLOWS_TLS_PORT,
             HEDERA_ACCOUNTS_EXPORT_PATH,
-            HEDERA_EXPORT_ACCOUNTS_ON_STARTUP,
+            HEDERA_EXPORT_ACCOUNTS_ON_STARTUP, // possibly network property
             HEDERA_PREFETCH_QUEUE_CAPACITY,
             HEDERA_PREFETCH_THREAD_POOL_SIZE,
             HEDERA_PREFETCH_CODE_CACHE_TTL_SECS,
             HEDERA_PROFILES_ACTIVE,
-            HEDERA_RECORD_STREAM_IS_ENABLED,
+            HEDERA_RECORD_STREAM_IS_ENABLED, // possibly network property
             HEDERA_RECORD_STREAM_LOG_DIR,
             HEDERA_RECORD_STREAM_SIDE_CAR_DIR,
             HEDERA_RECORD_STREAM_LOG_PERIOD,
             HEDERA_RECORD_STREAM_QUEUE_CAPACITY,
-            ISS_RESET_PERIOD,
+            ISS_RESET_PERIOD, // possibly network property
             ISS_ROUNDS_TO_LOG,
             NETTY_MODE,
             NETTY_PROD_FLOW_CONTROL_WINDOW,
@@ -604,7 +604,7 @@ public final class BootstrapProperties implements PropertySource {
             NETTY_START_RETRY_INTERVAL_MS,
             NETTY_TLS_CERT_PATH,
             NETTY_TLS_KEY_PATH,
-            QUERIES_BLOB_LOOK_UP_RETRIES,
+            QUERIES_BLOB_LOOK_UP_RETRIES, // possibly network property
             STATS_CONS_THROTTLES_TO_SAMPLE,
             STATS_HAPI_THROTTLES_TO_SAMPLE,
             STATS_EXECUTION_TIMES_TO_TRACK,
@@ -613,7 +613,7 @@ public final class BootstrapProperties implements PropertySource {
             STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS,
             STATS_RUNNING_AVG_HALF_LIFE_SECS,
             STATS_SPEEDOMETER_HALF_LIFE_SECS,
-            VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB);
+            VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB); // possibly network property
 
     public static final Set<String> BOOTSTRAP_PROP_NAMES =
             unmodifiableSet(Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS, NODE_PROPS)
