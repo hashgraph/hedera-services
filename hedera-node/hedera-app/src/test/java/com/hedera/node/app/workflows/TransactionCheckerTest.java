@@ -58,7 +58,6 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -114,27 +113,27 @@ final class TransactionCheckerTest extends AppTestBase {
         // would fail this empty transaction), but it is enough to test the checker.
         final var content = ConsensusCreateTopicTransactionBody.newBuilder().build();
         return TransactionBody.newBuilder()
-            .consensusCreateTopic(content)
-            .transactionID(txId)
-            .nodeAccountID(nodeSelfAccountId)
-            .transactionValidDuration(ONE_MINUTE)
-            .memo(CONTENT.asUtf8String());
+                .consensusCreateTopic(content)
+                .transactionID(txId)
+                .nodeAccountID(nodeSelfAccountId)
+                .transactionValidDuration(ONE_MINUTE)
+                .memo(CONTENT.asUtf8String());
     }
 
     private SignatureMap.Builder sigMapBuilder() {
         final var sigPair = SignaturePair.newBuilder()
-            .pubKeyPrefix(Bytes.wrap(new byte[]{1, 2, 3, 4, 5}))
-            .ed25519(randomBytes(64))
-            .build();
+                .pubKeyPrefix(Bytes.wrap(new byte[] {1, 2, 3, 4, 5}))
+                .ed25519(randomBytes(64))
+                .build();
         final var sigPair2 = SignaturePair.newBuilder()
-            .pubKeyPrefix(Bytes.wrap(new byte[]{1, 2, 7}))
-            .ed25519(randomBytes(64))
-            .build();
+                .pubKeyPrefix(Bytes.wrap(new byte[] {1, 2, 7}))
+                .ed25519(randomBytes(64))
+                .build();
         return SignatureMap.newBuilder().sigPair(sigPair, sigPair2);
     }
 
     private SignedTransaction.Builder signedTxBuilder(
-        final TransactionBody.Builder txBody, final SignatureMap.Builder sigMap) {
+            final TransactionBody.Builder txBody, final SignatureMap.Builder sigMap) {
         return signedTxBuilder(txBody.build(), sigMap.build());
     }
 
@@ -560,15 +559,15 @@ final class TransactionCheckerTest extends AppTestBase {
             void badPrefixes(final byte[]... prefixes) {
                 // Given a signature map with some prefixes that are identical
                 final var localSignatureMap = SignatureMap.newBuilder()
-                    .sigPair(Arrays.stream(prefixes)
-                        .map(prefix -> SignaturePair.newBuilder()
-                            .pubKeyPrefix(Bytes.wrap(prefix))
-                            .ed25519(randomBytes(64))
-                            .build())
-                        .collect(toList()))
-                    .build();
+                        .sigPair(Arrays.stream(prefixes)
+                                .map(prefix -> SignaturePair.newBuilder()
+                                        .pubKeyPrefix(Bytes.wrap(prefix))
+                                        .ed25519(randomBytes(64))
+                                        .build())
+                                .collect(toList()))
+                        .build();
                 final var localTx =
-                    txBuilder(signedTxBuilder(txBody, localSignatureMap)).build();
+                        txBuilder(signedTxBuilder(txBody, localSignatureMap)).build();
 
                 // When we check the transaction, we find it is invalid due to duplicate prefixes
                 assertThatThrownBy(() -> checker.check(localTx))
@@ -694,8 +693,8 @@ final class TransactionCheckerTest extends AppTestBase {
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
 
             @ParameterizedTest
@@ -704,14 +703,14 @@ final class TransactionCheckerTest extends AppTestBase {
             void testCheckTransactionBodyWithBadShardFails(final long shard) {
                 // Given a transaction ID with an account number that is not valid (0 is not a valid number)
                 final var payerId =
-                    AccountID.newBuilder().shardNum(shard).accountNum(10L).build();
+                        AccountID.newBuilder().shardNum(shard).accountNum(10L).build();
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
 
             @ParameterizedTest
@@ -720,14 +719,14 @@ final class TransactionCheckerTest extends AppTestBase {
             void testCheckTransactionBodyWithBadRealmFails(final long realm) {
                 // Given a transaction ID with an account number that is not valid (0 is not a valid number)
                 final var payerId =
-                    AccountID.newBuilder().realmNum(realm).accountNum(10L).build();
+                        AccountID.newBuilder().realmNum(realm).accountNum(10L).build();
                 final var body = bodyBuilder(txIdBuilder().accountID(payerId));
                 final var tx = txBuilder(signedTxBuilder(body, sigMapBuilder())).build();
 
                 // Then the checker should throw a PreCheckException
                 assertThatThrownBy(() -> checker.check(tx))
-                    .isInstanceOf(PreCheckException.class)
-                    .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
+                        .isInstanceOf(PreCheckException.class)
+                        .has(responseCode(PAYER_ACCOUNT_NOT_FOUND));
             }
 
             @Test
@@ -893,8 +892,8 @@ final class TransactionCheckerTest extends AppTestBase {
 
                     // When we parse and check, then the parsing fails due to the exception
                     assertThatThrownBy(() -> checker.check(tx))
-                        .isInstanceOf(PreCheckException.class)
-                        .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
+                            .isInstanceOf(PreCheckException.class)
+                            .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_BODY);
                 }
             }
         }

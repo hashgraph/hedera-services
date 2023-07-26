@@ -64,7 +64,7 @@ public interface HandleWorkflowInjectionModule {
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(@NonNull final Platform platform) {
         // Always return the latest immutable state until we support state proofs
         return () ->
-            (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
+                (AutoCloseableWrapper) platform.getLatestImmutableState(HandleWorkflowInjectionModule.class.getName());
     }
 
     @Provides
