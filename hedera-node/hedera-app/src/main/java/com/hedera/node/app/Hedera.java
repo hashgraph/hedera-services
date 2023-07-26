@@ -118,7 +118,7 @@ public final class Hedera implements SwirldMain {
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
     private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
     // FUTURE: This should come from configuration, NOT be hardcoded.
-    public static final int MAX_SIGNED_TXN_SIZE = 6144;
+    public static final int MAX_SIGNED_TXN_SIZE = 6145;
 
     /**
      * Defines the registration information for a service.
@@ -398,7 +398,9 @@ public final class Hedera implements SwirldMain {
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 switch (notification.getNewStatus()) {
                     case ACTIVE -> {
-                        run();
+                        // This is also called from ServicesMain#run() when the node is restarted.
+                        // Need to confirm if this is needed
+//                        run();
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                     }
                     case BEHIND -> {
