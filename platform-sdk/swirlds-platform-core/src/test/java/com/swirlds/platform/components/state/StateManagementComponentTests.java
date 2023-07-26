@@ -116,7 +116,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -163,7 +163,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -178,9 +178,7 @@ class StateManagementComponentTests {
             final SignedState signedStateSpy = spy(signedState);
             when(signedStateSpy.isComplete()).thenReturn(true);
 
-            final SourceOfSignedState source =
-                    random.nextBoolean() ? SourceOfSignedState.DISK : SourceOfSignedState.RECONNECT;
-            component.stateToLoad(signedStateSpy, source);
+            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
 
             // Some basic assertions on the signed state provided to the new latest complete state consumer
             verifyNewLatestCompleteStateConsumer(roundNum, signedStateSpy);
@@ -257,7 +255,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -303,7 +301,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         systemTransactionConsumer.reset();
         component.start();
@@ -381,7 +379,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -401,7 +399,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, true);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -651,19 +649,15 @@ class StateManagementComponentTests {
     }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook, final boolean saveReconnectState) {
-        return newStateManagementComponent(addressBook, defaultConfigBuilder(), saveReconnectState);
+    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
+        return newStateManagementComponent(addressBook, defaultConfigBuilder());
     }
 
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook,
-            @NonNull final TestConfigBuilder configBuilder,
-            final boolean saveReconnectState) {
-        configBuilder
-                .withValue("state.savedStateDirectory", tmpDir.toFile().toString())
-                .withValue("state.saveReconnectStateToDisk", saveReconnectState ? "true" : "false");
+            @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
+
+        configBuilder.withValue("state.savedStateDirectory", tmpDir.toFile().toString());
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
