@@ -23,10 +23,8 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
+
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
@@ -98,10 +96,15 @@ public record EthTxData(
             } else {
                 // typed transaction?
                 byte typeByte = rlpItem.asByte();
-                if (typeByte != 2) {
-                    // we only support EIP1559 at the moment.
+                if (typeByte != 1 && typeByte != 2) {
+                    // we only support EIP 2930 and EIP1559 type transactions at the moment.
                     return null;
                 }
+
+                if (typeByte == 1) {
+                    return populateEip2390EthTxData(decoder);
+                }
+
                 type = EthTransactionType.EIP1559;
                 rlpItem = decoder.next();
                 if (!rlpItem.isList()) {
@@ -182,7 +185,20 @@ public record EthTxData(
                     v,
                     r,
                     s);
-            case EIP2930 -> throw new IllegalStateException("EIP2930 txes not supported");
+            case EIP2930 -> RLPEncoder.encodeSequentially(
+                    Integers.toBytes(0x01),
+                    List.of(
+                            chainId,
+                            Integers.toBytes(nonce),
+                            gasPrice,
+                            Integers.toBytes(gasLimit),
+                            to,
+                            Integers.toBytesUnsigned(value),
+                            callData,
+                            List.of(/*accessList*/ ),
+                            Integers.toBytes(recId),
+                            r,
+                            s));
             case EIP1559 -> RLPEncoder.encodeSequentially(
                     Integers.toBytes(0x02),
                     List.of(
@@ -319,6 +335,43 @@ public record EthTxData(
                 accessList,
                 recId,
                 v,
+                r,
+                s);
+    }
+
+    /**
+     * Encodes the transaction data into a EthTxData according to EIP 2930 RLP format.
+     *
+     * @return the encoded transaction data
+     */
+    private static EthTxData populateEip2390EthTxData(Iterator<RLPItem> rlpItemIterator) {
+        final byte[] chainId = rlpItemIterator.next().asBytes();
+        final long nonce = rlpItemIterator.next().asLong();
+        final byte[] gasPrice = rlpItemIterator.next().asBytes();
+        final long gasLimit = rlpItemIterator.next().asLong();
+        final byte[] to = rlpItemIterator.next().asBytes();
+        final BigInteger value = rlpItemIterator.next().asBigInteger();
+        final byte[] data = rlpItemIterator.next().asBytes();
+        final byte[] accessList = rlpItemIterator.next().asBytes();
+        final byte yParity = rlpItemIterator.next().asByte();
+        final byte[] r = rlpItemIterator.next().asBytes();
+        final byte[] s = rlpItemIterator.next().asBytes();
+
+        return new EthTxData(
+                null,
+                EthTransactionType.EIP2930,
+                chainId,
+                nonce,
+                gasPrice,
+                null,
+                null,
+                gasLimit,
+                to,
+                value,
+                data,
+                accessList,
+                yParity,
+                null,
                 r,
                 s);
     }
