@@ -115,11 +115,7 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     public SingleTransactionRecord build() {
-        // build
-        this.transactionReceiptBuilder.status(status);
         final var transactionReceipt = this.transactionReceiptBuilder.build();
-
-        // compute transaction hash: TODO could pass in if we have it calculated else where
         final Bytes transactionHash;
         try {
             final MessageDigest digest = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
@@ -132,10 +128,11 @@ public class SingleTransactionRecordBuilderImpl
         final Timestamp parentConsensusTimestamp =
                 parentConsensus != null ? HapiUtils.asTimestamp(parentConsensus) : null;
 
-        this.transactionRecordBuilder.receipt(transactionReceipt);
-        this.transactionRecordBuilder.transactionHash(transactionHash);
-        this.transactionRecordBuilder.consensusTimestamp(consensusTimestamp);
-        this.transactionRecordBuilder.parentConsensusTimestamp(parentConsensusTimestamp);
+        this.transactionRecordBuilder
+                .receipt(transactionReceipt)
+                .transactionHash(transactionHash)
+                .consensusTimestamp(consensusTimestamp)
+                .parentConsensusTimestamp(parentConsensusTimestamp);
 
         final var transactionRecord = this.transactionRecordBuilder.build();
 
@@ -307,6 +304,7 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status, "status must not be null");
+        this.transactionReceiptBuilder.status(status);
         return this;
     }
 
@@ -416,14 +414,14 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public SingleTransactionRecordBuilderImpl addContractAction(
             @NonNull final ContractActions contractAction, final boolean isMigration) {
-        contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
+        this.contractActions.add(new AbstractMap.SimpleEntry<>(contractAction, isMigration));
         return this;
     }
 
     @NonNull
     public SingleTransactionRecordBuilderImpl addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
-        contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
+        this.contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));
         return this;
     }
 }
