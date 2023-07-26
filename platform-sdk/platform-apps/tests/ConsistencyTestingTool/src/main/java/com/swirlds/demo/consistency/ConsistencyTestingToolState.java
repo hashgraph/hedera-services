@@ -215,7 +215,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
 
         if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
-            logger.error(EXCEPTION.getMarker(), "Transaction " + transactionContents + " was not prehandled.");
+            logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
         }
 
         stateLong = NonCryptographicHashing.hash64(stateLong, transactionContents);
@@ -232,7 +232,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
             if (!transactionsAwaitingPostHandle.add(transactionContents)) {
                 logger.error(
                         EXCEPTION.getMarker(),
-                        "Transaction " + transactionContents + " was prehandled more than once.");
+                        "Transaction {} was prehandled more than once.", transactionContents);
             }
         });
     }
