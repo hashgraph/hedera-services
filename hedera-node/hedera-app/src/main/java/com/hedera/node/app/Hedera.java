@@ -400,7 +400,7 @@ public final class Hedera implements SwirldMain {
                     case ACTIVE -> {
                         // This is also called from ServicesMain#run() when the node is restarted.
                         // Need to confirm if this is needed
-//                        run();
+                        //                        run();
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                     }
                     case BEHIND -> {

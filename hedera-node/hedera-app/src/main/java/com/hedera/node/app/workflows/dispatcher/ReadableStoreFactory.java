@@ -73,10 +73,15 @@ public class ReadableStoreFactory {
         // Tokens and accounts
         newMap.put(ReadableAccountStore.class, new StoreEntry(TokenService.NAME, ReadableAccountStoreImpl::new));
         newMap.put(ReadableNftStore.class, new StoreEntry(TokenService.NAME, ReadableNftStoreImpl::new));
-        newMap.put(ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new));
+        newMap.put(
+                ReadableStakingInfoStore.class, new StoreEntry(TokenService.NAME, ReadableStakingInfoStoreImpl::new));
         newMap.put(ReadableTokenStore.class, new StoreEntry(TokenService.NAME, ReadableTokenStoreImpl::new));
-        newMap.put(ReadableTokenRelationStore.class, new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
-        newMap.put(ReadableNetworkStakingRewardsStore.class, new StoreEntry(TokenService.NAME, ReadableNetworkStakingRewardsStoreImpl::new));
+        newMap.put(
+                ReadableTokenRelationStore.class,
+                new StoreEntry(TokenService.NAME, ReadableTokenRelationStoreImpl::new));
+        newMap.put(
+                ReadableNetworkStakingRewardsStore.class,
+                new StoreEntry(TokenService.NAME, ReadableNetworkStakingRewardsStoreImpl::new));
         // Topics
         newMap.put(ReadableTopicStore.class, new StoreEntry(ConsensusService.NAME, ReadableTopicStoreImpl::new));
         // Schedules
