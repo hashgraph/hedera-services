@@ -77,7 +77,7 @@ class WritableStoreFactoryImplTest {
     void returnCorrectStoreClass(final String serviceName, final Class<?> storeClass) {
         // given
         given(stack.createWritableStates(serviceName)).willReturn(writableStates);
-        final WritableStoreFactoryImpl subject = new WritableStoreFactoryImpl(stack, serviceName);
+        final WritableStoreFactory subject = new WritableStoreFactory(stack, serviceName);
 
         // given
         final var store = subject.getStore(storeClass);

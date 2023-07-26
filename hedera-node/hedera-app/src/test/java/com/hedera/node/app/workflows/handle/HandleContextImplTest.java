@@ -386,6 +386,17 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
+        void testPeekingAtNewEntityNumWithInitialState() {
+            // when
+            final var actual = handleContext.peekAtNewEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(1L);
+            verify(entityNumberState).get();
+            verify(entityNumberState, never()).put(any());
+        }
+
+        @Test
         void testNewEntityNum() {
             // given
             when(entityNumberState.get())
@@ -398,6 +409,21 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertThat(actual).isEqualTo(43L);
             verify(entityNumberState).get();
             verify(entityNumberState).put(EntityNumber.newBuilder().number(43L).build());
+        }
+
+        @Test
+        void testPeekingAtNewEntityNum() {
+            // given
+            when(entityNumberState.get())
+                    .thenReturn(EntityNumber.newBuilder().number(42L).build());
+
+            // when
+            final var actual = handleContext.peekAtNewEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(43L);
+            verify(entityNumberState).get();
+            verify(entityNumberState, never()).put(any());
         }
     }
 

@@ -14,50 +14,36 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.dispatcher;
+package com.hedera.node.app.service.token.impl.test.api;
 
+import static com.hedera.node.app.service.token.impl.api.TokenServiceApiProvider.TOKEN_SERVICE_API_PROVIDER;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ServiceApiFactoryTest {
+class TokenServiceApiProviderTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     @Mock
-    private Savepoint savepoint;
+    private WritableStates writableStates;
 
-    @Mock
-    private SavepointStackImpl stack;
-
-    private ServiceApiFactory subject;
-
-    @BeforeEach
-    void setUp() {
-        subject = new ServiceApiFactory(stack);
+    @Test
+    void hasTokenServiceName() {
+        assertEquals(TokenService.NAME, TOKEN_SERVICE_API_PROVIDER.serviceName());
     }
 
     @Test
-    void throwsIfNoSuchProvider() {
-        assertThrows(IllegalArgumentException.class, () -> subject.getApi(NonExistentApi.class));
+    void instantiatesApiImpl() {
+        assertInstanceOf(
+                TokenServiceApiImpl.class, TOKEN_SERVICE_API_PROVIDER.newInstance(DEFAULT_CONFIG, writableStates));
     }
-
-    @Test
-    void canCreateTokenServiceApi() {
-        given(stack.peek()).willReturn(savepoint);
-        given(savepoint.configuration()).willReturn(DEFAULT_CONFIG);
-        assertNotNull(subject.getApi(TokenServiceApi.class));
-    }
-
-    private static class NonExistentApi {}
 }

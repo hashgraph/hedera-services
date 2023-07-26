@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -36,7 +35,6 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.store.WritableStoreFactory;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -47,7 +45,6 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,9 +68,6 @@ class TokenServiceApiImplTest {
             .accountNum(OTHER_CONTRACT_ID_BY_NUM.contractNumOrThrow())
             .build();
 
-    @Mock
-    private WritableStoreFactory storeFactory;
-
     private final WritableKVState<Bytes, AccountID> aliasesState =
             new MapWritableKVState<>(TokenServiceImpl.ALIASES_KEY);
     private final WritableKVState<AccountID, Account> accountState =
@@ -87,14 +81,13 @@ class TokenServiceApiImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, storeFactory);
+        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, writableStates);
     }
 
     @Test
     void createsExpectedContractWithAliasIfSet() {
         final Consumer<Account.Builder> spec =
                 builder -> builder.alias(EVM_ADDRESS).ethereumNonce(1L).memo(MEMO);
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
 
         subject.createAndMaybeAliasContract(CONTRACT_ID_BY_NUM, spec);
 
@@ -113,7 +106,6 @@ class TokenServiceApiImplTest {
     void createsExpectedContractWithoutAliasIfNotSet() {
         final Consumer<Account.Builder> spec =
                 builder -> builder.ethereumNonce(1L).memo(MEMO);
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
 
         subject.createAndMaybeAliasContract(CONTRACT_ID_BY_NUM, spec);
 
@@ -136,7 +128,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void removesByNumberIfSet() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
@@ -149,7 +140,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void removesByAliasIfSet() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .alias(EVM_ADDRESS)
@@ -165,7 +155,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void noopIfAliasReferencesNothing() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
@@ -178,7 +167,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void returnsModifiedKeys() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
@@ -194,7 +182,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void returnsUpdatedNonces() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .ethereumNonce(123L)
@@ -212,7 +199,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void transfersRequestedValue() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .smartContract(true)
@@ -239,7 +225,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void refusesToSetSenderBalanceNegative() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .smartContract(true)
@@ -257,7 +242,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void refusesToOverflowReceiverBalance() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .tinybarBalance(Long.MAX_VALUE)
@@ -276,7 +260,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void updatesSenderAccountNonce() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(EOA_ACCOUNT_ID)
                 .ethereumNonce(123L)
@@ -288,7 +271,6 @@ class TokenServiceApiImplTest {
 
     @Test
     void updatesContractAccountNonce() {
-        given(storeFactory.getStore(WritableAccountStore.class)).willReturn(accountStore);
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)
                 .smartContract(true)

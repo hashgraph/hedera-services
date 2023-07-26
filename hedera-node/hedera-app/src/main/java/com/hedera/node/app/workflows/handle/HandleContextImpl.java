@@ -30,7 +30,6 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.store.WritableStoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -42,7 +41,7 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactoryImpl;
+import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
@@ -127,8 +126,8 @@ public class HandleContextImpl implements HandleContext {
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
-        this.writableStoreFactory = new WritableStoreFactoryImpl(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(this::configuration, writableStoreFactory);
+        this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
+        this.serviceApiFactory = new ServiceApiFactory(stack);
     }
 
     private Savepoint current() {
@@ -179,8 +178,17 @@ public class HandleContextImpl implements HandleContext {
      */
     @Override
     public long newEntityNum() {
-        final var writableStoreFactory = new WritableStoreFactoryImpl(stack, EntityIdService.NAME);
-        return writableStoreFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
+        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long peekAtNewEntityNum() {
+        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 
     @Override

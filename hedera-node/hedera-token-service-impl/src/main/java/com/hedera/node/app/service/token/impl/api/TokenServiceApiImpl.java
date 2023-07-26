@@ -24,7 +24,7 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.spi.store.WritableStoreFactory;
+import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -35,11 +35,11 @@ import java.util.function.Consumer;
  * Implements {@link TokenServiceApi} via {@link WritableAccountStore} calls.
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
-    private final WritableStoreFactory storeFactory;
+    private final WritableStates writableStates;
 
-    public TokenServiceApiImpl(@NonNull final Configuration config, @NonNull final WritableStoreFactory storeFactory) {
+    public TokenServiceApiImpl(@NonNull final Configuration config, @NonNull final WritableStates writableStates) {
         requireNonNull(config);
-        this.storeFactory = requireNonNull(storeFactory);
+        this.writableStates = requireNonNull(writableStates);
     }
 
     /**
@@ -58,7 +58,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         if (newContract.tinybarBalance() > 0) {
             throw new IllegalArgumentException("Cannot create contract with non-zero balance");
         }
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         store.put(newContract);
         if (newContract.alias().length() > 0) {
             store.putAlias(newContract.alias(), newContract.accountId());
@@ -71,7 +71,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     @Override
     public void deleteAndMaybeUnaliasContract(@NonNull final ContractID idToDelete) {
         requireNonNull(idToDelete);
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         if (idToDelete.hasContractNum()) {
             store.remove(AccountID.newBuilder()
                     .accountNum(idToDelete.contractNumOrThrow())
@@ -90,7 +90,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public void incrementParentNonce(@NonNull ContractID parentId) {
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         final var contract = requireNonNull(store.getContractById(parentId));
         store.put(contract.copyBuilder()
                 .ethereumNonce(contract.ethereumNonce() + 1)
@@ -102,7 +102,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public void incrementSenderNonce(@NonNull AccountID senderId) {
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         final var sender = requireNonNull(store.get(senderId));
         store.put(sender.copyBuilder().ethereumNonce(sender.ethereumNonce() + 1).build());
     }
@@ -116,7 +116,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             throw new IllegalArgumentException(
                     "Cannot transfer negative value (" + amount + " tinybars) from " + fromId + " to " + toId);
         }
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         final var from = requireNonNull(store.get(fromId));
         final var to = requireNonNull(store.get(toId));
         if (from.tinybarBalance() < amount) {
@@ -138,7 +138,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public Set<AccountID> modifiedAccountIds() {
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         return store.modifiedAccountsInState();
     }
 
@@ -147,7 +147,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      */
     @Override
     public List<ContractNonceInfo> updatedContractNonces() {
-        final var store = storeFactory.getStore(WritableAccountStore.class);
+        final var store = new WritableAccountStore(writableStates);
         return store.updatedContractNonces();
     }
 }

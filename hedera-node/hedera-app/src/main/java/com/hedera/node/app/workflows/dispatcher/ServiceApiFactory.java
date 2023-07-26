@@ -16,45 +16,38 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static com.hedera.node.app.service.token.impl.api.TokenServiceApiProvider.TOKEN_SERVICE_API_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.ids.EntityIdServiceApiImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
-import com.hedera.node.app.spi.ids.EntityIdServiceApi;
-import com.hedera.node.app.spi.store.WritableStoreFactory;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.app.spi.api.ServiceApiProvider;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 /**
  * A factory for creating service APIs.
  */
 public class ServiceApiFactory {
-    private final Supplier<Configuration> configuration;
-    private final WritableStoreFactory writableStoreFactory;
+    private final SavepointStackImpl stack;
 
-    private static final Map<Class<?>, BiFunction<Configuration, WritableStoreFactory, ?>> API_FACTORY = Map.of(
-            TokenServiceApi.class, TokenServiceApiImpl::new,
-            EntityIdServiceApi.class, EntityIdServiceApiImpl::new);
+    private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER =
+            Map.of(TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER);
 
-    public ServiceApiFactory(
-            @NonNull final Supplier<Configuration> configuration,
-            @NonNull final WritableStoreFactory writableStoreFactory) {
-        this.configuration = requireNonNull(configuration);
-        this.writableStoreFactory = requireNonNull(writableStoreFactory);
+    public ServiceApiFactory(@NonNull final SavepointStackImpl stack) {
+        this.stack = requireNonNull(stack);
     }
 
     public <C> C getApi(@NonNull final Class<C> apiInterface) throws IllegalArgumentException {
         requireNonNull(apiInterface);
-        final var factory = API_FACTORY.get(apiInterface);
-        if (factory != null) {
-            final var api = factory.apply(configuration.get(), writableStoreFactory);
+        final var provider = API_PROVIDER.get(apiInterface);
+        if (provider != null) {
+            final var config = stack.peek().configuration();
+            final var writableStates = stack.createWritableStates(provider.serviceName());
+            final var api = provider.newInstance(config, writableStates);
             assert apiInterface.isInstance(api); // This needs to be ensured while apis are registered
             return apiInterface.cast(api);
         }
-        throw new IllegalArgumentException("No store of the given class is available");
+        throw new IllegalArgumentException("No provider of the given API is available");
     }
 }

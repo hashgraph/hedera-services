@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 public interface TokenServiceApi {
-
     /**
      * Creates a new contract whose initial properties are customized by the given spec.
      *

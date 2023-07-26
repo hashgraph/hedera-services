@@ -14,23 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.ids;
+package com.hedera.node.app.spi.api;
 
-/**
- * The API for the entity id service.
- */
-public interface EntityIdServiceApi {
-    /**
-     * Consumes an new entity id number and returns it.
-     *
-     * @return the consumed entity id number
-     */
-    long useNextNumber();
+import com.hedera.node.app.spi.state.WritableStates;
+import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-    /**
-     * Returns the next entity id number without consuming it.
-     *
-     * @return the next entity id number
-     */
-    long peekNextNumber();
+public interface ServiceApiProvider<T> {
+    String serviceName();
+
+    T newInstance(@NonNull Configuration configuration, @NonNull WritableStates writableStates);
 }
