@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static com.ibm.icu.impl.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -148,31 +149,22 @@ public class SingleTransactionRecordBuilderTest {
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             singleTransactionRecordBuilder.entropyBytes(prngBytes);
-            assertEquals(
-                    TransactionRecord.EntropyOneOfType.PRNG_BYTES,
-                    singleTransactionRecordBuilder.entropy().kind());
-            assertEquals(prngBytes, singleTransactionRecordBuilder.entropy().value());
         } else if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_NUMBER) {
             singleTransactionRecordBuilder.entropyNumber(ENTROPY_NUMBER);
-            assertEquals(
-                    TransactionRecord.EntropyOneOfType.PRNG_NUMBER,
-                    singleTransactionRecordBuilder.entropy().kind());
-            assertEquals(
-                    ENTROPY_NUMBER, singleTransactionRecordBuilder.entropy().value());
         } else {
             fail("Unknown entropy type");
         }
 
-        assertEquals(status, singleTransactionRecordBuilder.status());
-        assertEquals(accountID, singleTransactionRecordBuilder.accountID());
-        assertEquals(tokenID, singleTransactionRecordBuilder.tokenID());
-        assertEquals(topicID, singleTransactionRecordBuilder.topicID());
-        assertEquals(TOPIC_SEQUENCE_NUMBER, singleTransactionRecordBuilder.topicSequenceNumber());
-        assertEquals(topicRunningHash, singleTransactionRecordBuilder.topicRunningHash());
-        assertEquals(serialNumbers, singleTransactionRecordBuilder.serialNumbers());
-
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder.build();
         assertEquals(transaction, singleTransactionRecord.transaction());
+
+        if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
+            assertTrue(singleTransactionRecord.record().hasPrngBytes());
+            assertEquals(prngBytes, singleTransactionRecord.record().prngBytes());
+        } else {
+            assertTrue(singleTransactionRecord.record().hasPrngNumber());
+            assertEquals(ENTROPY_NUMBER, singleTransactionRecord.record().prngNumber());
+        }
 
         final Bytes transactionHash;
         try {

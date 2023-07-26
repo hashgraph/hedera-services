@@ -314,15 +314,6 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public OneOf<TransactionRecord.EntropyOneOfType> entropy() {
-        return this.transactionRecordBuilder.build().entropy();
-    }
-
     @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl evmAddress(@NonNull final Bytes evmAddress) {
@@ -351,25 +342,6 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public AccountID accountID() {
-        return accountID;
-    }
-
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public TokenID tokenID() {
-        return tokenID;
-    }
-
-    public SingleTransactionRecordBuilderImpl fileID(FileID fileID) {
     @NonNull
     public SingleTransactionRecordBuilderImpl fileID(@NonNull final FileID fileID) {
         this.fileID = fileID;
@@ -394,42 +366,16 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public TopicID topicID() {
-        return topicID;
-    }
-
     @NonNull
     public SingleTransactionRecordBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
         this.topicSequenceNumber = topicSequenceNumber;
         return this;
     }
 
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    public long topicSequenceNumber() {
-        return topicSequenceNumber;
-    }
-
     @NonNull
     public SingleTransactionRecordBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
         this.topicRunningHash = topicRunningHash;
         return this;
-    }
-
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public Bytes topicRunningHash() {
-        return topicRunningHash;
     }
 
     @NonNull
@@ -467,15 +413,6 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
         this.serialNumbers = serialNumbers;
         return this;
-    }
-
-    /**
-     * @deprecated this method is only used temporarily during the migration
-     */
-    @Deprecated(forRemoval = true)
-    @Nullable
-    public List<Long> serialNumbers() {
-        return serialNumbers;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
