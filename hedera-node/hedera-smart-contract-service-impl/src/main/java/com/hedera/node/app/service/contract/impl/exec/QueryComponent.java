@@ -21,7 +21,6 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 
 @Subcomponent(modules = {QueryModule.class})

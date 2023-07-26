@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -36,13 +38,10 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
@@ -58,36 +57,24 @@ public class WritableStoreFactory {
     private static Map<Class<?>, StoreEntry> createFactoryMap() {
         final Map<Class<?>, StoreEntry> newMap = new HashMap<>();
         // ConsensusService
-        newMap.put(
-                WritableTopicStore.class,
-                new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
+        newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
         // TokenService
-        newMap.put(WritableAccountStore.class,
-                new StoreEntry(TokenService.NAME, WritableAccountStore::new));
-        newMap.put(WritableNftStore.class,
-                new StoreEntry(TokenService.NAME, WritableNftStore::new));
-        newMap.put(WritableTokenStore.class,
-                new StoreEntry(TokenService.NAME, WritableTokenStore::new));
-        newMap.put(WritableTokenRelationStore.class,
-                new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
+        newMap.put(WritableAccountStore.class, new StoreEntry(TokenService.NAME, WritableAccountStore::new));
+        newMap.put(WritableNftStore.class, new StoreEntry(TokenService.NAME, WritableNftStore::new));
+        newMap.put(WritableTokenStore.class, new StoreEntry(TokenService.NAME, WritableTokenStore::new));
+        newMap.put(
+                WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
         // FreezeService
-        newMap.put(
-                WritableUpdateFileStore.class,
-                new StoreEntry(FreezeService.NAME, WritableUpdateFileStore::new));
+        newMap.put(WritableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, WritableUpdateFileStore::new));
         // FileService
-        newMap.put(
-                WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
-        newMap.put(
-                WritableUpgradeStore.class,
-                new StoreEntry(FileService.NAME, WritableUpgradeStore::new));
+        newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
+        newMap.put(WritableUpgradeStore.class, new StoreEntry(FileService.NAME, WritableUpgradeStore::new));
         // ContractService
         newMap.put(
                 WritableContractStateStore.class,
                 new StoreEntry(ContractService.NAME, WritableContractStateStore::new));
         // EntityIdService
-        newMap.put(
-                WritableEntityIdStore.class,
-                new StoreEntry(EntityIdService.NAME, WritableEntityIdStore::new));
+        newMap.put(WritableEntityIdStore.class, new StoreEntry(EntityIdService.NAME, WritableEntityIdStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -131,6 +118,5 @@ public class WritableStoreFactory {
         throw new IllegalArgumentException("No store of the given class is available");
     }
 
-    private record StoreEntry(@NonNull String name, @NonNull Function<WritableStates, ?> factory) {
-    }
+    private record StoreEntry(@NonNull String name, @NonNull Function<WritableStates, ?> factory) {}
 }

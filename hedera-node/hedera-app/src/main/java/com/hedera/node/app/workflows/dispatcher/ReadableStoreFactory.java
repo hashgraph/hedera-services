@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
@@ -49,13 +51,10 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.

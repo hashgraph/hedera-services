@@ -27,10 +27,9 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.common.metrics.Metrics;
 import dagger.BindsInstance;
 import dagger.Component;
-
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.function.Function;
 
 /**
  * Used by Dagger2 to instantiate an object graph with three roots:
@@ -67,6 +66,8 @@ public interface ScaffoldingComponent {
     }
 
     HederaState hederaState();
+
     Function<TransactionBody, HandleContext> contextFactory();
+
     SavepointStackImpl stack();
 }

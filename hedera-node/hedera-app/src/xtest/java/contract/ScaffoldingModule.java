@@ -16,6 +16,8 @@
 
 package contract;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -65,15 +67,12 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Singleton;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
-
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import javax.inject.Singleton;
 
 /**
  * A helper module for Dagger2 to instantiate an {@link ScaffoldingComponent}; provides
