@@ -36,6 +36,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Helper class for paying out staking rewards.
+ * This is called for all accounts that are modified in state for the current transaction,
+ * and are staking to a node
  */
 @Singleton
 public class StakingRewardsDistributor {
@@ -69,6 +71,10 @@ public class StakingRewardsDistributor {
 
             var receiverId = receiver;
             var beneficiary = originalAccount;
+            // Only if reward is greater than zero do all operations below.
+            // But, even if reward is zero add it to the rewardsPaid map, if the account is not declining reward.
+            // It is important to know that if the reward is zero because of its zero stake in last period.
+            // This is needed to update stakePeriodStart for the account.
             if (reward > 0) {
                 stakingRewardHelper.decreasePendingRewardsBy(stakingRewardsStore, reward);
 

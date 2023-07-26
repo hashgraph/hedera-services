@@ -32,6 +32,7 @@ import java.util.Map;
  * 2. The account's stakedId changes
  * 3. The account's declineReward field changes
  * 4. If stakedToMe field of the node to which the account is staked changes
+ *
  */
 public interface StakingRewardsHandler {
     /**
