@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
@@ -34,6 +35,7 @@ import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -194,6 +196,10 @@ public class SyncNode {
      */
     public ShadowGraphSynchronizer getSynchronizer() {
         final Consumer<GossipEvent> eventHandler = event -> {
+            if (event.getHashedData().getHash() == null) {
+                throw new IllegalStateException("expected event to be hashed on the gossip thread");
+            }
+
             if (sleepAfterEventReadMillis.get() > 0) {
                 try {
                     Thread.sleep(sleepAfterEventReadMillis.get());
@@ -204,8 +210,12 @@ public class SyncNode {
             receivedEventQueue.add(event);
         };
 
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
         // Lazy initialize this in case the parallel executor changes after construction
         return new ShadowGraphSynchronizer(
+                platformContext,
                 shadowGraph,
                 numNodes,
                 mock(SyncMetrics.class),
