@@ -97,16 +97,17 @@ public class SubmissionManager {
             @NonNull final ConfigProvider configProvider,
             @NonNull final Metrics metrics) {
         this.platform = requireNonNull(platform);
-        submittedTxns = requireNonNull(deduplicationCache);
+        this.submittedTxns = requireNonNull(deduplicationCache);
 
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;
+        this.isProduction = Profile.valueOf(hederaConfig.activeProfile()) == Profile.PROD;
 
         final var statsConfig = configProvider.getConfiguration().getConfigData(StatsConfig.class);
-        platformTxnRejections = metrics.getOrCreate(new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
-                .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
-                .withFormat(SPEEDOMETER_FORMAT)
-                .withHalfLife(statsConfig.speedometerHalfLifeSecs()));
+        this.platformTxnRejections =
+                metrics.getOrCreate(new SpeedometerMetric.Config("app", PLATFORM_TXN_REJECTIONS_NAME)
+                        .withDescription(PLATFORM_TXN_REJECTIONS_DESC)
+                        .withFormat(SPEEDOMETER_FORMAT)
+                        .withHalfLife(statsConfig.speedometerHalfLifeSecs()));
     }
 
     /**
