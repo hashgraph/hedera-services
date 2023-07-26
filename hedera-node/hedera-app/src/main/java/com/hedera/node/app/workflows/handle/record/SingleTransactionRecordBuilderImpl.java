@@ -114,7 +114,6 @@ public class SingleTransactionRecordBuilderImpl
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensusTimestamp must not be null");
     }
 
-    @SuppressWarnings("DataFlowIssue")
     public SingleTransactionRecord build() {
         // build
         this.transactionReceiptBuilder.status(status);
