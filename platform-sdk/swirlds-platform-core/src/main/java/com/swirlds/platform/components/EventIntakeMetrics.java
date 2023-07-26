@@ -23,7 +23,6 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
 import java.util.function.Supplier;
 
 /**
@@ -62,7 +61,7 @@ public class EventIntakeMetrics {
     /**
      * Report an amount of time that was waited for transactions in a round to be fully prehandled.
      */
-    public void reportTimeWaitedForPrehandlingTransaction(@NonNull final Duration duration) {
-        timeWaitingForTransactionPrehandling.update(UNIT_NANOSECONDS.convertTo(duration.toNanos(), UNIT_MILLISECONDS));
+    public void reportTimeWaitedForPrehandlingTransaction(final long nanoseconds) {
+        timeWaitingForTransactionPrehandling.update(UNIT_NANOSECONDS.convertTo(nanoseconds, UNIT_MILLISECONDS));
     }
 }

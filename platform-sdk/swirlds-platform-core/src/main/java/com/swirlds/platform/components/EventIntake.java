@@ -38,8 +38,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -267,10 +265,10 @@ public class EventIntake {
             // wait for prehandles to finish before proceeding. It is critically
             // important that prehandle is always called prior to handleConsensusRound().
             if (prehandlePool != null) {
-                final Instant start = time.now();
+                final long start = time.nanoTime();
                 consensusRound.forEach(e -> ((EventImpl) e).awaitPrehandleCompletion());
-                final Instant end = time.now();
-                metrics.reportTimeWaitedForPrehandlingTransaction(Duration.between(start, end));
+                final long end = time.nanoTime();
+                metrics.reportTimeWaitedForPrehandlingTransaction(end - start);
             }
 
             eventLinker.updateGenerations(consensusRound.getGenerations());
