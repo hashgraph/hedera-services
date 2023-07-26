@@ -24,10 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
+import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,7 +50,7 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
 
         assertNotNull(file);
 
-        assertEquals(fileSystemFileId, file.fileId());
+        assertEquals(fileUpgradeFileId, file.fileId());
         assertEquals(keys, file.keys());
 
         assertEquals(memo, file.memo());
@@ -62,10 +63,10 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
         final var stateData =
                 ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
         final AtomicReference<File> backingStore = new AtomicReference<>();
-        final var stateFile = new ReadableSingletonStateBase<>(UPGRADE_FILE_KEY, backingStore::get);
+        final var stateFile = MapWritableKVState.<FileID, File>builder(FILES).build();
         ;
         given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
-        given(filteredReadableStates.<File>getSingleton(UPGRADE_FILE_KEY)).willReturn(stateFile);
+        given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(stateFile);
         subject = new ReadableUpgradeStoreImpl(filteredReadableStates);
         assertThat(subject.peek()).isNull();
     }
