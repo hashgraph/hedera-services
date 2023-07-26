@@ -146,6 +146,7 @@ public class FileTestBase {
     @BeforeEach
     void commonSetUp() {
         givenValidFile();
+        givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileOnlyInReadable();
     }
 

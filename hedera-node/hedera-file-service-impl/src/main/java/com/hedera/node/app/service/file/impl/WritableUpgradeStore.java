@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 
 /**
@@ -35,7 +34,7 @@ import java.util.function.Predicate;
  * <p>This class is not exported from the module. It is an internal implementation detail. This
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements WritableQueueState<File> {
+public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableQueueState<Bytes> writableUpgradeState;
 
@@ -68,11 +67,6 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
     public void resetFileContents() {
         while (writableUpgradeState.removeIf(TRUE_PREDICATE) != null)
             ;
-    }
-
-    @Nullable
-    public File removeIf(@NonNull Predicate<File> predicate) {
-        return null;
     }
 
     private static class TruePredicate implements Predicate<Bytes> {

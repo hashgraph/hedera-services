@@ -31,6 +31,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -79,7 +80,8 @@ public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
     @Override
     @NonNull
     public Iterator<File> iterator() {
-        return List.of(upgradeFileState.get(UPGRADE_FILE_ID)).iterator();
+        final File upgradeFile = upgradeFileState.get(UPGRADE_FILE_ID);
+        return upgradeFile != null ? List.of(upgradeFile).iterator() : new ArrayList<File>(0).iterator();
     }
 
     @Override
