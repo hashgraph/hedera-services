@@ -194,10 +194,7 @@ class StateManagementComponentTests {
             final SignedState signedStateSpy = spy(signedState);
             when(signedStateSpy.isComplete()).thenReturn(true);
 
-            final SourceOfSignedState source =
-                    random.nextBoolean() ? SourceOfSignedState.DISK : SourceOfSignedState.RECONNECT;
-
-            component.stateToLoad(signedStateSpy, source);
+            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
 
             // The signed state provided is old, so the consumer should not be invoked again
             assertEquals(
