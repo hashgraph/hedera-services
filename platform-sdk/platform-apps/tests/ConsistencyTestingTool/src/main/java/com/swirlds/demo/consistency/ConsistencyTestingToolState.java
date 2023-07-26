@@ -225,7 +225,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * Keeps track of which transactions have been prehandled.
      */
     @Override
-    public void preHandle(final Event event) {
+    public void preHandle(@NonNull final Event event) {
         event.forEachTransaction(transaction -> {
             final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
 
