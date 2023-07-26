@@ -362,7 +362,7 @@ class AsyncPreconsensusEventWriterTests {
                 new PreconsensusEventFileManager(platformContext, time, TestRecycleBin.getInstance(), new NodeId(0));
 
         final PreconsensusEventStreamSequencer sequencer = new PreconsensusEventStreamSequencer();
-        final PreconsensusEventWriter writer = new AsyncPreconsensusEventWriter(
+        final AsyncPreconsensusEventWriter writer = new AsyncPreconsensusEventWriter(
                 platformContext,
                 getStaticThreadManager(),
                 new SyncPreconsensusEventWriter(platformContext, fileManager));
@@ -420,6 +420,7 @@ class AsyncPreconsensusEventWriterTests {
         // Prune old files.
         final long minimumGenerationToStore = events.get(events.size() - 1).getGeneration() / 2;
         writer.setMinimumGenerationToStore(minimumGenerationToStore);
+        writer.waitUntilNotBusy();
 
         // We shouldn't see any files that are incapable of storing events above the minimum
         fileManager

@@ -205,9 +205,9 @@ class Erc721OperationsTest {
 
     private void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
-            final var context = scaffoldingComponent.contextForTransaction().apply(txn);
+            final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
-            commitStateChanges();
+            scaffoldingComponent.stack().commit();
         }
     }
 
@@ -307,7 +307,6 @@ class Erc721OperationsTest {
                 Map.of(
                         ContractSchema.BYTECODE_KEY, new HashMap<EntityNumber, Bytecode>(),
                         ContractSchema.STORAGE_KEY, new HashMap<SlotKey, SlotValue>()));
-        scaffoldingComponent.workingStateAccessor().setHederaState(fakeHederaState);
     }
 
     private void setupErc721InitcodeAndWellKnownAccounts() throws IOException {
@@ -348,16 +347,6 @@ class Erc721OperationsTest {
             final var bytes = Objects.requireNonNull(in).readAllBytes();
             return Bytes.wrap(bytes);
         }
-    }
-
-    private void commitStateChanges() {
-        final var tokenState = scaffoldingComponent.hederaState().createWritableStates(TokenServiceImpl.NAME);
-        commitKvStateChanges(tokenState.get(TokenServiceImpl.ACCOUNTS_KEY));
-        commitKvStateChanges(tokenState.get(TokenServiceImpl.ALIASES_KEY));
-
-        final var contractState = scaffoldingComponent.hederaState().createWritableStates(ContractServiceImpl.NAME);
-        commitKvStateChanges(contractState.get(ContractSchema.BYTECODE_KEY));
-        commitKvStateChanges(contractState.get(ContractSchema.STORAGE_KEY));
     }
 
     private void commitKvStateChanges(final WritableKVState<?, ?> state) {

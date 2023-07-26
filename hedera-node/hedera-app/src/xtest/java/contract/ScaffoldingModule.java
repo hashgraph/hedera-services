@@ -16,8 +16,6 @@
 
 package contract;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -31,6 +29,7 @@ import com.hedera.node.app.records.impl.producers.BlockRecordWriterFactory;
 import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThreaded;
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -43,11 +42,13 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
+import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -64,15 +65,50 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.inject.Singleton;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
-import javax.inject.Singleton;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+
+/**
+ * A helper module for Dagger2 to instantiate an {@link ScaffoldingComponent}; provides
+ * any bindings not already provided by {@link HandlersInjectionModule}. Most of the
+ * bindings in this module are the production implementations of their interfaces, but
+ * some are not. The exceptions are,
+ * <ol>
+ *     <li>{@link FakeHederaState} implements {@link HederaState}.</li>
+ *     <li>{@link FakeNetworkInfo} implements {@link NetworkInfo}.</li>
+ *     <li>{@link FakeHederaNumbers} implements {@link HederaNumbers}.</li>
+ * </ol>
+ *
+ * <p>That is, tests using this module are not exercising the entire production stack,
+ * since the persistence layer and some "environment" details are faked.
+ */
 @Module
 public interface ScaffoldingModule {
+    @Provides
+    @Singleton
+    static HederaState provideState() {
+        return new FakeHederaState();
+    }
+
+    @Provides
+    @Singleton
+    static NetworkInfo provideNetworkInfo() {
+        return new FakeNetworkInfo();
+    }
+
+    @Provides
+    @Singleton
+    static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
+        return new CryptoSignatureWaiversImpl(new FakeHederaNumbers());
+    }
+
     @Binds
     @Singleton
     DeduplicationCache bindDeduplicationCache(DeduplicationCacheImpl cacheImpl);
@@ -123,26 +159,8 @@ public interface ScaffoldingModule {
 
     @Provides
     @Singleton
-    static NetworkInfo provideNetworkInfo() {
-        return new FakeNetworkInfo();
-    }
-
-    @Provides
-    @Singleton
     static SelfNodeInfo provideSelfNodeInfo(@NonNull final NetworkInfo networkInfo) {
         return networkInfo.selfNodeInfo();
-    }
-
-    @Provides
-    @Singleton
-    static CryptoSignatureWaivers provideCryptoSignatureWaivers() {
-        return new CryptoSignatureWaiversImpl(new FakeHederaNumbers());
-    }
-
-    @Provides
-    @Singleton
-    static HederaState provideState() {
-        return new FakeHederaState();
     }
 
     @Provides
@@ -162,13 +180,16 @@ public interface ScaffoldingModule {
     @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
+            @NonNull final HederaState state,
             @NonNull final RecordCache recordCache,
             @NonNull final Configuration configuration,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ServiceScopeLookup scopeLookup,
             @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final WorkingStateAccessor stateAccessor,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final SavepointStackImpl savepointStack) {
+            @NonNull final SavepointStackImpl stack) {
+        stateAccessor.setHederaState(state);
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(Instant.now());
         return body -> new HandleContextImpl(
                 body,
@@ -176,7 +197,7 @@ public interface ScaffoldingModule {
                 Key.DEFAULT,
                 USER,
                 parentRecordBuilder,
-                savepointStack,
+                stack,
                 new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
                 new RecordListBuilder(parentRecordBuilder),
                 new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),

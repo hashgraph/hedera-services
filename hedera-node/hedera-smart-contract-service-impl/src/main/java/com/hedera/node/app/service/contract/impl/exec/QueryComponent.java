@@ -17,11 +17,11 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
-import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 
 @Subcomponent(modules = {QueryModule.class})
@@ -32,6 +32,4 @@ public interface QueryComponent {
         QueryComponent create(
                 @BindsInstance @NonNull QueryContext context, @BindsInstance @NonNull Instant approxConsensusTime);
     }
-
-    RootProxyWorldUpdater baseProxyWorldUpdater();
 }

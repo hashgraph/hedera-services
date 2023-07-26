@@ -54,6 +54,12 @@ public interface ContractStateStore {
     /**
      * Puts the given {@link SlotValue} for the given {@link SlotKey}.
      *
+     * <p><b>Note: </b>Putting a {@link SlotValue#value()} of binary zeros is <b>not</b>
+     * equivalent to calling {@link #removeSlot(SlotKey)}. We defer removing slots until
+     * the very end of a contract transaction, at the point in
+     * {@link RootProxyWorldUpdater#commit()} where we know we have fixed up the
+     * {@link SlotValue#previousKey()} and {@link SlotValue#nextKey()} pointers.
+     *
      * @param key the {@link SlotKey} to put the {@link SlotValue} for
      * @param value the {@link SlotValue} to put
      */

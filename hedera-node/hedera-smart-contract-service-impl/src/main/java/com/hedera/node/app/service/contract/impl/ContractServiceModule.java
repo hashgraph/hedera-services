@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl;
 
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_030;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_034;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
-
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV030;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV034;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV038;
@@ -36,11 +32,16 @@ import dagger.Module;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.Multibinds;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+
+import javax.inject.Singleton;
+import java.util.Map;
+
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_030;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_034;
+import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_038;
 
 /**
  * Provides bindings for the {@link TransactionProcessor} implementations used by each
