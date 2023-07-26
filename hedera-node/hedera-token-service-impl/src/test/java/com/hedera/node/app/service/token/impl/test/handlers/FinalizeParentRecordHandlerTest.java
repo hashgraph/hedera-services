@@ -99,6 +99,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @BeforeEach
     public void setUp() {
+        super.setUp();
         subject = new FinalizeParentRecordHandler(stakingRewardsHandler);
     }
 
@@ -128,6 +129,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(ACCOUNT_1212.tinybarBalance() - 5)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -149,6 +151,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(ACCOUNT_3434.tinybarBalance() + amountToAdjust)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -168,6 +171,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels();
         context = mockContext();
 
+        given(context.configuration()).willReturn(configuration);
         subject.handle(context);
 
         BDDMockito.verifyNoInteractions(recordBuilder);
@@ -192,6 +196,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -231,6 +236,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(
                 ACCOUNT_5656.copyBuilder().memo("different memo field").build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -259,6 +265,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         writableTokenRelStore.put(tokenRel.copyBuilder().balance(-1).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -278,6 +285,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // The token relation's 'frozen' property is changed, but its balance doesn't change
         writableTokenRelStore.put(tokenRel.copyBuilder().frozen(true).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -316,6 +324,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .balance(fungibleAmountToTransfer)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -394,6 +403,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .balance(token2AmountTransferred)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -456,6 +466,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -492,6 +503,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(newNft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         context = mockContext();
 
+        given(context.configuration()).willReturn(configuration);
         subject.handle(context);
 
         BDDMockito.verify(recordBuilder)
@@ -507,11 +519,6 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleNftTransfersToExistingAccountSuccess() {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("staking.isEnabled", String.valueOf(false))
-                .getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
-
         // This test case handles successfully transferring NFTs only
 
         // Set up NFTs for token ID 531 (serials 111, 112)
@@ -563,6 +570,10 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft222.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         writableNftStore.put(nft223.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         context = mockContext();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("staking.isEnabled", String.valueOf(false))
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
 
         subject.handle(context);
 
@@ -649,6 +660,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 

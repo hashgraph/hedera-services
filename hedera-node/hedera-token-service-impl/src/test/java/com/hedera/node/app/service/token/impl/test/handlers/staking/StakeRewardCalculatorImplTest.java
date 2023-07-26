@@ -61,7 +61,7 @@ class StakeRewardCalculatorImplTest {
     @Mock
     private ReadableNetworkStakingRewardsStore stakingRewardsStore;
 
-    @Mock
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private Account account;
 
     private List<Long> rewardHistory;
