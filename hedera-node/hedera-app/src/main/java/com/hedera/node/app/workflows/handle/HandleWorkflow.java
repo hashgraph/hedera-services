@@ -16,14 +16,12 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -31,6 +29,7 @@ import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -57,7 +56,6 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,6 +83,7 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
     private final HederaRecordCache hederaRecordCache;
+    private final SolvencyPreCheck solvencyPreCheck;
 
     @Inject
     public HandleWorkflow(
@@ -98,11 +97,12 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
-            @NonNull final HederaRecordCache hederaRecordCache) {
+            @NonNull final HederaRecordCache hederaRecordCache,
+            @NonNull final SolvencyPreCheck solvencyPreCheck) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
-        this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
+        this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
         this.signatureExpander = requireNonNull(signatureExpander, "signatureExpander must not be null");
         this.signatureVerifier = requireNonNull(signatureVerifier, "signatureVerifier must not be null");
         this.checker = requireNonNull(checker, "checker must not be null");
@@ -110,6 +110,7 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.hederaRecordCache = requireNonNull(hederaRecordCache, "hederaRecordCache must not be null");
+        this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
     }
 
     /**
@@ -161,7 +162,6 @@ public class HandleWorkflow {
             final var hederaConfig = configuration.getConfigData(HederaConfig.class);
 
             preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
-
             final var transactionInfo = preHandleResult.txInfo();
             final var txBody = transactionInfo.txBody();
             recordBuilder
@@ -180,13 +180,15 @@ public class HandleWorkflow {
                 default -> throw new PreCheckException(preHandleResult.responseCode());
             }
 
-            // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
-            // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
-            // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
-            // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
-            // and create an appropriate record to save in state and send to the record stream.
-            final var foundTransactionRecord = hederaRecordCache.getRecord(
-                    preHandleResult.txInfo().txBody().transactionID());
+            // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
+            switch (preHandleResult.status()) {
+                case SO_FAR_SO_GOOD -> {
+                    /* All good nothing to do */
+                }
+                case NODE_DUE_DILIGENCE_FAILURE -> createPenaltyPayment();
+                case UNKNOWN_FAILURE -> throw new IllegalStateException("Pre-handle failed with unknown failure");
+                default -> throw new PreCheckException(preHandleResult.responseCode());
+            }
 
             // Check the payer signature. Whether this is a duplicate transaction or not, we need to have the payer
             // information to proceed. Also perform a solvency check on the account to make sure the account has not
@@ -199,22 +201,45 @@ public class HandleWorkflow {
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
-
-            for (final var key : preHandleResult.requiredKeys()) {
-                final var remainingMillis = maxMillis - instantSource.millis();
-                if (remainingMillis <= 0) {
-                    throw new TimeoutException("Verification of signatures timed out");
-                }
-                final var verification = preHandleResult.verificationResults().get(key);
-                if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
-                    throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
-                }
+            boolean chargeNode = false;
+            try {
+                solvencyPreCheck.checkPayerAccountStatus(state, preHandleResult.payer());
+                solvencyPreCheck.checkSolvencyOfVerifiedPayer(
+                        state, preHandleResult.txInfo().transaction());
+            } catch (PreCheckException e) {
+                // If the account is not valid, or it doesn't have sufficient funds - we charge the node
+                chargeNode = true;
             }
 
+            final var stack = new SavepointStackImpl(state, configuration);
+
+            // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
+            // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
+            // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
+            // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
+            // and create an appropriate record to save in state and send to the record stream.
+            final var foundTransactionRecord = hederaRecordCache.getRecord(
+                    preHandleResult.txInfo().txBody().transactionID());
+
             if (foundTransactionRecord != null) {
-                // Duplicate code path:
-                // 1. Compute the node+network fees
-                // 2. Create a transaction record
+                // TODO: 1. Compute the node+network fees(not implement yet)
+
+                // 2. Charge the payer or the node - depends on https://github.com/hashgraph/hedera-services/issues/6811
+                // TODO: we need to decide how we are going to charge the user - should we create a crypto transfer or
+                // should we directly from the state(?) Probably we will do it as do it when we have
+                // NODE_DUE_DILIGENCE_FAILURE
+                // and call the createPenaltyPayment(). If we choose to generate PreHandleResult and should let the flow
+                // continue(remove the else statement) so we can execute it. We should use chargeNode boolean to decide
+                // should we charge the node or the account.
+
+                // 3. TODO: Create a transaction record
+                // When createPenaltyPayment is implemented it will produce PreHandleResult. Using this result we can
+                // set it to the record as we do above:
+                /*
+                recordBuilder.transaction(
+                    preHandleResult.txInfo().transaction(),
+                    preHandleResult.txInfo().signedBytes());
+                 */
             } else {
                 for (final var key : preHandleResult.requiredKeys()) {
                     final var remainingMillis = maxMillis - instantSource.millis();
@@ -228,13 +253,7 @@ public class HandleWorkflow {
                     }
                 }
 
-                if (foundTransactionRecord != null) {
-                    recordBuilder.status(DUPLICATE_TRANSACTION);
-                    preHandleResult = createPenaltyPayment();
-                }
-
                 // Setup context
-                final var stack = new SavepointStackImpl(state, configuration);
                 final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
                 final var context = new HandleContextImpl(
                         txBody,
@@ -254,6 +273,7 @@ public class HandleWorkflow {
                 // Dispatch the transaction to the handler
                 dispatcher.dispatchHandle(context);
             }
+
             // TODO: Finalize transaction with the help of the token service
 
             recordBuilder.status(SUCCESS);
@@ -286,28 +306,22 @@ public class HandleWorkflow {
 
         // add the transaction to the cache
         if (preHandleResult != null) {
-            addTransactionToCache(
-                    preHandleResult,
-                    recordListResult.mainRecord().recordStreamItem().record(),
+            hederaRecordCache.add(
+                    platformEvent.getCreatorId().id(),
+                    preHandleResult.payer(),
+                    recordListResult.mainRecord().record(),
                     consensusNow);
         } else {
-            // TODO: implement
+            // The only reason the preHandleResult might be null is if there is an exception in the try-catch
+            // block above. If that happens the recordBuilder's status will be updated by the catch blocks so there
+            // is no need to override it here. Logging should be enough. // TODO: is that true?
+            logger.warn("The transaction was not saved in the cache");
         }
 
         blockRecordManager.endUserTransaction(recordListResult.recordStream(), state);
     }
 
-    private void addTransactionToCache(
-            @NonNull final PreHandleResult preHandleResult,
-            @NonNull final TransactionRecord transactionRecord,
-            @NonNull final Instant consensusNow) {
-        final var txBody = preHandleResult.txInfo().txBody();
-        final var nodeId = txBody.nodeAccountID().accountNum();
-        final var payerAccountId = preHandleResult.payer();
-        hederaRecordCache.add(nodeId, payerAccountId, transactionRecord, consensusNow);
-    }
-
-    private void recordFailedTransaction(
+    public void recordFailedTransaction(
             @NonNull final ResponseCodeEnum status,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final RecordListBuilder recordListBuilder) {

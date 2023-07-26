@@ -18,23 +18,24 @@ package com.hedera.node.app.workflows.handle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.node.transaction.TransactionRecord.BodyOneOfType;
-import com.hedera.hapi.node.transaction.TransactionRecord.EntropyOneOfType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
@@ -46,6 +47,7 @@ import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.SignatureExpander;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
+import com.hedera.node.app.solvency.SolvencyPreCheck;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -65,7 +67,6 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Round;
@@ -79,6 +80,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -105,6 +107,10 @@ class HandleWorkflowTest extends AppTestBase {
 
     private static PreHandleResult createPreHandleResult(
             @NonNull final Status status, @NonNull final ResponseCodeEnum code) {
+        final var transactionId = TransactionID.newBuilder()
+                .accountID(AccountID.newBuilder().accountNum(1002L).build())
+                .build();
+
         final var key = ALICE.account().keyOrThrow();
         return new PreHandleResult(
                 ALICE.accountID(),
@@ -154,16 +160,18 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock(strictness = LENIENT)
     private SwirldTransaction platformTxn;
 
-    private HandleWorkflow workflow;
-
-    @Mock(strictness = LENIENT)
-    private HederaRecordCache hederaRecordCache;
-
     @Mock
     private DeduplicationCache deduplicationCache;
 
     @Mock
     private WorkingStateAccessor workingStateAccessor;
+
+    @Mock
+    private SolvencyPreCheck solvencyPreCheck;
+
+    private HandleWorkflow workflow;
+
+    private HederaRecordCache hederaRecordCache;
 
     @BeforeEach
     void setup(@Mock final InstantSource instantSource) {
@@ -212,7 +220,8 @@ class HandleWorkflowTest extends AppTestBase {
                 serviceLookup,
                 configProvider,
                 instantSource,
-                hederaRecordCache);
+                hederaRecordCache,
+                solvencyPreCheck);
     }
 
     @Test
@@ -229,7 +238,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -242,7 +252,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -255,7 +266,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -268,7 +280,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -281,7 +294,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -294,7 +308,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -307,7 +322,8 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -320,7 +336,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         configProvider,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -333,20 +350,51 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         null,
                         instantSource,
-                        hederaRecordCache))
+                        hederaRecordCache,
+                        solvencyPreCheck))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                networkInfo,
-                preHandleWorkflow,
-                dispatcher,
-                blockRecordManager,
-                signatureExpander,
-                signatureVerifier,
-                checker,
-                serviceLookup,
-                configProvider,
-                null,
-                hederaRecordCache));
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        null,
+                        hederaRecordCache,
+                        solvencyPreCheck))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        null,
+                        solvencyPreCheck))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        hederaRecordCache,
+                        null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -368,6 +416,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     @DisplayName("Successful execution of simple case")
     void testHappyPath() {
+        // given
+        when(event.getCreatorId()).thenReturn(new NodeId(0));
+
         // when
         workflow.handleRound(state, round);
 
@@ -375,6 +426,13 @@ class HandleWorkflowTest extends AppTestBase {
         final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
         assertThat(alice).isNotNull();
         assertThat(alice).isEqualTo(ALICE.account().accountId());
+
+        final var inOrder = inOrder(blockRecordManager, hederaRecordCache, dispatcher, blockRecordManager);
+        inOrder.verify(blockRecordManager, times(1)).startUserTransaction(any(), any());
+        inOrder.verify(hederaRecordCache, times(1)).getRecord(any());
+        inOrder.verify(dispatcher, times(1)).dispatchHandle(any());
+        inOrder.verify(hederaRecordCache, times(1)).add(eq(0L), any(), any(), any());
+        inOrder.verify(blockRecordManager, times(1)).endUserTransaction(any(), any());
         // TODO: Check that record was created
     }
 
@@ -386,6 +444,7 @@ class HandleWorkflowTest extends AppTestBase {
         void setup() {
             when(preHandleWorkflow.preHandleTransaction(any(), any(), any(), eq(platformTxn)))
                     .thenReturn(OK_RESULT);
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
         }
 
         @Test
@@ -393,7 +452,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleNotExecuted() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -407,7 +465,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PRE_HANDLE_FAILURE_RESULT);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -421,7 +478,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testUnknownFailure() {
             // given
             when(platformTxn.getMetadata()).thenReturn(PreHandleResult.unknownFailure());
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -446,7 +502,6 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION - 1L);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -460,7 +515,6 @@ class HandleWorkflowTest extends AppTestBase {
         void testPreHandleSuccess() {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
-            when(event.getCreatorId()).thenReturn(new NodeId(0));
 
             // when
             workflow.handleRound(state, round);
@@ -485,6 +539,12 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             assertThat(aliasesState.isModified()).isFalse();
+            verify(blockRecordManager, times(1)).startUserTransaction(any(), any());
+            verify(hederaRecordCache, times(0)).getRecord(any());
+            verify(dispatcher, times(0)).dispatchHandle(any());
+            verify(blockRecordManager, times(1)).endRound(any());
+            verify(hederaRecordCache, times(0)).add(eq(0L), any(), any(), any());
+
             // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
         }
 
@@ -531,36 +591,47 @@ class HandleWorkflowTest extends AppTestBase {
 
         // then
         assertThat(aliasesState.isModified()).isFalse();
+        verify(blockRecordManager, times(1)).startUserTransaction(any(), any());
+        verify(hederaRecordCache, times(0)).getRecord(any());
+        verify(dispatcher, times(0)).dispatchHandle(any());
+        verify(blockRecordManager, times(1)).endRound(any());
+        verify(hederaRecordCache, times(0)).add(eq(0L), any(), any(), any());
         // TODO: Verify that we created a penalty payment (https://github.com/hashgraph/hedera-services/issues/6811)
     }
 
     @Test
-    @DisplayName("Test when there is the same transaction in the cache")
+    @DisplayName("Test with same transaction in the cache")
     void testExistingTransactionInCache() {
-        // given
-        when(hederaRecordCache.getRecord(any())).thenReturn(generateDummyTransactionRecord());
+        // pre-check
+        final var transactionId = OK_RESULT.txInfo().txBody().transactionID();
+        Assertions.assertTrue(hederaRecordCache.getRecords(transactionId).isEmpty());
 
-        // when
-        workflow.handleRound(state, round);
+        // given
+        when(event.getCreatorId()).thenReturn(new NodeId(0));
+
+        final HandleWorkflow workflowSpy = spy(workflow);
+
+        workflowSpy.handleRound(state, round);
+        assertEquals(1, hederaRecordCache.getRecords(transactionId).size());
+
+        // when - we call handleRound with the same arguments
+        workflowSpy.handleRound(state, round);
 
         // then
-        assertThat(accountsState.isModified()).isFalse();
-        assertThat(aliasesState.isModified()).isFalse();
-        verify(recordManager, times(1)).startUserTransaction(any());
-        verify(recordManager, times(1)).endUserTransaction(any());
-    }
-
-    private TransactionRecord generateDummyTransactionRecord() {
-        final var body = new OneOf<>(BodyOneOfType.UNSET, 1);
-        final var entropy = new OneOf<>(EntropyOneOfType.PRNG_BYTES, 1);
-        return new TransactionRecord(
-                null, null, null, null, null, 1L, body, null, null, null, null, null, null, null, null, null, entropy,
-                null);
+        assertEquals(2, hederaRecordCache.getRecords(transactionId).size());
+        verify(hederaRecordCache, times(2)).getRecord(any());
+        verify(hederaRecordCache, times(2)).add(eq(0L), any(), any(), any());
+        verify(dispatcher, times(1)).dispatchHandle(any());
     }
 
     @Nested
     @DisplayName("Tests for cases when preHandle ran successfully")
     final class AddMissingSignaturesTest {
+
+        @BeforeEach
+        void setup() {
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
+        }
 
         @Test
         @DisplayName("Add passing verification result, if a key was handled in preHandle")
@@ -1020,6 +1091,11 @@ class HandleWorkflowTest extends AppTestBase {
     @DisplayName("Tests for special cases during transaction dispatching")
     final class DispatchTest {
 
+        @BeforeEach
+        void setup() {
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
+        }
+
         @Test
         @DisplayName("Charge user, but do not change state otherwise, if transaction causes a HandleException")
         void testHandleException() {
@@ -1057,6 +1133,9 @@ class HandleWorkflowTest extends AppTestBase {
 
         @Test
         void testSimpleRun() {
+            // given
+            when(event.getCreatorId()).thenReturn(new NodeId(0));
+
             // when
             workflow.handleRound(state, round);
 
