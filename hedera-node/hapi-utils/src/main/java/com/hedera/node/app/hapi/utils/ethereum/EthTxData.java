@@ -102,7 +102,7 @@ public record EthTxData(
                 }
 
                 if (typeByte == 1) {
-                    return populateEip2390EthTxData(decoder);
+                    return populateEip2390EthTxData(decoder, data);
                 }
 
                 type = EthTransactionType.EIP1559;
@@ -344,21 +344,31 @@ public record EthTxData(
      *
      * @return the encoded transaction data
      */
-    private static EthTxData populateEip2390EthTxData(Iterator<RLPItem> rlpItemIterator) {
-        final byte[] chainId = rlpItemIterator.next().asBytes();
-        final long nonce = rlpItemIterator.next().asLong();
-        final byte[] gasPrice = rlpItemIterator.next().asBytes();
-        final long gasLimit = rlpItemIterator.next().asLong();
-        final byte[] to = rlpItemIterator.next().asBytes();
-        final BigInteger value = rlpItemIterator.next().asBigInteger();
-        final byte[] data = rlpItemIterator.next().asBytes();
-        final byte[] accessList = rlpItemIterator.next().asBytes();
-        final byte yParity = rlpItemIterator.next().asByte();
-        final byte[] r = rlpItemIterator.next().asBytes();
-        final byte[] s = rlpItemIterator.next().asBytes();
+    private static EthTxData populateEip2390EthTxData(Iterator<RLPItem> rlpItemIterator, byte[] rawTx) {
+        var rlpItem = rlpItemIterator.next();
+        if (!rlpItem.isList()) {
+            return null;
+        }
+
+        List<RLPItem> rlpList = rlpItem.asRLPList().elements();
+        if (rlpList.size() != 11) {
+            return null;
+        }
+
+        final byte[] chainId = rlpList.get(0).data();
+        final long nonce = rlpList.get(1).asLong();
+        final byte[] gasPrice = rlpList.get(2).data();
+        final long gasLimit = rlpList.get(3).asLong();
+        final byte[] to = rlpList.get(4).data();
+        final BigInteger value = rlpList.get(5).asBigInt();
+        final byte[] callData = rlpList.get(6).data();
+        final byte[] accessList = rlpList.get(7).data();
+        final byte recId = rlpList.get(8).asByte();
+        final byte[] r = rlpList.get(9).data();
+        final byte[] s = rlpList.get(10).data();
 
         return new EthTxData(
-                null,
+                rawTx,
                 EthTransactionType.EIP2930,
                 chainId,
                 nonce,
@@ -368,9 +378,9 @@ public record EthTxData(
                 gasLimit,
                 to,
                 value,
-                data,
+                callData,
                 accessList,
-                yParity,
+                recId,
                 null,
                 r,
                 s);
