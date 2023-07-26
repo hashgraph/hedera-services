@@ -23,8 +23,6 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for working with
@@ -33,7 +31,6 @@ import org.apache.logging.log4j.Logger;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
-    private static final Logger log = LogManager.getLogger(WritableStakingInfoStore.class);
 
     /** The underlying data storage class that holds the staking data. */
     private final WritableKVState<Long, StakingNodeInfo> stakingInfoState;

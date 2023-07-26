@@ -17,8 +17,8 @@
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.roundedToHbar;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
@@ -82,7 +82,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
-        subject = new StakingRewardsHandlerImpl(rewardsPayer, stakingRewardHelper, stakePeriodManager, stakeInfoHelper);
+        subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper);
     }
 
     @Test
@@ -117,8 +117,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var rewards = subject.applyStakingRewards(handleContext);
 
         // earned zero rewards due to zero stake
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards).containsEntry(payerId, 0L);
+        assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         // stakedToMe will not change as this is not staked by another account
@@ -258,7 +257,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
     }
 
     @Test
@@ -285,7 +284,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
     }
 
     //    @Test
@@ -310,8 +309,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .willReturn(3L);
         given(account.stakePeriodStart()).willReturn(2L);
 
-        final StakingRewardsHandlerImpl impl =
-                new StakingRewardsHandlerImpl(rewardsPayer, stakingRewardHelper, manager, stakeInfoHelper);
+        final StakingRewardsHandlerImpl impl = new StakingRewardsHandlerImpl(rewardsPayer, manager, stakeInfoHelper);
 
         assertThat(impl.shouldUpdateStakeStart(account, true, 0L, readableRewardsStore, consensusInstant))
                 .isTrue();
@@ -343,7 +341,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
     }
 
     @Test
@@ -395,9 +393,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
         final var node0InfoAfter = writableStakingInfoState.get(node0Id);
 
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isEqualTo(5500L);
-        assertThat(rewards.get(ownerId)).isEqualTo(null);
+        assertThat(rewards).hasSize(1).containsEntry(payerId, 5500L).doesNotContainKey(ownerId);
 
         assertThat(node1InfoAfter.stakeToReward()).isEqualTo(node1InfoBefore.stakeToReward() - accountBalance);
 
@@ -411,7 +407,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(node1InfoAfter.unclaimedStakeRewardStart())
                 .isEqualTo(node1InfoBefore.unclaimedStakeRewardStart() + accountBalance);
 
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
     }
 
     @Test
@@ -486,12 +482,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isEqualTo(5500L);
+        assertThat(rewards).hasSize(1).containsEntry(payerId, 5500L);
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance())
@@ -531,12 +526,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
         // No rewards rewarded
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isZero();
+        assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
@@ -576,12 +570,11 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
         // Since it has not declined rewards and has zero stake, no rewards rewarded
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isZero();
+        assertThat(rewards).hasSize(1).containsEntry(payerId, 0L);
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(0).isEqualTo(node1Info.unclaimedStakeRewardStart());
+        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
@@ -631,8 +624,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1InfoAfter = writableStakingInfoState.get(node1Id);
 
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(payerId)).isEqualTo(5500L);
+        assertThat(rewards).hasSize(1).containsEntry(payerId, 5500L);
 
         assertThat(node1InfoAfter.stakeToReward()).isEqualTo(node1InfoBefore.stakeToReward() - accountBalance);
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(accountBalance);
@@ -709,8 +701,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         // even though only payer account has changed, since staked to me of owner changes,
         // it will trigger reward for owner
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(ownerId)).isEqualTo(6600L);
+        assertThat(rewards).hasSize(1).containsEntry(ownerId, 6600L);
 
         final var modifiedPayer = writableAccountStore.get(payerId);
         final var modifiedOwner = writableAccountStore.get(ownerId);
@@ -724,7 +715,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node0InfoAfter = writableStakingInfoStore.get(node0Id);
         assertThat(node0InfoAfter.stakeToReward()).isEqualTo(node0InfoBefore.stakeToReward() - HBARS_TO_TINYBARS);
-        assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -788,7 +779,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart - 2);
 
         assertThat(node0InfoAfter.stakeToReward()).isEqualTo(node0InfoBefore.stakeToReward());
-        assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node0InfoAfter.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -829,8 +820,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var originalPayer = writableAccountStore.get(payerId);
         final var rewards = subject.applyStakingRewards(handleContext);
 
-        assertThat(rewards).hasSize(1);
-        assertThat(rewards.get(ownerId)).isEqualTo(6600L);
+        assertThat(rewards).hasSize(1).containsEntry(ownerId, 6600L);
 
         final var modifiedPayer = writableAccountStore.get(payerId);
         final var modifiedOwner = writableAccountStore.get(ownerId);

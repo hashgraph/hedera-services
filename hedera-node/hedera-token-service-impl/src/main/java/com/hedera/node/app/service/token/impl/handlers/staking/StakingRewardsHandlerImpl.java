@@ -20,9 +20,9 @@ import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUt
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.getPossibleRewardReceivers;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.hasStakeMetaChanges;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.roundedToHbar;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -48,18 +48,15 @@ import org.apache.logging.log4j.Logger;
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private static final Logger log = LogManager.getLogger(StakingRewardsHandlerImpl.class);
     private final StakingRewardsDistributor rewardsPayer;
-    private final StakingRewardsHelper stakingRewardHelper;
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
     public StakingRewardsHandlerImpl(
             @NonNull final StakingRewardsDistributor rewardsPayer,
-            @NonNull final StakingRewardsHelper stakingRewardHelper,
             @NonNull final StakePeriodManager stakePeriodManager,
             @NonNull final StakeInfoHelper stakeInfoHelper) {
         this.rewardsPayer = requireNonNull(rewardsPayer);
-        this.stakingRewardHelper = requireNonNull(stakingRewardHelper);
         this.stakePeriodManager = requireNonNull(stakePeriodManager);
         this.stakeInfoHelper = requireNonNull(stakeInfoHelper);
     }

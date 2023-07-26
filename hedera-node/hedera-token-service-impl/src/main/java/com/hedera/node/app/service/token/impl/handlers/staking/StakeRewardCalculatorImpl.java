@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;

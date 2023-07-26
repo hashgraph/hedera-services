@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;

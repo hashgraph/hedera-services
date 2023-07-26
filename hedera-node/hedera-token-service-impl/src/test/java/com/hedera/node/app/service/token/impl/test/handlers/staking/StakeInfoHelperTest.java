@@ -27,7 +27,8 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class StakeInfoHelperTest {
     private StakeInfoHelper subject;
@@ -49,41 +50,22 @@ class StakeInfoHelperTest {
         subject = new StakeInfoHelper();
     }
 
-    @Test
-    void increaseUnclaimedStartToLargerThanCurrentStakeReward() {
+    @ParameterizedTest
+    @CsvSource({
+        "20, 15", "9, 14", "10, 15",
+    })
+    void increaseUnclaimedStartToLargerThanCurrentStakeReward(int amount, int expectedResult) {
         assertUnclaimedStakeRewardStartPrecondition();
 
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 20, store);
+        subject.increaseUnclaimedStakeRewards(NODE_ID_1, amount, store);
 
         final var savedStakeInfo = store.get(NODE_ID_1);
         Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward
+        // Case 1: The passed in amount, 20, is greater than the stake reward start, 15, so the unclaimed stake reward
         // value should be the current stake reward start value
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
-    }
-
-    @Test
-    void increaseUnclaimedStartToLessThanCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 9, store);
-
-        final var savedStakeInfo = store.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(14);
-    }
-
-    @Test
-    void increaseUnclaimedStartToExactlyCurrentStakeReward() {
-        assertUnclaimedStakeRewardStartPrecondition();
-
-        subject.increaseUnclaimedStakeRewards(NODE_ID_1, 10, store);
-
-        final var savedStakeInfo = store.get(NODE_ID_1);
-        Assertions.assertThat(savedStakeInfo).isNotNull();
-        // Stake reward start + unclaimed stake reward start, 5 + 10 = 15
-        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(15);
+        // Case 2: The result should be the stake reward start + the unclaimed stake reward start, 5 + 9 = 14
+        // Case 3: Stake reward start + unclaimed stake reward start, 5 + 10 = 15
+        Assertions.assertThat(savedStakeInfo.unclaimedStakeRewardStart()).isEqualTo(expectedResult);
     }
 
     private void assertUnclaimedStakeRewardStartPrecondition() {

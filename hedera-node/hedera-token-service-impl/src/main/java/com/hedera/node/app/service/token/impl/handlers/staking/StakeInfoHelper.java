@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.roundedToHbar;
-import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtils.totalStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.Account;
@@ -36,7 +36,9 @@ public class StakeInfoHelper {
     private static final Logger log = LogManager.getLogger(StakeInfoHelper.class);
 
     @Inject
-    public StakeInfoHelper() {}
+    public StakeInfoHelper() {
+        // Needed for Dagger injection
+    }
 
     /**
      * Increases the unclaimed stake reward start for the given node by the given amount

@@ -23,7 +23,11 @@ import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class StakingUtils {
+public class StakingUtilities {
+    private StakingUtilities() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
     public static final long NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE = -1;
 
     public static long roundedToHbar(final long value) {
