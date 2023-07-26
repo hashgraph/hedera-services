@@ -17,6 +17,7 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
@@ -30,6 +31,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,6 +42,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,12 +84,21 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     private long roundsHandled = 0;
 
     /**
-     * If not zero and we are handling the first round after genesis, configure a freeze this duration later.
+     * If not zero, and we are handling the first round after genesis, configure a freeze this duration later.
      * <p>
      * Does not affect the hash of this node (although actions may be taken based on this info that DO affect the
      * hash).
      */
     private Duration freezeAfterGenesis = null;
+
+    /**
+     * The set of transactions that have been preconsensus-handled by this app, but haven't yet been
+     * postconsensus-handled. This is used to ensure that transactions are prehandled exactly 1 time, prior to
+     * posthandling.
+     * <p>
+     * Does not affect the hash of this node.
+     */
+    private Set<Long> transactionsAwaitingPostHandle = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor
@@ -108,6 +121,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         this.stateLong = that.stateLong;
         this.roundsHandled = that.roundsHandled;
         this.freezeAfterGenesis = that.freezeAfterGenesis;
+        this.transactionsAwaitingPostHandle = that.transactionsAwaitingPostHandle;
     }
 
     /**
@@ -196,10 +210,31 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * @param transaction the transaction to apply to the state
      */
     private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
-        final long transactionContents =
-                byteArrayToLong(Objects.requireNonNull(transaction).getContents(), 0);
+        Objects.requireNonNull(transaction);
+
+        final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+
+        if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
+            logger.error(EXCEPTION.getMarker(), "Transaction " + transactionContents + " was not prehandled.");
+        }
 
         stateLong = NonCryptographicHashing.hash64(stateLong, transactionContents);
+    }
+
+    /**
+     * Keeps track of which transactions have been prehandled.
+     */
+    @Override
+    public void preHandle(final Event event) {
+        event.forEachTransaction(transaction -> {
+            final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+
+            if (!transactionsAwaitingPostHandle.add(transactionContents)) {
+                logger.error(
+                        EXCEPTION.getMarker(),
+                        "Transaction " + transactionContents + " was prehandled more than once.");
+            }
+        });
     }
 
     /**
