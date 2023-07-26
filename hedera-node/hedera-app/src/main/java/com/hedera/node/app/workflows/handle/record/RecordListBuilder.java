@@ -60,7 +60,7 @@ public class RecordListBuilder {
      *
      * @param configuration the current configuration
      * @return the record builder for the preceding transaction
-     * @throws NullPointerException if {@code consensusConfig} is {@code null}
+     * @throws NullPointerException      if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more preceding slots are available
      */
     public SingleTransactionRecordBuilderImpl addPreceding(@NonNull final Configuration configuration) {
@@ -92,7 +92,7 @@ public class RecordListBuilder {
      *
      * @param configuration the current configuration
      * @return the record builder for the child transaction
-     * @throws NullPointerException if {@code consensusConfig} is {@code null}
+     * @throws NullPointerException      if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addChild(@NonNull final Configuration configuration) {
@@ -110,7 +110,7 @@ public class RecordListBuilder {
      *
      * @param configuration the current configuration
      * @return the record builder for the child transaction
-     * @throws NullPointerException if {@code consensusConfig} is {@code null}
+     * @throws NullPointerException      if {@code consensusConfig} is {@code null}
      * @throws IndexOutOfBoundsException if no more child slots are available
      */
     public SingleTransactionRecordBuilderImpl addRemovableChild(@NonNull final Configuration configuration) {
@@ -132,10 +132,11 @@ public class RecordListBuilder {
             throw new IndexOutOfBoundsException("No more child slots available");
         }
 
-        final var consensusNow =
-                recordBuilders.get(childCount - 1).consensusNow().plusNanos(1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
-
+        final var previousRecord = recordBuilders.get(childCount - 1);
+        final var consensusNow = previousRecord.consensusNow().plusNanos(1L);
+        final var parentConsensusTimestamp =
+                childCount == 1 ? previousRecord.consensusNow() : previousRecord.parentConsensusTimestamp();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, parentConsensusTimestamp);
         recordBuilders.add(recordBuilder);
         return recordBuilder;
     }

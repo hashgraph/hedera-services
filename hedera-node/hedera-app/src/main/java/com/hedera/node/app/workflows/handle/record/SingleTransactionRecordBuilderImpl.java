@@ -78,7 +78,7 @@ import java.util.List;
  * <p>This class is an ugly superset of all fields for all transaction types. It is masked down to a sensible subset by
  * the interfaces for specific transaction types.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class SingleTransactionRecordBuilderImpl
         implements SingleTransactionRecordBuilder,
                 ConsensusCreateTopicRecordBuilder,
@@ -104,7 +104,7 @@ public class SingleTransactionRecordBuilderImpl
     private ScheduleID scheduleRef;
     private List<AssessedCustomFee> assessedCustomFees = emptyList();
     private List<TokenAssociation> automaticTokenAssociations = emptyList();
-    private Timestamp parentConsensusTimestamp;
+    private final Instant parentConsensusTimestamp;
     private Bytes alias = Bytes.EMPTY;
     private Bytes ethereumHash = Bytes.EMPTY;
     private List<AccountAmount> paidStakingRewards = emptyList();
@@ -132,6 +132,14 @@ public class SingleTransactionRecordBuilderImpl
 
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.parentConsensusTimestamp = null;
+    }
+
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final Instant consensusNow, @NonNull final Instant parentConsensusTimestamp) {
+        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.parentConsensusTimestamp =
+                requireNonNull(parentConsensusTimestamp, "parentConsensusTimestamp must not be null");
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -201,7 +209,7 @@ public class SingleTransactionRecordBuilderImpl
                         scheduleRef,
                         assessedCustomFees,
                         automaticTokenAssociations,
-                        parentConsensusTimestamp,
+                        parentConsensusTimestamp != null ? HapiUtils.asTimestamp(parentConsensusTimestamp) : null,
                         alias,
                         ethereumHash,
                         paidStakingRewards,
@@ -209,6 +217,7 @@ public class SingleTransactionRecordBuilderImpl
                         evmAddress),
                 transactionSidecarRecords);
     }
+
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
     public SingleTransactionRecordBuilderImpl transaction(Transaction transaction) {
@@ -284,11 +293,12 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    public SingleTransactionRecordBuilderImpl parentConsensusTimestamp(Timestamp parentConsensusTimestamp) {
-        this.parentConsensusTimestamp = parentConsensusTimestamp;
-        return this;
+    @Nullable
+    public Instant parentConsensusTimestamp() {
+        return parentConsensusTimestamp;
     }
 
+    @NonNull
     public SingleTransactionRecordBuilderImpl alias(Bytes alias) {
         this.alias = alias;
         return this;

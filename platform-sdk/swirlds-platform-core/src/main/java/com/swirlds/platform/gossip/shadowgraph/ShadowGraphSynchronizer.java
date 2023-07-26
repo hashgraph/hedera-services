@@ -18,6 +18,8 @@ package com.swirlds.platform.gossip.shadowgraph;
 
 import static com.swirlds.logging.LogMarker.SYNC_INFO;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.threading.interrupt.InterruptableRunnable;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -25,9 +27,11 @@ import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -45,8 +49,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * The goal of the ShadowGraphSynchronizer is to compare graphs with a remote node, and update them so both sides
- * have the same events in the graph. This process is called a sync.
+ * The goal of the ShadowGraphSynchronizer is to compare graphs with a remote node, and update them so both sides have
+ * the same events in the graph. This process is called a sync.
  * <p>
  * This instance can be called by multiple threads at the same time. To avoid accidental concurrency issues, all the
  * variables in this class are final. The ones that are used for storing information about an ongoing sync are method
@@ -62,8 +66,8 @@ public class ShadowGraphSynchronizer {
     /** All sync stats */
     private final SyncMetrics syncMetrics;
     /**
-     * provides the current consensus instance, a supplier is used because this instance will change after a
-     * reconnect, so we have to make sure we always get the latest one
+     * provides the current consensus instance, a supplier is used because this instance will change after a reconnect,
+     * so we have to make sure we always get the latest one
      */
     private final Supplier<GraphGenerations> generationsSupplier;
     /** called to provide the sync result when the sync is done */
@@ -80,6 +84,7 @@ public class ShadowGraphSynchronizer {
     private final InterruptableRunnable executePreFetchTips;
 
     public ShadowGraphSynchronizer(
+            @NonNull final PlatformContext platformContext,
             final ShadowGraph shadowGraph,
             final int numberOfNodes,
             final SyncMetrics syncMetrics,
@@ -95,11 +100,35 @@ public class ShadowGraphSynchronizer {
         this.syncMetrics = syncMetrics;
         this.generationsSupplier = generationsSupplier;
         this.syncDone = syncDone;
-        this.eventHandler = eventHandler;
         this.fallenBehindManager = fallenBehindManager;
         this.executor = executor;
         this.sendRecInitBytes = sendRecInitBytes;
         this.executePreFetchTips = executePreFetchTips;
+        this.eventHandler = buildEventHandler(platformContext, eventHandler);
+    }
+
+    /**
+     * Construct the event handler for new events. If configured to do so, this handler will also hash events before
+     * passing them down the pipeline.
+     */
+    private Consumer<GossipEvent> buildEventHandler(
+            @NonNull final PlatformContext platformContext, @NonNull final Consumer<GossipEvent> rawEventHandler) {
+
+        final boolean hashOnGossipThreads = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .hashOnGossipThreads();
+
+        if (hashOnGossipThreads) {
+            final Cryptography cryptography = platformContext.getCryptography();
+            return event -> {
+                cryptography.digestSync(event.getHashedData());
+                event.buildDescriptor();
+                rawEventHandler.accept(event);
+            };
+        }
+
+        return rawEventHandler;
     }
 
     private static List<Boolean> getMyBooleans(final List<ShadowEvent> theirTipShadows) {
@@ -134,17 +163,12 @@ public class ShadowGraphSynchronizer {
     /**
      * Synchronize with a remote node using the supplied connection
      *
-     * @param conn
-     * 		the connection to sync through
+     * @param conn the connection to sync through
      * @return true iff a sync was (a) accepted, and (b) completed, including exchange of event data
-     * @throws IOException
-     * 		if any problem occurs with the connection
-     * @throws ParallelExecutionException
-     * 		if issue occurs while executing tasks in parallel
-     * @throws SyncException
-     * 		if any sync protocol issues occur
-     * @throws InterruptedException
-     * 		if the calling thread gets interrupted while the sync is ongoing
+     * @throws IOException                if any problem occurs with the connection
+     * @throws ParallelExecutionException if issue occurs while executing tasks in parallel
+     * @throws SyncException              if any sync protocol issues occur
+     * @throws InterruptedException       if the calling thread gets interrupted while the sync is ongoing
      */
     public boolean synchronize(final Connection conn)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
@@ -157,8 +181,8 @@ public class ShadowGraphSynchronizer {
     }
 
     /**
-     * Executes a sync using the supplied connection. This method contains all the logic while {@link
-     * #synchronize(Connection)} is just for exception handling.
+     * Executes a sync using the supplied connection. This method contains all the logic while
+     * {@link #synchronize(Connection)} is just for exception handling.
      */
     private boolean reserveSynchronize(final Connection conn)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
@@ -292,15 +316,11 @@ public class ShadowGraphSynchronizer {
     /**
      * Executes phase 3 of a sync
      *
-     * @param conn
-     * 		the connection to use
-     * @param timing
-     * 		metrics that track sync timing
-     * @param sendList
-     * 		the events to send
+     * @param conn     the connection to use
+     * @param timing   metrics that track sync timing
+     * @param sendList the events to send
      * @return true if the phase was successful, false if it was aborted
-     * @throws ParallelExecutionException
-     * 		if anything goes wrong
+     * @throws ParallelExecutionException if anything goes wrong
      */
     private boolean phase3(final Connection conn, final SyncTiming timing, final List<EventImpl> sendList)
             throws ParallelExecutionException {
@@ -331,24 +351,19 @@ public class ShadowGraphSynchronizer {
 
     /**
      * A method to do reads and writes in parallel.
-     *
+     * <p>
      * It is very important that the read task is executed by the caller thread. The reader thread can always time out,
      * if the writer thread gets blocked by a write method because the buffer is full, the only way to unblock it is to
      * close the connection. So the reader will close the connection and unblock the writer if it times out or if
      * anything goes wrong.
      *
-     * @param readTask
-     * 		read task
-     * @param writeTask
-     * 		write task
-     * @param connection
-     * 		the connection to close if anything goes wrong
-     * @param <T>
-     * 		the return type of the read task and this method
+     * @param readTask   read task
+     * @param writeTask  write task
+     * @param connection the connection to close if anything goes wrong
+     * @param <T>        the return type of the read task and this method
      * @return whatever the read task returns
-     * @throws ParallelExecutionException
-     * 		thrown if anything goes wrong during these read write operations. the connection will be closed before this
-     * 		exception is thrown
+     * @throws ParallelExecutionException thrown if anything goes wrong during these read write operations. the
+     *                                    connection will be closed before this exception is thrown
      */
     private <T> T readWriteParallel(
             final Callable<T> readTask, final Callable<Void> writeTask, final Connection connection)
@@ -364,10 +379,8 @@ public class ShadowGraphSynchronizer {
     /**
      * Reject a sync
      *
-     * @param conn
-     * 		the connection over which the sync was initiated
-     * @throws IOException
-     * 		if there are any connection issues
+     * @param conn the connection over which the sync was initiated
+     * @throws IOException if there are any connection issues
      */
     public void rejectSync(final Connection conn) throws IOException {
         try {

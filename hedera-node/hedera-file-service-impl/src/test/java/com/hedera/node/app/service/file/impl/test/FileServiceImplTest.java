@@ -46,7 +46,7 @@ class FileServiceImplTest {
         final var schema = schemaCaptor.getValue();
 
         final var statesToCreate = schema.statesToCreate();
-        assertEquals(1, statesToCreate.size());
+        assertEquals(2, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(FileServiceImpl.BLOBS_KEY, iter.next());
