@@ -16,24 +16,27 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("staking")
 public record StakingConfig(
-        @ConfigProperty(defaultValue = "1440") long periodMins,
-        @ConfigProperty(value = "rewardHistory.numStoredPeriods", defaultValue = "365")
+        @ConfigProperty(defaultValue = "1440") @NetworkProperty long periodMins,
+        @ConfigProperty(value = "rewardHistory.numStoredPeriods", defaultValue = "365") @NetworkProperty
                 int rewardHistoryNumStoredPeriods,
         // ConfigProperty(value = "startupHelper.recompute", defaultValue = "NODE_STAKES,PENDING_REWARDS")
         // Set<StakeStartupHelper.RecomputeType> startupHelperRecompute
-        @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") int feesNodeRewardPercentage,
-        @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "0") int feesStakingRewardPercentage,
+        @ConfigProperty(value = "fees.nodeRewardPercentage", defaultValue = "0") @NetworkProperty
+                int feesNodeRewardPercentage,
+        @ConfigProperty(value = "fees.stakingRewardPercentage", defaultValue = "0") @NetworkProperty
+                int feesStakingRewardPercentage,
         // @ConfigProperty(defaultValue = "") Map<Long, Long> nodeMaxToMinStakeRatios,
-        @ConfigProperty(defaultValue = "true") boolean isEnabled,
-        @ConfigProperty(defaultValue = "17808") long maxDailyStakeRewardThPerH,
-        @ConfigProperty(defaultValue = "false") boolean requireMinStakeToReward,
-        @ConfigProperty(defaultValue = "0") long rewardRate,
-        @ConfigProperty(defaultValue = "25000000000000000") long startThreshold,
-        @ConfigProperty(defaultValue = "500") int sumOfConsensusWeights,
-        @ConfigProperty(defaultValue = "0") long stakingRewardBalanceThreshold,
-        @ConfigProperty(defaultValue = "5000000000000000000") long stakingMaxStakeRewarded) {}
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean isEnabled,
+        @ConfigProperty(defaultValue = "17808") @NetworkProperty long maxDailyStakeRewardThPerH,
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean requireMinStakeToReward,
+        @ConfigProperty(defaultValue = "0") @NetworkProperty long rewardRate,
+        @ConfigProperty(defaultValue = "25000000000000000") @NetworkProperty long startThreshold,
+        @ConfigProperty(defaultValue = "500") @NetworkProperty int sumOfConsensusWeights,
+        @ConfigProperty(defaultValue = "0") @NetworkProperty long stakingRewardBalanceThreshold,
+        @ConfigProperty(defaultValue = "5000000000000000000") @NetworkProperty long stakingMaxStakeRewarded) {}
