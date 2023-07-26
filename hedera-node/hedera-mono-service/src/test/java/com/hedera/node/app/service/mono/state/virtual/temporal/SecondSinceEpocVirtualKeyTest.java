@@ -88,7 +88,7 @@ class SecondSinceEpocVirtualKeyTest {
 
         SecondSinceEpocVirtualKey key = new SecondSinceEpocVirtualKey();
 
-        key.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
+        key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
     }
@@ -118,7 +118,7 @@ class SecondSinceEpocVirtualKeyTest {
             subject.serialize(buffer);
             buffer.rewind();
             var copy = new SecondSinceEpocVirtualKey();
-            copy.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 
@@ -152,7 +152,7 @@ class SecondSinceEpocVirtualKeyTest {
 
             final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
             var copy = new SecondSinceEpocVirtualKey();
-            copy.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 

@@ -88,7 +88,7 @@ class ScheduleEqualityVirtualKeyTest {
 
         ScheduleEqualityVirtualKey key = new ScheduleEqualityVirtualKey();
 
-        key.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+        key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
     }
@@ -118,7 +118,7 @@ class ScheduleEqualityVirtualKeyTest {
             subject.serialize(buffer);
             buffer.rewind();
             var copy = new ScheduleEqualityVirtualKey();
-            copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 
@@ -152,7 +152,7 @@ class ScheduleEqualityVirtualKeyTest {
 
             final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
             var copy = new ScheduleEqualityVirtualKey();
-            copy.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 

@@ -205,7 +205,7 @@ class ContractKeyTest {
                 .willReturn((byte) (subject.getContractId()))
                 .willReturn(subject.getUint256Byte(0));
 
-        testSubject.deserialize(bin, 1);
+        testSubject.deserialize(bin);
 
         assertEquals(subject, testSubject);
     }

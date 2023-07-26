@@ -70,7 +70,7 @@ class UniqueTokenKeyTest {
     private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(final long num, final long serial)
             throws IOException {
         final UniqueTokenKey key = new UniqueTokenKey();
-        key.deserialize(serializeToByteBuffer(num, serial), UniqueTokenKey.CURRENT_VERSION);
+        key.deserialize(serializeToByteBuffer(num, serial));
         assertThat(key.getNum()).isEqualTo(num);
         assertThat(key.getTokenSerial()).isEqualTo(serial);
         return key;

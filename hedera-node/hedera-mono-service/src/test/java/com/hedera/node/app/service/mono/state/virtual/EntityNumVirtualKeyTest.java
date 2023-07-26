@@ -90,7 +90,7 @@ class EntityNumVirtualKeyTest {
 
         EntityNumVirtualKey key = new EntityNumVirtualKey();
 
-        key.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+        key.deserialize(buffer);
 
         assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
     }
@@ -120,7 +120,7 @@ class EntityNumVirtualKeyTest {
             subject.serialize(buffer);
             buffer.rewind();
             var copy = new EntityNumVirtualKey();
-            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 
@@ -154,7 +154,7 @@ class EntityNumVirtualKeyTest {
 
             final var buffer = ByteBuffer.wrap(byteArr.toByteArray());
             var copy = new EntityNumVirtualKey();
-            copy.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
+            copy.deserialize(buffer);
 
             assertEquals(subject, copy);
 

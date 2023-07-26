@@ -106,7 +106,7 @@ public final class OnDiskKey<K> implements VirtualKey {
     }
 
     @Override
-    public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
+    public void deserialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
         final var buf = BufferedData.wrap(byteBuffer);
         buf.skip(4);
         key = codec.parse(buf);

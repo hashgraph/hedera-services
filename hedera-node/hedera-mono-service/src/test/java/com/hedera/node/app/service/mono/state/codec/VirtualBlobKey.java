@@ -58,7 +58,7 @@ public class VirtualBlobKey implements VirtualKey {
     }
 
     @Override
-    public void deserialize(final ByteBuffer buffer, final int version) {
+    public void deserialize(final ByteBuffer buffer) {
         type = BLOB_TYPES[0xff & buffer.get()];
         entityNumCode = buffer.getInt();
     }
