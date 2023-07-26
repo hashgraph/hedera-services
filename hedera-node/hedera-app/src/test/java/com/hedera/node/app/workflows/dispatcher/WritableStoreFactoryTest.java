@@ -25,8 +25,6 @@ import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -63,7 +61,6 @@ class WritableStoreFactoryTest {
                 arguments(TokenService.NAME, WritableNftStore.class),
                 arguments(TokenService.NAME, WritableTokenStore.class),
                 arguments(TokenService.NAME, WritableTokenRelationStore.class),
-                arguments(FreezeService.NAME, WritableUpgradeStore.class),
                 arguments(FileService.NAME, WritableFileStore.class));
     }
 
