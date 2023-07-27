@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /**
- * This class includes utility methods for dealing with staking period calculations (the updates to staking performed at the end of each staking period). That said, <b>these methods should NOT update any state</b> (e.g. by passing in a writable store)
+ * This class includes utility methods for dealing with staking period calculations (the updates to
+ * staking performed at the end of each staking period). That said, <b>these methods should NOT
+ * update any state</b> (e.g. by passing in a writable store)
  */
 public final class PeriodStakingUtils {
     private PeriodStakingUtils() {
@@ -116,7 +118,8 @@ public final class PeriodStakingUtils {
     public record StakeResult(long stake, long stakeRewardStart) {}
 
     /**
-     * Computes a clamped stake value between [minStake, maxStake] for a node based on the node's current staking info. The new {@code stakeRewardStart} value is also computed
+     * Computes a clamped stake value between [minStake, maxStake] for a node based on the node's
+     * current staking info. The new {@code stakeRewardStart} value is also computed
      *
      * @param stakingInfo the node's current staking info
      * @return the calculated {@link StakeResult}

@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -66,7 +67,7 @@ class EndOfStakingPeriodCalculatorTest {
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodCalculator(new FakeHederaNumbers());
+        subject = new EndOfStakingPeriodCalculator(new FakeHederaNumbers(), new StakeInfoHelper());
     }
 
     @Test

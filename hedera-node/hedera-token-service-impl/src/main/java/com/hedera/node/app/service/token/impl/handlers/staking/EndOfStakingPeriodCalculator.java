@@ -63,15 +63,20 @@ public class EndOfStakingPeriodCalculator {
     private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
 
     private final HederaAccountNumbers accountNumbers;
+    private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
-    public EndOfStakingPeriodCalculator(@NonNull final HederaAccountNumbers accountNumbers) {
+    public EndOfStakingPeriodCalculator(
+            @NonNull final HederaAccountNumbers accountNumbers, @NonNull final StakeInfoHelper stakeInfoHelper) {
         this.accountNumbers = accountNumbers;
+        this.stakeInfoHelper = stakeInfoHelper;
     }
 
     /**
      * Updates all (relevant) staking-related values for all nodes, as well as any network reward information,
      * at the end of a staking period. This method must be invoked during handling of a transaction
+     *
+     * TODO: this method is still not called by the handle workflow
      *
      * @param consensusTime the consensus time of the transaction used to end the staking period
      * @param context the context of the transaction used to end the staking period
@@ -149,13 +154,7 @@ public class EndOfStakingPeriodCalculator {
                     nodePendingRewards,
                     oldStakeRewardStart,
                     newStakeRewardStart);
-
-            final var currentPendingRewards = stakingRewardsStore.pendingRewards();
-            final var newPendingRewards = currentPendingRewards + nodePendingRewards;
-            // TODO: replace with increasePendingRewards(nodePendingRewards) when available
-            final var newNetworkStakingRewards =
-                    copy(stakingRewardsStore).pendingRewards(newPendingRewards).build();
-            stakingRewardsStore.put(newNetworkStakingRewards);
+            stakeInfoHelper.increaseUnclaimedStakeRewards(nodeNum, nodePendingRewards, stakingInfoStore);
 
             currStakingInfo =
                     currStakingInfo.copyBuilder().unclaimedStakeRewardStart(0).build();
