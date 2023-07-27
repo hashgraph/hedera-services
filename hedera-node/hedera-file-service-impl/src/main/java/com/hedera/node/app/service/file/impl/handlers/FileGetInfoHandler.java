@@ -33,7 +33,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
+import com.hedera.node.app.service.file.ReadableUpgradeStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -85,7 +85,7 @@ public class FileGetInfoHandler extends FileQueryBase {
         requireNonNull(header);
         final var query = context.query();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var upgradeStore = context.createStore(ReadableUpgradeStoreImpl.class);
+        final var upgradeStore = context.createStore(ReadableUpgradeStore.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
         final var op = query.fileGetInfoOrThrow();
@@ -118,7 +118,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final ReadableUpgradeStoreImpl upgradeStore,
+            @NonNull final ReadableUpgradeStore upgradeStore,
             @NonNull final FilesConfig fileServiceConfig)
             throws IOException {
 
