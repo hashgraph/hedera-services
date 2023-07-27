@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -55,7 +54,6 @@ public class StakingRewardsDistributor {
 
     public Map<AccountID, Long> payRewardsIfPending(
             @NonNull final Set<AccountID> possibleRewardReceivers,
-            @NonNull final ReadableAccountStore readableStore,
             @NonNull final WritableAccountStore writableStore,
             @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
             @NonNull final WritableStakingInfoStore stakingInfoStore,
@@ -64,7 +62,7 @@ public class StakingRewardsDistributor {
 
         final Map<AccountID, Long> rewardsPaid = new HashMap<>();
         for (final var receiver : possibleRewardReceivers) {
-            final var originalAccount = readableStore.getAccountById(receiver);
+            final var originalAccount = writableStore.getOriginalValue(receiver);
             final var modifiedAccount = writableStore.get(receiver);
             final var reward = rewardCalculator.computePendingReward(
                     originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
@@ -95,7 +93,7 @@ public class StakingRewardsDistributor {
                         }
                         // TODO: need to get this info ?
                         //                    receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
-                        beneficiary = writableStore.get(receiverId);
+                        beneficiary = writableStore.getOriginalValue(receiverId);
                     } while (beneficiary.deleted());
                 }
             }

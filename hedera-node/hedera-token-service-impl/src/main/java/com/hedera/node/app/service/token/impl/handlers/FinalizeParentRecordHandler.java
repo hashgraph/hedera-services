@@ -32,9 +32,6 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableNftStore;
-import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -91,13 +88,11 @@ public class FinalizeParentRecordHandler implements TransactionHandler {
         final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
-        // token transfers based on the current readable state, and based on changes made during this transaction via
+        // token transfers based on the original value from writable state, and based on changes made during this
+        // transaction via
         // any relevant writable stores
-        final var readableAccountStore = context.readableStore(ReadableAccountStore.class);
         final var writableAccountStore = context.writableStore(WritableAccountStore.class);
-        final var readableTokenRelStore = context.readableStore(ReadableTokenRelationStore.class);
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
-        final var readableNftStore = context.readableStore(ReadableNftStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
 
@@ -113,7 +108,7 @@ public class FinalizeParentRecordHandler implements TransactionHandler {
         }
 
         /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
-        final var hbarChanges = hbarChangesWithStakingRewards(writableAccountStore, readableAccountStore);
+        final var hbarChanges = hbarChangesWithStakingRewards(writableAccountStore);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(
@@ -125,12 +120,12 @@ public class FinalizeParentRecordHandler implements TransactionHandler {
         final ArrayList<TokenTransferList> tokenTransferLists;
 
         // ---------- fungible token transfers
-        final var fungibleChanges = calculateFungibleChanges(writableTokenRelStore, readableTokenRelStore);
+        final var fungibleChanges = calculateFungibleChanges(writableTokenRelStore);
         final var fungibleTokenTransferLists = moldFungibleChanges(fungibleChanges);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers
-        final var nftTokenTransferLists = calculateNftChanges(writableNftStore, readableNftStore);
+        final var nftTokenTransferLists = calculateNftChanges(writableNftStore);
         tokenTransferLists.addAll(nftTokenTransferLists);
 
         // Record the modified fungible and non-fungible changes so records can be written
@@ -142,13 +137,12 @@ public class FinalizeParentRecordHandler implements TransactionHandler {
 
     @NonNull
     private static List<AccountAmount> hbarChangesWithStakingRewards(
-            @NonNull final WritableAccountStore writableAccountStore,
-            @NonNull final ReadableAccountStore readableAccountStore) {
+            @NonNull final WritableAccountStore writableAccountStore) {
         final var hbarChanges = new ArrayList<AccountAmount>();
         var netHbarBalance = 0;
         for (final AccountID modifiedAcctId : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.getAccountById(modifiedAcctId);
-            final var persistedAcct = readableAccountStore.getAccountById(modifiedAcctId);
+            final var persistedAcct = writableAccountStore.getOriginalValue(modifiedAcctId);
             // It's possible the modified account was created in this transaction, in which case the non-existent
             // persisted account effectively has no balance (i.e. its prior balance is 0)
             final var persistedBalance = persistedAcct != null ? persistedAcct.tinybarBalance() : 0;
@@ -177,14 +171,13 @@ public class FinalizeParentRecordHandler implements TransactionHandler {
 
     @NonNull
     private static Map<EntityIDPair, AccountAmount> calculateFungibleChanges(
-            @NonNull final WritableTokenRelationStore writableTokenRelStore,
-            @NonNull final ReadableTokenRelationStore readableTokenRelStore) {
+            @NonNull final WritableTokenRelationStore writableTokenRelStore) {
         final var fungibleChanges = new HashMap<EntityIDPair, AccountAmount>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountId();
             final var relTokenId = modifiedRel.tokenId();
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
-            final var persistedTokenRel = readableTokenRelStore.get(relAcctId, relTokenId);
+            final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);
             final var modifiedBalance = modifiedTokenRel.balance();
             // It's possible the modified token rel was created in this transaction. If so, use a persisted balance of 0
             // for the token rel that didn't exist
@@ -239,12 +232,11 @@ public class FinalizeParentRecordHandler implements TransactionHandler {
     }
 
     @NonNull
-    private List<TokenTransferList> calculateNftChanges(
-            @NonNull final WritableNftStore writableNftStore, @NonNull final ReadableNftStore readableNftStore) {
+    private List<TokenTransferList> calculateNftChanges(@NonNull final WritableNftStore writableNftStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
-            final var persistedNft = readableNftStore.get(nftId);
+            final var persistedNft = writableNftStore.getOriginalValue(nftId);
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             final var senderAccountId = persistedNft != null ? persistedNft.ownerId() : null;

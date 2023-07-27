@@ -19,7 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -42,7 +42,7 @@ public interface StakeRewardCalculator {
      */
     long computePendingReward(
             @NonNull final Account account,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore,
+            @NonNull final WritableStakingInfoStore stakingInfoStore,
             @NonNull final ReadableNetworkStakingRewardsStore rewardsStore,
             @NonNull final Instant consensusNow);
 

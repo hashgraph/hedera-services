@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -169,5 +170,30 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     @NonNull
     public Set<Bytes> modifiedAliasesInState() {
         return aliases().modifiedKeys();
+    }
+
+    public Account getOriginalValue(final AccountID id) {
+        // Get the account number based on the account identifier. It may be null.
+        final var accountOneOf = id.account();
+        final Long accountNum =
+                switch (accountOneOf.kind()) {
+                    case ACCOUNT_NUM -> accountOneOf.as();
+                    case ALIAS -> {
+                        final Bytes alias = accountOneOf.as();
+                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
+                            yield fromMirror(alias);
+                        } else {
+                            final var entityNum = aliases().getOriginalValue(alias);
+                            yield entityNum == null ? 0L : entityNum.accountNum();
+                        }
+                    }
+                    case UNSET -> 0L;
+                };
+
+        return accountNum == null
+                ? null
+                : accountState()
+                        .getOriginalValue(
+                                AccountID.newBuilder().accountNum(accountNum).build());
     }
 }

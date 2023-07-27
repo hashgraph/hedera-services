@@ -118,4 +118,10 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
         remove(NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build());
     }
+
+    @Nullable
+    public Nft getOriginalValue(@NonNull final NftID nftId) {
+        requireNonNull(nftId);
+        return nftState.getOriginalValue(nftId);
+    }
 }

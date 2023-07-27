@@ -26,8 +26,8 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.Units;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import java.time.Instant;
@@ -53,7 +53,7 @@ class StakeRewardCalculatorImplTest {
     private StakePeriodManager stakePeriodManager;
 
     @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
+    private WritableStakingInfoStore stakingInfoStore;
 
     @Mock
     private StakingNodeInfo stakingNodeInfo;

@@ -94,6 +94,14 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
                 EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
     }
 
+    @Nullable
+    public TokenRelation getOriginalValue(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
+        requireNonNull(accountId);
+        requireNonNull(tokenId);
+        return tokenRelState.getOriginalValue(
+                EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
+    }
+
     /**
      * @return the set of token relations modified in existing state
      */

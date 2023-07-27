@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,24 +52,22 @@ public class StakingRewardsHelper {
     /**
      * Looks through all the accounts modified in state and returns a list of accounts which are staked to a node
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
-     * @param writableAccountStore The store to write to for updated values
-     * @param readableAccountStore The store to read from for original values
+     * @param writableAccountStore The store to write to for updated values and original values
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
-    public static Set<AccountID> getPossibleRewardReceivers(
-            final WritableAccountStore writableAccountStore, final ReadableAccountStore readableAccountStore) {
+    public static Set<AccountID> getPossibleRewardReceivers(final WritableAccountStore writableAccountStore) {
         final var possibleRewardReceivers = new HashSet<AccountID>();
-        for (final AccountID modifiedId : writableAccountStore.modifiedAccountsInState()) {
-            final var modifiedAcct = writableAccountStore.get(modifiedId);
+        for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {
+            final var modifiedAcct = writableAccountStore.get(id);
             // TODO: change to use originalValue
-            final var originalAcct = readableAccountStore.getAccountById(modifiedId);
+            final var originalAcct = writableAccountStore.getOriginalValue(id);
             // It is possible that original account is null if the account was created in this transaction
             // In that case it is not a reward situation
             // If the account existed before this transaction and is staked to a node,
             // and the current transaction modified the stakedToMe field or declineReward or
             // the stakedId field, then it is a reward situation
             if (isRewardSituation(modifiedAcct, originalAcct)) {
-                possibleRewardReceivers.add(modifiedId);
+                possibleRewardReceivers.add(id);
             }
         }
         return possibleRewardReceivers;

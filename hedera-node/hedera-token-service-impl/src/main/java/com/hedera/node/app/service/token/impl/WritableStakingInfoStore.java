@@ -67,4 +67,8 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
         requireNonNull(stakingNodeInfo);
         stakingInfoState.put(nodeId, stakingNodeInfo);
     }
+
+    public StakingNodeInfo getOriginalValue(final long nodeId) {
+        return stakingInfoState.getOriginalValue(nodeId);
+    }
 }
