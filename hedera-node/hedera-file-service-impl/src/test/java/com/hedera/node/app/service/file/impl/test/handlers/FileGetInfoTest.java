@@ -44,8 +44,8 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.ReadableUpgradeStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
@@ -122,7 +122,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryIfInvalidFile() throws Throwable {
+    void validatesQueryIfInvalidFile() {
         readableFileState.reset();
         final var state = MapReadableKVState.<Long, File>builder("FILES").build();
         given(readableStates.<Long, File>get(FILES)).willReturn(state);
@@ -138,7 +138,7 @@ class FileGetInfoTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryIfDeletedFile() throws Throwable {
+    void validatesQueryIfDeletedFile() {
         givenValidFile(true);
         readableFileState = readableFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
@@ -199,7 +199,7 @@ class FileGetInfoTest extends FileTestBase {
 
         final var query = createGetFileInfoQuery(fileUpgradeFileId.fileNum());
         when(context.query()).thenReturn(query);
-        when(context.createStore(ReadableUpgradeStoreImpl.class)).thenReturn(readableUpgradeStore);
+        when(context.createStore(ReadableUpgradeStore.class)).thenReturn(readableUpgradeStore);
         final var response = subject.findResponse(context, responseHeader);
         final var fileInfoResponse = response.fileGetInfoOrThrow();
         assertEquals(ResponseCodeEnum.OK, fileInfoResponse.header().nodeTransactionPrecheckCode());

@@ -16,15 +16,16 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Predicate;
 
 /**
@@ -33,11 +34,11 @@ import java.util.function.Predicate;
  * <p>This class is not exported from the module. It is an internal implementation detail. This
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
-public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements WritableQueueState<File> {
+public class WritableUpgradeStore extends ReadableUpgradeStoreImpl {
     /** The underlying data storage class that holds the file data. */
     private final WritableQueueState<Bytes> writableUpgradeState;
 
-    private final WritableSingletonState<File> writableUpgradeFileState;
+    private final WritableKVState<FileID, File> writableUpgradeFileState;
 
     private static final Predicate<Bytes> TRUE_PREDICATE = new TruePredicate();
 
@@ -49,13 +50,13 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
     public WritableUpgradeStore(@NonNull final WritableStates states) {
         super(states);
         this.writableUpgradeState = requireNonNull(states.getQueue(getStateKey()));
-        this.writableUpgradeFileState = requireNonNull(states.getSingleton(getFileStateKey()));
+        this.writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));
     }
 
     public void add(@NonNull File file) {
         requireNonNull(file);
         writableUpgradeState.add(file.contents());
-        writableUpgradeFileState.put(file);
+        writableUpgradeFileState.put(file.fileIdOrThrow(), file);
     }
 
     public void append(@NonNull Bytes bytes) {
@@ -66,11 +67,6 @@ public class WritableUpgradeStore extends ReadableUpgradeStoreImpl implements Wr
     public void resetFileContents() {
         while (writableUpgradeState.removeIf(TRUE_PREDICATE) != null)
             ;
-    }
-
-    @Nullable
-    public File removeIf(@NonNull Predicate<File> predicate) {
-        return writableUpgradeFileState.get();
     }
 
     private static class TruePredicate implements Predicate<Bytes> {

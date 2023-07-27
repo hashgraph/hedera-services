@@ -16,19 +16,22 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_DATA_KEY;
 import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_FILE_KEY;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableUpgradeStore;
+import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -40,10 +43,12 @@ import java.util.Objects;
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
 public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
+    private final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
+
     /** The underlying data storage class that holds the file data. */
     private final ReadableQueueState<Bytes> upgradeState;
 
-    private final ReadableSingletonState<File> upgradeFileState;
+    private final ReadableKVState<FileID, File> upgradeFileState;
 
     /**
      * Create a new {@link ReadableUpgradeStoreImpl} instance.
@@ -52,7 +57,7 @@ public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
      */
     public ReadableUpgradeStoreImpl(@NonNull final ReadableStates states) {
         this.upgradeState = Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY));
-        this.upgradeFileState = Objects.requireNonNull(states.getSingleton(UPGRADE_FILE_KEY));
+        this.upgradeFileState = Objects.requireNonNull(states.get(BLOBS_KEY));
     }
 
     @Override
@@ -69,13 +74,14 @@ public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
     @Override
     @Nullable
     public File peek() {
-        return upgradeFileState.get();
+        return upgradeFileState.get(UPGRADE_FILE_ID);
     }
 
     @Override
     @NonNull
     public Iterator<File> iterator() {
-        return List.of(upgradeFileState.get()).iterator();
+        final File upgradeFile = upgradeFileState.get(UPGRADE_FILE_ID);
+        return upgradeFile != null ? List.of(upgradeFile).iterator() : new ArrayList<File>(0).iterator();
     }
 
     @Override
