@@ -36,6 +36,8 @@ public class StateBuilderUtil {
     public static final String TOKENS = "TOKENS";
     public static final String TOKEN_RELS = "TOKEN_RELS";
     public static final String NFTS = "NFTS";
+    public static final String STAKING_INFO = "STAKING_INFOS";
+    public static final String NETWORK_REWARDS = "STAKING_NETWORK_REWARDS";
 
     @NonNull
     protected MapReadableKVState.Builder<AccountID, Account> emptyReadableAccountStateBuilder() {
