@@ -56,6 +56,6 @@ public class LegibleStorageManager {
             @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
             @NonNull final WritableKVState<SlotKey, SlotValue> storage) {
-        throw new AssertionError("Not implemented");
+        // TODO - refactor mono-service code for this before perf tests
     }
 }

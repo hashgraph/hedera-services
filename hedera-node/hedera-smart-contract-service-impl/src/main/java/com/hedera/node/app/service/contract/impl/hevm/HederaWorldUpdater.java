@@ -58,6 +58,18 @@ public interface HederaWorldUpdater extends WorldUpdater {
     HederaEvmAccount getHederaAccount(@NonNull ContractID contractId);
 
     /**
+     * Returns the {@link HederaEvmAccount} for the given address, or null if no
+     * such contract (or account).
+     *
+     * @param address the id of the contract to get
+     * @return the account, or null if no such account
+     */
+    @Nullable
+    default HederaEvmAccount getHederaAccount(@NonNull Address address) {
+        return getHederaAccount(getHederaContractId(address));
+    }
+
+    /**
      * Returns the {@code 0.0.X} Hedera contract id for the given address, including when
      * the address is pending creation.
      *

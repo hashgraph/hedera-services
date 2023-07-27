@@ -28,6 +28,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -35,16 +36,19 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
+import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
+import com.hedera.node.app.workflows.handle.verifier.ChildHandleContextVerifier;
+import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -61,7 +65,7 @@ public class HandleContextImpl implements HandleContext {
     private final AccountID payer;
     private final Key payerKey;
     private final TransactionCategory category;
-    private final SingleTransactionRecordBuilder recordBuilder;
+    private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
     private final HandleContextVerifier verifier;
     private final RecordListBuilder recordListBuilder;
@@ -70,6 +74,7 @@ public class HandleContextImpl implements HandleContext {
     private final ServiceScopeLookup serviceScopeLookup;
     private final WritableStoreFactory writableStoreFactory;
     private final BlockRecordInfo blockRecordInfo;
+    private final RecordCache recordCache;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -82,7 +87,7 @@ public class HandleContextImpl implements HandleContext {
      * @param payer The {@link AccountID} of the payer
      * @param payerKey The {@link Key} of the payer
      * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder The main {@link SingleTransactionRecordBuilder}
+     * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
      * @param stack The {@link SavepointStackImpl} used to manage savepoints
      * @param verifier The {@link HandleContextVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
@@ -95,14 +100,15 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final AccountID payer,
             @NonNull final Key payerKey,
             @NonNull final TransactionCategory category,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
             @NonNull final HandleContextVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final BlockRecordInfo blockRecordInfo) {
+            @NonNull final BlockRecordInfo blockRecordInfo,
+            @NonNull final RecordCache recordCache) {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
         this.payerKey = requireNonNull(payerKey, "payerKey must not be null");
@@ -115,6 +121,7 @@ public class HandleContextImpl implements HandleContext {
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.blockRecordInfo = requireNonNull(blockRecordInfo, "blockRecordInfo must not be null");
+        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
@@ -208,6 +215,15 @@ public class HandleContextImpl implements HandleContext {
         return verifier.verificationFor(key);
     }
 
+    @NonNull
+    @Override
+    public SignatureVerification verificationFor(
+            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
+        requireNonNull(key, "key must not be null");
+        requireNonNull(callback, "callback must not be null");
+        return verifier.verificationFor(key, callback);
+    }
+
     @Override
     @NonNull
     public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
@@ -220,6 +236,12 @@ public class HandleContextImpl implements HandleContext {
             readableStoreFactory = new ReadableStoreFactory(stack);
         }
         return readableStoreFactory;
+    }
+
+    @NonNull
+    @Override
+    public RecordCache recordCache() {
+        return recordCache;
     }
 
     @Override
@@ -244,7 +266,8 @@ public class HandleContextImpl implements HandleContext {
     }
 
     private static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilder recordBuilder, @NonNull final Class<T> recordBuilderClass) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final Class<T> recordBuilderClass) {
         if (!recordBuilderClass.isInstance(recordBuilder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
@@ -272,9 +295,20 @@ public class HandleContextImpl implements HandleContext {
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatch(txBody, PRECEDING, precedingRecordBuilder);
+        dispatch(txBody, PRECEDING, verifier, precedingRecordBuilder);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T dispatchChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final VerificationAssistant callback) {
+        final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
+        final var childRecordBuilder = recordListBuilder.addChild(configuration());
+        return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
     }
 
     @Override
@@ -282,7 +316,18 @@ public class HandleContextImpl implements HandleContext {
     public <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         final var childRecordBuilder = recordListBuilder.addChild(configuration());
-        return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
+        return dispatchChildTransaction(txBody, verifier, childRecordBuilder, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T dispatchRemovableChildTransaction(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Class<T> recordBuilderClass,
+            @NonNull final VerificationAssistant callback) {
+        final var childVerifier = new ChildHandleContextVerifier(verifier, callback);
+        final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
+        return dispatchChildTransaction(txBody, childVerifier, childRecordBuilder, recordBuilderClass);
     }
 
     @Override
@@ -290,13 +335,14 @@ public class HandleContextImpl implements HandleContext {
     public <T> T dispatchRemovableChildTransaction(
             @NonNull final TransactionBody txBody, @NonNull final Class<T> recordBuilderClass) {
         final var childRecordBuilder = recordListBuilder.addRemovableChild(configuration());
-        return dispatchChildTransaction(txBody, childRecordBuilder, recordBuilderClass);
+        return dispatchChildTransaction(txBody, verifier, childRecordBuilder, recordBuilderClass);
     }
 
     @NonNull
     private <T> T dispatchChildTransaction(
             @NonNull final TransactionBody txBody,
-            @NonNull final SingleTransactionRecordBuilder childRecordBuilder,
+            @NonNull final HandleContextVerifier childVerifier,
+            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder,
             @NonNull final Class<T> recordBuilderClass) {
         if (category == PRECEDING) {
             throw new IllegalArgumentException("A preceding transaction cannot have child transactions");
@@ -306,7 +352,7 @@ public class HandleContextImpl implements HandleContext {
         stack.createSavepoint();
 
         // run the child-transaction
-        dispatch(txBody, CHILD, childRecordBuilder);
+        dispatch(txBody, CHILD, childVerifier, childRecordBuilder);
 
         // rollback if the child-transaction failed
         if (childRecordBuilder.status() != ResponseCodeEnum.OK) {
@@ -319,7 +365,8 @@ public class HandleContextImpl implements HandleContext {
     private void dispatch(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
-            @NonNull final SingleTransactionRecordBuilder childRecordBuilder) {
+            @NonNull final HandleContextVerifier childVerifier,
+            @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
         try {
             checker.checkTransactionBody(txBody);
             dispatcher.dispatchPureChecks(txBody);
@@ -336,12 +383,13 @@ public class HandleContextImpl implements HandleContext {
                 childCategory,
                 childRecordBuilder,
                 childStack,
-                verifier,
+                childVerifier,
                 recordListBuilder,
                 checker,
                 dispatcher,
                 serviceScopeLookup,
-                blockRecordInfo);
+                blockRecordInfo,
+                recordCache);
 
         try {
             dispatcher.dispatchHandle(childContext);

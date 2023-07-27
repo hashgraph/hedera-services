@@ -33,11 +33,17 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
+import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.state.FilteredReadableStates;
+import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -52,6 +58,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class FileTestBase {
     protected static final String FILES = "FILES";
+    protected static final String UPGRADE_FILE_KEY = "UPGRADE_FILE";
+    protected static final String UPGRADE_DATA_KEY = "UPGRADE_DATA";
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
     protected final String payerIdLiteral = "0.0.3";
@@ -67,9 +75,15 @@ public class FileTestBase {
             new JEd25519Key("cccccccccccccccccccccccccccccccc".getBytes())));
 
     protected final KeyList anotherKeys = B_KEY_LIST.keyList();
-
-    protected final FileID fileId = FileID.newBuilder().fileNum(1_234L).build();
-    protected final FileID fileSystemfileId = FileID.newBuilder().fileNum(250L).build();
+    protected final FileID WELL_KNOWN_FILE_ID =
+            FileID.newBuilder().fileNum(1_234L).build();
+    protected final FileID WELL_KNOWN_UPGRADE_FILE_ID =
+            FileID.newBuilder().fileNum(150L).shardNum(0L).realmNum(0L).build();
+    protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
+            FileID.newBuilder().fileNum(122L).shardNum(0L).realmNum(0L).build();
+    protected final FileID fileId = WELL_KNOWN_FILE_ID;
+    protected final FileID fileSystemFileId = WELL_KNOWN_SYSTEM_FILE_ID;
+    protected final FileID fileUpgradeFileId = WELL_KNOWN_UPGRADE_FILE_ID;
     protected final com.hederahashgraph.api.proto.java.FileID monoFileID =
             com.hederahashgraph.api.proto.java.FileID.newBuilder()
                     .setFileNum(1_234L)
@@ -78,10 +92,7 @@ public class FileTestBase {
             Duration.newBuilder().seconds(100).build();
     protected final Timestamp WELL_KNOWN_EXPIRY =
             Timestamp.newBuilder().seconds(1_234_567L).build();
-    protected final FileID WELL_KNOWN_FILE_ID =
-            FileID.newBuilder().fileNum(1_234L).build();
-    protected final FileID WELL_KNOWN_SYSTEM_FILE_ID =
-            FileID.newBuilder().fileNum(250L).build();
+
     protected final String beneficiaryIdStr = "0.0.3";
     protected final long paymentAmount = 1_234L;
     protected final Bytes ledgerId = Bytes.wrap(new byte[] {3});
@@ -96,6 +107,8 @@ public class FileTestBase {
 
     protected File fileSystem;
 
+    protected File upgradeFile;
+
     protected File fileWithNoKeysAndMemo;
 
     protected File fileWithNoContent;
@@ -106,39 +119,79 @@ public class FileTestBase {
     @Mock
     protected WritableStates writableStates;
 
+    @Mock
+    protected FilteredReadableStates filteredReadableStates;
+
+    @Mock
+    protected FilteredWritableStates filteredWritableStates;
+
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
 
     protected MapReadableKVState<FileID, File> readableFileState;
     protected MapWritableKVState<FileID, File> writableFileState;
 
+    protected ListReadableQueueState<Bytes> readableUpgradeStates;
+    protected ListWritableQueueState<Bytes> writableUpgradeStates;
+
+    protected MapReadableKVState<FileID, File> readableUpgradeFileStates;
+    protected MapWritableKVState<FileID, File> writableUpgradeFileStates;
+
     protected ReadableFileStoreImpl readableStore;
     protected WritableFileStore writableStore;
+
+    protected ReadableUpgradeStoreImpl readableUpgradeStore;
+    protected WritableUpgradeStore writableUpgradeStore;
 
     @BeforeEach
     void commonSetUp() {
         givenValidFile();
+        givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileOnlyInReadable();
     }
 
     protected void refreshStoresWithCurrentFileOnlyInReadable() {
         readableFileState = readableFileState();
         writableFileState = emptyWritableFileState();
+        readableUpgradeStates = readableUpgradeDataState();
+        writableUpgradeStates = emptyUpgradeDataState();
+        readableUpgradeFileStates = readableUpgradeFileState();
+        writableUpgradeFileStates = emptyUpgradeFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
+        given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
+        given(filteredWritableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
+        given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
+        given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStore(writableStates);
+        readableUpgradeStore = new ReadableUpgradeStoreImpl(filteredReadableStates);
+        writableUpgradeStore = new WritableUpgradeStore(filteredWritableStates);
+
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
     }
 
     protected void refreshStoresWithCurrentFileInBothReadableAndWritable() {
         readableFileState = readableFileState();
         writableFileState = writableFileStateWithOneKey();
+        readableUpgradeStates = readableUpgradeDataState();
+        writableUpgradeStates = writableUpgradeDataState();
+        readableUpgradeFileStates = readableUpgradeFileState();
+        writableUpgradeFileStates = writableUpgradeFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
+        given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
+        given(filteredWritableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
+        given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
+        given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
         writableStore = new WritableFileStore(writableStates);
+        readableUpgradeStore = new ReadableUpgradeStoreImpl(filteredReadableStates);
+        writableUpgradeStore = new WritableUpgradeStore(filteredWritableStates);
+
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
     }
 
     @NonNull
@@ -147,10 +200,20 @@ public class FileTestBase {
     }
 
     @NonNull
+    protected ListWritableQueueState<Bytes> emptyUpgradeDataState() {
+        return ListWritableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<FileID, File> emptyUpgradeFileState() {
+        return MapWritableKVState.<FileID, File>builder(FILES).build();
+    }
+
+    @NonNull
     protected MapWritableKVState<FileID, File> writableFileStateWithOneKey() {
         return MapWritableKVState.<FileID, File>builder(FILES)
                 .value(fileId, file)
-                .value(fileSystemfileId, fileSystem)
+                .value(fileSystemFileId, fileSystem)
                 .build();
     }
 
@@ -165,6 +228,34 @@ public class FileTestBase {
     protected MapReadableKVState<FileID, File> readableFileState() {
         return MapReadableKVState.<FileID, File>builder(FILES)
                 .value(fileId, file)
+                .build();
+    }
+
+    @NonNull
+    protected ListReadableQueueState<Bytes> readableUpgradeDataState() {
+        return ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY)
+                .value(fileSystem.contents())
+                .build();
+    }
+
+    @NonNull
+    protected ListWritableQueueState<Bytes> writableUpgradeDataState() {
+        return ListWritableQueueState.<Bytes>builder(UPGRADE_DATA_KEY)
+                .value(fileSystem.contents())
+                .build();
+    }
+
+    @NonNull
+    protected MapReadableKVState<FileID, File> readableUpgradeFileState() {
+        return MapReadableKVState.<FileID, File>builder(FILES)
+                .value(fileUpgradeFileId, upgradeFile)
+                .build();
+    }
+
+    @NonNull
+    protected MapWritableKVState<FileID, File> writableUpgradeFileState() {
+        return MapWritableKVState.<FileID, File>builder(FILES)
+                .value(fileUpgradeFileId, upgradeFile)
                 .build();
     }
 
@@ -186,12 +277,28 @@ public class FileTestBase {
         fileWithNoKeysAndMemo = new File(fileId, expirationTime, null, Bytes.wrap(contents), null, deleted);
         fileWithNoContent = new File(fileId, expirationTime, withKeys ? keys : null, null, memo, deleted);
         fileSystem =
-                new File(fileSystemfileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+                new File(fileSystemFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
+    }
+
+    protected void givenValidUpgradeFile(boolean deleted, boolean withKeys) {
+        upgradeFile = new File(
+                fileUpgradeFileId, expirationTime, withKeys ? keys : null, Bytes.wrap(contents), memo, deleted);
     }
 
     protected File createFile() {
         return new File.Builder()
                 .fileId(fileId)
+                .expirationTime(expirationTime)
+                .keys(keys)
+                .contents(Bytes.wrap(contents))
+                .memo(memo)
+                .deleted(true)
+                .build();
+    }
+
+    protected File createUpgradeFile() {
+        return new File.Builder()
+                .fileId(fileUpgradeFileId)
                 .expirationTime(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
