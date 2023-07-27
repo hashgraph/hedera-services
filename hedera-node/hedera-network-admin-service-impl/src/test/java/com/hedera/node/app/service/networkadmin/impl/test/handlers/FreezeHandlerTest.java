@@ -27,6 +27,8 @@ import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -48,6 +50,7 @@ import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -108,7 +111,7 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void pureChecksFailIfUnknownFreezeType() {
+    void failsUnknownFreezeType() {
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(nonAdminAccount)
@@ -119,6 +122,11 @@ class FreezeHandlerTest {
                         .build())
                 .build();
         assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
+
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
     @Test
@@ -246,6 +254,37 @@ class FreezeHandlerTest {
                     .build();
             given(preHandleContext.body()).willReturn(txn);
             assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+        }
+    }
+
+    @Test
+    void rejectOnInvalidFile() throws IOException {
+        // these freeze types require a valid update file to have been set via FileService
+        FreezeType[] freezeTypes = {PREPARE_UPGRADE, TELEMETRY_UPGRADE};
+
+        // set up the file store to return a fake upgrade file
+        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull()).willThrow(IOException.class);
+
+        for (FreezeType freezeType : freezeTypes) {
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .startTime(Timestamp.newBuilder().seconds(2000).build())
+                            .updateFile(FileID.newBuilder().fileNum(150L))
+                            .fileHash(Bytes.wrap(new byte[48]))
+                            .build())
+                    .build();
+            given(preHandleContext.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+            given(handleContext.body()).willReturn(txn);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(IllegalStateException.class);
         }
     }
 

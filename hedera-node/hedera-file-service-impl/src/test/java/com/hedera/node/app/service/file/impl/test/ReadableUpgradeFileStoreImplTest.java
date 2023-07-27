@@ -92,7 +92,7 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
 
     @Test
     void verifyFileStateKey() {
-        assertEquals(subject.getFileStateKey(), UPGRADE_FILE_KEY);
+        assertEquals(UPGRADE_FILE_KEY, subject.getFileStateKey());
     }
 
     @Test

@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
@@ -54,7 +53,9 @@ class WritableUpgradeFileStoreTest extends FileTestBase {
         writableUpgradeStates.add(file.contents());
         writableUpgradeFileStates.put(file.fileId(), file);
 
-        assertTrue(writableUpgradeFileStates.get(fileUpgradeFileId).fileId().equals(UPGRADE_FILE_ID));
+        assertEquals(
+                UPGRADE_FILE_ID,
+                writableUpgradeFileStates.get(fileUpgradeFileId).fileId());
         final var writtenFile = writableUpgradeFileStates.get(fileUpgradeFileId);
         assertEquals(file, writtenFile);
         assertEquals(file.contents(), writableUpgradeStates.peek());

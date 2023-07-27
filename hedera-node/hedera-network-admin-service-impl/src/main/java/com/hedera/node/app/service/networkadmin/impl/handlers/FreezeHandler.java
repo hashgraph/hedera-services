@@ -179,8 +179,9 @@ public class FreezeHandler implements TransactionHandler {
         requireNonNull(updateFileStore);
         requireNonNull(upgradeStore);
 
-        if (freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE) {
-            if (upgradeStore.peek() == null) throw new IllegalStateException("Update file not found");
+        if ((freezeTxn.freezeType() == PREPARE_UPGRADE || freezeTxn.freezeType() == TELEMETRY_UPGRADE)
+                && (upgradeStore.peek() == null)) {
+            throw new IllegalStateException("Update file not found");
         }
     }
     /**
