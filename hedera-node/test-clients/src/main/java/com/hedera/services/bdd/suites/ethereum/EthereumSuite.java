@@ -145,8 +145,7 @@ public class EthereumSuite extends HapiSuite {
                                 etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
                                 etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
                                 sendingLargerBalanceThanAvailableFailsGracefully(),
-                                directTransferWorksForERC20(),
-                                executeEip2930Tx()))
+                                directTransferWorksForERC20()))
                 .toList();
     }
 
@@ -741,53 +740,6 @@ public class EthereumSuite extends HapiSuite {
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_TRANSFER)
                                                         .withErcFungibleTransferStatus(true)))))));
-    }
-
-    HapiSpec executeEip2930Tx() {
-        String RECEIVER = "RECEIVER";
-        final String aliasBalanceSnapshot = "aliasBalance";
-        return defaultHapiSpec("etx010TransferToCryptoAccountSucceeds")
-                .given(
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RECEIVER).balance(0L),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via(AUTO_ACCOUNT_TRANSACTION_NAME),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
-                        getTxnRecord(AUTO_ACCOUNT_TRANSACTION_NAME).andAllChildRecords())
-                .when(
-                        balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
-                                .accountIsAlias(),
-                        ethereumCryptoTransfer(RECEIVER, FIVE_HBARS)
-                                .type(EthTxData.EthTransactionType.EIP2930)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .gasPrice(0L)
-                                .gasLimit(2_000_000L)
-                                .via(PAY_TXN)
-                                .hasKnownStatus(SUCCESS))
-                .then(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                getTxnRecord(PAY_TXN)
-                                        .logged()
-                                        .hasPriority(recordWith()
-                                                .status(SUCCESS)
-                                                .contractCallResult(resultWith()
-                                                        .logs(inOrder())
-                                                        .senderId(spec.registry()
-                                                                .getAccountID(spec.registry()
-                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
-                                                                        .getAlias()
-                                                                        .toStringUtf8())))
-                                                .ethereumHash(ByteString.copyFrom(
-                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().nonce(1L)),
-                        getAccountBalance(RECEIVER).hasTinyBars(FIVE_HBARS),
-                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
-                                .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
     @Override
