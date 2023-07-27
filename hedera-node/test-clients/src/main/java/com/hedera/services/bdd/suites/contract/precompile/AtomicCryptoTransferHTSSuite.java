@@ -65,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -78,7 +79,9 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class AtomicCryptoTransferHTSSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(AtomicCryptoTransferHTSSuite.class);
 
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};

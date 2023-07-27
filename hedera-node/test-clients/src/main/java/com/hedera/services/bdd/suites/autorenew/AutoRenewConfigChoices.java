@@ -20,11 +20,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import java.util.Map;
 
+@HapiTestSuite
 public class AutoRenewConfigChoices {
+
     static final int DEFAULT_HIGH_TOUCH_COUNT = 10_000;
     static final int HIGH_SCAN_CYCLE_COUNT = 10_000;
 
