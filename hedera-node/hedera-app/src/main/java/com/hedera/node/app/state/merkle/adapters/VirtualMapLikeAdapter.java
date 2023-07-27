@@ -62,7 +62,7 @@ public final class VirtualMapLikeAdapter {
             }
 
             @Override
-            public VirtualDataSource getDataSource() {
+            public VirtualDataSource<OnDiskKey<K>, OnDiskValue<V>> getDataSource() {
                 return real.getDataSource();
             }
 
