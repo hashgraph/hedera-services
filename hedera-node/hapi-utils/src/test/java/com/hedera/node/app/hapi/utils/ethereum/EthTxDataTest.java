@@ -358,10 +358,11 @@ class EthTxDataTest {
         assertNotNull(parsed);
         final var noCallData = parsed.replaceCallData(new byte[0]);
         assertArrayEquals(
-                Hex.decode(RAW_TX_TYPE_1
-                        .replace("f871", "f86e") // tx is shorter
-                        .replace("83123456", "80")  // calldata changed
-                ),
+                Hex.decode(
+                        RAW_TX_TYPE_1
+                                .replace("f871", "f86e") // tx is shorter
+                                .replace("83123456", "80") // calldata changed
+                        ),
                 noCallData.encodeTx());
     }
 

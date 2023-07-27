@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import java.math.BigInteger;
 import java.util.*;
-
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
@@ -304,7 +303,7 @@ public record EthTxData(
                 v,
                 rlpList.get(7).data(), // r
                 rlpList.get(8).data() // s
-        );
+                );
     }
 
     /**
@@ -339,7 +338,7 @@ public record EthTxData(
                 null, // v
                 rlpList.get(10).data(), // r
                 rlpList.get(11).data() // s
-        );
+                );
     }
 
     /**
@@ -373,7 +372,7 @@ public record EthTxData(
                 rlpList.get(8).asByte(), // recId
                 null, // v
                 rlpList.get(9).data(), // r
-                rlpList.get(10).data() //s
-        );
+                rlpList.get(10).data() // s
+                );
     }
 }
