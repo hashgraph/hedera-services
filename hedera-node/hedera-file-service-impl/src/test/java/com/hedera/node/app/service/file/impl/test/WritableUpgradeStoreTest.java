@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class WritableUpgradeStoreTest extends FileTestBase {
     private File file;
+    protected final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     @Test
     void throwsIfNullValuesAsArgs() {
@@ -50,10 +52,10 @@ class WritableUpgradeStoreTest extends FileTestBase {
         assertFalse(writableUpgradeStates.iterator().hasNext());
 
         writableUpgradeStates.add(file.contents());
-        writableUpgradeFileStates.put(file);
+        writableUpgradeFileStates.put(file.fileId(), file);
 
-        assertTrue(writableUpgradeFileStates.get().fileId().fileNum() == 150L);
-        final var writtenFile = writableUpgradeFileStates.get();
+        assertTrue(writableUpgradeFileStates.get(fileUpgradeFileId).fileId().equals(UPGRADE_FILE_ID));
+        final var writtenFile = writableUpgradeFileStates.get(fileUpgradeFileId);
         assertEquals(file, writtenFile);
         assertEquals(file.contents(), writableUpgradeStates.peek());
     }
@@ -62,11 +64,11 @@ class WritableUpgradeStoreTest extends FileTestBase {
     void getReturnsUpgradeFile() {
         file = createUpgradeFile();
         writableUpgradeStates.add(file.contents());
-        writableUpgradeFileStates.put(file);
+        writableUpgradeFileStates.put(file.fileId(), file);
 
         final var readFile = writableUpgradeStates.peek();
 
         assertEquals(file.contents(), readFile);
-        assertEquals(file, writableUpgradeFileStates.get());
+        assertEquals(file, writableUpgradeFileStates.get(fileUpgradeFileId));
     }
 }

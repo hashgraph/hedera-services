@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.ZONE_UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -221,8 +221,9 @@ class StakePeriodManagerTest {
         final AtomicReference<NetworkStakingRewards> backingValue =
                 new AtomicReference<>(new NetworkStakingRewards(true, 1L, 2L, 3L));
         final var stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_REWARDS_KEY, backingValue::get, backingValue::set);
-        given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn((WritableSingletonState) stakingRewardsState);
+                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
+                .willReturn((WritableSingletonState) stakingRewardsState);
         stakingRewardsStore = new ReadableNetworkStakingRewardsStoreImpl(states);
     }
 
@@ -230,8 +231,9 @@ class StakePeriodManagerTest {
         final AtomicReference<NetworkStakingRewards> backingValue =
                 new AtomicReference<>(new NetworkStakingRewards(false, 1L, 2L, 3L));
         final var stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_REWARDS_KEY, backingValue::get, backingValue::set);
-        given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn((WritableSingletonState) stakingRewardsState);
+                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
+                .willReturn((WritableSingletonState) stakingRewardsState);
         stakingRewardsStore = new ReadableNetworkStakingRewardsStoreImpl(states);
     }
 
