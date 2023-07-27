@@ -36,6 +36,7 @@ import com.swirlds.logging.payloads.InsufficientSignaturesPayload;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
 import com.swirlds.platform.components.common.query.PrioritySystemTransactionSubmitter;
 import com.swirlds.platform.components.state.output.IssConsumer;
+import com.swirlds.platform.components.state.output.MinimumGenerationNonAncientConsumer;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -216,6 +217,15 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 dispatchBuilder.getDispatcher(this, StateHashedTrigger.class)::dispatch;
         signedStateHasher = new SignedStateHasher(signedStateMetrics, stateHashedTrigger, fatalErrorConsumer);
 
+        final MinimumGenerationNonAncientConsumer setMinimumGenerationToStore = generation -> {
+            try {
+                preconsensusEventWriter.setMinimumGenerationToStore(generation);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error(EXCEPTION.getMarker(), "interrupted while setting minimum generation non-ancient");
+            }
+        };
+
         signedStateFileManager = new SignedStateFileManager(
                 platformContext,
                 threadManager,
@@ -225,7 +235,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 selfId,
                 swirldName,
                 stateToDiskEventConsumer,
-                preconsensusEventWriter::setMinimumGenerationToStore,
+                setMinimumGenerationToStore,
                 statusActionSubmitter);
 
         final StateHasEnoughSignaturesConsumer combinedStateHasEnoughSignaturesConsumer = ss -> {
