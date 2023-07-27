@@ -227,7 +227,7 @@ class TokenServiceApiImplTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> subject.transferFromTo(EOA_ACCOUNT_ID, CONTRACT_ACCOUNT_ID, Long.MAX_VALUE));
+                () -> subject.transferFromTo(CONTRACT_ACCOUNT_ID, EOA_ACCOUNT_ID, Long.MAX_VALUE));
     }
 
     @Test

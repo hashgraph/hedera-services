@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -683,6 +684,29 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         @Test
         void exposesGivenNetworkInfo() {
             assertSame(networkInfo, context.networkInfo());
+        }
+    }
+
+    @Nested
+    @DisplayName("Creating Service APIs")
+    final class ServiceApiTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void failsAsExpectedWithoutAvailableApi() {
+            assertThrows(IllegalArgumentException.class, () -> context.serviceApi(Object.class));
         }
     }
 
