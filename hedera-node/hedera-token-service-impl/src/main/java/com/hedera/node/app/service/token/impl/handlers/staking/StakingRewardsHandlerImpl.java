@@ -143,7 +143,6 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * nodes. It also updates stakeAtStartOfLastRewardedPeriod and stakePeriodStart for accounts.
      *
      * @param writableStore writable account store
-     * @param readableStore readable account store
      * @param stakingInfoStore writable staking info store
      * @param stakingRewardStore writable staking reward store
      * @param consensusNow consensus time
