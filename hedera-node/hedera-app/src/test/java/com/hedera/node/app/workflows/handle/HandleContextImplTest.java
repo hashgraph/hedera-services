@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -659,6 +660,29 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE));
+        }
+    }
+
+    @Nested
+    @DisplayName("Requesting network info")
+    final class NetworkInfoTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void exposesGivenNetworkInfo() {
+            assertSame(networkInfo, context.networkInfo());
         }
     }
 

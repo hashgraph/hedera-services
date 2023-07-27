@@ -283,7 +283,7 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     public @NonNull NetworkInfo networkInfo() {
-        throw new AssertionError("Not implemented");
+        return networkInfo;
     }
 
     @Override

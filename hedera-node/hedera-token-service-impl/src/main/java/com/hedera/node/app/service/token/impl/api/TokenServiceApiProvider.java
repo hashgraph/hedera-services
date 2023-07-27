@@ -23,6 +23,9 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Provides {@link TokenServiceApi} instances.
+ */
 public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceApi> {
     TOKEN_SERVICE_API_PROVIDER;
 

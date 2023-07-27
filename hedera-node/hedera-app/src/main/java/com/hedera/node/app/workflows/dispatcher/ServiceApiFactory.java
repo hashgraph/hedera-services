@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 /**
- * A factory for creating service APIs.
+ * A factory for creating service APIs based on the {@link SavepointStackImpl} for the current transaction.
  */
 public class ServiceApiFactory {
     private final SavepointStackImpl stack;
@@ -38,6 +38,9 @@ public class ServiceApiFactory {
         this.stack = requireNonNull(stack);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public <C> C getApi(@NonNull final Class<C> apiInterface) throws IllegalArgumentException {
         requireNonNull(apiInterface);
         final var provider = API_PROVIDER.get(apiInterface);
