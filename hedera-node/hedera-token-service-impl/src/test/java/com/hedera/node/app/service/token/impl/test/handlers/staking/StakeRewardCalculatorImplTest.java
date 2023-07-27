@@ -16,18 +16,20 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.ZONE_UTC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.Units;
-import com.hedera.node.app.service.token.impl.staking.RewardCalculatorImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -41,7 +43,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RewardCalculatorImplTest {
+class StakeRewardCalculatorImplTest {
+    private static final Instant consensusTime = Instant.ofEpochSecond(12345678910L);
     private static final long TODAY_NUMBER =
             LocalDate.ofInstant(Instant.ofEpochSecond(12345678910L), ZONE_UTC).toEpochDay();
     private static final int REWARD_HISTORY_SIZE = 366;
@@ -56,16 +59,19 @@ class RewardCalculatorImplTest {
     private StakingNodeInfo stakingNodeInfo;
 
     @Mock
+    private ReadableNetworkStakingRewardsStore stakingRewardsStore;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
     private Account account;
 
     private List<Long> rewardHistory;
 
-    private RewardCalculatorImpl subject;
+    private StakeRewardCalculatorImpl subject;
 
     @BeforeEach
     void setUp() {
         rewardHistory = newRewardHistory();
-        subject = new RewardCalculatorImpl(stakePeriodManager);
+        subject = new StakeRewardCalculatorImpl(stakePeriodManager);
     }
 
     @Test
@@ -87,7 +93,7 @@ class RewardCalculatorImplTest {
         rewardHistory.set(2, 1L);
         setUpMocks();
         given(stakingInfoStore.get(0L)).willReturn(stakingNodeInfo);
-        given(stakePeriodManager.currentStakePeriod()).willReturn(TODAY_NUMBER);
+        given(stakePeriodManager.currentStakePeriod(consensusTime)).willReturn(TODAY_NUMBER);
         given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
         // Staked node ID of -1 will return a node ID address of 0
         given(account.stakedNodeId()).willReturn(-1L);
@@ -98,21 +104,44 @@ class RewardCalculatorImplTest {
 
         given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 4);
         // (98+2) * (6-1) + 90 * (1-0) = 590;
-        var reward = subject.computePendingReward(account, stakingInfoStore);
+        var reward = subject.computePendingReward(account, stakingInfoStore, stakingRewardsStore, consensusTime);
 
         assertEquals(590, reward);
 
         given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 3);
         // (98+2) * (6-3) + 90 * (3-1) = 480;
-        reward = subject.computePendingReward(account, stakingInfoStore);
+        reward = subject.computePendingReward(account, stakingInfoStore, stakingRewardsStore, consensusTime);
 
         assertEquals(480, reward);
 
         given(account.stakePeriodStart()).willReturn(TODAY_NUMBER - 2);
         // (98+2) * (6-6) + 90 * (6-3) = 270;
-        reward = subject.computePendingReward(account, stakingInfoStore);
+        reward = subject.computePendingReward(account, stakingInfoStore, stakingRewardsStore, consensusTime);
 
         assertEquals(270, reward);
+    }
+
+    @Test
+    void estimatesPendingRewardsForStateView() {
+        final var todayNum = 300L;
+
+        given(stakePeriodManager.estimatedCurrentStakePeriod()).willReturn(todayNum);
+        given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
+        given(account.stakePeriodStart()).willReturn(todayNum - 2);
+        given(account.stakeAtStartOfLastRewardedPeriod()).willReturn(-1L);
+        given(account.declineReward()).willReturn(false);
+        given(account.stakedToMe()).willReturn(100 * Units.HBARS_TO_TINYBARS);
+        given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);
+        given(stakePeriodManager.isEstimatedRewardable(todayNum - 2, stakingRewardsStore))
+                .willReturn(true);
+
+        final long reward = subject.estimatePendingRewards(account, stakingNodeInfo, stakingRewardsStore);
+
+        assertEquals(500, reward);
+
+        // if declinedReward
+        given(account.declineReward()).willReturn(true);
+        assertEquals(0L, subject.estimatePendingRewards(account, stakingNodeInfo, stakingRewardsStore));
     }
 
     @Test
@@ -122,15 +151,16 @@ class RewardCalculatorImplTest {
         given(account.stakePeriodStart()).willReturn(todayNum - 2);
         given(stakePeriodManager.effectivePeriod(todayNum - 2)).willReturn(todayNum - 2);
 
-        final long reward = subject.estimatePendingRewards(account, stakingNodeInfo);
+        final long reward = subject.estimatePendingRewards(account, stakingNodeInfo, stakingRewardsStore);
 
         assertEquals(0, reward);
     }
 
     private void setUpMocks() {
-        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(TODAY_NUMBER);
+        given(stakePeriodManager.firstNonRewardableStakePeriod(stakingRewardsStore, consensusTime))
+                .willReturn(TODAY_NUMBER);
         willCallRealMethod().given(stakePeriodManager).effectivePeriod(anyLong());
-        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
+        willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong(), any(), any());
     }
 
     private static List<Long> newRewardHistory() {

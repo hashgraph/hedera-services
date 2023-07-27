@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.staking;
+package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
@@ -31,8 +31,8 @@ import com.hedera.hapi.node.transaction.NodeStakeUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStoreImpl;
-import com.hedera.node.app.service.token.impl.WritableStakingInfoStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -87,9 +87,9 @@ public class EndOfStakingPeriodCalculator {
         }
 
         final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
-        final WritableStakingInfoStoreImpl stakingInfoStore = context.writableStore(WritableStakingInfoStoreImpl.class);
-        final WritableNetworkStakingRewardsStoreImpl stakingRewardsStore =
-                context.writableStore(WritableNetworkStakingRewardsStoreImpl.class);
+        final WritableStakingInfoStore stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
+        final WritableNetworkStakingRewardsStore stakingRewardsStore =
+                context.writableStore(WritableNetworkStakingRewardsStore.class);
 
         final var nodeIds = stakingInfoStore.getAll();
         final var totalStakedRewardStart = stakingRewardsStore.totalStakeRewardStart();
@@ -133,7 +133,8 @@ public class EndOfStakingPeriodCalculator {
             final var oldStakeRewardStart = currStakingInfo.stakeRewardStart();
             final var pendingRewardHbars =
                     (oldStakeRewardStart - currStakingInfo.unclaimedStakeRewardStart()) / HBARS_TO_TINYBARS;
-            final var recomputedStake = PeriodStakingUtils.computeNextStake(currStakingInfo);
+            final var recomputedStake =
+                    com.hedera.node.app.service.token.impl.staking.PeriodStakingUtils.computeNextStake(currStakingInfo);
             currStakingInfo = currStakingInfo
                     .copyBuilder()
                     .stake(recomputedStake.stake())

@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -40,37 +42,40 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
+@ExtendWith(MockitoExtension.class)
+class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private final AccountID ACCOUNT_1212_ID =
             AccountID.newBuilder().accountNum(1212).build();
     private final Account ACCOUNT_1212 =
-            givenValidAccount().copyBuilder().accountId(ACCOUNT_1212_ID).build();
+            givenValidAccountBuilder().accountId(ACCOUNT_1212_ID).build();
     private final AccountID ACCOUNT_3434_ID =
             AccountID.newBuilder().accountNum(3434).build();
-    private final Account ACCOUNT_3434 = givenValidAccount()
-            .copyBuilder()
+    private final Account ACCOUNT_3434 = givenValidAccountBuilder()
             .accountId(ACCOUNT_3434_ID)
             .tinybarBalance(500)
             .build();
     private final AccountID ACCOUNT_5656_ID =
             AccountID.newBuilder().accountNum(5656).build();
-    private final Account ACCOUNT_5656 = givenValidAccount()
-            .copyBuilder()
+    private final Account ACCOUNT_5656 = givenValidAccountBuilder()
             .accountId(ACCOUNT_5656_ID)
             .tinybarBalance(10000)
             .build();
@@ -87,11 +92,15 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
     private ReadableNftStore readableNftStore;
     private WritableNftStore writableNftStore;
 
-    private FinalizeRecordHandler subject;
+    @Mock
+    private StakingRewardsHandlerImpl stakingRewardsHandler;
+
+    private FinalizeParentRecordHandler subject;
 
     @BeforeEach
     public void setUp() {
-        subject = new FinalizeRecordHandler();
+        super.setUp();
+        subject = new FinalizeParentRecordHandler(stakingRewardsHandler);
     }
 
     @Test
@@ -120,6 +129,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(ACCOUNT_1212.tinybarBalance() - 5)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -141,6 +151,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .tinybarBalance(ACCOUNT_3434.tinybarBalance() + amountToAdjust)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -160,6 +171,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels();
         context = mockContext();
 
+        given(context.configuration()).willReturn(configuration);
         subject.handle(context);
 
         BDDMockito.verifyNoInteractions(recordBuilder);
@@ -184,6 +196,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
         writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -223,6 +236,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(
                 ACCOUNT_5656.copyBuilder().memo("different memo field").build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -243,14 +257,15 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleFungibleTokenBalanceIsNegative() {
-        final var validAcct = givenValidAccount();
+        final var validAcct = givenValidAccountBuilder();
         final var tokenRel = givenFungibleTokenRelation(); // Already tied to validAcct's account ID
-        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct);
-        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct);
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct.build());
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct.build());
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         writableTokenRelStore.put(tokenRel.copyBuilder().balance(-1).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.handle(context))
                 .isInstanceOf(HandleException.class)
@@ -259,10 +274,10 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleFungibleTransferTokenBalancesDontChange() {
-        final var validAcct = givenValidAccount();
+        final var validAcct = givenValidAccountBuilder();
         final var tokenRel = givenFungibleTokenRelation();
-        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct);
-        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct);
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(validAcct.build());
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(validAcct.build());
         readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(tokenRel);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(tokenRel);
         readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
@@ -270,6 +285,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // The token relation's 'frozen' property is changed, but its balance doesn't change
         writableTokenRelStore.put(tokenRel.copyBuilder().frozen(true).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -308,6 +324,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .balance(fungibleAmountToTransfer)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -386,6 +403,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .balance(token2AmountTransferred)
                 .build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -448,6 +466,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 
@@ -484,6 +503,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(newNft.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
         context = mockContext();
 
+        given(context.configuration()).willReturn(configuration);
         subject.handle(context);
 
         BDDMockito.verify(recordBuilder)
@@ -550,6 +570,10 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         writableNftStore.put(nft222.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         writableNftStore.put(nft223.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         context = mockContext();
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("staking.isEnabled", String.valueOf(false))
+                .getOrCreateConfig();
+        given(context.configuration()).willReturn(config);
 
         subject.handle(context);
 
@@ -586,6 +610,9 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                                 .receiverAccountID(ACCOUNT_3434_ID)
                                                 .build())
                                 .build()));
+
+        subject.handle(context);
+        verify(stakingRewardsHandler, never()).applyStakingRewards(context);
     }
 
     @Test
@@ -633,6 +660,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         context = mockContext();
+        given(context.configuration()).willReturn(configuration);
 
         subject.handle(context);
 

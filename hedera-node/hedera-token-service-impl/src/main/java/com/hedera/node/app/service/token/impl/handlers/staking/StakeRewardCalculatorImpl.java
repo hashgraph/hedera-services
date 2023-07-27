@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,49 +14,61 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.staking;
+package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.token.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.service.token.impl.utils.RewardCalculator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class RewardCalculatorImpl implements RewardCalculator {
+public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
     private final StakePeriodManager stakePeriodManager;
 
     @Inject
-    public RewardCalculatorImpl(@NonNull final StakePeriodManager stakePeriodManager) {
+    public StakeRewardCalculatorImpl(@NonNull final StakePeriodManager stakePeriodManager) {
         this.stakePeriodManager = stakePeriodManager;
     }
 
+    /** {@inheritDoc} */
+    @Override
     public long computePendingReward(
-            @NonNull final Account account, @NonNull final ReadableStakingInfoStore stakingInfoStore) {
+            @NonNull final Account account,
+            @NonNull final ReadableStakingInfoStore stakingInfoStore,
+            @NonNull final ReadableNetworkStakingRewardsStore rewardsStore,
+            @NonNull final Instant consensusNow) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
-        if (!stakePeriodManager.isRewardable(effectiveStart)) {
+        if (!stakePeriodManager.isRewardable(effectiveStart, rewardsStore, consensusNow)) {
             return 0;
         }
 
-        final var addressBookId = calculateNodeAddressId(account.stakedNodeId());
-        final var stakingInfo = stakingInfoStore.get(addressBookId);
-        final var rewardOffered =
-                computeRewardFromDetails(account, stakingInfo, stakePeriodManager.currentStakePeriod(), effectiveStart);
+        // At this point all the accounts that are eligible for computing rewards should have a
+        // staked to a node
+        final var nodeId = account.stakedNodeIdOrThrow();
+        final var stakingInfo = stakingInfoStore.get(nodeId);
+        final var rewardOffered = computeRewardFromDetails(
+                account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
     }
 
+    /** {@inheritDoc} */
+    @Override
     public long estimatePendingRewards(
-            @NonNull final Account account, @Nullable final StakingNodeInfo nodeStakingInfo) {
+            @NonNull final Account account,
+            @Nullable final StakingNodeInfo nodeStakingInfo,
+            @NonNull final ReadableNetworkStakingRewardsStore rewardsStore) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
-        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart)) {
+        if (!stakePeriodManager.isEstimatedRewardable(effectiveStart, rewardsStore)) {
             return 0;
         }
         final var rewardOffered = computeRewardFromDetails(
@@ -64,6 +76,8 @@ public class RewardCalculatorImpl implements RewardCalculator {
         return account.declineReward() ? 0 : rewardOffered;
     }
 
+    /** {@inheritDoc} */
+    @Override
     public long epochSecondAtStartOfPeriod(final long stakePeriod) {
         return stakePeriodManager.epochSecondAtStartOfPeriod(stakePeriod);
     }
@@ -102,17 +116,9 @@ public class RewardCalculatorImpl implements RewardCalculator {
                             / HBARS_TO_TINYBARS
                             * (rewardFromMinus1Sum - rewardFromSum)
                     // ...and second, the reward for all following periods
-                    + calculateTotalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromMinus1Sum);
+                    + totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromMinus1Sum);
         } else {
-            return calculateTotalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
+            return totalStake(account) / HBARS_TO_TINYBARS * (firstRewardSum - rewardFromSum);
         }
-    }
-
-    private static long calculateNodeAddressId(long stakedNodeId) {
-        return -stakedNodeId - 1L;
-    }
-
-    private static long calculateTotalStake(@NonNull final Account account) {
-        return account.stakedToMe() + account.tinybarBalance();
     }
 }

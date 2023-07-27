@@ -17,10 +17,10 @@
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.staking.EndOfStakingPeriodCalculator.calculateWeightFromStake;
-import static com.hedera.node.app.service.token.impl.staking.EndOfStakingPeriodCalculator.scaleUpWeightToStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator.calculateWeightFromStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator.scaleUpWeightToStake;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,9 +30,9 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStoreImpl;
-import com.hedera.node.app.service.token.impl.WritableStakingInfoStoreImpl;
-import com.hedera.node.app.service.token.impl.staking.EndOfStakingPeriodCalculator;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -79,8 +79,8 @@ class EndOfStakingPeriodCalculatorTest {
                 .willReturn(
                         newStakingConfig().withValue("staking.isEnabled", false).getOrCreateConfig());
         // Set up the relevant stores (and data)
-        final var stakingInfoStore = mock(WritableStakingInfoStoreImpl.class);
-        final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStoreImpl.class);
+        final var stakingInfoStore = mock(WritableStakingInfoStore.class);
+        final var stakingRewardsStore = mock(WritableNetworkStakingRewardsStore.class);
 
         subject.updateNodes(consensusTime, context);
 
@@ -182,18 +182,18 @@ class EndOfStakingPeriodCalculatorTest {
                 .value(NODE_NUM_3, STAKING_INFO_3)
                 .build();
         final var stakingInfoStore =
-                new WritableStakingInfoStoreImpl(new MapWritableStates(Map.of(STAKING_INFO_KEY, stakingInfosState)));
-        given(context.writableStore(WritableStakingInfoStoreImpl.class)).willReturn(stakingInfoStore);
+                new WritableStakingInfoStore(new MapWritableStates(Map.of(STAKING_INFO_KEY, stakingInfosState)));
+        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(stakingInfoStore);
 
         // Create staking reward store (with data)
         final var backingValue = new AtomicReference<>(new NetworkStakingRewards(true, 1_000_000_000L, 0, 0));
         final var stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_REWARDS_KEY, backingValue::get, backingValue::set);
+                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
         final var states = mock(WritableStates.class);
-        given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn((WritableSingletonState) stakingRewardsState);
-        final var stakingRewardsStore = new WritableNetworkStakingRewardsStoreImpl(states);
-        given(context.writableStore(WritableNetworkStakingRewardsStoreImpl.class))
-                .willReturn(stakingRewardsStore);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
+                .willReturn((WritableSingletonState) stakingRewardsState);
+        final var stakingRewardsStore = new WritableNetworkStakingRewardsStore(states);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(stakingRewardsStore);
 
         // Assert preconditions
         Assertions.assertThat(STAKING_INFO_1.weight()).isZero();

@@ -23,8 +23,6 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides write methods for modifying underlying data storage mechanisms for working with
@@ -32,18 +30,17 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class WritableStakingInfoStoreImpl extends ReadableStakingInfoStoreImpl {
-    private static final Logger log = LogManager.getLogger(WritableStakingInfoStoreImpl.class);
+public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
 
     /** The underlying data storage class that holds the staking data. */
     private final WritableKVState<Long, StakingNodeInfo> stakingInfoState;
 
     /**
-     * Create a new {@link WritableStakingInfoStoreImpl} instance
+     * Create a new {@link WritableStakingInfoStore} instance
      *
      * @param states The state to use
      */
-    public WritableStakingInfoStoreImpl(@NonNull final WritableStates states) {
+    public WritableStakingInfoStore(@NonNull final WritableStates states) {
         super(states);
         requireNonNull(states);
 
@@ -69,31 +66,5 @@ public class WritableStakingInfoStoreImpl extends ReadableStakingInfoStoreImpl {
     public void put(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
         requireNonNull(stakingNodeInfo);
         stakingInfoState.put(nodeId, stakingNodeInfo);
-    }
-
-    /**
-     * Increases the unclaimed stake reward start for the given node by the given amount
-     *
-     * @param nodeId the node's numeric ID
-     * @param amount the amount to increase the unclaimed stake reward start by
-     */
-    public void increaseUnclaimedStakeRewardStart(final long nodeId, final long amount) {
-        final var currentStakingInfo = getForModify(nodeId);
-        final var currentStakeRewardStart = currentStakingInfo.stakeRewardStart();
-        final var newUnclaimedStakeRewardStart = currentStakingInfo.unclaimedStakeRewardStart() + amount;
-
-        final var newStakingInfo =
-                currentStakingInfo.copyBuilder().unclaimedStakeRewardStart(newUnclaimedStakeRewardStart);
-        if (newUnclaimedStakeRewardStart > currentStakeRewardStart) {
-            log.warn(
-                    "Asked to release {} more rewards for node{} (now {}), but only {} was staked",
-                    amount,
-                    nodeId,
-                    newUnclaimedStakeRewardStart,
-                    currentStakeRewardStart);
-            newStakingInfo.unclaimedStakeRewardStart(currentStakeRewardStart);
-        }
-
-        stakingInfoState.put(nodeId, newStakingInfo.build());
     }
 }
