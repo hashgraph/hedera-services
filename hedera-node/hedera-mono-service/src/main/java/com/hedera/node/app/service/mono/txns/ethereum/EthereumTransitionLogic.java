@@ -109,8 +109,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         final var callerNum = validatedCallerOf(accessor);
         final var synthTxn = spanMapAccessor.getEthTxBodyMeta(accessor);
         final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
-        // we don't support 2930 transactions, even though we parse them.
-        validateFalse(ethTxData.type() == EthTxData.EthTransactionType.EIP2930, INVALID_ETHEREUM_TRANSACTION);
+        validateFalse(
+                !dynamicProperties.isEip2930Enabled() &&
+                ethTxData.type() == EthTxData.EthTransactionType.EIP2930, INVALID_ETHEREUM_TRANSACTION
+        );
         final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
         final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
         final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
