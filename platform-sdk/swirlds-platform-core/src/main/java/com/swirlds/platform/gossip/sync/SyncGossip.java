@@ -160,6 +160,7 @@ public class SyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -175,8 +176,7 @@ public class SyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
-                clearAllPipelinesForReconnect,
-                time);
+                clearAllPipelinesForReconnect);
 
         final EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);

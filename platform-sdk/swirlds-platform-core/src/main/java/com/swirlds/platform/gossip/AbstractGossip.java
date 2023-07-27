@@ -120,6 +120,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
+     * @param time                          the time object used to get the current time
      * @param crypto                        can be used to sign things
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -136,11 +137,11 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
-     * @param time                          the time object used to get the current time
      */
     protected AbstractGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull final Crypto crypto,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -156,8 +157,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final Time time) {
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.selfId = Objects.requireNonNull(selfId);

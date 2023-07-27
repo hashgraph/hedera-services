@@ -189,6 +189,7 @@ public final class GossipFactory {
                 return new SingleNodeSyncGossip(
                         platformContext,
                         threadManager,
+                        time,
                         crypto,
                         addressBook,
                         selfId,
@@ -206,8 +207,7 @@ public final class GossipFactory {
                         syncMetrics,
                         statusActionSubmitter,
                         loadReconnectState,
-                        clearAllPipelinesForReconnect,
-                        time);
+                        clearAllPipelinesForReconnect);
             } else {
                 logger.info(STARTUP.getMarker(), "Using SyncGossip");
                 return new SyncGossip(
@@ -241,6 +241,7 @@ public final class GossipFactory {
             return new LegacySyncGossip(
                     platformContext,
                     threadManager,
+                    time,
                     crypto,
                     addressBook,
                     selfId,
@@ -259,8 +260,7 @@ public final class GossipFactory {
                     syncMetrics,
                     statusActionSubmitter,
                     loadReconnectState,
-                    clearAllPipelinesForReconnect,
-                    time);
+                    clearAllPipelinesForReconnect);
         }
     }
 }

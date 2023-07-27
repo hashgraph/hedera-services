@@ -80,6 +80,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
+     * @param time                          the time object used to get the current time
      * @param crypto                        can be used to sign things
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -99,11 +100,11 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
-     * @param time                          the time object used to get the current time
      */
     public SingleNodeSyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull Crypto crypto,
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
@@ -121,11 +122,11 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final SyncMetrics syncMetrics,
             @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
-            @NonNull final Runnable clearAllPipelinesForReconnect,
-            @NonNull final Time time) {
+            @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -141,8 +142,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
-                clearAllPipelinesForReconnect,
-                time);
+                clearAllPipelinesForReconnect);
 
         this.eventIntakeLambda = Objects.requireNonNull(eventIntakeLambda);
 

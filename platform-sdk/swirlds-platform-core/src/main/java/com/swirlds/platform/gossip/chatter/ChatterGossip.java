@@ -172,6 +172,7 @@ public class ChatterGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -187,8 +188,7 @@ public class ChatterGossip extends AbstractGossip {
                 eventObserverDispatcher,
                 statusActionSubmitter,
                 loadReconnectState,
-                clearAllPipelinesForReconnect,
-                time);
+                clearAllPipelinesForReconnect);
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
         final ChatterConfig chatterConfig = platformContext.getConfiguration().getConfigData(ChatterConfig.class);
