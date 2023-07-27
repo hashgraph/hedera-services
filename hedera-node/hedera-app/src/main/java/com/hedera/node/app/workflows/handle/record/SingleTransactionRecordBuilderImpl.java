@@ -307,6 +307,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param transferList the transferList
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl transferList(@NonNull final TransferList transferList) {
         requireNonNull(transferList, "transferList must not be null");
@@ -320,6 +321,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param tokenTransferLists the tokenTransferLists
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenTransferLists(
             @NonNull final List<TokenTransferList> tokenTransferLists) {
@@ -469,6 +471,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param num number to use for entropy
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl entropyNumber(final int num) {
         this.transactionRecordBuilder.prngNumber(num);
@@ -481,6 +484,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param prngBytes bytes to use for entropy
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl entropyBytes(@NonNull final Bytes prngBytes) {
         requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
@@ -535,6 +539,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param accountID the {@link AccountID} for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
         requireNonNull(accountID, "accountID must not be null");
@@ -548,6 +553,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param fileID the {@link FileID} for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl fileID(@NonNull final FileID fileID) {
         requireNonNull(fileID, "fileID must not be null");
@@ -587,6 +593,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param topicID the {@link TopicID} for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl topicID(@NonNull final TopicID topicID) {
         requireNonNull(topicID, "topicID must not be null");
@@ -600,6 +607,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param topicSequenceNumber the topicSequenceNumber for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
         this.transactionReceiptBuilder.topicSequenceNumber(topicSequenceNumber);
@@ -612,6 +620,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param topicRunningHash the topicRunningHash for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
         requireNonNull(topicRunningHash, "topicRunningHash must not be null");
@@ -625,6 +634,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param topicRunningHashVersion the topicRunningHashVersion for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl topicRunningHashVersion(final long topicRunningHashVersion) {
         this.transactionReceiptBuilder.topicRunningHashVersion(topicRunningHashVersion);
@@ -637,6 +647,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param tokenID the {@link TokenID} for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
@@ -688,6 +699,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param serialNumbers the serialNumbers for the receipt
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
         requireNonNull(serialNumbers, "serialNumbers must not be null");
