@@ -180,9 +180,9 @@ public class EventIntake {
         stats.dispatchedPreConsensus();
         final long minGenNonAncientBeforeAdding = consensus().getMinGenerationNonAncient();
         // #5762 if we cannot calculate its roundCreated, then we use the one that was sent to us
-        final boolean hasAtLeastOneParent = event.getSelfParentHash() != null || event.getOtherParentHash() != null;
-        final boolean noParentsFound = event.getSelfParent() == null && event.getOtherParent() == null;
-        if (hasAtLeastOneParent && noParentsFound) {
+        final boolean missingSelfParent = event.getSelfParentHash() != null && event.getSelfParent() == null;
+        final boolean missingOtherParent = event.getOtherParentHash() != null && event.getOtherParent() == null;
+        if (missingSelfParent || missingOtherParent) {
             if (event.getBaseEvent().isRoundCreatedSet()) {
                 // we then use the round created sent to us
                 event.setRoundCreated(event.getBaseEvent().getRoundCreated());
