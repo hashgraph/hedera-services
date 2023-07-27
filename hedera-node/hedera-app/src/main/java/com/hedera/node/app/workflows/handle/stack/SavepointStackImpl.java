@@ -36,6 +36,7 @@ import java.util.Map;
  */
 public class SavepointStackImpl implements SavepointStack, HederaState {
 
+    private final HederaState root;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
@@ -46,7 +47,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @throws NullPointerException if {@code root} is {@code null}
      */
     public SavepointStackImpl(@NonNull final HederaState root, @NonNull final Configuration config) {
-        requireNonNull(root, "root must not be null");
+        this.root = requireNonNull(root, "root must not be null");
         requireNonNull(config, "config must not be null");
         setupSavepoint(root, config);
     }
@@ -89,6 +90,17 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             throw new IllegalStateException("The stack has already been committed");
         }
         return stack.peek();
+    }
+
+    /**
+     * Returns the root {@link ReadableStates} for the given service name.
+     *
+     * @param serviceName the name of the service
+     * @return the root {@link ReadableStates} for the given service name
+     */
+    @NonNull
+    public ReadableStates rootStates(@NonNull final String serviceName) {
+        return root.createReadableStates(serviceName);
     }
 
     /**

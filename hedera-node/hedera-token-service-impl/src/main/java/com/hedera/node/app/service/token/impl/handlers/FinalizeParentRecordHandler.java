@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -37,24 +38,49 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This is a special handler that is used to "finalize" hbar and token transfers, most importantly by writing the results of a transaction to record files. Finalization in this context means summing the net changes to make to each account's hbar balance and token balances, and assigning the final owner of an nft after an arbitrary number of ownership changes
+ * This is a special handler that is used to "finalize" hbar and token transfers for the parent transaction record.
+ * Finalization in this context means summing the net changes to make to each account's hbar balance and token
+ * balances, and assigning the final owner of an nft after an arbitrary number of ownership changes.
+ * Based on issue https://github.com/hashgraph/hedera-services/issues/7084 the modularized
+ * transaction record for NFT transfer chain A -> B -> C, will look different from mono-service record.
+ * This is because mono-service will record both ownership changes from A -> b and then B-> C.
+ *
+ * In this finalizer, we will:
+ * 1.If staking is enabled, iterate through all modifications in writableAccountStore and compare with the corresponding entity in readableAccountStore
+ * 2. Comparing the changes, we look for balance/declineReward/stakedToMe/stakedId fields have been modified,
+ * if an account is staking to a node. Construct a list of possibleRewardReceivers
+ * 3. Pay staking rewards to any account who has pending rewards
+ * 4. Now again, iterate through all modifications in writableAccountStore, writableTokenRelationStore.
+ * 5. For each modification we look at the same entity in the respective readableStore
+ * 6. Calculate the difference between the two, and then construct a TransferList and TokenTransferList
+ * for the parent record
  */
 @Singleton
-public class FinalizeRecordHandler implements TransactionHandler {
+public class FinalizeParentRecordHandler implements TransactionHandler {
+    private final StakingRewardsHandler stakingRewardsHandler;
+
+    @Inject
+    public FinalizeParentRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
+        this.stakingRewardsHandler = stakingRewardsHandler;
+    }
+
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         // Intentionally empty. There are no pre-checks to do before finalizing the transfer lists
@@ -73,9 +99,21 @@ public class FinalizeRecordHandler implements TransactionHandler {
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var readableNftStore = context.readableStore(ReadableNftStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
-        // TODO : Need to pay staking rewards
-        // ---------- Hbar transfers
-        final var hbarChanges = calculateHbarChanges(writableAccountStore, readableAccountStore);
+        final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
+
+        if (stakingConfig.isEnabled()) {
+            // staking rewards are triggered for any balance changes to account's that are staked to
+            // a node. They are also triggered if staking related fields are modified
+            // Calculate staking rewards and add them also to hbarChanges here, before assessing
+            // net changes for transaction record
+            final var rewardsPaid = stakingRewardsHandler.applyStakingRewards(context);
+            if (!rewardsPaid.isEmpty()) {
+                recordBuilder.paidStakingRewards(asAccountAmounts(rewardsPaid));
+            }
+        }
+
+        /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
+        final var hbarChanges = hbarChangesWithStakingRewards(writableAccountStore, readableAccountStore);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(
@@ -103,7 +141,7 @@ public class FinalizeRecordHandler implements TransactionHandler {
     }
 
     @NonNull
-    private static List<AccountAmount> calculateHbarChanges(
+    private static List<AccountAmount> hbarChangesWithStakingRewards(
             @NonNull final WritableAccountStore writableAccountStore,
             @NonNull final ReadableAccountStore readableAccountStore) {
         final var hbarChanges = new ArrayList<AccountAmount>();
