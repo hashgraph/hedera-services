@@ -279,40 +279,32 @@ public record EthTxData(
             return null;
         }
 
-        EthTransactionType type = EthTransactionType.LEGACY_ETHEREUM;
         byte[] chainId = null;
-        long nonce = rlpList.get(0).asLong();
-        byte[] gasPrice = rlpList.get(1).asBytes();
-        long gasLimit = rlpList.get(2).asLong();
-        byte[] to = rlpList.get(3).data();
-        BigInteger value = rlpList.get(4).asBigInt();
-        byte[] callData = rlpList.get(5).data();
         byte[] v = rlpList.get(6).asBytes();
         BigInteger vBI = new BigInteger(1, v);
         byte recId = vBI.testBit(0) ? (byte) 0 : 1;
-        byte[] r = rlpList.get(7).data();
-        byte[] s = rlpList.get(8).data();
         if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
             chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
         }
 
         return new EthTxData(
                 rawTx,
-                type,
+                EthTransactionType.LEGACY_ETHEREUM,
                 chainId,
-                nonce,
-                gasPrice,
-                null,
-                null,
-                gasLimit,
-                to,
-                value,
-                callData,
-                null,
+                rlpList.get(0).asLong(), // nonce
+                rlpList.get(1).asBytes(), // gasPrice
+                null, // maxPriorityGas
+                null, // maxGas
+                rlpList.get(2).asLong(), // gasLimit
+                rlpList.get(3).data(), // to
+                rlpList.get(4).asBigInt(), // value
+                rlpList.get(5).data(), // callData
+                null, // accessList
                 recId,
                 v,
-                r,
-                s);
+                rlpList.get(7).data(), // r
+                rlpList.get(8).data() // s
+        );
     }
 
     /**
@@ -330,38 +322,24 @@ public record EthTxData(
             return null;
         }
 
-        EthTransactionType type = EthTransactionType.EIP1559;
-        byte[] chainId = rlpList.get(0).data();
-        long nonce = rlpList.get(1).asLong();
-        byte[] maxPriorityGas = rlpList.get(2).data();
-        byte[] maxGas = rlpList.get(3).data();
-        long gasLimit = rlpList.get(4).asLong();
-        byte[] to = rlpList.get(5).data();
-        BigInteger value = rlpList.get(6).asBigInt();
-        byte[] callData = rlpList.get(7).data();
-        byte[] accessList = rlpList.get(8).data();
-        byte recId = rlpList.get(9).asByte();
-        byte[] v = null;
-        byte[] r = rlpList.get(10).data();
-        byte[] s = rlpList.get(11).data();
-
         return new EthTxData(
                 rawTx,
-                type,
-                chainId,
-                nonce,
-                null,
-                maxPriorityGas,
-                maxGas,
-                gasLimit,
-                to,
-                value,
-                callData,
-                accessList,
-                recId,
-                v,
-                r,
-                s);
+                EthTransactionType.EIP1559,
+                rlpList.get(0).data(), // chainId
+                rlpList.get(1).asLong(), // nonce
+                null, // gasPrice
+                rlpList.get(2).data(), // maxPriorityGas
+                rlpList.get(3).data(), // maxGas
+                rlpList.get(4).asLong(), // gasLimit
+                rlpList.get(5).data(), // to
+                rlpList.get(6).asBigInt(), // value
+                rlpList.get(7).data(), // callData
+                rlpList.get(8).data(), // accessList
+                rlpList.get(9).asByte(), // recId
+                null, // v
+                rlpList.get(10).data(), // r
+                rlpList.get(11).data() // s
+        );
     }
 
     /**
@@ -379,35 +357,23 @@ public record EthTxData(
             return null;
         }
 
-        EthTransactionType type = EthTransactionType.EIP2930;
-        final byte[] chainId = rlpList.get(0).data();
-        final long nonce = rlpList.get(1).asLong();
-        final byte[] gasPrice = rlpList.get(2).data();
-        final long gasLimit = rlpList.get(3).asLong();
-        final byte[] to = rlpList.get(4).data();
-        final BigInteger value = rlpList.get(5).asBigInt();
-        final byte[] callData = rlpList.get(6).data();
-        final byte[] accessList = rlpList.get(7).data();
-        final byte recId = rlpList.get(8).asByte();
-        final byte[] r = rlpList.get(9).data();
-        final byte[] s = rlpList.get(10).data();
-
         return new EthTxData(
                 rawTx,
-                type,
-                chainId,
-                nonce,
-                gasPrice,
-                null,
-                null,
-                gasLimit,
-                to,
-                value,
-                callData,
-                accessList,
-                recId,
-                null,
-                r,
-                s);
+                EthTransactionType.EIP2930,
+                rlpList.get(0).data(), // chainId
+                rlpList.get(1).asLong(), // nonce
+                rlpList.get(2).data(), // gasPrice
+                null, // maxPriorityGas
+                null, // maxGas
+                rlpList.get(3).asLong(), // gasLimit
+                rlpList.get(4).data(), // to
+                rlpList.get(5).asBigInt(), // value
+                rlpList.get(6).data(), // callData
+                rlpList.get(7).data(), // accessList
+                rlpList.get(8).asByte(), // recId
+                null, // v
+                rlpList.get(9).data(), // r
+                rlpList.get(10).data() //s
+        );
     }
 }
