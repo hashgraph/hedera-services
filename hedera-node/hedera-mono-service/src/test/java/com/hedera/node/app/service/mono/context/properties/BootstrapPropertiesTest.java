@@ -149,6 +149,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ISS_RESET_PERIOD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ISS_ROUNDS_TO_LOG;
@@ -431,6 +432,7 @@ class BootstrapPropertiesTest {
             entry(HEDERA_TXN_MIN_VALID_DURATION, 15L),
             entry(HEDERA_TXN_MAX_VALID_DURATION, 180L),
             entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, 10),
+            entry(HEDERA_TXN_EIP2930_ENABLED, true),
             entry(LEDGER_ID, "0x03"),
             entry(LEDGER_CHANGE_HIST_MEM_SECS, 20),
             entry(LEDGER_FUNDING_ACCOUNT, 98L),

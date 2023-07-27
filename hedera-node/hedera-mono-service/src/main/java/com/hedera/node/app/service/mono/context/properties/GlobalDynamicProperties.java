@@ -89,6 +89,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LAZY_CREATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
@@ -202,6 +203,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private long maxTxnDuration;
     private long minTxnDuration;
     private int minValidityBuffer;
+    private boolean eip2930Enabled;
     private long maxGasPerSec;
     private byte[] chainIdBytes;
     private Bytes32 chainIdBytes32;
@@ -344,6 +346,7 @@ public class GlobalDynamicProperties implements EvmProperties {
         maxTxnDuration = properties.getLongProperty(HEDERA_TXN_MAX_VALID_DURATION);
         minTxnDuration = properties.getLongProperty(HEDERA_TXN_MIN_VALID_DURATION);
         minValidityBuffer = properties.getIntProperty(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS);
+        eip2930Enabled = properties.getBooleanProperty(HEDERA_TXN_EIP2930_ENABLED);
         maxGasPerSec = properties.getLongProperty(CONTRACTS_MAX_GAS_PER_SEC);
         final var chainId = properties.getIntProperty(CONTRACTS_CHAIN_ID);
         chainIdBytes = Integers.toBytes(chainId);
@@ -574,6 +577,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     public int minValidityBuffer() {
         return minValidityBuffer;
     }
+
+    public boolean isEip2930Enabled() { return eip2930Enabled; }
 
     public long maxGasPerSec() {
         return maxGasPerSec;

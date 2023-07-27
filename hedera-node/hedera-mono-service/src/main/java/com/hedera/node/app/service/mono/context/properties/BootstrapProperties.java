@@ -149,6 +149,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ISS_RESET_PERIOD;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ISS_ROUNDS_TO_LOG;
@@ -501,6 +502,7 @@ public final class BootstrapProperties implements PropertySource {
             HEDERA_TXN_MAX_VALID_DURATION,
             HEDERA_TXN_MIN_VALID_DURATION,
             HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS,
+            HEDERA_TXN_EIP2930_ENABLED,
             HEDERA_RECORD_STREAM_RECORD_FILE_VERSION,
             HEDERA_RECORD_STREAM_SIG_FILE_VERSION,
             HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION,
@@ -684,6 +686,7 @@ public final class BootstrapProperties implements PropertySource {
             entry(HEDERA_TXN_MAX_VALID_DURATION, AS_LONG),
             entry(HEDERA_TXN_MIN_VALID_DURATION, AS_LONG),
             entry(HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS, AS_INT),
+            entry(HEDERA_TXN_EIP2930_ENABLED, AS_BOOLEAN),
             entry(CONTRACTS_PRECOMPILE_HTS_UNSUPPORTED_CUSTOM_FEE_RECEIVER_DEBITS, AS_CUSTOM_FEES_TYPE),
             entry(AUTO_CREATION_ENABLED, AS_BOOLEAN),
             entry(LAZY_CREATION_ENABLED, AS_BOOLEAN),

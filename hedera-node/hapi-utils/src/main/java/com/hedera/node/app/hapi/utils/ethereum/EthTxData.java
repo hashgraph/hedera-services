@@ -57,94 +57,23 @@ public record EthTxData(
         try {
             var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(data);
             var rlpItem = decoder.next();
-            EthTransactionType type;
-            long nonce;
-            byte[] chainId = null;
-            byte[] gasPrice = null;
-            byte[] maxPriorityGas = null;
-            byte[] maxGas = null;
-            long gasLimit;
-            byte[] to;
-            BigInteger value;
-            byte[] callData;
-            byte[] accessList = null;
-            byte recId;
-            byte[] v = null;
-            byte[] r;
-            byte[] s;
             if (rlpItem.isList()) {
-                // frontier TX
-                type = EthTransactionType.LEGACY_ETHEREUM;
-                List<RLPItem> rlpList = rlpItem.asRLPList().elements();
-                if (rlpList.size() != 9) {
-                    return null;
-                }
-                nonce = rlpList.get(0).asLong();
-                gasPrice = rlpList.get(1).asBytes();
-                gasLimit = rlpList.get(2).asLong();
-                to = rlpList.get(3).data();
-                value = rlpList.get(4).asBigInt();
-                callData = rlpList.get(5).data();
-                v = rlpList.get(6).asBytes();
-                BigInteger vBI = new BigInteger(1, v);
-                recId = vBI.testBit(0) ? (byte) 0 : 1;
-                r = rlpList.get(7).data();
-                s = rlpList.get(8).data();
-                if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
-                    chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
-                }
-            } else {
-                // typed transaction?
-                byte typeByte = rlpItem.asByte();
-                if (typeByte != 1 && typeByte != 2) {
-                    // we only support EIP 2930 and EIP1559 type transactions at the moment.
-                    return null;
-                }
-
-                if (typeByte == 1) {
-                    return populateEip2390EthTxData(decoder, data);
-                }
-
-                type = EthTransactionType.EIP1559;
-                rlpItem = decoder.next();
-                if (!rlpItem.isList()) {
-                    return null;
-                }
-                List<RLPItem> rlpList = rlpItem.asRLPList().elements();
-                if (rlpList.size() != 12) {
-                    return null;
-                }
-                chainId = rlpList.get(0).data();
-                nonce = rlpList.get(1).asLong();
-                maxPriorityGas = rlpList.get(2).data();
-                maxGas = rlpList.get(3).data();
-                gasLimit = rlpList.get(4).asLong();
-                to = rlpList.get(5).data();
-                value = rlpList.get(6).asBigInt();
-                callData = rlpList.get(7).data();
-                accessList = rlpList.get(8).data();
-                recId = rlpList.get(9).asByte();
-                r = rlpList.get(10).data();
-                s = rlpList.get(11).data();
+                return populateLegacyEthTxData(rlpItem, data);
             }
 
-            return new EthTxData(
-                    data,
-                    type,
-                    chainId,
-                    nonce,
-                    gasPrice,
-                    maxPriorityGas,
-                    maxGas,
-                    gasLimit,
-                    to,
-                    value,
-                    callData,
-                    accessList,
-                    recId,
-                    v,
-                    r,
-                    s);
+            // typed transaction?
+            byte typeByte = rlpItem.asByte();
+            if (typeByte != 1 && typeByte != 2) {
+                // we only support EIP-2930 and EIP-1559 type transactions at the moment.
+                return null;
+            }
+
+            if (typeByte == 1) {
+                return populateEip2390EthTxData(decoder.next(), data);
+            }
+
+            return populateEip1559EthTxData(decoder.next(), data);
+
         } catch (IllegalArgumentException | NoSuchElementException e) {
             return null;
         }
@@ -340,12 +269,106 @@ public record EthTxData(
     }
 
     /**
+     * Encodes the transaction data into a EthTxData according to legacy RLP format.
+     *
+     * @return the encoded transaction data
+     */
+    private static EthTxData populateLegacyEthTxData(RLPItem rlpItem, byte[] rawTx) {
+        List<RLPItem> rlpList = rlpItem.asRLPList().elements();
+        if (rlpList.size() != 9) {
+            return null;
+        }
+
+        EthTransactionType type = EthTransactionType.LEGACY_ETHEREUM;
+        byte[] chainId = null;
+        long nonce = rlpList.get(0).asLong();
+        byte[] gasPrice = rlpList.get(1).asBytes();
+        long gasLimit = rlpList.get(2).asLong();
+        byte[] to = rlpList.get(3).data();
+        BigInteger value = rlpList.get(4).asBigInt();
+        byte[] callData = rlpList.get(5).data();
+        byte[] v = rlpList.get(6).asBytes();
+        BigInteger vBI = new BigInteger(1, v);
+        byte recId = vBI.testBit(0) ? (byte) 0 : 1;
+        byte[] r = rlpList.get(7).data();
+        byte[] s = rlpList.get(8).data();
+        if (vBI.compareTo(BigInteger.valueOf(34)) > 0) {
+            chainId = vBI.subtract(BigInteger.valueOf(35)).shiftRight(1).toByteArray();
+        }
+
+        return new EthTxData(
+                rawTx,
+                type,
+                chainId,
+                nonce,
+                gasPrice,
+                null,
+                null,
+                gasLimit,
+                to,
+                value,
+                callData,
+                null,
+                recId,
+                v,
+                r,
+                s);
+    }
+
+    /**
+     * Encodes the transaction data into a EthTxData according to EIP 1559 RLP format.
+     *
+     * @return the encoded transaction data
+     */
+    private static EthTxData populateEip1559EthTxData(RLPItem rlpItem, byte[] rawTx) {
+        EthTransactionType type = EthTransactionType.EIP1559;
+        if (!rlpItem.isList()) {
+            return null;
+        }
+        List<RLPItem> rlpList = rlpItem.asRLPList().elements();
+        if (rlpList.size() != 12) {
+            return null;
+        }
+        byte[] chainId = rlpList.get(0).data();
+        long nonce = rlpList.get(1).asLong();
+        byte[] gasPrice = null;
+        byte[] maxPriorityGas = rlpList.get(2).data();
+        byte[] maxGas = rlpList.get(3).data();
+        long gasLimit = rlpList.get(4).asLong();
+        byte[] to = rlpList.get(5).data();
+        BigInteger value = rlpList.get(6).asBigInt();
+        byte[] callData = rlpList.get(7).data();
+        byte[] accessList = rlpList.get(8).data();
+        byte recId = rlpList.get(9).asByte();
+        byte[] v = null;
+        byte[] r = rlpList.get(10).data();
+        byte[] s = rlpList.get(11).data();
+
+        return new EthTxData(
+                rawTx,
+                type,
+                chainId,
+                nonce,
+                gasPrice,
+                maxPriorityGas,
+                maxGas,
+                gasLimit,
+                to,
+                value,
+                callData,
+                accessList,
+                recId,
+                v,
+                r,
+                s);
+    }
+
+    /**
      * Encodes the transaction data into a EthTxData according to EIP 2930 RLP format.
      *
      * @return the encoded transaction data
      */
-    private static EthTxData populateEip2390EthTxData(Iterator<RLPItem> rlpItemIterator, byte[] rawTx) {
-        var rlpItem = rlpItemIterator.next();
+    private static EthTxData populateEip2390EthTxData(RLPItem rlpItem, byte[] rawTx) {
         if (!rlpItem.isList()) {
             return null;
         }
