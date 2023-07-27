@@ -103,21 +103,10 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         subject = new FinalizeParentRecordHandler(stakingRewardsHandler);
     }
 
-    @Test
-    void pureChecksSucceeds() {
-        Assertions.assertThatCode(() -> subject.pureChecks(mock(TransactionBody.class)))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    void prehandleSucceeds() {
-        Assertions.assertThatCode(() -> subject.preHandle(mock(PreHandleContext.class)))
-                .doesNotThrowAnyException();
-    }
 
     @Test
     void handleNullArg() {
-        assertThatThrownBy(() -> subject.handle(context)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of())).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -131,7 +120,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.handle(context))
+        assertThatThrownBy(() ->  subject.finalizeParentRecord(context, List.of()))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -153,7 +142,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.handle(context))
+        assertThatThrownBy(() ->  subject.finalizeParentRecord(context, List.of()))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -172,7 +161,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verifyNoInteractions(recordBuilder);
     }
@@ -198,7 +187,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -238,7 +227,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -267,7 +256,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.handle(context))
+        assertThatThrownBy(() ->  subject.finalizeParentRecord(context, List.of()))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -287,7 +276,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verifyNoInteractions(recordBuilder);
     }
@@ -326,7 +315,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -405,7 +394,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(
@@ -468,7 +457,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -504,7 +493,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.handle(context);
+        subject.finalizeParentRecord(context, List.of());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -575,7 +564,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         // The transfer list should be sorted by token ID, then by serial number
         BDDMockito.verify(recordBuilder)
@@ -611,7 +600,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                                 .build())
                                 .build()));
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
         verify(stakingRewardsHandler, never()).applyStakingRewards(context);
     }
 
@@ -662,7 +651,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.handle(context);
+         subject.finalizeParentRecord(context, List.of());;
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
