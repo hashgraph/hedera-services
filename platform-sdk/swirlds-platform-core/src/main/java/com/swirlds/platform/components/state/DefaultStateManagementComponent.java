@@ -334,10 +334,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         } else {
             signedStateFileManager.determineIfStateShouldBeSaved(signedState, source);
         }
-        if (source == SourceOfSignedState.RECONNECT && stateConfig.saveReconnectStateToDisk()) {
+        if (source == SourceOfSignedState.RECONNECT) {
             // a state received from reconnect should be saved to disk, but the method stateHasEnoughSignatures will not
             // be called for it by the signed state manager, so we need to call it here
-            // we only call this method if the behaviour is enabled to retain the same behaviour as before
             stateHasEnoughSignatures(signedState);
         }
 
