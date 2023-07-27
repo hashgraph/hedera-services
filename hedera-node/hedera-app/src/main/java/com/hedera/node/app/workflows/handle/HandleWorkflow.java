@@ -203,6 +203,7 @@ public class HandleWorkflow {
                     txBody,
                     preHandleResult.payer(),
                     preHandleResult.payerKey(),
+                    networkInfo,
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,

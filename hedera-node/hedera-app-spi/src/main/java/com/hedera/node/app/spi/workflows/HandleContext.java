@@ -19,6 +19,7 @@ package com.hedera.node.app.spi.workflows;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -251,6 +252,14 @@ public interface HandleContext {
      */
     @NonNull
     <T> T serviceApi(@NonNull Class<T> apiInterface);
+
+    /**
+     * Returns the information about the network this transaction is being handled in.
+     *
+     * @return the network information
+     */
+    @NonNull
+    NetworkInfo networkInfo();
 
     /**
      * Returns a record builder for the given record builder subtype.

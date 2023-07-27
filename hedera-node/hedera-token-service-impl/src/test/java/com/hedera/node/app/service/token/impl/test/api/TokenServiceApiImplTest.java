@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -41,7 +41,6 @@ import com.swirlds.config.api.Configuration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,44 +85,13 @@ class TokenServiceApiImplTest {
 
     @Test
     void createsExpectedContractWithAliasIfSet() {
-        final Consumer<Account.Builder> spec =
-                builder -> builder.alias(EVM_ADDRESS).ethereumNonce(1L).memo(MEMO);
+        accountStore.put(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
-        subject.createAndMaybeAliasContract(CONTRACT_ID_BY_NUM, spec);
-
-        assertEquals(1, accountStore.sizeOfAccountState());
-        final var created = accountStore.getContractById(CONTRACT_ID_BY_NUM);
-        assertNotNull(created);
-        assertTrue(created.smartContract());
-        assertEquals(1L, created.ethereumNonce());
-        assertEquals(MEMO, created.memo());
-        assertEquals(EVM_ADDRESS, created.alias());
-        final var unaliasedId = accountStore.getAccountIDByAlias(EVM_ADDRESS);
-        assertEquals(CONTRACT_ACCOUNT_ID, unaliasedId);
-    }
-
-    @Test
-    void createsExpectedContractWithoutAliasIfNotSet() {
-        final Consumer<Account.Builder> spec =
-                builder -> builder.ethereumNonce(1L).memo(MEMO);
-
-        subject.createAndMaybeAliasContract(CONTRACT_ID_BY_NUM, spec);
+        assertNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
+        subject.markNewlyCreatedAsContract(CONTRACT_ACCOUNT_ID);
 
         assertEquals(1, accountStore.sizeOfAccountState());
-        final var created = accountStore.getContractById(CONTRACT_ID_BY_NUM);
-        assertNotNull(created);
-        assertTrue(created.smartContract());
-        assertEquals(1L, created.ethereumNonce());
-        assertEquals(MEMO, created.memo());
-        assertEquals(0, accountStore.sizeOfAliasesState());
-    }
-
-    @Test
-    void refusesToCreateWithNonZeroBalance() {
-        final Consumer<Account.Builder> spec = builder -> builder.tinybarBalance(1L);
-
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.createAndMaybeAliasContract(CONTRACT_ID_BY_NUM, spec));
+        assertNotNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
     }
 
     @Test

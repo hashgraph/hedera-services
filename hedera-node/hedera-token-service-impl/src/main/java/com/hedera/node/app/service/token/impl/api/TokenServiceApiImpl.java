@@ -21,7 +21,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -29,7 +28,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 /**
  * Implements {@link TokenServiceApi} via {@link WritableAccountStore} calls.
@@ -46,23 +44,17 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void createAndMaybeAliasContract(
-            @NonNull final ContractID idToCreate, @NonNull final Consumer<Account.Builder> spec) {
-        requireNonNull(spec);
-        requireNonNull(idToCreate);
-        final var builder = Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(idToCreate.contractNumOrThrow()))
-                .smartContract(true);
-        spec.accept(builder);
-        final var newContract = builder.build();
-        if (newContract.tinybarBalance() > 0) {
-            throw new IllegalArgumentException("Cannot create contract with non-zero balance");
-        }
+    public void markNewlyCreatedAsContract(@NonNull final AccountID justCreated) {
+        requireNonNull(justCreated);
         final var store = new WritableAccountStore(writableStates);
-        store.put(newContract);
-        if (newContract.alias().length() > 0) {
-            store.putAlias(newContract.alias(), newContract.accountId());
+        if (!store.isNewlyCreated(justCreated)) {
+            throw new AssertionError("Not implemented");
         }
+        final var accountAsContract = requireNonNull(store.get(justCreated))
+                .copyBuilder()
+                .smartContract(true)
+                .build();
+        store.put(accountAsContract);
     }
 
     /**

@@ -19,20 +19,16 @@ package com.hedera.node.app.service.token.api;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
-import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public interface TokenServiceApi {
     /**
-     * Creates a new contract whose initial properties are customized by the given spec.
+     * Marks an account as a contract.
      *
-     * @param idToCreate the id of the contract to create
-     * @param spec the spec that should be used to customize the contract account
      */
-    void createAndMaybeAliasContract(@NonNull ContractID idToCreate, @NonNull Consumer<Account.Builder> spec);
+    void markNewlyCreatedAsContract(@NonNull AccountID justCreated);
 
     /**
      * Deletes the contract with the given id.
