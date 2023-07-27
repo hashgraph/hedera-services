@@ -86,10 +86,10 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LAZY_CREATION_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
@@ -578,7 +578,9 @@ public class GlobalDynamicProperties implements EvmProperties {
         return minValidityBuffer;
     }
 
-    public boolean isEip2930Enabled() { return eip2930Enabled; }
+    public boolean isEip2930Enabled() {
+        return eip2930Enabled;
+    }
 
     public long maxGasPerSec() {
         return maxGasPerSec;
