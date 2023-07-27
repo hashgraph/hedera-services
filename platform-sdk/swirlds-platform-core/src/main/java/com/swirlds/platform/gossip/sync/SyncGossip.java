@@ -258,7 +258,8 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            statusActionSubmitter),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,

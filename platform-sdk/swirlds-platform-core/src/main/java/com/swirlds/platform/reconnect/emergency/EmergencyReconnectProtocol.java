@@ -22,6 +22,8 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -59,24 +61,21 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final FallenBehindManager fallenBehindManager;
 
     /**
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param peerId
-     * 		the ID of the peer we are communicating with
-     * @param emergencyRecoveryManager
-     * 		the state of emergency recovery, if any
-     * @param teacherThrottle
-     * 		restricts reconnects as a teacher
-     * @param stateFinder
-     * 		finds compatible states based on round number and hash
-     * @param reconnectSocketTimeout
-     * 		the socket timeout to use when executing a reconnect
-     * @param reconnectMetrics
-     * 		tracks reconnect metrics
-     * @param reconnectController
-     * 		controls reconnecting as a learner
-     * @param fallenBehindManager
-     *      maintains this node's behind status
+     * Enables submitting platform status actions
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
+
+    /**
+     * @param threadManager            responsible for managing thread lifecycles
+     * @param peerId                   the ID of the peer we are communicating with
+     * @param emergencyRecoveryManager the state of emergency recovery, if any
+     * @param teacherThrottle          restricts reconnects as a teacher
+     * @param stateFinder              finds compatible states based on round number and hash
+     * @param reconnectSocketTimeout   the socket timeout to use when executing a reconnect
+     * @param reconnectMetrics         tracks reconnect metrics
+     * @param reconnectController      controls reconnecting as a learner
+     * @param fallenBehindManager      maintains this node's behind status
+     * @param statusActionSubmitter    enables submitting platform status actions
      */
     public EmergencyReconnectProtocol(
             final ThreadManager threadManager,
@@ -88,7 +87,9 @@ public class EmergencyReconnectProtocol implements Protocol {
             final Duration reconnectSocketTimeout,
             final ReconnectMetrics reconnectMetrics,
             final ReconnectController reconnectController,
-            @NonNull final FallenBehindManager fallenBehindManager) {
+            @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+
         this.threadManager = threadManager;
         this.notificationEngine = notificationEngine;
         this.peerId = peerId;
@@ -98,7 +99,8 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectSocketTimeout = reconnectSocketTimeout;
         this.reconnectMetrics = reconnectMetrics;
         this.reconnectController = reconnectController;
-        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
     }
 
     @Override
@@ -108,6 +110,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             // if a permit is acquired, it will be released by either initiateFailed or runProtocol
             final boolean shouldInitiate = reconnectController.acquireLearnerPermit();
             if (shouldInitiate) {
+                statusActionSubmitter.submitStatusAction(new EmergencyReconnectStartedAction());
                 initiatedBy = InitiatedBy.SELF;
             }
             return shouldInitiate;

@@ -32,6 +32,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -78,7 +79,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests the emergency reconnect protocol learner and teacher flows.
  */
-public class EmergencyReconnectTests {
+class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
     private final NodeId learnerId = new NodeId(0L);
@@ -274,7 +275,8 @@ public class EmergencyReconnectTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class));
+                mock(FallenBehindManager.class),
+                mock(StatusActionSubmitter.class));
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -294,7 +296,8 @@ public class EmergencyReconnectTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class));
+                mock(FallenBehindManager.class),
+                mock(StatusActionSubmitter.class));
     }
 
     private void mockTeacherHasCompatibleState(

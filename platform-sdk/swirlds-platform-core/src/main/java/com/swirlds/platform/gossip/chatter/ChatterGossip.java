@@ -269,7 +269,8 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            statusActionSubmitter),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,

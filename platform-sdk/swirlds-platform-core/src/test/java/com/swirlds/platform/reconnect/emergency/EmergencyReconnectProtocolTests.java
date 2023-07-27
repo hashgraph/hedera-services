@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
@@ -53,9 +54,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Tests for P
+ * Tests for the {@link EmergencyReconnectProtocol}
  */
-public class EmergencyReconnectProtocolTests {
+class EmergencyReconnectProtocolTests {
 
     private static final NodeId PEER_ID = new NodeId(1L);
 
@@ -111,7 +112,8 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                fallenBehindManager);
+                fallenBehindManager,
+                mock(StatusActionSubmitter.class));
 
         assertEquals(initiateParams.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -136,7 +138,8 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                mock(StatusActionSubmitter.class));
 
         assertEquals(!teacherIsThrottled, protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -166,7 +169,8 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                fallenBehindManager);
+                fallenBehindManager,
+                mock(StatusActionSubmitter.class));
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -217,7 +221,8 @@ public class EmergencyReconnectProtocolTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                mock(StatusActionSubmitter.class));
 
         assertTrue(protocol.shouldAccept(), "expected protocol to accept initiation");
 
