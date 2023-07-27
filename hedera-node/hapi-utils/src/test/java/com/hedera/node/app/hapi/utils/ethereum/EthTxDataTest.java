@@ -45,7 +45,7 @@ class EthTxDataTest {
     static final String RAW_TX_TYPE_0_TRIMMED_LAST_BYTES =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290000";
     static final String RAW_TX_TYPE_1 =
-            "01f86e82012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40080c001a05ede060b1afef9f1f72220c6ec4bc559cd1055ee37410bde9850f40847b9f1a0a075a65c9eb95a9430221541ef8afbee3fce58b26c647596bf0aa583896649bf43";
+            "01f87182012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a04d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714fa03a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58";
     static final String RAW_TX_TYPE_2 =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
@@ -54,8 +54,8 @@ class EthTxDataTest {
     static final String EIP155_DEMO =
             "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
 
-    static final String EIP_2930_ADDRESS = "bce87f85be516d732627c93dc3074756d143933f";
-    static final String EIP_2930_PUBKEY = "032632026d05dc2ff41c97514ec6e4036f2edb3731fa4e2cc7374fe3631c6e1e04";
+    static final String EIP_2930_ADDRESS = "2c5d9eaed6ccb0705676b1ffc705507a1e0ea394";
+    static final String EIP_2930_PUBKEY = "023db57466d8612dae504043f8df82311b7681e1b93e0d55d893d8025ea94c0595";
 
     @Test
     void detectsMissingCallData() {
@@ -153,12 +153,12 @@ class EthTxDataTest {
         assertEquals(3_000_000L, berlinTx.gasLimit());
         assertEquals("000000000000000000000000000000000000052d", Hex.toHexString(berlinTx.to()));
         assertEquals(new BigInteger("2540be400", 16), berlinTx.value());
-        assertEquals("", Hex.toHexString(berlinTx.callData()));
+        assertEquals("123456", Hex.toHexString(berlinTx.callData()));
         assertEquals("", Hex.toHexString(berlinTx.accessList()));
         assertEquals(1, berlinTx.recId());
         assertNull(berlinTx.v());
-        assertEquals("5ede060b1afef9f1f72220c6ec4bc559cd1055ee37410bde9850f40847b9f1a0", Hex.toHexString(berlinTx.r()));
-        assertEquals("75a65c9eb95a9430221541ef8afbee3fce58b26c647596bf0aa583896649bf43", Hex.toHexString(berlinTx.s()));
+        assertEquals("4d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714f", Hex.toHexString(berlinTx.r()));
+        assertEquals("3a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58", Hex.toHexString(berlinTx.s()));
 
         final var berlinSigs = EthTxSigs.extractSignatures(berlinTx);
         assertNotNull(berlinSigs);
@@ -329,12 +329,12 @@ class EthTxDataTest {
                 oneByte,
                 BigInteger.ONE,
                 oneByte,
-                null,
+                oneByte,
                 1,
                 oneByte,
                 oneByte,
                 oneByte);
-        assertThrows(IllegalStateException.class, ethTsDataEIP2930::encodeTx);
+        assertThrows(IllegalStateException.class, ethTxDataWithAccessList::encodeTx);
     }
 
     @Test
@@ -359,9 +359,9 @@ class EthTxDataTest {
         final var noCallData = parsed.replaceCallData(new byte[0]);
         assertArrayEquals(
                 Hex.decode(RAW_TX_TYPE_1
-                        .replace("f86e", "f86d") // tx is shorter
-//                        .replace("83123456", "80") // needs to be fixed
-                ), // calldata changed
+                        .replace("f871", "f86e") // tx is shorter
+                        .replace("83123456", "80")  // calldata changed
+                ),
                 noCallData.encodeTx());
     }
 
