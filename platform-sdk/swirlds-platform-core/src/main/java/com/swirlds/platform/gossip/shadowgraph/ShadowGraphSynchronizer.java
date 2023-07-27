@@ -32,6 +32,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -163,18 +164,20 @@ public class ShadowGraphSynchronizer {
     /**
      * Synchronize with a remote node using the supplied connection
      *
-     * @param conn the connection to sync through
+     * @param conn                      the connection to sync through
+     * @param lastEventIngestedCallback if not null, this method is called once the last event received during the sync
+     *                                  is ingested
      * @return true iff a sync was (a) accepted, and (b) completed, including exchange of event data
      * @throws IOException                if any problem occurs with the connection
      * @throws ParallelExecutionException if issue occurs while executing tasks in parallel
      * @throws SyncException              if any sync protocol issues occur
      * @throws InterruptedException       if the calling thread gets interrupted while the sync is ongoing
      */
-    public boolean synchronize(final Connection conn)
+    public boolean synchronize(final Connection conn, @Nullable final Runnable lastEventIngestedCallback)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
         logger.info(SYNC_INFO.getMarker(), "{} sync start", conn.getDescription());
         try {
-            return reserveSynchronize(conn);
+            return reserveSynchronize(conn, lastEventIngestedCallback);
         } finally {
             logger.info(SYNC_INFO.getMarker(), "{} sync end", conn.getDescription());
         }
@@ -182,9 +185,13 @@ public class ShadowGraphSynchronizer {
 
     /**
      * Executes a sync using the supplied connection. This method contains all the logic while
-     * {@link #synchronize(Connection)} is just for exception handling.
+     * {@link #synchronize(Connection, Runnable)} is just for exception handling.
+     *
+     * @param conn                      the connection to sync through
+     * @param lastEventIngestedCallback if not null, this method is called once the last event received during the sync
+     *                                  is ingested
      */
-    private boolean reserveSynchronize(final Connection conn)
+    private boolean reserveSynchronize(final Connection conn, @Nullable final Runnable lastEventIngestedCallback)
             throws IOException, ParallelExecutionException, SyncException, InterruptedException {
         // accumulates time points for each step in the execution of a single gossip session, used for stats
         // reporting and performance analysis
@@ -246,7 +253,7 @@ public class ShadowGraphSynchronizer {
             sendList = createSendList(knownSet, myGenerations, theirGensTips.getGenerations());
         }
 
-        return phase3(conn, timing, sendList);
+        return phase3(conn, timing, sendList, lastEventIngestedCallback);
     }
 
     private Generations getGenerations(final long minRoundGen) {
@@ -316,13 +323,18 @@ public class ShadowGraphSynchronizer {
     /**
      * Executes phase 3 of a sync
      *
-     * @param conn     the connection to use
-     * @param timing   metrics that track sync timing
-     * @param sendList the events to send
+     * @param conn                      the connection to use
+     * @param timing                    metrics that track sync timing
+     * @param sendList                  the events to send
+     * @param lastEventIngestedCallback if not null, this method is called once the last event received during the sync
      * @return true if the phase was successful, false if it was aborted
      * @throws ParallelExecutionException if anything goes wrong
      */
-    private boolean phase3(final Connection conn, final SyncTiming timing, final List<EventImpl> sendList)
+    private boolean phase3(
+            final Connection conn,
+            final SyncTiming timing,
+            final List<EventImpl> sendList,
+            @Nullable final Runnable lastEventIngestedCallback)
             throws ParallelExecutionException {
         timing.setTimePoint(4);
         // the reading thread uses this to indicate to the writing thread that it is done
@@ -330,7 +342,7 @@ public class ShadowGraphSynchronizer {
         // the writer will set it to true if writing is aborted
         final AtomicBoolean writeAborted = new AtomicBoolean(false);
         final Integer eventsRead = readWriteParallel(
-                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone),
+                SyncComms.phase3Read(conn, eventHandler, syncMetrics, eventReadingDone, lastEventIngestedCallback),
                 SyncComms.phase3Write(conn, sendList, eventReadingDone, writeAborted),
                 conn);
         if (eventsRead < 0 || writeAborted.get()) {

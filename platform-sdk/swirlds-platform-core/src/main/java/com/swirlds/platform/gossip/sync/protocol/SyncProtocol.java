@@ -19,6 +19,7 @@ package com.swirlds.platform.gossip.sync.protocol;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 
 import com.swirlds.base.time.Time;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncPermitProvider;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
@@ -27,6 +28,7 @@ import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphSynchronizer;
+import com.swirlds.platform.gossip.sync.config.SyncConfig;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.NetworkProtocolException;
@@ -37,6 +39,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Executes the sync protocol where events are exchanged with a peer and all events are sent and received in topological
@@ -96,8 +99,20 @@ public class SyncProtocol implements Protocol {
     private final Time time;
 
     /**
+     * If true, don't consider a sync to be completed until all events obtained from the sync have been fully ingested.
+     */
+    private final boolean extendedSyncLifecycle;
+
+    /**
+     * Whether this node is ready to start a new sync. If {@link #extendedSyncLifecycle} is true, then this remains
+     * false until all events obtained from the sync have been fully ingested.
+     */
+    private final AtomicBoolean readyForNextSync = new AtomicBoolean(true);
+
+    /**
      * Constructs a new sync protocol
      *
+     * @param platformContext        the platform context for this node
      * @param peerId                 the id of the peer being synced with in this protocol
      * @param synchronizer           the shadow graph synchronizer, responsible for actually doing the sync
      * @param fallenBehindManager    manager to determine whether this node has fallen behind
@@ -109,6 +124,7 @@ public class SyncProtocol implements Protocol {
      * @param time                   a source of time
      */
     public SyncProtocol(
+            @NonNull final PlatformContext platformContext,
             @NonNull final NodeId peerId,
             @NonNull final ShadowGraphSynchronizer synchronizer,
             @NonNull final FallenBehindManager fallenBehindManager,
@@ -128,6 +144,10 @@ public class SyncProtocol implements Protocol {
         this.sleepAfterSync = Objects.requireNonNull(sleepAfterSync);
         this.syncMetrics = Objects.requireNonNull(syncMetrics);
         this.time = Objects.requireNonNull(time);
+        this.extendedSyncLifecycle = platformContext
+                .getConfiguration()
+                .getConfigData(SyncConfig.class)
+                .extendedSyncLifecycle();
     }
 
     /**
@@ -158,7 +178,10 @@ public class SyncProtocol implements Protocol {
         syncMetrics.opportunityToInitiateSync();
 
         // are there any reasons not to initiate?
-        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete()
+                || !peerAgnosticSyncChecks.shouldSync()
+                || fallenBehindManager.hasFallenBehind()
+                || !readyForNextSync.get()) {
             return false;
         }
 
@@ -184,7 +207,10 @@ public class SyncProtocol implements Protocol {
         syncMetrics.incomingSyncRequestReceived();
 
         // are there any reasons not to accept?
-        if (!syncCooldownComplete() || !peerAgnosticSyncChecks.shouldSync() || fallenBehindManager.hasFallenBehind()) {
+        if (!syncCooldownComplete()
+                || !peerAgnosticSyncChecks.shouldSync()
+                || fallenBehindManager.hasFallenBehind()
+                || !readyForNextSync.get()) {
             return false;
         }
 
@@ -236,8 +262,10 @@ public class SyncProtocol implements Protocol {
     public void runProtocol(@NonNull final Connection connection)
             throws NetworkProtocolException, IOException, InterruptedException {
 
+        readyForNextSync.set(false);
+
         try {
-            synchronizer.synchronize(connection);
+            synchronizer.synchronize(connection, extendedSyncLifecycle ? this::syncFinished : null);
         } catch (final ParallelExecutionException | SyncException e) {
             if (Utilities.isRootCauseSuppliedType(e, IOException.class)) {
                 throw new IOException(e);
@@ -245,11 +273,19 @@ public class SyncProtocol implements Protocol {
 
             throw new NetworkProtocolException(e);
         } finally {
-
-            // TODO don't close the permit here if new feature is enabled
-            closePermit();
+            if (!extendedSyncLifecycle) {
+                syncFinished();
+            }
 
             lastSyncTime = time.now();
         }
+    }
+
+    /**
+     * Called when a sync is finished. Releases resources used during the sync.
+     */
+    private void syncFinished() {
+        readyForNextSync.set(true);
+        closePermit();
     }
 }

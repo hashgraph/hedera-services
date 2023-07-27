@@ -38,7 +38,7 @@ public class Synchronizer {
     /**
      * Performs synchronization between the caller and listener nodes.
      *
-     * The {@link ShadowGraphSynchronizer#synchronize(Connection)} method is
+     * The {@link ShadowGraphSynchronizer#synchronize(Connection, Runnable)} method is
      * invoked on each node in parallel using the {@link ParallelExecutor}.
      *
      * @throws Exception
@@ -49,7 +49,7 @@ public class Synchronizer {
         parallelExecutor.doParallel(
                 () -> {
                     try {
-                        final boolean synchronize = caller.getSynchronizer().synchronize(caller.getConnection());
+                        final boolean synchronize = caller.getSynchronizer().synchronize(caller.getConnection(), null);
                         caller.setSynchronizerReturn(synchronize);
                     } catch (final Exception e) {
                         caller.setSynchronizerReturn(null);
@@ -69,7 +69,7 @@ public class Synchronizer {
                     try {
                         if (listener.isCanAcceptSync()) {
                             final boolean synchronize =
-                                    listener.getSynchronizer().synchronize(listener.getConnection());
+                                    listener.getSynchronizer().synchronize(listener.getConnection(), null);
                             listener.setSynchronizerReturn(synchronize);
                         } else {
                             listener.getSynchronizer().rejectSync(listener.getConnection());

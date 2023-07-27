@@ -247,7 +247,7 @@ public class SyncCaller implements Runnable {
                         }
                         // try to initiate a sync. If they accept the request, then sync
                         try {
-                            syncAccepted = syncShadowgraphSynchronizer.synchronize(conn);
+                            syncAccepted = syncShadowgraphSynchronizer.synchronize(conn, null);
                             if (syncAccepted) {
                                 break;
                             }

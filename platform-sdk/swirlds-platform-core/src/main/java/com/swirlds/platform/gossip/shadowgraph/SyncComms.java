@@ -25,6 +25,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.network.ByteConstants;
 import com.swirlds.platform.network.Connection;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -254,10 +255,12 @@ public final class SyncComms {
             final Connection conn,
             final Consumer<GossipEvent> eventHandler,
             final SyncMetrics syncMetrics,
-            final CountDownLatch eventReadingDone) {
+            final CountDownLatch eventReadingDone,
+            @Nullable final Runnable lastEventIngestedCallback) {
         return () -> {
             logger.info(SYNC_INFO.getMarker(), "{} reading events start", conn.getDescription());
             int eventsRead = 0;
+            GossipEvent previousEvent = null;
             try {
                 final long startTime = System.nanoTime();
                 while (true) {
@@ -269,7 +272,10 @@ public final class SyncComms {
                     switch (next) {
                         case ByteConstants.COMM_EVENT_NEXT -> {
                             final GossipEvent gossipEvent = conn.getDis().readEventData();
-                            eventHandler.accept(gossipEvent);
+                            if (previousEvent != null) {
+                                eventHandler.accept(previousEvent);
+                            }
+                            previousEvent = gossipEvent;
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
@@ -303,6 +309,16 @@ public final class SyncComms {
                     }
                 }
             } finally {
+                if (lastEventIngestedCallback != null) {
+                    if (previousEvent == null) {
+                        // We didn't receive any events, invoke callback immediately.
+                        lastEventIngestedCallback.run();
+                    } else {
+                        previousEvent.setIngestionCompleteCallback(lastEventIngestedCallback);
+                        eventHandler.accept(previousEvent);
+                    }
+                }
+
                 // in case an exception gets thrown, unblock the writer thread
                 eventReadingDone.countDown();
             }

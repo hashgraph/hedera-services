@@ -65,7 +65,7 @@ class ChatterSyncTest {
             throws ParallelExecutionException, IOException, SyncException, InterruptedException,
                     NetworkProtocolException {
         chatterSync.runProtocol(connection);
-        Mockito.verify(synchronizer).synchronize(connection);
+        Mockito.verify(synchronizer).synchronize(connection, null);
     }
 
     @Test
@@ -134,7 +134,7 @@ class ChatterSyncTest {
                     throw e;
                 })
                 .when(synchronizer)
-                .synchronize(Mockito.any());
+                .synchronize(Mockito.any(), Mockito.any());
         Assertions.assertThrows(
                 Exception.class, () -> chatterSync.runProtocol(connection), "the exception should be propagated");
         Assertions.assertFalse(state.shouldChatter(), "we should not be chattering after an exception");

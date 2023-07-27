@@ -155,7 +155,7 @@ public class EventIntake {
         while (eventLinker.hasLinkedEvents()) {
             addEvent(eventLinker.pollLinkedEvent());
         }
-        event.ingestionCompleted();
+        event.markIngestionCompleted();
     }
 
     /**

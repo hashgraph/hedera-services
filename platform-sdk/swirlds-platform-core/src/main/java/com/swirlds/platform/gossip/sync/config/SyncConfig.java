@@ -43,6 +43,10 @@ import com.swirlds.config.api.ConfigProperty;
  *                                        callerSkipsBeforeSleep in a row *
  * @param hashOnGossipThreads             if true, hash events on gossip threads. If false, events are hashed on the
  *                                        event intake thread.
+ * @param extendedSyncLifecycle           if true then don't consider the sync to be truly over until all events
+ *                                        obtained from the sync have been fully ingested. Until events are fully
+ *                                        ingested, do not release the permit, and do not allow another sync to start
+ *                                        with that peer.
  */
 @ConfigData("sync")
 public record SyncConfig(
@@ -54,4 +58,5 @@ public record SyncConfig(
         @ConfigProperty(defaultValue = "1") int maxIncomingSyncsInc,
         @ConfigProperty(defaultValue = "30") long callerSkipsBeforeSleep,
         @ConfigProperty(defaultValue = "50") long sleepCallerSkips,
-        @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads) {}
+        @ConfigProperty(defaultValue = "true") boolean hashOnGossipThreads,
+        @ConfigProperty(defaultValue = "true") boolean extendedSyncLifecycle) {}

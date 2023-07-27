@@ -73,7 +73,7 @@ public class GossipEvent implements EventIntakeTask, BaseEvent, ChatterEvent {
      * Mark this event as fully ingested. Should be called both on events that are rejected (either due to duplication
      * or invalidity), and events that are accepted and inserted into the shadowgraph.
      */
-    public void ingestionCompleted() {
+    public void markIngestionCompleted() {
         if (ingestCompleteCallback != null) {
             ingestCompleteCallback.run();
         }

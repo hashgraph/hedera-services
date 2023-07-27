@@ -68,7 +68,7 @@ public class SyncProtocolResponder implements NetworkProtocolResponder {
                     return;
                 }
 
-                synchronizer.synchronize(connection);
+                synchronizer.synchronize(connection, null);
             } catch (ParallelExecutionException | SyncException e) {
                 throw new NetworkProtocolException(e);
             }

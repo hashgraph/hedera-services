@@ -106,7 +106,7 @@ public class ChatterSyncProtocol implements Protocol {
             throws NetworkProtocolException, IOException, InterruptedException {
         state.chatterSyncStarted();
         try {
-            if (synchronizer.synchronize(connection)) {
+            if (synchronizer.synchronize(connection, null)) {
                 state.chatterSyncSucceeded();
             } else {
                 state.chatterSyncFailed();

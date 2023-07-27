@@ -271,6 +271,7 @@ public class SyncGossip extends AbstractGossip {
                                             new DefaultSignedStateValidator(),
                                             fallenBehindManager),
                                     new SyncProtocol(
+                                            platformContext,
                                             otherId,
                                             syncShadowgraphSynchronizer,
                                             fallenBehindManager,

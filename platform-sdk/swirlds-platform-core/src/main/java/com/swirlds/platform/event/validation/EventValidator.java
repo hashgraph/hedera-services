@@ -60,7 +60,7 @@ public class EventValidator {
                 gossipEvent.buildDescriptor();
             }
             if (!gossipEventValidator.isEventValid(gossipEvent)) {
-                gossipEvent.ingestionCompleted();
+                gossipEvent.markIngestionCompleted();
                 return;
             }
             eventIntake.accept(gossipEvent);
