@@ -38,6 +38,11 @@ class BytesCodecTest {
     final BytesCodec subject = new BytesCodec();
 
     @Test
+    void throwsIfMeasureRecordAccessed() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(null));
+    }
+
+    @Test
     void doesntSupport() {
         assertThrows(UnsupportedOperationException.class, () -> subject.measure(null));
         assertThrows(UnsupportedOperationException.class, () -> subject.fastEquals(SOME_DATA, null));
@@ -57,6 +62,23 @@ class BytesCodecTest {
         final var in = new ReadableStreamingData(bais);
 
         final var parsedItem = subject.parse(in);
+        assertEquals(item, parsedItem);
+    }
+
+    @Test
+    void verifyParseStrict() throws IOException {
+        final var subject = new BytesCodec();
+
+        final var baos = new ByteArrayOutputStream();
+        final var out = new WritableStreamingData(new SerializableDataOutputStream(baos));
+        final var item = Bytes.wrap("HELLO");
+
+        subject.write(item, out);
+
+        final var bais = new ByteArrayInputStream(baos.toByteArray());
+        final var in = new ReadableStreamingData(bais);
+
+        final var parsedItem = subject.parseStrict(in);
         assertEquals(item, parsedItem);
     }
 }

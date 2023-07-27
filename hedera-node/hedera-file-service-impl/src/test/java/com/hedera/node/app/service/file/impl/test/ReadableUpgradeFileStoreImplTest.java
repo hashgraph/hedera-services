@@ -31,6 +31,8 @@ import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,5 +88,21 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
     void validGetFullFileContent() throws IOException {
         givenValidFile();
         assertTrue(subject.getFull().length() > 0);
+    }
+
+    @Test
+    void verifyFileStateKey() {
+        assertEquals(subject.getFileStateKey(), UPGRADE_FILE_KEY);
+    }
+
+    @Test
+    void verifyIterator() {
+        System.out.println(subject.iterator().next());
+        System.out.println(wellKnowUpgradeId().next());
+        assertEquals(subject.iterator().next(), wellKnowUpgradeId().next());
+    }
+
+    private Iterator<File> wellKnowUpgradeId() {
+        return List.of(upgradeFile).iterator();
     }
 }
