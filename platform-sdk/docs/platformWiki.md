@@ -47,10 +47,10 @@ This code is maintained by the "Platform Hashgraph" team.
     - [Pre-consensus event stream](core/preconsensusEventStream.svg)
     - Post-consensus event stream
     - Threading Diagram
-- [Disaster recovery](core/disaster-recovery/disaster-recovery.md)
 - [Freeze](core/freeze/freeze.md)
 - WIP
     - [Address book management](core/address-book-management.md)
+- [External docs](https://drive.google.com/drive/folders/161GObnZVBWXKy4MHulBZKFcBDsNTU5FB?usp=drive_link)
 
 ## Data
 
