@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -94,15 +93,15 @@ public class SingleTransactionRecordBuilderImpl
     // fields needed for TransactionRecord
     private final Instant consensusNow;
     private final Instant parentConsensus;
-    private List<TokenTransferList> tokenTransferLists = emptyList();
-    private List<AssessedCustomFee> assessedCustomFees = emptyList();
-    private List<TokenAssociation> automaticTokenAssociations = emptyList();
-    private List<AccountAmount> paidStakingRewards = emptyList();
+    private List<TokenTransferList> tokenTransferLists = new ArrayList<>();
+    private List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private List<TokenAssociation> automaticTokenAssociations = new ArrayList<>();
+    private List<AccountAmount> paidStakingRewards = new ArrayList<>();
     private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
 
     // fields needed for TransactionReceipt
     private ResponseCodeEnum status = ResponseCodeEnum.OK;
-    private List<Long> serialNumbers = emptyList();
+    private List<Long> serialNumbers = new ArrayList<>();
     private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
     // Sidecar data, booleans are the migration flag
     private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new ArrayList<>();
