@@ -19,8 +19,6 @@ package com.swirlds.virtual.merkle;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import java.nio.ByteBuffer;
 
@@ -48,16 +46,6 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     @Override
     public long getCurrentDataVersion() {
         return 1;
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) {
-        // nop
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) {
-        // nop
     }
 
     @Override

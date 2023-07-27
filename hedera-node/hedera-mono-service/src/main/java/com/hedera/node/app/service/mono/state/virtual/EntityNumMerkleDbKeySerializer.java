@@ -21,6 +21,7 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -79,7 +80,7 @@ public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVi
     }
 
     @Override
-    public void serialize(final EntityNumVirtualKey key, final WritableSequentialData out) {
+    public void serialize(@NonNull final EntityNumVirtualKey key, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         key.serialize(out);
@@ -94,7 +95,7 @@ public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVi
     }
 
     @Override
-    public EntityNumVirtualKey deserialize(final ReadableSequentialData in) {
+    public EntityNumVirtualKey deserialize(@NonNull final ReadableSequentialData in) {
         Objects.requireNonNull(in);
         final var key = new EntityNumVirtualKey();
         key.deserialize(in);
@@ -108,7 +109,7 @@ public class EntityNumMerkleDbKeySerializer implements KeySerializer<EntityNumVi
     }
 
     @Override
-    public boolean equals(final BufferedData buf, EntityNumVirtualKey key) throws IOException {
+    public boolean equals(@NonNull final BufferedData buf, @NonNull final EntityNumVirtualKey key) {
         Objects.requireNonNull(buf);
         return key.equals(buf);
     }

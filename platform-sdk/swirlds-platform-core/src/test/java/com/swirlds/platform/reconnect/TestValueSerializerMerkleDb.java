@@ -33,12 +33,6 @@ public class TestValueSerializerMerkleDb implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {}
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
-
-    @Override
     public int getVersion() {
         return 1;
     }

@@ -23,6 +23,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -71,18 +72,22 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @throws IOException If there was a problem writing to the buffer
      */
     @Deprecated(forRemoval = true)
-    int serialize(K data, ByteBuffer buffer) throws IOException;
+    default int serialize(K data, ByteBuffer buffer) throws IOException {
+        throw new RuntimeException("TO IMPLEMENT");
+    }
 
     /**
-     * Deserialize a key from the byte buffer, where it was previously written using either {@link
-     * #serialize(VirtualKey, ByteBuffer)} or {@link #serialize(VirtualKey, ByteBuffer)} method.
+     * Deserialize a key from the byte buffer, where it was previously written using {@link
+     * #serialize(VirtualKey, ByteBuffer)} method.
      *
      * @param buffer The byte buffer to read from
      * @return A key deserialized from the buffer
      * @throws IOException If there was a problem reading from the buffer
      */
     @Deprecated(forRemoval = true)
-    K deserialize(ByteBuffer buffer, long dataVersion) throws IOException;
+    default K deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
+        throw new RuntimeException("TO IMPLEMENT");
+    }
 
     /**
      * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer
@@ -114,17 +119,17 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @return true if the content of the buffer matches this class's data
      * @throws IOException If there was a problem reading from the buffer
      */
-    boolean equals(BufferedData buffer, K keyToCompare) throws IOException;
+    boolean equals(@NonNull BufferedData buffer, @NonNull K keyToCompare);
 
     /** {@inheritDoc} */
     @Override
-    default void serialize(SerializableDataOutputStream out) throws IOException {
+    default void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         // most key serializers are stateless, so there is nothing to serialize
     }
 
     /** {@inheritDoc} */
     @Override
-    default void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    default void deserialize(@NonNull final SerializableDataInputStream in, int version) throws IOException {
         // most key serializers are staless, so there is nothing to deserialize
     }
 }

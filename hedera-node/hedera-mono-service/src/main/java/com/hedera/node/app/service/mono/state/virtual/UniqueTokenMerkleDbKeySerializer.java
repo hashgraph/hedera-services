@@ -20,6 +20,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -62,7 +63,7 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public int getSerializedSize(UniqueTokenKey key) {
+    public int getSerializedSize(@NonNull final UniqueTokenKey key) {
         return key.getSerializedSizeInBytes();
     }
 
@@ -79,7 +80,7 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public void serialize(final UniqueTokenKey key, final WritableSequentialData out) {
+    public void serialize(@NonNull final UniqueTokenKey key, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         key.serializeTo(out::writeByte);
@@ -94,7 +95,7 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public UniqueTokenKey deserialize(final ReadableSequentialData in) {
+    public UniqueTokenKey deserialize(@NonNull final ReadableSequentialData in) {
         Objects.requireNonNull(in);
         final UniqueTokenKey tokenKey = new UniqueTokenKey();
         tokenKey.deserialize(in);
@@ -108,7 +109,7 @@ public class UniqueTokenMerkleDbKeySerializer implements KeySerializer<UniqueTok
     }
 
     @Override
-    public boolean equals(final BufferedData buffer, UniqueTokenKey key) throws IOException {
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final UniqueTokenKey key) {
         Objects.requireNonNull(buffer);
         return key.equalsTo(buffer::readByte);
     }

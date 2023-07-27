@@ -345,11 +345,9 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
          * @param buffer The buffer to read from and compare to
          * @param keyToCompare The key to compare with the data in the file.
          * @return true if the content of the buffer matches this class's data
-         * @throws IOException If there was a problem reading from the buffer
          */
         @Override
-        public boolean equals(BufferedData buffer, ExampleLongLongKeyVariableSize keyToCompare)
-                throws IOException {
+        public boolean equals(final BufferedData buffer, final ExampleLongLongKeyVariableSize keyToCompare) {
             byte numOfBytes1 = buffer.readByte();
             byte numOfBytes2 = buffer.readByte();
             long value1 = 0;

@@ -46,16 +46,6 @@ public final class ExampleFixedSizeVirtualValueSerializer implements ValueSerial
         return ClassVersion.ORIGINAL;
     }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        // no-op
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // no-op
-    }
-
     // ValueSerializer
 
     @Override

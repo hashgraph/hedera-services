@@ -22,6 +22,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -45,16 +46,6 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     @Override
     public long getCurrentDataVersion() {
         return 1;
-    }
-
-    @Override
-    public void serialize(final SerializableDataOutputStream out) {
-        // nop
-    }
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) {
-        // nop
     }
 
     @Override
@@ -85,7 +76,7 @@ public class TestKeySerializerMerkleDb implements KeySerializer<TestKey> {
     }
 
     @Override
-    public boolean equals(final BufferedData buffer, final TestKey keyToCompare) throws IOException {
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final TestKey keyToCompare) {
         return buffer.readLong() == keyToCompare.getKeyAsLong();
     }
 

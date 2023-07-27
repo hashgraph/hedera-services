@@ -54,8 +54,7 @@ public class AccountVirtualMapKeySerializerMerkleDb extends AbstractFixedSizeKey
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final BufferedData buffer, final AccountVirtualMapKey keyToCompare)
-            throws IOException {
+    public boolean equals(final BufferedData buffer, final AccountVirtualMapKey keyToCompare) {
         return keyToCompare.equals(buffer);
     }
 

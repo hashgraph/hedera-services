@@ -116,7 +116,7 @@ public final class OnDiskKeySerializerMerkleDb<K> implements KeySerializer<OnDis
     }
 
     @Override
-    public int getSerializedSize(final OnDiskKey<K> key) {
+    public int getSerializedSize(@NonNull final OnDiskKey<K> key) {
         return codec.measureRecord(key.getKey());
     }
 
@@ -170,7 +170,7 @@ public final class OnDiskKeySerializerMerkleDb<K> implements KeySerializer<OnDis
     }
 
     @Override
-    public boolean equals(@NonNull final BufferedData bufferedData, @NonNull final OnDiskKey<K> key) throws IOException {
+    public boolean equals(@NonNull final BufferedData bufferedData, @NonNull final OnDiskKey<K> key) {
         // I really don't have a fast path for this. Which is very problematic for performance.
         // All we can do is serialize one or deserialize the other! It would be nice if PBJ
         // had a special method for this, but then we'd have to pipe it through all our APIs again

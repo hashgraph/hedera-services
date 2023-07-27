@@ -16,12 +16,11 @@
 
 package com.swirlds.merkledb.serialize;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
@@ -45,7 +44,7 @@ public interface ValueSerializer<V extends VirtualValue> extends BaseSerializer<
      * {@inheritDoc}
      */
     @Override
-    default void serialize(SerializableDataOutputStream out) throws IOException {
+    default void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         // most value serializers are stateless, so there is nothing to serialize
     }
 
@@ -53,7 +52,7 @@ public interface ValueSerializer<V extends VirtualValue> extends BaseSerializer<
      * {@inheritDoc}
      */
     @Override
-    default void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    default void deserialize(@NonNull final SerializableDataInputStream in, int version) throws IOException {
         // most value serializers are stateless, so there is nothing to deserialize
     }
 }

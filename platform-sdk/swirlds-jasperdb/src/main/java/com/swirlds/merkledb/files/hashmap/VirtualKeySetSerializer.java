@@ -24,6 +24,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -67,7 +68,7 @@ public class VirtualKeySetSerializer extends AbstractFixedSizeKeySerializer<Virt
 
     /** {@inheritDoc} */
     @Override
-    public boolean equals(final BufferedData buffer, final VirtualLongKey keyToCompare) throws IOException {
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final VirtualLongKey keyToCompare) {
         return buffer.readLong() == keyToCompare.getKeyAsLong();
     }
 

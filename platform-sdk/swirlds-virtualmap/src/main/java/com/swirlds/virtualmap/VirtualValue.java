@@ -51,7 +51,9 @@ public interface VirtualValue extends SelfSerializable, FastCopyable {
      * @throws IOException
      * 		If an I/O exception happens during serialization.
      */
+    @Deprecated(forRemoval = true)
     void serialize(final ByteBuffer buffer) throws IOException;
 
+    @Deprecated(forRemoval = true)
     void deserialize(final ByteBuffer buffer, final int version) throws IOException;
 }

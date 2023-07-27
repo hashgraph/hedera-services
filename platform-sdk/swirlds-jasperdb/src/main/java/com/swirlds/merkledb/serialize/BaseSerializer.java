@@ -18,8 +18,10 @@ package com.swirlds.merkledb.serialize;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public interface BaseSerializer<T> {
 
@@ -34,6 +36,7 @@ public interface BaseSerializer<T> {
      *
      * @return true if getSerializedSize() == DataFileCommon.VARIABLE_DATA_SIZE
      */
+    // Future work: remove this method
     default boolean isVariableSize() {
         return getSerializedSize() == VARIABLE_DATA_SIZE;
     }
@@ -43,8 +46,10 @@ public interface BaseSerializer<T> {
      *
      * @return Either a number of bytes or DataFileCommon.VARIABLE_DATA_SIZE if size is variable
      */
+    // Future work: remove this method
     int getSerializedSize();
 
+    @Deprecated(forRemoval = true)
     default int getSerializedSizeForVersion(long version) {
         return getSerializedSize();
     }
@@ -61,10 +66,8 @@ public interface BaseSerializer<T> {
         return getSerializedSize();
     }
 
-    default int getSerializedSize(T data) {
-        if (data == null) {
-            throw new NullPointerException();
-        }
+    default int getSerializedSize(@NonNull T data) {
+        Objects.requireNonNull(data);
         final int size = getSerializedSize();
         if (size != VARIABLE_DATA_SIZE) {
             return size;
@@ -85,7 +88,7 @@ public interface BaseSerializer<T> {
         throw new RuntimeException("TO IMPLEMENT");
     }
 
-    void serialize(T dataItem, WritableSequentialData out);
+    void serialize(@NonNull T dataItem, @NonNull WritableSequentialData out);
 
     /**
      * Deserialize a data item from a byte buffer, that was written with given data version.
@@ -99,5 +102,5 @@ public interface BaseSerializer<T> {
         throw new RuntimeException("TO IMPLEMENT");
     }
 
-    T deserialize(ReadableSequentialData in);
+    T deserialize(@NonNull ReadableSequentialData in);
 }

@@ -162,7 +162,7 @@ public class VirtualBlobKey implements VirtualKey {
         return (type.ordinal() == (0xff & buffer.get())) && (entityNumCode == buffer.getInt());
     }
 
-    public boolean equals(final BufferedData buffer) throws IOException {
+    public boolean equals(final BufferedData buffer) {
         return (type.ordinal() == (0xff & buffer.readByte())) && (entityNumCode == buffer.readInt());
     }
 }

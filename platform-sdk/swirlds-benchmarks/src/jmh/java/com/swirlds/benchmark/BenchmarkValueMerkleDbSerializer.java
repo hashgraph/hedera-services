@@ -60,7 +60,7 @@ public class BenchmarkValueMerkleDbSerializer implements ValueSerializer<Benchma
     }
 
     @Override
-    public void serialize(BenchmarkValue data, WritableSequentialData out) {
+    public void serialize(final BenchmarkValue data, final WritableSequentialData out) {
         data.serialize(out);
     }
 
@@ -72,7 +72,7 @@ public class BenchmarkValueMerkleDbSerializer implements ValueSerializer<Benchma
     }
 
     @Override
-    public BenchmarkValue deserialize(ReadableSequentialData in) {
+    public BenchmarkValue deserialize(final ReadableSequentialData in) {
         final BenchmarkValue value = new BenchmarkValue();
         value.deserialize(in);
         return value;

@@ -20,6 +20,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -70,7 +71,7 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     }
 
     @Override
-    public void serialize(final VirtualBlobKey key, final WritableSequentialData out) {
+    public void serialize(@NonNull final VirtualBlobKey key, @NonNull final WritableSequentialData out) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(out);
         key.serialize(out);
@@ -85,7 +86,7 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     }
 
     @Override
-    public VirtualBlobKey deserialize(final ReadableSequentialData out) {
+    public VirtualBlobKey deserialize(@NonNull final ReadableSequentialData out) {
         Objects.requireNonNull(out);
         final var key = new VirtualBlobKey();
         key.deserialize(out);
@@ -99,7 +100,7 @@ public class VirtualBlobMerkleDbKeySerializer implements KeySerializer<VirtualBl
     }
 
     @Override
-    public boolean equals(final BufferedData buffer, VirtualBlobKey key) throws IOException {
+    public boolean equals(@NonNull final BufferedData buffer, VirtualBlobKey key) {
         Objects.requireNonNull(buffer);
         return key.equals(buffer);
     }

@@ -215,11 +215,9 @@ public class ExampleLongLongKeyFixedSize implements VirtualLongKey, FastCopyable
          * @param buffer The buffer to read from and compare to
          * @param keyToCompare The key to compare with the data in the file.
          * @return true if the content of the buffer matches this class's data
-         * @throws IOException If there was a problem reading from the buffer
          */
         @Override
-        public boolean equals(BufferedData buffer, ExampleLongLongKeyFixedSize keyToCompare)
-                throws IOException {
+        public boolean equals(final BufferedData buffer, final ExampleLongLongKeyFixedSize keyToCompare) {
             final long readValue1 = buffer.readLong();
             final long readValue2 = buffer.readLong();
             return readValue1 == keyToCompare.getValue1() && readValue2 == keyToCompare.getValue2();

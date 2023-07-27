@@ -20,6 +20,7 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.AbstractFixedSizeKeySerializer;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -62,7 +63,7 @@ public final class SmartContractMapKeySerializerMerkleDb extends AbstractFixedSi
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(final BufferedData buffer, final SmartContractMapKey keyToCompare) throws IOException {
+    public boolean equals(@NonNull final BufferedData buffer, @NonNull final SmartContractMapKey keyToCompare) {
         return keyToCompare.equals(buffer);
     }
 

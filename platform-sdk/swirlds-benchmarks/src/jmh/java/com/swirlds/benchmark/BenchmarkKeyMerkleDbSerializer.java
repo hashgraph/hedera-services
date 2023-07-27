@@ -66,7 +66,7 @@ public class BenchmarkKeyMerkleDbSerializer implements KeySerializer<BenchmarkKe
     }
 
     @Override
-    public void serialize(BenchmarkKey data, WritableSequentialData out) {
+    public void serialize(final BenchmarkKey data, final WritableSequentialData out) {
         data.serialize(out);
     }
 
@@ -79,7 +79,7 @@ public class BenchmarkKeyMerkleDbSerializer implements KeySerializer<BenchmarkKe
     }
 
     @Override
-    public BenchmarkKey deserialize(ReadableSequentialData in) {
+    public BenchmarkKey deserialize(final ReadableSequentialData in) {
         BenchmarkKey key = new BenchmarkKey();
         key.deserialize(in);
         return key;
