@@ -56,6 +56,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
@@ -855,6 +856,9 @@ public class SwirldsPlatform implements Platform, Startable {
                                 + reconnectHash + ", new hash is "
                                 + signedState.getState().getHash());
             }
+
+            // Before attempting to load the state, verify that the platform AB matches the state AB.
+            AddressBookUtils.verifyReconnectAddressBooks(getAddressBook(), signedState.getAddressBook());
 
             swirldStateManager.loadFromSignedState(signedState);
 
