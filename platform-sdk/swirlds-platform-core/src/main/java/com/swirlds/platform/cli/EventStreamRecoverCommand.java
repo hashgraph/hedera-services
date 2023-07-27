@@ -21,22 +21,15 @@ import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.config.ConfigUtils;
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
-import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
-import com.swirlds.config.api.source.ConfigSource;
-import com.swirlds.platform.config.internal.ConfigMappings;
-import java.io.IOException;
+import com.swirlds.platform.config.DefaultConfiguration;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -128,33 +121,9 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
         this.loadSigningKeys = loadSigningKeys;
     }
 
-    /**
-     * Build a configuration object from the provided configuration paths.
-     *
-     * @return the configuration object
-     * @throws IOException if there is an error reading the configuration files
-     */
-    private Configuration buildConfiguration() throws IOException {
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
-
-        for (final Path configurationPath : configurationPaths) {
-            System.out.printf("Loading configuration from %s%n", configurationPath);
-            configurationBuilder.withSource(new LegacyFileConfigSource(configurationPath));
-        }
-        final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
-        final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
-        final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
-        configurationBuilder.withSource(mappedSettingsConfigSource);
-        configurationBuilder.withSource(threadCountPropertyConfigSource);
-
-        return configurationBuilder.build();
-    }
-
     @Override
     public Integer call() throws Exception {
-        final Configuration configuration = buildConfiguration();
-
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(configurationPaths);
         final PlatformContext platformContext =
                 new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
