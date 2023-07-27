@@ -50,14 +50,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenServiceApiImplTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Bytes EVM_ADDRESS = Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
-    private static final String MEMO = "Testing 123";
 
     public static final ContractID CONTRACT_ID_BY_NUM =
             ContractID.newBuilder().contractNum(666).build();
     public static final ContractID OTHER_CONTRACT_ID_BY_NUM =
             ContractID.newBuilder().contractNum(777).build();
-    public static final ContractID CONTRACT_ID_BY_ALIAS =
-            ContractID.newBuilder().evmAddress(EVM_ADDRESS).build();
+    public static final AccountID CONTRACT_ID_BY_ALIAS =
+            AccountID.newBuilder().alias(EVM_ADDRESS).build();
     public static final AccountID EOA_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(888).build();
     public static final AccountID CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
@@ -95,13 +94,18 @@ class TokenServiceApiImplTest {
     }
 
     @Test
+    void throwsIseIfAccountNotNewlyCreated() {
+        assertThrows(IllegalArgumentException.class, () -> subject.markNewlyCreatedAsContract(CONTRACT_ACCOUNT_ID));
+    }
+
+    @Test
     void removesByNumberIfSet() {
         accountStore.put(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
                 .build());
 
-        subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_NUM);
+        subject.deleteAndMaybeUnaliasContract(CONTRACT_ACCOUNT_ID);
 
         assertEquals(0, accountStore.sizeOfAccountState());
     }

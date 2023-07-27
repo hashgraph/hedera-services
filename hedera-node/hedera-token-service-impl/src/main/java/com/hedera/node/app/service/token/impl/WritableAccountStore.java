@@ -79,7 +79,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return true if the given id was created in the current savepoint
      */
     public boolean isNewlyCreated(@NonNull final AccountID id) {
-        throw new AssertionError("Not implemented");
+        final var modifiedState = accountState();
+        return modifiedState.getOriginalValue(id) == null && modifiedState.get(id) != null;
     }
 
     /**

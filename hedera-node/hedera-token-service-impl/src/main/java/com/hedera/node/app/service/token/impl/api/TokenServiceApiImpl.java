@@ -48,7 +48,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         requireNonNull(justCreated);
         final var store = new WritableAccountStore(writableStates);
         if (!store.isNewlyCreated(justCreated)) {
-            throw new AssertionError("Not implemented");
+            throw new IllegalArgumentException("Account " + justCreated + " is not newly created");
         }
         final var accountAsContract = requireNonNull(store.get(justCreated))
                 .copyBuilder()
@@ -61,18 +61,17 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void deleteAndMaybeUnaliasContract(@NonNull final ContractID idToDelete) {
+    public void deleteAndMaybeUnaliasContract(@NonNull final AccountID idToDelete) {
         requireNonNull(idToDelete);
         final var store = new WritableAccountStore(writableStates);
-        if (idToDelete.hasContractNum()) {
-            store.remove(AccountID.newBuilder()
-                    .accountNum(idToDelete.contractNumOrThrow())
-                    .build());
+        if (idToDelete.hasAccountNum()) {
+            store.remove(idToDelete);
         } else {
-            final var contractAccountId = store.getAccountIDByAlias(idToDelete.evmAddressOrThrow());
+            final var alias = idToDelete.aliasOrThrow();
+            final var contractAccountId = store.getAccountIDByAlias(alias);
             if (contractAccountId != null) {
                 store.remove(contractAccountId);
-                store.removeAlias(idToDelete.evmAddressOrThrow());
+                store.removeAlias(alias);
             }
         }
     }

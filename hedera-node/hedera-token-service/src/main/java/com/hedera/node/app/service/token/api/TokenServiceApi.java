@@ -23,6 +23,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Defines mutations that can't be expressed as a {@link com.hedera.hapi.node.transaction.TransactionBody} dispatch.
+ *
+ * <p>Only exported to the contract service at this time, as it is the only service that currently needs such a thing.
+ * If, for example, we extract a {@code StakingService}, this API would likely need to expand.
+ */
 public interface TokenServiceApi {
     /**
      * Marks an account as a contract.
@@ -35,7 +41,7 @@ public interface TokenServiceApi {
      *
      * @param idToDelete the id of the contract to delete
      */
-    void deleteAndMaybeUnaliasContract(@NonNull ContractID idToDelete);
+    void deleteAndMaybeUnaliasContract(@NonNull AccountID idToDelete);
 
     /**
      * Increments the nonce of the given contract.
@@ -63,7 +69,7 @@ public interface TokenServiceApi {
     /**
      * Returns a list of all the account ids that were modified by this {@link TokenServiceApi}.
      *
-     * @return a list of all the account ids that were modified by this {@link TokenServiceApi}
+     * @return the account ids that were modified by this {@link TokenServiceApi}
      */
     Set<AccountID> modifiedAccountIds();
 
