@@ -321,17 +321,18 @@ public record EthTxData(
      * @return the encoded transaction data
      */
     private static EthTxData populateEip1559EthTxData(RLPItem rlpItem, byte[] rawTx) {
-        EthTransactionType type = EthTransactionType.EIP1559;
         if (!rlpItem.isList()) {
             return null;
         }
+
         List<RLPItem> rlpList = rlpItem.asRLPList().elements();
         if (rlpList.size() != 12) {
             return null;
         }
+
+        EthTransactionType type = EthTransactionType.EIP1559;
         byte[] chainId = rlpList.get(0).data();
         long nonce = rlpList.get(1).asLong();
-        byte[] gasPrice = null;
         byte[] maxPriorityGas = rlpList.get(2).data();
         byte[] maxGas = rlpList.get(3).data();
         long gasLimit = rlpList.get(4).asLong();
@@ -349,7 +350,7 @@ public record EthTxData(
                 type,
                 chainId,
                 nonce,
-                gasPrice,
+                null,
                 maxPriorityGas,
                 maxGas,
                 gasLimit,
@@ -378,6 +379,7 @@ public record EthTxData(
             return null;
         }
 
+        EthTransactionType type = EthTransactionType.EIP2930;
         final byte[] chainId = rlpList.get(0).data();
         final long nonce = rlpList.get(1).asLong();
         final byte[] gasPrice = rlpList.get(2).data();
@@ -392,7 +394,7 @@ public record EthTxData(
 
         return new EthTxData(
                 rawTx,
-                EthTransactionType.EIP2930,
+                type,
                 chainId,
                 nonce,
                 gasPrice,
