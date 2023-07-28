@@ -18,8 +18,9 @@ package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.staking.PeriodStakingUtils.calculateRewardSumHistory;
-import static com.hedera.node.app.service.token.impl.staking.PeriodStakingUtils.readableNonZeroHistory;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.*;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
@@ -63,13 +64,14 @@ public class EndOfStakingPeriodUpdater {
     private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
 
     private final HederaAccountNumbers accountNumbers;
-    private final StakeInfoHelper stakeInfoHelper;
+    private final StakingRewardsHelper stakeRewardsHelper;
 
     @Inject
     public EndOfStakingPeriodUpdater(
-            @NonNull final HederaAccountNumbers accountNumbers, @NonNull final StakeInfoHelper stakeInfoHelper) {
+            @NonNull final HederaAccountNumbers accountNumbers,
+            @NonNull final StakingRewardsHelper stakeRewardsHelper) {
         this.accountNumbers = accountNumbers;
-        this.stakeInfoHelper = stakeInfoHelper;
+        this.stakeRewardsHelper = stakeRewardsHelper;
     }
 
     /**
@@ -119,8 +121,9 @@ public class EndOfStakingPeriodUpdater {
         for (final var nodeNum : nodeIds.stream().sorted().toList()) {
             var currStakingInfo = stakingInfoStore.getForModify(nodeNum);
 
-            // The return value is the reward rate (tinybars-per-hbar-staked-to-reward) that will be paid to all
-            // accounts who had staked-to-reward for this node long enough to be eligible in the just-finished period
+            // The return value here includes both the new reward sum history, and the reward rate
+            // (tinybars-per-hbar-staked-to-reward) that will be paid to all accounts who had staked-to-reward for this
+            // node long enough to be eligible in the just-finished period
             final var newRewardSumHistory = calculateRewardSumHistory(
                     currStakingInfo,
                     perHbarRate,
@@ -138,8 +141,7 @@ public class EndOfStakingPeriodUpdater {
             final var oldStakeRewardStart = currStakingInfo.stakeRewardStart();
             final var pendingRewardHbars =
                     (oldStakeRewardStart - currStakingInfo.unclaimedStakeRewardStart()) / HBARS_TO_TINYBARS;
-            final var recomputedStake =
-                    com.hedera.node.app.service.token.impl.staking.PeriodStakingUtils.computeNextStake(currStakingInfo);
+            final var recomputedStake = computeNextStake(currStakingInfo);
             currStakingInfo = currStakingInfo
                     .copyBuilder()
                     .stake(recomputedStake.stake())
@@ -154,7 +156,7 @@ public class EndOfStakingPeriodUpdater {
                     nodePendingRewards,
                     oldStakeRewardStart,
                     newStakeRewardStart);
-            stakeInfoHelper.increaseUnclaimedStakeRewards(nodeNum, nodePendingRewards, stakingInfoStore);
+            stakeRewardsHelper.increasePendingRewardsBy(stakingRewardsStore, nodePendingRewards);
 
             currStakingInfo =
                     currStakingInfo.copyBuilder().unclaimedStakeRewardStart(0).build();

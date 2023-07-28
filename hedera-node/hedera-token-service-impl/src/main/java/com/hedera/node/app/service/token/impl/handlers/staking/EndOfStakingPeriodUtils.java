@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.staking;
+package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,8 +28,8 @@ import java.util.stream.IntStream;
  * staking performed at the end of each staking period). That said, <b>these methods should NOT
  * update any state</b> (e.g. by passing in a writable store)
  */
-public final class PeriodStakingUtils {
-    private PeriodStakingUtils() {
+public final class EndOfStakingPeriodUtils {
+    private EndOfStakingPeriodUtils() {
         throw new UnsupportedOperationException("Utility Class");
     }
 

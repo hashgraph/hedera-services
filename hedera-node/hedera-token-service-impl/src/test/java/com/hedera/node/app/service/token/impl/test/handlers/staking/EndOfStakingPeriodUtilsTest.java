@@ -16,20 +16,21 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.*;
+
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.node.app.service.token.impl.staking.PeriodStakingUtils;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class PeriodStakingUtilsTest {
+class EndOfStakingPeriodUtilsTest {
     private static final long MAX_STAKE = 10_000L;
     private static final long STAKE_REWARD_START = 1234L;
     private static final long UNCLAIMED_STAKE_REWARD_START = STAKE_REWARD_START / 10;
-    private static int STAKE_TO_REWARD = 345;
-    private static int STAKE_TO_NOT_REWARD = 155;
+    private static final int STAKE_TO_REWARD = 345;
+    private static final int STAKE_TO_NOT_REWARD = 155;
     private static final StakingNodeInfo STAKING_INFO = StakingNodeInfo.newBuilder()
             .nodeNumber(34)
             .minStake(10_000L)
@@ -45,25 +46,25 @@ class PeriodStakingUtilsTest {
 
     @Test
     void readableNonZeroHistoryFromEmptyRewards() {
-        final var result = PeriodStakingUtils.readableNonZeroHistory(Collections.emptyList());
+        final var result = readableNonZeroHistory(Collections.emptyList());
         Assertions.assertThat(result).isEqualTo("[]");
     }
 
     @Test
     void readableNonZeroHistoryFromNoZeroRewards() {
-        final var result = PeriodStakingUtils.readableNonZeroHistory(List.of(1L, 2L, 3L, 4L, 5L));
+        final var result = readableNonZeroHistory(List.of(1L, 2L, 3L, 4L, 5L));
         Assertions.assertThat(result).isEqualTo("[1, 2, 3, 4, 5]");
     }
 
     @Test
     void readableNonZeroHistoryFromOneZeroRewards() {
-        final var result = PeriodStakingUtils.readableNonZeroHistory(List.of(1L, 2L, 3L, 0L, 5L));
+        final var result = readableNonZeroHistory(List.of(1L, 2L, 3L, 0L, 5L));
         Assertions.assertThat(result).isEqualTo("[1, 2, 3]");
     }
 
     @Test
     void readableNonZeroHistoryFromMultipleZeroRewards() {
-        final var result = PeriodStakingUtils.readableNonZeroHistory(List.of(1L, 2L, 0L, 0L, 3L, 0L, 0L, 4L, 0L));
+        final var result = readableNonZeroHistory(List.of(1L, 2L, 0L, 0L, 3L, 0L, 0L, 4L, 0L));
         Assertions.assertThat(result).isEqualTo("[1, 2]");
     }
 
@@ -72,7 +73,7 @@ class PeriodStakingUtilsTest {
         final var rewardRate = 1_000_000;
         final var maxRewardRate = rewardRate / 2;
 
-        final var result = PeriodStakingUtils.calculateRewardSumHistory(STAKING_INFO, rewardRate, maxRewardRate, true);
+        final var result = calculateRewardSumHistory(STAKING_INFO, rewardRate, maxRewardRate, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(maxRewardRate + 2L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(maxRewardRate);
@@ -82,7 +83,7 @@ class PeriodStakingUtilsTest {
     void calculatesUpdatedRewardsSumHistoryAsExpectedForNodeWithGreaterThanMinStakeAndNoMoreThanMaxStake() {
         final var rewardRate = 1_000_000;
 
-        final var result = PeriodStakingUtils.calculateRewardSumHistory(STAKING_INFO, rewardRate, Long.MAX_VALUE, true);
+        final var result = calculateRewardSumHistory(STAKING_INFO, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(1_000_002L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(1_000_000L);
@@ -96,7 +97,7 @@ class PeriodStakingUtilsTest {
                 .copyBuilder()
                 .stakeRewardStart(2 * STAKING_INFO.maxStake())
                 .build();
-        final var result = PeriodStakingUtils.calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
+        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(500_002L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(500_000L);
@@ -113,7 +114,7 @@ class PeriodStakingUtilsTest {
 
         final var stakingInfo =
                 STAKING_INFO.copyBuilder().stakeRewardStart(excessStake).build();
-        final var result = PeriodStakingUtils.calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
+        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(expectedScaledRate + 2L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(expectedScaledRate);
@@ -124,7 +125,7 @@ class PeriodStakingUtilsTest {
         final var rewardRate = 1_000_000_000;
 
         final var stakingInfo = STAKING_INFO.copyBuilder().stake(0).build();
-        final var result = PeriodStakingUtils.calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
+        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, true);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(2L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isZero();
@@ -139,7 +140,7 @@ class PeriodStakingUtilsTest {
                 .stake(0)
                 .stakeRewardStart(STAKING_INFO.minStake() - 1)
                 .build();
-        final var result = PeriodStakingUtils.calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, false);
+        final var result = calculateRewardSumHistory(stakingInfo, rewardRate, Long.MAX_VALUE, false);
 
         Assertions.assertThat(result.rewardSumHistory()).isEqualTo(List.of(1000000002L, 2L, 1L));
         Assertions.assertThat(result.pendingRewardRate()).isEqualTo(rewardRate);
@@ -148,8 +149,7 @@ class PeriodStakingUtilsTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void computeStakeNullArg() {
-        Assertions.assertThatThrownBy(() -> PeriodStakingUtils.computeNextStake(null))
-                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> computeNextStake(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -157,7 +157,7 @@ class PeriodStakingUtilsTest {
         final var maxStake = STAKE_TO_REWARD + STAKE_TO_NOT_REWARD - 1;
         final var input = STAKING_INFO.copyBuilder().maxStake(maxStake).build();
 
-        final var result = PeriodStakingUtils.computeNextStake(input);
+        final var result = computeNextStake(input);
         Assertions.assertThat(result.stake()).isEqualTo(maxStake);
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
@@ -169,7 +169,7 @@ class PeriodStakingUtilsTest {
                 .minStake(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD + 1)
                 .build();
 
-        final var result = PeriodStakingUtils.computeNextStake(input);
+        final var result = computeNextStake(input);
         Assertions.assertThat(result.stake()).isZero();
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
@@ -182,7 +182,7 @@ class PeriodStakingUtilsTest {
                 .maxStake(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD + 1)
                 .build();
 
-        final var result = PeriodStakingUtils.computeNextStake(input);
+        final var result = computeNextStake(input);
         Assertions.assertThat(result.stake()).isEqualTo(STAKE_TO_REWARD + STAKE_TO_NOT_REWARD);
         Assertions.assertThat(result.stakeRewardStart()).isEqualTo(STAKE_TO_REWARD);
     }
