@@ -49,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -115,7 +116,7 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      * @param validity - whether the contract is valid or note, aka active or deleted
      */
     public record Contract(
-            @NonNull Set</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
+            @NonNull TreeSet</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
 
         @Override
         public boolean equals(final Object o) {
@@ -208,9 +209,10 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
                 final var blob = fileStore.get(vbk);
                 if (null != blob) {
                     final var c = new Contract(
-                            Set.of(cid),
+                            new TreeSet<>(),
                             blob.getData(),
                             deletedContractIds.contains(cid) ? Validity.DELETED : Validity.ACTIVE);
+                    c.ids.add(cid);
                     codes.add(c);
                 }
             }
