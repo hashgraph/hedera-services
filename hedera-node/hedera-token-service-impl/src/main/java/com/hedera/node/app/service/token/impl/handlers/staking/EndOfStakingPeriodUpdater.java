@@ -56,8 +56,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Singleton
-public class EndOfStakingPeriodCalculator {
-    private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
+public class EndOfStakingPeriodUpdater {
+    private static final Logger log = LogManager.getLogger(EndOfStakingPeriodUpdater.class);
 
     // The exact choice of precision will not have a large effect on the per-hbar reward rate
     private static final MathContext MATH_CONTEXT = new MathContext(8, RoundingMode.DOWN);
@@ -66,7 +66,7 @@ public class EndOfStakingPeriodCalculator {
     private final StakeInfoHelper stakeInfoHelper;
 
     @Inject
-    public EndOfStakingPeriodCalculator(
+    public EndOfStakingPeriodUpdater(
             @NonNull final HederaAccountNumbers accountNumbers, @NonNull final StakeInfoHelper stakeInfoHelper) {
         this.accountNumbers = accountNumbers;
         this.stakeInfoHelper = stakeInfoHelper;
@@ -76,7 +76,7 @@ public class EndOfStakingPeriodCalculator {
      * Updates all (relevant) staking-related values for all nodes, as well as any network reward information,
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
-     * TODO: this method is still not called by the handle workflow
+     * TODO: this method is still not called by the handle workflow (will be done in issue #7721)
      *
      * @param consensusTime the consensus time of the transaction used to end the staking period
      * @param context the context of the transaction used to end the staking period

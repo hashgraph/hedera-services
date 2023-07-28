@@ -19,8 +19,8 @@ package com.hedera.node.app.service.token.impl.test.handlers.staking;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator.calculateWeightFromStake;
-import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator.scaleUpWeightToStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.calculateWeightFromStake;
+import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater.scaleUpWeightToStake;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -32,7 +32,7 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodCalculator;
+import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
@@ -56,10 +56,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class EndOfStakingPeriodCalculatorTest {
+class EndOfStakingPeriodUpdaterTest {
     private ReadableAccountStore accountStore;
 
-    private EndOfStakingPeriodCalculator subject;
+    private EndOfStakingPeriodUpdater subject;
 
     @BeforeEach
     void setup() {
@@ -67,11 +67,11 @@ class EndOfStakingPeriodCalculatorTest {
                 .accountId(asAccount(800))
                 .tinybarBalance(100_000_000_000L)
                 .build());
-        subject = new EndOfStakingPeriodCalculator(new FakeHederaNumbers(), new StakeInfoHelper());
+        subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakeInfoHelper());
     }
 
     @Test
-    void skipsEndOfStakingPeriodCalcsIfStakingNotEnabled() {
+    void skipsEndOfStakingPeriodUpdatesIfStakingNotEnabled() {
         final var consensusTime = Instant.now();
 
         // Set up the staking config
