@@ -25,6 +25,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,27 +35,29 @@ public class EventExpansion {
     private static final Logger log = LogManager.getLogger(EventExpansion.class);
 
     private final Cryptography engine;
-    private final SigReqsManager sigReqsManager;
     private final ExpandHandleSpan expandHandleSpan;
     private final PrefetchProcessor prefetchProcessor;
+    private final Provider<SigReqsManager> sigReqsManagerProvider;
 
     @Inject
     public EventExpansion(
             final Cryptography engine,
-            final SigReqsManager sigReqsManager,
             final ExpandHandleSpan expandHandleSpan,
-            final PrefetchProcessor prefetchProcessor) {
+            final PrefetchProcessor prefetchProcessor,
+            final Provider<SigReqsManager> sigReqsManagerProvider) {
         this.engine = engine;
-        this.sigReqsManager = sigReqsManager;
         this.expandHandleSpan = expandHandleSpan;
         this.prefetchProcessor = prefetchProcessor;
+        this.sigReqsManagerProvider = sigReqsManagerProvider;
     }
 
     public void expandAllSigs(final Event event, final StateChildrenProvider provider) {
-        event.forEachTransaction(txn -> expandSingle(txn, provider));
+        final var eventSigReqsManager = sigReqsManagerProvider.get();
+        event.forEachTransaction(txn -> expandSingle(txn, eventSigReqsManager, provider));
     }
 
-    public void expandSingle(final Transaction txn, final StateChildrenProvider provider) {
+    public void expandSingle(
+            final Transaction txn, final SigReqsManager sigReqsManager, final StateChildrenProvider provider) {
         try {
             final var accessor = expandHandleSpan.track(txn);
             // Submit the transaction for any pre-handle processing that can be
