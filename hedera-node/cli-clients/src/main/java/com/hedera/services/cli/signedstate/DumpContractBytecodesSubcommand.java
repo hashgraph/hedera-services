@@ -45,6 +45,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * comparisons can be made between two signed states that are similar (e.g., mono-service vs modularized service when
  * the same events are run through them).
  */
+@SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractBytecodesSubcommand {
 
     static final int ESTIMATED_NUMBER_OF_CONTRACTS = 500_000;

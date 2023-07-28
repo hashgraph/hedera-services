@@ -34,6 +34,7 @@ import picocli.CommandLine.ParentCommand;
 /**
  * A subcommand of the {@link PlatformCli}, for dealing with signed state files
  */
+@SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 @CommandLine.Command(
         name = "signed-state",
         mixinStandardHelpOptions = true,
@@ -90,6 +91,7 @@ public final class SignedStateCommand extends AbstractCommand {
 
     Level loggingLevel;
 
+    @SuppressWarnings("java:S4792") // "make sure this logger's configuration is safe"
     private void setRootLoggingLevel() {
         // BUG: This doesn't work.  Setting level to `WARN` I still see a message from `INFO STATE_TO_DISK`
         if (verbosity == Verbosity.VERBOSE) System.out.printf("===Log level set to %s%n", loggingLevel);

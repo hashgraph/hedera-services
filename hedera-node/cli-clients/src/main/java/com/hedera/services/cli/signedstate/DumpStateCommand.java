@@ -27,6 +27,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
+@SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 @Command(
         name = "dump",
         subcommandsRepeatable = true,
@@ -153,6 +154,7 @@ public class DumpStateCommand extends AbstractCommand {
      *
      * Rather fragile if the subcommands are ever reorganized ... but maybe that won't happen soon ...
      */
+    @SuppressWarnings("java:S1488") // "immediately return expr" - Sonar doesn't understand value of parallel constructs
     @NonNull
     Set<String> getSubcommandsToRun() {
         final SignedStateCommand signedStateCommand = this.parent;

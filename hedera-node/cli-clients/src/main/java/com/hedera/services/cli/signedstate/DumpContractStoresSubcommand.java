@@ -42,6 +42,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
+@SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpContractStoresSubcommand {
     static void doit(
             @NonNull final SignedStateHolder state,
@@ -75,6 +76,10 @@ public class DumpContractStoresSubcommand {
         this.verbosity = verbosity;
     }
 
+    @SuppressWarnings(
+            "java:S3864") // "Remove Stream.peek - should be used with caution" - conflicts with an IntelliJ inspection
+    // that says to put _in_ a `Stream.peek`; anyway, in this case I _want_ it, it makes sense, I
+    // _am in fact_ being properly cautious, thank you Sonar
     void doit() {
 
         record ContractKeyLocal(long contractId, UInt256 key) {
