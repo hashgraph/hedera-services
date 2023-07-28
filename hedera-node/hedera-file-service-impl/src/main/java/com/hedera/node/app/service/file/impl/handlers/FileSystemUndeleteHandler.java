@@ -71,8 +71,8 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
-        // First validate this file is mutable; and the pending mutations are allowed
-        // TODO: add or condition for privilege accounts from context
+        // TODO: check here that the "payer" is a privileged account.
+        //       a privileged account is always required for this transaction.
 
         final var systemUndeleteTransactionBody = handleContext.body().systemUndeleteOrThrow();
         if (!systemUndeleteTransactionBody.hasFileID()) {
