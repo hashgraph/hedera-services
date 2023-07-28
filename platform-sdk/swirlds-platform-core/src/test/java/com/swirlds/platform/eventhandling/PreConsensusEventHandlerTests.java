@@ -37,7 +37,6 @@ import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -111,7 +110,7 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
         // Start the pre-consensus handler and add events to the queue for it to handle
         preConsensusEventHandler.start();
         for (int i = 0; i < numEvents; i++) {
-            preConsensusEventHandler.preConsensusEvent(event);
+            preConsensusEventHandler.preconsensusEvent(event);
         }
 
         // Make the separate thread invoke clear()
@@ -153,41 +152,13 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
                 threadConfig);
 
         assertDoesNotThrow(
-                () -> preConsensusEventHandler.preConsensusEvent(null),
+                () -> preConsensusEventHandler.preconsensusEvent(null),
                 "null events should be discarded and not added to the queue.");
         assertEquals(0, preConsensusEventHandler.getQueueSize(), "queue should be empty");
 
         final EventImpl emptyEvent = createEvents(1, 0, true).get(0);
         assertTrue(emptyEvent.isEmpty(), "The generated event should be empty");
-        preConsensusEventHandler.preConsensusEvent(emptyEvent);
+        preConsensusEventHandler.preconsensusEvent(emptyEvent);
         assertEquals(0, preConsensusEventHandler.getQueueSize(), "Empty events should not be added to the queue");
-    }
-
-    /**
-     * Test that events are discarded if the {@link SwirldStateManager} says they should be.
-     */
-    @Test
-    void testEventsDiscarded() {
-        final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
-        when(swirldStateManager.discardPreConsensusEvent(any(EventImpl.class))).thenReturn(true);
-
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-        final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
-
-        preConsensusEventHandler = new PreConsensusEventHandler(
-                new NoOpMetrics(),
-                getStaticThreadManager(),
-                selfId,
-                swirldStateManager,
-                consensusMetrics,
-                threadConfig);
-        preConsensusEventHandler.start();
-
-        final List<EventImpl> events = createEvents(10, 10, false);
-        events.forEach(preConsensusEventHandler::preConsensusEvent);
-        assertEquals(
-                0,
-                preConsensusEventHandler.getQueueSize(),
-                "queue should be empty because all events should be discarded");
     }
 }
