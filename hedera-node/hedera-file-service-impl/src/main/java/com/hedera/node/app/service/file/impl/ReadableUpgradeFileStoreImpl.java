@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.file.impl.FileServiceImpl.UPGRADE_FILE
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.ReadableUpgradeStore;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -42,7 +42,7 @@ import java.util.Objects;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
+public class ReadableUpgradeFileStoreImpl implements ReadableUpgradeFileStore {
     private final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     /** The underlying data storage class that holds the file data. */
@@ -51,11 +51,11 @@ public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
     private final ReadableKVState<FileID, File> upgradeFileState;
 
     /**
-     * Create a new {@link ReadableUpgradeStoreImpl} instance.
+     * Create a new {@link ReadableUpgradeFileStoreImpl} instance.
      *
      * @param states The state to use.
      */
-    public ReadableUpgradeStoreImpl(@NonNull final ReadableStates states) {
+    public ReadableUpgradeFileStoreImpl(@NonNull final ReadableStates states) {
         this.upgradeState = Objects.requireNonNull(states.getQueue(UPGRADE_DATA_KEY));
         this.upgradeFileState = Objects.requireNonNull(states.get(BLOBS_KEY));
     }

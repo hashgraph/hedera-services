@@ -23,9 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
-import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -36,38 +35,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableUpdateFileStoreTest {
-    private WritableUpdateFileStore subject;
+class WritableUpgradeStoreTest {
+    private WritableUpgradeStore subject;
 
     @Mock(strictness = LENIENT)
     protected WritableStates writableStates;
 
     @Test
     void constructorCreatesFreezeState() {
-        final WritableUpdateFileStore store = new WritableUpdateFileStore(writableStates);
+        final WritableUpgradeStore store = new WritableUpgradeStore(writableStates);
         assertNotNull(store);
     }
 
     @Test
     void testNullConstructorArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableUpdateFileStore(null));
-    }
-
-    @Test
-    void testPreparedUpdateFileID() {
-        final AtomicReference<Long> backingStore = new AtomicReference<>(null);
-        when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_ID_KEY))
-                .then(invocation -> new WritableSingletonStateBase<>(
-                        FreezeServiceImpl.UPGRADE_FILE_ID_KEY, backingStore::get, backingStore::set));
-
-        final WritableUpdateFileStore store = new WritableUpdateFileStore(writableStates);
-
-        // test with no file ID set
-        assertTrue(store.updateFileID().isEmpty());
-
-        // test with file ID set
-        store.updateFileID(FileID.newBuilder().fileNum(42L).build());
-        assertEquals(42L, store.updateFileID().get().fileNum());
+        assertThrows(NullPointerException.class, () -> new WritableUpgradeStore(null));
     }
 
     @Test
@@ -76,7 +58,7 @@ class WritableUpdateFileStoreTest {
         when(writableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY))
                 .then(invocation -> new WritableSingletonStateBase<>(
                         FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, backingStore::get, backingStore::set));
-        final WritableUpdateFileStore store = new WritableUpdateFileStore(writableStates);
+        final WritableUpgradeStore store = new WritableUpgradeStore(writableStates);
 
         // test with no file hash set
         assertTrue(store.updateFileHash().isEmpty());

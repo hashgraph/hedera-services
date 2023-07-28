@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.file.impl.test.codec;
+package com.hedera.node.app.spi.state.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.file.impl.codec.BytesCodec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
@@ -37,6 +36,11 @@ class BytesCodecTest {
     private static final Bytes SOME_DATA = Bytes.wrap("HELLO");
 
     final BytesCodec subject = new BytesCodec();
+
+    @Test
+    void throwsIfMeasureRecordAccessed() {
+        assertThrows(UnsupportedOperationException.class, () -> subject.measureRecord(null));
+    }
 
     @Test
     void doesntSupport() {
@@ -58,6 +62,23 @@ class BytesCodecTest {
         final var in = new ReadableStreamingData(bais);
 
         final var parsedItem = subject.parse(in);
+        assertEquals(item, parsedItem);
+    }
+
+    @Test
+    void verifyParseStrict() throws IOException {
+        final var subject = new BytesCodec();
+
+        final var baos = new ByteArrayOutputStream();
+        final var out = new WritableStreamingData(new SerializableDataOutputStream(baos));
+        final var item = Bytes.wrap("HELLO");
+
+        subject.write(item, out);
+
+        final var bais = new ByteArrayInputStream(baos.toByteArray());
+        final var in = new ReadableStreamingData(bais);
+
+        final var parsedItem = subject.parseStrict(in);
         assertEquals(item, parsedItem);
     }
 }

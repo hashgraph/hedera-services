@@ -26,21 +26,22 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Iterator;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ReadableUpgradeStoreImplTest extends FileTestBase {
-    private ReadableUpgradeStoreImpl subject;
+class ReadableUpgradeFileStoreImplTest extends FileTestBase {
+    private ReadableUpgradeFileStoreImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ReadableUpgradeStoreImpl(filteredReadableStates);
+        subject = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
     }
 
     @Test
@@ -62,29 +63,42 @@ class ReadableUpgradeStoreImplTest extends FileTestBase {
     void missingUpgradeFileIsNull() {
         final var stateData =
                 ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
-        final AtomicReference<File> backingStore = new AtomicReference<>();
         final var stateFile = MapWritableKVState.<FileID, File>builder(FILES).build();
-        ;
+
         given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(stateFile);
-        subject = new ReadableUpgradeStoreImpl(filteredReadableStates);
+        subject = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         assertThat(subject.peek()).isNull();
     }
 
     @Test
     void constructorCreatesUpgradeFileState() {
-        final var store = new ReadableUpgradeStoreImpl(filteredReadableStates);
+        final var store = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
         assertNotNull(store);
     }
 
     @Test
     void nullArgsFail() {
-        assertThrows(NullPointerException.class, () -> new ReadableUpgradeStoreImpl(null));
+        assertThrows(NullPointerException.class, () -> new ReadableUpgradeFileStoreImpl(null));
     }
 
     @Test
     void validGetFullFileContent() throws IOException {
         givenValidFile();
         assertTrue(subject.getFull().length() > 0);
+    }
+
+    @Test
+    void verifyFileStateKey() {
+        assertEquals(UPGRADE_FILE_KEY, subject.getFileStateKey());
+    }
+
+    @Test
+    void verifyIterator() {
+        assertEquals(subject.iterator().next(), wellKnowUpgradeId().next());
+    }
+
+    private Iterator<File> wellKnowUpgradeId() {
+        return List.of(upgradeFile).iterator();
     }
 }

@@ -27,6 +27,6 @@ import com.swirlds.config.api.ConfigProperty;
  *                             marker files are written
  */
 @ConfigData("networkAdmin")
-public record NetworkAdminServiceConfig(
+public record NetworkAdminConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current") @NodeProperty
                 String upgradeArtifactsPath) {}

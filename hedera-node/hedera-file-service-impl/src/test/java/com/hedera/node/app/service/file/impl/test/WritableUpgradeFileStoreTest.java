@@ -20,29 +20,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class WritableUpgradeStoreTest extends FileTestBase {
+class WritableUpgradeFileStoreTest extends FileTestBase {
     private File file;
     protected final FileID UPGRADE_FILE_ID = new FileID(0, 0, 150);
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableUpgradeStore(null));
-        assertThrows(NullPointerException.class, () -> writableUpgradeStore.add(null));
+        assertThrows(NullPointerException.class, () -> new WritableUpgradeFileStore(null));
+        assertThrows(NullPointerException.class, () -> writableUpgradeFileStore.add(null));
     }
 
     @Test
     void constructorCreatesUpgradeFileState() {
-        final var store = new WritableUpgradeStore(filteredWritableStates);
+        final var store = new WritableUpgradeFileStore(filteredWritableStates);
         assertNotNull(store);
     }
 
@@ -54,7 +53,9 @@ class WritableUpgradeStoreTest extends FileTestBase {
         writableUpgradeStates.add(file.contents());
         writableUpgradeFileStates.put(file.fileId(), file);
 
-        assertTrue(writableUpgradeFileStates.get(fileUpgradeFileId).fileId().equals(UPGRADE_FILE_ID));
+        assertEquals(
+                UPGRADE_FILE_ID,
+                writableUpgradeFileStates.get(fileUpgradeFileId).fileId());
         final var writtenFile = writableUpgradeFileStates.get(fileUpgradeFileId);
         assertEquals(file, writtenFile);
         assertEquals(file.contents(), writableUpgradeStates.peek());
