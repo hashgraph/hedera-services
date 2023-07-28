@@ -232,6 +232,7 @@ class EthTxDataTest {
     @Test
     void whiteBoxDecodingErrors() {
         final var oneByte = new byte[] {1};
+        final var sequentiallyEncodeOneByte = RLPEncoder.encodeSequentially(oneByte);
         final var size_13 = List.of(
                 oneByte, oneByte, oneByte, oneByte, oneByte, oneByte, oneByte, oneByte, oneByte, oneByte, oneByte,
                 oneByte, oneByte);
@@ -241,10 +242,20 @@ class EthTxDataTest {
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeAsList(size_13)));
         // legacy TX with too few RLP entries
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeAsList(size_1)));
+        // type 1 TX with too few RLP entries
+        assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {1}, size_1)));
+        // type 1 TX with too many RLP entries
+        assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {1}, size_13)));
+        // type 1 TX with not <List> Type RLP Item
+        assertNull(
+                EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {1}, sequentiallyEncodeOneByte)));
         // type 2 TX with too many RLP entries
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, size_13)));
         // type 2 TX with too few RLP entries
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, size_1)));
+        // type 2 TX with not <List> Type RLP Item
+        assertNull(
+                EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {2}, sequentiallyEncodeOneByte)));
         // Unsupported Transaciton Type
         assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] {127}, size_13)));
         // Trimmed End Bytes
