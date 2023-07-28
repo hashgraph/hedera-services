@@ -33,7 +33,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,9 +63,8 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
     void missingUpgradeFileIsNull() {
         final var stateData =
                 ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
-        final AtomicReference<File> backingStore = new AtomicReference<>();
         final var stateFile = MapWritableKVState.<FileID, File>builder(FILES).build();
-        ;
+
         given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(stateData);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(stateFile);
         subject = new ReadableUpgradeFileStoreImpl(filteredReadableStates);
@@ -97,8 +95,6 @@ class ReadableUpgradeFileStoreImplTest extends FileTestBase {
 
     @Test
     void verifyIterator() {
-        System.out.println(subject.iterator().next());
-        System.out.println(wellKnowUpgradeId().next());
         assertEquals(subject.iterator().next(), wellKnowUpgradeId().next());
     }
 
