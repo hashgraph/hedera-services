@@ -379,7 +379,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 // 11. Initialize the HAPI Spec system
                 final var defaultProperties = JutilPropertySource.getDefaultInstance();
                 HapiSpec.runInCiMode(
-                        String.valueOf(hedera.getGrpcPort()),
+                        defaultProperties.get("nodes"),
                         defaultProperties.get("default.payer"),
                         defaultProperties.get("default.node").split("\\.")[2],
                         defaultProperties.get("tls"),
