@@ -63,9 +63,7 @@ public record EthTxData(
                 return populateLegacyEthTxData(rlpItem, data);
             }
 
-            // typed transaction?
-            byte typeByte = rlpItem.asByte();
-            return switch (typeByte) {
+            return switch (rlpItem.asByte()) {
                 case 1 -> populateEip2390EthTxData(decoder.next(), data);
                 case 2 -> populateEip1559EthTxData(decoder.next(), data);
                 default -> null;
