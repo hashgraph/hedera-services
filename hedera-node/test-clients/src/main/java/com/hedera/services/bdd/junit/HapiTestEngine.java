@@ -140,17 +140,32 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
+
+        // We obtain the selectors using MethodSelector and ClassSelector because we don't know how the
+        // tests will be executed. If we run tests at the class level, we will have a ClassSelector.
+        // If we run a single test, we will have a MethodSelector.
+        discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
+            final var javaClass = selector.getJavaClass();
+            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+        });
+
         discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            if (IS_HAPI_TEST_SUITE.test(javaClass)) {
-                discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
-                final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
-                if (!classDescriptor.skip) {
-                    engineDescriptor.addChild(classDescriptor);
-                }
-            }
+            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
         });
+
         return engineDescriptor;
+    }
+
+    private static void addChildToEngineDescriptor(
+            Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
+        if (IS_HAPI_TEST_SUITE.test(javaClass)) {
+            discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
+            final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
+            if (!classDescriptor.skip) {
+                engineDescriptor.addChild(classDescriptor);
+            }
+        }
     }
 
     /**
