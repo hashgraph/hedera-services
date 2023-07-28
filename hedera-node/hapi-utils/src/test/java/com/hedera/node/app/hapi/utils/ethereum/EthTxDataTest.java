@@ -45,7 +45,7 @@ class EthTxDataTest {
     static final String RAW_TX_TYPE_0_TRIMMED_LAST_BYTES =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290000";
     static final String RAW_TX_TYPE_1 =
-            "01f87182012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a04d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714fa03a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58";
+            "01f87182012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a07844f7acfe12e2985953cce823870b97464d7c2d5c752798c022b9403e0d5ca7a011154a57f1078fe7e36b6d17c8bb4a287cd385fc3168c2d43d24e193851f3186";
     static final String RAW_TX_TYPE_2 =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
@@ -53,9 +53,6 @@ class EthTxDataTest {
     static final String EIP_155_DEMO_PUBKEY = "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382";
     static final String EIP155_DEMO =
             "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
-
-    static final String EIP_2930_ADDRESS = "2c5d9eaed6ccb0705676b1ffc705507a1e0ea394";
-    static final String EIP_2930_PUBKEY = "023db57466d8612dae504043f8df82311b7681e1b93e0d55d893d8025ea94c0595";
 
     @Test
     void detectsMissingCallData() {
@@ -157,13 +154,13 @@ class EthTxDataTest {
         assertEquals("", Hex.toHexString(berlinTx.accessList()));
         assertEquals(1, berlinTx.recId());
         assertNull(berlinTx.v());
-        assertEquals("4d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714f", Hex.toHexString(berlinTx.r()));
-        assertEquals("3a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58", Hex.toHexString(berlinTx.s()));
+        assertEquals("7844f7acfe12e2985953cce823870b97464d7c2d5c752798c022b9403e0d5ca7", Hex.toHexString(berlinTx.r()));
+        assertEquals("11154a57f1078fe7e36b6d17c8bb4a287cd385fc3168c2d43d24e193851f3186", Hex.toHexString(berlinTx.s()));
 
         final var berlinSigs = EthTxSigs.extractSignatures(berlinTx);
         assertNotNull(berlinSigs);
-        assertEquals(EIP_2930_ADDRESS, Hex.toHexString(berlinSigs.address()));
-        assertEquals(EIP_2930_PUBKEY, Hex.toHexString(berlinSigs.publicKey()));
+        assertEquals(SIGNATURE_ADDRESS, Hex.toHexString(berlinSigs.address()));
+        assertEquals(SIGNATURE_PUBKEY, Hex.toHexString(berlinSigs.publicKey()));
     }
 
     @Test

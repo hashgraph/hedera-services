@@ -23,7 +23,10 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
@@ -62,16 +65,11 @@ public record EthTxData(
 
             // typed transaction?
             byte typeByte = rlpItem.asByte();
-            if (typeByte != 1 && typeByte != 2) {
-                // we only support EIP-2930 and EIP-1559 type transactions at the moment.
-                return null;
-            }
-
-            if (typeByte == 1) {
-                return populateEip2390EthTxData(decoder.next(), data);
-            }
-
-            return populateEip1559EthTxData(decoder.next(), data);
+            return switch (typeByte) {
+                case 1 -> populateEip2390EthTxData(decoder.next(), data);
+                case 2 -> populateEip1559EthTxData(decoder.next(), data);
+                default -> null;
+            };
 
         } catch (IllegalArgumentException | NoSuchElementException e) {
             return null;
