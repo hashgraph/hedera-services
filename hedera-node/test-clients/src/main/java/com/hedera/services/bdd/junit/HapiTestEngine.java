@@ -48,6 +48,7 @@ import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
@@ -87,6 +88,7 @@ import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
 import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.discovery.MethodSelector;
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor;
 import org.junit.platform.engine.support.descriptor.ClassSource;
@@ -138,7 +140,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
-        discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
+        discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
             if (IS_HAPI_TEST_SUITE.test(javaClass)) {
                 discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
@@ -269,6 +271,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(WiringConfig.class)
                         .withConfigDataType(SyncConfig.class)
                         .withConfigDataType(UptimeConfig.class)
+                        .withConfigDataType(PlatformStatusConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
                         .build();
