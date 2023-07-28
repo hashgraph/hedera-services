@@ -94,6 +94,14 @@ public class WritableTokenRelationStore extends ReadableTokenRelationStoreImpl {
                 EntityIDPair.newBuilder().accountId(accountId).tokenId(tokenId).build());
     }
 
+    /**
+     * Gets the original value associated with the given tokenRelation before any modifications were made to
+     * it. The returned value will be {@code null} if the tokenRelation does not exist.
+     *
+     * @param accountId The accountId of tokenRelation.
+     * @param tokenId The tokenId of tokenRelation.
+     * @return The original value, or null if there is no such tokenRelation in the state
+     */
     @Nullable
     public TokenRelation getOriginalValue(@NonNull final AccountID accountId, @NonNull final TokenID tokenId) {
         requireNonNull(accountId);

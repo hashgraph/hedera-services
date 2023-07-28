@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.AccountAmount.*;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.node.app.service.token.impl.RecordFinalizer;
+import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -34,32 +35,17 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * This is a special handler that is used to "finalize" hbar and token transfers for the parent transaction record.
- * Finalization in this context means summing the net changes to make to each account's hbar balance and token
- * balances, and assigning the final owner of an nft after an arbitrary number of ownership changes.
- * Based on issue https://github.com/hashgraph/hedera-services/issues/7084 the modularized
- * transaction record for NFT transfer chain A -> B -> C, will look different from mono-service record.
- * This is because mono-service will record both ownership changes from A -> b and then B-> C.
- * Parent record will record any staking rewards paid out due to transaction changes to state.
- * It will deduct any transfer changes that are listed in child transaction records in the parent record.
- *
- * In this finalizer, we will:
- * 1.If staking is enabled, iterate through all modifications in writableAccountStore and compare with the corresponding entity in readableAccountStore
- * 2. Comparing the changes, we look for balance/declineReward/stakedToMe/stakedId fields have been modified,
- * if an account is staking to a node. Construct a list of possibleRewardReceivers
- * 3. Pay staking rewards to any account who has pending rewards
- * 4. Now again, iterate through all modifications in writableAccountStore, writableTokenRelationStore.
- * 5. For each modification we look at the same entity in the respective readableStore
- * 6. Calculate the difference between the two, and then construct a TransferList and TokenTransferList
- * for the parent record (excluding changes from child transaction records)
+ * This class is used to "finalize" hbar and token transfers for the parent transaction record.
  */
 @Singleton
-public class FinalizeParentRecordHandler extends RecordFinalizer implements ParentRecordFinalizer {
+public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
     private final StakingRewardsHandler stakingRewardsHandler;
 
     @Inject
@@ -69,7 +55,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizer implements Pare
 
     @Override
     public void finalizeParentRecord(
-            @NonNull final HandleContext context, @NonNull List<SingleTransactionRecordBuilder> childRecords) {
+            @NonNull final HandleContext context, @NonNull final List<SingleTransactionRecordBuilder> childRecords) {
         final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -94,6 +80,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizer implements Pare
 
         /* ------------------------- Hbar changes from transaction including staking rewards ------------------------- */
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
+        deductChangesFromChildRecords(hbarChanges, childRecords);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(
@@ -118,5 +105,11 @@ public class FinalizeParentRecordHandler extends RecordFinalizer implements Pare
             tokenTransferLists.sort(TOKEN_TRANSFER_LIST_COMPARATOR);
             recordBuilder.tokenTransferLists(tokenTransferLists);
         }
+    }
+
+    private void deductChangesFromChildRecords(
+            final List<AccountAmount> hbarChanges, final List<SingleTransactionRecordBuilder> childRecords) {
+        final Map<AccountID, Long> childHbarChanges = new HashMap<>();
+        for (final var childRecord : childRecords) {}
     }
 }

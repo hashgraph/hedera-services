@@ -172,7 +172,17 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         return aliases().modifiedKeys();
     }
 
-    public Account getOriginalValue(final AccountID id) {
+    /**
+     * Gets the original value associated with the given accountId before any modifications were made to
+     * it. The returned value will be {@code null} if the accountId does not exist.
+     *
+     * @param id The accountId. Cannot be null, otherwise an exception is thrown.
+     * @return The original value, or null if there is no such accountId in the state
+     * @throws NullPointerException if the accountId is null.
+     */
+    @Nullable
+    public Account getOriginalValue(@NonNull final AccountID id) {
+        requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
         final var accountOneOf = id.account();
         final Long accountNum =

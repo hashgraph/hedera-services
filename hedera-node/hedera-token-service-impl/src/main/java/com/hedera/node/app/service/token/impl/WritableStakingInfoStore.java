@@ -68,6 +68,14 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
         stakingInfoState.put(nodeId, stakingNodeInfo);
     }
 
+    /**
+     * Gets the original value associated with the given nodeId before any modifications were made to
+     * it. The returned value will be {@code null} if the nodeId does not exist.
+     *
+     * @param nodeId The nftId.
+     * @return The original value, or null if there is no such nftId in the state
+     */
+    @Nullable
     public StakingNodeInfo getOriginalValue(final long nodeId) {
         return stakingInfoState.getOriginalValue(nodeId);
     }

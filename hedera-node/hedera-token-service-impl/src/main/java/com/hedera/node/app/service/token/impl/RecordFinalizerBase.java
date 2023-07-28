@@ -40,7 +40,7 @@ import java.util.Map;
  * com.hedera.node.app.service.token.records.ChildRecordFinalizer}. This contains methods that are common to both
  * classes.
  */
-public class RecordFinalizer {
+public class RecordFinalizerBase {
     @NonNull
     protected List<AccountAmount> hbarChangesFrom(@NonNull final WritableAccountStore writableAccountStore) {
         final var hbarChanges = new ArrayList<AccountAmount>();
