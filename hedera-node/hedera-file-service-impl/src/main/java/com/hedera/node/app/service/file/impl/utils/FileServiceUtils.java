@@ -32,6 +32,8 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -39,6 +41,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.List;
 
 /** Provides utility methods for file operations. */
 public class FileServiceUtils {
@@ -96,29 +99,27 @@ public class FileServiceUtils {
     /**
      * The function validates the keys and adds them to the context.
      *
-     * @param listKeys the list of keys to validate and add to required keys in context
+     * @param file file that will be checked for required keys
+     * @param transactionKeys transaction keys that add to context for required keys.
      * @param context the prehandle context for the transaction.
-     * @param areKeysRequired create allows files to be created without additional keys. Therefore,
-     *     this flag is needed.
      * @throws PreCheckException
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
-            throws PreCheckException {
+            @Nullable final File file,
+            @Nullable final KeyList transactionKeys,
+            @NonNull final PreHandleContext context) {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
 
-        // TODO This logic is wrong. What we should be doing, is verifying whether the file in state has keys, and
-        //  if so, that all those keys are added to the required signing keys, and if not, then unless the user is
-        //  a super user, we should throw UNAUTHORIZED. But just because the update transaction itself (for example)
-        //  is missing keys DOES NOT mean that we should throw UNAUTHORIZED.
-        //        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-        //            // @todo('protobuf change needed') change to immutable file response code
-        //            if (areKeysRequired) {
-        //                throw new PreCheckException(UNAUTHORIZED);
-        //            }
-        //        }
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                for (final Key key : fileKeyList.keys()) {
+                    context.requireKey(key);
+                }
+            }
+        }
 
-        if (listKeys != null && listKeys.hasKeys()) {
-            for (final Key key : listKeys.keys()) {
+        if (transactionKeys != null && transactionKeys.hasKeys()) {
+            for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
             }
         }
@@ -188,5 +189,34 @@ public class FileServiceUtils {
             @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId) {
         return verifyNotSystemFile(ledgerConfig, fileStore, fileId, false);
+    }
+
+    /**
+     * Verify the keys from transaction and file are relevant for the transaction
+     * @param file that will be checked for verification keys
+     * @param transactionKeyList transaction keys that add to context for verification.
+     * @param context the handle context for the transaction.
+     * @throws HandleException throws exception if {@link ResponseCodeEnum#UNAUTHORIZED}
+     */
+    public static void validateSignatures(
+            @Nullable File file, @Nullable KeyList transactionKeyList, @NonNull HandleContext context)
+            throws HandleException {
+
+        if (transactionKeyList != null && transactionKeyList.hasKeys()) {
+            for (final Key key : transactionKeyList.keys()) {
+                SignatureVerification verificationResult = context.verificationFor(key);
+                if (verificationResult.failed()) throw new HandleException(UNAUTHORIZED);
+            }
+        }
+
+        if (file != null && file.keys() != null) {
+            List<Key> fileKeyList = file.keys().keys();
+            if (fileKeyList != null) {
+                for (final Key key : fileKeyList) {
+                    SignatureVerification verificationResult = context.verificationFor(key);
+                    if (verificationResult.failed()) throw new HandleException(UNAUTHORIZED);
+                }
+            }
+        }
     }
 }

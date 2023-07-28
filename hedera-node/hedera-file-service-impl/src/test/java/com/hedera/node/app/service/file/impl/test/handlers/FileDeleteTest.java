@@ -58,6 +58,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -169,6 +170,9 @@ class FileDeleteTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
+        given(signatureVerification.failed()).willReturn(false);
+
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);

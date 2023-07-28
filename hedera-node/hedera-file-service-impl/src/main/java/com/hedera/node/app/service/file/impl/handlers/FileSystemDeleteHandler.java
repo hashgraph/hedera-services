@@ -63,14 +63,17 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var transactionBody = context.body().systemDeleteOrThrow();
         final var fileStore = context.createStore(ReadableFileStoreImpl.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, true);
+        preValidate(transactionBody.fileID(), fileStore, context, true);
 
-        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), null, context);
     }
 
     @Override
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
+        // First validate this file is mutable; and the pending mutations are allowed
+        // TODO: add or condition for privilege accounts from context
 
         final var systemDeleteTransactionBody = handleContext.body().systemDeleteOrThrow();
         if (!systemDeleteTransactionBody.hasFileID()) {

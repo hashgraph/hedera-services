@@ -21,12 +21,14 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateSignatures;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
@@ -66,7 +68,7 @@ public class FileCreateHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileCreateOrThrow();
 
-        validateAndAddRequiredKeys(transactionBody.keys(), context, false);
+        validateAndAddRequiredKeys(null, transactionBody.keys(), context);
 
         if (!transactionBody.hasExpirationTime()) {
             throw new PreCheckException(INVALID_EXPIRATION_TIME);
@@ -82,7 +84,9 @@ public class FileCreateHandler implements TransactionHandler {
 
         final var fileCreateTransactionBody = handleContext.body().fileCreateOrThrow();
         if (fileCreateTransactionBody.hasKeys()) {
-            builder.keys(fileCreateTransactionBody.keys());
+            KeyList transactionKeyList = fileCreateTransactionBody.keys();
+            validateSignatures(null, transactionKeyList, handleContext);
+            builder.keys(transactionKeyList);
         }
 
         /* Validate if the current file can be created */
