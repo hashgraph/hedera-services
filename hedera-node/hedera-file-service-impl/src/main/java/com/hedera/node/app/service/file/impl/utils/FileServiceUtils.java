@@ -102,7 +102,6 @@ public class FileServiceUtils {
      * @param file file that will be checked for required keys
      * @param transactionKeys transaction keys that add to context for required keys.
      * @param context the prehandle context for the transaction.
-     * @throws PreCheckException
      */
     public static void validateAndAddRequiredKeys(
             @Nullable final File file,
