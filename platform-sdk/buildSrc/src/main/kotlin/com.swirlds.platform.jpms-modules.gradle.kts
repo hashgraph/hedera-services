@@ -48,10 +48,9 @@ extraJavaModuleInfo {
     automaticModule("com.google.truth:truth", "truth")
     automaticModule("org.awaitility:awaitility", "awaitility")
 
-    automaticModule("org.antlr:antlr4", "antlr4")
-    automaticModule("org.antlr:ST4", "ST4")
-    automaticModule("org.antlr:antlr-runtime", "antlr-runtime")
+    automaticModule("org.antlr:antlr4", "org.antlr.antlr4")
+    automaticModule("org.antlr:antlr-runtime", "org.antlr.antlr.runtime")
+    automaticModule("org.antlr:ST4", "org.antlr.ST4")
     automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
-
 }
 

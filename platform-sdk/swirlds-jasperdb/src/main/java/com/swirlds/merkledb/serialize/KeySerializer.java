@@ -16,8 +16,6 @@
 
 package com.swirlds.merkledb.serialize;
 
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -117,7 +115,6 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
      * @param buffer The buffer to read from and compare to
      * @param keyToCompare The key to compare with the data in the file.
      * @return true if the content of the buffer matches this class's data
-     * @throws IOException If there was a problem reading from the buffer
      */
     boolean equals(@NonNull BufferedData buffer, @NonNull K keyToCompare);
 

@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -28,10 +27,7 @@ import java.nio.file.Path;
  * It is designed to be used from a single thread.
  *
  * @see DataFileWriter for definition of file structure
- *
- * @param <B> The type of the data item data buffer
  */
-@SuppressWarnings("rawtypes")
 public interface DataFileIterator extends AutoCloseable {
 
     /**
