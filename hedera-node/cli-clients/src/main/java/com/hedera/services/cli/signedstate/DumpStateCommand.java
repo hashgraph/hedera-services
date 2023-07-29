@@ -59,6 +59,11 @@ public class DumpStateCommand extends AbstractCommand {
         YES
     }
 
+    enum Format {
+        CSV,
+        ELIDED_DEFAULT_FIELDS
+    }
+
     // We want to open the signed state file only once but run a bunch of dumps against it
     // (because it takes a long time to open the signed state file).  So we can specify
     // more than one of these subcommands on the single command line.  But we don't get
@@ -123,6 +128,37 @@ public class DumpStateCommand extends AbstractCommand {
                 storePath,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 withSlots ? WithSlots.YES : WithSlots.NO,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "accounts")
+    void accounts(
+            @Option(
+                            names = {"--account"},
+                            arity = "1",
+                            description = "Output file for accounts dump")
+                    @NonNull
+                    final Path accountPath,
+            @Option(
+                            names = {"--csv"},
+                            arity = "0..1",
+                            description = "If present output is in pure csv form")
+                    final boolean doCsv,
+            @Option(
+                            names = {"--limit"},
+                            arity = "0..1",
+                            defaultValue = "-1",
+                            description = "Limit #of accounts processed (default: all)")
+                    int limit) {
+        Objects.requireNonNull(accountPath);
+        init();
+        System.out.println("=== accounts ===");
+        DumpAccountsSubcommand.doit(
+                parent.signedState,
+                accountPath,
+                limit,
+                doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();
     }
