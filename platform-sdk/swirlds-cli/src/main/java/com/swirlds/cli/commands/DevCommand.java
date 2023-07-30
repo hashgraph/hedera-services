@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.cli;
+package com.swirlds.cli.commands;
 
-import static com.swirlds.common.constructable.GenerateClassId.generateAndPrintClassId;
-
-import com.swirlds.cli.commands.DevCommand;
+import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import picocli.CommandLine;
 
-@CommandLine.Command(
-        name = "generate-uid",
-        mixinStandardHelpOptions = true,
-        description = "Generate a random class ID for a serializable object.")
-@SubcommandOf(DevCommand.class)
-public final class GenerateUidCommand extends AbstractCommand {
+/**
+ * A collection of operations on event streams.
+ */
+@CommandLine.Command(name = "dev", mixinStandardHelpOptions = true, description = "Miscellaneous developer tools.")
+@SubcommandOf(PlatformCli.class)
+public final class DevCommand extends AbstractCommand {
 
-    private GenerateUidCommand() {}
-
-    @Override
-    public Integer call() {
-        generateAndPrintClassId();
-        return 0;
-    }
+    private DevCommand() {}
 }

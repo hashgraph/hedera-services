@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,13 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.common.constructable.GenerateClassId.generateAndPrintClassId;
-
 import com.swirlds.cli.commands.DevCommand;
-import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import picocli.CommandLine;
 
 @CommandLine.Command(
-        name = "generate-uid",
+        name = "jtr",
         mixinStandardHelpOptions = true,
-        description = "Generate a random class ID for a serializable object.")
+        description = "Read JRS test results and create a report.")
 @SubcommandOf(DevCommand.class)
-public final class GenerateUidCommand extends AbstractCommand {
-
-    private GenerateUidCommand() {}
-
-    @Override
-    public Integer call() {
-        generateAndPrintClassId();
-        return 0;
-    }
-}
+public class JrsTestReaderCommand {}
