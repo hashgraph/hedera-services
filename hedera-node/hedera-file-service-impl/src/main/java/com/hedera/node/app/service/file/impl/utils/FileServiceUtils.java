@@ -105,12 +105,17 @@ public class FileServiceUtils {
     public static void validateAndAddRequiredKeys(
             @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
             throws PreCheckException {
-        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-            // @todo('protobuf change needed') change to immutable file response code
-            if (areKeysRequired) {
-                throw new PreCheckException(UNAUTHORIZED);
-            }
-        }
+
+        // TODO This logic is wrong. What we should be doing, is verifying whether the file in state has keys, and
+        //  if so, that all those keys are added to the required signing keys, and if not, then unless the user is
+        //  a super user, we should throw UNAUTHORIZED. But just because the update transaction itself (for example)
+        //  is missing keys DOES NOT mean that we should throw UNAUTHORIZED.
+        //        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
+        //            // @todo('protobuf change needed') change to immutable file response code
+        //            if (areKeysRequired) {
+        //                throw new PreCheckException(UNAUTHORIZED);
+        //            }
+        //        }
 
         if (listKeys != null && listKeys.hasKeys()) {
             for (final Key key : listKeys.keys()) {

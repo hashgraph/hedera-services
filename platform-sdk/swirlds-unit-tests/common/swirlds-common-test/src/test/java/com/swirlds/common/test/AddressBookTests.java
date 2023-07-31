@@ -19,7 +19,7 @@ package com.swirlds.common.test;
 import static com.swirlds.common.system.address.AddressBookUtils.parseAddressBookText;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,6 +37,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -401,7 +402,7 @@ class AddressBookTests {
     @DisplayName("Out Of Order add() Test")
     void outOfOrderAddTest() {
         final RandomAddressBookGenerator generator = new RandomAddressBookGenerator(getRandomPrintSeed()).setSize(100);
-        final AddressBook addressBook = new AddressBook();
+        final AddressBook addressBook = generator.build();
 
         // The address book has gaps. Make sure we can't insert anything into those gaps.
         for (int i = 0; i < addressBook.getNextNodeId().id(); i++) {
@@ -414,7 +415,7 @@ class AddressBookTests {
             } else {
                 // We can't add something into a gap
                 assertThrows(
-                        IllegalStateException.class,
+                        IllegalArgumentException.class,
                         () -> addressBook.add(address),
                         "shouldn't be able to add this address");
             }
@@ -448,14 +449,15 @@ class AddressBookTests {
         final AddressBook addressBook = generator.build();
 
         final NodeId nextId = addressBook.getNextNodeId();
-        addressBook.setNextNodeId(nextId.id() + 10);
+        addressBook.setNextNodeId(nextId.getOffset(10));
 
-        assertEquals(nextId.id() + 10, addressBook.getNextNodeId().id(), "node ID should have been updated");
+        assertEquals(nextId.getOffset(10), addressBook.getNextNodeId(), "node ID should have been updated");
 
+        final NodeId lastNodeId = addressBook.getNodeId(addressBook.getSize() - 1);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> addressBook.setNextNodeId(0),
-                "node ID shouldn't be able to be set to a value less than an existing address book");
+                () -> addressBook.setNextNodeId(lastNodeId.getOffset(-1)),
+                "the next node ID should not be able to be set to a value less than or equal to the last node id in the address book");
     }
 
     @Test
@@ -484,12 +486,12 @@ class AddressBookTests {
             assertEquals(address.getSelfName(), parsedAddress.getSelfName(), "self name matches");
             assertEquals(address.getNickname(), parsedAddress.getNickname(), "nickname matches");
             assertEquals(address.getWeight(), parsedAddress.getWeight(), "weight matches");
-            assertArrayEquals(
-                    address.getAddressInternalIpv4(), parsedAddress.getAddressInternalIpv4(), "internal ipv4 matches");
-            assertEquals(address.getPortInternalIpv4(), parsedAddress.getPortInternalIpv4(), "internal port matches");
-            assertArrayEquals(
-                    address.getAddressExternalIpv4(), parsedAddress.getAddressExternalIpv4(), "external ipv4 matches");
-            assertEquals(address.getPortExternalIpv4(), parsedAddress.getPortExternalIpv4(), "external port matches");
+            assertEquals(
+                    address.getHostnameInternal(), parsedAddress.getHostnameInternal(), "internal hostname matches");
+            assertEquals(address.getPortInternal(), parsedAddress.getPortInternal(), "internal port matches");
+            assertEquals(
+                    address.getHostnameExternal(), parsedAddress.getHostnameExternal(), "external hostname matches");
+            assertEquals(address.getPortExternal(), parsedAddress.getPortExternal(), "external port matches");
             assertEquals(address.getMemo(), parsedAddress.getMemo(), "memo matches");
         }
     }
@@ -524,5 +526,44 @@ class AddressBookTests {
         } catch (final ParseException e) {
             assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
         }
+    }
+
+    @Test
+    @DisplayName("Reconnect Address Book Comparison Test")
+    public void reconnectAddressBookComparisonTest() {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(10).build();
+
+        assertDoesNotThrow(() -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook.copy()));
+        // test exception on size mismatch
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(
+                        addressBook, addressBook.copy().remove(addressBook.getNodeId(0))));
+        // test exception on nextNodeId mismatch
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(
+                        addressBook,
+                        addressBook
+                                .copy()
+                                .setNextNodeId(addressBook.getNextNodeId().getOffset(5))));
+
+        // test exception on node id mismatch
+        final AddressBook addressBook2 = addressBook.copy();
+        final Address address = addressBook2.getAddress(addressBook2.getNodeId(0));
+        addressBook2.remove(address.getNodeId());
+        addressBook2.add(address.copySetNodeId(addressBook.getNextNodeId()));
+        addressBook.setNextNodeId(addressBook2.getNextNodeId());
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook2));
+
+        // test exception on address mismatch
+        final AddressBook addressBook3 = addressBook.copy();
+        addressBook3.updateWeight(addressBook3.getNodeId(0), 100);
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook3));
     }
 }

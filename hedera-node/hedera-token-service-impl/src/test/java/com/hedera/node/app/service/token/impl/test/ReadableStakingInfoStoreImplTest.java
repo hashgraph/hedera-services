@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.test;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
@@ -69,5 +70,29 @@ class ReadableStakingInfoStoreImplTest {
     void testGetEmpty() {
         final var result = subject.get(NODE_ID_20);
         Assertions.assertThat(result).isNull();
+    }
+
+    @Test
+    void getAllReturnsAllKeys() {
+        final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .value(NODE_ID_10, stakingNodeInfo)
+                .value(NODE_ID_20, mock(StakingNodeInfo.class))
+                .build();
+        given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        subject = new ReadableStakingInfoStoreImpl(states);
+
+        final var result = subject.getAll();
+        Assertions.assertThat(result).containsExactlyInAnyOrder(NODE_ID_10, NODE_ID_20);
+    }
+
+    @Test
+    void getAllReturnsEmptyKeys() {
+        final var readableStakingNodes = MapReadableKVState.<Long, StakingNodeInfo>builder(STAKING_INFO_KEY)
+                .build(); // Intentionally empty
+        given(states.<Long, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
+        subject = new ReadableStakingInfoStoreImpl(states);
+
+        final var result = subject.getAll();
+        Assertions.assertThat(result).isEmpty();
     }
 }

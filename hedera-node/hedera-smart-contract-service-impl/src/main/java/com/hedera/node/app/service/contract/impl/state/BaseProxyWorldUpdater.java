@@ -72,15 +72,11 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
         final var sizeEffects = summarizeSizeEffects(changes);
 
         // Validate the effects on size are legal
-        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), scope, sizeEffects.sizeChanges());
-
-        // For each increase in storage size, calculate rent and try to charge the allocating contract
+        storageSizeValidator.assertValid(sizeEffects.finalSlotsUsed(), scope.dispatch(), sizeEffects.sizeChanges());
+        // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
-
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
-        final WritableKVState<SlotKey, SlotValue> storage =
-                scope.writableContractState().get(STORAGE_KEY);
-        storageManager.rewrite(scope, changes, sizeEffects.sizeChanges(), storage);
+        storageManager.rewrite(scope, changes, sizeEffects.sizeChanges(), scopedStorage());
 
         super.commit();
     }
@@ -113,5 +109,9 @@ public class BaseProxyWorldUpdater extends ProxyWorldUpdater {
                 scope.dispatch().chargeStorageRent(sizeChange.contractNumber(), rentInTinybars, true);
             }
         }
+    }
+
+    private WritableKVState<SlotKey, SlotValue> scopedStorage() {
+        return scope.writableContractState().get(STORAGE_KEY);
     }
 }

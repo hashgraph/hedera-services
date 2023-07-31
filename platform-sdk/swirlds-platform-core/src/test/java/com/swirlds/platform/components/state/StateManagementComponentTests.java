@@ -35,6 +35,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusGetter;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
@@ -114,7 +116,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -161,7 +163,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -176,9 +178,7 @@ class StateManagementComponentTests {
             final SignedState signedStateSpy = spy(signedState);
             when(signedStateSpy.isComplete()).thenReturn(true);
 
-            final SourceOfSignedState source =
-                    random.nextBoolean() ? SourceOfSignedState.DISK : SourceOfSignedState.RECONNECT;
-            component.stateToLoad(signedStateSpy, source);
+            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
 
             // Some basic assertions on the signed state provided to the new latest complete state consumer
             verifyNewLatestCompleteStateConsumer(roundNum, signedStateSpy);
@@ -194,10 +194,7 @@ class StateManagementComponentTests {
             final SignedState signedStateSpy = spy(signedState);
             when(signedStateSpy.isComplete()).thenReturn(true);
 
-            final SourceOfSignedState source =
-                    random.nextBoolean() ? SourceOfSignedState.DISK : SourceOfSignedState.RECONNECT;
-
-            component.stateToLoad(signedStateSpy, source);
+            component.stateToLoad(signedStateSpy, SourceOfSignedState.DISK);
 
             // The signed state provided is old, so the consumer should not be invoked again
             assertEquals(
@@ -255,7 +252,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -301,7 +298,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         systemTransactionConsumer.reset();
         component.start();
@@ -379,7 +376,7 @@ class StateManagementComponentTests {
                 .setSize(NUM_NODES)
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, false);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -399,7 +396,7 @@ class StateManagementComponentTests {
                 .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
-        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook, true);
+        final DefaultStateManagementComponent component = newStateManagementComponent(addressBook);
 
         component.start();
 
@@ -435,22 +432,26 @@ class StateManagementComponentTests {
 
         final Hash stateHash = signedState.getState().getHash();
         final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(0),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(0), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(1),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(2),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), otherHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(3),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(0),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), stateHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(1),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), stateHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(2),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), otherHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(3),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
         assertNull(issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
@@ -477,22 +478,26 @@ class StateManagementComponentTests {
 
         final Hash stateHash = signedState.getState().getHash();
         final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(0),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(0), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(1),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(2),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), stateHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(3),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(0),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), stateHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(1),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), stateHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(2),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), stateHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(3),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
         assertEquals(addressBook.getNodeId(3), issConsumer.getIssNodeId(), "Incorrect other node ISS id reported");
@@ -518,18 +523,21 @@ class StateManagementComponentTests {
         component.newSignedStateFromTransactions(signedState.reserve("test"));
 
         final Hash otherHash = RandomUtils.randomHash(random);
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(1),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(1), otherHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(2),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(2), otherHash));
-        component.handleStateSignatureTransactionPostConsensus(
-                null,
-                addressBook.getNodeId(3),
-                issStateSignatureTransaction(signedState, addressBook.getNodeId(3), otherHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(1),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), otherHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(2),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), otherHash));
+        component
+                .getConsensusHashManager()
+                .handlePostconsensusSignatureTransaction(
+                        addressBook.getNodeId(3),
+                        new StateSignatureTransaction(roundNum, mock(Signature.class), otherHash));
 
         assertEquals(signedState.getRound(), issConsumer.getIssRound(), "Incorrect round reported to iss consumer");
         assertEquals(NODE_ID, issConsumer.getIssNodeId(), "ISS should have been reported as self ISS");
@@ -567,8 +575,9 @@ class StateManagementComponentTests {
 
     private void allNodesSign(final SignedState signedState, final DefaultStateManagementComponent component) {
         final AddressBook addressBook = signedState.getAddressBook();
-        IntStream.range(0, NUM_NODES)
-                .forEach(index -> component.handleStateSignatureTransactionPreConsensus(
+        IntStream.range(0, NUM_NODES).forEach(index -> component
+                .getSignedStateManager()
+                .handlePreconsensusSignatureTransaction(
                         addressBook.getNodeId(index),
                         stateSignatureTransaction(addressBook.getNodeId(index), signedState)));
     }
@@ -637,19 +646,15 @@ class StateManagementComponentTests {
     }
 
     @NonNull
-    private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook, final boolean saveReconnectState) {
-        return newStateManagementComponent(addressBook, defaultConfigBuilder(), saveReconnectState);
+    private DefaultStateManagementComponent newStateManagementComponent(@NonNull final AddressBook addressBook) {
+        return newStateManagementComponent(addressBook, defaultConfigBuilder());
     }
 
     @NonNull
     private DefaultStateManagementComponent newStateManagementComponent(
-            @NonNull final AddressBook addressBook,
-            @NonNull final TestConfigBuilder configBuilder,
-            final boolean saveReconnectState) {
-        configBuilder
-                .withValue("state.savedStateDirectory", tmpDir.toFile().toString())
-                .withValue("state.saveReconnectStateToDisk", saveReconnectState ? "true" : "false");
+            @NonNull final AddressBook addressBook, @NonNull final TestConfigBuilder configBuilder) {
+
+        configBuilder.withValue("state.savedStateDirectory", tmpDir.toFile().toString());
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withMetrics(new NoOpMetrics())
@@ -658,6 +663,9 @@ class StateManagementComponentTests {
 
         final PlatformSigner signer = mock(PlatformSigner.class);
         when(signer.sign(any(Hash.class))).thenReturn(mock(Signature.class));
+
+        final PlatformStatusGetter platformStatusGetter = mock(PlatformStatusGetter.class);
+        when(platformStatusGetter.getCurrentStatus()).thenReturn(PlatformStatus.ACTIVE);
 
         return new DefaultStateManagementComponent(
                 platformContext,
@@ -676,6 +684,7 @@ class StateManagementComponentTests {
                 (msg) -> {},
                 (msg, t, code) -> {},
                 mock(PreconsensusEventWriter.class),
-                () -> PlatformStatus.ACTIVE);
+                platformStatusGetter,
+                mock(StatusActionSubmitter.class));
     }
 }

@@ -35,7 +35,6 @@ import com.swirlds.platform.config.ThreadConfig;
 import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.ConsensusMetrics;
-import com.swirlds.platform.observers.PreConsensusEventObserver;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.stats.AverageAndMax;
 import com.swirlds.platform.stats.AverageStat;
@@ -47,11 +46,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Created by a Platform to manage the flow of pre-consensus events to SwirldState (1 instance or 3 depending on the
- * SwirldState implemented). It contains a thread queue that contains a queue of pre-consensus events (q1) and a
- * SwirldStateManager which applies those events to the state
+ * Prehandles transactions (both system and application). Ensures that application transactions are prehandled before
+ * handling the consensus round containing the transactions. There is currently no requirement for strong ordering
+ * between prehandling and handling of system transactions, and so none is currently enforced.
  */
-public class PreConsensusEventHandler implements PreConsensusEventObserver, Clearable, Startable {
+public class PreConsensusEventHandler implements Clearable, Startable {
 
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(PreConsensusEventHandler.class);
@@ -71,18 +70,12 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     private final SwirldStateManager swirldStateManager;
 
     /**
-     * @param metrics
-     *      metrics system
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param selfId
-     * 		the ID of this node
-     * @param swirldStateManager
-     * 		manages states
-     * @param consensusMetrics
-     * 		metrics relating to consensus
-     * @param threadConfig
-     *      configuration for the thread system
+     * @param metrics            metrics system
+     * @param threadManager      responsible for managing thread lifecycles
+     * @param selfId             the ID of this node
+     * @param swirldStateManager manages states
+     * @param consensusMetrics   metrics relating to consensus
+     * @param threadConfig       configuration for the thread system
      */
     public PreConsensusEventHandler(
             @NonNull final Metrics metrics,
@@ -145,13 +138,9 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
     }
 
     /**
-     * Do pre-handle processing on the pre-consensus event and add it to the queue (q1) for handling. Events that are
-     * null or empty are discarded immediately. All other events go through pre-handle processing. Events that should
-     * not be handled pre-consensus according to {@link SwirldStateManager#discardPreConsensusEvent(EventImpl)} are not
-     * added to the queue.
+     * Do prehandle processing on the preconsensus event and add it to the queue (q1) for handling.
      */
-    @Override
-    public void preConsensusEvent(final EventImpl event) {
+    public void preconsensusEvent(final EventImpl event) {
         // we don't need empty pre-consensus events
         if (event == null || event.isEmpty()) {
             return;
@@ -159,11 +148,6 @@ public class PreConsensusEventHandler implements PreConsensusEventObserver, Clea
 
         // All events are supplied for preHandle
         swirldStateManager.preHandle(event);
-
-        // some events should not be applied as pre-consensus, so discard them
-        if (swirldStateManager.discardPreConsensusEvent(event)) {
-            return;
-        }
 
         try {
             // update the estimate now, so the queue can sort on it

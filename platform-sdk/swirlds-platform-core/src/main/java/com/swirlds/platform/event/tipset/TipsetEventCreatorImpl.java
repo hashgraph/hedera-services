@@ -69,6 +69,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
+    private final int networkSize;
 
     /**
      * The bully score is divided by this number to get the probability of creating an event that reduces the bully
@@ -138,6 +139,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
                 platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+        networkSize = addressBook.getSize();
 
         zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
@@ -199,6 +201,12 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     @Override
     @Nullable
     public GossipEvent maybeCreateEvent() {
+        if (networkSize == 1) {
+            // Special case: network of size 1.
+            // We can always create a new event, no need to run the tipset algorithm.
+            return createEventForSizeOneNetwork();
+        }
+
         final long bullyScore = tipsetWeightCalculator.getMaxBullyScore();
         tipsetMetrics.getBullyScoreMetric().update(bullyScore);
 
@@ -211,6 +219,20 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         } else {
             return createEventByOptimizingAdvancementWeight();
         }
+    }
+
+    /**
+     * Create the next event for a network of size 1 (i.e. where we are the only member). We don't use the tipset
+     * algorithm like normal, since we will never have a real other parent.
+     *
+     * @return the new event
+     */
+    private GossipEvent createEventForSizeOneNetwork() {
+        // There is a quirk in size 1 networks where we can only
+        // reach consensus if the self parent is also the other parent.
+        // Unexpected, but harmless. So just use the same event
+        // as both parents until that issue is resolved.
+        return buildAndProcessEvent(lastSelfEvent);
     }
 
     /**
@@ -287,9 +309,10 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                     // an advancement score of zero.
                     zeroAdvancementWeightLogger.error(
                             EXCEPTION.getMarker(),
-                            "bully score is {} but advancement score is zero for {}",
+                            "bully score is {} but advancement score is zero for {}.\n{}",
                             bullyScore,
-                            possibleNerd);
+                            possibleNerd,
+                            this);
                 }
             }
         }
@@ -432,5 +455,16 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         } else {
             return descriptor.getCreator();
         }
+    }
+
+    @NonNull
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Minimum generation non-ancient: ")
+                .append(tipsetTracker.getMinimumGenerationNonAncient())
+                .append("\n");
+        sb.append(childlessOtherEventTracker);
+        sb.append(tipsetWeightCalculator);
+        return sb.toString();
     }
 }

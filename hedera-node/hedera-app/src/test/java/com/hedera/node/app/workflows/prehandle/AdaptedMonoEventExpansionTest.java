@@ -26,6 +26,7 @@ import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.GlobalStaticProperties;
 import com.hedera.node.app.service.mono.sigs.EventExpansion;
+import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
@@ -62,11 +63,15 @@ class AdaptedMonoEventExpansionTest extends AppTestBase {
     @Mock
     private NodeInfo nodeInfo;
 
+    @Mock
+    private SigReqsManager sigReqsManager;
+
     private AdaptedMonoEventExpansion subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AdaptedMonoEventExpansion(eventExpansion, preHandleWorkflow, staticProperties);
+        subject = new AdaptedMonoEventExpansion(
+                eventExpansion, preHandleWorkflow, staticProperties, () -> sigReqsManager);
     }
 
     @Test

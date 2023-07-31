@@ -226,8 +226,7 @@ class TokenFreezeAccountHandlerTest {
             final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
-                    .willReturn(
-                            Account.newBuilder().accountNumber(accountNumber).build());
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token)).willReturn(null);
             final var txn = newFreezeTxn(token);
             given(context.body()).willReturn(txn);
@@ -244,8 +243,7 @@ class TokenFreezeAccountHandlerTest {
             final var accountNumber = (long) ACCOUNT_13257.accountNumOrThrow();
             given(readableTokenStore.getTokenMeta(token)).willReturn(tokenMetaWithFreezeKey());
             given(readableAccountStore.getAccountById(ACCOUNT_13257))
-                    .willReturn(
-                            Account.newBuilder().accountNumber(accountNumber).build());
+                    .willReturn(Account.newBuilder().accountId(ACCOUNT_13257).build());
             given(tokenRelStore.getForModify(ACCOUNT_13257, token))
                     .willReturn(TokenRelation.newBuilder()
                             .tokenId(token)

@@ -16,12 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStoreImpl;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -39,22 +39,23 @@ class WritableNetworkStakingRewardsStoreImplTest {
     private WritableStates states;
 
     private WritableSingletonStateBase<NetworkStakingRewards> stakingRewardsState;
-    private WritableNetworkStakingRewardsStoreImpl subject;
+    private WritableNetworkStakingRewardsStore subject;
 
     @BeforeEach
     void setUp() {
         final AtomicReference<NetworkStakingRewards> backingValue =
                 new AtomicReference<>(new NetworkStakingRewards(true, 1L, 2L, 3L));
         stakingRewardsState =
-                new WritableSingletonStateBase<>(STAKING_REWARDS_KEY, backingValue::get, backingValue::set);
-        given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn((WritableSingletonState) stakingRewardsState);
+                new WritableSingletonStateBase<>(STAKING_NETWORK_REWARDS_KEY, backingValue::get, backingValue::set);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY))
+                .willReturn((WritableSingletonState) stakingRewardsState);
 
-        subject = new WritableNetworkStakingRewardsStoreImpl(states);
+        subject = new WritableNetworkStakingRewardsStore(states);
     }
 
     @Test
     void constructorWithNullArg() {
-        Assertions.assertThatThrownBy(() -> new WritableNetworkStakingRewardsStoreImpl(null))
+        Assertions.assertThatThrownBy(() -> new WritableNetworkStakingRewardsStore(null))
                 .isInstanceOf(NullPointerException.class);
     }
 

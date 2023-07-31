@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.SYNC;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -28,6 +29,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -38,6 +40,7 @@ import com.swirlds.platform.network.SocketConnection;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.net.Socket;
+import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,6 +58,8 @@ public class InboundConnectionHandler {
     private final SocketConfig socketConfig;
     private final boolean doVersionCheck;
     private final SoftwareVersion softwareVersion;
+    /** Rate Limited Logger for SocketExceptions */
+    private final RateLimitedLogger socketExceptionLogger;
     private final Configuration configuration;
 
     public InboundConnectionHandler(
@@ -65,6 +70,7 @@ public class InboundConnectionHandler {
             @NonNull final SocketConfig socketConfig,
             final boolean doVersionCheck,
             @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Time time,
             @NonNull final Configuration configuration) {
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
@@ -73,6 +79,8 @@ public class InboundConnectionHandler {
         this.socketConfig = Objects.requireNonNull(socketConfig);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        Objects.requireNonNull(time);
+        this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.configuration = Objects.requireNonNull(configuration);
     }
 
@@ -128,17 +136,17 @@ public class InboundConnectionHandler {
             logger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} was interrupted: {}",
+                    otherId == null ? "unknown" : otherId,
                     selfId,
-                    otherId,
                     formattedException);
             NetworkUtils.close(dis, dos, clientSocket);
         } catch (final IOException e) {
             String formattedException = NetworkUtils.formatException(e);
-            logger.warn(
+            socketExceptionLogger.warn(
                     SOCKET_EXCEPTIONS.getMarker(),
                     "Inbound connection from {} to {} had IOException: {}",
+                    otherId == null ? "unknown" : otherId,
                     selfId,
-                    otherId,
                     formattedException);
             NetworkUtils.close(dis, dos, clientSocket);
         } catch (final RuntimeException e) {

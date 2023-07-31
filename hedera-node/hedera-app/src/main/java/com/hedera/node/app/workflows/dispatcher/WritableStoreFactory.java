@@ -18,17 +18,21 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -56,9 +60,17 @@ public class WritableStoreFactory {
                     WritableTokenStore.class, WritableTokenStore::new,
                     WritableTokenRelationStore.class, WritableTokenRelationStore::new),
             FreezeService.NAME,
-            Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
+            Map.of(WritableUpgradeStore.class, WritableUpgradeStore::new),
             FileService.NAME,
-            Map.of(WritableFileStore.class, WritableFileStore::new));
+            Map.of(
+                    WritableFileStore.class,
+                    WritableFileStore::new,
+                    WritableUpgradeFileStore.class,
+                    WritableUpgradeFileStore::new),
+            EntityIdService.NAME,
+            Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new),
+            UtilService.NAME,
+            Map.of());
 
     private final Map<Class<?>, Function<WritableStates, ?>> storeFactories;
     private final WritableStates states;

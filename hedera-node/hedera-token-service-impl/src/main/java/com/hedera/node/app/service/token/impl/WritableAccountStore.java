@@ -37,11 +37,6 @@ import java.util.Set;
  * class is not complete, it will be extended with other methods like remove, update etc.,
  */
 public class WritableAccountStore extends ReadableAccountStoreImpl {
-    /** The underlying data storage class that holds the account data. */
-    private final WritableKVState<AccountID, Account> accountState;
-    /** The underlying data storage class that holds the aliases data built from the state. */
-    private final WritableKVState<String, AccountID> aliases;
-
     /**
      * Create a new {@link WritableAccountStore} instance.
      *
@@ -49,10 +44,16 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public WritableAccountStore(@NonNull final WritableStates states) {
         super(states);
-        requireNonNull(states);
+    }
 
-        this.accountState = states.get(TokenServiceImpl.ACCOUNTS_KEY);
-        this.aliases = states.get(TokenServiceImpl.ALIASES_KEY);
+    @Override
+    protected WritableKVState<AccountID, Account> accountState() {
+        return super.accountState();
+    }
+
+    @Override
+    protected WritableKVState<Bytes, AccountID> aliases() {
+        return super.aliases();
     }
 
     /**
@@ -63,19 +64,18 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState.put(
-                AccountID.newBuilder().accountNum(account.accountNumber()).build(), Objects.requireNonNull(account));
+        accountState().put(account.accountId(), account);
     }
 
     /**
      * Persists a new alias linked to the account persisted to state
      *
      * @param alias - the alias to be added to modifications in state.
-     * @param accountNum - the account number to be added to modifications in state.
+     * @param accountId - the account number to be added to modifications in state.
      */
-    public void putAlias(@NonNull final String alias, final long accountNum) {
+    public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
         Objects.requireNonNull(alias);
-        aliases.put(alias, AccountID.newBuilder().accountNum(accountNum).build());
+        aliases().put(alias, accountId);
     }
 
     /**
@@ -108,7 +108,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
                         if (alias.length() == EVM_ADDRESS_LEN && isMirror(alias)) {
                             yield fromMirror(alias);
                         } else {
-                            final var accountID = aliases.get(alias.asUtf8String());
+                            final var accountID = aliases().get(alias);
                             yield accountID == null ? 0L : accountID.accountNum();
                         }
                     }
@@ -117,8 +117,9 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
 
         return accountNum == null
                 ? null
-                : accountState.getForModify(
-                        AccountID.newBuilder().accountNum(accountNum).build());
+                : accountState()
+                        .getForModify(
+                                AccountID.newBuilder().accountNum(accountNum).build());
     }
 
     /**
@@ -127,7 +128,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @param accountID - the account id of the account to be removed.
      */
     public void remove(@NonNull final AccountID accountID) {
-        accountState.remove(accountID);
+        accountState().remove(accountID);
     }
 
     /**
@@ -137,7 +138,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the number of accounts in the state.
      */
     public long sizeOfAccountState() {
-        return accountState.size();
+        return accountState().size();
     }
 
     /**
@@ -147,7 +148,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the number of aliases in the state.
      */
     public long sizeOfAliasesState() {
-        return aliases.size();
+        return aliases().size();
     }
 
     /**
@@ -157,7 +158,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     @NonNull
     public Set<AccountID> modifiedAccountsInState() {
-        return accountState.modifiedKeys();
+        return accountState().modifiedKeys();
     }
 
     /**
@@ -166,7 +167,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * @return the set of aliases modified in existing state
      */
     @NonNull
-    public Set<String> modifiedAliasesInState() {
-        return aliases.modifiedKeys();
+    public Set<Bytes> modifiedAliasesInState() {
+        return aliases().modifiedKeys();
     }
 }

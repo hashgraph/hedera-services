@@ -27,10 +27,12 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeFactory;
 
 /**
  * An {@link Account} whose code proxies all calls to the {@code 0x167} system contract, and thus can
@@ -73,6 +75,11 @@ public class TokenEvmAccount extends AbstractMutableEvmAccount {
     @Override
     public Bytes getCode() {
         return state.getTokenRedirectCode(address);
+    }
+
+    @Override
+    public @NonNull Code getEvmCode() {
+        return CodeFactory.createCode(getCode(), 0, false);
     }
 
     @Override

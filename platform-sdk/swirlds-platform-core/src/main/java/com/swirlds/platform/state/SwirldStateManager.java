@@ -51,18 +51,6 @@ public interface SwirldStateManager extends FreezePeriodChecker, Clearable, Load
     void handlePreConsensusEvent(final EventImpl event);
 
     /**
-     * Determines if a pre-consensus event should be discarded or added to the pre-consensus queue (q1) for
-     * processing.
-     *
-     * @param event
-     * 		the event to discard or not
-     * @return true if the event should be discarded, false otherwise
-     */
-    default boolean discardPreConsensusEvent(final EventImpl event) {
-        return false;
-    }
-
-    /**
      * Provides the transaction pool used to store transactions submitted by this node.
      *
      * @return the transaction pool

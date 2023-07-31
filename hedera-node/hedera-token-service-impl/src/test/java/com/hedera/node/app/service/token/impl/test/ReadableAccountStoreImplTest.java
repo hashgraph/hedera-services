@@ -53,7 +53,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
     @Test
     void getAccount() {
         // given
-        given(account.accountNumber()).willReturn(accountNum);
+        given(account.accountId()).willReturn(id);
         given(account.memo()).willReturn("");
         given(account.key()).willReturn(accountKey);
         given(account.expiry()).willReturn(5L);
@@ -73,7 +73,8 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         given(account.stakedAccountId())
                 .willReturn(AccountID.newBuilder().accountNum(41L).build());
         given(account.declineReward()).willReturn(true);
-        given(account.autoRenewAccountNumber()).willReturn(53L);
+        given(account.autoRenewAccountId())
+                .willReturn(AccountID.newBuilder().accountNum(53L).build());
         given(account.autoRenewSecs()).willReturn(59L);
         given(account.alias()).willReturn(Bytes.wrap(new byte[] {1, 2, 3}));
         given(account.smartContract()).willReturn(true);
@@ -101,9 +102,9 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
                 .isEqualTo(AccountID.newBuilder().accountNum(41L).build());
         assertThat(mappedAccount.declineReward()).isTrue();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
-        assertThat(mappedAccount.autoRenewAccountNumber()).isEqualTo(53L);
+        assertThat(mappedAccount.autoRenewAccountId().accountNum()).isEqualTo(53L);
         assertThat(mappedAccount.autoRenewSecs()).isEqualTo(59L);
-        assertThat(mappedAccount.accountNumber()).isEqualTo(accountNum);
+        assertThat(mappedAccount.accountId()).isEqualTo(id);
         assertThat(mappedAccount.alias()).isEqualTo(Bytes.wrap(new byte[] {1, 2, 3}));
         assertThat(mappedAccount.smartContract()).isTrue();
     }
@@ -114,7 +115,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         // given
         given(account.key()).willReturn(accountKey);
         given(account.memo()).willReturn("");
-        given(account.accountNumber()).willReturn(accountNum);
+        given(account.accountId()).willReturn(id);
 
         // when
         final var mappedAccount = subject.getAccountById(id);
@@ -139,9 +140,9 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         assertThat(mappedAccount.stakedNodeId()).isZero();
         assertThat(mappedAccount.declineReward()).isFalse();
         assertThat(mappedAccount.stakeAtStartOfLastRewardedPeriod()).isZero();
-        assertThat(mappedAccount.autoRenewAccountNumber()).isZero();
+        assertThat(mappedAccount.autoRenewAccountId()).isNull();
         assertThat(mappedAccount.autoRenewSecs()).isZero();
-        assertThat(mappedAccount.accountNumber()).isEqualTo(accountNum);
+        assertThat(mappedAccount.accountId()).isEqualTo(id);
         assertThat(mappedAccount.alias()).isNull();
         assertThat(mappedAccount.smartContract()).isFalse();
     }

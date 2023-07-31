@@ -71,15 +71,15 @@ public interface SocketFactory {
      * 		the socket to configure and connect
      * @param socketConfig
      * 		the configuration for the socket
-     * @param ipAddress
-     * 		the IP address to connect to
+     * @param hostname
+     * 		the address to connect to
      * @param port
      * 		the TCP port to connect to
      * @throws IOException
      * 		if the connections fails
      */
     static void configureAndConnect(
-            final Socket clientSocket, final SocketConfig socketConfig, final String ipAddress, final int port)
+            final Socket clientSocket, final SocketConfig socketConfig, final String hostname, final int port)
             throws IOException {
         if (isIpTopInRange(socketConfig.ipTos())) {
             // set the IP_TOS option
@@ -90,7 +90,7 @@ public interface SocketFactory {
         clientSocket.setTcpNoDelay(socketConfig.tcpNoDelay());
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
         // because it causes a major bug in certain situations
-        clientSocket.connect(new InetSocketAddress(ipAddress, port), socketConfig.timeoutSyncClientConnect());
+        clientSocket.connect(new InetSocketAddress(hostname, port), socketConfig.timeoutSyncClientConnect());
     }
 
     /**
@@ -110,13 +110,13 @@ public interface SocketFactory {
     /**
      * Create a new Socket, then connect to the given ip and port.
      *
-     * @param ipAddress
-     * 		the ip address to connect to
+     * @param hostname
+     * 		the address to connect to
      * @param port
      * 		the port to connect to
      * @return the new socket
      * @throws IOException
      * 		if the connection cannot be made
      */
-    Socket createClientSocket(final String ipAddress, final int port) throws IOException;
+    Socket createClientSocket(final String hostname, final int port) throws IOException;
 }

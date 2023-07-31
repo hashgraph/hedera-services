@@ -103,13 +103,13 @@ public class TlsFactory implements SocketFactory {
     }
 
     @Override
-    public Socket createClientSocket(final String ipAddress, final int port) throws IOException {
+    public Socket createClientSocket(final String hostname, final int port) throws IOException {
         SSLSocket clientSocket = (SSLSocket) sslSocketFactory.createSocket();
         // ensure the connection is ALWAYS the exact cipher suite we've chosen
         clientSocket.setEnabledCipherSuites(new String[] {CryptoConstants.TLS_SUITE});
         clientSocket.setWantClientAuth(true);
         clientSocket.setNeedClientAuth(true);
-        SocketFactory.configureAndConnect(clientSocket, socketConfig, ipAddress, port);
+        SocketFactory.configureAndConnect(clientSocket, socketConfig, hostname, port);
         clientSocket.startHandshake();
         return clientSocket;
     }

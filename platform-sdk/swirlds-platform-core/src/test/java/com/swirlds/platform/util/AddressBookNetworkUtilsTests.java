@@ -44,23 +44,23 @@ class AddressBookNetworkUtilsTests {
                 new RandomAddressBookGenerator().setSize(2).build();
         final Address address = addressBook.getAddress(addressBook.getNodeId(0));
 
-        final Address loopBackAddress = address.copySetAddressInternalIpv4(
-                Inet4Address.getLoopbackAddress().getAddress());
+        final Address loopBackAddress = address.copySetHostnameInternal(
+                Inet4Address.getLoopbackAddress().getHostAddress());
         assertTrue(AddressBookNetworkUtils.isLocal(loopBackAddress));
 
-        final Address localIpAddress = address.copySetAddressInternalIpv4(
-                Inet4Address.getByName(Network.getInternalIPAddress()).getAddress());
+        final Address localIpAddress = address.copySetHostnameInternal(
+                Inet4Address.getByName(Network.getInternalIPAddress()).getHostAddress());
         assertTrue(AddressBookNetworkUtils.isLocal(localIpAddress));
 
         final InetAddress inetAddress = Inet4Address.getByName(Network.getInternalIPAddress());
         assertTrue(Network.isOwn(inetAddress));
 
         final Address notLocalAddress =
-                address.copySetAddressInternalIpv4(Inet4Address.getByAddress(new byte[] {(byte) 192, (byte) 168, 0, 1})
-                        .getAddress());
+                address.copySetHostnameInternal(Inet4Address.getByAddress(new byte[] {(byte) 192, (byte) 168, 0, 1})
+                        .getHostAddress());
         assertFalse(AddressBookNetworkUtils.isLocal(notLocalAddress));
 
-        final Address badLocalAddress = address.copySetAddressInternalIpv4(new byte[] {8, 8, 8});
+        final Address badLocalAddress = address.copySetHostnameInternal("500.8.8");
         assertThrows(IllegalStateException.class, () -> AddressBookNetworkUtils.isLocal(badLocalAddress));
     }
 }

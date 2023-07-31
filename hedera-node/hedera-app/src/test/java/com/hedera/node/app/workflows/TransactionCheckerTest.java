@@ -58,7 +58,6 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -167,8 +166,7 @@ final class TransactionCheckerTest extends AppTestBase {
 
         // Set up the properties
         props = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.create(false)
-                        .withConfigDataType(HederaConfig.class)
+                HederaTestConfigBuilder.create()
                         .withValue("hedera.transaction.maxMemoUtf8Bytes", MAX_MEMO_SIZE)
                         .withValue("hedera.transaction.minValidityBufferSecs", MIN_VALIDITY_BUFFER)
                         .withValue("hedera.transaction.minValidDuration", MIN_DURATION)

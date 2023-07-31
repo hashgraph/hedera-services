@@ -127,7 +127,7 @@ class BaseProxyWorldUpdaterTest {
 
         subject.commit();
 
-        inOrder.verify(storageSizeValidator).assertValid(sizeExcludingPendingRemovals, scope, expectedSizeChanges());
+        inOrder.verify(storageSizeValidator).assertValid(sizeExcludingPendingRemovals, dispatch, expectedSizeChanges());
         inOrder.verify(dispatch).chargeStorageRent(A_NUM, rentInTinybars, true);
         inOrder.verify(storageManager).rewrite(scope, pendingChanges(), expectedSizeChanges(), storage);
         inOrder.verify(scope).commit();

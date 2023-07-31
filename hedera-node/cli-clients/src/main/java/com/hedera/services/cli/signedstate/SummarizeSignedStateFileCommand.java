@@ -16,46 +16,48 @@
 
 package com.hedera.services.cli.signedstate;
 
-import static com.hedera.services.cli.signedstate.SignedStateHolder.getContracts;
-
-import com.hedera.services.cli.ExamplePcliPlugin;
 import com.hedera.services.cli.signedstate.SignedStateHolder.Contract;
+import com.swirlds.cli.utility.AbstractCommand;
+import com.swirlds.cli.utility.SubcommandOf;
 import java.lang.reflect.Array;
-import java.nio.file.Path;
-import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 @Command(
         name = "summarize",
-        subcommands = {picocli.CommandLine.HelpCommand.class},
+        mixinStandardHelpOptions = true,
         description = "Summarizes contents of signed state file (to stdout)")
-public class SummarizeSignedStateFileCommand implements Callable<Integer> {
+@SubcommandOf(SignedStateCommand.class)
+public class SummarizeSignedStateFileCommand extends AbstractCommand {
+
     @ParentCommand
-    private ExamplePcliPlugin examplePcliPlugin;
+    SignedStateCommand parent;
 
-    @Option(
-            names = {"-f", "--file"},
-            arity = "1",
-            description = "Input signed state file")
-    Path inputFile;
-
+    @SuppressWarnings("java:S2095") // Ignoring AutoCloseable (because handled in `SignedStateCommand` instead)
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
 
-        final var knownContracts = getContracts(inputFile);
+        try {
+            final var signedState = parent.openSignedState();
 
-        final int contractsWithBytecodeFound = knownContracts.contracts().size();
-        final var bytesFound = knownContracts.contracts().stream()
-                .map(Contract::bytecode)
-                .mapToInt(Array::getLength)
-                .sum();
+            final var contractsInfo = signedState.getContracts();
+            final var nContractsWithBytecodeFound = contractsInfo.contracts().size();
+            final var nDeletedContracts = contractsInfo.deletedContracts().size();
+            final var bytesFound = contractsInfo.contracts().stream()
+                    .map(Contract::bytecode)
+                    .mapToInt(Array::getLength)
+                    .sum();
 
-        System.out.printf(
-                "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
-                        + " (%d bytes total)%n",
-                knownContracts.registeredContractsCount(), contractsWithBytecodeFound, bytesFound);
+            System.out.printf(
+                    "signed-state summarize: %d contractIds found (%d deleted), %d contracts with bytecode, %d bytes total%n",
+                    contractsInfo.registeredContractsCount(),
+                    nDeletedContracts,
+                    nContractsWithBytecodeFound,
+                    bytesFound);
+
+        } finally {
+            parent.closeSignedState();
+        }
 
         return 0;
     }

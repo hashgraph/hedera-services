@@ -23,9 +23,11 @@ import com.hedera.node.app.spi.info.NodeInfo;
 import com.swirlds.common.system.address.Address;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public record NodeInfoImpl(AccountID accountId, boolean zeroStake) implements NodeInfo {
+public record NodeInfoImpl(long nodeId, @NonNull AccountID accountId, boolean zeroStake, @NonNull String memo)
+        implements NodeInfo {
     @NonNull
     static NodeInfo fromAddress(@NonNull final Address address) {
-        return new NodeInfoImpl(parseAccount(address.getMemo()), address.getWeight() <= 0);
+        return new NodeInfoImpl(
+                address.getNodeId().id(), parseAccount(address.getMemo()), address.getWeight() <= 0, address.getMemo());
     }
 }

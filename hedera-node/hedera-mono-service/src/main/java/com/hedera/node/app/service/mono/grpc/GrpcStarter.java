@@ -70,7 +70,7 @@ public class GrpcStarter {
                 } else {
                     final var staticBook = addressBook.get();
                     final var nodeAddress = staticBook.getAddress(nodeId);
-                    int portOffset = thisNodeIsDefaultListener() ? 0 : nodeAddress.getPortExternalIpv4() % PORT_MODULUS;
+                    int portOffset = thisNodeIsDefaultListener() ? 0 : nodeAddress.getPortExternal() % PORT_MODULUS;
                     grpc.start(port + portOffset, tlsPort + portOffset, this::logInfoWithConsoleEcho);
                 }
                 break;
