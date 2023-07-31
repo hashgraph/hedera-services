@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
@@ -53,6 +54,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SplittableRandom;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -86,11 +88,19 @@ class StakeStartupHelperTest {
 
     @Mock
     private RewardCalculator rewardCalculator;
+    @Mock
+    private TransactionContext txnCtx;
 
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
+    private StakePeriodManager stakePeriodManager;
 
     private StakeStartupHelper subject;
+
+    @BeforeEach
+    public void setUp(){
+        stakePeriodManager = new StakePeriodManager(txnCtx, () -> networkContext, properties);
+    }
 
     @Test
     void alwaysPrepsStakeInfoManagerForNewAddressBookAndUpdatesMap() {
@@ -190,7 +200,7 @@ class StakeStartupHelperTest {
                 }
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
                 given(rewardCalculator.estimatePendingRewards(
-                                account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()))))
+                        account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()))))
                         .willReturn(pretendReward);
                 pendingRewards += pretendReward;
                 // Should this account decline rewards?
@@ -209,21 +219,21 @@ class StakeStartupHelperTest {
 
     private void givenGenesisSubject() {
         givenGenesisAddressBook();
-        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator, stakePeriodManager);
     }
 
     private void givenPostRestartSubject() {
         givenWellKnownAddressBookAndInfosMap();
         given(properties.getIntProperty(PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(365);
-        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator, stakePeriodManager);
     }
 
     private void givenPostUpgradeSubjectDoing(final StakeStartupHelper.RecomputeType... types) {
         given(properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE))
                 .willReturn(Set.of(types));
 
-        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator, stakePeriodManager);
     }
 
     void givenGenesisAddressBook() {

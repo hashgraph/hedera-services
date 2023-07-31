@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
 
@@ -30,6 +31,8 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,15 +69,18 @@ public class StakeStartupHelper {
     private final PropertySource properties;
     private final StakeInfoManager stakeInfoManager;
     private final RewardCalculator rewardCalculator;
+    private final StakePeriodManager stakePeriodManager;
 
     @Inject
     public StakeStartupHelper(
             final StakeInfoManager stakeInfoManager,
             final @CompositeProps PropertySource properties,
-            final RewardCalculator rewardCalculator) {
+            final RewardCalculator rewardCalculator,
+            final StakePeriodManager stakePeriodManager) {
         this.properties = properties;
         this.stakeInfoManager = stakeInfoManager;
         this.rewardCalculator = rewardCalculator;
+        this.stakePeriodManager = stakePeriodManager;
     }
 
     /**
@@ -130,6 +136,9 @@ public class StakeStartupHelper {
         // Recompute anything requested by the staking.startupHelper.recompute property
         final var recomputeTypes = properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE);
         if (!recomputeTypes.isEmpty()) {
+//            final var curStakePeriod = LocalDate.ofInstant(networkContext.consensusTimeOfLastHandledTxn(), ZONE_UTC)
+//                    .toEpochDay();
+//            stakePeriodManager.setCurrentStakePeriod(curStakePeriod);
             withLoggedDuration(
                     () -> recomputeQuantities(
                             recomputeTypes.contains(RecomputeType.NODE_STAKES),

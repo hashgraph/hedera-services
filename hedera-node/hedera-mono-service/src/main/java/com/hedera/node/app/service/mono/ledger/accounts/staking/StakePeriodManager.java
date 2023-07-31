@@ -148,6 +148,14 @@ public class StakePeriodManager {
         return StakingUtils.NA;
     }
 
+    /**
+     * Sets the stakePeriod to the given value. This is only called during upgrade housekeeping.
+     * @param currentStakePeriod the value to set the currentStakePeriod to
+     */
+    public void setCurrentStakePeriod(final long currentStakePeriod) {
+        this.currentStakePeriod = currentStakePeriod;
+    }
+
     @VisibleForTesting
     long getPrevConsensusSecs() {
         return prevConsensusSecs;
