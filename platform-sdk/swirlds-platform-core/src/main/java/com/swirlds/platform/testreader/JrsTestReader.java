@@ -18,6 +18,9 @@ package com.swirlds.platform.testreader;
 
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.platform.testreader.TestStatus.FAIL;
+import static com.swirlds.platform.testreader.TestStatus.PASS;
+import static com.swirlds.platform.testreader.TestStatus.UNKNOWN;
 
 import com.swirlds.platform.util.CommandResult;
 import com.swirlds.platform.util.VirtualTerminal;
@@ -240,21 +243,16 @@ public final class JrsTestReader {
 
             final List<String> testFiles = lsRemoteDir(terminal, testDirectory);
 
-            Boolean passed = null;
+            TestStatus status = UNKNOWN;
 
             for (final String testFile : testFiles) {
                 if (testFile.endsWith("test-passed")) {
-                    passed = true;
+                    status = PASS;
                     break;
                 } else if (testFile.endsWith("test-failed")) {
-                    passed = false;
+                    status = FAIL;
                     break;
                 }
-            }
-
-            if (passed == null) {
-                System.out.println("unable to determine test result for " + testDirectory);
-                continue;
             }
 
             final String[] parts = testDirectory.split("/");
@@ -262,7 +260,7 @@ public final class JrsTestReader {
 
             final JrsTestResult result = new JrsTestResult(
                     testName,
-                    passed,
+                    status,
                     testDirectory);
 
             testResults.add(result);
@@ -298,6 +296,14 @@ public final class JrsTestReader {
 
         final String report = sb.toString();
         System.out.println(report);
+
+        if (Files.exists(reportPath)) {
+            try {
+                Files.delete(reportPath);
+            } catch (final IOException e) {
+                throw new UncheckedIOException("unable to delete existing test report", e);
+            }
+        }
 
         try {
             Files.write(reportPath, report.getBytes());

@@ -1,5 +1,7 @@
 package com.swirlds.platform.testreader;
 
+import static com.swirlds.platform.testreader.TestStatus.FAIL;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -7,13 +9,13 @@ import java.util.Objects;
 /**
  * The result of a JRS test run.
  *
- * @param name          The name of the test
- * @param passed        Whether the test passed
- * @param testDirectory The directory where the test was run
+ * @param name          the name of the test
+ * @param status        the status of the test
+ * @param testDirectory the directory where the test was run
  */
 public record JrsTestResult(
         @NonNull String name,
-        boolean passed,
+        @NonNull TestStatus status,
         @NonNull String testDirectory) implements Comparable<JrsTestResult> {
 
     /**
@@ -25,10 +27,8 @@ public record JrsTestResult(
      */
     @Override
     public int compareTo(@NonNull final JrsTestResult that) {
-        if (this.passed && !that.passed) {
-            return 1;
-        } else if (!this.passed && that.passed) {
-            return -1;
+        if (this.status != that.status) {
+            return Integer.compare(this.status.ordinal(), that.status.ordinal());
         } else {
             return this.name.compareTo(that.name);
         }
@@ -49,16 +49,20 @@ public record JrsTestResult(
      * @param sb the string builder to append to
      * @return a CSV line
      */
-
     public void renderCsvLine(@NonNull final StringBuilder sb) {
         final String browserUrl = generateWebBrowserUrl();
 
         sb.append(name).append(", ")
                 .append(getTestTimestamp()).append(", ")
-                .append(passed ? "PASS" : "FAIL").append(", ")
-                .append(browserUrl).append("/summary.txt, ")
-                .append(browserUrl).append("\n")
+                .append(status.name()).append(", ")
+                .append(hyperlink(browserUrl + "summary.txt", "summary")).append(", ")
+                .append(hyperlink(browserUrl, "data")).append("git stat\n")
         ;
+    }
+
+    @NonNull
+    private static String hyperlink(@NonNull final String url, @NonNull final String text) {
+        return "\"=HYPERLINK(\"\"" + url + "\"\", \"\"" + text + "\"\")\"";
     }
 
     // TODO make these configurable
