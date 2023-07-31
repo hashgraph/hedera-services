@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state.signed;
 
-import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
-
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
@@ -29,6 +27,7 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,6 +40,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 /**
  * <p>
@@ -82,7 +83,8 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {
+    }
 
     /**
      * Signatures for rounds in the future.
@@ -301,6 +303,31 @@ public class SignedStateManager implements SignedStateFinder {
             }
 
             addSignature(reservedState.get(), signerId, signature);
+        }
+    }
+
+    /**
+     * An observer of post-consensus state signatures.
+     *
+     * @param signerId    the node that created the signature
+     * @param transaction the signature transaction
+     */
+    public synchronized void handlePostconsensusSignatureTransaction(
+            @NonNull NodeId signerId, @NonNull StateSignatureTransaction transaction) {
+
+        Objects.requireNonNull(signerId);
+
+        final long round = transaction.getRound();
+
+        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
+            // it isn't possible to receive a post-consensus signature transaction for a future round,
+            // and if we don't have the state for an old round, we never will.
+            // in both cases, the signature can be ignored
+            if (reservedState.isNull()) {
+                return;
+            }
+
+            addSignature(reservedState.get(), signerId, transaction.getStateSignature());
         }
     }
 
