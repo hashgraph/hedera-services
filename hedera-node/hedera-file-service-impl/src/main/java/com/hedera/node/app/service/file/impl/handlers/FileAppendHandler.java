@@ -111,6 +111,8 @@ public class FileAppendHandler implements TransactionHandler {
         }
         final var file = optionalFile.get();
 
+        // TODO: skip at least the mutability check for privileged "payer" accounts
+
         // First validate this file is mutable; and the pending mutations are allowed
         validateFalse(file.keys() == null, UNAUTHORIZED);
         validateSignatures(file, null, handleContext);

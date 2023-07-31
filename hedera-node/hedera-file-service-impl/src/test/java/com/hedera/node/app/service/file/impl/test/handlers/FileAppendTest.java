@@ -210,6 +210,19 @@ class FileAppendTest extends FileTestBase {
         assertEquals(bytesNewContentExpected, file);
     }
 
+    @Test
+    void handleThrowsIfKeysSignatureFailed() {
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()).contents(Bytes.wrap(new byte[1048577])))
+                .build();
+
+        given(handleContext.body()).willReturn(txBody);
+        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
+        given(signatureVerification.failed()).willReturn(true);
+
+        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+    }
+
     private FileID wellKnownId() {
         return fileId;
     }

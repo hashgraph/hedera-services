@@ -319,6 +319,18 @@ class FileUpdateTest extends FileTestBase {
         assertEquals(file, newFile);
     }
 
+    @Test
+    void handleThrowsIfKeysSignatureFailed() {
+        final var op = OP_BUILDER.fileID(wellKnownId()).build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+
+        given(handleContext.body()).willReturn(txBody);
+        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
+        given(signatureVerification.failed()).willReturn(true);
+
+        assertThrows(HandleException.class, () -> subject.handle(handleContext));
+    }
+
     public static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
         final var ex = assertThrows(HandleException.class, something::run);
         assertEquals(status, ex.getStatus());
