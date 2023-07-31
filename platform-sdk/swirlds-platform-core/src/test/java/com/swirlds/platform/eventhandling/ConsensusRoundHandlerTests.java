@@ -42,6 +42,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
+import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
@@ -190,16 +191,23 @@ class ConsensusRoundHandlerTests extends AbstractEventHandlerTests {
         final State state = new State();
         state.setSwirldState(swirldState);
 
+        final AddressBook addressBook = new RandomAddressBookGenerator().build();
+
         final PlatformState platformState = mock(PlatformState.class);
         when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
         when(platformState.copy()).thenReturn(platformState);
+        when(platformState.getAddressBook()).thenReturn(addressBook);
 
         state.setPlatformState(platformState);
 
+        final DualStateImpl platformDualState = mock(DualStateImpl.class);
+        when(platformDualState.getClassId()).thenReturn(DualStateImpl.CLASS_ID);
+        when(platformDualState.copy()).thenReturn(platformDualState);
+
+        state.setDualState(platformDualState);
+
         final PlatformData platformData = mock(PlatformData.class);
         when(platformState.getPlatformData()).thenReturn(platformData);
-
-        final AddressBook addressBook = new RandomAddressBookGenerator().build();
 
         final Configuration configuration = new TestConfigBuilder()
                 .withValue("event.maxEventQueueForCons", 500)
