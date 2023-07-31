@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -36,13 +38,10 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
