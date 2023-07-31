@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.swirlds.platform.util.VirtualTerminal;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -59,18 +60,19 @@ public class JrsTestReaderTests {
 
     @Test
     void test() {
-        final VirtualTerminal terminal = new VirtualTerminal().setThrowOnError(true);
+        final VirtualTerminal terminal = new VirtualTerminal()
+                .setThrowOnError(true);
 
         final ExecutorService executor = Executors.newFixedThreadPool(12);
 
-        final List<String> directories = JrsTestReader.findTestDirectories(
+        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
+        //"gs://swirlds-circleci-jrs-results/cody-littley/"
+        final String root = "gs://swirlds-circleci-jrs-results/cody-littley/";
+
+        JrsTestReader.generateTestReport(
                 terminal,
                 executor,
-                "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/",
-                Instant.now().minus(2, ChronoUnit.DAYS));
-
-        for (final String directory : directories) {
-            System.out.println("-  " + directory);
-        }
+                root,
+                Instant.now().minus(2, ChronoUnit.DAYS), Path.of("out.csv"));
     }
 }

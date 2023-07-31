@@ -23,14 +23,20 @@ import com.swirlds.platform.util.CommandResult;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Utilities for reading JRS test results and creating a report.
@@ -51,7 +57,7 @@ public final class JrsTestReader {
         for (final String part : parts) {
             final String[] subParts = part.split("-");
 
-            if (subParts.length < 2) {
+            if (subParts.length < 2 || subParts[0].length() != 8 || subParts[1].length() != 6) {
                 continue;
             }
 
@@ -123,10 +129,10 @@ public final class JrsTestReader {
         System.out.println("Searching for panel directories.");
         final ProgressIndicator progressIndicator = new ProgressIndicator();
 
-        final Queue<String> directoriesToExplore = new LinkedBlockingDeque<>();
+        final Queue<String> directoriesToExplore = new LinkedBlockingQueue<>();
         directoriesToExplore.add(rootDirectory);
 
-        final Queue<String> directoriesWithTimestamps = new LinkedBlockingDeque<>();
+        final Queue<String> directoriesWithTimestamps = new LinkedBlockingQueue<>();
 
         while (!directoriesToExplore.isEmpty()) {
 
@@ -137,7 +143,6 @@ public final class JrsTestReader {
                 final String next = directoriesToExplore.remove();
                 executorService.submit(() -> {
                     final Instant timestamp = parseTimestampFromDirectory(next);
-
                     if (timestamp == null) {
                         final List<String> subDirectories = lsRemoteDir(terminal, next);
                         directoriesToExplore.addAll(subDirectories);
@@ -145,7 +150,6 @@ public final class JrsTestReader {
                         directoriesWithTimestamps.add(next);
                     }
                     progressIndicator.increment();
-
                     latch.countDown();
                 });
             }
@@ -209,5 +213,96 @@ public final class JrsTestReader {
         dirList.addAll(testDirectories);
 
         return dirList;
+    }
+
+    /**
+     * Get a list of test results.
+     *
+     * @param terminal         the virtual terminal
+     * @param executorService  the executor service to use
+     * @param rootDirectory    the root of the directory tree to explore
+     * @param minimumTimestamp any test with a timestamp less than this will be ignored
+     * @return a list of test results
+     */
+    @NonNull
+    public static List<JrsTestResult> findTestResults(
+            @NonNull final VirtualTerminal terminal,
+            @NonNull final ExecutorService executorService,
+            @NonNull final String rootDirectory,
+            @NonNull final Instant minimumTimestamp) {
+
+        final List<String> testDirectories =
+                findTestDirectories(terminal, executorService, rootDirectory, minimumTimestamp);
+
+        final List<JrsTestResult> testResults = new ArrayList<>(testDirectories.size());
+
+        for (final String testDirectory : testDirectories) {
+
+            final List<String> testFiles = lsRemoteDir(terminal, testDirectory);
+
+            Boolean passed = null;
+
+            for (final String testFile : testFiles) {
+                if (testFile.endsWith("test-passed")) {
+                    passed = true;
+                    break;
+                } else if (testFile.endsWith("test-failed")) {
+                    passed = false;
+                    break;
+                }
+            }
+
+            if (passed == null) {
+                System.out.println("unable to determine test result for " + testDirectory);
+                continue;
+            }
+
+            final String[] parts = testDirectory.split("/");
+            final String testName = parts[parts.length - 1];
+
+            final JrsTestResult result = new JrsTestResult(
+                    testName,
+                    passed,
+                    testDirectory);
+
+            testResults.add(result);
+        }
+
+        return testResults;
+    }
+
+    /**
+     * Generate a test report.
+     *
+     * @param terminal         the virtual terminal
+     * @param executorService  the executor service to use
+     * @param rootDirectory    the root of the directory tree to explore
+     * @param minimumTimestamp any test with a timestamp less than this will be ignored
+     * @param reportPath       the path to write the report to
+     */
+    public static void generateTestReport(
+            @NonNull final VirtualTerminal terminal,
+            @NonNull final ExecutorService executorService,
+            @NonNull final String rootDirectory,
+            @NonNull final Instant minimumTimestamp,
+            @NonNull final Path reportPath) {
+        final List<JrsTestResult> results =
+                findTestResults(terminal, executorService, rootDirectory, minimumTimestamp);
+        Collections.sort(results);
+
+        final StringBuilder sb = new StringBuilder();
+        JrsTestResult.renderCsvHeader(sb);
+        for (final JrsTestResult result : results) {
+            result.renderCsvLine(sb);
+        }
+
+        final String report = sb.toString();
+        System.out.println(report);
+
+        try {
+            Files.write(reportPath, report.getBytes());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to generate test report", e);
+        }
     }
 }
