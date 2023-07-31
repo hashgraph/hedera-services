@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.NODE_STAKES;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper.RecomputeType.PENDING_REWARDS;
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -47,6 +49,8 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkle.tree.MerkleBinaryTree;
 import com.swirlds.merkle.tree.MerkleTreeInternalNode;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +77,7 @@ class StakeStartupHelperTest {
     private static final SplittableRandom r = new SplittableRandom(1_234_567L);
     private static final int numStakingAccounts = 50;
     private static final long currentStakingPeriod = 1_234_567L;
+    private static final Instant consTime = Instant.ofEpochSecond(currentStakingPeriod);
 
     @Mock
     private StakeInfoManager stakeInfoManager;
@@ -100,6 +105,7 @@ class StakeStartupHelperTest {
 
     @BeforeEach
     public void setUp() {
+        lenient().when(networkContext.consensusTimeOfLastHandledTxn()).thenReturn(consTime);
         stakePeriodManager = new StakePeriodManager(txnCtx, () -> networkContext, properties);
     }
 
@@ -151,6 +157,7 @@ class StakeStartupHelperTest {
                 MerkleMapLike.from(stakingInfos));
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
+        assertEquals(LocalDate.ofInstant(consTime, ZONE_UTC).toEpochDay(), stakePeriodManager.getCurrentStakePeriod());
 
         for (final var postUpgradeInfo : stakingInfos.values()) {
             final var num = postUpgradeInfo.getKey();

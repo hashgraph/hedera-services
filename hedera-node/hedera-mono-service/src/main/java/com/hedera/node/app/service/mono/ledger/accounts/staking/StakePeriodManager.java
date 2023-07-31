@@ -160,4 +160,9 @@ public class StakePeriodManager {
     long getPrevConsensusSecs() {
         return prevConsensusSecs;
     }
+
+    @VisibleForTesting
+    public long getCurrentStakePeriod() {
+        return currentStakePeriod;
+    }
 }
