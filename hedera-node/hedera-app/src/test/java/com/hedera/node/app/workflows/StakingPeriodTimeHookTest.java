@@ -41,7 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ConsensusTimeHookTest {
+class StakingPeriodTimeHookTest {
     private static final Instant CONSENSUS_TIME_1234567 = Instant.ofEpochSecond(1_234_567L);
 
     @Mock
@@ -50,17 +50,17 @@ class ConsensusTimeHookTest {
     @Mock
     private HandleContext context;
 
-    private ConsensusTimeHook subject;
+    private StakingPeriodTimeHook subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ConsensusTimeHook(stakingPeriodCalculator);
+        subject = new StakingPeriodTimeHook(stakingPeriodCalculator);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new ConsensusTimeHook(null)).isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> new StakingPeriodTimeHook(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -95,7 +95,7 @@ class ConsensusTimeHookTest {
         subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
         // Pre-condition check
-        Assertions.assertThat(ConsensusTimeHook.isNextPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+        Assertions.assertThat(StakingPeriodTimeHook.isNextPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
         subject.process(currentConsensusTime, context);
@@ -116,7 +116,7 @@ class ConsensusTimeHookTest {
     void isNextPeriodDefaultStakingPeriodIsInSameUtcDay() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
-        final var result = ConsensusTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextPeriod(
                 CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567.minusSeconds(300), context);
 
         Assertions.assertThat(result).isFalse();
@@ -126,7 +126,7 @@ class ConsensusTimeHookTest {
     void isNextPeriodDefaultStakingPeriodIsNotInSameUtcDay() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
-        final var result = ConsensusTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextPeriod(
                 CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds()), CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isTrue();
@@ -138,7 +138,7 @@ class ConsensusTimeHookTest {
         final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
 
-        final var result = ConsensusTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextPeriod(
                 CONSENSUS_TIME_1234567,
                 CONSENSUS_TIME_1234567.plusSeconds(
                         // periodMins * 60 seconds/min
@@ -154,7 +154,7 @@ class ConsensusTimeHookTest {
         final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
 
-        final var result = ConsensusTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextPeriod(
                 CONSENSUS_TIME_1234567,
                 CONSENSUS_TIME_1234567.plusSeconds(
                         // 10 min * 60 seconds/min

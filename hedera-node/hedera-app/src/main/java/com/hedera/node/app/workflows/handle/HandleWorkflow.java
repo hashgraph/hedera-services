@@ -36,7 +36,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.ConsensusTimeHook;
+import com.hedera.node.app.workflows.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -86,7 +86,7 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
-    private final ConsensusTimeHook consensusTimeHook;
+    private final StakingPeriodTimeHook stakingPeriodTimeHook;
 
     @Inject
     public HandleWorkflow(
@@ -101,7 +101,7 @@ public class HandleWorkflow {
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
             @NonNull final HederaRecordCache recordCache,
-            @NonNull final ConsensusTimeHook consensusTimeHook) {
+            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -113,7 +113,7 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
-        this.consensusTimeHook = requireNonNull(consensusTimeHook, "consensusTimeHook must not be null");
+        this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
     }
 
     /**
@@ -233,7 +233,7 @@ public class HandleWorkflow {
             dispatcher.dispatchHandle(context);
 
             // Handle the end of a staking period
-            consensusTimeHook.process(consensusNow, context);
+            stakingPeriodTimeHook.process(consensusNow, context);
 
             // TODO: Finalize transaction with the help of the token service
 

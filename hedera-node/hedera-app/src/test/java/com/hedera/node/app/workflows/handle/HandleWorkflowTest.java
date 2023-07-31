@@ -47,7 +47,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.workflows.ConsensusTimeHook;
+import com.hedera.node.app.workflows.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -147,7 +147,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HederaRecordCache recordCache;
 
     @Mock
-    private ConsensusTimeHook consensusTimeHook;
+    private StakingPeriodTimeHook stakingPeriodTimeHook;
 
     private HandleWorkflow workflow;
 
@@ -193,7 +193,7 @@ class HandleWorkflowTest extends AppTestBase {
                 configProvider,
                 instantSource,
                 recordCache,
-                consensusTimeHook);
+                stakingPeriodTimeHook);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -212,7 +212,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -226,7 +226,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -240,7 +240,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -254,7 +254,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -268,7 +268,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -282,7 +282,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -296,7 +296,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -310,7 +310,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -324,7 +324,7 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         instantSource,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -338,7 +338,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         null,
                         recordCache,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -352,7 +352,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         null,
-                        consensusTimeHook))
+                        stakingPeriodTimeHook))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -1066,6 +1066,6 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     void testConsensusTimeHookCalled() {
         workflow.handleRound(state, round);
-        verify(consensusTimeHook).process(eq(CONSENSUS_NOW), notNull());
+        verify(stakingPeriodTimeHook).process(eq(CONSENSUS_NOW), notNull());
     }
 }
