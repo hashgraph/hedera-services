@@ -68,4 +68,11 @@ public interface HandleContextVerifier {
      */
     @NonNull
     SignatureVerification verificationFor(@NonNull Bytes evmAlias);
+
+    /**
+     * Gets the number of signatures verified for this transaction.
+     *
+     * @return the number of signatures verified for this transaction. Non-negative.
+     */
+    int numSignaturesVerified();
 }

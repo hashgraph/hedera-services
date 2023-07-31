@@ -591,6 +591,7 @@ public final class Hedera implements SwirldMain {
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
 
+        initializeFeeManager(state);
         initializeExchangeRateManager(state);
 
         // Store the version in state
@@ -791,6 +792,26 @@ public final class Hedera implements SwirldMain {
         }
     }
 
+    private void initializeFeeManager(@NonNull final HederaState state) {
+        logger.info("Initializing fee schedules");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.feeSchedules();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build();
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            daggerApp.feeManager().update(fileData);
+        });
+        logger.info("Fee schedule initialized");
+    }
+
     private void initializeExchangeRateManager(@NonNull final HederaState state) {
         logger.info("Initializing exchange rates");
         final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
@@ -801,7 +822,7 @@ public final class Hedera implements SwirldMain {
                 .fileNum(fileNum)
                 .shardNum(hederaConfig.shard())
                 .realmNum(hederaConfig.realm())
-                .build(); // default to shard=0, realm=0
+                .build();
 
         final var fileOpt = readableFileStore.getFileLeaf(fileId);
         fileOpt.ifPresent(file -> {

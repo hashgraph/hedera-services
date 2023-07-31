@@ -21,6 +21,7 @@ import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.FeesInjectionModule;
 import com.hedera.node.app.grpc.GrpcInjectionModule;
 import com.hedera.node.app.grpc.GrpcServerManager;
@@ -113,6 +114,8 @@ public interface HederaInjectionComponent {
     HandleWorkflow handleWorkflow();
 
     BlockRecordManager blockRecordManager();
+
+    FeeManager feeManager();
 
     ExchangeRateManager exchangeRateManager();
 

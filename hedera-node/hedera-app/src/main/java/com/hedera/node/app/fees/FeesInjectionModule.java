@@ -24,9 +24,5 @@ import javax.inject.Singleton;
 public interface FeesInjectionModule {
     @Binds
     @Singleton
-    FeeAccumulator bindFeeAccumulator(FeeAccumulatorImpl feeAccumulator);
-
-    @Binds
-    @Singleton
     QueryFeeCheck bindQueryFeeCheck(QueryFeeCheckImpl queryFeeCheck);
 }
