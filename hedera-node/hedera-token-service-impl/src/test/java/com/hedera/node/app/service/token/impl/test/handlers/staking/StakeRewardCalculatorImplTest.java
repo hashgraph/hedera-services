@@ -92,7 +92,7 @@ class StakeRewardCalculatorImplTest {
         rewardHistory.set(1, 3L);
         rewardHistory.set(2, 1L);
         setUpMocks();
-        given(stakingInfoStore.get(0L)).willReturn(stakingNodeInfo);
+        given(stakingInfoStore.getOriginalValue(0L)).willReturn(stakingNodeInfo);
         given(stakePeriodManager.currentStakePeriod(consensusTime)).willReturn(TODAY_NUMBER);
         given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
         // Staked node ID of -1 will return a node ID address of 0
