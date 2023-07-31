@@ -33,6 +33,7 @@ package com.hedera.node.app.service.token.impl.handlers;
  */
 
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
@@ -74,8 +75,9 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var hbarChanges = hbarChangesFrom(writableAccountStore);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
-            recordBuilder.transferList(
-                    TransferList.newBuilder().accountAmounts(hbarChanges).build());
+            recordBuilder.transferList(TransferList.newBuilder()
+                    .accountAmounts(asAccountAmounts(hbarChanges))
+                    .build());
         }
 
         // Declare the top-level token transfer list, which list will include BOTH fungible and non-fungible token
@@ -88,7 +90,8 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers -------------------------
-        final var nftTokenTransferLists = nftChangesFrom(writableNftStore);
+        final var nftChanges = nftChangesFrom(writableNftStore);
+        final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
         tokenTransferLists.addAll(nftTokenTransferLists);
 
         // Record the modified fungible and non-fungible changes so records can be written

@@ -16,13 +16,12 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.hapi.node.base.AccountAmount.newBuilder;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
-import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.NftTransfer;
@@ -42,8 +41,8 @@ import java.util.Map;
  */
 public class RecordFinalizerBase {
     @NonNull
-    protected List<AccountAmount> hbarChangesFrom(@NonNull final WritableAccountStore writableAccountStore) {
-        final var hbarChanges = new ArrayList<AccountAmount>();
+    protected Map<AccountID, Long> hbarChangesFrom(@NonNull final WritableAccountStore writableAccountStore) {
+        final var hbarChanges = new HashMap<AccountID, Long>();
         var netHbarBalance = 0;
         for (final AccountID modifiedAcctId : writableAccountStore.modifiedAccountsInState()) {
             final var modifiedAcct = writableAccountStore.getAccountById(modifiedAcctId);
@@ -58,12 +57,7 @@ public class RecordFinalizerBase {
             final var netHbarChange = modifiedAcct.tinybarBalance() - persistedBalance;
             if (netHbarChange != 0) {
                 netHbarBalance += netHbarChange;
-                final var netChange = newBuilder()
-                        .accountID(modifiedAcctId)
-                        .amount(netHbarChange)
-                        .isApproval(false)
-                        .build();
-                hbarChanges.add(netChange);
+                hbarChanges.put(modifiedAcctId, netHbarChange);
             }
         }
         // Since this is a finalization handler, we should have already succeeded in handling the transaction in a
@@ -75,9 +69,9 @@ public class RecordFinalizerBase {
     }
 
     @NonNull
-    protected Map<EntityIDPair, AccountAmount> fungibleChangesFrom(
+    protected Map<EntityIDPair, Long> fungibleChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore) {
-        final var fungibleChanges = new HashMap<EntityIDPair, AccountAmount>();
+        final var fungibleChanges = new HashMap<EntityIDPair, Long>();
         for (final EntityIDPair modifiedRel : writableTokenRelStore.modifiedTokens()) {
             final var relAcctId = modifiedRel.accountId();
             final var relTokenId = modifiedRel.tokenId();
@@ -94,12 +88,7 @@ public class RecordFinalizerBase {
             // If the token rel's balance has changed, add it to the list of changes
             final var netFungibleChange = modifiedBalance - persistedBalance;
             if (netFungibleChange != 0) {
-                final var netChange = newBuilder()
-                        .accountID(relAcctId)
-                        .amount(netFungibleChange)
-                        .isApproval(false)
-                        .build();
-                fungibleChanges.put(modifiedRel, netChange);
+                fungibleChanges.put(modifiedRel, netFungibleChange);
             }
         }
 
@@ -107,17 +96,18 @@ public class RecordFinalizerBase {
     }
 
     @NonNull
-    protected List<TokenTransferList> asTokenTransferListFrom(
-            @NonNull final Map<EntityIDPair, AccountAmount> fungibleChanges) {
+    protected List<TokenTransferList> asTokenTransferListFrom(@NonNull final Map<EntityIDPair, Long> fungibleChanges) {
         final var fungibleTokenTransferLists = new ArrayList<TokenTransferList>();
-        final var acctAmountsByTokenId = new HashMap<TokenID, List<AccountAmount>>();
+        final var acctAmountsByTokenId = new HashMap<TokenID, HashMap<AccountID, Long>>();
         for (final var fungibleChange : fungibleChanges.entrySet()) {
             final var tokenIdOfAcctAmountChange = fungibleChange.getKey().tokenId();
+            final var accountIdOfAcctAmountChange = fungibleChange.getKey().accountId();
             if (!acctAmountsByTokenId.containsKey(tokenIdOfAcctAmountChange)) {
-                acctAmountsByTokenId.put(tokenIdOfAcctAmountChange, new ArrayList<>());
+                acctAmountsByTokenId.put(tokenIdOfAcctAmountChange, new HashMap<>());
             }
-            if (fungibleChange.getValue().amount() != 0) {
-                acctAmountsByTokenId.get(tokenIdOfAcctAmountChange).add(fungibleChange.getValue());
+            if (fungibleChange.getValue() != 0) {
+                final var tokenIdMap = acctAmountsByTokenId.get(tokenIdOfAcctAmountChange);
+                tokenIdMap.merge(accountIdOfAcctAmountChange, fungibleChange.getValue(), Long::sum);
             }
         }
         // Mold the fungible changes into a transfer ordered by (token ID, account ID). The fungible pairs are ordered
@@ -125,10 +115,12 @@ public class RecordFinalizerBase {
         for (final var acctAmountsForToken : acctAmountsByTokenId.entrySet()) {
             final var singleTokenTransfers = acctAmountsForToken.getValue();
             if (!singleTokenTransfers.isEmpty()) {
-                singleTokenTransfers.sort(ACCOUNT_AMOUNT_COMPARATOR);
+                final var aaList = asAccountAmounts(singleTokenTransfers);
+                aaList.sort(ACCOUNT_AMOUNT_COMPARATOR);
                 fungibleTokenTransferLists.add(TokenTransferList.newBuilder()
                         .token(acctAmountsForToken.getKey())
-                        .transfers(singleTokenTransfers)
+                        .transfers(aaList)
+                        .expectedDecimals(0) // Should this be set to some other value ?
                         .build());
             }
         }
@@ -137,7 +129,7 @@ public class RecordFinalizerBase {
     }
 
     @NonNull
-    protected List<TokenTransferList> nftChangesFrom(@NonNull final WritableNftStore writableNftStore) {
+    protected Map<TokenID, List<NftTransfer>> nftChangesFrom(@NonNull final WritableNftStore writableNftStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
         for (final NftID nftId : writableNftStore.modifiedNfts()) {
             final var modifiedNft = writableNftStore.get(nftId);
@@ -149,7 +141,7 @@ public class RecordFinalizerBase {
                     .serialNumber(modifiedNft.id().serialNumber())
                     .senderAccountID(senderAccountId)
                     .receiverAccountID(modifiedNft.ownerId())
-                    .isApproval(false)
+                    .isApproval(false) // Isn't this wrong ? Should we see transaction and set isApproval ?
                     .build();
             if (!nftChanges.containsKey(nftId.tokenId())) {
                 nftChanges.put(nftId.tokenId(), new ArrayList<>());
@@ -159,6 +151,11 @@ public class RecordFinalizerBase {
             currentNftChanges.add(nftTransfer);
             nftChanges.put(nftId.tokenId(), currentNftChanges);
         }
+        return nftChanges;
+    }
+
+    protected List<TokenTransferList> asTokenTransferListFromNftChanges(
+            final Map<TokenID, List<NftTransfer>> nftChanges) {
 
         // Create a new transfer list for each token ID
         final var nftTokenTransferLists = new ArrayList<TokenTransferList>();

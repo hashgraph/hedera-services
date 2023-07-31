@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -42,5 +42,5 @@ import java.util.List;
  * for the parent record (excluding changes from child transaction records)
  */
 public interface ParentRecordFinalizer {
-    void finalizeParentRecord(@NonNull HandleContext context, List<SingleTransactionRecordBuilder> childRecords);
+    void finalizeParentRecord(@NonNull HandleContext context, List<TransactionRecord> childRecords);
 }
