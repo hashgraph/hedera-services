@@ -120,7 +120,7 @@ public class RecordFinalizerBase {
                 fungibleTokenTransferLists.add(TokenTransferList.newBuilder()
                         .token(acctAmountsForToken.getKey())
                         .transfers(aaList)
-                        .expectedDecimals(0) // Should this be set to some other value ?
+                        //                        .expectedDecimals(0) // Should this be set ?
                         .build());
             }
         }

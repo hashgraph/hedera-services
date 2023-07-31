@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -155,6 +156,7 @@ public class StakingRewardsHelper {
                     .amount(entry.getValue())
                     .build());
         }
+        accountAmounts.sort(ACCOUNT_AMOUNT_COMPARATOR);
         return accountAmounts;
     }
 }
