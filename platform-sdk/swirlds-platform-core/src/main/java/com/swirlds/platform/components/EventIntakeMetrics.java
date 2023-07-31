@@ -22,6 +22,7 @@ import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.RunningAverageMetric;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Supplier;
 
@@ -30,10 +31,7 @@ import java.util.function.Supplier;
  */
 public class EventIntakeMetrics {
 
-    private final RunningAverageMetric.Config timeWaitingForTransactionPrehandlingConfig =
-            new RunningAverageMetric.Config("platform", "timeWaitingForTransactionPrehandling")
-                    .withDescription("The time spent waiting for a transaction to be prehandled.")
-                    .withUnit("ms");
+    private final RunningAverageMetric.Config timeWaitingForTransactionPrehandlingConfig;
     private final RunningAverageMetric timeWaitingForTransactionPrehandling;
 
     /**
@@ -47,12 +45,18 @@ public class EventIntakeMetrics {
             @NonNull Supplier<Integer> prehandleTransactionQueueSizeSupplier) {
 
         final FunctionGauge.Config<Integer> prehandleTransactionQueueSizeConfig = new FunctionGauge.Config<>(
-                        "platform",
-                        "prehandleTransactionQueueSize",
-                        Integer.class,
-                        prehandleTransactionQueueSizeSupplier)
+                "platform",
+                "prehandleTransactionQueueSize",
+                Integer.class,
+                prehandleTransactionQueueSizeSupplier)
                 .withDescription("The number of events in the app prehandle transaction queue.");
         platformContext.getMetrics().getOrCreate(prehandleTransactionQueueSizeConfig);
+
+        final MetricsConfig metricsConfig = platformContext.getConfiguration().getConfigData(MetricsConfig.class);
+        timeWaitingForTransactionPrehandlingConfig = new RunningAverageMetric.Config(metricsConfig, "platform",
+                "timeWaitingForTransactionPrehandling")
+                .withDescription("The time spent waiting for a transaction to be prehandled.")
+                .withUnit("ms");
 
         timeWaitingForTransactionPrehandling =
                 platformContext.getMetrics().getOrCreate(timeWaitingForTransactionPrehandlingConfig);

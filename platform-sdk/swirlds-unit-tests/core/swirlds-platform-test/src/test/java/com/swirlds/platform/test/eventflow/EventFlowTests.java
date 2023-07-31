@@ -648,9 +648,9 @@ class EventFlowTests {
                 signedStateTracker,
                 e -> {
                 },
-                mock(StatusActionSubmitter.class),
                 () -> {
                 },
+                mock(StatusActionSubmitter.class),
                 (round) -> {
                 },
                 SoftwareVersion.NO_VERSION);
