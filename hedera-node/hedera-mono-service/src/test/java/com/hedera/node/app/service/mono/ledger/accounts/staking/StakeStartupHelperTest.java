@@ -88,6 +88,7 @@ class StakeStartupHelperTest {
 
     @Mock
     private RewardCalculator rewardCalculator;
+
     @Mock
     private TransactionContext txnCtx;
 
@@ -98,7 +99,7 @@ class StakeStartupHelperTest {
     private StakeStartupHelper subject;
 
     @BeforeEach
-    public void setUp(){
+    public void setUp() {
         stakePeriodManager = new StakePeriodManager(txnCtx, () -> networkContext, properties);
     }
 
@@ -200,7 +201,7 @@ class StakeStartupHelperTest {
                 }
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
                 given(rewardCalculator.estimatePendingRewards(
-                        account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()))))
+                                account, stakingInfos.get(EntityNum.fromLong(account.getStakedNodeAddressBookId()))))
                         .willReturn(pretendReward);
                 pendingRewards += pretendReward;
                 // Should this account decline rewards?
