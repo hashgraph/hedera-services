@@ -307,7 +307,7 @@ public class DataFileCompactor {
      * there are more / less calls to resume compactions than to pause, or if they are called in a
      * wrong order, it will result in deadlocks.</b>
      *
-     * @return compaction level of the file that was in progress at the moment of calling this. This parameter should be passed to resumeCompaction() later.
+     * @see #resumeCompaction()
      * @throws IOException If an I/O error occurs
      */
     public void pauseCompaction() throws IOException {

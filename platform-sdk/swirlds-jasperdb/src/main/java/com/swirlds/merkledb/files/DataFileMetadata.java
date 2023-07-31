@@ -63,7 +63,7 @@ public final class DataFileMetadata {
     private final Instant creationDate;
     /** Serialization version for data stored in the file */
     private final long serializationVersion;
-
+    /** The level of compaction this file has. See {@link DataFileCompactor}*/
     private final int compactionLevel;
 
     /**
