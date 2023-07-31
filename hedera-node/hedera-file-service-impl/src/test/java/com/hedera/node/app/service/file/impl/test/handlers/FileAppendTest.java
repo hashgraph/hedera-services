@@ -18,27 +18,38 @@ package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
@@ -46,6 +57,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -53,6 +65,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FileAppendTest extends FileTestBase {
     private final FileAppendTransactionBody.Builder OP_BUILDER = FileAppendTransactionBody.newBuilder();
+
+    @Mock
+    private ReadableAccountStore accountStore;
 
     @Mock
     private Account account;
@@ -69,15 +84,28 @@ class FileAppendTest extends FileTestBase {
     @Mock
     private Configuration configuration;
 
+    @Mock(strictness = LENIENT)
+    private PreHandleContext preHandleContext;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected TransactionDispatcher mockDispatcher;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected ReadableStoreFactory mockStoreFactory;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected Account payerAccount;
+
+    protected Configuration testConfig;
+
     private FileAppendHandler subject;
-    private FilesConfig config;
 
     @BeforeEach
     void setUp() {
         subject = new FileAppendHandler();
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
-        lenient().when(handleContext.configuration()).thenReturn(configuration);
-        lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
+        testConfig = HederaTestConfigBuilder.createConfig();
+        lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
+        lenient().when(handleContext.configuration()).thenReturn(testConfig);
     }
 
     @Test
@@ -87,6 +115,32 @@ class FileAppendTest extends FileTestBase {
 
         // expect:
         assertFailsWith(INVALID_FILE_ID, () -> subject.handle(handleContext));
+    }
+
+    @Test
+    @DisplayName("Pre handle works as expected")
+    void preHandleWorksAsExpected() throws PreCheckException {
+        refreshStoresWithCurrentFileOnlyInReadable();
+
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
+
+        // No-op
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(txnId)
+                .build();
+
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, txBody, testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
+        assertEquals(realPreContext.requiredNonPayerKeys().size(), 3);
     }
 
     @Test
@@ -214,7 +268,7 @@ class FileAppendTest extends FileTestBase {
 
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be appended")
-    void keysDoesntExist() {
+    void keysDoesntExistDuringHandle() {
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
                 .build();
