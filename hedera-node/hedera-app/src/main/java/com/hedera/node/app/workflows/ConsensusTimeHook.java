@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeri
 import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
@@ -49,7 +50,7 @@ public class ConsensusTimeHook {
 
     @Inject
     public ConsensusTimeHook(@NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator) {
-        this.stakingCalculator = stakingPeriodCalculator;
+        this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
     }
 
     /**
@@ -62,7 +63,7 @@ public class ConsensusTimeHook {
     public void process(@NonNull Instant consensusTime, @NonNull final HandleContext context) {
         if (consensusTimeOfLastHandledTxn == null
                 || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.getEpochSecond()
-                        && isNextPeriod(consensusTimeOfLastHandledTxn, consensusTime, context)) {
+                        && isNextPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
             // Handle the daily staking distributions and updates
             try {
                 stakingCalculator.updateNodes(consensusTime, context);
@@ -82,21 +83,22 @@ public class ConsensusTimeHook {
 
     @VisibleForTesting
     static boolean isNextPeriod(
-            @NonNull final Instant lastConsensusTime,
-            @NonNull final Instant consensusTime,
+            @NonNull final Instant currentConsensusTime,
+            @NonNull final Instant previousConsensusTime,
             @NonNull final HandleContext handleContext) {
         final var stakingPeriod =
                 handleContext.configuration().getConfigData(StakingConfig.class).periodMins();
         if (stakingPeriod == DEFAULT_STAKING_PERIOD_MINS) {
-            return !inSameUtcDay(lastConsensusTime, consensusTime);
+            return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {
-            return getPeriod(consensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
-                    != getPeriod(lastConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
+            return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
+                    != getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
         }
     }
 
-    private static boolean inSameUtcDay(@NonNull final Instant now, @NonNull final Instant then) {
-        return LocalDateTime.ofInstant(now, UTC).getDayOfYear()
-                == LocalDateTime.ofInstant(then, UTC).getDayOfYear();
+    private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {
+        final var nowDay = LocalDateTime.ofInstant(now, UTC);
+        final var thenDay = LocalDateTime.ofInstant(then, UTC);
+        return nowDay.isAfter(thenDay) && nowDay.getDayOfYear() != thenDay.getDayOfYear();
     }
 }

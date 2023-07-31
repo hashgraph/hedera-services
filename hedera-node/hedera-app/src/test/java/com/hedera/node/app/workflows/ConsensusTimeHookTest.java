@@ -47,11 +47,20 @@ class ConsensusTimeHookTest {
     @Mock
     private EndOfStakingPeriodUpdater stakingPeriodCalculator;
 
+    @Mock
+    private HandleContext context;
+
     private ConsensusTimeHook subject;
 
     @BeforeEach
     void setUp() {
         subject = new ConsensusTimeHook(stakingPeriodCalculator);
+    }
+
+    @SuppressWarnings("DataFlowIssue")
+    @Test
+    void nullArgConstructor() {
+        Assertions.assertThatThrownBy(() -> new ConsensusTimeHook(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -63,7 +72,7 @@ class ConsensusTimeHookTest {
     void processUpdateCalledForNullConsensusTime() {
         subject.setLastConsensusTime(null);
 
-        subject.process(CONSENSUS_TIME_1234567, mock(HandleContext.class));
+        subject.process(CONSENSUS_TIME_1234567, context);
 
         verify(stakingPeriodCalculator).updateNodes(notNull(), notNull());
     }
@@ -73,21 +82,20 @@ class ConsensusTimeHookTest {
         final var beforeLastConsensusTime = CONSENSUS_TIME_1234567.minusSeconds(1);
         subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
-        subject.process(beforeLastConsensusTime, mock(HandleContext.class));
+        subject.process(beforeLastConsensusTime, context);
 
         verifyNoInteractions(stakingPeriodCalculator);
     }
 
     @Test
     void processUpdateCalledForNextPeriod() {
-        final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig());
         // Use any number of seconds that gets isNextPeriod(...) to return true
         var currentConsensusTime = CONSENSUS_TIME_1234567.plusSeconds(500_000);
         subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
         // Pre-condition check
-        Assertions.assertThat(ConsensusTimeHook.isNextPeriod(CONSENSUS_TIME_1234567, currentConsensusTime, context))
+        Assertions.assertThat(ConsensusTimeHook.isNextPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
         subject.process(currentConsensusTime, context);
@@ -101,12 +109,11 @@ class ConsensusTimeHookTest {
                 .when(stakingPeriodCalculator)
                 .updateNodes(any(), any());
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(Instant.now(), mock(HandleContext.class)));
+        Assertions.assertThatNoException().isThrownBy(() -> subject.process(CONSENSUS_TIME_1234567, context));
     }
 
     @Test
     void isNextPeriodDefaultStakingPeriodIsInSameUtcDay() {
-        final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
         final var result = ConsensusTimeHook.isNextPeriod(
@@ -117,13 +124,10 @@ class ConsensusTimeHookTest {
 
     @Test
     void isNextPeriodDefaultStakingPeriodIsNotInSameUtcDay() {
-        final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
         final var result = ConsensusTimeHook.isNextPeriod(
-                CONSENSUS_TIME_1234567,
-                CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds()),
-                context);
+                CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds()), CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isTrue();
     }
