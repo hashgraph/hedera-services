@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -47,7 +46,6 @@ import org.apache.logging.log4j.Logger;
  * Run mixed operations including ContractCreate, ContractUpdate, ContractCallLocal, ContractCall,
  * ContractInfo
  */
-@HapiTestSuite
 public class MixedSmartContractOpsLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(MixedSmartContractOpsLoadTest.class);
 

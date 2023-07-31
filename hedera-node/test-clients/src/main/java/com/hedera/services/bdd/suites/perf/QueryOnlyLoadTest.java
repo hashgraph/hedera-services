@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -57,7 +56,6 @@ import org.apache.logging.log4j.Logger;
  * and topic chunks in current saved state file, but the token and schedule transactions are not
  * clear.
  */
-@HapiTestSuite
 public class QueryOnlyLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(QueryOnlyLoadTest.class);
     private static final Random r = new Random();
