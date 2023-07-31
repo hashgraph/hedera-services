@@ -33,6 +33,7 @@ import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -44,10 +45,12 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
@@ -76,7 +79,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -259,6 +264,19 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 registry.registerConstructables("com.swirlds.merkle.tree");
 
                 // 1. Create a configuration instance with any desired overrides.
+                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
+                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
+                System.setProperty(
+                        "hedera.recordStream.logDir",
+                        tmpDir.resolve("recordStream").toString());
+                System.setProperty("accounts.storeOnDisk", "true");
+                System.setProperty("grpc.port", "0");
+                System.setProperty("grpc.tlsPort", "0");
+                System.setProperty("grpc.workflowsPort", "0");
+                System.setProperty("grpc.workflowsTlsPort", "0");
+                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
+                System.setProperty("platformStatus.observingStatusDelay", "0");
+
                 final var factory = ServiceLoader.load(ConfigurationBuilderFactory.class);
                 final var configBuilder = factory.findFirst().orElseThrow().create();
                 final var config = configBuilder
@@ -289,24 +307,13 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(PlatformStatusConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
+                        .withSource(SystemPropertiesConfigSource.getInstance())
                         .build();
 
                 ConfigurationHolder.getInstance().setConfiguration(config);
                 CryptographyHolder.reset();
 
                 final var port = new InetSocketAddress(0).getPort();
-
-                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty(
-                        "hedera.recordStream.logDir",
-                        tmpDir.resolve("recordStream").toString());
-                System.setProperty("accounts.storeOnDisk", "true");
-                System.setProperty("grpc.port", "0");
-                System.setProperty("grpc.tlsPort", "0");
-                System.setProperty("grpc.workflowsPort", "0");
-                System.setProperty("grpc.workflowsTlsPort", "0");
-                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
 
                 // 3. Create a new Node ID for our node
                 final var nodeId = new NodeId(0);
@@ -374,12 +381,21 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 // 10. Init and Start
                 hedera.init(platform, nodeId);
+                final var latch = new CountDownLatch(1);
+                platform.getNotificationEngine().register(PlatformStatusChangeListener.class, notification -> {
+                    if (notification.getNewStatus() == PlatformStatus.ACTIVE) {
+                        latch.countDown();
+                    }
+                });
                 platform.start();
 
                 // 11. Initialize the HAPI Spec system
+                latch.await(30, TimeUnit.SECONDS);
+                hedera.run();
+
                 final var defaultProperties = JutilPropertySource.getDefaultInstance();
                 HapiSpec.runInCiMode(
-                        defaultProperties.get("nodes"),
+                        String.valueOf(hedera.getGrpcPort()),
                         defaultProperties.get("default.payer"),
                         defaultProperties.get("default.node").split("\\.")[2],
                         defaultProperties.get("tls"),
