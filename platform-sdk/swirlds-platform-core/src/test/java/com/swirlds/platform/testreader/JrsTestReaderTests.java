@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.testreader;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.testreader.JrsTestReader.parseTimestampFromDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -67,12 +68,13 @@ public class JrsTestReaderTests {
 
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
         //"gs://swirlds-circleci-jrs-results/cody-littley/"
-        final String root = "gs://swirlds-circleci-jrs-results/cody-littley/";
+        final String root = "gs://swirlds-circleci-jrs-results/alittley/";
 
         JrsTestReader.generateTestReport(
                 terminal,
                 executor,
                 root,
-                Instant.now().minus(2, ChronoUnit.DAYS), Path.of("out.csv"));
+                Instant.now().minus(2, ChronoUnit.DAYS),
+                getAbsolutePath(Path.of("~/Desktop/out.csv")));
     }
 }

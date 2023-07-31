@@ -20,7 +20,7 @@ public record JrsTestResult(
 
     /**
      * Failing tests are always ordered before passing tests. If both tests are passing or both tests are failing, then
-     * the tests are ordered by alphabetical order of the test name.
+     * the tests are ordered by alphabetical order of the test name. Finally, use timestamp as a tiebreaker.
      *
      * @param that the object to be compared.
      * @return a negative integer, zero, or a positive integer as this object is less than, equal to, or greater than
@@ -28,9 +28,11 @@ public record JrsTestResult(
     @Override
     public int compareTo(@NonNull final JrsTestResult that) {
         if (this.status != that.status) {
-            return Integer.compare(this.status.ordinal(), that.status.ordinal());
-        } else {
+            return Integer.compare(that.status.ordinal(), this.status.ordinal());
+        } else if (!this.name.equals(that.name)) {
             return this.name.compareTo(that.name);
+        } else {
+            return this.getTestTimestamp().compareTo(that.getTestTimestamp());
         }
     }
 
@@ -41,7 +43,7 @@ public record JrsTestResult(
      * @param sb the string builder to append to
      */
     public static void renderCsvHeader(@NonNull final StringBuilder sb) {
-        sb.append("Name, Timestamp, Status, Summary, Data\n");
+        sb.append("Name\tTimestamp\tStatus\tSummary\tMetrics\tData\n");
     }
 
     /**
@@ -52,17 +54,18 @@ public record JrsTestResult(
     public void renderCsvLine(@NonNull final StringBuilder sb) {
         final String browserUrl = generateWebBrowserUrl();
 
-        sb.append(name).append(", ")
-                .append(getTestTimestamp()).append(", ")
-                .append(status.name()).append(", ")
-                .append(hyperlink(browserUrl + "summary.txt", "summary")).append(", ")
-                .append(hyperlink(browserUrl, "data")).append("git stat\n")
+        sb.append(name).append("\t")
+                .append(getTestTimestamp()).append("\t")
+                .append(status.name()).append("\t")
+                .append(hyperlink(browserUrl + "summary.txt", "summary")).append("\t")
+                .append(hyperlink(browserUrl + "multipage_pdf.pdf", "metrics")).append("\t")
+                .append(hyperlink(browserUrl, "data")).append("\n")
         ;
     }
 
     @NonNull
     private static String hyperlink(@NonNull final String url, @NonNull final String text) {
-        return "\"=HYPERLINK(\"\"" + url + "\"\", \"\"" + text + "\"\")\"";
+        return "=HYPERLINK(\"" + url + "\", \"" + text + "\")";
     }
 
     // TODO make these configurable
