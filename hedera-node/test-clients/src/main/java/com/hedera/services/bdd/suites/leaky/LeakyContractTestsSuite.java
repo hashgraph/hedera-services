@@ -302,13 +302,13 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 contractCreateNoncesExternalizationHappyPath(),
                 contractCreateFollowedByContractCallNoncesExternalization(),
                 shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled(),
-                executeEip2930Tx());
+                transferHbarsViaEip2390TxSuccessfully());
     }
 
-    private HapiSpec executeEip2930Tx() {
+    private HapiSpec transferHbarsViaEip2390TxSuccessfully() {
         final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
-        return propertyPreservingHapiSpec("executeEip2930Tx")
+        return propertyPreservingHapiSpec("transferHbarsViaEip2390TxSuccessfully")
                 .preserving(HEDERA_TXN_EIP2930_ENABLED)
                 .given(
                         overriding(HEDERA_TXN_EIP2930_ENABLED, "true"),
