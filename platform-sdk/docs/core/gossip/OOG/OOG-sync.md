@@ -1,0 +1,46 @@
+# Chatter sync
+
+Chatter is a protocol that simply sends all events to all peers. This is quite simple when all nodes have the same
+starting point. But if a peer establishes a connection again, or went through a reconnect, an extra step is needed. The
+peers need to exchange events that have already been sent to others, and start sending the new ones as well. The whole
+process is called a chatter sync. This transition we will call the handover.
+
+The exchange of events is done through [a sync](../syncing/sync-protocol.md), implemented by
+the [synchronizer](../shadowgraph-synchronizer.md).
+
+## Handover
+
+The handover needs to ensure that the peer receives all events, duplicates are permitted. The process is as follows:
+
+- If a chatter connection is not established, the sending queues will not accept any events
+- The chatter sync goes through the first 2 phases of a sync, until it reaches a point where it is about to retrieve the
+  latest tips from the shadowgraph.
+- Before getting the tips, it first allows events to be enqueued for sending over chatter
+- After this, it needs to ensure that events will either be sent through the sync or through chatter afterwards. To
+  ensure this, it needs to wait for the intake thread to finish its current cycle, to avoid a situation where an event
+  is being processed and does not get sent through either channel (explained in the diagram below).
+    - NOTE: this would have been easier to solve if the event was first added to the shadowgraph and then to chatter. We
+      cannot do this because of orphan events. Orphans need to be sent through chatter as soon as they are validated,
+      but cannot be added to the shadowgraph until we get their parents (see [orphans](orphan-buffer.md))
+- Once the intake finishes any cycle it was in the middle of, we ask the shadowgraph for the latest tips, and send
+  events that are unknown ancestors of those tips
+- Once all of this is done, chatter sync is done, and chatter can start running
+
+### Example diagram
+
+[![](https://mermaid.ink/img/pako:eNqNVEtvozAQ_isjn1opK22TG9pGqlIUcUmRQNoLF9eeBKvFpvbQh6r-9x2HkCUtasoJ8OfvNeB3oZxGkYiATx1ahbdG7rxsKluR7MjZrrlHz08W-JKKnIcMZIDMknxAoNqj1BHdSk9GmVZagmIdIUUttXthtrbut48hqyJCVrUkQg8tov9z75fsocPPbFk5FvRSPewdUe8mL8dE037yNGJy7JNUtHGE4J4ZvyoSKGuEvTCYAJs75lMKWzJ2B_iMlsLplqxMBjNDaRCI1QJcw-9TbM7YwVp4swqMhda7nccQeivZr-WyZ1QeG1ZjyMANF9dXlz3oNRodmNIruLCOQGqN-nJgKdYJ3GjNq9O8kVA7iwPrefH5pPj8s3heMk2E3Ox7myztS8_WvUz2vCeLnv5KQ7DlAY8skYOtsSbUI3Oj4POzwQ-bokb-f4xx8agd2dY4pIiSAa0-LudpAgW_CNzz7CD5zbxv7zZphPyg7cUx0Endiy8xF2dj9lTfWIuf68nofpZ4IWaiQd9Io_nIeI9_dSWoZv1KJHyrcSu7R6pEZT8Y2rVaEqba8H8qkq18DDgT8VQpuBqRkO9wAB2OnQPq4x_44o-w)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNqNVEtvozAQ_isjn1opK22TG9pGqlIUcUmRQNoLF9eeBKvFpvbQh6r-9x2HkCUtasoJ8OfvNeB3oZxGkYiATx1ahbdG7rxsKluR7MjZrrlHz08W-JKKnIcMZIDMknxAoNqj1BHdSk9GmVZagmIdIUUttXthtrbut48hqyJCVrUkQg8tov9z75fsocPPbFk5FvRSPewdUe8mL8dE037yNGJy7JNUtHGE4J4ZvyoSKGuEvTCYAJs75lMKWzJ2B_iMlsLplqxMBjNDaRCI1QJcw-9TbM7YwVp4swqMhda7nccQeivZr-WyZ1QeG1ZjyMANF9dXlz3oNRodmNIruLCOQGqN-nJgKdYJ3GjNq9O8kVA7iwPrefH5pPj8s3heMk2E3Ox7myztS8_WvUz2vCeLnv5KQ7DlAY8skYOtsSbUI3Oj4POzwQ-bokb-f4xx8agd2dY4pIiSAa0-LudpAgW_CNzz7CD5zbxv7zZphPyg7cUx0Endiy8xF2dj9lTfWIuf68nofpZ4IWaiQd9Io_nIeI9_dSWoZv1KJHyrcSu7R6pEZT8Y2rVaEqba8H8qkq18DDgT8VQpuBqRkO9wAB2OnQPq4x_44o-w)
+
+### Example: why intake cycle needs to finish
+
+[![](https://mermaid.ink/img/pako:eNptkT9vwjAQxb_KyVMrwdB2syokRCPEUkUKo5fDPohVYqf2GVohvnvtBCgDnvzn9-49352E9oaEFJG-EzlNHxZ3ATvlFGNi71K3oZBPDvJCzT7ACjDCyjF-EXAbCE2hewxste3RMTTLgjQtGn_M1fp2lN8ji6YgixaZKUBPFN43YZYzJCpu2X3wqtf32GO3uipMTWNOxavpz6KRN1H1Ck_OM6AxZJ4LUK-ns1lB5lpTz0AHchxvL81SwpKu18AeIjkzVh5f58bksqPbIKmrf7_46_SgiADVy2OEc_w4QNbtYBt8B9UbeHfEYIYgn54J_IFKB2T5go3gqJyziMVEdBQ6tCZP7lSaqwS31JESMm8NbTHtWQnlzhlNvUGmytjcUCG3uI80EWW4TU4qJIdEV-gy_Qt1_gP8Prxm)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNptkT9vwjAQxb_KyVMrwdB2syokRCPEUkUKo5fDPohVYqf2GVohvnvtBCgDnvzn9-49352E9oaEFJG-EzlNHxZ3ATvlFGNi71K3oZBPDvJCzT7ACjDCyjF-EXAbCE2hewxste3RMTTLgjQtGn_M1fp2lN8ji6YgixaZKUBPFN43YZYzJCpu2X3wqtf32GO3uipMTWNOxavpz6KRN1H1Ck_OM6AxZJ4LUK-ns1lB5lpTz0AHchxvL81SwpKu18AeIjkzVh5f58bksqPbIKmrf7_46_SgiADVy2OEc_w4QNbtYBt8B9UbeHfEYIYgn54J_IFKB2T5go3gqJyziMVEdBQ6tCZP7lSaqwS31JESMm8NbTHtWQnlzhlNvUGmytjcUCG3uI80EWW4TU4qJIdEV-gy_Qt1_gP8Prxm)
+
+### A few more examples
+
+Chatter thread is done between 2 intake events, no duplicates are sent:
+[![](https://mermaid.ink/img/pako:eNptkk1rg0AQhv_KsKcE0kNylCZQUgneBIVevEx2x7okrnYdW0rIf-9s_EBKPCnz-M4zu3NTujGkItXRV09O07vFT4914QrGnhvX12fy8uVAHtTceEgAO0gc44WAK09oAt2iZ6tti44hOwUkq9A0P5LWVsPvS-SYBeRYITN5aIn869kfxKGn_2lJvmzoUV8eRjzYpPky6LlPGgcmpWGSgtP85XA4ZhG8aU0tA32T426uJHkEH2gZSsm3Q185H-AGSutsV8Fqv10HPAl4KvhoZxpHc0waR7NX9-u0ZDjTAcTbwSIZWyVOe6rFYNlrtd-tJyiYTkHxDlZoDJm5mp1kDmOk8jw0pAWvKfKp3sMs3qmNqsnXaI2sxC3cWqG4kpxCRfJqqMT-yoUq3F3QvjXIFBsr96CiEq8dbVTYmkymVRH7niZoXKuRuv8BmIbYXg)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNptkk1rg0AQhv_KsKcE0kNylCZQUgneBIVevEx2x7okrnYdW0rIf-9s_EBKPCnz-M4zu3NTujGkItXRV09O07vFT4914QrGnhvX12fy8uVAHtTceEgAO0gc44WAK09oAt2iZ6tti44hOwUkq9A0P5LWVsPvS-SYBeRYITN5aIn869kfxKGn_2lJvmzoUV8eRjzYpPky6LlPGgcmpWGSgtP85XA4ZhG8aU0tA32T426uJHkEH2gZSsm3Q185H-AGSutsV8Fqv10HPAl4KvhoZxpHc0waR7NX9-u0ZDjTAcTbwSIZWyVOe6rFYNlrtd-tJyiYTkHxDlZoDJm5mp1kDmOk8jw0pAWvKfKp3sMs3qmNqsnXaI2sxC3cWqG4kpxCRfJqqMT-yoUq3F3QvjXIFBsr96CiEq8dbVTYmkymVRH7niZoXKuRuv8BmIbYXg)
+
+Event is added to the chatter queue and we wait for it to be added to the shadowgraph, E2 is sent twice:
+[![](https://mermaid.ink/img/pako:eNptksFqg0AQhl9l2FMK6aE5ShsoqQRvgkIvXia7Y10SV7OOLSXk3TurxkobT7rz-f-f7l6UbgypSHV07slperP44bEuXMHYc-P6-kBenhzIhZobDwlgB4ljPBJw5QlNoFv0bLVt0TFk-4BkFZrmS9Laanx9ieyygOwqZCYPLZF_PvitOPT0Ny3Jl4Ue9XEw4tEmzZdB933SODApjV9ScJo_bre7LIJXralloE9y3I2zREZJHkmf9lTLOtixWf4QrF42D3NAoN7RMpSisYC4gdI621Uznkx1N8t4Ays0hsw8zfYiY4xM7juEXNM4ukUGKDikAzVUh_Hslsa_bd230xLgTAcQP62njv_YQMQbtVY1-RqtkWNxCTtXKK5Eo1CR3BoqsT9xoQp3FbRvDTLFxspeqKjEU0drFU5OJq0qYt_TDZqO1kRdfwBQR9ki)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNptksFqg0AQhl9l2FMK6aE5ShsoqQRvgkIvXia7Y10SV7OOLSXk3TurxkobT7rz-f-f7l6UbgypSHV07slperP44bEuXMHYc-P6-kBenhzIhZobDwlgB4ljPBJw5QlNoFv0bLVt0TFk-4BkFZrmS9Laanx9ieyygOwqZCYPLZF_PvitOPT0Ny3Jl4Ue9XEw4tEmzZdB933SODApjV9ScJo_bre7LIJXralloE9y3I2zREZJHkmf9lTLOtixWf4QrF42D3NAoN7RMpSisYC4gdI621Uznkx1N8t4Ays0hsw8zfYiY4xM7juEXNM4ukUGKDikAzVUh_Hslsa_bd230xLgTAcQP62njv_YQMQbtVY1-RqtkWNxCTtXKK5Eo1CR3BoqsT9xoQp3FbRvDTLFxspeqKjEU0drFU5OJq0qYt_TDZqO1kRdfwBQR9ki)
+
+Event is not added to the chatter queue and we wait for it to be added to the shadowgraph, no duplicates are sent:
+[![](https://mermaid.ink/img/pako:eNptkk1rg0AQhv_KsKcU0kNzlFYIqQQPBUGhFy-T3bEuiatdx34Q8t87q0kqbTwp-8zzvuvuUenWkIpUT-8DOU3PFt88NqUrGQdu3dDsyMuXA3lQc-shBewhdYx7Aq49oQl0h56tth06hnwbkLxG036Kraun8TmyyQOyqZGZPHRE_nHnY-kw0F9bWswDPer92IinNlkxF93ukyWByWjaScnpfRynRSRO7akhIexkl78Ai6fV3QR9bfLoak5WsHAtAxpDZgSyQjQBWWtNHQN9iKm_roSAV7QMlbSc-bmFyjrb17OkOM634jFGYm4XDJOmdXQZClBIyUZqlIfla3qW_Fbvv50WgTM9QPKwPGf8x0ZC9lhb9wbr4kUtVUO-QWvkghzDGZaKa-lTqkheDVU4HLhUpTsJOnQGmRJj5VRUVOGhp6UKdyiXeBWxH-gCnS_ZmTr9ADQg3Uc)](https://mermaid-js.github.io/mermaid-live-editor/edit/#pako:eNptkk1rg0AQhv_KsKcU0kNzlFYIqQQPBUGhFy-T3bEuiatdx34Q8t87q0kqbTwp-8zzvuvuUenWkIpUT-8DOU3PFt88NqUrGQdu3dDsyMuXA3lQc-shBewhdYx7Aq49oQl0h56tth06hnwbkLxG036Kraun8TmyyQOyqZGZPHRE_nHnY-kw0F9bWswDPer92IinNlkxF93ukyWByWjaScnpfRynRSRO7akhIexkl78Ai6fV3QR9bfLoak5WsHAtAxpDZgSyQjQBWWtNHQN9iKm_roSAV7QMlbSc-bmFyjrb17OkOM634jFGYm4XDJOmdXQZClBIyUZqlIfla3qW_Fbvv50WgTM9QPKwPGf8x0ZC9lhb9wbr4kUtVUO-QWvkghzDGZaKa-lTqkheDVU4HLhUpTsJOnQGmRJj5VRUVOGhp6UKdyiXeBWxH-gCnS_ZmTr9ADQg3Uc)

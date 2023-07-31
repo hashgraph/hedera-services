@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test;
 
+import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 
@@ -62,6 +63,6 @@ class FreezeServiceImplTest {
         assertEquals(1, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(FreezeServiceImpl.UPGRADE_FILES_KEY, iter.next());
+        assertEquals(UPGRADE_FILE_HASH_KEY, iter.next());
     }
 }

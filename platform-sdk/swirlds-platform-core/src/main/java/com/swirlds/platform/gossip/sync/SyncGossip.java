@@ -160,6 +160,7 @@ public class SyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,

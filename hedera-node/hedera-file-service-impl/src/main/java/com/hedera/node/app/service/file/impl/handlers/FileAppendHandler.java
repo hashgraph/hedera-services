@@ -29,7 +29,7 @@ import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -133,7 +133,7 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
-        final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
+        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
         File file = fileStore.peek();
         if (file == null) {
             throw new HandleException(INVALID_FILE_ID);

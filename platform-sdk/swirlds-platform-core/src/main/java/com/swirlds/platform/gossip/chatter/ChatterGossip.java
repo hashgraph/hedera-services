@@ -172,6 +172,7 @@ public class ChatterGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,

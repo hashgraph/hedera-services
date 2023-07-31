@@ -33,7 +33,7 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.ReadableUpgradeStore;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -85,7 +85,7 @@ public class FileGetInfoHandler extends FileQueryBase {
         requireNonNull(header);
         final var query = context.query();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var upgradeStore = context.createStore(ReadableUpgradeStore.class);
+        final var upgradeFileStore = context.createStore(ReadableUpgradeFileStore.class);
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
         final var op = query.fileGetInfoOrThrow();
@@ -97,7 +97,7 @@ public class FileGetInfoHandler extends FileQueryBase {
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             final Optional<FileInfo> optionalInfo;
             try {
-                optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeStore, fileServiceConfig);
+                optionalInfo = infoForFile(file, fileStore, ledgerConfig, upgradeFileStore, fileServiceConfig);
             } catch (IOException e) {
                 throw new RuntimeException("Unable to read file contents", e);
             }
@@ -118,7 +118,7 @@ public class FileGetInfoHandler extends FileQueryBase {
             @NonNull final FileID fileID,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final ReadableUpgradeStore upgradeStore,
+            @NonNull final ReadableUpgradeFileStore upgradeFileStore,
             @NonNull final FilesConfig fileServiceConfig)
             throws IOException {
 
@@ -127,10 +127,10 @@ public class FileGetInfoHandler extends FileQueryBase {
         // upgrade is for the entire network, not a node. It's across shards and realms, however, which is why we ignore
         // the shard and realm values.
         if (fileID.fileNum() == fileServiceConfig.upgradeFileNumber()) {
-            final var file = upgradeStore.peek();
+            final var file = upgradeFileStore.peek();
             if (file != null) {
                 // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
-                final var contents = upgradeStore.getFull().toByteArray();
+                final var contents = upgradeFileStore.getFull().toByteArray();
                 contentSize = contents.length;
                 final var upgradeHash =
                         hex(CryptographyHolder.get().digestSync(contents).getValue());

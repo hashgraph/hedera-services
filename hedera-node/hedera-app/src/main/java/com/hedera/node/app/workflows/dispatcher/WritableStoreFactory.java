@@ -24,9 +24,9 @@ import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -60,13 +60,13 @@ public class WritableStoreFactory {
                     WritableTokenStore.class, WritableTokenStore::new,
                     WritableTokenRelationStore.class, WritableTokenRelationStore::new),
             FreezeService.NAME,
-            Map.of(WritableUpdateFileStore.class, WritableUpdateFileStore::new),
+            Map.of(WritableUpgradeStore.class, WritableUpgradeStore::new),
             FileService.NAME,
             Map.of(
                     WritableFileStore.class,
                     WritableFileStore::new,
-                    WritableUpgradeStore.class,
-                    WritableUpgradeStore::new),
+                    WritableUpgradeFileStore.class,
+                    WritableUpgradeFileStore::new),
             EntityIdService.NAME,
             Map.of(WritableEntityIdStore.class, WritableEntityIdStore::new),
             UtilService.NAME,
