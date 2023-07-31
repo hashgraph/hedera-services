@@ -56,6 +56,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusManager;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
@@ -477,7 +478,6 @@ public class SwirldsPlatform implements Platform, Startable {
         final EventObserverDispatcher eventObserverDispatcher = new EventObserverDispatcher(
                 new ShadowGraphEventObserver(shadowGraph),
                 consensusRoundHandler,
-                preConsensusEventHandler,
                 eventMapper,
                 addedEventMetrics,
                 eventIntakeMetrics,
@@ -507,13 +507,17 @@ public class SwirldsPlatform implements Platform, Startable {
         final IntakeCycleStats intakeCycleStats = new IntakeCycleStats(time, metrics);
 
         final EventIntake eventIntake = new EventIntake(
+                platformContext,
+                threadManager,
+                time,
                 selfId,
                 eventLinker,
                 consensusRef::get,
                 initialAddressBook,
                 eventObserverDispatcher,
                 intakeCycleStats,
-                shadowGraph);
+                shadowGraph,
+                preConsensusEventHandler::preconsensusEvent);
 
         final EventCreator eventCreator = buildEventCreator(eventIntake);
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
@@ -855,6 +859,9 @@ public class SwirldsPlatform implements Platform, Startable {
                                 + reconnectHash + ", new hash is "
                                 + signedState.getState().getHash());
             }
+
+            // Before attempting to load the state, verify that the platform AB matches the state AB.
+            AddressBookUtils.verifyReconnectAddressBooks(getAddressBook(), signedState.getAddressBook());
 
             swirldStateManager.loadFromSignedState(signedState);
 

@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -26,9 +24,9 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -38,10 +36,13 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
@@ -65,10 +66,10 @@ public class WritableStoreFactory {
         newMap.put(
                 WritableTokenRelationStore.class, new StoreEntry(TokenService.NAME, WritableTokenRelationStore::new));
         // FreezeService
-        newMap.put(WritableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, WritableUpdateFileStore::new));
+        newMap.put(WritableUpgradeStore.class, new StoreEntry(FreezeService.NAME, WritableUpgradeStore::new));
         // FileService
         newMap.put(WritableFileStore.class, new StoreEntry(FileService.NAME, WritableFileStore::new));
-        newMap.put(WritableUpgradeStore.class, new StoreEntry(FileService.NAME, WritableUpgradeStore::new));
+        newMap.put(WritableUpgradeFileStore.class, new StoreEntry(FileService.NAME, WritableUpgradeFileStore::new));
         // ContractService
         newMap.put(
                 WritableContractStateStore.class,

@@ -55,7 +55,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
-import com.hedera.node.config.data.NetworkAdminServiceConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.SigsConfig;
@@ -167,7 +167,7 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(LazyCreationConfig.class)
                 .withConfigDataType(LedgerConfig.class)
                 .withConfigDataType(NettyConfig.class)
-                .withConfigDataType(NetworkAdminServiceConfig.class)
+                .withConfigDataType(NetworkAdminConfig.class)
                 .withConfigDataType(RatesConfig.class)
                 .withConfigDataType(SchedulingConfig.class)
                 .withConfigDataType(SigsConfig.class)
