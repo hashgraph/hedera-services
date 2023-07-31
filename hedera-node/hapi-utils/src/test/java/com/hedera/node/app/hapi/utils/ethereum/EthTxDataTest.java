@@ -349,7 +349,7 @@ class EthTxDataTest {
                 oneByte,
                 oneByte,
                 oneByte);
-        assertThrows(IllegalStateException.class, ethTxDataWithAccessList::encodeTx);
+        assertThrows(IllegalStateException.class, ethTsDataEIP2930::encodeTx);
     }
 
     @Test
