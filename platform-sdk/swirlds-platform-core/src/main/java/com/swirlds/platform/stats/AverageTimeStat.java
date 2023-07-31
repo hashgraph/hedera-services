@@ -34,8 +34,13 @@ public class AverageTimeStat {
     private final AtomicAverage average;
     private final StatEntry avgEntry;
 
-    public AverageTimeStat(final MetricsConfig metricsConfig,
-            final Metrics metrics, final ChronoUnit unit, final String category, final String name, final String desc) {
+    public AverageTimeStat(
+            final MetricsConfig metricsConfig,
+            final Metrics metrics,
+            final ChronoUnit unit,
+            final String category,
+            final String name,
+            final String desc) {
         this(metricsConfig, metrics, unit, category, name, desc, AverageStat.WEIGHT_SMOOTH);
     }
 

@@ -348,51 +348,45 @@ public class PlatformTestingToolMain implements SwirldMain {
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
 
-        vmCreateSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmCreate").withDescription(
-                        "VM Creation TPS"));
+        vmCreateSpeed = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmCreate")
+                .withDescription("VM Creation TPS"));
         vmUpdateSpeed = metrics.getOrCreate(
                 new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmUpdate").withDescription("VM Update TPS"));
-        vmDeleteSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmDelete").withDescription(
-                        "VM Deletion TPS"));
-        vmContractCreateSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmContractCreate").withDescription(
-                        "VM Contract Creation TPS"));
-        vmContractExecutionSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmContractExecute").withDescription(
-                        "VM Contract Execution TPS"));
+        vmDeleteSpeed = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmDelete")
+                .withDescription("VM Deletion TPS"));
+        vmContractCreateSpeed =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmContractCreate")
+                        .withDescription("VM Contract Creation TPS"));
+        vmContractExecutionSpeed =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, VM_CATEGORY, "vmContractExecute")
+                        .withDescription("VM Contract Execution TPS"));
 
         // Add FCM speedometer
-        fcmCreateSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmCreate").withDescription(
-                        "FCM Creation TPS"));
-        fcmUpdateSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmUpdate").withDescription(
-                        "FCM Update TPS"));
-        fcmTransferSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmTransfer").withDescription(
-                        "FCM Transfer TPS"));
-        fcmDeleteSpeed = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmDelete").withDescription(
-                        "FCM Delete TPS"));
+        fcmCreateSpeed = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmCreate")
+                .withDescription("FCM Creation TPS"));
+        fcmUpdateSpeed = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmUpdate")
+                .withDescription("FCM Update TPS"));
+        fcmTransferSpeed = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmTransfer")
+                .withDescription("FCM Transfer TPS"));
+        fcmDeleteSpeed = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, FCM_CATEGORY, "fcmDelete")
+                .withDescription("FCM Delete TPS"));
 
         // Add some global information for debugging
         transactionSubmitted = metrics.getOrCreate(TRANSACTION_SUBMITTED_CONFIG);
-        transactionSubmitSpeedometer = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, "Debug.info", "tranSubTPS").withDescription(
-                        "Transaction submitted TPS"));
+        transactionSubmitSpeedometer =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, "Debug.info", "tranSubTPS")
+                        .withDescription("Transaction submitted TPS"));
 
         // add stats for time taken to query a leaf
-        queryLeafTimeCostMicroSec = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, "Query", "queryLeafTimeCostMicroSec")
+        queryLeafTimeCostMicroSec =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, "Query", "queryLeafTimeCostMicroSec")
                         .withDescription("avg time taken to query a leaf in the latest signed state (in microseconds)")
                         .withHalfLife(DEFAULT_HALF_LIFE));
 
-        queriesAnsweredPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                "Query", "queriesAnsweredPerSecond")
-                .withDescription("number of queries have been answered per second")
-                .withFormat(FORMAT_9_6));
+        queriesAnsweredPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, "Query", "queriesAnsweredPerSecond")
+                        .withDescription("number of queries have been answered per second")
+                        .withFormat(FORMAT_9_6));
 
         expectedInvalidSigRatio = metrics.getOrCreate(
                 new RunningAverageMetric.Config(metricsConfig, FCM_CATEGORY, "expectedInvalidSigRatio")
@@ -870,7 +864,7 @@ public class PlatformTestingToolMain implements SwirldMain {
         int checkPeriodSec = 20;
         if (previousTimestamp != null
                 && consensusTimestamp.getEpochSecond() / checkPeriodSec
-                != previousTimestamp.getEpochSecond() / checkPeriodSec) {
+                        != previousTimestamp.getEpochSecond() / checkPeriodSec) {
             previousTimestamp = consensusTimestamp;
             return true;
         }
@@ -1018,7 +1012,7 @@ public class PlatformTestingToolMain implements SwirldMain {
             final AtomicLong maxSmartContractIdFromLoadedState = new AtomicLong(0);
             if (state.getVirtualMapForSmartContractsByteCode() != null) {
                 new MerkleIterator<VirtualLeafNode<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>>(
-                        state.getVirtualMapForSmartContractsByteCode())
+                                state.getVirtualMapForSmartContractsByteCode())
                         .setFilter(node -> node instanceof VirtualLeafNode)
                         .forEachRemaining(leaf -> {
                             final SmartContractByteCodeMapKey key = leaf.getKey();

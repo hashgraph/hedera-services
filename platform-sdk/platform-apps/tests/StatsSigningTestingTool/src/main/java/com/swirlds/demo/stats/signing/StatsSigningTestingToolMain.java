@@ -187,8 +187,8 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         final Metrics metrics = platform.getContext().getMetrics();
         final Configuration configuration = platform.getContext().getConfiguration();
         transactionSubmitSpeedometer = metrics.getOrCreate(
-                new Config(configuration.getConfigData(MetricsConfig.class), "Debug.info",
-                        "tranSubTPS").withDescription("Transaction submitted TPS"));
+                new Config(configuration.getConfigData(MetricsConfig.class), "Debug.info", "tranSubTPS")
+                        .withDescription("Transaction submitted TPS"));
     }
 
     @Override

@@ -209,8 +209,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         this.stateConfig = configuration.getConfigData(StateConfig.class);
         this.signedStateSentinel = new SignedStateSentinel(platformContext, threadManager, Time.getCurrent());
 
-        dispatchBuilder =
-                new DispatchBuilder(configuration.getConfigData(DispatchConfiguration.class));
+        dispatchBuilder = new DispatchBuilder(configuration.getConfigData(DispatchConfiguration.class));
 
         hashLogger = new HashLogger(threadManager, selfId, stateConfig);
 
@@ -280,9 +279,9 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                 .registerObservers(issMetrics)
                 .registerObservers(this);
 
-        final RunningAverageMetric avgRoundSupermajority =
-                platformContext.getMetrics().getOrCreate(new Config(metricsConfig,
-                        PLATFORM_CATEGORY, "roundSup")
+        final RunningAverageMetric avgRoundSupermajority = platformContext
+                .getMetrics()
+                .getOrCreate(new Config(metricsConfig, PLATFORM_CATEGORY, "roundSup")
                         .withDescription("latest round with state signed by a supermajority")
                         .withUnit("round"));
         platformContext.getMetrics().addUpdater(() -> avgRoundSupermajority.update(getLastCompleteRound()));
@@ -320,8 +319,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                     EXCEPTION.getMarker(),
                     new InsufficientSignaturesPayload(
                             ("state written to disk for round %d did not have enough signatures. "
-                                    + "Collected signatures representing %d/%d weight. "
-                                    + "Total unsigned disk states so far: %d.")
+                                            + "Collected signatures representing %d/%d weight. "
+                                            + "Total unsigned disk states so far: %d.")
                                     .formatted(
                                             signedState.getRound(),
                                             signedState.getSigningWeight(),

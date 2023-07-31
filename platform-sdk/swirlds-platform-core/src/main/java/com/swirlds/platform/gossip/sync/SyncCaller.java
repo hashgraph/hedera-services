@@ -117,10 +117,12 @@ public class SyncCaller implements Runnable {
         this.eventTaskCreator = Objects.requireNonNull(eventTaskCreator);
         this.syncShadowgraphSynchronizer = Objects.requireNonNull(syncShadowgraphSynchronizer);
 
-        sleep1perSecond = platformContext.getMetrics()
-                .getOrCreate(new SpeedometerMetric.Config(platformContext.getConfiguration().getConfigData(
-                        MetricsConfig.class),
-                        INTERNAL_CATEGORY, "sleep1/sec")
+        sleep1perSecond = platformContext
+                .getMetrics()
+                .getOrCreate(new SpeedometerMetric.Config(
+                                platformContext.getConfiguration().getConfigData(MetricsConfig.class),
+                                INTERNAL_CATEGORY,
+                                "sleep1/sec")
                         .withDescription("sleeps per second because caller thread had too many failed connects"));
         syncConfig = platformContext.getConfiguration().getConfigData(SyncConfig.class);
     }

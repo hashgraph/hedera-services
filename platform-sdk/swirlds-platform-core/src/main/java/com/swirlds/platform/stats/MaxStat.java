@@ -37,8 +37,13 @@ public class MaxStat {
      * @param format
      * 		a string that can be passed to String.format() to format the statistic for the average number
      */
-    public MaxStat(final MetricsConfig metricsConfig,
-            final Metrics metrics, final String category, final String name, final String desc, final String format) {
+    public MaxStat(
+            final MetricsConfig metricsConfig,
+            final Metrics metrics,
+            final String category,
+            final String name,
+            final String desc,
+            final String format) {
         max = new AtomicMax();
         metrics.getOrCreate(new StatEntry.Config<>(metricsConfig, category, name, Long.class, max::get)
                 .withDescription(desc)

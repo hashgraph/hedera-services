@@ -68,7 +68,8 @@ public class AverageAndMax {
      * @param weight
      * 		the weight used to calculate the average
      */
-    public AverageAndMax(final MetricsConfig metricsConfig,
+    public AverageAndMax(
+            final MetricsConfig metricsConfig,
             final Metrics metrics,
             final String category,
             final String name,

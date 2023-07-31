@@ -90,8 +90,8 @@ public class ManualWiring {
         this.freezeManager = freezeManager;
 
         final Configuration configuration = platformContext.getConfiguration();
-        this.wiringMetrics = new WiringMetrics(configuration.getConfigData(MetricsConfig.class),
-                platformContext.getMetrics());
+        this.wiringMetrics =
+                new WiringMetrics(configuration.getConfigData(MetricsConfig.class), platformContext.getMetrics());
 
         final WiringConfig wiringConfig = configuration.getConfigData(WiringConfig.class);
         asyncLatestCompleteStateQueue = new QueueThreadConfiguration<Runnable>(threadManager)

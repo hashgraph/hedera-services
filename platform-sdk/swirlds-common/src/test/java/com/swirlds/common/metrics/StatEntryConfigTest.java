@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 class StatEntryConfigTest {
 
     private static final String DEFAULT_FORMAT = FloatFormats.FORMAT_11_3;
-    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -158,8 +158,7 @@ class StatEntryConfigTest {
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withResetStatsStringSupplier(null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> config.withResetStatsStringSupplier(null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("unchecked")

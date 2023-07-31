@@ -42,11 +42,12 @@ public class QueueOutputMain<T extends SelfSerializable> implements MessageOutpu
     private final List<QueueOutputPeer<T>> peerInstances;
     private final AverageAndMax stats;
 
-    public QueueOutputMain(final String queueName, final int queueCapacity, final MetricsConfig metricsConfig,
-            final Metrics metrics) {
+    public QueueOutputMain(
+            final String queueName, final int queueCapacity, final MetricsConfig metricsConfig, final Metrics metrics) {
         this.queueCapacity = queueCapacity;
         peerInstances = new ArrayList<>();
-        stats = new AverageAndMax(metricsConfig,
+        stats = new AverageAndMax(
+                metricsConfig,
                 metrics,
                 "chatter",
                 queueName + "Queue",

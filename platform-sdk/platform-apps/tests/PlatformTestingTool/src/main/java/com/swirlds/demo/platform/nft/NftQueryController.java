@@ -78,9 +78,10 @@ public class NftQueryController {
     private void initStats() {
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        nftQueriesAnsweredPerSecond =
-                this.platform.getContext().getMetrics().getOrCreate(new Config(metricsConfig,
-                        "NFT", "nftQueriesAnsweredPerSecond")
+        nftQueriesAnsweredPerSecond = this.platform
+                .getContext()
+                .getMetrics()
+                .getOrCreate(new Config(metricsConfig, "NFT", "nftQueriesAnsweredPerSecond")
                         .withDescription("number of NFT queries have been answered per second")
                         .withFormat(FORMAT_9_6));
 

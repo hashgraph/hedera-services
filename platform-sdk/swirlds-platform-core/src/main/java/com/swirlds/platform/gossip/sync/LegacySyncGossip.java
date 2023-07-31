@@ -182,8 +182,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 syncManager,
                 shadowgraphExecutor,
                 true,
-                () -> {
-                });
+                () -> {});
 
         clearAllInternalPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
@@ -195,9 +194,10 @@ public class LegacySyncGossip extends AbstractGossip {
         sharedConnectionLocks = new SharedConnectionLocks(topology, connectionManagers);
 
         final SyncConfig syncConfig = configuration.getConfigData(SyncConfig.class);
-        simultaneousSyncThrottle = new SimultaneousSyncThrottle(configuration.getConfigData(
-                MetricsConfig.class),
-                platformContext.getMetrics(), syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
+        simultaneousSyncThrottle = new SimultaneousSyncThrottle(
+                configuration.getConfigData(MetricsConfig.class),
+                platformContext.getMetrics(),
+                syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
 
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
@@ -238,8 +238,7 @@ public class LegacySyncGossip extends AbstractGossip {
                     .setComponent(PLATFORM_THREAD_POOL_NAME)
                     .setThreadName("heartbeat")
                     .setOtherNodeId(otherId)
-                    .setWork(new HeartbeatSender(
-                            otherId, sharedConnectionLocks, networkMetrics, configuration))
+                    .setWork(new HeartbeatSender(otherId, sharedConnectionLocks, networkMetrics, configuration))
                     .build());
         }
 
@@ -319,8 +318,7 @@ public class LegacySyncGossip extends AbstractGossip {
                 selfId,
                 topology.getConnectionGraph(),
                 statusActionSubmitter,
-                () -> {
-                },
+                () -> {},
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));
     }
 

@@ -41,11 +41,10 @@ class DistributionAdapterTest {
     private static final String DESCRIPTION = "DeScRiPtIoN";
     private static final String UNIT = "UnIt";
 
-    private static final String[] GLOBAL_LABEL = new String[]{"type"};
-    private static final String[] NODE_LABEL = new String[]{"node", "type"};
-    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
-
+    private static final String[] GLOBAL_LABEL = new String[] {"type"};
+    private static final String[] NODE_LABEL = new String[] {"node", "type"};
+    private final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     private static final double EPSILON = 1e-6;
 
@@ -53,8 +52,8 @@ class DistributionAdapterTest {
     void testCreateGlobalMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(
-                new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
+        final Metric metric =
+                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
                         .withDescription(DESCRIPTION)
                         .withUnit(UNIT));
 
@@ -74,8 +73,8 @@ class DistributionAdapterTest {
     void testCreatePlatformMetric() {
         // given
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(
-                new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
+        final Metric metric =
+                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, CATEGORY, NAME)
                         .withDescription(DESCRIPTION)
                         .withUnit(UNIT));
 
@@ -96,8 +95,8 @@ class DistributionAdapterTest {
         // given
         final String brokenName = ".- /%()";
         final CollectorRegistry registry = new CollectorRegistry();
-        final Metric metric = new DefaultRunningAverageMetric(
-                new RunningAverageMetric.Config(metricsConfig, brokenName, brokenName));
+        final Metric metric =
+                new DefaultRunningAverageMetric(new RunningAverageMetric.Config(metricsConfig, brokenName, brokenName));
 
         // when
         new DistributionAdapter(registry, metric, GLOBAL);
@@ -143,13 +142,13 @@ class DistributionAdapterTest {
         adapter.update(Snapshot.of(metric), null);
 
         // then
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"mean"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"mean"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"min"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"min"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"max"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"max"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[]{"stddev"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, GLOBAL_LABEL, new String[] {"stddev"}))
                 .isCloseTo(0.0, offset(EPSILON));
     }
 
@@ -166,13 +165,13 @@ class DistributionAdapterTest {
         adapter.update(Snapshot.of(metric), new NodeId(1L));
 
         // then
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "mean"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "mean"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "min"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "min"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "max"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "max"}))
                 .isCloseTo(Math.PI, offset(EPSILON));
-        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[]{"1", "stddev"}))
+        assertThat(registry.getSampleValue(MAPPING_NAME, NODE_LABEL, new String[] {"1", "stddev"}))
                 .isCloseTo(0.0, offset(EPSILON));
     }
 

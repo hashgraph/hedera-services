@@ -73,33 +73,31 @@ public class EventIntakeMetrics implements StaleEventObserver {
         Objects.requireNonNull(metrics, "metrics required");
         this.time = time;
 
-        rescuedEventsPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "rescuedEv/sec")
-                .withDescription("number of events per second generated to prevent stale events")
-                .withFormat(FORMAT_16_2));
-        duplicateEventsPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "dupEv/sec")
-                .withDescription("number of events received per second that are already known")
-                .withFormat(FORMAT_14_2));
-        avgDuplicatePercent = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                PLATFORM_CATEGORY, "dupEv%")
-                .withDescription("percentage of events received that are already known")
-                .withFormat(FORMAT_10_2));
-        timeFracAdd = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "timeFracAdd")
+        rescuedEventsPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, INTERNAL_CATEGORY, "rescuedEv/sec")
+                        .withDescription("number of events per second generated to prevent stale events")
+                        .withFormat(FORMAT_16_2));
+        duplicateEventsPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, INTERNAL_CATEGORY, "dupEv/sec")
+                        .withDescription("number of events received per second that are already known")
+                        .withFormat(FORMAT_14_2));
+        avgDuplicatePercent =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "dupEv%")
+                        .withDescription("percentage of events received that are already known")
+                        .withFormat(FORMAT_10_2));
+        timeFracAdd = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, INTERNAL_CATEGORY, "timeFracAdd")
                 .withDescription(
                         "fraction of each second spent adding an event to the hashgraph and " + "finding consensus")
                 .withFormat(FORMAT_9_6));
         shouldCreateEvent = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "shouldCreateEvent").withFormat(
-                        FORMAT_10_1));
-        staleEventsTotal = metrics.getOrCreate(
-                new Counter.Config(INTERNAL_CATEGORY, "staleEvTot").withDescription(
-                        "total number of stale events ever"));
-        staleEventsPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "staleEv/sec")
-                .withDescription("number of stale events per second")
-                .withFormat(FORMAT_16_2));
+                new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "shouldCreateEvent")
+                        .withFormat(FORMAT_10_1));
+        staleEventsTotal = metrics.getOrCreate(new Counter.Config(INTERNAL_CATEGORY, "staleEvTot")
+                .withDescription("total number of stale events ever"));
+        staleEventsPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, INTERNAL_CATEGORY, "staleEv/sec")
+                        .withDescription("number of stale events per second")
+                        .withFormat(FORMAT_16_2));
     }
 
     /**

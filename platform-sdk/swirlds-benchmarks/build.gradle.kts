@@ -15,31 +15,33 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
-  id("com.swirlds.platform.library")
-  id("com.swirlds.platform.benchmark-conventions")
+    id("com.swirlds.platform.conventions")
+    id("com.swirlds.platform.library")
+    id("com.swirlds.platform.benchmark-conventions")
 }
 
 dependencies {
-  implementation(project(mapOf("path" to ":swirlds-unit-tests:common:swirlds-test-framework")))
+    implementation(project(mapOf("path" to ":swirlds-unit-tests:common:swirlds-test-framework")))
     // JMH Dependencies
-  jmhImplementation(project(":swirlds-platform-core"))
-  jmhImplementation(project(":swirlds-config-api"))
-  jmhImplementation(project(":swirlds-config-impl"))
+    jmhImplementation(project(":swirlds-platform-core"))
+    jmhImplementation(project(":swirlds-config-api"))
+    jmhImplementation(project(":swirlds-config-impl"))
 }
 
 fun getListProperty(arg: String): ListProperty<String> {
-  return project.objects.listProperty(String::class).value(listOf(arg))
+    return project.objects.listProperty(String::class).value(listOf(arg))
 }
 
 jmh {
-  jvmArgs.set(listOf("-Xmx8g"))
-  includes.set(listOf("transfer"))
-  warmupIterations.set(0)
-  iterations.set(1)
-  benchmarkParameters.set(
-      mapOf(
-          "numFiles" to getListProperty("10"),
-          "keySize" to getListProperty("16"),
-          "recordSize" to getListProperty("128")))
+    jvmArgs.set(listOf("-Xmx8g"))
+    includes.set(listOf("transfer"))
+    warmupIterations.set(0)
+    iterations.set(1)
+    benchmarkParameters.set(
+        mapOf(
+            "numFiles" to getListProperty("10"),
+            "keySize" to getListProperty("16"),
+            "recordSize" to getListProperty("128")
+        )
+    )
 }

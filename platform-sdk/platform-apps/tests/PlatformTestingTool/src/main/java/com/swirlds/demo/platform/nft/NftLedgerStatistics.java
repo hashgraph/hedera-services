@@ -99,31 +99,30 @@ public class NftLedgerStatistics {
         final Metrics metrics = platform.getContext().getMetrics();
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        mintTokenMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                NFT_CATEGORY, "nftMintedTokenMicroSec")
-                .withDescription("avg time taken to execute the NftLedger mintToken method (in microseconds)")
-                .withHalfLife(DEFAULT_HALF_LIFE));
-        transferTokenMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                NFT_CATEGORY, "nftTransferTokenMicroSec")
+        mintTokenMicroSec = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, NFT_CATEGORY, "nftMintedTokenMicroSec")
+                        .withDescription("avg time taken to execute the NftLedger mintToken method (in microseconds)")
+                        .withHalfLife(DEFAULT_HALF_LIFE));
+        transferTokenMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(
+                        metricsConfig, NFT_CATEGORY, "nftTransferTokenMicroSec")
                 .withDescription("avg time taken to execute the NftLedger transferToken method (in microseconds)")
                 .withHalfLife(DEFAULT_HALF_LIFE));
-        burnTokenMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                NFT_CATEGORY, "nftBurnTokenMicroSec")
-                .withDescription("avg time taken to execute the NftLedger burnToken method (in microseconds)")
-                .withHalfLife(DEFAULT_HALF_LIFE));
-        mintedTokensPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                NFT_CATEGORY, "mintedTokensPerSecond")
-                .withDescription("number of NFTs minted per second")
-                .withFormat(FORMAT_9_6));
-        transferredTokensPerSecond =
-                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                        NFT_CATEGORY, "transferredTokensPerSecond")
+        burnTokenMicroSec =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, NFT_CATEGORY, "nftBurnTokenMicroSec")
+                        .withDescription("avg time taken to execute the NftLedger burnToken method (in microseconds)")
+                        .withHalfLife(DEFAULT_HALF_LIFE));
+        mintedTokensPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, NFT_CATEGORY, "mintedTokensPerSecond")
+                        .withDescription("number of NFTs minted per second")
+                        .withFormat(FORMAT_9_6));
+        transferredTokensPerSecond = metrics.getOrCreate(
+                new SpeedometerMetric.Config(metricsConfig, NFT_CATEGORY, "transferredTokensPerSecond")
                         .withDescription("number of NFTs transferred per second")
                         .withFormat(FORMAT_9_6));
-        burnedTokensPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                NFT_CATEGORY, "burnedTokensPerSecond")
-                .withDescription("number of NFTs burned per second")
-                .withFormat(FORMAT_9_6));
+        burnedTokensPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, NFT_CATEGORY, "burnedTokensPerSecond")
+                        .withDescription("number of NFTs burned per second")
+                        .withFormat(FORMAT_9_6));
 
         registered = true;
     }

@@ -55,7 +55,10 @@ public class CycleTimingStat {
      * @param definition
      * 		the definition of the cycle state
      */
-    public CycleTimingStat(final MetricsConfig metricsConfig, final Metrics metrics, final ChronoUnit unit,
+    public CycleTimingStat(
+            final MetricsConfig metricsConfig,
+            final Metrics metrics,
+            final ChronoUnit unit,
             final CycleDefinition definition) {
 
         this.numIntervals = definition.getNumIntervals();
@@ -63,7 +66,8 @@ public class CycleTimingStat {
 
         timePointStats = new ArrayList<>(numIntervals);
         for (int i = 0; i < numIntervals; i++) {
-            timePointStats.add(new AverageTimeStat(metricsConfig,
+            timePointStats.add(new AverageTimeStat(
+                    metricsConfig,
                     metrics,
                     unit,
                     definition.getCategory(),
@@ -72,7 +76,8 @@ public class CycleTimingStat {
                     AverageStat.WEIGHT_VOLATILE));
         }
 
-        totalCycleTimeStat = new AverageTimeStat(metricsConfig,
+        totalCycleTimeStat = new AverageTimeStat(
+                metricsConfig,
                 metrics,
                 unit,
                 definition.getCategory(),

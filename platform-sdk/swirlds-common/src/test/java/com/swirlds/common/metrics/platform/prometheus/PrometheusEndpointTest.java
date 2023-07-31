@@ -87,8 +87,8 @@ class PrometheusEndpointTest {
     private static final String LABEL_2 = NODE_ID_2.toString();
 
     private static final InetSocketAddress ADDRESS = new InetSocketAddress(0);
-    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     private static final double EPSILON = 1e-6;
 
@@ -1277,8 +1277,8 @@ class PrometheusEndpointTest {
     @Test
     void testGlobalBooleanStatEntry() throws IOException {
         // given
-        final StatEntry.Config<Boolean> config = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Boolean.class,
-                () -> true);
+        final StatEntry.Config<Boolean> config =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Boolean.class, () -> true);
         final DefaultStatEntry metric = new DefaultStatEntry(config);
 
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {
@@ -1305,11 +1305,11 @@ class PrometheusEndpointTest {
     @Test
     void testPlatformBooleanStatEntry() throws IOException {
         // given
-        final StatEntry.Config<Boolean> config1 = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Boolean.class,
-                () -> true);
+        final StatEntry.Config<Boolean> config1 =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Boolean.class, () -> true);
         final DefaultStatEntry metric1 = new DefaultStatEntry(config1);
-        final StatEntry.Config<Boolean> config2 = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Boolean.class,
-                () -> false);
+        final StatEntry.Config<Boolean> config2 =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Boolean.class, () -> false);
         final DefaultStatEntry metric2 = new DefaultStatEntry(config2);
 
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {
@@ -1342,8 +1342,8 @@ class PrometheusEndpointTest {
     @Test
     void testGlobalNumberStatEntry() throws IOException {
         // given
-        final StatEntry.Config<Double> config = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Double.class,
-                () -> Math.PI);
+        final StatEntry.Config<Double> config =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Double.class, () -> Math.PI);
         final DefaultStatEntry metric = new DefaultStatEntry(config);
 
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {
@@ -1370,11 +1370,11 @@ class PrometheusEndpointTest {
     @Test
     void testPlatformNumberStatEntry() throws IOException {
         // given
-        final StatEntry.Config<Double> config1 = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Double.class,
-                () -> Math.E);
+        final StatEntry.Config<Double> config1 =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Double.class, () -> Math.E);
         final DefaultStatEntry metric1 = new DefaultStatEntry(config1);
-        final StatEntry.Config<Double> config2 = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Double.class,
-                () -> Math.PI);
+        final StatEntry.Config<Double> config2 =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, Double.class, () -> Math.PI);
         final DefaultStatEntry metric2 = new DefaultStatEntry(config2);
 
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {
@@ -1407,8 +1407,8 @@ class PrometheusEndpointTest {
     @Test
     void testGlobalStringStatEntry() throws IOException {
         // given
-        final StatEntry.Config<String> config = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, String.class,
-                () -> "Hello");
+        final StatEntry.Config<String> config =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, String.class, () -> "Hello");
         final DefaultStatEntry metric = new DefaultStatEntry(config);
 
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {
@@ -1435,11 +1435,11 @@ class PrometheusEndpointTest {
     @Test
     void testPlatformStringStatEntry() throws IOException {
         // given
-        final StatEntry.Config<String> config1 = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, String.class,
-                () -> "Hello");
+        final StatEntry.Config<String> config1 =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, String.class, () -> "Hello");
         final DefaultStatEntry metric1 = new DefaultStatEntry(config1);
-        final StatEntry.Config<String> config2 = new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, String.class,
-                () -> "Goodbye");
+        final StatEntry.Config<String> config2 =
+                new StatEntry.Config<>(metricsConfig, CATEGORY, NAME, String.class, () -> "Goodbye");
         final DefaultStatEntry metric2 = new DefaultStatEntry(config2);
 
         try (final PrometheusEndpoint endpoint = new PrometheusEndpoint(httpServer, registry)) {

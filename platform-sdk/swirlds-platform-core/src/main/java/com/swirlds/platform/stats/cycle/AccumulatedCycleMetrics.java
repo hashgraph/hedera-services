@@ -40,8 +40,8 @@ public class AccumulatedCycleMetrics implements CycleMetrics {
     /** For each interval, track the average and max values. Updates as each interval finishes. */
     private final AverageAndMax[] intervalAvgMax;
 
-    public AccumulatedCycleMetrics(final MetricsConfig metricsConfig, final Metrics metrics,
-            final CycleDefinition definition) {
+    public AccumulatedCycleMetrics(
+            final MetricsConfig metricsConfig, final Metrics metrics, final CycleDefinition definition) {
         this.definition = definition;
         this.avgCycleTime = new AccumulatedAverageTime(
                 metrics,
@@ -58,7 +58,8 @@ public class AccumulatedCycleMetrics implements CycleMetrics {
 
         for (int i = 0; i < definition.getNumIntervals(); i++) {
             intervalFraction[i] = new IntervalPercentageMetric(metrics, definition, i);
-            intervalAvgMax[i] = new AverageAndMax(metricsConfig,
+            intervalAvgMax[i] = new AverageAndMax(
+                    metricsConfig,
                     metrics,
                     definition.getCategory(),
                     definition.getDisplayName(i),

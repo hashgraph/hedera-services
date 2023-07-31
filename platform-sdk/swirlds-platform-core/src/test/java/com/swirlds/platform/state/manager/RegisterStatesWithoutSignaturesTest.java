@@ -45,7 +45,6 @@ public class RegisterStatesWithoutSignaturesTest extends AbstractSignedStateMana
     private final AddressBook addressBook =
             new RandomAddressBookGenerator(random).setSize(4).build();
 
-
     /**
      * Called on each state as it gets too old without collecting enough signatures.
      * <p>

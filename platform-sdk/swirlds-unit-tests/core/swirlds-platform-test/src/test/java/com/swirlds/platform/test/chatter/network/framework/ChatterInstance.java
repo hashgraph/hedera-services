@@ -77,9 +77,7 @@ public class ChatterInstance<T extends SimulatedChatterEvent> implements GossipM
         this.newEventCreator = newEventCreator;
         this.eventPipeline = eventPipeline;
 
-        core = new ChatterCore<>(time, clazz, e -> {
-        }, configuration, (id, ping) -> {
-        }, new NoOpMetrics());
+        core = new ChatterCore<>(time, clazz, e -> {}, configuration, (id, ping) -> {}, new NoOpMetrics());
 
         for (long peerId = 0; peerId < numNodes; peerId++) {
             // Don't create a peer instance for self

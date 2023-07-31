@@ -77,10 +77,10 @@ class PreConsensusEventHandlerTests extends AbstractEventHandlerTests {
 
         // sleep for a little while to pretend to handle an event
         doAnswer((e) -> {
-            Thread.sleep(sleepMillisPerEvent);
-            numEventsHandled.incrementAndGet();
-            return null;
-        })
+                    Thread.sleep(sleepMillisPerEvent);
+                    numEventsHandled.incrementAndGet();
+                    return null;
+                })
                 .when(swirldStateManager)
                 .handlePreConsensusEvent(any(EventImpl.class));
 

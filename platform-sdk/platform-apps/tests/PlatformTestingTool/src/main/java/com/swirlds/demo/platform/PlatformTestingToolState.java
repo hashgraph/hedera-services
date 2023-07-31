@@ -322,27 +322,36 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         /* Add handleTransaction statistics */
-        htFCMMicroSec = platform.getContext().getMetrics().getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                HANDLE_TRANSACTION_CATEGORY, "htFCMTimeMicroSec")
-                .withDescription("average handleTransaction (FCM) Time, microseconds"));
-        htFCQMicroSec = platform.getContext().getMetrics().getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                HANDLE_TRANSACTION_CATEGORY, "htFCQTimeMicroSec")
-                .withDescription("average handleTransaction (FCQ) Time, microseconds"));
-        htFCQExpirationMicroSec = platform.getContext().getMetrics().getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCQExpirationMicroSec")
+        htFCMMicroSec = platform.getContext()
+                .getMetrics()
+                .getOrCreate(
+                        new RunningAverageMetric.Config(metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCMTimeMicroSec")
+                                .withDescription("average handleTransaction (FCM) Time, microseconds"));
+        htFCQMicroSec = platform.getContext()
+                .getMetrics()
+                .getOrCreate(
+                        new RunningAverageMetric.Config(metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCQTimeMicroSec")
+                                .withDescription("average handleTransaction (FCQ) Time, microseconds"));
+        htFCQExpirationMicroSec = platform.getContext()
+                .getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(
+                                metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCQExpirationMicroSec")
                         .withDescription("FCQ Expiration Time per call, microseconds"));
-        htFCMSize = platform.getContext().getMetrics().getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                HANDLE_TRANSACTION_CATEGORY, "htFCMSize")
-                .withDescription("FCM Tree Size (accounts)")
-                .withFormat(FORMAT_11_0));
-        htFCQSize = platform.getContext().getMetrics().getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                HANDLE_TRANSACTION_CATEGORY, "htFCQSize")
-                .withDescription("FCQ Tree Size (accounts)")
-                .withFormat(FORMAT_11_0));
-        htFCQRecords = platform.getContext().getMetrics().getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                HANDLE_TRANSACTION_CATEGORY, "htFCQRecords")
-                .withDescription("FCQ Transaction Records")
-                .withFormat(FORMAT_11_0));
+        htFCMSize = platform.getContext()
+                .getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCMSize")
+                        .withDescription("FCM Tree Size (accounts)")
+                        .withFormat(FORMAT_11_0));
+        htFCQSize = platform.getContext()
+                .getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCQSize")
+                        .withDescription("FCQ Tree Size (accounts)")
+                        .withFormat(FORMAT_11_0));
+        htFCQRecords = platform.getContext()
+                .getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(metricsConfig, HANDLE_TRANSACTION_CATEGORY, "htFCQRecords")
+                        .withDescription("FCQ Transaction Records")
+                        .withFormat(FORMAT_11_0));
 
         NftLedgerStatistics.register(platform);
 
@@ -510,7 +519,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     }
 
     public VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue>
-    getVirtualMapForSmartContractsByteCode() {
+            getVirtualMapForSmartContractsByteCode() {
         return getChild(ChildIndices.VIRTUAL_MERKLE_SMART_CONTRACTS_BYTE_CODE);
     }
 
@@ -873,7 +882,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
 
         // if there is any error, we don't handle this transaction
         if (!expectedFCMFamily.shouldHandleForKeys(
-                keys, transactionType, getConfig(), entityType, epochMillis, originId)
+                        keys, transactionType, getConfig(), entityType, epochMillis, originId)
                 && entityType != EntityType.NFT) {
             return;
         }
@@ -1287,13 +1296,13 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         initializeExpirationQueueAndAccountsSet();
 
         logger.info(LOGM_DEMO_INFO, "Dual state received in init function {}", () -> new ApplicationDualStatePayload(
-                swirldDualState.getFreezeTime(), swirldDualState.getLastFrozenTime())
+                        swirldDualState.getFreezeTime(), swirldDualState.getLastFrozenTime())
                 .toString());
 
         logger.info(LOGM_STARTUP, () -> new SoftwareVersionPayload(
-                "Trigger and PreviousSoftwareVersion state received in init function",
-                trigger.toString(),
-                Objects.toString(previousSoftwareVersion))
+                        "Trigger and PreviousSoftwareVersion state received in init function",
+                        trigger.toString(),
+                        Objects.toString(previousSoftwareVersion))
                 .toString());
 
         if (trigger == InitTrigger.GENESIS) {

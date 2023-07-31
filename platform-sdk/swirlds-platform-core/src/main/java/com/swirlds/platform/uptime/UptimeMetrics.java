@@ -75,20 +75,20 @@ class UptimeMetrics {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(isDegraded);
 
-        healthyNetworkFraction = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "healthyNetworkFraction")
-                .withUnit("fraction")
-                .withDescription(
-                        "The fraction (out of 1.0) of the network that is alive and healthy, weighted by consensus weight."));
+        healthyNetworkFraction = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, CATEGORY, "healthyNetworkFraction")
+                        .withUnit("fraction")
+                        .withDescription(
+                                "The fraction (out of 1.0) of the network that is alive and healthy, weighted by consensus weight."));
 
         final FunctionGauge.Config<Boolean> degradedConfig = new FunctionGauge.Config<>(
-                CATEGORY, "degraded", Boolean.class, isDegraded)
+                        CATEGORY, "degraded", Boolean.class, isDegraded)
                 .withUnit("boolean")
                 .withDescription("False if this node is healthy, true if this node is degraded.");
         metrics.getOrCreate(degradedConfig);
 
-        uptimeComputationTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "uptimeComputationTime")
+        uptimeComputationTime = metrics.getOrCreate(new RunningAverageMetric.Config(
+                        metricsConfig, CATEGORY, "uptimeComputationTime")
                 .withUnit("microseconds")
                 .withDescription("The time, in microseconds, required to compute uptime information each round."));
 
@@ -106,7 +106,7 @@ class UptimeMetrics {
         Objects.requireNonNull(nodeId, "nodeId must not be null");
 
         final RunningAverageMetric.Config roundsSinceLastConensusEventConfig = new RunningAverageMetric.Config(
-                metricsConfig, CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId)
+                        metricsConfig, CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId)
                 .withUnit("rounds")
                 .withDescription(
                         "The number of rounds since the last consensus event created by this node was observed");

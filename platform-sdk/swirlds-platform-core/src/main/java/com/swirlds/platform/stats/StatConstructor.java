@@ -50,7 +50,10 @@ public class StatConstructor {
      */
     public static <T extends Enum<T> & UniqueId> StatEntry.Config<Integer> createEnumStat(
             final MetricsConfig metricsConfig,
-            final String name, final String category, final T[] enumValues, final Supplier<T> enumSupplier) {
+            final String name,
+            final String category,
+            final T[] enumValues,
+            final Supplier<T> enumSupplier) {
         // check if the reserved value is being used
         if (Arrays.stream(enumValues).anyMatch((v) -> v.getId() == NO_VALUE)) {
             throw new IllegalArgumentException("Unique ID must not be equal to " + NO_VALUE);

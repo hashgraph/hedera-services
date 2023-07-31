@@ -56,17 +56,15 @@ public class NftSimpleQuerier {
         final Metrics metrics = platform.getContext().getMetrics();
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        tokensPerKey = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                "NFT", "nftTokensPerKey")
+        tokensPerKey = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, "NFT", "nftTokensPerKey")
                 .withDescription("avg number of tokens each key has when queried")
                 .withFormat(FORMAT_9_6)
                 .withHalfLife(10.0));
         nftQueriesAnsweredMicroSec =
-                metrics.getOrCreate(
-                        new RunningAverageMetric.Config(metricsConfig, "NFT", "nftQueriesAnsweredMicroSec")
-                                .withDescription("avg time taken to answer a query through NftLedger (in microseconds)")
-                                .withFormat(FORMAT_9_6)
-                                .withHalfLife(10.0));
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, "NFT", "nftQueriesAnsweredMicroSec")
+                        .withDescription("avg time taken to answer a query through NftLedger (in microseconds)")
+                        .withFormat(FORMAT_9_6)
+                        .withHalfLife(10.0));
     }
 
     protected static void setConfig(final NftQueryConfig config) {

@@ -231,8 +231,7 @@ public class ChatterGossip extends AbstractGossip {
                     addressBook.getSize(),
                     syncMetrics,
                     consensusRef::get,
-                    sr -> {
-                    },
+                    sr -> {},
                     eventTaskCreator::addEvent,
                     syncManager,
                     shadowgraphExecutor,
@@ -244,8 +243,7 @@ public class ChatterGossip extends AbstractGossip {
                         intakeCycle.waitForCurrentSequenceEnd();
                     });
 
-            final ReconnectConfig reconnectConfig =
-                    configuration.getConfigData(ReconnectConfig.class);
+            final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
             chatterThreads.add(new StoppableThreadConfiguration<>(threadManager)
                     .setPriority(Thread.NORM_PRIORITY)

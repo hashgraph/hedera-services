@@ -43,13 +43,13 @@ public class SignedStateMetrics {
     private final RunningAverageMetric averageTimeToFullySignState;
 
     private static final Counter.Config TOTAL_NEVER_SIGNED_STATES_CONFIG = new Counter.Config(
-            CATEGORY, "totalNeverSignedStates")
+                    CATEGORY, "totalNeverSignedStates")
             .withDescription("total number of states that did not receive enough signatures in the allowed time")
             .withUnit("count");
     private final Counter totalNeverSignedStates;
 
     private static final Counter.Config TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG = new Counter.Config(
-            CATEGORY, "totalNeverSignedDiskStates")
+                    CATEGORY, "totalNeverSignedDiskStates")
             .withDescription(
                     "total number of disk-bound states that did not receive enough signatures in the allowed time")
             .withUnit("count");
@@ -182,69 +182,65 @@ public class SignedStateMetrics {
      * 		a reference to the metrics-system
      */
     public SignedStateMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
-        unsignedStates = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "unsignedStates")
+        unsignedStates = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "unsignedStates")
                 .withDescription("Average Number Of Unsigned States Awaiting Signatures")
                 .withUnit("count")
                 .withFormat(FORMAT_10_2));
-        averageTimeToFullySignState = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "averageTimeToFullySignState")
+        averageTimeToFullySignState = metrics.getOrCreate(new RunningAverageMetric.Config(
+                        metricsConfig, CATEGORY, "averageTimeToFullySignState")
                 .withDescription("The average time spent waiting for enough state signatures to fully sign a state.")
                 .withUnit(MILLISECONDS)
                 .withFormat(FORMAT_10_2));
         totalNeverSignedStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_STATES_CONFIG);
         totalNeverSignedDiskStates = metrics.getOrCreate(TOTAL_NEVER_SIGNED_DISK_STATES_CONFIG);
-        statesSignedPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "statesSigned/sec")
-                .withDescription("the number of states completely signed per second")
-                .withFormat(FORMAT_16_2)
-                .withUnit("hz"));
-        stateSignaturesGatheredPerSecond = metrics.getOrCreate(
-                new SpeedometerMetric.Config(metricsConfig, CATEGORY, "stateSignaturesGathered/sec")
+        statesSignedPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "statesSigned/sec")
+                        .withDescription("the number of states completely signed per second")
+                        .withFormat(FORMAT_16_2)
+                        .withUnit("hz"));
+        stateSignaturesGatheredPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "stateSignaturesGathered/sec")
                         .withDescription("the number of state signatures gathered from other nodes per second")
                         .withFormat(FORMAT_16_2)
                         .withUnit("hz"));
-        stateArchivalTimeAvg = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "stateArchivalTimeAvg")
-                .withDescription("avg time to archive a signed state (in milliseconds)")
-                .withUnit(MILLISECONDS)
-                .withFormat(FORMAT_15_3));
-        stateDeletionQueueAvg = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "stateDeletionQueueAvg")
-                .withDescription("avg length of the state deletion queue")
-                .withFormat(FORMAT_15_3)
-                .withUnit("count"));
-        stateDeletionTimeAvg = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "stateDeletionTimeAvg")
-                .withDescription("avg time it takes to delete a signed state (in milliseconds)")
-                .withUnit(MILLISECONDS)
-                .withFormat(FORMAT_15_3));
-        stateHashingTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "sigStateHash")
+        stateArchivalTimeAvg =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "stateArchivalTimeAvg")
+                        .withDescription("avg time to archive a signed state (in milliseconds)")
+                        .withUnit(MILLISECONDS)
+                        .withFormat(FORMAT_15_3));
+        stateDeletionQueueAvg =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "stateDeletionQueueAvg")
+                        .withDescription("avg length of the state deletion queue")
+                        .withFormat(FORMAT_15_3)
+                        .withUnit("count"));
+        stateDeletionTimeAvg =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "stateDeletionTimeAvg")
+                        .withDescription("avg time it takes to delete a signed state (in milliseconds)")
+                        .withUnit(MILLISECONDS)
+                        .withFormat(FORMAT_15_3));
+        stateHashingTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "sigStateHash")
                 .withDescription("average time it takes to hash a SignedState (in milliseconds)")
                 .withUnit(MILLISECONDS)
                 .withFormat(FORMAT_10_3));
-        stateToDiskTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "stateToDisk")
+        stateToDiskTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "stateToDisk")
                 .withDescription("average time it takes to do perform all actions when writing a SignedState to disk "
                         + "(in milliseconds)")
                 .withUnit(MILLISECONDS)
                 .withFormat(FORMAT_10_3));
-        writeStateToDiskTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "writeStateToDisk")
-                .withDescription("average time it takes to write a SignedState to disk (in milliseconds)")
-                .withUnit(MILLISECONDS)
-                .withFormat(FORMAT_10_3));
-        stateSignatureAge = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "stateSignatureAge")
-                .withDescription("the average difference in round number between state "
-                        + "signatures and the most recent immutable state. Negative numbers mean"
-                        + "the are being received early, large positive numbers mean "
-                        + "signatures are being received late.")
-                .withFormat(FORMAT_10_3)
-                .withUnit("rounds"));
-        signedStates = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "signedStates")
+        writeStateToDiskTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "writeStateToDisk")
+                        .withDescription("average time it takes to write a SignedState to disk (in milliseconds)")
+                        .withUnit(MILLISECONDS)
+                        .withFormat(FORMAT_10_3));
+        stateSignatureAge =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "stateSignatureAge")
+                        .withDescription("the average difference in round number between state "
+                                + "signatures and the most recent immutable state. Negative numbers mean"
+                                + "the are being received early, large positive numbers mean "
+                                + "signatures are being received late.")
+                        .withFormat(FORMAT_10_3)
+                        .withUnit("rounds"));
+        signedStates = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "signedStates")
                 .withDescription("Average Number Of Signed States In the Signed State Manager")
                 .withUnit("count")
                 .withFormat(FORMAT_10_2));

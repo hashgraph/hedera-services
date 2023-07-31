@@ -112,13 +112,12 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
         this.config = Objects.requireNonNull(chatterConfig);
         this.pingConsumer = Objects.requireNonNull(pingConsumer);
 
-        this.selfEventOutput = new QueueOutputMain<>("selfEvent", chatterConfig.selfEventQueueCapacity(), metricsConfig,
-                metrics);
-        this.otherEventOutput = new QueueOutputMain<>("otherEvent", chatterConfig.otherEventQueueCapacity(),
-                metricsConfig,
-                metrics);
-        this.hashOutput = new QueueOutputMain<>("descriptor", chatterConfig.descriptorQueueCapacity(), metricsConfig,
-                metrics);
+        this.selfEventOutput =
+                new QueueOutputMain<>("selfEvent", chatterConfig.selfEventQueueCapacity(), metricsConfig, metrics);
+        this.otherEventOutput =
+                new QueueOutputMain<>("otherEvent", chatterConfig.otherEventQueueCapacity(), metricsConfig, metrics);
+        this.hashOutput =
+                new QueueOutputMain<>("descriptor", chatterConfig.descriptorQueueCapacity(), metricsConfig, metrics);
         this.peerInstances = new HashMap<>();
 
         this.msgsPerSecRead = new CountPerSecond(
@@ -155,10 +154,10 @@ public class ChatterCore<E extends ChatterEvent> implements Shiftable, LoadableF
 
         final MessageProvider hashPeerInstance = hashOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send hashes
-        );
+                );
         final MessageProvider selfEventPeerInstance = selfEventOutput.createPeerInstance(
                 communicationState, d -> SendAction.SEND // always send self events
-        );
+                );
         final MessageProvider otherEventPeerInstance = otherEventOutput.createPeerInstance(
                 communicationState,
                 new VariableTimeDelay<>(

@@ -66,8 +66,8 @@ class CycleMetricsTest {
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
-        final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metricsConfig, metrics,
-                definition);
+        final AccumulatedCycleMetrics accumulatedCycleMetrics =
+                new AccumulatedCycleMetrics(metricsConfig, metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
         assertEquals(0.0, accumulatedCycleMetrics.getAvgCycleTime(), EPSILON, "avgTime should be 0");
         assertEquals(0.0, accumulatedCycleMetrics.getIntervalFraction(0), EPSILON, "int-0 should be 0");
@@ -120,8 +120,8 @@ class CycleMetricsTest {
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
-        final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metricsConfig, metrics,
-                definition);
+        final AccumulatedCycleMetrics accumulatedCycleMetrics =
+                new AccumulatedCycleMetrics(metricsConfig, metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
         assertEquals(0.0, accumulatedCycleMetrics.getAvgCycleTime(), EPSILON, "avgTime should be 0");
         assertEquals(0.0, accumulatedCycleMetrics.getIntervalFraction(0), EPSILON, "int-0 should be 0");
@@ -159,8 +159,8 @@ class CycleMetricsTest {
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
-        final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metricsConfig, metrics,
-                definition);
+        final AccumulatedCycleMetrics accumulatedCycleMetrics =
+                new AccumulatedCycleMetrics(metricsConfig, metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
         assertEquals(0.0, accumulatedCycleMetrics.getAvgCycleTime(), EPSILON, "avgTime should be 0");
         assertEquals(0.0, accumulatedCycleMetrics.getIntervalFraction(0), EPSILON, "int-0 should be 0");
@@ -200,8 +200,8 @@ class CycleMetricsTest {
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
                 null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
-        final CycleTracker tracker = new CycleTracker(time,
-                new AccumulatedCycleMetrics(metricsConfig, metrics, definition));
+        final CycleTracker tracker =
+                new CycleTracker(time, new AccumulatedCycleMetrics(metricsConfig, metrics, definition));
         tracker.startCycle();
         Assertions.assertThrows(
                 IllegalArgumentException.class, () -> tracker.intervalEnded(-1), "negative intervals are illegal");

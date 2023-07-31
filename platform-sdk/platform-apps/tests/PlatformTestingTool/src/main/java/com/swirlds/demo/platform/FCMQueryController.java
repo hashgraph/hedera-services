@@ -59,9 +59,9 @@ class FCMQueryController {
         this.throttle = new Throttle(fcmQueryConfig.getQps());
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        this.fcmQueriesAnsweredPerSecond =
-                platform.getContext().getMetrics().getOrCreate(new Config(metricsConfig,
-                        "FCM", "fcmQueriesAnsweredPerSecond")
+        this.fcmQueriesAnsweredPerSecond = platform.getContext()
+                .getMetrics()
+                .getOrCreate(new Config(metricsConfig, "FCM", "fcmQueriesAnsweredPerSecond")
                         .withDescription("number of FCM queries have been answered per second")
                         .withFormat(FORMAT_9_6));
     }

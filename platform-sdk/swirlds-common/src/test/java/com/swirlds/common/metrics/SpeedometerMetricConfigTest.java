@@ -57,10 +57,10 @@ class SpeedometerMetricConfigTest {
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, null, NAME)).isInstanceOf(
-                IllegalArgumentException.class);
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, "", NAME)).isInstanceOf(
-                IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, null, NAME))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, "", NAME))
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(metricsConfig, " \t\n", NAME))
                 .isInstanceOf(IllegalArgumentException.class);
 

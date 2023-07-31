@@ -64,10 +64,10 @@ public class EventCounter {
      *      configuration for the metrics
      * @param metrics the metrics engine
      */
-    public static void registerEventCounterMetrics(@NonNull final MetricsConfig metricsConfig,
-            @NonNull final Metrics metrics) {
-        final RunningAverageMetric avgEventsInMem = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "eventsInMem")
+    public static void registerEventCounterMetrics(
+            @NonNull final MetricsConfig metricsConfig, @NonNull final Metrics metrics) {
+        final RunningAverageMetric avgEventsInMem = metrics.getOrCreate(new RunningAverageMetric.Config(
+                        metricsConfig, INTERNAL_CATEGORY, "eventsInMem")
                 .withDescription("total number of events in memory, for all members on the local machine together")
                 .withUnit("count"));
         metrics.addUpdater(() -> avgEventsInMem.update(getNumEventsInMemory()));

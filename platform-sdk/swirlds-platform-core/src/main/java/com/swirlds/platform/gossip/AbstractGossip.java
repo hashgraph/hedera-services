@@ -234,8 +234,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 syncManager,
                 ThreadLocalRandom::current);
 
-        final ReconnectConfig reconnectConfig =
-                configuration.getConfigData(ReconnectConfig.class);
+        final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         reconnectThrottle = new ReconnectThrottle(reconnectConfig);
 
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);

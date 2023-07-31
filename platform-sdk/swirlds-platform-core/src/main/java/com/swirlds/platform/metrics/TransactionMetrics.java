@@ -42,7 +42,8 @@ public class TransactionMetrics {
      * 		if {@code metrics} is {@code null}
      */
     public TransactionMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
-        avgTransSubmitMicros = new AverageStat(metricsConfig,
+        avgTransSubmitMicros = new AverageStat(
+                metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 PlatformStatNames.TRANS_SUBMIT_MICROS,

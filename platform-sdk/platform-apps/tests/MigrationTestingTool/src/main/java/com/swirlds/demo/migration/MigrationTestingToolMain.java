@@ -121,7 +121,7 @@ public class MigrationTestingToolMain implements SwirldMain {
         final Configuration configuration = platform.getContext().getConfiguration();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final Metrics metrics = platform.getContext().getMetrics();
-        
+
         FCQueueStatistics.register(metricsConfig, metrics);
         MerkleMapMetrics.register(metricsConfig, metrics);
     }

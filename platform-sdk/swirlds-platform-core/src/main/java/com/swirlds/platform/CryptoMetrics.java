@@ -33,22 +33,22 @@ public final class CryptoMetrics {
     private static final String CATEGORY = "crypto";
 
     private static final LongAccumulator.Config MIN_DIGEST_BATCH_SIZE_CONFIG = new LongAccumulator.Config(
-            CATEGORY, "MinDigBatchSz")
+                    CATEGORY, "MinDigBatchSz")
             .withAccumulator(Math::min)
             .withDescription("minimum digest batch size")
             .withInitialValue(Long.MAX_VALUE);
     private static final LongAccumulator.Config MAX_DIGEST_BATCH_SIZE_CONFIG = new LongAccumulator.Config(
-            CATEGORY, "MaxDigBatchSz")
+                    CATEGORY, "MaxDigBatchSz")
             .withDescription("maximum digest batch size")
             .withInitialValue(Long.MIN_VALUE);
     private static final LongAccumulator.Config MIN_SIG_BATCH_SIZE_CONFIG = new LongAccumulator.Config(
-            CATEGORY, "MinSigBatchSz")
+                    CATEGORY, "MinSigBatchSz")
             .withAccumulator(Math::min)
             .withDescription("minimum signature batch size")
             .withFormat("%,d")
             .withInitialValue(Long.MAX_VALUE);
     private static final LongAccumulator.Config MAX_SIG_BATCH_SIZE_CONFIG = new LongAccumulator.Config(
-            CATEGORY, "MaxSigBatchSz")
+                    CATEGORY, "MaxSigBatchSz")
             .withDescription("maximum signature batch size")
             .withFormat("%,d")
             .withInitialValue(Long.MIN_VALUE);
@@ -130,125 +130,113 @@ public final class CryptoMetrics {
         if (metrics == null || metricsConfig == null) {
             throw new IllegalStateException("Metrics has not been set");
         }
-        avgDigestQueueDepth = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "DigQuDepth")
+        avgDigestQueueDepth = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "DigQuDepth")
                 .withDescription("average digest queue depth")
                 .withFormat(FORMAT_11_3));
-        avgSigQueueDepth = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "SigQuDepth")
+        avgSigQueueDepth = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigQuDepth")
                 .withDescription("average signature queue depth")
                 .withFormat(FORMAT_11_3));
-        avgDigestBatchSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "DigBatchSz")
+        avgDigestBatchSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "DigBatchSz")
                 .withDescription("average digest batch size")
                 .withFormat(FORMAT_11_3));
         minDigestBatchSize = metrics.getOrCreate(MIN_DIGEST_BATCH_SIZE_CONFIG);
         maxDigestBatchSize = metrics.getOrCreate(MAX_DIGEST_BATCH_SIZE_CONFIG);
-        avgSigBatchSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "SigBatchSz")
+        avgSigBatchSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigBatchSz")
                 .withDescription("average signature batch size")
                 .withFormat(FORMAT_11_3));
         minSigBatchSize = metrics.getOrCreate(MIN_SIG_BATCH_SIZE_CONFIG);
         maxSigBatchSize = metrics.getOrCreate(MAX_SIG_BATCH_SIZE_CONFIG);
-        digWorkPulsePerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "DigPulse/sec")
-                .withDescription("average digest worker pulses per second")
-                .withFormat(FORMAT_11_3));
-        digLockUpgradesPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "DigLockUp/sec")
-                .withDescription("average digest lock upgrades per second")
-                .withFormat(FORMAT_11_3));
-        digSpansPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "DigSpans/sec")
+        digWorkPulsePerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "DigPulse/sec")
+                        .withDescription("average digest worker pulses per second")
+                        .withFormat(FORMAT_11_3));
+        digLockUpgradesPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "DigLockUp/sec")
+                        .withDescription("average digest lock upgrades per second")
+                        .withFormat(FORMAT_11_3));
+        digSpansPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "DigSpans/sec")
                 .withDescription("average: digest batch spans per second")
                 .withFormat(FORMAT_11_3));
-        digBatchesPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "DigBatches/sec")
-                .withDescription("average: digest batches created per second")
-                .withFormat(FORMAT_11_3));
+        digBatchesPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "DigBatches/sec")
+                        .withDescription("average: digest batches created per second")
+                        .withFormat(FORMAT_11_3));
         digPerSec = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "Dig/sec")
                 .withDescription("number of digests per second (complete)")
                 .withFormat(FORMAT_11_3));
-        sigWorkPulsePerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigPulse/sec")
-                .withDescription("average Signature worker pulses per second")
-                .withFormat(FORMAT_11_3));
-        avgDigestTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "DigWrkTime")
+        sigWorkPulsePerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigPulse/sec")
+                        .withDescription("average Signature worker pulses per second")
+                        .withFormat(FORMAT_11_3));
+        avgDigestTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "DigWrkTime")
                 .withDescription("average: time spent (in millis) in digest worker pulses")
                 .withFormat(FORMAT_11_3));
-        avgSigTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "SigWrkTime")
+        avgSigTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigWrkTime")
                 .withDescription("average: time spent (in millis) in signature worker pulses")
                 .withFormat(FORMAT_11_3));
-        avgDigestWorkItemSubmitTime = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, CATEGORY, "DigSubWrkItmTime")
+        avgDigestWorkItemSubmitTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "DigSubWrkItmTime")
                         .withDescription("average: time spent (in millis) in digest submission")
                         .withFormat(FORMAT_11_3));
-        avgSigWorkItemSubmitTime = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigSubWrkItmTime")
+        avgSigWorkItemSubmitTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigSubWrkItmTime")
                         .withDescription("average: time spent (in millis) in signature verification submission")
                         .withFormat(FORMAT_11_3));
-        sigLockUpgradesPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigLockUp/sec")
-                .withDescription("average Signature lock upgrades per second")
-                .withFormat(FORMAT_11_3));
-        sigSpansPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigSpans/sec")
+        sigLockUpgradesPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigLockUp/sec")
+                        .withDescription("average Signature lock upgrades per second")
+                        .withFormat(FORMAT_11_3));
+        sigSpansPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigSpans/sec")
                 .withDescription("average: signature verification batch spans per second")
                 .withFormat(FORMAT_11_3));
-        sigBatchesPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigBatches/sec")
-                .withDescription("average: signature verification batches created per second")
-                .withFormat(FORMAT_11_3));
-        avgDigestSliceSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "DigSliceSz")
+        sigBatchesPerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigBatches/sec")
+                        .withDescription("average: signature verification batches created per second")
+                        .withFormat(FORMAT_11_3));
+        avgDigestSliceSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "DigSliceSz")
                 .withDescription("average digest slice size")
                 .withFormat(FORMAT_11_3));
-        avgSigSliceSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "SigSliceSz")
+        avgSigSliceSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigSliceSz")
                 .withDescription("average signature slice size")
                 .withFormat(FORMAT_11_3));
         sigPerSec = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "Sig/sec")
                 .withDescription("number of signature verifications per second (complete)")
                 .withFormat(FORMAT_11_3));
-        sigValidPerSec = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigVal/sec")
+        sigValidPerSec = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigVal/sec")
                 .withDescription("number of valid signatures per second")
                 .withFormat(FORMAT_11_3));
-        sigInvalidPerSec = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigInval/sec")
+        sigInvalidPerSec = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigInval/sec")
                 .withDescription("number of invalid signatures per second")
                 .withFormat(FORMAT_11_3));
-        avgSigIntakeQueueDepth = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigIntakeQueueDepth")
+        avgSigIntakeQueueDepth =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigIntakeQueueDepth")
                         .withDescription("depth of the signature intake queue")
                         .withFormat(FORMAT_11_3));
-        sigIntakePulsePerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "SigIntakePulse/sec")
-                .withDescription("number of times the signature intake worker thread is executed per second")
-                .withFormat(FORMAT_11_3));
-        avgSigIntakePulseTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "SigIntakePulseTime")
-                .withDescription("average time spent (in millis) of each signature intake execution")
-                .withFormat(FORMAT_11_3));
-        avgSigIntakeEnqueueTime = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigIntakeEnqueueTime")
+        sigIntakePulsePerSecond =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "SigIntakePulse/sec")
+                        .withDescription("number of times the signature intake worker thread is executed per second")
+                        .withFormat(FORMAT_11_3));
+        avgSigIntakePulseTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigIntakePulseTime")
+                        .withDescription("average time spent (in millis) of each signature intake execution")
+                        .withFormat(FORMAT_11_3));
+        avgSigIntakeEnqueueTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigIntakeEnqueueTime")
                         .withDescription("average time spent (in millis) of each intake enqueue call")
                         .withFormat(FORMAT_11_3));
-        avgSigIntakeListSize = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "SigIntakeListSize")
-                .withDescription("average size of each list sent to the intake worker")
-                .withFormat(FORMAT_11_3));
-        avgPlatformEnqueueTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "PlatSigEnqueueTime")
-                .withDescription("average time spent (in millis) by the platform enqueuing signatures")
-                .withFormat(FORMAT_11_3));
-        avgPlatformExpandTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                CATEGORY, "PlatSigExpandTime")
-                .withDescription(
-                        "average time spent (in millis) by the platform calling the expandSignatures " + "method")
-                .withFormat(FORMAT_11_3));
+        avgSigIntakeListSize =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "SigIntakeListSize")
+                        .withDescription("average size of each list sent to the intake worker")
+                        .withFormat(FORMAT_11_3));
+        avgPlatformEnqueueTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "PlatSigEnqueueTime")
+                        .withDescription("average time spent (in millis) by the platform enqueuing signatures")
+                        .withFormat(FORMAT_11_3));
+        avgPlatformExpandTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, CATEGORY, "PlatSigExpandTime")
+                        .withDescription("average time spent (in millis) by the platform calling the expandSignatures "
+                                + "method")
+                        .withFormat(FORMAT_11_3));
         totalDigests = metrics.getOrCreate(TOTAL_DIGESTS_CONFIG);
         totalSig = metrics.getOrCreate(TOTAL_SIG_CONFIG);
         totalSigValid = metrics.getOrCreate(TOTAL_SIG_VALID_CONFIG);

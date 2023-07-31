@@ -110,7 +110,8 @@ public class PreConsensusEventHandler implements Clearable, Startable {
                 .setMetricsConfiguration(new QueueThreadMetricsConfiguration(metrics).enableBusyTimeMetric())
                 .build();
 
-        final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(metricsConfig,
+        final AverageAndMax avgQ1PreConsEvents = new AverageAndMax(
+                metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 PlatformStatNames.PRE_CONSENSUS_QUEUE_SIZE,

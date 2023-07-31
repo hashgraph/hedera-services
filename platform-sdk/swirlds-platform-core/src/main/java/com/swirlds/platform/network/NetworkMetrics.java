@@ -79,22 +79,23 @@ public class NetworkMetrics {
      * @param addressBook     the address book
      * @throws IllegalArgumentException if {@code platform} is {@code null}
      */
-    public NetworkMetrics(@NonNull final MetricsConfig metricsConfig,
-            @NonNull final Metrics metrics, @NonNull final NodeId selfId, @NonNull final AddressBook addressBook) {
+    public NetworkMetrics(
+            @NonNull final MetricsConfig metricsConfig,
+            @NonNull final Metrics metrics,
+            @NonNull final NodeId selfId,
+            @NonNull final AddressBook addressBook) {
         Objects.requireNonNull(metrics, "The metrics must not be null.");
         this.selfId = Objects.requireNonNull(selfId, "The selfId must not be null.");
         Objects.requireNonNull(addressBook, "The addressBook must not be null.");
 
-        avgPing = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                PLATFORM_CATEGORY, "ping")
+        avgPing = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "ping")
                 .withDescription("average time for a round trip message between 2 computers (in milliseconds)")
                 .withFormat(FORMAT_7_0));
-        bytesPerSecondSent = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "bytes/sec_sent")
-                .withDescription("number of bytes sent per second over the network (total for this member)")
-                .withFormat(FORMAT_16_2));
-        avgConnsCreated = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                PLATFORM_CATEGORY, "conns")
+        bytesPerSecondSent =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, INTERNAL_CATEGORY, "bytes/sec_sent")
+                        .withDescription("number of bytes sent per second over the network (total for this member)")
+                        .withFormat(FORMAT_16_2));
+        avgConnsCreated = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "conns")
                 .withDescription("number of times a TLS connections was created")
                 .withFormat(FORMAT_10_0)
                 .withHalfLife(0.0));
@@ -103,16 +104,15 @@ public class NetworkMetrics {
             final NodeId nodeId = address.getNodeId();
             avgPingMilliseconds.put(
                     nodeId,
-                    metrics.getOrCreate(
-                            new RunningAverageMetric.Config(metricsConfig, PING_CATEGORY,
-                                    String.format("ping_ms_%02d", nodeId.id()))
-                                    .withDescription(String.format(
-                                            "milliseconds to send node %02d a byte and receive a reply", nodeId.id()))
-                                    .withFormat(FORMAT_4_2)));
+                    metrics.getOrCreate(new RunningAverageMetric.Config(
+                                    metricsConfig, PING_CATEGORY, String.format("ping_ms_%02d", nodeId.id()))
+                            .withDescription(String.format(
+                                    "milliseconds to send node %02d a byte and receive a reply", nodeId.id()))
+                            .withFormat(FORMAT_4_2)));
             avgBytePerSecSent.put(
                     nodeId,
-                    metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                            BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", nodeId.id()))
+                    metrics.getOrCreate(new SpeedometerMetric.Config(
+                                    metricsConfig, BPSS_CATEGORY, String.format("bytes/sec_sent_%02d", nodeId.id()))
                             .withDescription(String.format("bytes per second sent to node %02d", nodeId.id()))
                             .withFormat(FORMAT_16_2)));
             disconnectFrequency.put(
@@ -120,7 +120,7 @@ public class NetworkMetrics {
                     new CountPerSecond(
                             metrics,
                             new CountPerSecond.Config(
-                                    PLATFORM_CATEGORY, String.format("disconnects/sec_%02d", nodeId.id()))
+                                            PLATFORM_CATEGORY, String.format("disconnects/sec_%02d", nodeId.id()))
                                     .withDescription(String.format(
                                             "number of disconnects per second from node %02d", nodeId.id()))
                                     .withFormat(FORMAT_10_0)));

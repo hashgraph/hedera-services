@@ -32,12 +32,9 @@ public class SignedStateManagerBuilder {
 
     private final StateConfig stateConfig;
     private final SignedStateMetrics metrics;
-    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = x -> {
-    };
-    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {
-    };
-    private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {
-    };
+    private final NewLatestCompleteStateConsumer newLatestCompleteStateConsumer = x -> {};
+    private StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer = x -> {};
+    private StateLacksSignaturesConsumer stateLacksSignaturesConsumer = x -> {};
 
     public SignedStateManagerBuilder(final MetricsConfig metricsConfig, final StateConfig stateConfig) {
         this.stateConfig = stateConfig;

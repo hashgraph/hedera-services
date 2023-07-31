@@ -126,8 +126,8 @@ public class PreconsensusEventFileManager {
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
 
         this.time = time;
-        this.metrics = new PreconsensusEventMetrics(configuration.getConfigData(MetricsConfig.class),
-                platformContext.getMetrics());
+        this.metrics = new PreconsensusEventMetrics(
+                configuration.getConfigData(MetricsConfig.class), platformContext.getMetrics());
 
         minimumRetentionPeriod = preconsensusEventStreamConfig.minimumRetentionPeriod();
 

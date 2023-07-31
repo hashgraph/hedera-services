@@ -45,16 +45,16 @@ public class EventIntakeMetrics {
             @NonNull Supplier<Integer> prehandleTransactionQueueSizeSupplier) {
 
         final FunctionGauge.Config<Integer> prehandleTransactionQueueSizeConfig = new FunctionGauge.Config<>(
-                "platform",
-                "prehandleTransactionQueueSize",
-                Integer.class,
-                prehandleTransactionQueueSizeSupplier)
+                        "platform",
+                        "prehandleTransactionQueueSize",
+                        Integer.class,
+                        prehandleTransactionQueueSizeSupplier)
                 .withDescription("The number of events in the app prehandle transaction queue.");
         platformContext.getMetrics().getOrCreate(prehandleTransactionQueueSizeConfig);
 
         final MetricsConfig metricsConfig = platformContext.getConfiguration().getConfigData(MetricsConfig.class);
-        timeWaitingForTransactionPrehandlingConfig = new RunningAverageMetric.Config(metricsConfig, "platform",
-                "timeWaitingForTransactionPrehandling")
+        timeWaitingForTransactionPrehandlingConfig = new RunningAverageMetric.Config(
+                        metricsConfig, "platform", "timeWaitingForTransactionPrehandling")
                 .withDescription("The time spent waiting for a transaction to be prehandled.")
                 .withUnit("ms");
 

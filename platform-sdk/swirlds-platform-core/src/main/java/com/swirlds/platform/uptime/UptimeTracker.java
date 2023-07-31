@@ -87,11 +87,13 @@ public class UptimeTracker {
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         final Configuration configuration = platformContext.getConfiguration();
 
-        this.degradationThreshold = configuration
-                .getConfigData(UptimeConfig.class)
-                .degradationThreshold();
-        this.uptimeMetrics = new UptimeMetrics(configuration.getConfigData(MetricsConfig.class),
-                platformContext.getMetrics(), addressBook, this::isSelfDegraded);
+        this.degradationThreshold =
+                configuration.getConfigData(UptimeConfig.class).degradationThreshold();
+        this.uptimeMetrics = new UptimeMetrics(
+                configuration.getConfigData(MetricsConfig.class),
+                platformContext.getMetrics(),
+                addressBook,
+                this::isSelfDegraded);
     }
 
     /**

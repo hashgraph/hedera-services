@@ -61,7 +61,7 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .build();
-        
+
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
@@ -69,11 +69,9 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
         final ChatterCore<ChatterEvent> core = new ChatterCore<>(
                 Time.getCurrent(),
                 ChatterEvent.class,
-                e -> {
-                },
+                e -> {},
                 configuration,
-                (nodeId, ping) -> {
-                },
+                (nodeId, ping) -> {},
                 new DefaultMetrics(
                         selfId,
                         registry,

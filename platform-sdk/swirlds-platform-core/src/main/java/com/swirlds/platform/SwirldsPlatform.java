@@ -353,7 +353,8 @@ public class SwirldsPlatform implements Platform, Startable {
         this.metrics = platformContext.getMetrics();
 
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        metrics.getOrCreate(StatConstructor.createEnumStat(metricsConfig,
+        metrics.getOrCreate(StatConstructor.createEnumStat(
+                metricsConfig,
                 "PlatformStatus",
                 Metrics.PLATFORM_CATEGORY,
                 PlatformStatus.values(),
@@ -441,8 +442,7 @@ public class SwirldsPlatform implements Platform, Startable {
 
         initializeState(initialState);
 
-        final TransactionConfig transactionConfig =
-                configuration.getConfigData(TransactionConfig.class);
+        final TransactionConfig transactionConfig = configuration.getConfigData(TransactionConfig.class);
 
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = PlatformConstructor.swirldStateManager(

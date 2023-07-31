@@ -53,8 +53,8 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("No-Op Metrics Test")
 class NoOpMetricsTest {
-    private final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     private void testCommonMethods(final Metric metric) {
         assertNotNull(metric.get(Metric.ValueType.VALUE));
@@ -220,8 +220,8 @@ class NoOpMetricsTest {
     void runningAverageMetricTest() {
         assertDoesNotThrow(() -> {
             final Metrics metrics = new NoOpMetrics();
-            final RunningAverageMetric metric = metrics.getOrCreate(
-                    new RunningAverageMetric.Config(metricsConfig, "asdf", "asdf"));
+            final RunningAverageMetric metric =
+                    metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, "asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
             metric.get();
@@ -236,8 +236,8 @@ class NoOpMetricsTest {
     void speedometerMetricTest() {
         assertDoesNotThrow(() -> {
             final Metrics metrics = new NoOpMetrics();
-            final SpeedometerMetric metric = metrics.getOrCreate(
-                    new SpeedometerMetric.Config(metricsConfig, "asdf", "asdf"));
+            final SpeedometerMetric metric =
+                    metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, "asdf", "asdf"));
 
             metric.get(Metric.ValueType.VALUE);
             metric.get();
@@ -393,10 +393,8 @@ class NoOpMetricsTest {
         // The following operations should not throw.
         assertDoesNotThrow(() -> {
             metrics.start();
-            metrics.addUpdater(() -> {
-            });
-            metrics.removeUpdater(() -> {
-            });
+            metrics.addUpdater(() -> {});
+            metrics.removeUpdater(() -> {});
         });
     }
 

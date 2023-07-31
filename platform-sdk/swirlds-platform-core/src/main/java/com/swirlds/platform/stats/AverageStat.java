@@ -50,7 +50,8 @@ public class AverageStat {
      * @param weight
      * 		the weight used to calculate the average
      */
-    public AverageStat(final MetricsConfig metricsConfig,
+    public AverageStat(
+            final MetricsConfig metricsConfig,
             final Metrics metrics,
             final String category,
             final String name,

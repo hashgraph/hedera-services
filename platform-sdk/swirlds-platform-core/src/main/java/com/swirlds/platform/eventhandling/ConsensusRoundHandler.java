@@ -200,8 +200,7 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
 
         final Configuration configuration = platformContext.getConfiguration();
         final EventConfig eventConfig = configuration.getConfigData(EventConfig.class);
-        final ConsensusConfig consensusConfig =
-                configuration.getConfigData(ConsensusConfig.class);
+        final ConsensusConfig consensusConfig = configuration.getConfigData(ConsensusConfig.class);
 
         eventsAndGenerations = new SignedStateEventsAndGenerations(consensusConfig);
         final ConsensusQueue queue = new ConsensusQueue(consensusHandlingMetrics, eventConfig.maxEventQueueForCons());
@@ -219,31 +218,30 @@ public class ConsensusRoundHandler implements ConsensusRoundObserver, Clearable,
                 .setQueue(queue)
                 .build();
 
-        roundsNonAncient = configuration
-                .getConfigData(ConsensusConfig.class)
-                .roundsNonAncient();
+        roundsNonAncient = configuration.getConfigData(ConsensusConfig.class).roundsNonAncient();
 
         this.waitForEventDurability = waitForEventDurability;
 
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        final AverageAndMax avgQ2ConsEvents = new AverageAndMax(metricsConfig,
+        final AverageAndMax avgQ2ConsEvents = new AverageAndMax(
+                metricsConfig,
                 platformContext.getMetrics(),
                 INTERNAL_CATEGORY,
                 PlatformStatNames.CONSENSUS_QUEUE_SIZE,
                 "average number of events in the consensus queue (q2) waiting to be handled",
                 FORMAT_10_3,
                 AverageStat.WEIGHT_VOLATILE);
-        final RunningAverageMetric avgQSignedStateEvents =
-                platformContext.getMetrics().getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                        INTERNAL_CATEGORY, "queueSignedStateEvents")
+        final RunningAverageMetric avgQSignedStateEvents = platformContext
+                .getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "queueSignedStateEvents")
                         .withDescription(
                                 "number of handled consensus events that will be part of the next signed state")
                         .withUnit("count"));
-        final RunningAverageMetric avgStateToHashSignDepth =
-                platformContext.getMetrics().getOrCreate(
-                        new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "stateToHashSignDepth")
-                                .withDescription("average depth of the stateToHashSign queue (number of SignedStates)")
-                                .withUnit("count"));
+        final RunningAverageMetric avgStateToHashSignDepth = platformContext
+                .getMetrics()
+                .getOrCreate(new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "stateToHashSignDepth")
+                        .withDescription("average depth of the stateToHashSign queue (number of SignedStates)")
+                        .withUnit("count"));
         platformContext.getMetrics().addUpdater(() -> {
             avgQ2ConsEvents.update(queueThread.size());
             avgQSignedStateEvents.update(eventsAndGenerations.getNumberOfEvents());

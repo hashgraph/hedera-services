@@ -50,11 +50,11 @@ class CycleTimingStatTest {
     @MethodSource({"validConstructorArgs", "invalidConstructorArgs"})
     void testConstructor(
             final String name, final boolean validArgs, final List<String> detailedNames, final List<String> descList) {
-        final MetricsConfig metricConfig = new TestConfigBuilder().getOrCreateConfig()
-                .getConfigData(MetricsConfig.class);
+        final MetricsConfig metricConfig =
+                new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
         final Metrics metrics = new NoOpMetrics();
-        final Runnable constructor = () -> new CycleTimingStat(metricConfig,
-                metrics, ChronoUnit.MICROS, new CycleDefinition("cat", name, detailedNames, descList));
+        final Runnable constructor = () -> new CycleTimingStat(
+                metricConfig, metrics, ChronoUnit.MICROS, new CycleDefinition("cat", name, detailedNames, descList));
         if (validArgs) {
             assertDoesNotThrow(constructor::run);
         } else {

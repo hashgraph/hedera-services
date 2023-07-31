@@ -40,7 +40,8 @@ public class WiringMetrics {
      * 		reference to the metrics-system
      */
     public WiringMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
-        asyncLatestCompleteStateQueueSize = new AverageAndMax(metricsConfig,
+        asyncLatestCompleteStateQueueSize = new AverageAndMax(
+                metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 "asyncLatestCompleteStateQueueSize",

@@ -25,8 +25,8 @@ import com.swirlds.platform.intake.IntakeCycleStats;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 
 public class NoOpIntakeCycleStats extends IntakeCycleStats {
-    private static MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    private static MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     public NoOpIntakeCycleStats() {
         super(Time.getCurrent(), metricsConfig, mock(Metrics.class));

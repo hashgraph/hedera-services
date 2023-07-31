@@ -51,18 +51,17 @@ public class SimultaneousSyncThrottle {
      * @param metrics          the metrics engine
      * @param maxListenerSyncs the maximum number of listener syncs that can happen at the same time
      */
-    public SimultaneousSyncThrottle(@NonNull final MetricsConfig metricsConfig, @NonNull final Metrics metrics,
-            final int maxListenerSyncs) {
+    public SimultaneousSyncThrottle(
+            @NonNull final MetricsConfig metricsConfig, @NonNull final Metrics metrics, final int maxListenerSyncs) {
         this.maxListenerSyncs = maxListenerSyncs;
         simSyncThrottleLock = new ConcurrentHashMap<>();
 
-        final RunningAverageMetric avgSimSyncs = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                PLATFORM_CATEGORY, "simSyncs")
-                .withDescription("avg number of simultaneous syncs happening at any given time")
-                .withFormat(FORMAT_9_6));
-        final RunningAverageMetric avgSimListenSyncs = metrics.getOrCreate(
-                new RunningAverageMetric.Config(metricsConfig,
-                        PLATFORM_CATEGORY, "simListenSyncs")
+        final RunningAverageMetric avgSimSyncs =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "simSyncs")
+                        .withDescription("avg number of simultaneous syncs happening at any given time")
+                        .withFormat(FORMAT_9_6));
+        final RunningAverageMetric avgSimListenSyncs =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "simListenSyncs")
                         .withDescription("avg number of simultaneous listening syncs happening at any given time")
                         .withFormat(FORMAT_9_6));
         metrics.addUpdater(() -> {

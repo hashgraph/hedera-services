@@ -60,8 +60,8 @@ public class AbstractSignedStateManagerTest {
     protected final int futureStateSignatureRounds = 16;
     protected int roundsToKeepAfterSigning = 0;
 
-    protected final MetricsConfig metricsConfig = new TestConfigBuilder().getOrCreateConfig()
-            .getConfigData(MetricsConfig.class);
+    protected final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     /**
      * true if an error occurs on a notification thread

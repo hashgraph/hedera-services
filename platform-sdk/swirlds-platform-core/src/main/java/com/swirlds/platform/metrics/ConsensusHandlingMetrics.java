@@ -51,7 +51,7 @@ public class ConsensusHandlingMetrics {
     private final LongGauge consensusTime;
 
     private static final LongGauge.Config consensusTimeDeviationConfig = new LongGauge.Config(
-            INTERNAL_CATEGORY, "consensusTimeDeviation")
+                    INTERNAL_CATEGORY, "consensusTimeDeviation")
             .withDescription("The difference between the consensus time of "
                     + "the round currently being handled and this node's wall clock time. "
                     + "Positive values mean that this node's clock is behind the consensus time, "
@@ -74,7 +74,8 @@ public class ConsensusHandlingMetrics {
         Objects.requireNonNull(metrics, "metrics");
         this.time = time;
 
-        consensusCycleTiming = new CycleTimingStat(metricsConfig,
+        consensusCycleTiming = new CycleTimingStat(
+                metricsConfig,
                 metrics,
                 ChronoUnit.MILLIS,
                 new CycleDefinition(
@@ -96,7 +97,8 @@ public class ConsensusHandlingMetrics {
                                 Pair.of(
                                         "forSigCleanMillis",
                                         "average time spent expiring signed state storage events"))));
-        newSignedStateCycleTiming = new CycleTimingStat(metricsConfig,
+        newSignedStateCycleTiming = new CycleTimingStat(
+                metricsConfig,
                 metrics,
                 ChronoUnit.MICROS,
                 new CycleDefinition(
@@ -110,7 +112,8 @@ public class ConsensusHandlingMetrics {
                                 Pair.of(
                                         "queueAdmitMicros",
                                         "average time spent admitting the signed state to the signing queue"))));
-        avgEventsPerRound = new AverageAndMax(metricsConfig,
+        avgEventsPerRound = new AverageAndMax(
+                metricsConfig,
                 metrics,
                 INTERNAL_CATEGORY,
                 "events/round",

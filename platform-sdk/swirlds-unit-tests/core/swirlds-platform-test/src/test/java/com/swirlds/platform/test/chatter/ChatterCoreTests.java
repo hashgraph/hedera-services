@@ -53,14 +53,10 @@ public class ChatterCoreTests {
 
         final Random random = RandomUtils.getRandomPrintSeed();
         final ChatterCore<GossipEvent> chatterCore = new ChatterCore<>(
-                Time.getCurrent(), GossipEvent.class, (m) -> {
-        }, configuration, (id, l) -> {
-        }, new NoOpMetrics());
+                Time.getCurrent(), GossipEvent.class, (m) -> {}, configuration, (id, l) -> {}, new NoOpMetrics());
 
-        chatterCore.newPeerInstance(new NodeId(0L), e -> {
-        });
-        chatterCore.newPeerInstance(new NodeId(1L), e -> {
-        });
+        chatterCore.newPeerInstance(new NodeId(0L), e -> {});
+        chatterCore.newPeerInstance(new NodeId(1L), e -> {});
 
         final GossipEventBuilder builder = GossipEventBuilder.builder().setRandom(random);
 

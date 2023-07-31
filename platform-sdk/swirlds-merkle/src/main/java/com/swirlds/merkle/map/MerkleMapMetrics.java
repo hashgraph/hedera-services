@@ -65,17 +65,15 @@ public final class MerkleMapMetrics {
      * 		the metrics-system
      */
     public static void register(final MetricsConfig metricsConfig, final Metrics metrics) {
-        mmmGetMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                MM_CATEGORY, "mmGetMicroSec")
-                .withDescription("avg time taken to execute the MerkleMap get method (in microseconds)"));
-        mmGfmMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                MM_CATEGORY, "mmGfmMicroSec")
+        mmmGetMicroSec =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, MM_CATEGORY, "mmGetMicroSec")
+                        .withDescription("avg time taken to execute the MerkleMap get method (in microseconds)"));
+        mmGfmMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, MM_CATEGORY, "mmGfmMicroSec")
                 .withDescription("avg time taken to execute the MerkleMap getForModify method (in microseconds)"));
-        mmReplaceMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                MM_CATEGORY, "mmReplaceMicroSec")
-                .withDescription("avg time taken to execute the MerkleMap replace method (in microseconds)"));
-        mmPutMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                MM_CATEGORY, "mmPutMicroSec")
+        mmReplaceMicroSec =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, MM_CATEGORY, "mmReplaceMicroSec")
+                        .withDescription("avg time taken to execute the MerkleMap replace method (in microseconds)"));
+        mmPutMicroSec = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, MM_CATEGORY, "mmPutMicroSec")
                 .withDescription("avg time taken to execute the MerkleMap put method (in microseconds)"));
 
         registered = true;

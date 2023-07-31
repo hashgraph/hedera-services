@@ -31,19 +31,19 @@ public class PreconsensusEventMetrics {
     private static final String CATEGORY = "platform";
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_COUNT_CONFIG = new LongGauge.Config(
-            CATEGORY, "preconsensusEventFileCount")
+                    CATEGORY, "preconsensusEventFileCount")
             .withUnit("count")
             .withDescription("The number of preconsensus event files currently being stored");
     private final LongGauge preconsensusEventFileCount;
 
     private static final DoubleGauge.Config PRECONSENSUS_EVENT_FILE_AVERAGE_SIZE_MB_CONFIG = new DoubleGauge.Config(
-            CATEGORY, "preconsensusEventFileAverageSizeMB")
+                    CATEGORY, "preconsensusEventFileAverageSizeMB")
             .withUnit("megabytes")
             .withDescription("The average size of preconsensus event files, in megabytes.");
     private final DoubleGauge preconsensusEventFileAverageSizeMB;
 
     private static final DoubleGauge.Config PRECONSENSUS_EVENT_FILE_TOTAL_SIZE_GB_CONFIG = new DoubleGauge.Config(
-            CATEGORY, "preconsensusEventFileTotalSizeGB")
+                    CATEGORY, "preconsensusEventFileTotalSizeGB")
             .withUnit("gigabytes")
             .withDescription("The total size of all preconsensus event files, in gigabytes.");
     private final DoubleGauge preconsensusEventFileTotalSizeGB;
@@ -55,19 +55,19 @@ public class PreconsensusEventMetrics {
     private final RunningAverageMetric preconsensusEventAverageUnUtilizedFileSpan;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG = new LongGauge.Config(
-            CATEGORY, "preconsensusEventFileOldestGeneration")
+                    CATEGORY, "preconsensusEventFileOldestGeneration")
             .withUnit("oldest generation")
             .withDescription("The oldest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileOldestGeneration;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG = new LongGauge.Config(
-            CATEGORY, "preconsensusEventFileYoungestGeneration")
+                    CATEGORY, "preconsensusEventFileYoungestGeneration")
             .withUnit("youngest generation")
             .withDescription("The youngest possible generation that is being " + "stored in preconsensus event files.");
     private final LongGauge preconsensusEventFileYoungestGeneration;
 
     private static final LongGauge.Config PRECONSENSUS_EVENT_FILE_OLDEST_SECONDS_CONFIG = new LongGauge.Config(
-            CATEGORY, "preconsensusEventFileOldestSeconds")
+                    CATEGORY, "preconsensusEventFileOldestSeconds")
             .withUnit("seconds")
             .withDescription("The age of the oldest preconsensus event file, in seconds.");
     private final LongGauge preconsensusEventFileOldestSeconds;
@@ -81,23 +81,21 @@ public class PreconsensusEventMetrics {
         preconsensusEventFileCount = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_COUNT_CONFIG);
         preconsensusEventFileAverageSizeMB = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_AVERAGE_SIZE_MB_CONFIG);
         preconsensusEventFileTotalSizeGB = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_TOTAL_SIZE_GB_CONFIG);
-        preconsensusEventFileRate = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                CATEGORY, "preconsensusEventFileRate")
-                .withUnit("hertz")
-                .withDescription("The number of preconsensus event files written per second."));
+        preconsensusEventFileRate =
+                metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig, CATEGORY, "preconsensusEventFileRate")
+                        .withUnit("hertz")
+                        .withDescription("The number of preconsensus event files written per second."));
         preconsensusEventAverageFileSpan = metrics.getOrCreate(
                 new RunningAverageMetric.Config(metricsConfig, CATEGORY, "preconsensusEventAverageFileSpan")
                         .withUnit("generations")
                         .withDescription("The average generational span of preconsensus event files. Only reflects"
                                 + "files written since the last restart."));
-        preconsensusEventAverageUnUtilizedFileSpan =
-                metrics.getOrCreate(
-                        new RunningAverageMetric.Config(metricsConfig, CATEGORY,
-                                "preconsensusEventAverageUnutilizedFileSpan")
-                                .withUnit("generations")
-                                .withDescription(
-                                        "The average unutilized generational span of preconsensus event files prior "
-                                                + "to span compaction. Only reflects files written since the last restart. Smaller is better."));
+        preconsensusEventAverageUnUtilizedFileSpan = metrics.getOrCreate(
+                new RunningAverageMetric.Config(metricsConfig, CATEGORY, "preconsensusEventAverageUnutilizedFileSpan")
+                        .withUnit("generations")
+                        .withDescription(
+                                "The average unutilized generational span of preconsensus event files prior "
+                                        + "to span compaction. Only reflects files written since the last restart. Smaller is better."));
         preconsensusEventFileOldestGeneration = metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_OLDEST_GENERATION_CONFIG);
         preconsensusEventFileYoungestGeneration =
                 metrics.getOrCreate(PRECONSENSUS_EVENT_FILE_YOUNGEST_GENERATION_CONFIG);

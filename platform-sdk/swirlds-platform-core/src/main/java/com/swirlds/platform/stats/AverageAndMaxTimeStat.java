@@ -37,8 +37,13 @@ public class AverageAndMaxTimeStat {
     private final AtomicMax max;
     private final StatEntry maxEntry;
 
-    public AverageAndMaxTimeStat(final MetricsConfig metricsConfig,
-            final Metrics metrics, final ChronoUnit unit, final String category, final String name, final String desc) {
+    public AverageAndMaxTimeStat(
+            final MetricsConfig metricsConfig,
+            final Metrics metrics,
+            final ChronoUnit unit,
+            final String category,
+            final String name,
+            final String desc) {
         this(metricsConfig, metrics, unit, category, name, desc, AverageStat.WEIGHT_SMOOTH);
     }
 

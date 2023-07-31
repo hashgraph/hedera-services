@@ -63,32 +63,34 @@ public class SwirldStateMetrics {
      * 		if {@code metrics} is {@code null}
      */
     public SwirldStateMetrics(final MetricsConfig metricsConfig, final Metrics metrics) {
-        avgSecTransHandled = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "secTransH")
-                .withDescription(
-                        "avg time to handle a consensus transaction in SwirldState.handleTransaction " + "(in seconds)")
-                .withFormat(FORMAT_10_6));
-        avgConsHandleTime = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                PLATFORM_CATEGORY, "SecC2H")
-                .withDescription("time from knowing consensus for a transaction to handling it (in seconds)")
-                .withFormat(FORMAT_10_3));
-        transHandledPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, PlatformStatNames.TRANSACTIONS_HANDLED_PER_SECOND)
+        avgSecTransHandled =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "secTransH")
+                        .withDescription("avg time to handle a consensus transaction in SwirldState.handleTransaction "
+                                + "(in seconds)")
+                        .withFormat(FORMAT_10_6));
+        avgConsHandleTime =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, PLATFORM_CATEGORY, "SecC2H")
+                        .withDescription("time from knowing consensus for a transaction to handling it (in seconds)")
+                        .withFormat(FORMAT_10_3));
+        transHandledPerSecond = metrics.getOrCreate(new SpeedometerMetric.Config(
+                        metricsConfig, INTERNAL_CATEGORY, PlatformStatNames.TRANSACTIONS_HANDLED_PER_SECOND)
                 .withDescription(
                         "number of consensus transactions per second handled " + "by SwirldState.handleTransaction()")
                 .withFormat(FORMAT_9_6));
-        avgStateCopyMicros = metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig,
-                INTERNAL_CATEGORY, "stateCopyMicros")
-                .withDescription("average time it takes the SwirldState.copy() method in SwirldState to finish "
-                        + "(in microseconds)")
-                .withFormat(FORMAT_16_2));
-        preConsHandleTime = new AverageTimeStat(metricsConfig,
+        avgStateCopyMicros =
+                metrics.getOrCreate(new RunningAverageMetric.Config(metricsConfig, INTERNAL_CATEGORY, "stateCopyMicros")
+                        .withDescription("average time it takes the SwirldState.copy() method in SwirldState to finish "
+                                + "(in microseconds)")
+                        .withFormat(FORMAT_16_2));
+        preConsHandleTime = new AverageTimeStat(
+                metricsConfig,
                 metrics,
                 ChronoUnit.MICROS,
                 INTERNAL_CATEGORY,
                 "preConsHandleMicros",
                 "average time it takes to handle a pre-consensus event from q4 (in microseconds)");
-        preHandleTime = new AverageTimeStat(metricsConfig,
+        preHandleTime = new AverageTimeStat(
+                metricsConfig,
                 metrics,
                 ChronoUnit.MICROS,
                 INTERNAL_CATEGORY,
