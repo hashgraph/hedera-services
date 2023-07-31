@@ -40,7 +40,6 @@ import com.swirlds.merkledb.collections.LongListDisk;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection;
-import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.merkledb.files.DataFileReader;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
 import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
@@ -82,7 +81,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntConsumer;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -193,10 +191,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private final VirtualLeafRecord[] leafRecordCache;
 
     /** ScheduledThreadPool for executing merges */
-    private final ScheduledThreadPoolExecutor mergingExecutor;
+    private final ScheduledThreadPoolExecutor compactingExecutor;
 
     /** Future for scheduled merging thread */
-    private ScheduledFuture<?> mergingFuture = null;
+    private ScheduledFuture<?> compactingFuture = null;
 
     /** Thread pool storing internal records */
     private final ExecutorService storeInternalExecutor;
@@ -223,19 +221,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     private final AtomicBoolean compactionEnabled = new AtomicBoolean();
 
-    /** When was the last medium-sized merge, only touched from single merge thread. */
-    private Instant lastMediumMerge;
-
-    /** When was the last full merge, only touched from single merge thread. */
-    private Instant lastFullMerge;
-
     /** Paths to all database files and directories */
     private final MerkleDbPaths dbPaths;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-
-    /** A nanosecond-precise Clock */
-    private final NanoClock clock = new NanoClock();
 
     public MerkleDbDataSource(
             final MerkleDb database,
@@ -254,7 +243,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
         // create scheduledThreadPool for executing merges
-        mergingExecutor = new ScheduledThreadPoolExecutor(
+        compactingExecutor = new ScheduledThreadPoolExecutor(
                 NUMBER_OF_MERGING_THREADS,
                 new ThreadConfiguration(getStaticThreadManager())
                         .setThreadGroup(threadGroup)
@@ -402,16 +391,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         leafRecordCacheSize = config.leafRecordCacheSize();
         leafRecordCache = (leafRecordCacheSize > 0) ? new VirtualLeafRecord[leafRecordCacheSize] : null;
 
-        // Compute initial merge periods to a randomized value of now +/- 50% of merge period. So
-        // each node will do
-        // medium and full merges at random times.
-        lastMediumMerge = Instant.now()
-                .minus(config.mediumMergePeriod() / 2, config.mergePeriodUnit())
-                .plus((long) (config.mediumMergePeriod() * Math.random()), config.mergePeriodUnit());
-        lastFullMerge = Instant.now()
-                .minus(config.fullMergePeriod() / 2, config.mergePeriodUnit())
-                .plus((long) (config.fullMergePeriod() * Math.random()), config.mergePeriodUnit());
-
         // If merging is enabled start merging service
         if (compactionEnabled) {
             startBackgroundCompaction();
@@ -437,10 +416,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     @Override
     public void startBackgroundCompaction() {
         compactionEnabled.set(true);
-        synchronized (mergingExecutor) {
-            if (mergingFuture == null || mergingFuture.isCancelled()) {
-                mergingFuture = mergingExecutor.scheduleAtFixedRate(
-                        this::doMerge, config.mergeActivatePeriod(), config.mergeActivatePeriod(), TimeUnit.SECONDS);
+        synchronized (compactingExecutor) {
+            if (compactingFuture == null || compactingFuture.isCancelled()) {
+                compactingFuture = compactingExecutor.scheduleAtFixedRate(
+                        this::doCompaction,
+                        config.mergeActivatePeriod(),
+                        config.mergeActivatePeriod(),
+                        TimeUnit.SECONDS);
             }
         }
     }
@@ -448,10 +430,10 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** Stop background compaction process, if it is running. */
     @Override
     public void stopBackgroundCompaction() {
-        synchronized (mergingExecutor) {
-            if (mergingFuture != null) {
-                mergingFuture.cancel(true);
-                mergingFuture = null;
+        synchronized (compactingExecutor) {
+            if (compactingFuture != null) {
+                compactingFuture.cancel(true);
+                compactingFuture = null;
             }
         }
         compactionEnabled.set(false);
@@ -792,7 +774,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 stopBackgroundCompaction();
                 // shut down all four DB threads
                 shutdownThreadsAndWait(
-                        mergingExecutor, storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
+                        compactingExecutor, storeInternalExecutor, storeKeyToPathExecutor, snapshotExecutor);
             } finally {
                 // close all closable data stores
                 logger.info(MERKLE_DB.getMarker(), "Closing Data Source [{}]", tableName);
@@ -1333,7 +1315,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     }
 
     /**
-     * Start a Merge if needed, this is called by default every 30 seconds if a merge is not already
+     * Start a compaction if needed, this is called by default every second if a merge is not already
      * running. This implements the logic for how often and with what files we merge.
      *
      * <b> IMPORTANT: This method is called on a thread that can be interrupted, so it needs to
@@ -1347,68 +1329,29 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      *     occurred.
      */
     @SuppressWarnings({"rawtypes", "unchecked", "ConstantConditions"})
-    boolean doMerge() {
+    boolean doCompaction() {
         try {
-            Instant timestamp = Instant.now(clock);
-
-            final UnaryOperator<List<DataFileReader>> filesToMergeFilter;
-            final CompactionType compactionType;
-            if (isTimeForFullMerge(timestamp)) {
-                lastFullMerge = timestamp;
-                /* Filter nothing during a full merge */
-                filesToMergeFilter = dataFileReaders -> dataFileReaders;
-                compactionType = CompactionType.FULL;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", tableName);
-            } else if (isTimeForMediumMerge(timestamp)) {
-                lastMediumMerge = timestamp;
-                filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
-                        config.mediumMergeCutoffMb(), config.maxNumberOfFilesInMerge());
-                compactionType = CompactionType.MEDIUM;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", tableName);
-            } else {
-                filesToMergeFilter = DataFileCommon.newestFilesSmallerThan(
-                        config.smallMergeCutoffMb(), config.maxNumberOfFilesInMerge());
-                compactionType = CompactionType.SMALL;
-                logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", tableName);
-            }
-
             int totalFileSizeMb = 0;
             // we need to merge disk files for internal hashes if they exist and pathToHashKeyValue store
             if (hasDiskStoreForHashes) {
-                // horrible hack to get around generics because file filters work on any type of
-                // DataFileReader
-                final UnaryOperator<List<DataFileReader<VirtualHashRecord>>> internalRecordFileFilter =
-                        (UnaryOperator<List<DataFileReader<VirtualHashRecord>>>) ((Object) filesToMergeFilter);
-                hashStoreDisk.merge(
-                        internalRecordFileFilter,
-                        config.minNumberOfFilesInMerge(),
-                        time -> statistics.setHashesStoreCompactionTimeMs(compactionType, time),
-                        savedSpace -> statistics.setHashesStoreCompactionSavedSpaceMb(compactionType, savedSpace));
+                hashStoreDisk.compact(
+                        (compactionType, time) -> statistics.setHashesStoreCompactionTimeMs(compactionType, time),
+                        (compactionType, savedSpace) ->
+                                statistics.setHashesStoreCompactionSavedSpaceMb(compactionType, savedSpace));
                 totalFileSizeMb += updateHashesStoreFileStats();
             }
             // merge objectKeyToPath files
             if (objectKeyToPath != null) {
-                // horrible hack to get around generics because file filters work on any type of
-                // DataFileReader
-                final UnaryOperator<List<DataFileReader<Bucket<K>>>> bucketFileFilter =
-                        (UnaryOperator<List<DataFileReader<Bucket<K>>>>) ((Object) filesToMergeFilter);
-                objectKeyToPath.merge(
-                        bucketFileFilter,
-                        config.minNumberOfFilesInMerge(),
-                        time -> statistics.setLeafKeysStoreCompactionTimeMs(compactionType, time),
-                        savedSpace -> statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionType, savedSpace));
+                objectKeyToPath.compact(
+                        (compactionType, time) -> statistics.setLeafKeysStoreCompactionTimeMs(compactionType, time),
+                        (compactionType, savedSpace) ->
+                                statistics.setLeafKeysStoreCompactionSavedSpaceMb(compactionType, savedSpace));
                 totalFileSizeMb += updateLeafKeysStoreFileStats();
             }
-            // now do main merge of pathToKeyValue store
-            // horrible hack to get around generics because file filters work on any type of
-            // DataFileReader
-            final UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>> leafRecordFileFilter =
-                    (UnaryOperator<List<DataFileReader<VirtualLeafRecord<K, V>>>>) ((Object) filesToMergeFilter);
-            pathToKeyValue.merge(
-                    leafRecordFileFilter,
-                    config.minNumberOfFilesInMerge(),
-                    time -> statistics.setLeavesStoreCompactionTimeMs(compactionType, time),
-                    savedSpace -> statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, savedSpace));
+            pathToKeyValue.compact(
+                    (compactionType, time) -> statistics.setLeavesStoreCompactionTimeMs(compactionType, time),
+                    (compactionType, savedSpace) ->
+                            statistics.setLeavesStoreCompactionSavedSpaceMb(compactionType, savedSpace));
             totalFileSizeMb += updateLeavesStoreFileStats();
 
             // Update total file size stat
@@ -1427,18 +1370,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             logger.error(EXCEPTION.getMarker(), "[{}] Compaction failed", tableName, e);
             return false;
         }
-    }
-
-    private boolean isTimeForFullMerge(final Instant startMerge) {
-        return startMerge
-                .minus(config.fullMergePeriod(), config.mergePeriodUnit())
-                .isAfter(lastFullMerge);
-    }
-
-    private boolean isTimeForMediumMerge(final Instant startMerge) {
-        return startMerge
-                .minus(config.mediumMergePeriod(), config.mergePeriodUnit())
-                .isAfter(lastMediumMerge);
     }
 
     /**

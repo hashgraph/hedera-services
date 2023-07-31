@@ -64,6 +64,8 @@ public final class DataFileMetadata {
     /** Serialization version for data stored in the file */
     private final long serializationVersion;
 
+    private final int compactionLevel;
+
     /**
      * Create a new DataFileMetadata with complete set of data
      *
@@ -84,13 +86,16 @@ public final class DataFileMetadata {
             final long dataItemCount,
             final int index,
             final Instant creationDate,
-            final long serializationVersion) {
+            final long serializationVersion,
+            final int compactionLevel) {
         this.fileFormatVersion = fileFormatVersion;
         this.dataItemValueSize = dataItemValueSize;
         this.dataItemCount = dataItemCount;
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
+        assert compactionLevel >= 0 && compactionLevel < 127;
+        this.compactionLevel = compactionLevel;
     }
 
     /**
@@ -112,7 +117,7 @@ public final class DataFileMetadata {
             this.dataItemCount = buf.getLong();
             this.index = buf.getInt();
             this.creationDate = Instant.ofEpochSecond(buf.getLong(), buf.getInt());
-            buf.get(); // backwards compatibility: used to be a byte for isMergeFile
+            this.compactionLevel = buf.get();
             this.serializationVersion = buf.getLong();
         }
     }
@@ -130,7 +135,7 @@ public final class DataFileMetadata {
         buf.putInt(this.index);
         buf.putLong(this.creationDate.getEpochSecond());
         buf.putInt(this.creationDate.getNano());
-        buf.put((byte) 0); // backwards compatibility: used to be a byte for isMergeFile
+        buf.put((byte) compactionLevel);
         buf.putLong(this.serializationVersion);
         buf.rewind();
         return buf;
@@ -187,6 +192,10 @@ public final class DataFileMetadata {
     /** Get the serialization version for data stored in this file */
     public long getSerializationVersion() {
         return serializationVersion;
+    }
+
+    public int getCompactionLevel() {
+        return compactionLevel;
     }
 
     /** toString for debugging */

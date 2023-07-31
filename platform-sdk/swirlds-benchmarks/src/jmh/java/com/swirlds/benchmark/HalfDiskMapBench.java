@@ -71,15 +71,8 @@ public class HalfDiskMapBench extends BaseBench {
         // Merge files
         start = System.currentTimeMillis();
         final AtomicLong count = new AtomicLong(0);
-        store.merge(
-                list -> {
-                    count.set(list.size());
-                    return list;
-                },
-                2,
-                null,
-                null);
-        System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
+        store.compact(null, null);
+        System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content
         if (verify) {

@@ -383,11 +383,13 @@ class DataFileCollectionTest {
         assertEquals(new KeyRange(0, 1000), reopened.getValidKeyRange(), "Should still have the valid range");
     }
 
+    @SuppressWarnings("unchecked")
     @Order(100)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCompactor fileCompactor = new DataFileCompactor(fileCollection);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         final int NUM_OF_KEYS = 1000;
@@ -421,7 +423,8 @@ class DataFileCollectionTest {
                 System.out.println("DataFileCollectionTest.merge");
                 List<Path> mergedFiles = null;
                 try {
-                    List<DataFileReader<long[]>> filesToMerge = fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
+                    List<DataFileReader<?>> filesToMerge =
+                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(MAX_TEST_FILE_MB);
                     System.out.println("filesToMerge = " + filesToMerge.size());
                     AtomicInteger numMoves = new AtomicInteger(0);
                     Set<Integer> allKeysExpectedToBeThere =
@@ -452,7 +455,7 @@ class DataFileCollectionTest {
                         }
                     };
 
-                    mergedFiles = fileCollection.compactFiles(indexUpdater, filesToMerge);
+                    mergedFiles = fileCompactor.compactFiles(indexUpdater, filesToMerge);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                     System.out.println(
                             "============= MERGE [" + numMoves.get() + "] MOVES DONE ===========================");
@@ -486,13 +489,15 @@ class DataFileCollectionTest {
                 "unexpected # of files #1");
         // After merge is complete, there should be only 1 "fully written" file, and that it is
         // empty.
-        List<DataFileReader<long[]>> filesLeft = fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
+        List<DataFileReader<?>> filesLeft =
+                (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles(Integer.MAX_VALUE);
         assertEquals(1, filesLeft.size(), "unexpected # of files #2");
-        filesLeft = fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
+        filesLeft = (List<DataFileReader<?>>)
+                (Object) fileCollection.getAllCompletedFiles(1); // files with size less than 1 are empty
         assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
-        List<Path> secondMergeResults = fileCollection.compactFiles(null, filesLeft);
+        List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft);
         assertNotNull(secondMergeResults, "null merged files list");
         assertEquals(0, secondMergeResults.size(), "unexpected results from second merge");
     }
@@ -544,15 +549,17 @@ class DataFileCollectionTest {
         checkData(testType, 50, 1000, 10_000);
     }
 
+    @SuppressWarnings("unchecked")
     @Order(202)
     @ParameterizedTest
     @EnumSource(FilesTestType.class)
     void merge2(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
+        final DataFileCompactor fileCompactor = new DataFileCompactor(fileCollection);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         // start compaction paused so that we can test pausing
-        fileCollection.pauseCompaction();
+        fileCompactor.pauseCompaction();
 
         IntStream.range(0, 3).parallel().forEach(thread -> {
             if (thread == 0) { // checking thread, keep reading and checking data all
@@ -568,7 +575,8 @@ class DataFileCollectionTest {
             } else if (thread == 1) { // move thread
                 // merge 2 files
                 try {
-                    List<DataFileReader<long[]>> allFiles = fileCollection.getAllCompletedFiles();
+                    List<DataFileReader<?>> allFiles =
+                            (List<DataFileReader<?>>) (Object) fileCollection.getAllCompletedFiles();
                     Set<Integer> allKeysExpectedToBeThere =
                             IntStream.range(0, 1000).boxed().collect(Collectors.toSet());
                     final CASableLongIndex indexUpdater = new CASableLongIndex() {
@@ -595,7 +603,7 @@ class DataFileCollectionTest {
                             storedOffsets.forEach(action);
                         }
                     };
-                    fileCollection.compactFiles(indexUpdater, allFiles);
+                    fileCompactor.compactFiles(indexUpdater, allFiles);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -612,7 +620,7 @@ class DataFileCollectionTest {
                 System.out.println("Un-pausing merging");
                 try {
                     // now let merging continue
-                    fileCollection.resumeCompaction();
+                    fileCompactor.resumeCompaction();
                 } catch (IOException e) {
                     e.printStackTrace();
                     throw new UncheckedIOException(e);
@@ -674,6 +682,7 @@ class DataFileCollectionTest {
         // reopen
         final DataFileCollection<long[]> fileCollection2 =
                 new DataFileCollection<>(dbDir, storeName, testType.dataItemSerializer, null);
+        final DataFileCompactor fileCompactor = new DataFileCompactor(fileCollection2);
         fileCollectionMap.put(testType, fileCollection2);
         // check 10 files were opened and data is correct
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files");
@@ -681,7 +690,8 @@ class DataFileCollectionTest {
         // check all files are available for merge
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // merge
-        fileCollection2.compactFiles(storedOffsets, fileCollection2.getAllCompletedFiles());
+        fileCompactor.compactFiles(
+                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles());
         // check 1 files were opened and data is correct
         assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
         assertEquals(

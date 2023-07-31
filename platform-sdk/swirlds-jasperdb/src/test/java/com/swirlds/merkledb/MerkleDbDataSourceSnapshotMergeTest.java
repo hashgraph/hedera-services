@@ -188,11 +188,11 @@ class MerkleDbDataSourceSnapshotMergeTest {
                         e.printStackTrace();
                     }
                 } else { // thread 1 does merge
-                    dataSource.doMerge();
+                    dataSource.doCompaction();
                     merging.set(false);
                 }
             });
-            dataSource.doMerge();
+            dataSource.doCompaction();
             checkData(COUNT2, testType, dataSource);
 
             // check the database statistics - starting with the five speedometers

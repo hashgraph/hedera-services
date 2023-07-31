@@ -76,7 +76,7 @@ class MergeInterruptTest {
             createData(dataSource);
             // start merging
             final AtomicBoolean mergeResult = new AtomicBoolean();
-            final Thread mergingThread = new Thread(() -> mergeResult.set(dataSource.doMerge()));
+            final Thread mergingThread = new Thread(() -> mergeResult.set(dataSource.doCompaction()));
             mergingThread.start();
             // wait a small-time for merging to start
             MILLISECONDS.sleep(20);
@@ -125,7 +125,7 @@ class MergeInterruptTest {
             });
             // start merging
             final AtomicBoolean mergeResult = new AtomicBoolean();
-            final Thread mergingThread = new Thread(() -> mergeResult.set(dataSource.doMerge()));
+            final Thread mergingThread = new Thread(() -> mergeResult.set(dataSource.doCompaction()));
             mergingThread.start();
             // wait a small-time for merging to start
             MILLISECONDS.sleep(20);
