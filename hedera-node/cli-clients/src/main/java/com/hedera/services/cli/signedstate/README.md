@@ -1,4 +1,4 @@
-(Better documentaiton will come later, but here are some sample command lines:)
+(Better documentation will come later, but here are some sample command lines:)
 
 ## Summarize contents of a signed state file
 
