@@ -31,6 +31,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * A utility class for building a basic configuration with the default configuration sources and paths.
+ * <p>
+ * Can be used in cli tools to build a basic configuration.
+ */
 public class DefaultConfiguration {
     /**
      * Build a basic configuration with the default configuration sources and paths.
@@ -53,7 +58,8 @@ public class DefaultConfiguration {
      * @throws IOException if there is an error reading the configuration files
      */
     @NonNull
-    public static Configuration buildBasicConfiguration(final List<Path> configurationPaths) throws IOException {
+    public static Configuration buildBasicConfiguration(@NonNull final List<Path> configurationPaths)
+            throws IOException {
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();

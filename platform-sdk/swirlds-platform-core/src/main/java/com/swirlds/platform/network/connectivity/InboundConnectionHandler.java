@@ -28,8 +28,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -60,6 +60,7 @@ public class InboundConnectionHandler {
     private final SoftwareVersion softwareVersion;
     /** Rate Limited Logger for SocketExceptions */
     private final RateLimitedLogger socketExceptionLogger;
+
     private final Configuration configuration;
 
     public InboundConnectionHandler(
