@@ -19,6 +19,7 @@ package com.swirlds.benchmark;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.files.DataFileCollection;
+import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.DataFileReader;
 import java.io.IOException;
 import java.util.List;
@@ -59,6 +60,7 @@ public class DataFileCollectionBench extends BaseBench {
                         return readDataItem(dataLocation);
                     }
                 };
+        final var compactor = new DataFileCompactor(store);
         System.out.println();
 
         // Write files
@@ -79,7 +81,7 @@ public class DataFileCollectionBench extends BaseBench {
         // Merge files
         start = System.currentTimeMillis();
         final List<DataFileReader<BenchmarkRecord>> filesToMerge = store.getAllCompletedFiles();
-        store.compactFiles(index, filesToMerge);
+        compactor.compact(index, null, null);
         System.out.println(
                 "Merged " + filesToMerge.size() + " files in " + (System.currentTimeMillis() - start) + "ms");
 

@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -463,31 +462,10 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
         @Override
         protected void doWork() throws Exception {
-            if (iteration % 100 == 0) {
-                // Do a big merge that includes everything
-                coll.merge(list -> list, 2, null, null);
-            } else if (iteration % 25 == 0) {
-                // Do a medium merge that just has medium size files
-                coll.merge(
-                        list -> list.stream()
-                                .filter(file -> file.getSize() > 1_000_000 && file.getSize() < 32_000_000)
-                                .collect(Collectors.toList()),
-                        2,
-                        null,
-                        null);
-            } else if (iteration % 5 == 0) {
-                // Do a small merge
-                coll.merge(
-                        list -> list.stream()
-                                .filter(file -> file.getSize() < 1_000_000)
-                                .collect(Collectors.toList()),
-                        2,
-                        null,
-                        null);
-            } else {
-                MILLISECONDS.sleep(10);
-            }
 
+            if (iteration % 5 == 0) {
+                coll.compact(null, null);
+            }
             iteration++;
         }
     }

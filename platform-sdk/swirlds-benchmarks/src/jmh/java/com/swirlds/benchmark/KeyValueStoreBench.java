@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.merkledb.files.MemoryIndexDiskKeyValueStore;
-import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -70,16 +69,8 @@ public class KeyValueStoreBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final AtomicLong count = new AtomicLong(0);
-        store.merge(
-                list -> {
-                    count.set(list.size());
-                    return list;
-                },
-                2,
-                null,
-                null);
-        System.out.println("Merged " + count.get() + " files in " + (System.currentTimeMillis() - start) + "ms");
+        store.compact(null, null);
+        System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
         // Verify merged content
         if (verify) {

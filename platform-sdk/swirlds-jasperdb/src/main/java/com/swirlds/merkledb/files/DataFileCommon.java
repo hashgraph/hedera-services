@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -42,7 +41,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -95,46 +93,8 @@ public final class DataFileCommon {
     /** Size of metadata footer written at end of file */
     public static final int FOOTER_SIZE = PAGE_SIZE;
     /** Comparator for comparing DataFileReaders by file creation time */
-    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR =
-            Comparator.comparing(o -> o.getMetadata().getCreationDate());
-    /** Comparator for comparing DataFileReaders by file creation time reversed */
-    private static final Comparator<DataFileReader> DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED =
-            DATA_FILE_READER_CREATION_TIME_COMPARATOR.reversed();
-
     private DataFileCommon() {
         throw new IllegalStateException("Utility class; should not be instantiated.");
-    }
-
-    /**
-     * Create a filter to only return all new files that are smaller than given size
-     *
-     * @param sizeMB max file size to accept in MB
-     * @param maxNumberOfFilesInMerge The maximum number of files to process in a single merge
-     * @return filter to filter list of files
-     */
-    public static UnaryOperator<List<DataFileReader>> newestFilesSmallerThan(
-            final int sizeMB, final int maxNumberOfFilesInMerge) {
-        final long sizeBytes = sizeMB * (long) MEBIBYTES_TO_BYTES;
-
-        return dataFileReaders -> {
-            final List<DataFileReader> filesNewestFirst = dataFileReaders.stream()
-                    .sorted(DATA_FILE_READER_CREATION_TIME_COMPARATOR_REVERSED)
-                    .toList();
-            final ArrayList<DataFileReader> smallEnoughFiles = new ArrayList<>(filesNewestFirst.size());
-            for (final DataFileReader file : filesNewestFirst) {
-                long size = file.getSize();
-                if (size < sizeBytes) {
-                    smallEnoughFiles.add(file);
-                } else {
-                    break;
-                }
-            }
-
-            final var numFiles = smallEnoughFiles.size();
-            return numFiles > maxNumberOfFilesInMerge
-                    ? smallEnoughFiles.subList(numFiles - maxNumberOfFilesInMerge, numFiles)
-                    : smallEnoughFiles;
-        };
     }
 
     /**
@@ -300,9 +260,9 @@ public final class DataFileCommon {
      * @param filePaths collection of paths to files
      * @return total number of bytes take for all the files in filePaths
      */
-    public static <D> long getSizeOfFiles(final Iterable<DataFileReader<D>> filePaths) {
+    public static long getSizeOfFiles(final Iterable<DataFileReader<?>> filePaths) {
         long totalSize = 0;
-        for (final DataFileReader<D> dataFileReader : filePaths) {
+        for (final DataFileReader<?> dataFileReader : filePaths) {
             totalSize += dataFileReader.getSize();
         }
         return totalSize;
@@ -345,13 +305,13 @@ public final class DataFileCommon {
         return (double) Math.round(d * ROUNDING_SCALE_FACTOR) / ROUNDING_SCALE_FACTOR;
     }
 
-    public static <D> void logMergeStats(
+    public static void logMergeStats(
             final String storeName,
             final double tookSeconds,
-            final Collection<DataFileReader<D>> filesToMerge,
+            final Collection<DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
-            final DataFileCollection<D> fileCollection)
+            final DataFileCollection<?> fileCollection)
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);

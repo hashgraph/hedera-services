@@ -109,7 +109,8 @@ public final class DataFileWriter<D> {
             final Path dataFileDir,
             final int index,
             final DataItemSerializer<D> dataItemSerializer,
-            final Instant creationTime)
+            final Instant creationTime,
+            final int compactionLevel)
             throws IOException {
         this.index = index;
         this.dataItemSerializer = dataItemSerializer;

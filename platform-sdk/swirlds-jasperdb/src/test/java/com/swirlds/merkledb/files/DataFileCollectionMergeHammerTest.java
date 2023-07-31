@@ -25,6 +25,7 @@ import com.swirlds.merkledb.collections.LongListHeap;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -42,6 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Disabled
 class DataFileCollectionMergeHammerTest {
 
+    @SuppressWarnings("unchecked")
     @ParameterizedTest
     @MethodSource("provideForBenchmark")
     @Tags({@Tag("Speed")})
@@ -52,6 +54,7 @@ class DataFileCollectionMergeHammerTest {
             final var serializer = new ExampleFixedSizeDataSerializer();
             final var coll = new DataFileCollection<>(
                     tempFileDir.resolve("benchmark"), "benchmark", serializer, (key, dataLocation, dataValue) -> {});
+            final var compactor = new DataFileCompactor(coll);
 
             final Random rand = new Random(777);
             for (int i = 0; i < numFiles; i++) {
@@ -70,8 +73,8 @@ class DataFileCollectionMergeHammerTest {
             }
 
             final long start = System.currentTimeMillis();
-            final var filesToMerge = coll.getAllCompletedFiles();
-            coll.compactFiles(index, filesToMerge);
+            final var filesToMerge = (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
+            compactor.compactFiles(index, filesToMerge);
             System.out.println(numFiles + " files took " + (System.currentTimeMillis() - start) + "ms");
             index.close();
         });
@@ -98,6 +101,7 @@ class DataFileCollectionMergeHammerTest {
                 Arguments.of(1000, 1_000_000));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     @Tags({@Tag(TestTypeTags.HAMMER)})
     void hammer() throws IOException, InterruptedException {
@@ -106,6 +110,7 @@ class DataFileCollectionMergeHammerTest {
         final var serializer = new ExampleFixedSizeDataSerializer();
         final var coll = new DataFileCollection<>(
                 tempFileDir.resolve("hammer"), "hammer", serializer, (key, dataLocation, dataValue) -> {});
+        final var compactor = new DataFileCompactor(coll);
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);
@@ -135,12 +140,13 @@ class DataFileCollectionMergeHammerTest {
         new Thread(() -> {
                     while (!stop.get()) {
                         try {
-                            final var filesToMerge = coll.getAllCompletedFiles();
+                            final List<DataFileReader<?>> filesToMerge =
+                                    (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
                             System.out.println(filesToMerge.size());
                             if (filesToMerge.size() > 10000) {
                                 stop.set(true);
                             }
-                            coll.compactFiles(index, filesToMerge);
+                            compactor.compactFiles(index, filesToMerge);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -149,9 +155,9 @@ class DataFileCollectionMergeHammerTest {
                 .start();
 
         for (int i = 0; i < 100; i++) {
-            coll.pauseCompaction();
+            compactor.pauseCompaction();
             SECONDS.sleep(3);
-            coll.resumeCompaction();
+            compactor.resumeCompaction();
             SECONDS.sleep(1);
         }
 
