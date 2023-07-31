@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -62,7 +62,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
         requireNonNull(context);
 
         final var transactionBody = context.body().systemDeleteOrThrow();
-        final var fileStore = context.createStore(ReadableFileStoreImpl.class);
+        final var fileStore = context.createStore(ReadableFileStore.class);
         preValidate(transactionBody.fileID(), fileStore, context, true);
 
         var file = fileStore.getFileLeaf(transactionBody.fileID());
