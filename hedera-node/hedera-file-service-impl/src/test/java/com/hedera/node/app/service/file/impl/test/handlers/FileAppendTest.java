@@ -30,7 +30,7 @@ import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -178,7 +178,7 @@ class FileAppendTest extends FileTestBase {
     void appliesUpgradeFileNewContent() {
         final var additionalContent = "contents".getBytes();
         var bytesNewContent = Bytes.wrap(additionalContent);
-        givenValidFile(false);
+        givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
         var bytesNewContentExpected = Bytes.wrap(additionalContent);
@@ -186,7 +186,7 @@ class FileAppendTest extends FileTestBase {
                 .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
                 .build();
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
 
         subject.handle(handleContext);
         final var iterator = writableUpgradeStates.iterator();

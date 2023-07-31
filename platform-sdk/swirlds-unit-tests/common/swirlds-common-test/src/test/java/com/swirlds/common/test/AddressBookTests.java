@@ -19,6 +19,7 @@ package com.swirlds.common.test;
 import static com.swirlds.common.system.address.AddressBookUtils.parseAddressBookText;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,6 +37,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.address.AddressBookUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -524,5 +526,44 @@ class AddressBookTests {
         } catch (final ParseException e) {
             assertEquals(part, e.getErrorOffset(), "The part number is wrong in the exception: " + e.getMessage());
         }
+    }
+
+    @Test
+    @DisplayName("Reconnect Address Book Comparison Test")
+    public void reconnectAddressBookComparisonTest() {
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator().setSize(10).build();
+
+        assertDoesNotThrow(() -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook.copy()));
+        // test exception on size mismatch
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(
+                        addressBook, addressBook.copy().remove(addressBook.getNodeId(0))));
+        // test exception on nextNodeId mismatch
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(
+                        addressBook,
+                        addressBook
+                                .copy()
+                                .setNextNodeId(addressBook.getNextNodeId().getOffset(5))));
+
+        // test exception on node id mismatch
+        final AddressBook addressBook2 = addressBook.copy();
+        final Address address = addressBook2.getAddress(addressBook2.getNodeId(0));
+        addressBook2.remove(address.getNodeId());
+        addressBook2.add(address.copySetNodeId(addressBook.getNextNodeId()));
+        addressBook.setNextNodeId(addressBook2.getNextNodeId());
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook2));
+
+        // test exception on address mismatch
+        final AddressBook addressBook3 = addressBook.copy();
+        addressBook3.updateWeight(addressBook3.getNodeId(0), 100);
+        assertThrows(
+                IllegalStateException.class,
+                () -> AddressBookUtils.verifyReconnectAddressBooks(addressBook, addressBook3));
     }
 }

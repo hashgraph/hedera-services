@@ -20,13 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -63,13 +64,13 @@ class WritableStoreFactoryImplTest {
                 arguments(TokenService.NAME, WritableNftStore.class),
                 arguments(TokenService.NAME, WritableTokenStore.class),
                 arguments(TokenService.NAME, WritableTokenRelationStore.class),
-                arguments(FreezeService.NAME, WritableUpdateFileStore.class),
+                arguments(FreezeService.NAME, WritableUpgradeStore.class),
                 arguments(FileService.NAME, WritableFileStore.class));
     }
 
     @BeforeEach
     void setUp() {
-        given(writableStates.get(anyString())).willReturn(writableKVState);
+        lenient().when(writableStates.get(anyString())).thenReturn(writableKVState);
     }
 
     @ParameterizedTest

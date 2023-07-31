@@ -32,7 +32,7 @@ import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -121,7 +121,7 @@ public class FileUpdateHandler implements TransactionHandler {
     }
 
     private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
-        final var fileStore = handleContext.writableStore(WritableUpgradeStore.class);
+        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
         // empty old upgrade file
         fileStore.resetFileContents();
         final var file = new File.Builder()
