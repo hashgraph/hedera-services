@@ -34,6 +34,5 @@ message DataFile {
     uint64 itemVersion = 5;
 
     /* Data items */
-    // repeated DataItem items = 11;
     repeated bytes items = 11;
 }

@@ -6,7 +6,6 @@ import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.function.CheckedFunction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -99,28 +98,10 @@ public class ProtoUtils {
         return Math.toIntExact(sizeOfTag(field, WIRE_TYPE_DELIMITED) + sizeOfVarInt32(length) + length);
     }
 
-    public static <T extends ReadableSequentialData> int getBytesSize(
-            final T in, final FieldDefinition fieldDef) {
-        final int tag = in.readVarInt(false);
-        final int fieldNum = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
-        assert fieldDef.number() == fieldNum : "Field number mismatch";
-        return in.readVarInt(false);
-    }
-
     public static <T extends WritableSequentialData> void writeBytes(
             final T out, final FieldDefinition field, final int size, final Consumer<T> writer) {
         out.writeVarInt(field.number() << ProtoParserTools.TAG_FIELD_OFFSET | WIRE_TYPE_DELIMITED, false);
         out.writeVarInt(size, false);
         writer.accept(out);
-    }
-
-    public static <T> T readProtoField(
-            @NonNull final ReadableSequentialData in,
-            @NonNull final FieldDefinition fieldDef,
-            @NonNull final CheckedFunction<ReadableSequentialData, T, IOException> reader) throws IOException {
-        final int tag = in.readVarInt(false);
-        final int fieldNum = tag >>> ProtoParserTools.TAG_FIELD_OFFSET;
-        assert fieldDef.number() == fieldNum : "Field number mismatch";
-        return reader.apply(in);
     }
 }

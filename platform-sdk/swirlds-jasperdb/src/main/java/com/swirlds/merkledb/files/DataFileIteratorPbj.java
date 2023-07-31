@@ -16,6 +16,13 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COUNT;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -24,13 +31,12 @@ import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
-import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Instant;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -94,9 +100,6 @@ public final class DataFileIteratorPbj implements DataFileIterator {
         this.inputStream = new BufferedInputStream(
                 Files.newInputStream(path, StandardOpenOption.READ), config.iteratorInputBufferBytes());
         this.in = new ReadableStreamingData(inputStream);
-
-        // Skip the header
-        this.in.skip(metadata.getHeaderSize());
     }
 
     /** {@inheritDoc} */
@@ -149,12 +152,31 @@ public final class DataFileIteratorPbj implements DataFileIterator {
             return false;
         }
 
-        currentDataItemFilePosition = in.position();
-        currentDataItemSize = ProtoUtils.getBytesSize(in, DataFileCommon.FIELD_DATAFILE_ITEMS);
-        dataItemBuffer = fillBuffer(currentDataItemSize);
+        while (in.hasRemaining()) {
+            currentDataItemFilePosition = in.position();
+            final int tag = in.readVarInt(false);
+            final int number = tag >> TAG_FIELD_OFFSET;
+            if (number == FIELD_DATAFILE_ITEMS.number()) {
+                currentDataItemSize = in.readVarInt(false);
+                dataItemBuffer = fillBuffer(currentDataItemSize);
+                currentDataItem++;
+                return true;
+            } else if (number == FIELD_DATAFILE_INDEX.number()) {
+                in.readVarInt(false); // skip index
+            } else if (number == FIELD_DATAFILE_CREATION_SECONDS.number()) {
+                in.readVarLong(false); // skip creation seconds
+            } else if (number == FIELD_DATAFILE_CREATION_NANOS.number()) {
+                in.readVarInt(false); // skip creation nanos
+            } else if (number == FIELD_DATAFILE_ITEMS_COUNT.number()) {
+                in.readLong(ByteOrder.LITTLE_ENDIAN); // skip items count
+            } else if (number == FIELD_DATAFILE_ITEM_VERSION.number()) {
+                in.readVarLong(false); // skip item serialization version
+            } else {
+                throw new IllegalArgumentException("Unknown data file field: " + number);
+            }
+        }
 
-        currentDataItem++;
-        return true;
+        throw new IllegalStateException("Reached the end of data file while expecting more data items");
     }
 
     /**

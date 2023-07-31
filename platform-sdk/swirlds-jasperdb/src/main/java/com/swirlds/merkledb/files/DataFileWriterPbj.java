@@ -288,6 +288,8 @@ public class DataFileWriterPbj<D> implements DataFileWriter<D> {
         // total file size is where the current writing pos is
         final long totalFileSize = mmapPositionInFile + writingPbjData.position();
         // update data item count in the metadata and in the file
+        // not that updateDataItemCount() messes up with writing buffer state (position), but
+        // the buffer will be closed below anyway
         metadata.updateDataItemCount(writingHeaderPbjData, dataItemCount);
         // release all the resources
         DataFileCommon.closeMmapBuffer(writingHeaderMmap);

@@ -16,24 +16,17 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
 import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Arrays;
-import sun.misc.Unsafe;
 
 /**
  * Writer for creating a data file. A data file contains a number of data items. Each data item can

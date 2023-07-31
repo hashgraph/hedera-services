@@ -22,7 +22,6 @@ import static com.swirlds.merkledb.files.DataFileCommon.PAGE_SIZE;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_DELIMITED;
 
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
-import com.swirlds.merkledb.collections.IndexedObject;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;

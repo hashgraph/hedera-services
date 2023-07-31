@@ -79,10 +79,6 @@ public final class DataFileMetadataJdb extends DataFileMetadata {
         }
     }
 
-    protected int calculateHeaderSize() {
-        return 0;
-    }
-
     /**
      * Get the metadata in the form of a one page 4k bytebuffer ready to write at the end of a file.
      *

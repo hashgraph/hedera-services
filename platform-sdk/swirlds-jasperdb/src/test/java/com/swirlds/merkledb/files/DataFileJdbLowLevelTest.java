@@ -238,7 +238,7 @@ class DataFileJdbLowLevelTest {
         }
         // check by location math
         if (testType == FilesTestType.fixed) {
-            long offset = dataFileReader.getMetadata().getHeaderSize();
+            long offset = 0;
             for (int i = 0; i < 1000; i++) {
                 long[] dataItem = dataFileReader.readDataItem(DataFileCommon.dataLocation(DATA_FILE_INDEX, offset));
                 assertEquals(i, dataItem[0], "unexpected dataItem[0]");

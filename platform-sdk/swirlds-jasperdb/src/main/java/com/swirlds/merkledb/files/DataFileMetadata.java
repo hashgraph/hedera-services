@@ -16,26 +16,31 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.hedera.pbj.runtime.ProtoParserTools.TAG_FIELD_OFFSET;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_NANOS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_CREATION_SECONDS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_INDEX;
+import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEMS_COUNT;
 import static com.swirlds.merkledb.files.DataFileCommon.FIELD_DATAFILE_ITEM_VERSION;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_FIXED_64_BIT;
 import static com.swirlds.merkledb.utilities.ProtoUtils.WIRE_TYPE_VARINT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.hedera.pbj.runtime.io.stream.ReadableStreamingData;
 import com.swirlds.merkledb.utilities.ProtoUtils;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -67,9 +72,6 @@ public class DataFileMetadata {
     // Future work: make it private final, once this class is final again
     protected long serializationVersion;
 
-    /** Header (metadata) size, in bytes */
-    private final int headerSize;
-
     // Set in writeTo()
     private long dataItemCountHeaderOffset = 0;
 
@@ -91,7 +93,6 @@ public class DataFileMetadata {
         this.index = index;
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
-        headerSize = calculateHeaderSize();
     }
 
     /**
@@ -101,69 +102,66 @@ public class DataFileMetadata {
      * @throws IOException If there was a problem reading metadata footer from the file
      */
     public DataFileMetadata(Path file) throws IOException {
-        MappedByteBuffer readingMmap = null;
-        try (final FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
-            readingMmap = channel.map(MapMode.READ_ONLY, 0, Math.min(1024, channel.size()));
-            final BufferedData readingHeaderPbjData = BufferedData.wrap(readingMmap);
-            this.index = ProtoUtils.readProtoField(
-                    readingHeaderPbjData, FIELD_DATAFILE_INDEX,
-                    o -> o.readVarInt(false));
-            final long creationDataSeconds = ProtoUtils.readProtoField(
-                    readingHeaderPbjData, FIELD_DATAFILE_CREATION_SECONDS,
-                    o -> o.readVarLong(false));
-            final int creationDataNanos = ProtoUtils.readProtoField(
-                    readingHeaderPbjData, FIELD_DATAFILE_CREATION_NANOS,
-                    o -> o.readVarInt(false));
-            this.creationDate = Instant.ofEpochSecond(creationDataSeconds, creationDataNanos);
-            this.itemsCount = ProtoUtils.readProtoField(
-                    readingHeaderPbjData, FIELD_DATAFILE_ITEMS_COUNT,
-                    o -> o.readLong(ByteOrder.LITTLE_ENDIAN));
-            this.serializationVersion = ProtoUtils.readProtoField(
-                    readingHeaderPbjData, FIELD_DATAFILE_ITEM_VERSION,
-                    o -> o.readVarLong(false));
-            headerSize = calculateHeaderSize();
-        } finally {
-            if (readingMmap != null) {
-                DataFileCommon.closeMmapBuffer(readingMmap);
+        // Defaults
+        int index = 0;
+        long creationSeconds = 0;
+        int creationNanos = 0;
+        long itemsCount = 0;
+        long serializationVersion = 0;
+
+        // Track which fields are read, so we don't have to scan through the whole file
+        final Set<String> fieldsToRead = new HashSet<>(
+                Set.of("index", "creationSeconds", "creationNanos", "itemsCount", "serializationVersion"));
+
+        // Read values from the file, skipping all data items
+        try (final InputStream fin = Files.newInputStream(file, StandardOpenOption.READ)) {
+            final ReadableSequentialData in = new ReadableStreamingData(fin);
+            while (in.hasRemaining() && !fieldsToRead.isEmpty()) {
+                final int tag = in.readVarInt(false);
+                final int number = tag >> TAG_FIELD_OFFSET;
+                if (number == FIELD_DATAFILE_INDEX.number()) {
+                    index = in.readVarInt(false);
+                    fieldsToRead.remove("index");
+                } else if (number == FIELD_DATAFILE_CREATION_SECONDS.number()) {
+                    creationSeconds = in.readVarLong(false);
+                    fieldsToRead.remove("creationSeconds");
+                } else if (number == FIELD_DATAFILE_CREATION_NANOS.number()) {
+                    creationNanos = in.readVarInt(false);
+                    fieldsToRead.remove("creationNanos");
+                } else if (number == FIELD_DATAFILE_ITEMS_COUNT.number()) {
+                    itemsCount = in.readLong(ByteOrder.LITTLE_ENDIAN);
+                    fieldsToRead.remove("itemsCount");
+                } else if (number == FIELD_DATAFILE_ITEM_VERSION.number()) {
+                    serializationVersion = in.readVarLong(false);
+                    fieldsToRead.remove("serializationVersion");
+                } else if (number == FIELD_DATAFILE_ITEMS.number()) {
+                    // Just skip it
+                    final int size = in.readVarInt(false);
+                    in.skip(size);
+                } else {
+                    throw new IllegalArgumentException("Unknown data file field: " + number);
+                }
             }
         }
+
+        // Initialize this object
+        this.index = index;
+        this.creationDate = Instant.ofEpochSecond(creationSeconds, creationNanos);
+        this.itemsCount = itemsCount;
+        this.serializationVersion = serializationVersion;
     }
 
-    // Future work: make it private once DataFileMetadataJdb is dropped
-    protected int calculateHeaderSize() {
-//        return ProtoWriterTools.sizeOfInteger(FIELD_DATAFILE_INDEX, index) +
-        return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt32(index) +
-//                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_CREATION_SECONDS, creationDate.getEpochSecond()) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt64(creationDate.getEpochSecond()) +
-//                ProtoWriterTools.sizeOfInteger(FIELD_DATAFILE_CREATION_NANOS, creationDate.getNano()) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt32(creationDate.getNano()) +
-//                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_ITEMS_COUNT, itemsCount) +
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT) +
-                Long.BYTES +
-//                ProtoWriterTools.sizeOfLong(FIELD_DATAFILE_ITEM_VERSION, serializationVersion);
-                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT) +
-                ProtoUtils.sizeOfUnsignedVarInt64(serializationVersion);
-    }
-
-    void writeTo(final BufferedData out) throws IOException {
-//        ProtoWriterTools.writeInteger(out, FIELD_DATAFILE_INDEX, getIndex());
+    void writeTo(final BufferedData out) {
         ProtoUtils.writeTag(out, FIELD_DATAFILE_INDEX);
         out.writeVarInt(getIndex(), false);
         final Instant creationInstant = getCreationDate();
-//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_CREATION_SECONDS, creationInstant.getEpochSecond());
         ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_SECONDS);
         out.writeVarLong(creationInstant.getEpochSecond(), false);
-//        ProtoWriterTools.writeInteger(out, FIELD_DATAFILE_CREATION_NANOS, creationInstant.getNano());
         ProtoUtils.writeTag(out, FIELD_DATAFILE_CREATION_NANOS);
         out.writeVarInt(creationInstant.getNano(), false);
         dataItemCountHeaderOffset = out.position();
-//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEMS_COUNT, 0); // will be updated later
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEMS_COUNT);
         out.writeLong(0, ByteOrder.LITTLE_ENDIAN); // will be updated later
-//        ProtoWriterTools.writeLong(out, FIELD_DATAFILE_ITEM_VERSION, getSerializationVersion());
         ProtoUtils.writeTag(out, FIELD_DATAFILE_ITEM_VERSION);
         out.writeVarLong(getSerializationVersion(), false);
     }
@@ -177,10 +175,12 @@ public class DataFileMetadata {
     }
 
     /**
-     * Updates number of data items in the file. This method is called by {@link DataFileWriter}
-     * right before the file is finished writing.
+     * Updates number of data items in the file. This method must be called after metadata is
+     * written to a file using {@link #writeTo(BufferedData)}.
+     *
+     * This method is called by {@link DataFileWriter} right before the file is finished writing.
      */
-    void updateDataItemCount(final BufferedData out, final long count) throws IOException {
+    void updateDataItemCount(final BufferedData out, final long count) {
         this.itemsCount = count;
         assert dataItemCountHeaderOffset != 0;
         out.position(dataItemCountHeaderOffset);
@@ -204,9 +204,20 @@ public class DataFileMetadata {
         return serializationVersion;
     }
 
-    /** Get header (metadata) size, in bytes */
-    public int getHeaderSize() {
-        return headerSize;
+    // For testing purposes. In low-level data file tests, skip this number of bytes from the
+    // beginning of the file before reading data items, assuming file metadata is always written
+    // first, then data items
+    int metadataSizeInBytes() {
+        return ProtoUtils.sizeOfTag(FIELD_DATAFILE_INDEX, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfVarInt32(index) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_SECONDS, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfVarInt64(creationDate.getEpochSecond()) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_CREATION_NANOS, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfVarInt64(creationDate.getNano()) +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEMS_COUNT, WIRE_TYPE_FIXED_64_BIT) +
+                Long.BYTES +
+                ProtoUtils.sizeOfTag(FIELD_DATAFILE_ITEM_VERSION, WIRE_TYPE_VARINT) +
+                ProtoUtils.sizeOfVarInt64(serializationVersion);
     }
 
     /** toString for debugging */

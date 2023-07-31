@@ -199,7 +199,7 @@ class DataFilePbjLowLevelTest {
         final var dataFile = dataFileMap.get(testType);
         final int fileSize = (int) Files.size(dataFile);
         final var dataFileMetadata = dataFileMetadataMap.get(testType);
-        final int headerSize = dataFileMetadata.getHeaderSize();
+        final int headerSize = dataFileMetadata.metadataSizeInBytes();
         // read the whole file
         BufferedData buf = BufferedData.wrap(Files.readAllBytes(dataFile), headerSize, fileSize - headerSize);
 //        LongBuffer longBuf = buf.asLongBuffer();
@@ -249,7 +249,7 @@ class DataFilePbjLowLevelTest {
         }
         // check by location math
         if (testType == FilesTestType.fixed) {
-            long offset = dataFileReader.getMetadata().getHeaderSize();
+            long offset = dataFileMetadata.metadataSizeInBytes();
             for (int i = 0; i < 1000; i++) {
                 long[] dataItem = dataFileReader.readDataItem(DataFileCommon.dataLocation(DATA_FILE_INDEX, offset));
                 assertEquals(i, dataItem[0], "unexpected dataItem[0]");

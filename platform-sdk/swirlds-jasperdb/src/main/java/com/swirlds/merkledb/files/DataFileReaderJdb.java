@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.DataItemHeader;
 import com.swirlds.merkledb.serialize.DataItemSerializer;
 import com.swirlds.merkledb.utilities.MerkleDbFileUtils;
