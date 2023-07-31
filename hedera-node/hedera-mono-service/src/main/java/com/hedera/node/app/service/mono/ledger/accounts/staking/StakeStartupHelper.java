@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -136,9 +135,13 @@ public class StakeStartupHelper {
         // Recompute anything requested by the staking.startupHelper.recompute property
         final var recomputeTypes = properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE);
         if (!recomputeTypes.isEmpty()) {
-//            final var curStakePeriod = LocalDate.ofInstant(networkContext.consensusTimeOfLastHandledTxn(), ZONE_UTC)
-//                    .toEpochDay();
-//            stakePeriodManager.setCurrentStakePeriod(curStakePeriod);
+            // While doing upgrade housekeeping, the current stake period is calculated from the last consensus time
+            // that is recorded in state. This is needed because when we calculate effectivePeriod in rewardCalculator
+            // we need to know the current stake period.
+            final var curStakePeriod = LocalDate.ofInstant(networkContext.consensusTimeOfLastHandledTxn(), ZONE_UTC)
+                    .toEpochDay();
+            stakePeriodManager.setCurrentStakePeriod(curStakePeriod);
+
             withLoggedDuration(
                     () -> recomputeQuantities(
                             recomputeTypes.contains(RecomputeType.NODE_STAKES),
