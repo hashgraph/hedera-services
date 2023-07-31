@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -49,6 +50,7 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -150,6 +152,27 @@ class FileUpdateTest extends FileTestBase {
         final var newFile = writableFileState.get(fileId);
         final var expectedKey = anotherKeys;
         assertEquals(expectedKey, newFile.keys());
+    }
+
+    @Test
+    @DisplayName("Fails handle if keys doesn't exist on file to be updated")
+    void keysDoesntExist() {
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var op = OP_BUILDER.fileID(fileId).keys(anotherKeys).build();
+        final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
+
+        writableFileState = writableFileStateWithOneKey();
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
+        writableStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+
+        given(handleContext.body()).willReturn(txBody);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
 
     @Test

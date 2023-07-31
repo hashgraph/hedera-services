@@ -28,6 +28,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -42,6 +43,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -208,6 +210,27 @@ class FileAppendTest extends FileTestBase {
             file = iterator.next();
         }
         assertEquals(bytesNewContentExpected, file);
+    }
+
+    @Test
+    @DisplayName("Fails handle if keys doesn't exist on file to be appended")
+    void keysDoesntExist() {
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .build();
+
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+
+        given(handleContext.body()).willReturn(txBody);
+        writableFileState = writableFileStateWithOneKey();
+        given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
+        writableStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        assertEquals(ResponseCodeEnum.UNAUTHORIZED, msg.getStatus());
     }
 
     @Test
