@@ -472,7 +472,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_accountsPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_accountsPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -633,7 +633,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_consGasPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_consGasPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -794,7 +794,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_contractsPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_contractsPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -954,7 +954,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_filesPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_filesPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -1114,7 +1114,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_nftsPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_nftsPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -1274,7 +1274,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_topicsPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_topicsPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -1434,7 +1434,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "avg(app_tokensPercentUsed{environment=\"$Network\"})",
+          "expr": "max(app_tokensPercentUsed{environment=\"$Network\"})",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -1657,13 +1657,13 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Entity Utilization",
   "uid": "entity-utlization-prom",
-  "version": 5,
+  "version": 7,
   "weekStart": ""
 }
