@@ -102,7 +102,11 @@ class CustomMessageCallProcessorTest {
     @BeforeEach
     void setUp() {
         subject = new CustomMessageCallProcessor(
-                evm, featureFlags, registry, addressChecks, Map.of(TestHelpers.HTS_PRECOMPILE_ADDRESS, htsPrecompile));
+                evm,
+                featureFlags,
+                registry,
+                addressChecks,
+                Map.of(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS, htsPrecompile));
     }
 
     @Test
@@ -113,7 +117,7 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void hederaPrecompilesNotYetSupported() {
-        givenCallWithCode(TestHelpers.HTS_PRECOMPILE_ADDRESS);
+        givenCallWithCode(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS);
         assertThrows(UnsupportedOperationException.class, () -> subject.start(frame, operationTracer));
     }
 

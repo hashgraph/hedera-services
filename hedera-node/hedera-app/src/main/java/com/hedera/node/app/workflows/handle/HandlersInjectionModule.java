@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
@@ -27,17 +29,24 @@ import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-@Module()
+@Module
 public interface HandlersInjectionModule {
+    @Provides
+    @Singleton
+    static Supplier<ContractHandlers> provideContractHandlers() {
+        return CONTRACT_SERVICE::handlers;
+    }
+
     @Provides
     @Singleton
     static TransactionHandlers provideTransactionHandlers(
             @NonNull final NetworkAdminHandlers networkAdminHandlers,
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
-            @NonNull final ContractHandlers contractHandlers,
+            @NonNull final Supplier<ContractHandlers> contractHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers,
             @NonNull final UtilHandlers utilHandlers) {
@@ -46,13 +55,13 @@ public interface HandlersInjectionModule {
                 consensusHandlers.consensusUpdateTopicHandler(),
                 consensusHandlers.consensusDeleteTopicHandler(),
                 consensusHandlers.consensusSubmitMessageHandler(),
-                contractHandlers.contractCreateHandler(),
-                contractHandlers.contractUpdateHandler(),
-                contractHandlers.contractCallHandler(),
-                contractHandlers.contractDeleteHandler(),
-                contractHandlers.contractSystemDeleteHandler(),
-                contractHandlers.contractSystemUndeleteHandler(),
-                contractHandlers.etherumTransactionHandler(),
+                contractHandlers.get().contractCreateHandler(),
+                contractHandlers.get().contractUpdateHandler(),
+                contractHandlers.get().contractCallHandler(),
+                contractHandlers.get().contractDeleteHandler(),
+                contractHandlers.get().contractSystemDeleteHandler(),
+                contractHandlers.get().contractSystemUndeleteHandler(),
+                contractHandlers.get().etherumTransactionHandler(),
                 tokenHandlers.cryptoCreateHandler(),
                 tokenHandlers.cryptoUpdateHandler(),
                 tokenHandlers.cryptoTransferHandler(),
