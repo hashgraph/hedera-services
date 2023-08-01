@@ -52,7 +52,7 @@ class EthTxDataTest {
     //  v: 28, accessList: []
     // }
     static final String RAW_TX_TYPE_1 =
-            "01f87182012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a07844f7acfe12e2985953cce823870b97464d7c2d5c752798c022b9403e0d5ca7a011154a57f1078fe7e36b6d17c8bb4a287cd385fc3168c2d43d24e193851f3186";
+            "01f87382012a82160c85a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a0abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816a0249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53";
     static final String RAW_TX_TYPE_2 =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
@@ -150,7 +150,7 @@ class EthTxDataTest {
         assertEquals(RAW_TX_TYPE_1, Hex.toHexString(berlinTx.rawTx()));
         assertEquals(EthTxData.EthTransactionType.EIP2930, berlinTx.type());
         assertEquals("012a", Hex.toHexString(berlinTx.chainId()));
-        assertEquals(0, berlinTx.nonce());
+        assertEquals(5644, berlinTx.nonce());
         assertEquals("a54f4c3c00", Hex.toHexString(berlinTx.gasPrice()));
         assertNull(berlinTx.maxPriorityGas());
         assertNull(berlinTx.maxGas());
@@ -161,8 +161,8 @@ class EthTxDataTest {
         assertEquals("", Hex.toHexString(berlinTx.accessList()));
         assertEquals(1, berlinTx.recId());
         assertNull(berlinTx.v());
-        assertEquals("7844f7acfe12e2985953cce823870b97464d7c2d5c752798c022b9403e0d5ca7", Hex.toHexString(berlinTx.r()));
-        assertEquals("11154a57f1078fe7e36b6d17c8bb4a287cd385fc3168c2d43d24e193851f3186", Hex.toHexString(berlinTx.s()));
+        assertEquals("abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816", Hex.toHexString(berlinTx.r()));
+        assertEquals("249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53", Hex.toHexString(berlinTx.s()));
 
         final var berlinSigs = EthTxSigs.extractSignatures(berlinTx);
         assertNotNull(berlinSigs);
