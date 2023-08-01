@@ -75,6 +75,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -87,6 +88,7 @@ import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
@@ -94,6 +96,7 @@ import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.ClassSelector;
+import org.junit.platform.engine.discovery.ClasspathRootSelector;
 import org.junit.platform.engine.discovery.MethodSelector;
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor;
 import org.junit.platform.engine.support.descriptor.ClassSource;
@@ -159,6 +162,15 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
         });
 
+        // This is not working as expected, but it's still useful. Because in the EngineDiscoveryRequest we only
+        // have access up-to the main package this code will execute all HapiTests under it.
+        // This means that if you run the tests from whatever package all HapiTests will be started.
+        // We should fix that but for now this can still be useful.
+        // For more information: https://github.com/hashgraph/hedera-services/pull/7730#discussion_r1279360505
+        discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
+            appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
+        });
+
         return engineDescriptor;
     }
 
@@ -171,6 +183,14 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 engineDescriptor.addChild(classDescriptor);
             }
         }
+    }
+
+    private void appendTestsInClasspathRoot(
+            URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
+        ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
+                .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
+                .filter(classTestDescriptor -> !classTestDescriptor.skip)
+                .forEach(engineDescriptor::addChild);
     }
 
     /**
