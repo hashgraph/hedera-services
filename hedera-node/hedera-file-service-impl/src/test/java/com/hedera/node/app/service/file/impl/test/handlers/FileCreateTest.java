@@ -66,7 +66,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -203,8 +202,6 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -236,8 +233,6 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(handleContext.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilder(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -266,8 +261,6 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         final var failure = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, failure.getStatus());
@@ -285,8 +278,6 @@ class FileCreateTest extends FileTestBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         doThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .when(validator)
@@ -294,17 +285,6 @@ class FileCreateTest extends FileTestBase {
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertTrue(fileStore.get(FileID.newBuilder().fileNum(1234L).build()).isEmpty());
-    }
-
-    @Test
-    void handleThrowsIfKeysSignatureFailed() {
-        final var txBody = newCreateTxn(anotherKeys, expirationTime);
-
-        given(handleContext.body()).willReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(true);
-
-        assertThrows(HandleException.class, () -> subject.handle(handleContext));
     }
 
     @Test
@@ -318,8 +298,6 @@ class FileCreateTest extends FileTestBase {
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
         final var fileStore = new WritableFileStore(writableStates);
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(fileStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         assertEquals(2, fileStore.sizeOfState());
 

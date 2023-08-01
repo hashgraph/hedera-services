@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateSignatures;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static java.util.Objects.requireNonNull;
 
@@ -87,7 +86,6 @@ public class FileCreateHandler implements TransactionHandler {
         // TODO: skip at least the mutability check for privileged "payer" accounts
         if (fileCreateTransactionBody.hasKeys()) {
             KeyList transactionKeyList = fileCreateTransactionBody.keys();
-            validateSignatures(null, transactionKeyList, handleContext);
             builder.keys(transactionKeyList);
         }
 

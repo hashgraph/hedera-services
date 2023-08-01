@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateSignatures;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.verifyNotSystemFile;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
@@ -88,7 +87,6 @@ public class FileDeleteHandler implements TransactionHandler {
 
         // First validate this file is mutable; and the pending mutations are allowed
         validateFalse(file.keys() == null, UNAUTHORIZED);
-        validateSignatures(file, null, handleContext);
 
         /* Copy part of the fields from existing, delete the file content and set the deleted flag  */
         final var fileBuilder = new File.Builder()

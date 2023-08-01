@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
-import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateSignatures;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
@@ -109,8 +108,6 @@ public class FileUpdateHandler implements TransactionHandler {
         // First validate this file is mutable; and the pending mutations are allowed
         // TODO: add or condition for privilege accounts from context
         validateFalse(file.keys() == null, UNAUTHORIZED);
-
-        validateSignatures(file, fileUpdate.keys(), handleContext);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
 

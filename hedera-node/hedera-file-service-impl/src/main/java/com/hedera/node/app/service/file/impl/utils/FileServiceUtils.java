@@ -32,8 +32,6 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -41,7 +39,6 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 
 /** Provides utility methods for file operations. */
 public class FileServiceUtils {
@@ -188,34 +185,5 @@ public class FileServiceUtils {
             @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId) {
         return verifyNotSystemFile(ledgerConfig, fileStore, fileId, false);
-    }
-
-    /**
-     * Verify the keys from transaction and file are relevant for the transaction
-     * @param file that will be checked for verification keys
-     * @param transactionKeyList transaction keys that add to context for verification.
-     * @param context the handle context for the transaction.
-     * @throws HandleException throws exception if {@link ResponseCodeEnum#UNAUTHORIZED}
-     */
-    public static void validateSignatures(
-            @Nullable File file, @Nullable KeyList transactionKeyList, @NonNull HandleContext context)
-            throws HandleException {
-
-        if (transactionKeyList != null && transactionKeyList.hasKeys()) {
-            for (final Key key : transactionKeyList.keys()) {
-                SignatureVerification verificationResult = context.verificationFor(key);
-                if (verificationResult.failed()) throw new HandleException(UNAUTHORIZED);
-            }
-        }
-
-        if (file != null && file.keys() != null) {
-            List<Key> fileKeyList = file.keys().keys();
-            if (fileKeyList != null) {
-                for (final Key key : fileKeyList) {
-                    SignatureVerification verificationResult = context.verificationFor(key);
-                    if (verificationResult.failed()) throw new HandleException(UNAUTHORIZED);
-                }
-            }
-        }
     }
 }
