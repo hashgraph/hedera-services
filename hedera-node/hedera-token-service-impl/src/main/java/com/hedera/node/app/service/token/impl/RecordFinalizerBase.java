@@ -120,7 +120,6 @@ public class RecordFinalizerBase {
                 fungibleTokenTransferLists.add(TokenTransferList.newBuilder()
                         .token(acctAmountsForToken.getKey())
                         .transfers(aaList)
-                        //                        .expectedDecimals(0) // Should this be set ?
                         .build());
             }
         }
@@ -141,7 +140,6 @@ public class RecordFinalizerBase {
                     .serialNumber(modifiedNft.id().serialNumber())
                     .senderAccountID(senderAccountId)
                     .receiverAccountID(modifiedNft.ownerId())
-                    .isApproval(false) // Isn't this wrong ? Should we see transaction and set isApproval ?
                     .build();
             if (!nftChanges.containsKey(nftId.tokenId())) {
                 nftChanges.put(nftId.tokenId(), new ArrayList<>());

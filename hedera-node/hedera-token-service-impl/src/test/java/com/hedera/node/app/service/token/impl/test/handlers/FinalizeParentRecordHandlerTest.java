@@ -202,12 +202,14 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void handleHbarTransfersToNewAccountDeductsFromChildRecordsSuccess() {
+    void handleHbarTransfersToAccountDeductsFromChildRecordsSuccess() {
         // This case handles a successful hbar transfer to an auto-created account
         // deducts the child record transfers from parent transfer list
 
         final var amountToTransfer = ACCOUNT_1212.tinybarBalance() - 1;
-        final var childRecordTransfer = amountToTransfer / 2;
+        // 1 tinybar left in parent account , transferred 9999
+        final var childRecordTransfer = amountToTransfer / 2; // 1/2 of parent account balance, 4999
+
         readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212);
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
         writableAccountStore.put(ACCOUNT_1212.copyBuilder().tinybarBalance(1).build());
@@ -225,23 +227,23 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.configuration()).willReturn(configuration);
 
         final var childRecord = mock(TransactionRecord.class);
-        // child record has  1212 (+) -> 3434(-) transfer
+        // child record has  1212 (-) -> 3434(+) transfer
         given(childRecord.transferList())
                 .willReturn(TransferList.newBuilder()
                         .accountAmounts(
                                 AccountAmount.newBuilder()
                                         .accountID(ACCOUNT_1212_ID)
-                                        .amount(childRecordTransfer)
+                                        .amount(-childRecordTransfer)
                                         .build(),
                                 AccountAmount.newBuilder()
                                         .accountID(ACCOUNT_3434_ID)
-                                        .amount(-childRecordTransfer)
+                                        .amount(childRecordTransfer)
                                         .build())
                         .build());
         subject.finalizeParentRecord(context, List.of(childRecord));
 
-        final var transferAmount1212 = -amountToTransfer - childRecordTransfer;
-        final var transferAmount3434 = amountToTransfer + childRecordTransfer;
+        final var transferAmount1212 = -amountToTransfer + childRecordTransfer;
+        final var transferAmount3434 = amountToTransfer - childRecordTransfer;
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
                         .accountAmounts(
@@ -257,9 +259,140 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    void handleFungibleTokenTransfersToAccountDeductsFromChildRecordsSuccess() {
+        // This case handles a successful fungible token transfer to an auto-created account
+        // deducts all child record transfers from parent transfer list
+
+        final var senderAcct = ACCOUNT_1212;
+        final var senderTokenRel = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_1212_ID)
+                .build();
+        final var fungibleAmountToTransfer = senderTokenRel.balance() - 1;
+        final var childAmount = fungibleAmountToTransfer / 2;
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(senderAcct);
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(senderAcct);
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(senderTokenRel);
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(senderTokenRel);
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+        // Simulate the token receiver's account (ACCOUNT_3434) being auto-created (with an hbar balance of 0)
+        writableAccountStore.put(ACCOUNT_3434
+                .copyBuilder()
+                .tinybarBalance(0)
+                .alias(Bytes.wrap("00000000000000000002"))
+                .build());
+        // Simulate the receiver's token relation being auto-created (and both the sender and receiver token rel
+        // balances adjusted)
+        writableTokenRelStore.put(senderTokenRel.copyBuilder().balance(1).build());
+        writableTokenRelStore.put(senderTokenRel
+                .copyBuilder()
+                .accountId(ACCOUNT_3434_ID)
+                .balance(fungibleAmountToTransfer)
+                .build());
+        context = mockContext();
+        given(context.configuration()).willReturn(configuration);
+
+        final var childRecord = mock(TransactionRecord.class);
+        // child record has  1212 (-) -> 3434(+) transfer
+        given(childRecord.transferList()).willReturn(TransferList.newBuilder().build());
+        given(childRecord.tokenTransferListsOrElse(List.of()))
+                .willReturn(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(childAmount)
+                                        .build())
+                        .build()));
+
+        subject.finalizeParentRecord(context, List.of(childRecord));
+
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_1212_ID)
+                                        .amount(-fungibleAmountToTransfer + childAmount)
+                                        .build(),
+                                AccountAmount.newBuilder()
+                                        .accountID(ACCOUNT_3434_ID)
+                                        .amount(fungibleAmountToTransfer - childAmount)
+                                        .build())
+                        .build()));
+    }
+
+    @Test
+    void handleNFTTransfersToAccountDeductsFromChildRecordsSuccess() {
+        // This case handles a successful NFT transfer to an auto-created account
+        // deducts all child record transfers from parent transfer list
+        final var existingTokenRel = givenNonFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_1212_ID)
+                .build();
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212);
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(existingTokenRel);
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(existingTokenRel);
+        final var nft1 = givenNft(
+                        NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build())
+                .copyBuilder()
+                .ownerId(ACCOUNT_1212_ID)
+                .build();
+        final var nft2 = givenNft(
+                        NftID.newBuilder().tokenId(TOKEN_321).serialNumber(2).build())
+                .copyBuilder()
+                .ownerId(ACCOUNT_1212_ID)
+                .build();
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(nft1, nft2);
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(nft1, nft2);
+        // Simulate the token receiver's account (ACCOUNT_3434) being auto-created
+        writableAccountStore.put(ACCOUNT_3434
+                .copyBuilder()
+                .tinybarBalance(0)
+                .alias(Bytes.wrap("00000000000000000003"))
+                .build());
+        writableNftStore.put(nft1.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        writableNftStore.put(nft2.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        context = mockContext();
+        given(context.configuration()).willReturn(configuration);
+
+        final var childRecord = mock(TransactionRecord.class);
+
+        given(childRecord.transferList()).willReturn(TransferList.newBuilder().build());
+        given(childRecord.tokenTransferListsOrElse(List.of()))
+                .willReturn(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .nftTransfers(NftTransfer.newBuilder()
+                                .serialNumber(1)
+                                .senderAccountID(ACCOUNT_1212_ID)
+                                .receiverAccountID(ACCOUNT_3434_ID)
+                                .build())
+                        .build()));
+
+        subject.finalizeParentRecord(context, List.of(childRecord));
+
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .nftTransfers(NftTransfer.newBuilder()
+                                .serialNumber(2)
+                                .senderAccountID(ACCOUNT_1212_ID)
+                                .receiverAccountID(ACCOUNT_3434_ID)
+                                .build())
+                        .build()));
+    }
+
+    @Test
     void handleHbarTransfersToExistingAccountSuccess() {
         // This test case handles successfully transferring hbar only (no tokens)
-
         readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434, ACCOUNT_5656);
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434, ACCOUNT_5656);
         writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(); // Intentionally empty
