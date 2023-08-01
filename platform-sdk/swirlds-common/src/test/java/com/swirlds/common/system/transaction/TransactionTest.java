@@ -41,8 +41,7 @@ public class TransactionTest {
     @BeforeAll
     public static void setup() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("com.swirlds.common");
-        registry.registerConstructables("com.swirlds.common.system.transaction.internal");
+        registry.registerConstructables("com.swirlds.common.system");
     }
 
     /**
