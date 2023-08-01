@@ -29,7 +29,7 @@ import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -97,8 +97,8 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     }
 
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {
-        final var nowDay = LocalDateTime.ofInstant(now, UTC);
-        final var thenDay = LocalDateTime.ofInstant(then, UTC);
+        final var nowDay = LocalDate.ofInstant(now, UTC);
+        final var thenDay = LocalDate.ofInstant(then, UTC);
         return nowDay.isAfter(thenDay) && nowDay.getDayOfYear() != thenDay.getDayOfYear();
     }
 }
