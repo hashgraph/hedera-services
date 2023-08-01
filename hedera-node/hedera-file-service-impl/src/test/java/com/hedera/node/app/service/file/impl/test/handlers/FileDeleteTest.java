@@ -62,7 +62,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -212,8 +211,6 @@ class FileDeleteTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -222,6 +219,25 @@ class FileDeleteTest extends FileTestBase {
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
         assertNull(changedFile.get().contents());
+    }
+
+    @Test
+    @DisplayName("File without keys returns error")
+    void noFileKeys() {
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var txn = newDeleteTxn().fileDeleteOrThrow();
+
+        final var existingFile = writableStore.get(fileId);
+        assertTrue(existingFile.isPresent());
+        assertFalse(existingFile.get().deleted());
+
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        // expect:
+        assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
     }
 
     private Key mockPayerLookup() throws PreCheckException {
@@ -235,5 +251,10 @@ class FileDeleteTest extends FileTestBase {
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
                 .build();
+    }
+
+    private static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
+        final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
     }
 }
