@@ -375,7 +375,7 @@ class EthTxDataTest {
         assertArrayEquals(
                 Hex.decode(
                         RAW_TX_TYPE_1
-                                .replace("f871", "f86e") // tx is shorter
+                                .replace("f873", "f870") // tx is shorter
                                 .replace("83123456", "80") // calldata changed
                         ),
                 noCallData.encodeTx());
