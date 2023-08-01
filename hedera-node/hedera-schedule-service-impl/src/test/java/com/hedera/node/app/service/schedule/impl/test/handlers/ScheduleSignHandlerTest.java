@@ -45,7 +45,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void scheduleSignVanillaNoExplicitPayer() throws PreCheckException {
+    void vanillaNoExplicitPayer() throws PreCheckException {
         final TransactionBody testTransaction = scheduleSignTransaction(null);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
 
@@ -56,7 +56,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void scheduleSignFailsIfScheduleMissing() throws PreCheckException {
+    void failsIfScheduleMissing() throws PreCheckException {
         final ScheduleID badScheduleID = ScheduleID.newBuilder().scheduleNum(1L).build();
         final TransactionBody testTransaction = scheduleSignTransaction(badScheduleID);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
@@ -64,7 +64,7 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void scheduleSignVanillaWithOptionalPayerSet() throws PreCheckException {
+    void vanillaWithOptionalPayerSet() throws PreCheckException {
         final TransactionBody testTransaction = scheduleSignTransaction(null);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
         subject.preHandle(realPreContext);

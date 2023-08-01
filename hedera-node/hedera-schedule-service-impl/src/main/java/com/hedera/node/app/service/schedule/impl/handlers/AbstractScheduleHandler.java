@@ -53,22 +53,6 @@ abstract class AbstractScheduleHandler {
     protected static final String NULL_CONTEXT_MESSAGE =
             "Dispatcher called the schedule delete handler with a null context; probable internal data corruption.";
 
-    protected static void markRecordSuccess(
-            @NonNull final ScheduleID currentScheduleId,
-            @NonNull final Schedule currentSchedule,
-            @NonNull final HandleContext context) {
-        final ScheduleRecordBuilder recordBuilder = context.recordBuilder(ScheduleRecordBuilder.class);
-        // set the schedule ID for THIS transaction
-        recordBuilder.scheduleID(currentScheduleId);
-        // set the child transaction ID for THIS transaction
-        recordBuilder.scheduledTransactionID(ScheduleUtility.transactionIdForScheduled(currentSchedule));
-        // If all went well, we return SUCCESS.
-        // @note the interface below should always be implemented by all record builders
-        if (recordBuilder instanceof SingleTransactionRecordBuilder base) {
-            base.status(ResponseCodeEnum.SUCCESS);
-        }
-    }
-
     /**
      * A simple record to return both "deemed valid" signatories and remaining primitive keys that must sign.
      * @param updatedSignatories a Set of "deemed valid" signatories, possibly updated with new entries
@@ -132,7 +116,7 @@ abstract class AbstractScheduleHandler {
      *   The alternative is a CopyOnWriteArraySet, which has significant GC performance issues.
      * @param keyCollection an Iterable of Key values.
      * @return a {@link Set<Key>} containing the same contents as the input.  Duplicates and null values are excluded
-     * from this Set.  This Set is always a modifiable set..
+     * from this Set.  This Set is always a modifiable set.
      */
     @NonNull
     private Set<Key> setOfKeys(@Nullable final Iterable<Key> keyCollection) {
@@ -197,14 +181,20 @@ abstract class AbstractScheduleHandler {
      * Given a schedule, consensus time, and long term scheduling enabled flag, validate the transaction
      * meets minimum requirements to be handled.
      * <p>
-     *     This method checks that the schedule is not null, has not been executed, is not deleted, and is not
-     *     expired as of the current consensus time.
-     * </p>
+     * This method checks that, as of the current consensus time, the schedule is
+     * <ul>
+     *     <li>not null</li>
+     *     <li>has a scheduled transaction</li>
+     *      <li>has not been executed</li>
+     *     <li>is not deleted</li>
+     *     <li>has not expired</li>
+     * </ul>
      *
-     * @param scheduleToValidate the schedule to validate.  If this is null then
+     *
+     * @param scheduleToValidate the {@link Schedule} to validate.  If this is null then
      *     {@link ResponseCodeEnum#INVALID_SCHEDULE_ID} is returned.
-     * @param consensusTime the consensus time applicable to this transaction.  If this is null then we assume this is
-     *     a pre-check and do not validate expiration.
+     * @param consensusTime the consensus time {@link Instant} applicable to this transaction.
+     *     If this is null then we assume this is a pre-check and do not validate expiration.
      * @param isLongTermEnabled a flag indicating if long term scheduling is currently enabled. This modifies
      *     which response code is sent when a schedule is expired.
      * @return a response code representing the result of the validation.  This is {@link ResponseCodeEnum#OK}
@@ -218,27 +208,32 @@ abstract class AbstractScheduleHandler {
         final ResponseCodeEnum result;
         final Instant effectiveConsensusTime = Objects.requireNonNullElse(consensusTime, Instant.MIN);
         if (scheduleToValidate != null) {
-            if (!scheduleToValidate.executed()) {
-                if (!scheduleToValidate.deleted()) {
-                    Timestamp expiration = scheduleToValidate.calculatedExpirationTime();
-                    final Instant calculatedExpiration = ScheduleUtility.instantFromTimestamp(expiration, Instant.MAX);
-                    if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
-                        result = ResponseCodeEnum.OK;
-                    } else {
-                        // We are past expiration time
-                        if (!isLongTermEnabled) {
-                            result = ResponseCodeEnum.INVALID_SCHEDULE_ID;
+            if (scheduleToValidate.hasScheduledTransaction()) {
+                if (!scheduleToValidate.executed()) {
+                    if (!scheduleToValidate.deleted()) {
+                        Timestamp expiration = scheduleToValidate.calculatedExpirationTime();
+                        final Instant calculatedExpiration =
+                                ScheduleUtility.instantFromTimestamp(expiration, Instant.MAX);
+                        if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
+                            result = ResponseCodeEnum.OK;
                         } else {
-                            // This is not failure, it indicates the schedule should execute if it can,
-                            // or be removed if it is not executable (i.e. it lacks required signatures)
-                            result = ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+                            // We are past expiration time
+                            if (!isLongTermEnabled) {
+                                result = ResponseCodeEnum.INVALID_SCHEDULE_ID;
+                            } else {
+                                // This is not failure, it indicates the schedule should execute if it can,
+                                // or be removed if it is not executable (i.e. it lacks required signatures)
+                                result = ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
+                            }
                         }
+                    } else {
+                        result = ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
                     }
                 } else {
-                    result = ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
+                    result = ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
                 }
             } else {
-                result = ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+                result = ResponseCodeEnum.INVALID_TRANSACTION;
             }
         } else {
             result = ResponseCodeEnum.INVALID_SCHEDULE_ID;

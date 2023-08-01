@@ -109,7 +109,6 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                             context.verificationFor(scheduleData.adminKeyOrThrow());
                     if (verificationResult.passed()) {
                         scheduleStore.delete(idToDelete, context.consensusNow());
-                        markRecordSuccess(idToDelete, scheduleData, context);
                     } else {
                         throw new HandleException(ResponseCodeEnum.UNAUTHORIZED);
                     }

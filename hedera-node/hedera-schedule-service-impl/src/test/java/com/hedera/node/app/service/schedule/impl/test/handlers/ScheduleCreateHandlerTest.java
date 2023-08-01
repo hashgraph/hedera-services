@@ -42,33 +42,33 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void preHandleScheduleCreateVanilla() throws PreCheckException {
+    void preHandleVanilla() throws PreCheckException {
         realPreContext = new PreHandleContextImpl(
                 mockStoreFactory, scheduleCreateTransaction(payer), testConfig, mockDispatcher);
-        subject.preHandle(realPreContext);
-
-        Assertions.assertEquals(2, realPreContext.requiredNonPayerKeys().size());
-        Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
-        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
-        Assertions.assertEquals(Set.of(payerKey, adminKey), realPreContext.requiredNonPayerKeys());
-        Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
-    }
-
-    @Test
-    void preHandleScheduleCreateVanillaNoAdmin() throws PreCheckException {
-        final TransactionBody transactionToTest = ScheduledTxnFactory.scheduleCreateTxnWith(
-                null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
-        realPreContext = new PreHandleContextImpl(mockStoreFactory, transactionToTest, testConfig, mockDispatcher);
         subject.preHandle(realPreContext);
 
         Assertions.assertEquals(1, realPreContext.requiredNonPayerKeys().size());
         Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
         Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
+        Assertions.assertEquals(Set.of(adminKey), realPreContext.requiredNonPayerKeys());
         Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
     }
 
     @Test
-    void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() throws PreCheckException {
+    void preHandleVanillaNoAdmin() throws PreCheckException {
+        final TransactionBody transactionToTest = ScheduledTxnFactory.scheduleCreateTxnWith(
+                null, "", payer, scheduler, Timestamp.newBuilder().seconds(1L).build());
+        realPreContext = new PreHandleContextImpl(mockStoreFactory, transactionToTest, testConfig, mockDispatcher);
+        subject.preHandle(realPreContext);
+
+        Assertions.assertEquals(0, realPreContext.requiredNonPayerKeys().size());
+        Assertions.assertEquals(1, realPreContext.optionalNonPayerKeys().size());
+        Assertions.assertEquals(schedulerKey, realPreContext.payerKey());
+        Assertions.assertEquals(Set.of(payerKey), realPreContext.optionalNonPayerKeys());
+    }
+
+    @Test
+    void preHandleUsesSamePayerIfScheduledPayerNotSet() throws PreCheckException {
         realPreContext =
                 new PreHandleContextImpl(mockStoreFactory, scheduleCreateTransaction(null), testConfig, mockDispatcher);
         subject.preHandle(realPreContext);
@@ -79,7 +79,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void innerTxnFailsSetsStatus() throws PreCheckException {
+    void preHandleMissingPayerSetsInvalidPayer() throws PreCheckException {
         BDDMockito.given(accountStore.getAccountById(payer)).willReturn(null);
 
         realPreContext = new PreHandleContextImpl(

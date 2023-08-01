@@ -10,14 +10,12 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.node.config;
     requires com.swirlds.common;
     requires com.swirlds.config;
-    requires com.swirlds.virtualmap;
-    requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-    requires com.google.common;
 
     exports com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.schedule.impl.handlers;
+    exports com.hedera.node.app.service.schedule.impl.codec;
 
     provides com.hedera.node.app.service.schedule.ScheduleService with
             com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;

@@ -107,9 +107,6 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     /**
      * This method is called during the handle workflow. It executes the actual transaction.
      *
-     * <p>Please note: the method signature is just a placeholder which is most likely going to
-     * change.
-     *
      * @throws HandleException if the transaction is not handled successfully.
      *     The response code appropriate to the failure reason will be provided via this exception.
      */
@@ -147,7 +144,6 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                         } else {
                             scheduleStore.put(ScheduleUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
-                        markRecordSuccess(idToSign, scheduleToSign, context);
                     } else {
                         // Note, this will never happen, but Sonar static analysis can't figure that out.
                         throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
@@ -156,7 +152,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                     throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
                 }
             } else {
-                throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);
+                throw new HandleException(validationResult);
             }
         } else {
             throw new HandleException(ResponseCodeEnum.INVALID_SCHEDULE_ID);

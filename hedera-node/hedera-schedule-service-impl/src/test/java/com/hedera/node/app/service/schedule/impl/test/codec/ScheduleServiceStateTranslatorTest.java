@@ -58,7 +58,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ScheduleServiceStateTranslatorTest {
+class ScheduleServiceStateTranslatorTest {
     // spotless mangles this section randomly, due to incorrect wrapping rules
     // spotless:off
     // A few random values for fake ed25519 test keys

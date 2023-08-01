@@ -48,7 +48,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
     }
 
     @Test
-    void scheduleDeleteHappyPath() throws InvalidKeyException, PreCheckException {
+    void preHandleHappyPath() throws InvalidKeyException, PreCheckException {
         realPreContext =
                 new PreHandleContextImpl(mockStoreFactory, scheduleDeleteTransaction(), testConfig, mockDispatcher);
 
@@ -59,7 +59,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     // when schedule id to delete is not found, fail with INVALID_SCHEDULE_ID
-    void scheduleDeleteFailsIfScheduleMissing() throws PreCheckException {
+    void failsIfScheduleMissing() throws PreCheckException {
         final TransactionBody schedule = scheduleDeleteTransaction();
         realPreContext = new PreHandleContextImpl(mockStoreFactory, schedule, testConfig, mockDispatcher);
         BDDMockito.given(schedulesById.get(testScheduleID)).willReturn(null);
@@ -69,7 +69,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
 
     @Test
     // when admin key not set in scheduled tx, fail with SCHEDULE_IS_IMMUTABLE
-    void scheduleDeleteScheduleIsImmutable() throws PreCheckException {
+    void failsIfScheduleIsImmutable() throws PreCheckException {
         final TransactionBody schedule = scheduleDeleteTransaction();
         realPreContext = new PreHandleContextImpl(mockStoreFactory, schedule, testConfig, mockDispatcher);
         BDDMockito.given(scheduleInState.adminKey()).willReturn(null);

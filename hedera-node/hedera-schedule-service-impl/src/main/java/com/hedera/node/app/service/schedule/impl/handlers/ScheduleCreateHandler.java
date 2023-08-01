@@ -91,9 +91,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         getSchedulableTransaction(currentTransaction);
         // If we have an explicit payer account for the scheduled child transaction,
         //   add it to optional keys (it might not have signed yet).
-        //   otherwise, add the payer for this transaction to avoid a corner case
         final Key payerKey = getKeyForPayerAccount(scheduleBody, context);
-        if (payerKey != null) context.requireKey(payerKey);
+        if (payerKey != null) context.optionalKey(payerKey);
         if (scheduleBody.hasAdminKey()) {
             // If an admin key is present, it must sign the create transaction.
             context.requireKey(scheduleBody.adminKeyOrThrow());
@@ -128,14 +127,14 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
         if (currentTransaction.hasScheduleCreate()) {
             final Schedule provisionalSchedule = ScheduleUtility.createProvisionalSchedule(
                     currentTransaction, currentConsensusTime, schedulingConfig.maxExpirationFutureSeconds());
-            final List<Schedule> possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
-            if (isPresentIn(possibleDuplicates, provisionalSchedule)) {
-                throw new HandleException(ResponseCodeEnum.DUPLICATE_TRANSACTION);
-            }
             context.attributeValidator().validateMemo(provisionalSchedule.memo());
             final ResponseCodeEnum validationResult =
                     validate(provisionalSchedule, currentConsensusTime, isLongTermEnabled);
             if (validationOk(validationResult)) {
+                final List<Schedule> possibleDuplicates = scheduleStore.getByEquality(provisionalSchedule);
+                if (isPresentIn(possibleDuplicates, provisionalSchedule)) {
+                    throw new HandleException(ResponseCodeEnum.DUPLICATE_TRANSACTION);
+                }
                 // Need to process the child transaction again, to get the *primitive* keys possibly required
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
@@ -152,8 +151,6 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = ScheduleUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
-                // Will never be null, but sonar...
-                markRecordSuccess(finalSchedule.idOrThrow(), finalSchedule, context);
             } else {
                 throw new HandleException(validationResult);
             }

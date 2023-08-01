@@ -20,10 +20,14 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.Schedule.Builder;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
@@ -36,6 +40,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class ScheduleServiceStateTranslator {
     private static final int ED25519_KEY_LENGTH = 32;
@@ -43,30 +48,25 @@ public final class ScheduleServiceStateTranslator {
     private ScheduleServiceStateTranslator() {}
 
     public static Schedule convertScheduleVirtualValueToSchedule(
-            @NonNull
-                    final com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue
-                            scheduleVirtualValue)
+            @NonNull final com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue virtualValue)
             throws IOException {
-        /*
-        @Nullable List<Key> signatories
-         */
-        Builder scheduleBuilder = Schedule.newBuilder()
-                .deleted(scheduleVirtualValue.isDeleted())
-                .executed(scheduleVirtualValue.isExecuted())
-                .waitForExpiry(scheduleVirtualValue.waitForExpiryProvided());
-        final var optionalMemo = scheduleVirtualValue.memo();
+        final Builder scheduleBuilder = Schedule.newBuilder()
+                .deleted(virtualValue.isDeleted())
+                .executed(virtualValue.isExecuted())
+                .waitForExpiry(virtualValue.waitForExpiryProvided());
+        final Optional<String> optionalMemo = virtualValue.memo();
 
         if (optionalMemo.isPresent()) {
             scheduleBuilder.memo(optionalMemo.get());
         }
 
-        if (scheduleVirtualValue.getKey() != null) {
+        if (virtualValue.getKey() != null) {
             scheduleBuilder.id(ScheduleID.newBuilder()
-                    .scheduleNum(scheduleVirtualValue.getKey().getKeyAsLong())
+                    .scheduleNum(virtualValue.getKey().getKeyAsLong())
                     .build());
         }
 
-        final var scheduleAccount = scheduleVirtualValue.schedulingAccount();
+        final EntityId scheduleAccount = virtualValue.schedulingAccount();
         if (scheduleAccount != null) {
             scheduleBuilder.schedulerAccount(AccountID.newBuilder()
                     .accountNum(scheduleAccount.num())
@@ -75,7 +75,7 @@ public final class ScheduleServiceStateTranslator {
                     .build());
         }
 
-        final var payerAccount = scheduleVirtualValue.payer();
+        final EntityId payerAccount = virtualValue.payer();
         if (payerAccount != null) {
             scheduleBuilder.payerAccount(AccountID.newBuilder()
                     .accountNum(payerAccount.num())
@@ -84,12 +84,12 @@ public final class ScheduleServiceStateTranslator {
                     .build());
         }
 
-        final var adminKey = scheduleVirtualValue.adminKey();
+        final Optional<JKey> adminKey = virtualValue.adminKey();
         if (adminKey.isPresent()) {
             scheduleBuilder.adminKey(PbjConverter.asPbjKey(adminKey.get()));
         }
 
-        final var validStart = scheduleVirtualValue.schedulingTXValidStart();
+        final RichInstant validStart = virtualValue.schedulingTXValidStart();
         if (validStart != null) {
             scheduleBuilder.scheduleValidStart(Timestamp.newBuilder()
                     .seconds(validStart.getSeconds())
@@ -97,7 +97,7 @@ public final class ScheduleServiceStateTranslator {
                     .build());
         }
 
-        final var expirationTime = scheduleVirtualValue.expirationTimeProvided();
+        final RichInstant expirationTime = virtualValue.expirationTimeProvided();
         if (expirationTime != null) {
             scheduleBuilder.expirationTimeProvided(Timestamp.newBuilder()
                     .seconds(expirationTime.getSeconds())
@@ -105,7 +105,7 @@ public final class ScheduleServiceStateTranslator {
                     .build());
         }
 
-        final var calculatedExpirationTime = scheduleVirtualValue.calculatedExpirationTime();
+        final RichInstant calculatedExpirationTime = virtualValue.calculatedExpirationTime();
         if (calculatedExpirationTime != null) {
             scheduleBuilder.calculatedExpirationTime(Timestamp.newBuilder()
                     .seconds(calculatedExpirationTime.getSeconds())
@@ -113,28 +113,25 @@ public final class ScheduleServiceStateTranslator {
                     .build());
         }
 
-        final var resolutionTime = scheduleVirtualValue.getResolutionTime();
+        final Timestamp resolutionTime = getResolutionTime(virtualValue);
         if (resolutionTime != null) {
-            scheduleBuilder.resolutionTime(Timestamp.newBuilder()
-                    .seconds(resolutionTime.getSeconds())
-                    .nanos(resolutionTime.getNanos())
-                    .build());
+            scheduleBuilder.resolutionTime(resolutionTime);
         }
 
-        final var scheduledTxn = PbjConverter.toPbj(scheduleVirtualValue.scheduledTxn());
+        final Optional<SchedulableTransactionBody> scheduledTxn = PbjConverter.toPbj(virtualValue.scheduledTxn());
         if (scheduledTxn.isPresent()) {
             scheduleBuilder.scheduledTransaction(scheduledTxn.get());
         }
 
-        final var body = scheduleVirtualValue.bodyBytes();
+        final byte[] body = virtualValue.bodyBytes();
         if (body.length > 0) {
             scheduleBuilder.originalCreateTransaction(TransactionBody.PROTOBUF.parse(BufferedData.wrap(body)));
         }
 
-        var keys = scheduleVirtualValue.signatories();
+        final List<byte[]> keys = virtualValue.signatories();
         if (keys != null && !keys.isEmpty()) {
             final List<Key> keyList = new ArrayList<>();
-            for (byte[] key : keys) {
+            for (final byte[] key : keys) {
                 if (key.length == ED25519_KEY_LENGTH) {
                     keyList.add(Key.newBuilder().ed25519(Bytes.wrap(key)).build());
                 } else {
@@ -147,12 +144,19 @@ public final class ScheduleServiceStateTranslator {
         return scheduleBuilder.build();
     }
 
+    @Nullable
+    private static Timestamp getResolutionTime(@NonNull final ScheduleVirtualValue virtualValue) {
+        if (virtualValue.isDeleted()) return PbjConverter.toPbj(virtualValue.deletionTime());
+        else if (virtualValue.isExecuted()) return PbjConverter.toPbj(virtualValue.executionTime());
+        else return null;
+    }
+
     @NonNull
     public static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue pbjToState(
-            @NonNull ScheduleID scheduleID, @NonNull ReadableScheduleStoreImpl readableScheduleStore) {
+            @NonNull final ScheduleID scheduleID, @NonNull final ReadableScheduleStoreImpl readableScheduleStore) {
         Objects.requireNonNull(scheduleID);
         Objects.requireNonNull(readableScheduleStore);
-        final var optionalSchedule = readableScheduleStore.get(scheduleID);
+        final Schedule optionalSchedule = readableScheduleStore.get(scheduleID);
         if (optionalSchedule == null) {
             throw new IllegalArgumentException("Schedule not found");
         }
@@ -161,16 +165,16 @@ public final class ScheduleServiceStateTranslator {
 
     @NonNull
     public static List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> pbjToState(
-            long expiration, @NonNull ReadableScheduleStoreImpl readableScheduleStore) {
+            final long expiration, @NonNull final ReadableScheduleStoreImpl readableScheduleStore) {
         Objects.requireNonNull(readableScheduleStore);
         final List<Schedule> expiringSchedules = readableScheduleStore.getByExpirationSecond(expiration);
         if (expiringSchedules == null || expiringSchedules.isEmpty()) {
             throw new IllegalArgumentException("Schedule not found base on expirationTime");
         }
 
-        List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> schedules =
+        final List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> schedules =
                 new ArrayList<>();
-        for (Schedule schedule : expiringSchedules) {
+        for (final Schedule schedule : expiringSchedules) {
             schedules.add(pbjToState(schedule));
         }
 
@@ -179,7 +183,7 @@ public final class ScheduleServiceStateTranslator {
 
     @NonNull
     public static List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> pbjToState(
-            @NonNull Schedule schedule, @NonNull ReadableScheduleStoreImpl readableScheduleStore)
+            @NonNull final Schedule schedule, @NonNull final ReadableScheduleStoreImpl readableScheduleStore)
             throws IllegalArgumentException {
         Objects.requireNonNull(schedule);
         Objects.requireNonNull(readableScheduleStore);
@@ -188,9 +192,9 @@ public final class ScheduleServiceStateTranslator {
             throw new IllegalArgumentException("Schedule not found base on expirationTime");
         }
 
-        List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> schedules =
+        final List<com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue> schedules =
                 new ArrayList<>();
-        for (Schedule scheduleElm : optionalSchedules) {
+        for (final Schedule scheduleElm : optionalSchedules) {
             schedules.add(pbjToState(scheduleElm));
         }
 
@@ -199,11 +203,11 @@ public final class ScheduleServiceStateTranslator {
 
     @NonNull
     public static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue pbjToState(
-            @NonNull Schedule schedule) {
+            @NonNull final Schedule schedule) {
         Objects.requireNonNull(schedule);
         Objects.requireNonNull(schedule.id());
 
-        final var body = PbjConverter.asBytes(
+        final byte[] body = PbjConverter.asBytes(
                 TransactionBody.PROTOBUF, Objects.requireNonNull(schedule.originalCreateTransaction()));
         com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue scheduleVirtualValue =
                 new com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue();
@@ -214,7 +218,7 @@ public final class ScheduleServiceStateTranslator {
         }
 
         if (schedule.resolutionTime() != null) {
-            final var resolutionTime = instantFromTimestamp(schedule.resolutionTime(), Instant.MAX);
+            final Instant resolutionTime = instantFromTimestamp(schedule.resolutionTime(), Instant.MAX);
             if (schedule.deleted()) {
                 scheduleVirtualValue.markDeleted(resolutionTime);
             }
@@ -225,12 +229,11 @@ public final class ScheduleServiceStateTranslator {
 
         scheduleVirtualValue.setKey(EntityNumVirtualKey.fromLong(schedule.id().scheduleNum()));
 
-        var keys = schedule.signatories();
+        final List<Key> keys = schedule.signatories();
 
         if (keys != null && !keys.isEmpty()) {
-            for (Key key : keys) {
-                Bytes keyBytes =
-                        key.hasEd25519() ? key.ed25519() : key.hasEcdsaSecp256k1() ? key.ecdsaSecp256k1() : null;
+            for (final Key key : keys) {
+                final Bytes keyBytes = getKeyBytes(key);
                 if (keyBytes != null) {
                     scheduleVirtualValue.witnessValidSignature(keyBytes.toByteArray());
                 }
@@ -240,8 +243,16 @@ public final class ScheduleServiceStateTranslator {
         return scheduleVirtualValue;
     }
 
+    @Nullable
+    private static Bytes getKeyBytes(@NonNull final Key key) {
+        if (key.hasEd25519()) return key.ed25519();
+        else if (key.hasEcdsaSecp256k1()) return key.ecdsaSecp256k1();
+        else return null;
+    }
+
     @NonNull
-    private static Instant instantFromTimestamp(@Nullable final Timestamp timestampValue, Instant defaultValue) {
+    private static Instant instantFromTimestamp(
+            @Nullable final Timestamp timestampValue, @NonNull final Instant defaultValue) {
         return timestampValue != null
                 ? Instant.ofEpochSecond(timestampValue.seconds(), timestampValue.nanos())
                 : defaultValue;

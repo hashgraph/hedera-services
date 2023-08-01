@@ -276,7 +276,7 @@ public final class ScheduleUtility {
         // payer on parent transaction ID will also never be null...
         final AccountID payerAccount = valueInState.payerAccountOrElse(parentTransactionId.accountIDOrThrow());
         // Scheduled transaction ID is the same as its parent except
-        //     scheduled is set true, payer *might* be modified, and the nonce is incremented.
+        //     if scheduled is set true, payer *might* be modified, and the nonce is incremented.
         final TransactionID.Builder builder = TransactionID.newBuilder().accountID(payerAccount);
         builder.transactionValidStart(parentTransactionId.transactionValidStart());
         builder.scheduled(true).nonce(parentTransactionId.nonce() + 1);
@@ -302,8 +302,8 @@ public final class ScheduleUtility {
             return new Timestamp(currentPlusMaxLife.getEpochSecond(), currentPlusMaxLife.getNano());
         }
     }
-
-    // TODO This requires rebuilding the equality virtual map on migration,
+    // Create issue and fill in below.
+    // @todo('7773') This requires rebuilding the equality virtual map on migration,
     //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
     @SuppressWarnings("UnstableApiUsage")
     public static String calculateStringHash(final @NonNull Schedule scheduleToHash) {
