@@ -117,7 +117,7 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("onDiskKeySerializerClassId is as expected")
     void onDiskKeySerializerClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "OnDiskKeySerializer");
+        final var expected = StateUtils.computeClassId(md, "OnDiskMerkleDbKeySerializer");
         assertThat(expected).isEqualTo(md.onDiskKeySerializerClassId());
     }
 
@@ -125,7 +125,7 @@ class StateMetadataTest extends MerkleTestBase {
     @DisplayName("onDiskValueSerializerClassId is as expected")
     void onDiskValueSerializerClassId() {
         final var md = new StateMetadata<>(FIRST_SERVICE, schema, def);
-        final var expected = StateUtils.computeClassId(md, "OnDiskValueSerializer");
+        final var expected = StateUtils.computeClassId(md, "OnDiskMerkleDbValueSerializer");
         assertThat(expected).isEqualTo(md.onDiskValueSerializerClassId());
     }
 }

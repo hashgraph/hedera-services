@@ -24,9 +24,9 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.*;
 import com.hedera.node.app.state.merkle.MerkleHederaState.MerkleWritableStates;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskMerkleDbKeySerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskMerkleDbValueSerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.memory.InMemoryWritableKVState;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
@@ -36,12 +36,13 @@ import com.hedera.node.app.state.merkle.singleton.ValueLeaf;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -186,21 +187,18 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
                     hederaState.putServiceStateIfAbsent(md, map);
                 } else {
-                    final var ks = new OnDiskKeySerializer(md);
-                    final var ds = new JasperDbBuilder()
-                            .maxNumOfKeys(def.maxKeysHint())
-                            .keySerializer(ks)
-                            .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer(
-                                    (short) 1,
-                                    DataFileCommon.VARIABLE_DATA_SIZE,
-                                    ks,
-                                    (short) 1,
-                                    DataFileCommon.VARIABLE_DATA_SIZE,
-                                    new OnDiskValueSerializer(md),
-                                    false));
-
+                    final MerkleDbTableConfig<OnDiskKey, OnDiskValue> tableConfig = new MerkleDbTableConfig<>(
+                            (short) 1,
+                            DigestType.SHA_384,
+                            (short) 1,
+                            new OnDiskMerkleDbKeySerializer<>(md),
+                            (short) 1,
+                            new OnDiskMerkleDbValueSerializer<>(md));
+                    tableConfig.maxNumberOfKeys(def.maxKeysHint());
                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                     // PREFER_DISK_BASED_INDICES = false
+                    final VirtualDataSourceBuilder<OnDiskKey, OnDiskValue> ds =
+                            new MerkleDbDataSourceBuilder<>(tableConfig);
                     final var label = StateUtils.computeLabel(serviceName, stateKey);
                     hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
                 }
@@ -339,12 +337,12 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     new ClassConstructorPair(InMemoryValue.class, () -> new InMemoryValue(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(OnDiskKey.class, () -> new OnDiskKey<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskKeySerializer.class, () -> new OnDiskKeySerializer<>(md)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskMerkleDbKeySerializer.class, () -> new OnDiskMerkleDbKeySerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(OnDiskValue.class, () -> new OnDiskValue<>(md)));
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(OnDiskValueSerializer.class, () -> new OnDiskValueSerializer<>(md)));
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    OnDiskMerkleDbValueSerializer.class, () -> new OnDiskMerkleDbValueSerializer<>(md)));
             constructableRegistry.registerConstructable(
                     new ClassConstructorPair(SingletonNode.class, () -> new SingletonNode<>(md, null)));
             constructableRegistry.registerConstructable(

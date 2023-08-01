@@ -35,6 +35,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.constructable.RuntimeConstructable;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.MerkleDb;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -53,6 +54,8 @@ class SerializationTest extends MerkleTestBase {
         setupConstructableRegistry();
 
         this.dir = TemporaryFileBuilder.buildTemporaryDirectory();
+        // Use a fresh database dir for every test run
+        MerkleDb.setDefaultPath(null);
         this.config = Mockito.mock(Configuration.class);
         final var hederaConfig = Mockito.mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);

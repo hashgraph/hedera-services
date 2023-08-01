@@ -34,6 +34,7 @@ import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.merkledb.MerkleDb;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.Set;
@@ -63,6 +64,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         config = Mockito.mock(Configuration.class);
         final var hederaConfig = Mockito.mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
+        // Use a fresh MerkleDb instance for every test run
+        MerkleDb.setDefaultPath(null);
     }
 
     @Nested

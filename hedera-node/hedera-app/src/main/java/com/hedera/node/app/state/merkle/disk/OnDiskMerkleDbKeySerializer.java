@@ -16,17 +16,11 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
-import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
-
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
-import com.swirlds.jasperdb.files.DataFileCommon;
-import com.swirlds.jasperdb.files.hashmap.KeySerializer;
+import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -45,13 +39,13 @@ import java.util.Objects;
  *
  * @param <K>
  */
-public final class OnDiskKeySerializer<K>
-        implements KeySerializer<OnDiskKey<K>>, SelfSerializableSupplier<OnDiskKey<K>> {
+public final class OnDiskMerkleDbKeySerializer<K> implements KeySerializer<OnDiskKey<K>> {
+
     /** This is a hint for virtual maps, but isn't actually useful. We just pick some size. */
     private static final int TYPICAL_SIZE = 256;
 
     @Deprecated(forRemoval = true)
-    private static final long CLASS_ID = 0x9992382838283411L;
+    private static final long CLASS_ID = 0x9992382838283412L;
 
     private final long classId;
     private final Codec<K> codec;
@@ -59,20 +53,45 @@ public final class OnDiskKeySerializer<K>
 
     // Default constructor provided for ConstructableRegistry, TO BE REMOVED ASAP
     @Deprecated(forRemoval = true)
-    public OnDiskKeySerializer() {
+    public OnDiskMerkleDbKeySerializer() {
         classId = CLASS_ID; // BAD!!
         codec = null;
         md = null;
     }
 
-    public OnDiskKeySerializer(@NonNull final StateMetadata<K, ?> md) {
+    public OnDiskMerkleDbKeySerializer(@NonNull final StateMetadata<K, ?> md) {
         this.classId = md.onDiskKeySerializerClassId();
         this.md = Objects.requireNonNull(md);
         this.codec = md.stateDefinition().keyCodec();
     }
 
+    // Serializer info
+
+    /** {@inheritDoc} */
     @Override
-    public int getSerializedSize(long dataVersion) {
+    public long getClassId() {
+        return classId;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int getVersion() {
+        return 1;
+    }
+
+    // Key info
+
+    /** {@inheritDoc} */
+    @Override
+    public long getCurrentDataVersion() {
+        return 1;
+    }
+
+    // Key serialization
+
+    /** {@inheritDoc} */
+    @Override
+    public int getSerializedSize() {
         // We're going to use variable size keys, always. MerkleDB was designed with
         // fast paths if you knew you were using a Long as the key -- but we really
         // cannot use that. The problem manifests itself with state proofs. We wanted
@@ -95,77 +114,63 @@ public final class OnDiskKeySerializer<K>
         // size, and protobuf would either be fixed > 8 bytes, or variable sized, and being
         // fixed but greater than 8 bytes doesn't help us in performance, so we will
         // have to use variable size always.
-        return DataFileCommon.VARIABLE_DATA_SIZE;
+        return VARIABLE_DATA_SIZE;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int getTypicalSerializedSize() {
+        // Future work: check mainnet states about actual average virtual key size
         return TYPICAL_SIZE;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public long getCurrentDataVersion() {
-        return 1;
+    public int serialize(@NonNull final OnDiskKey<K> key, @NonNull final ByteBuffer buffer) throws IOException {
+        // This creates a very short-lived BufferedData object, which increases load on GC.
+        // It will be streamlined in future MerkleDb versions
+        final BufferedData out = BufferedData.wrap(buffer);
+        final long originalPos = out.position();
+        out.skip(Integer.BYTES); // will be used later to store the size
+        codec.write(key.getKey(), out);
+        final long finalPos = out.position();
+        final int size = (int) (finalPos - originalPos);
+        // It would be great to just call out.setInt(originalPos, size), but BufferedData doesn't provide
+        // such API yet. See https://github.com/hashgraph/pbj/issues/79 for details. For now, assuming
+        // buffer and out share positions, use ByteBuffer.putInt() instead
+        buffer.putInt((int) originalPos, size); // now update the size
+        return size;
     }
 
+    // Key deserialization
+
+    /** {@inheritDoc} */
     @Override
-    public int deserializeKeySize(@NonNull final ByteBuffer byteBuffer) {
-        try {
-            return codec.measure(BufferedData.wrap(byteBuffer)) + 4;
-        } catch (IOException e) {
-            // Maybe log here?
-            return -1;
-        }
+    public int deserializeKeySize(@NonNull final ByteBuffer buffer) {
+        return buffer.getInt(buffer.position()); // don't mess up with the current position
     }
 
+    /** {@inheritDoc} */
     @Override
-    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer byteBuffer, final long ignored) throws IOException {
-        final var buff = BufferedData.wrap(byteBuffer);
-        buff.skip(4); // skip the length we wrote
-        final var k = codec.parse(buff);
+    public OnDiskKey<K> deserialize(@NonNull final ByteBuffer buffer, final long version) throws IOException {
+        // This creates a very short-lived BufferedData object, which increases load on GC.
+        // It will be streamlined in future MerkleDb versions
+        final BufferedData in = BufferedData.wrap(buffer);
+        in.skip(Integer.BYTES); // skip the length we wrote
+        final K k = codec.parse(in);
         Objects.requireNonNull(k);
         return new OnDiskKey<>(md, k);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public int serialize(@Nullable final OnDiskKey<K> key, @NonNull final SerializableDataOutputStream out)
-            throws IOException {
-        return writeToStream(out, codec, Objects.requireNonNull(key).getKey());
-    }
-
-    @Override
-    public boolean equals(@NonNull final ByteBuffer byteBuffer, final int ignored, @Nullable final OnDiskKey<K> key)
+    public boolean equals(@NonNull final ByteBuffer buffer, final int version, @Nullable final OnDiskKey<K> key)
             throws IOException {
         // I really don't have a fast path for this. Which is very problematic for performance.
         // All we can do is serialize one or deserialize the other! It would be nice if PBJ
         // had a special method for this, but then we'd have to pipe it through all our APIs again
         // or create some kind of Codec object with all this stuff on it.
-        final var other = deserialize(byteBuffer, 0);
+        final OnDiskKey<K> other = deserialize(buffer, version);
         return other.equals(key);
-    }
-
-    @Override
-    public long getClassId() {
-        return classId;
-    }
-
-    @Override
-    public int getVersion() {
-        return 1;
-    }
-
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        // This class has nothing to serialize
-    }
-
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored) throws IOException {
-        // This class has nothing to deserialize
-    }
-
-    @Override
-    public OnDiskKey<K> get() {
-        return new OnDiskKey<>(md);
     }
 }

@@ -21,7 +21,6 @@ import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
@@ -97,6 +96,8 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException("Should never be called");
+        /*
         final var output = BufferedData.wrap(byteBuffer);
         output.skip(4);
         codec.write(value, output);
@@ -104,6 +105,7 @@ public class OnDiskValue<V> implements VirtualValue {
         output.position(0);
         output.writeInt((int) pos - 4);
         output.position(pos);
+        */
     }
 
     /** {@inheritDoc} */
@@ -115,9 +117,12 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
+        throw new UnsupportedOperationException("Should never be called");
+        /*
         final var input = BufferedData.wrap(byteBuffer);
         input.skip(4); // skip the length
         value = codec.parse(input);
+        */
     }
 
     /** {@inheritDoc} */

@@ -38,18 +38,20 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
-import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskMerkleDbKeySerializer;
+import com.hedera.node.app.state.merkle.disk.OnDiskMerkleDbValueSerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
-import com.hedera.node.app.state.merkle.disk.OnDiskValueSerializer;
+import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
-import com.swirlds.jasperdb.JasperDbBuilder;
-import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
-import com.swirlds.jasperdb.files.DataFileCommon;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -130,20 +132,18 @@ class VirtualMapLikeAdapterTest {
         final var nftsDef = schema.statesToCreate().iterator().next();
         metadata = new StateMetadata<>("REAL", schema, nftsDef);
 
-        final var keySerializer = new OnDiskKeySerializer(metadata);
-        final var valueSerializer = new OnDiskValueSerializer(metadata);
-        final var ds = new JasperDbBuilder<>()
-                .maxNumOfKeys(1_024)
-                .storageDir(TemporaryFileBuilder.buildTemporaryDirectory("jasperdb"))
-                .keySerializer(keySerializer)
-                .virtualLeafRecordSerializer(new VirtualLeafRecordSerializer<>(
+        final MerkleDbTableConfig<OnDiskKey<UniqueTokenKey>, OnDiskValue<UniqueTokenValue>> tableConfig =
+                new MerkleDbTableConfig<>(
                         (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        keySerializer,
+                        DigestType.SHA_384,
                         (short) 1,
-                        DataFileCommon.VARIABLE_DATA_SIZE,
-                        valueSerializer,
-                        false));
+                        new OnDiskMerkleDbKeySerializer<>(metadata),
+                        (short) 1,
+                        new OnDiskMerkleDbValueSerializer<>(metadata));
+        tableConfig.maxNumberOfKeys(1_024);
+        final Path storageDir = TemporaryFileBuilder.buildTemporaryDirectory("merkledb");
+        final VirtualDataSourceBuilder<OnDiskKey<UniqueTokenKey>, OnDiskValue<UniqueTokenValue>> ds =
+                new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         real = new VirtualMap<>("REAL", ds);
         subject = VirtualMapLikeAdapter.unwrapping(metadata, real);
     }

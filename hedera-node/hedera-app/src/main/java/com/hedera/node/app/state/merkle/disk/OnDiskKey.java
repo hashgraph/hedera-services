@@ -21,7 +21,6 @@ import static com.hedera.node.app.state.merkle.StateUtils.writeToStream;
 
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -63,7 +62,7 @@ public final class OnDiskKey<K> implements VirtualKey {
     }
 
     /**
-     * Creates a new OnDiskKey. Used by {@link OnDiskKeySerializer}.
+     * Creates a new OnDiskKey.
      *
      * @param md The state metadata
      */
@@ -96,6 +95,8 @@ public final class OnDiskKey<K> implements VirtualKey {
 
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
+        throw new UnsupportedOperationException("Should never be called");
+        /*
         final var output = BufferedData.wrap(byteBuffer);
         output.skip(4);
         codec.write(key, output);
@@ -103,13 +104,17 @@ public final class OnDiskKey<K> implements VirtualKey {
         output.position(0);
         output.writeInt((int) pos - 4);
         output.position(pos);
+        */
     }
 
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
+        throw new UnsupportedOperationException("Should never be called");
+        /*
         final var buf = BufferedData.wrap(byteBuffer);
         buf.skip(4);
         key = codec.parse(buf);
+        */
     }
 
     @Override

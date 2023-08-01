@@ -36,9 +36,9 @@ public final class StateMetadata<K, V> {
     // this class ID cannot change in the future, otherwise state already in the saved state file
     // will not be retrievable!
     private static final String ON_DISK_KEY_CLASS_ID_SUFFIX = "OnDiskKey";
-    private static final String ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskKeySerializer";
+    private static final String ON_DISK_KEY_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskMerkleDbKeySerializer";
     private static final String ON_DISK_VALUE_CLASS_ID_SUFFIX = "OnDiskValue";
-    private static final String ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskValueSerializer";
+    private static final String ON_DISK_VALUE_SERIALIZER_CLASS_ID_SUFFIX = "OnDiskMerkleDbValueSerializer";
     private static final String IN_MEMORY_VALUE_CLASS_ID_SUFFIX = "InMemoryValue";
     private static final String SINGLETON_CLASS_ID_SUFFIX = "SingletonLeaf";
 
