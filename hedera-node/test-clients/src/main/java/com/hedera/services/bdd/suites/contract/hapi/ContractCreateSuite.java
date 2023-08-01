@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
@@ -79,6 +81,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -122,6 +125,7 @@ public class ContractCreateSuite extends HapiSuite {
                 vanillaSuccess(),
                 blockTimestampChangesWithinFewSeconds(),
                 contractWithAutoRenewNeedSignatures(),
+                newAccountsCanUsePureContractIdKey(),
                 createContractWithStakingFields());
     }
 
@@ -532,6 +536,26 @@ public class ContractCreateSuite extends HapiSuite {
                                                                 .propertiesInheritedFrom(PARENT_INFO)))
                                                 .logs(inOrder()))),
                         contractListWithPropertiesInheritedFrom("createChildCallResult", 1, PARENT_INFO));
+    }
+
+    HapiSpec newAccountsCanUsePureContractIdKey() {
+        final var contract = "CreateTrivial";
+        final var contractControlled = "contractControlled";
+        return defaultHapiSpec("NewAccountsCanUsePureContractIdKey")
+                .given(
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(contractControlled).keyShape(CONTRACT.signedWith(contract)))
+                .when()
+                .then(withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var contractIdKey = Key.newBuilder()
+                            .setContractID(registry.getContractId(contract))
+                            .build();
+                    final var keyCheck =
+                            getAccountInfo(contractControlled).has(accountWith().key(contractIdKey));
+                    allRunFor(spec, keyCheck);
+                }));
     }
 
     HapiSpec contractWithAutoRenewNeedSignatures() {

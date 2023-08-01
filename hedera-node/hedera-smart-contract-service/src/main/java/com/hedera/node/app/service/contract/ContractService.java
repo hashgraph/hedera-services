@@ -17,10 +17,8 @@
 package com.hedera.node.app.service.contract;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ServiceLoader;
 import java.util.Set;
 
 /**
@@ -29,7 +27,6 @@ import java.util.Set;
  * Contract Service</a>.
  */
 public interface ContractService extends Service {
-
     String NAME = "ContractService";
 
     @NonNull
@@ -42,15 +39,5 @@ public interface ContractService extends Service {
     @Override
     default Set<RpcServiceDefinition> rpcDefinitions() {
         return Set.of(SmartContractServiceDefinition.INSTANCE);
-    }
-
-    /**
-     * Returns the concrete implementation instance of the service
-     *
-     * @return the implementation instance
-     */
-    @NonNull
-    static ContractService getInstance() {
-        return ServiceFactory.loadService(ContractService.class, ServiceLoader.load(ContractService.class));
     }
 }
