@@ -15,7 +15,6 @@ module com.hedera.node.app.spi {
     exports com.hedera.node.app.spi.records;
     exports com.hedera.node.app.spi.signatures;
     exports com.hedera.node.app.spi.validation;
-    exports com.hedera.node.app.spi.meta.bni;
     exports com.hedera.node.app.spi.workflows.record;
     exports com.hedera.node.app.spi.state.codec;
 }

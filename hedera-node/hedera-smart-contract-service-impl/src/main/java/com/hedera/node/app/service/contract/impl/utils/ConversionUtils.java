@@ -24,8 +24,9 @@ import com.hedera.hapi.node.contract.ContractLoginfo;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -64,6 +65,20 @@ public class ConversionUtils {
             pbjLogs.add(pbjLogFrom(log));
         }
         return pbjLogs;
+    }
+
+    /**
+     * Wraps the first 32 bytes of the given SHA-384 {@link com.swirlds.common.crypto.Hash hash} in a Besu {@link Hash}.
+     *
+     * @param sha384Hash the SHA-384 hash
+     * @return the first 32 bytes as a Besu {@link Hash}
+     */
+    public static org.hyperledger.besu.datatypes.Hash ethHashFrom(
+            @NonNull final com.hedera.pbj.runtime.io.buffer.Bytes sha384Hash) {
+        requireNonNull(sha384Hash);
+        final byte[] prefixBytes = new byte[32];
+        sha384Hash.getBytes(0, prefixBytes, 0, prefixBytes.length);
+        return org.hyperledger.besu.datatypes.Hash.wrap(Bytes32.wrap(prefixBytes));
     }
 
     /**
@@ -158,14 +173,15 @@ public class ConversionUtils {
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
-     * within the given {@link Dispatch}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
+     * within the given {@link HandleHederaNativeOperations}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
      * and does not correspond to a known Hedera entity.
      *
      * @param address  the EVM address
-     * @param dispatch the dispatch
+     * @param extFrameScope the {@link HandleHederaNativeOperations} to use for resolving aliases
      * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
      */
-    public static long maybeMissingNumberOf(@NonNull final Address address, @NonNull final Dispatch dispatch) {
+    public static long maybeMissingNumberOf(
+            @NonNull final Address address, @NonNull final HederaNativeOperations extFrameScope) {
         final var explicit = address.toArrayUnsafe();
         if (isLongZeroAddress(explicit)) {
             return longFrom(
@@ -179,7 +195,7 @@ public class ConversionUtils {
                     explicit[19]);
         } else {
             final var alias = aliasFrom(address);
-            final var maybeNumber = dispatch.resolveAlias(alias);
+            final var maybeNumber = extFrameScope.resolveAlias(alias);
             return (maybeNumber == null) ? MISSING_ENTITY_NUMBER : maybeNumber.number();
         }
     }
@@ -311,6 +327,17 @@ public class ConversionUtils {
      */
     public static @NonNull UInt256 pbjToTuweniUInt256(@NonNull final com.hedera.pbj.runtime.io.buffer.Bytes bytes) {
         return (bytes.length() == 0) ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(clampedBytes(bytes, 0, 32)));
+    }
+
+    /**
+     * Returns the PBJ bloom for a list of Besu {@link Log}s.
+     *
+     * @param logs the Besu {@link Log}s
+     * @return the PBJ bloom
+     */
+    public static com.hedera.pbj.runtime.io.buffer.Bytes bloomForAll(@NonNull final List<Log> logs) {
+        return com.hedera.pbj.runtime.io.buffer.Bytes.wrap(
+                LogsBloomFilter.builder().insertLogs(logs).build().toArray());
     }
 
     private static byte[] clampedBytes(

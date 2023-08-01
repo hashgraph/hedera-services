@@ -40,6 +40,8 @@ public record ContractsConfig(
         // "TokenAssociateToAccount,TokenDissociateFromAccount,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenAccountWipe,TokenBurn,TokenDelete,TokenMint,TokenUnpause,TokenPause,TokenCreate,TokenUpdate,ContractCall,CryptoTransfer") Set<HederaFunctionality> allowSystemUseOfHapiSigs,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long maxNumWithHapiSigsAccess,
         // @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
+        @ConfigProperty(value = "nonces.externalization.enabled", defaultValue = "true") @NetworkProperty
+                boolean noncesExternalizationEnabled,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enforceCreationThrottle,
         @ConfigProperty(defaultValue = "15000000") @NetworkProperty long maxGasPerSec,
         @ConfigProperty(value = "maxKvPairs.aggregate", defaultValue = "500000000") @NetworkProperty
@@ -74,4 +76,4 @@ public record ContractsConfig(
                 boolean precompileHrcFacadeAssociateEnabled,
         @ConfigProperty(value = "evm.version.dynamic", defaultValue = "false") @NetworkProperty
                 boolean evmVersionDynamic,
-        @ConfigProperty(value = "evm.version", defaultValue = "v0.34") @NetworkProperty String evmVersion) {}
+        @ConfigProperty(value = "evm.version", defaultValue = "v0.38") @NetworkProperty String evmVersion) {}

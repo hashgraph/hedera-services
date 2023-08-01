@@ -16,15 +16,15 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.app.spi.meta.bni.Scope;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -34,7 +34,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class LegibleStorageManager {
-    @Singleton
+    @Inject
     public LegibleStorageManager() {}
 
     /**
@@ -44,18 +44,18 @@ public class LegibleStorageManager {
      *
      * <p>Besides updating the first keys of these linked lists in the scoped accounts, also updates the
      * slots used per contract via
-     * {@link com.hedera.node.app.spi.meta.bni.Dispatch#updateStorageMetadata(long, Bytes, int)}.
+     * {@link HandleHederaOperations#updateStorageMetadata(long, Bytes, int)}.
      *
      * @param scope the scope of the current transaction
      * @param changes the pending changes to storage values
      * @param sizeChanges the pending changes to storage sizes
-     * @param storage the writable storage K/V state
+     * @param store the writable state store
      */
     public void rewrite(
-            @NonNull final Scope scope,
+            @NonNull final HederaOperations scope,
             @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
-            @NonNull final WritableKVState<SlotKey, SlotValue> storage) {
+            @NonNull final ContractStateStore store) {
         // TODO - refactor mono-service code for this before perf tests
     }
 }

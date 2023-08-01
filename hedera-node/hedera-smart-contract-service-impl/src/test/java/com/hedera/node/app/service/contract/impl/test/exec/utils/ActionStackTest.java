@@ -32,7 +32,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DA
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONTRACT_CODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CREATE_ACTION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_PRECOMPILE_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.LAZY_CREATE_ACTION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MISSING_ADDRESS_CALL_ACTION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
@@ -146,7 +146,7 @@ class ActionStackTest {
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(parentFrame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
         given(parentFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
-        given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+        given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
         given(helper.prettyPrint(MISSING_ADDRESS_CALL_ACTION)).willReturn("<pretty-printed action>");
@@ -175,7 +175,7 @@ class ActionStackTest {
         given(parentFrame.getOriginatorAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(parentFrame.getSenderAddress()).willReturn(EIP_1014_ADDRESS);
         given(parentFrame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
-        given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+        given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
         given(parentFrame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
 
@@ -222,13 +222,13 @@ class ActionStackTest {
         given(parentFrame.getState()).willReturn(MessageFrame.State.EXCEPTIONAL_HALT);
         final var pretendPrecompileAction = CALL_ACTION
                 .copyBuilder()
-                .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
+                .targetedAddress(tuweniToPbjBytes(HTS_SYSTEM_CONTRACT_ADDRESS))
                 .build();
         final var wrappedAction = new ActionWrapper(pretendPrecompileAction);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
-        given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+        given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
 
         subject.finalizeLastStackActionAsPrecompile(parentFrame, SYSTEM, ActionStack.Validation.ON);
 
@@ -237,7 +237,7 @@ class ActionStackTest {
         final var finalAction = wrappedAction.get();
         assertEquals(
                 ContractID.newBuilder()
-                        .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
+                        .contractNum(ConversionUtils.numberOfLongZero(HTS_SYSTEM_CONTRACT_ADDRESS))
                         .build(),
                 finalAction.recipientContract());
         assertEquals(SYSTEM, finalAction.callType());
@@ -252,13 +252,13 @@ class ActionStackTest {
         given(parentFrame.getState()).willReturn(MessageFrame.State.COMPLETED_FAILED);
         final var pretendPrecompileAction = CALL_ACTION
                 .copyBuilder()
-                .targetedAddress(tuweniToPbjBytes(HTS_PRECOMPILE_ADDRESS))
+                .targetedAddress(tuweniToPbjBytes(HTS_SYSTEM_CONTRACT_ADDRESS))
                 .build();
         final var wrappedAction = new ActionWrapper(pretendPrecompileAction);
         allActions.add(wrappedAction);
         actionsStack.push(wrappedAction);
         given(parentFrame.getType()).willReturn(MessageFrame.Type.MESSAGE_CALL);
-        given(parentFrame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+        given(parentFrame.getContractAddress()).willReturn(HTS_SYSTEM_CONTRACT_ADDRESS);
         given(helper.isValid(any())).willReturn(true);
 
         subject.finalizeLastStackActionAsPrecompile(parentFrame, PRECOMPILE, ActionStack.Validation.ON);
@@ -268,7 +268,7 @@ class ActionStackTest {
         final var finalAction = wrappedAction.get();
         assertEquals(
                 ContractID.newBuilder()
-                        .contractNum(ConversionUtils.numberOfLongZero(HTS_PRECOMPILE_ADDRESS))
+                        .contractNum(ConversionUtils.numberOfLongZero(HTS_SYSTEM_CONTRACT_ADDRESS))
                         .build(),
                 finalAction.recipientContract());
         assertEquals(PRECOMPILE, finalAction.callType());
