@@ -28,7 +28,12 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.system.*;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.common.system.state.notifications.NewRecoveredStateNotification;
@@ -141,7 +146,7 @@ public final class EventRecoveryWorkflow {
                     resultingStateDirectory);
 
             SignedStateFileWriter.writeSignedStateFilesToDirectory(
-                    selfId, resultingStateDirectory, resultingState.get());
+                    selfId, resultingStateDirectory, resultingState.get(), platformContext.getConfiguration());
 
             updateEmergencyRecoveryFile(
                     resultingStateDirectory, initialState.get().getConsensusTimestamp());
