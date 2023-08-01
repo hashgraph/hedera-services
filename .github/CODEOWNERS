@@ -46,6 +46,8 @@
 
 # Platform SDK Modules
 /platform-sdk/platform-apps/                    @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-base/                     @hashgraph/platform-base
+/platform-sdk/swirlds-benchmarks/               @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-cli/                      @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-common/                   @hashgraph/platform-hashgraph @hashgraph/platform-base @hashgraph/platform-data
 /platform-sdk/swirlds-config-*/                 @hashgraph/platform-base
@@ -55,6 +57,7 @@
 /platform-sdk/swirlds-logging/                  @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-merkle/                   @hashgraph/platform-data @hashgraph/platform-architects
 /platform-sdk/swirlds-platform-core/            @hashgraph/platform-hashgraph
+/platform-sdk/swirlds-sign-tool/                @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-unit-tests/common/        @hashgraph/platform-hashgraph @hashgraph/platform-base
 /platform-sdk/swirlds-unit-tests/core/          @hashgraph/platform-hashgraph
 /platform-sdk/swirlds-unit-tests/structures/    @hashgraph/platform-data @hashgraph/platform-architects
