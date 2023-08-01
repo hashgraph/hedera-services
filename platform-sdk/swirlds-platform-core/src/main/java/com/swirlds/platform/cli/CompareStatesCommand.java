@@ -154,7 +154,7 @@ public final class CompareStatesCommand extends AbstractCommand {
     public Integer call() throws IOException {
         BootstrapUtils.setupConstructableRegistry();
 
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(configurationPaths);
         final PlatformContext platformContext =
                 new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
