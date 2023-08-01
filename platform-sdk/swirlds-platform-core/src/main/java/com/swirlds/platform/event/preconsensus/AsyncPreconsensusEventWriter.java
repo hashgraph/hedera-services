@@ -59,8 +59,8 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
     private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
-     * This class is used as a flag to indicate where in the queue events start being new (as opposed to being
-     * events from the preconsensus event stream on disk).
+     * This class is used as a flag to indicate where in the queue events start being new (as opposed to being events
+     * from the preconsensus event stream on disk).
      */
     private static class BeginStreamingNewEvents {}
 
@@ -96,11 +96,21 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
     private final BlockingQueueInserter<Discontinuity> discontinuityInserter;
 
     /**
+     * This class is used to indicate the new minimum generation to store.
+     */
+    private record MinimumGenerationToStore(long minimumGenerationToStore) {}
+
+    /**
+     * Used to push the MinimumGenerationToStore message onto the handle queue.
+     */
+    private final BlockingQueueInserter<MinimumGenerationToStore> minimumGenerationToStoreInserter;
+
+    /**
      * Create a new AsyncPreConsensusEventWriter.
      *
      * @param platformContext the platform context
-     * @param threadManager responsible for creating new threads
-     * @param writer        the writer to which events will be written, wrapped by this class
+     * @param threadManager   responsible for creating new threads
+     * @param writer          the writer to which events will be written, wrapped by this class
      */
     public AsyncPreconsensusEventWriter(
             @NonNull final PlatformContext platformContext,
@@ -123,6 +133,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
                 .addHandler(BeginStreamingNewEvents.class, this::beginStreamingNewEventsHandler)
                 .addHandler(FlushRequested.class, this::flushRequestedHandler)
                 .addHandler(Discontinuity.class, this::discontinuityHandler)
+                .addHandler(MinimumGenerationToStore.class, this::minimumGenerationToStoreHandler)
                 .setMetricsConfiguration(
                         new QueueThreadMetricsConfiguration(platformContext.getMetrics()).enableBusyTimeMetric())
                 .build();
@@ -132,6 +143,7 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
         beginStreamingNewEventsInserter = handleThread.getInserter(BeginStreamingNewEvents.class);
         flushRequestedInserter = handleThread.getInserter(FlushRequested.class);
         discontinuityInserter = handleThread.getInserter(Discontinuity.class);
+        minimumGenerationToStoreInserter = handleThread.getInserter(MinimumGenerationToStore.class);
     }
 
     /**
@@ -200,8 +212,8 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
      * {@inheritDoc}
      */
     @Override
-    public void setMinimumGenerationToStore(final long minimumGenerationToStore) {
-        writer.setMinimumGenerationToStore(minimumGenerationToStore);
+    public void setMinimumGenerationToStore(final long minimumGenerationToStore) throws InterruptedException {
+        minimumGenerationToStoreInserter.put(new MinimumGenerationToStore(minimumGenerationToStore));
     }
 
     /**
@@ -301,5 +313,26 @@ public class AsyncPreconsensusEventWriter implements PreconsensusEventWriter {
             logger.error(EXCEPTION.getMarker(), "interrupted while attempting to register a discontinuity", e);
             Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * Set the minimum generation to store on the wrapped writer.
+     */
+    private void minimumGenerationToStoreHandler(@NonNull final MinimumGenerationToStore minimumGenerationToStore) {
+        try {
+            writer.setMinimumGenerationToStore(minimumGenerationToStore.minimumGenerationToStore);
+        } catch (final InterruptedException e) {
+            // Unless we do something silly like wrapping an asynchronous writer inside another asynchronous writer,
+            // this should never throw an InterruptedException.
+            logger.error(EXCEPTION.getMarker(), "interrupted while attempting to set minimum generation to store", e);
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Wait until the handle thread is not busy. May block indefinitely if work is continuously added.
+     */
+    public void waitUntilNotBusy() throws InterruptedException {
+        handleThread.waitUntilNotBusy();
     }
 }

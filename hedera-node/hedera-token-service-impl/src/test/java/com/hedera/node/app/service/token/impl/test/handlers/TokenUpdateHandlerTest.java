@@ -540,6 +540,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -558,6 +562,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -581,6 +589,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
@@ -599,6 +611,10 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("autoRenew.targetTypes", "CONTRACT,ACCOUNT")
+                .getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)

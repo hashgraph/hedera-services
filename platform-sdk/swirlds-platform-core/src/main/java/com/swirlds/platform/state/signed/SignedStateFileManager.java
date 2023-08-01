@@ -357,8 +357,7 @@ public class SignedStateFileManager implements Startable {
             return false;
         }
 
-        if (source == SourceOfSignedState.RECONNECT && stateConfig.saveReconnectStateToDisk()) {
-            // states received via reconnect should be written to disk if configured
+        if (source == SourceOfSignedState.RECONNECT) {
             return true;
         }
 

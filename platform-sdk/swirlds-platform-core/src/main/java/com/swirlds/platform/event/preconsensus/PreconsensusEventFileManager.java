@@ -60,7 +60,7 @@ public class PreconsensusEventFileManager {
     /**
      * This constant can be used when the caller wants all events, regardless of generation.
      */
-    public static final long NO_MINIMUM_GENERATION = Long.MIN_VALUE;
+    public static final long NO_MINIMUM_GENERATION = -1;
 
     /**
      * The initial size of the ring buffer used to track event files.

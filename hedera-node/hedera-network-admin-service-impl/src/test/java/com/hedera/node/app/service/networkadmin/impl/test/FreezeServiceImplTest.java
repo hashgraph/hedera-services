@@ -16,9 +16,13 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test;
 
+import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.spi.state.Schema;
@@ -42,7 +46,7 @@ class FreezeServiceImplTest {
         final FreezeService service = new FreezeServiceImpl();
 
         // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
+        assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
                 FreezeServiceImpl.class,
                 service.getClass(),
@@ -62,6 +66,19 @@ class FreezeServiceImplTest {
         assertEquals(1, statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(FreezeServiceImpl.UPGRADE_FILES_KEY, iter.next());
+        assertEquals(UPGRADE_FILE_HASH_KEY, iter.next());
+    }
+
+    @Test
+    void migratesAsExpected() {
+        final var subject = new FreezeServiceImpl();
+        final var registry = new FakeSchemaRegistry();
+        final var state = new FakeHederaState();
+
+        subject.registerSchemas(registry);
+        registry.migrate(FreezeService.NAME, state);
+        final var upgradeFileHashKeyState =
+                state.createReadableStates(FreezeService.NAME).getSingleton(UPGRADE_FILE_HASH_KEY);
+        assertNotNull(upgradeFileHashKeyState.get());
     }
 }

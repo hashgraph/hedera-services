@@ -19,14 +19,9 @@ package com.hedera.services.cli.signedstate;
 import com.hedera.services.cli.signedstate.SignedStateHolder.Contract;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.reflect.Array;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
+import picocli.CommandLine.ParentCommand;
 
 @Command(
         name = "summarize",
@@ -35,28 +30,15 @@ import picocli.CommandLine.Option;
 @SubcommandOf(SignedStateCommand.class)
 public class SummarizeSignedStateFileCommand extends AbstractCommand {
 
-    @Option(
-            names = {"-f", "--file"},
-            arity = "1",
-            description = "Input signed state file")
-    Path inputFile;
+    @ParentCommand
+    SignedStateCommand parent;
 
-    @CommandLine.Option(
-            names = {"-c", "--config"},
-            description = "A path to where a configuration file can be found. If not provided then defaults are used.")
-    private void setConfigurationPath(@NonNull final List<Path> configurationPaths) {
-        Objects.requireNonNull(configurationPaths, "configurationPaths");
-
-        configurationPaths.forEach(this::pathMustExist);
-        this.configurationPaths = configurationPaths;
-    }
-
-    private List<Path> configurationPaths = List.of();
-
+    @SuppressWarnings("java:S2095") // Ignoring AutoCloseable (because handled in `SignedStateCommand` instead)
     @Override
     public Integer call() {
 
-        try (final var signedState = new SignedStateHolder(inputFile, configurationPaths)) {
+        try {
+            final var signedState = parent.openSignedState();
 
             final var contractsInfo = signedState.getContracts();
             final var nContractsWithBytecodeFound = contractsInfo.contracts().size();
@@ -72,7 +54,11 @@ public class SummarizeSignedStateFileCommand extends AbstractCommand {
                     nDeletedContracts,
                     nContractsWithBytecodeFound,
                     bytesFound);
+
+        } finally {
+            parent.closeSignedState();
         }
+
         return 0;
     }
 }
