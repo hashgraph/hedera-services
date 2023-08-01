@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
-import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -40,6 +39,9 @@ import java.util.Map;
  * classes.
  */
 public class RecordFinalizerBase {
+    private static final AccountID ZERO_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(0).build();
+
     @NonNull
     protected Map<AccountID, Long> hbarChangesFrom(@NonNull final WritableAccountStore writableAccountStore) {
         final var hbarChanges = new HashMap<AccountID, Long>();
@@ -136,11 +138,17 @@ public class RecordFinalizerBase {
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             final var senderAccountId = persistedNft != null ? persistedNft.ownerId() : null;
-            final var nftTransfer = NftTransfer.newBuilder()
-                    .serialNumber(modifiedNft.id().serialNumber())
-                    .senderAccountID(senderAccountId)
-                    .receiverAccountID(modifiedNft.ownerId())
-                    .build();
+            // If the NFT has been burned, modifiedNft will be null. In that case the receiverId
+            // will be explicit;y set as 0-.0.0
+            final var builder = NftTransfer.newBuilder();
+            if (modifiedNft != null) {
+                builder.serialNumber(modifiedNft.id().serialNumber());
+                builder.receiverAccountID(modifiedNft.ownerId());
+            } else {
+                builder.receiverAccountID(ZERO_ACCOUNT_ID);
+            }
+            final var nftTransfer = builder.senderAccountID(senderAccountId).build();
+
             if (!nftChanges.containsKey(nftId.tokenId())) {
                 nftChanges.put(nftId.tokenId(), new ArrayList<>());
             }
@@ -160,8 +168,9 @@ public class RecordFinalizerBase {
         for (final var nftsForTokenId : nftChanges.entrySet()) {
             if (!nftsForTokenId.getValue().isEmpty()) {
                 // This var is the collection of all NFT transfers _for a single token ID_
+                // NFT serial numbers will not be sorted, instead will be displayed in the order they were added in
+                // transaction
                 final var nftTransfersForTokenId = nftsForTokenId.getValue();
-                nftTransfersForTokenId.sort(NFT_TRANSFER_COMPARATOR);
                 nftTokenTransferLists.add(TokenTransferList.newBuilder()
                         .token(nftsForTokenId.getKey())
                         .nftTransfers(nftTransfersForTokenId)
