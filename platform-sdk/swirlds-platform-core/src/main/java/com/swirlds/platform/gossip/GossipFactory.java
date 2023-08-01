@@ -189,6 +189,7 @@ public final class GossipFactory {
                 return new SingleNodeSyncGossip(
                         platformContext,
                         threadManager,
+                        time,
                         crypto,
                         addressBook,
                         selfId,
@@ -240,6 +241,7 @@ public final class GossipFactory {
             return new LegacySyncGossip(
                     platformContext,
                     threadManager,
+                    time,
                     crypto,
                     addressBook,
                     selfId,

@@ -23,15 +23,15 @@ import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.ReadableUpgradeStore;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
-import com.hedera.node.app.service.file.impl.ReadableUpgradeStoreImpl;
+import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.NetworkService;
 import com.hedera.node.app.service.networkadmin.ReadableRunningHashLeafStore;
-import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
 import com.hedera.node.app.service.networkadmin.impl.ReadableRunningHashLeafStoreImpl;
-import com.hedera.node.app.service.networkadmin.impl.ReadableUpdateFileStoreImpl;
+import com.hedera.node.app.service.networkadmin.impl.ReadableUpgradeStoreImpl;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ReadableScheduleStoreImpl;
@@ -88,9 +88,9 @@ public class ReadableStoreFactory {
         newMap.put(ReadableScheduleStore.class, new StoreEntry(ScheduleService.NAME, ReadableScheduleStoreImpl::new));
         // Files
         newMap.put(ReadableFileStore.class, new StoreEntry(FileService.NAME, ReadableFileStoreImpl::new));
-        newMap.put(ReadableUpgradeStore.class, new StoreEntry(FileService.NAME, ReadableUpgradeStoreImpl::new));
+        newMap.put(ReadableUpgradeFileStore.class, new StoreEntry(FileService.NAME, ReadableUpgradeFileStoreImpl::new));
         // Network Admin
-        newMap.put(ReadableUpdateFileStore.class, new StoreEntry(FreezeService.NAME, ReadableUpdateFileStoreImpl::new));
+        newMap.put(ReadableUpgradeStore.class, new StoreEntry(FreezeService.NAME, ReadableUpgradeStoreImpl::new));
         // Util
         newMap.put(
                 ReadableRunningHashLeafStore.class,

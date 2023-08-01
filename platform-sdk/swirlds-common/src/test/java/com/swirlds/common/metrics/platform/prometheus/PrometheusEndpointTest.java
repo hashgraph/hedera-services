@@ -25,7 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;

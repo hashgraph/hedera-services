@@ -36,7 +36,7 @@ import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
-import com.hedera.node.app.service.file.impl.WritableUpgradeStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -244,7 +244,7 @@ class FileUpdateTest extends FileTestBase {
                 OP_BUILDER.fileID(wellKnowUpgradeId()).contents(newContent).build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(writableUpgradeStore);
+        given(handleContext.writableStore(WritableUpgradeFileStore.class)).willReturn(writableUpgradeFileStore);
         subject.handle(handleContext);
 
         final var newFile = writableUpgradeStates.poll();

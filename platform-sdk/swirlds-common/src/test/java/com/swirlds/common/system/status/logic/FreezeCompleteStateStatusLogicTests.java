@@ -18,7 +18,7 @@ package com.swirlds.common.system.status.logic;
 
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
