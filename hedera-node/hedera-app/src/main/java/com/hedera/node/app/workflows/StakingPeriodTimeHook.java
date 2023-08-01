@@ -35,6 +35,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A {@link ConsensusTimeHook} implementation that handles the daily staking period updates
+ */
 @Singleton
 public class StakingPeriodTimeHook implements ConsensusTimeHook {
     private static final Logger logger = LogManager.getLogger(StakingPeriodTimeHook.class);
@@ -47,11 +50,20 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
     }
 
+    /**
+     * This time hook is responsible for performing necessary staking updates and distributing staking
+     * rewards. This should only be done during handling of the first transaction of each new staking
+     * period, which staking period usually starts at midnight UTC.
+     *
+     * <p>The only exception to this rule is when {@code consensusTimeOfLastHandledTxn} is null,
+     * <b>which should only happen on node startup.</b> The node should therefore run this process
+     * to catch up on updates and distributions when first coming online.
+     */
     @Override
     public void process(@NonNull Instant consensusTime, @NonNull final HandleContext context) {
         if (consensusTimeOfLastHandledTxn == null
                 || consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.getEpochSecond()
-                        && isNextPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
+                        && isNextStakingPeriod(consensusTime, consensusTimeOfLastHandledTxn, context)) {
             // Handle the daily staking distributions and updates
             try {
                 stakingCalculator.updateNodes(consensusTime, context);
@@ -70,7 +82,7 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     }
 
     @VisibleForTesting
-    static boolean isNextPeriod(
+    static boolean isNextStakingPeriod(
             @NonNull final Instant currentConsensusTime,
             @NonNull final Instant previousConsensusTime,
             @NonNull final HandleContext handleContext) {

@@ -95,7 +95,8 @@ class StakingPeriodTimeHookTest {
         subject.setLastConsensusTime(CONSENSUS_TIME_1234567);
 
         // Pre-condition check
-        Assertions.assertThat(StakingPeriodTimeHook.isNextPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
+        Assertions.assertThat(StakingPeriodTimeHook.isNextStakingPeriod(
+                        currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
         subject.process(currentConsensusTime, context);
@@ -113,32 +114,32 @@ class StakingPeriodTimeHookTest {
     }
 
     @Test
-    void isNextPeriodDefaultStakingPeriodIsInSameUtcDay() {
+    void isNextStakingPeriodDefaultStakingPeriodIsInSameUtcDay() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
-        final var result = StakingPeriodTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
                 CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567.minusSeconds(300), context);
 
         Assertions.assertThat(result).isFalse();
     }
 
     @Test
-    void isNextPeriodDefaultStakingPeriodIsNotInSameUtcDay() {
+    void isNextStakingPeriodDefaultStakingPeriodIsNotInSameUtcDay() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
-        final var result = StakingPeriodTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
                 CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds()), CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isTrue();
     }
 
     @Test
-    void isNextPeriodCustomStakingPeriodsMatch() {
+    void isNextStakingPeriodCustomStakingPeriodsMatch() {
         final var periodMins = 990;
         final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
 
-        final var result = StakingPeriodTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
                 CONSENSUS_TIME_1234567,
                 CONSENSUS_TIME_1234567.plusSeconds(
                         // periodMins * 60 seconds/min
@@ -149,12 +150,12 @@ class StakingPeriodTimeHookTest {
     }
 
     @Test
-    void isNextPeriodCustomStakingPeriodsDontMatch() {
+    void isNextStakingPeriodCustomStakingPeriodsDontMatch() {
         final var periodMins = 990;
         final var context = mock(HandleContext.class);
         given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
 
-        final var result = StakingPeriodTimeHook.isNextPeriod(
+        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
                 CONSENSUS_TIME_1234567,
                 CONSENSUS_TIME_1234567.plusSeconds(
                         // 10 min * 60 seconds/min
