@@ -140,8 +140,7 @@ class FileDeleteTest extends FileTestBase {
 
         subject.preHandle(realPreContext);
 
-        assertTrue(realPreContext.requiredNonPayerKeys().size() == 0);
-        assertEquals(realPreContext.requiredNonPayerKeys().size(), 0);
+        assertEquals(0, realPreContext.requiredNonPayerKeys().size());
     }
 
     @Test
@@ -159,7 +158,7 @@ class FileDeleteTest extends FileTestBase {
         subject.preHandle(realPreContext);
 
         assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
-        assertEquals(realPreContext.requiredNonPayerKeys().size(), 3);
+        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
     }
 
     @Test
