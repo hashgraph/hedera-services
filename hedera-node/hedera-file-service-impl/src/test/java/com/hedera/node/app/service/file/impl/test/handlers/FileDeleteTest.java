@@ -121,6 +121,31 @@ class FileDeleteTest extends FileTestBase {
     }
 
     @Test
+    @DisplayName("Pre handle works as expected immutable")
+    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+        file = createFileEmptyMemoAndKeys();
+        refreshStoresWithCurrentFileOnlyInReadable();
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
+
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
+        TransactionBody transactionBody = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .fileDelete(deleteFileBuilder.build())
+                .build();
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertTrue(realPreContext.requiredNonPayerKeys().size() == 0);
+        assertEquals(realPreContext.requiredNonPayerKeys().size(), 0);
+    }
+
+    @Test
     @DisplayName("Pre handle works as expected")
     void preHandleWorksAsExpected() throws PreCheckException {
         refreshStoresWithCurrentFileOnlyInReadable();

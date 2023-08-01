@@ -41,8 +41,6 @@ import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.validation.AttributeValidator;
-import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -68,21 +66,6 @@ class FileAppendTest extends FileTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
-
-    @Mock
-    private Account account;
-
-    @Mock
-    private Account autoRenewAccount;
-
-    @Mock
-    private ExpiryValidator expiryValidator;
-
-    @Mock
-    private AttributeValidator attributeValidator;
-
-    @Mock
-    private Configuration configuration;
 
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
@@ -141,6 +124,31 @@ class FileAppendTest extends FileTestBase {
 
         assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
         assertEquals(realPreContext.requiredNonPayerKeys().size(), 3);
+    }
+
+    @Test
+    @DisplayName("Pre handle works as expected immutable")
+    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+        file = createFileEmptyMemoAndKeys();
+        refreshStoresWithCurrentFileOnlyInReadable();
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
+
+        // No-op
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var txBody = TransactionBody.newBuilder()
+                .fileAppend(OP_BUILDER.fileID(wellKnownId()))
+                .transactionID(txnId)
+                .build();
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, txBody, testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertTrue(realPreContext.requiredNonPayerKeys().size() == 0);
+        assertEquals(realPreContext.requiredNonPayerKeys().size(), 0);
     }
 
     @Test
@@ -268,7 +276,7 @@ class FileAppendTest extends FileTestBase {
 
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be appended")
-    void keysDoesntExistDuringHandle() {
+    void failsForImmutableFile() {
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnownId()))
                 .build();

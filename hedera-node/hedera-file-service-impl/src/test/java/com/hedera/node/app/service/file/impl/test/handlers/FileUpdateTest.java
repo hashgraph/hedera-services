@@ -134,6 +134,32 @@ class FileUpdateTest extends FileTestBase {
     }
 
     @Test
+    @DisplayName("Pre handle works as expected immutable")
+    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+        file = createFileEmptyMemoAndKeys();
+        refreshStoresWithCurrentFileOnlyInReadable();
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
+
+        // No-op
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var updateFileBuilder = FileUpdateTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
+        final var txBody = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .fileUpdate(updateFileBuilder.build())
+                .build();
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, txBody, testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertTrue(realPreContext.requiredNonPayerKeys().size() == 0);
+        assertEquals(realPreContext.requiredNonPayerKeys().size(), 0);
+    }
+
+    @Test
     void rejectsMissingFile() {
         final var op = OP_BUILDER.build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
@@ -194,7 +220,7 @@ class FileUpdateTest extends FileTestBase {
 
     @Test
     @DisplayName("Fails handle if keys doesn't exist on file to be updated")
-    void keysDoesntExist() {
+    void failForImmutableFile() {
         file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
