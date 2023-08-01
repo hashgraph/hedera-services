@@ -18,7 +18,7 @@ import java.time.Duration;
 @ConfigData("sstt")
 public record SSTTConfig (
 		@ConfigProperty(defaultValue = "100") @Positive int bytesPerTrans,
-		@ConfigProperty(defaultValue = "100") @Positive int transPerSecToCreate,
+		@ConfigProperty(defaultValue = "500") @Positive int transPerSecToCreate,
 		@ConfigProperty(defaultValue = "1024") @Positive int transPoolSize,
 		@ConfigProperty(defaultValue = "0s") Duration handleTime,
 		@ConfigProperty(defaultValue = "0s") Duration preHandleTime
