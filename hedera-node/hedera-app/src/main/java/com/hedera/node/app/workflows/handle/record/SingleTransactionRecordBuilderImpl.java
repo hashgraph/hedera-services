@@ -43,6 +43,8 @@ import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
@@ -86,7 +88,9 @@ public class SingleTransactionRecordBuilderImpl
                 CryptoTransferRecordBuilder,
                 PrngRecordBuilder,
                 TokenMintRecordBuilder,
-                TokenCreateRecordBuilder {
+                TokenCreateRecordBuilder,
+                ContractCreateRecordBuilder,
+                ContractCallRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -287,15 +291,9 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    /**
-     * Sets the body to contractCreateResult result.
-     *
-     * @param contractCreateResult the contractCreate result
-     * @return the builder
-     */
-    @NonNull
-    public SingleTransactionRecordBuilderImpl contractCreateResult(
-            @NonNull final ContractFunctionResult contractCreateResult) {
+    @Override
+    public @NonNull SingleTransactionRecordBuilderImpl contractCreateResult(
+            @Nullable ContractFunctionResult contractCreateResult) {
         this.transactionRecordBuilder.contractCreateResult(contractCreateResult);
         return this;
     }
@@ -514,8 +512,8 @@ public class SingleTransactionRecordBuilderImpl
      * @param status the receipt status
      * @return the builder
      */
-    @NonNull
-    public SingleTransactionRecordBuilderImpl status(@NonNull final ResponseCodeEnum status) {
+    @Override
+    public @NonNull SingleTransactionRecordBuilderImpl status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status, "status must not be null");
         this.transactionReceiptBuilder.status(status);
         return this;
@@ -566,8 +564,8 @@ public class SingleTransactionRecordBuilderImpl
      * @param contractID the {@link ContractID} for the receipt
      * @return the builder
      */
-    @NonNull
-    public SingleTransactionRecordBuilderImpl contractID(@NonNull final ContractID contractID) {
+    @Override
+    public @NonNull SingleTransactionRecordBuilderImpl contractID(@Nullable ContractID contractID) {
         requireNonNull(contractID, "contractID must not be null");
         this.transactionReceiptBuilder.contractID(contractID);
         return this;

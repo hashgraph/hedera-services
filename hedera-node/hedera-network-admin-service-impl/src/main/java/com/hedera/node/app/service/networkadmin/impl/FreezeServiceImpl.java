@@ -23,6 +23,7 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.codec.BytesCodec;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -47,7 +48,11 @@ public final class FreezeServiceImpl implements FreezeService {
 
             @Override
             public void migrate(@NonNull final MigrationContext ctx) {
-                // nothing to do
+                // Reset the upgrade file hash to empty
+                // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
+                // Nothing in state can ever be null, so use Bytes.EMPTY to indicate an empty hash
+                final var upgradeFileHashKeyState = ctx.newStates().getSingleton(UPGRADE_FILE_HASH_KEY);
+                upgradeFileHashKeyState.put(Bytes.EMPTY);
             }
         };
     }

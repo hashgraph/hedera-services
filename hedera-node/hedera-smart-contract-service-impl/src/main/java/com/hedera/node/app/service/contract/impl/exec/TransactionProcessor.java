@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
@@ -70,6 +71,16 @@ public class TransactionProcessor {
     }
 
     /**
+     * Records the two or three parties involved in a transaction.
+     *
+     * @param sender the externally-operated account that signed the transaction (AKA the "origin")
+     * @param relayer if non-null, the account relayed an Ethereum transaction on behalf of the sender
+     * @param receiverAddress the address of the account receiving the top-level call
+     */
+    private record InvolvedParties(
+            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
+
+    /**
      * Process the given transaction, returning the result of running it to completion
      * and committing to the given updater.
      *
@@ -94,7 +105,6 @@ public class TransactionProcessor {
         try {
             parties = computeInvolvedParties(transaction, updater, config);
             gasCharges = gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
-            // Build the initial frame for the transaction
             initialFrame = frameBuilder.buildInitialFrameWith(
                     transaction,
                     updater,
@@ -113,9 +123,10 @@ public class TransactionProcessor {
             result = frameRunner.runToCompletion(
                     transaction.gasLimit(), initialFrame, tracer, messageCall, contractCreation);
         } catch (ResourceExhaustedException e) {
-            return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), e.getStatus());
+            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
-        // Adjust the pending commit based on the result
+
+        // Maybe refund some of the charged fees before committing
         gasCharging.maybeRefundGiven(
                 transaction.unusedGas(result.gasUsed()),
                 gasCharges.relayerAllowanceUsed(),
@@ -125,7 +136,7 @@ public class TransactionProcessor {
                 updater);
         initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-        // Returns this result if we can commit it without resource exhaustion, otherwise returns a fees-only result
+        // Tries to commit and return the original result; returns a fees-only result on resource exhaustion
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
     }
 
@@ -149,8 +160,18 @@ public class TransactionProcessor {
         return result;
     }
 
-    private record InvolvedParties(
-            @NonNull HederaEvmAccount sender, @Nullable HederaEvmAccount relayer, @NonNull Address receiverAddress) {}
+    private HederaEvmTransactionResult commitResourceExhaustion(
+            @NonNull final HederaEvmTransaction transaction,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final HederaEvmContext context,
+            @NonNull final ResponseCodeEnum reason,
+            @NonNull final Configuration config) {
+        // Note these calls cannot fail, or processTransaction() above would have aborted right away
+        final var parties = computeInvolvedParties(transaction, updater, config);
+        gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
+        updater.commit();
+        return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), reason);
+    }
 
     /**
      * Given an input {@link HederaEvmTransaction}, the {@link HederaWorldUpdater} for the transaction, and the
@@ -166,8 +187,8 @@ public class TransactionProcessor {
      * {@link HederaWorldUpdater#setupAliasedCreate(Address, Address)}.
      *
      * @param transaction the transaction to set up
-     * @param updater the updater for the transaction
-     * @param config the current node configuration
+     * @param updater     the updater for the transaction
+     * @param config      the current node configuration
      * @return the involved parties determined while setting up the transaction
      */
     private InvolvedParties computeInvolvedParties(
@@ -186,10 +207,9 @@ public class TransactionProcessor {
             final Address to;
             if (transaction.isEthereumTransaction()) {
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
-                // Top-level creates "originate" from the zero address
-                updater.setupAliasedCreate(Address.ZERO, to);
+                updater.setupAliasedCreate(sender.getAddress(), to);
             } else {
-                to = updater.setupCreate(Address.ZERO);
+                to = updater.setupCreate(sender.getAddress());
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {
