@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.signed;
 
+import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
+
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
@@ -27,7 +29,6 @@ import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesCons
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,8 +41,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-
-import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 
 /**
  * <p>
@@ -83,8 +82,7 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * A signature that was received when there was no state with a matching round.
      */
-    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {
-    }
+    private record SavedSignature(long round, @NonNull NodeId memberId, @NonNull Signature signature) {}
 
     /**
      * Signatures for rounds in the future.
