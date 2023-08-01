@@ -58,6 +58,7 @@ public class EmergencyReconnectTeacher {
      * @param reconnectSocketTimeout the socket timeout to use when executing a reconnect
      * @param requestToStopTeaching  to be checked periodically if teaching should be stopped
      * @param reconnectMetrics       tracks reconnect metrics
+     * @param configuration          the configuration for the platform
      */
     public EmergencyReconnectTeacher(
             @NonNull final ThreadManager threadManager,

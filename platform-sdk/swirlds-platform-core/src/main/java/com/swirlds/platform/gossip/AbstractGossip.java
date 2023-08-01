@@ -182,21 +182,13 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                 PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
         final OutboundConnectionCreator connectionCreator = new OutboundConnectionCreator(
-                selfId,
-                socketConfig,
-                this,
-                socketFactory,
-                addressBook,
-                shouldDoVersionCheck(),
-                appVersion,
-                configuration);
+                selfId, this, socketFactory, addressBook, shouldDoVersionCheck(), appVersion, configuration);
         connectionManagers = new StaticConnectionManagers(topology, connectionCreator);
         final InboundConnectionHandler inboundConnectionHandler = new InboundConnectionHandler(
                 this,
                 selfId,
                 addressBook,
                 connectionManagers::newConnection,
-                socketConfig,
                 shouldDoVersionCheck(),
                 appVersion,
                 time,

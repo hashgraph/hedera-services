@@ -126,11 +126,16 @@ public class SignedStateFileManager implements Startable {
     /**
      * Creates a new instance.
      *
-     * @param threadManager         responsible for creating and managing threads
-     * @param mainClassName         the main class name of this node
-     * @param selfId                the ID of this node
-     * @param swirldName            the name of the swirld
-     * @param statusActionSubmitter enables submitting platform status actions
+     * @param context                             the platform context
+     * @param threadManager                       responsible for creating and managing threads
+     * @param metrics                             metrics provider
+     * @param time                                provides time
+     * @param mainClassName                       the main class name of this node
+     * @param selfId                              the ID of this node
+     * @param swirldName                          the name of the swirld
+     * @param stateToDiskAttemptConsumer          a consumer of data when a state is written to disk
+     * @param minimumGenerationNonAncientConsumer this method must be called when the minimum generation non-ancient
+     * @param statusActionSubmitter               enables submitting platform status actions
      */
     public SignedStateFileManager(
             @NonNull final PlatformContext context,
@@ -220,6 +225,7 @@ public class SignedStateFileManager implements Startable {
      * @param taskDescription  a human-readable description of the operation being performed
      * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
      *                         succeeded, else is passed false.
+     * @param configuration    the configuration of the platform
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(

@@ -37,6 +37,10 @@ import java.util.Set;
  * Can be used in cli tools to build a basic configuration.
  */
 public class DefaultConfiguration {
+    private DefaultConfiguration() {
+        // Avoid instantiation for utility class
+    }
+
     /**
      * Build a basic configuration with the default configuration sources and paths.
      * And register the configuration to the {@link ConfigurationHolder}.

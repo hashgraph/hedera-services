@@ -68,7 +68,6 @@ public class InboundConnectionHandler {
             @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
             @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
-            @NonNull final SocketConfig socketConfig,
             final boolean doVersionCheck,
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Time time,
@@ -77,12 +76,12 @@ public class InboundConnectionHandler {
         this.selfId = Objects.requireNonNull(selfId);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
-        this.socketConfig = Objects.requireNonNull(socketConfig);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         Objects.requireNonNull(time);
         this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
         this.configuration = Objects.requireNonNull(configuration);
+        this.socketConfig = configuration.getConfigData(SocketConfig.class);
     }
 
     /**

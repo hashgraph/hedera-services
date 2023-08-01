@@ -176,6 +176,7 @@ public final class SignedStateFileWriter {
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
      * @param taskDescription     a description of the task
+     * @param configuration       the configuration for the platform
      */
     public static void writeSignedStateToDisk(
             @Nullable final NodeId selfId,

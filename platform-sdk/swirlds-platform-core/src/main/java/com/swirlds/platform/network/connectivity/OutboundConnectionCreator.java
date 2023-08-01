@@ -63,7 +63,6 @@ public class OutboundConnectionCreator {
 
     public OutboundConnectionCreator(
             @NonNull final NodeId selfId,
-            @NonNull final SocketConfig socketConfig,
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final SocketFactory socketFactory,
             @NonNull final AddressBook addressBook,
@@ -71,13 +70,13 @@ public class OutboundConnectionCreator {
             @NonNull final SoftwareVersion softwareVersion,
             @NonNull final Configuration configuration) {
         this.selfId = Objects.requireNonNull(selfId);
-        this.socketConfig = Objects.requireNonNull(socketConfig);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.socketFactory = Objects.requireNonNull(socketFactory);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.configuration = Objects.requireNonNull(configuration);
+        this.socketConfig = configuration.getConfigData(SocketConfig.class);
     }
 
     /**

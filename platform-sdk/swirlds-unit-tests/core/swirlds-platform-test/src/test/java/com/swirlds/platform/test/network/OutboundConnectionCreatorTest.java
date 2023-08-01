@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-import com.swirlds.common.config.SocketConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -99,17 +98,14 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SocketConfig socketConfig = getConfig().getConfigData(SocketConfig.class);
-        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
-                socketConfig,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
                 true,
                 new BasicSoftwareVersion(1),
-                configuration);
+                getConfig());
 
         Connection connection = occ.createConnection(otherNode);
         assertTrue(connection instanceof SocketConnection, "the returned connection should be a socket connection");
@@ -196,11 +192,8 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SocketConfig socketConfig = getConfig().getConfigData(SocketConfig.class);
-
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
-                socketConfig,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
@@ -255,11 +248,8 @@ class OutboundConnectionCreatorTest {
         final SocketFactory socketFactory = mock(SocketFactory.class);
         doAnswer(i -> socket).when(socketFactory).createClientSocket(any(), anyInt());
 
-        final SocketConfig socketConfig = getConfig().getConfigData(SocketConfig.class);
-
         final OutboundConnectionCreator occ = new OutboundConnectionCreator(
                 thisNode,
-                socketConfig,
                 mock(ConnectionTracker.class),
                 socketFactory,
                 addressBook,
@@ -278,8 +268,6 @@ class OutboundConnectionCreatorTest {
 
     @NonNull
     private static Configuration getConfig() {
-        final Configuration configuration =
-                new TestConfigBuilder().withValue("socket.bufferSize", "100").getOrCreateConfig();
-        return configuration;
+        return new TestConfigBuilder().withValue("socket.bufferSize", "100").getOrCreateConfig();
     }
 }

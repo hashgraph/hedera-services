@@ -111,6 +111,8 @@ public class TeachingSynchronizer {
      * 		failure.
      * @param requestToStopTeaching
      *      a function to check periodically if teaching should be stopped
+     * @param reconnectConfig
+     *      reconnect configuration from platform
      */
     public TeachingSynchronizer(
             @NonNull final ThreadManager threadManager,

@@ -60,6 +60,7 @@ public class SocketConnection implements Connection {
      * @param socket            the socket connecting the two members over TCP/IP
      * @param dis               the input stream
      * @param dos               the output stream
+     * @param configuration     the configuration from the platform
      */
     protected SocketConnection(
             final NodeId selfId,
@@ -97,6 +98,7 @@ public class SocketConnection implements Connection {
      * @param socket            the socket connecting the two members over TCP/IP
      * @param dis               the input stream
      * @param dos               the output stream
+     * @param configuration     the configuration from the platform
      */
     public static SocketConnection create(
             final NodeId selfId,
