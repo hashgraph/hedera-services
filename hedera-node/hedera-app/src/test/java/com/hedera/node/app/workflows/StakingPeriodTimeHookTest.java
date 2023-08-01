@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -114,54 +113,63 @@ class StakingPeriodTimeHookTest {
     }
 
     @Test
-    void isNextStakingPeriodDefaultStakingPeriodIsInSameUtcDay() {
+    void isNextStakingPeriodNowConsensusTimeBeforeThenConsensusTimeUtcDay() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
-        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
-                CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567.minusSeconds(300), context);
+        final var earlierNowConsensus =
+                CONSENSUS_TIME_1234567.minusSeconds(Duration.ofDays(1).toSeconds());
+        final var result =
+                StakingPeriodTimeHook.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
 
     @Test
-    void isNextStakingPeriodDefaultStakingPeriodIsNotInSameUtcDay() {
+    void isNextStakingPeriodNowConsensusTimeInSameThenConsensusTimeUtcDay() {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
-        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
-                CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds()), CONSENSUS_TIME_1234567, context);
+        final var result =
+                StakingPeriodTimeHook.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
 
-        Assertions.assertThat(result).isTrue();
-    }
-
-    @Test
-    void isNextStakingPeriodCustomStakingPeriodsMatch() {
-        final var periodMins = 990;
-        final var context = mock(HandleContext.class);
-        given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
-
-        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
-                CONSENSUS_TIME_1234567,
-                CONSENSUS_TIME_1234567.plusSeconds(
-                        // periodMins * 60 seconds/min
-                        periodMins * 60),
-                context);
-
-        Assertions.assertThat(result).isTrue();
-    }
-
-    @Test
-    void isNextStakingPeriodCustomStakingPeriodsDontMatch() {
-        final var periodMins = 990;
-        final var context = mock(HandleContext.class);
-        given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
-
-        final var result = StakingPeriodTimeHook.isNextStakingPeriod(
-                CONSENSUS_TIME_1234567,
-                CONSENSUS_TIME_1234567.plusSeconds(
-                        // 10 min * 60 seconds/min
-                        10 * 60),
-                context);
         Assertions.assertThat(result).isFalse();
+    }
+
+    @Test
+    void isNextStakingPeriodNowConsensusTimeAfterThenConsensusTimeUtcDay() {
+        given(context.configuration()).willReturn(newPeriodMinsConfig());
+
+        final var laterNowConsensus =
+                CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds());
+        final var result =
+                StakingPeriodTimeHook.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
+
+        Assertions.assertThat(result).isTrue();
+    }
+
+    @Test
+    void isNextStakingPeriodNowCustomStakingPeriodIsEarlier() {
+        final var periodMins = 990;
+        given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
+
+        final var earlierStakingPeriodTime = CONSENSUS_TIME_1234567.minusSeconds(
+                // 1000 min * 60 seconds/min
+                1000 * 60);
+        final var result =
+                StakingPeriodTimeHook.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+        Assertions.assertThat(result).isFalse();
+    }
+
+    @Test
+    void isNextStakingPeriodNowCustomStakingPeriodIsLater() {
+        final var periodMins = 990;
+        given(context.configuration()).willReturn(newPeriodMinsConfig(periodMins));
+
+        final var laterStakingPeriodTime = CONSENSUS_TIME_1234567.plusSeconds(
+                // 1000 min * 60 seconds/min
+                1000 * 60);
+        final var result =
+                StakingPeriodTimeHook.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+        Assertions.assertThat(result).isTrue();
     }
 
     private Configuration newPeriodMinsConfig() {

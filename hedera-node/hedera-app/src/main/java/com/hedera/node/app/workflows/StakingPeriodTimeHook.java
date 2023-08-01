@@ -92,7 +92,7 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
             return isLaterUtcDay(currentConsensusTime, previousConsensusTime);
         } else {
             return getPeriod(currentConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS)
-                    != getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
+                    > getPeriod(previousConsensusTime, stakingPeriod * MINUTES_TO_MILLISECONDS);
         }
     }
 
