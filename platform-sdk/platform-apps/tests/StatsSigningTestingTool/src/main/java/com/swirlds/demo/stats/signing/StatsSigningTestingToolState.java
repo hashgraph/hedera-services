@@ -26,13 +26,6 @@ package com.swirlds.demo.stats.signing;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.utility.CommonUtils.hex;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT;
-
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -42,16 +35,12 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.Transaction;
+import com.swirlds.common.utility.ByteUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.time.Duration;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This demo collects statistics on the running of the network and consensus systems. It writes them to the
@@ -61,35 +50,27 @@ import org.apache.logging.log4j.Logger;
  * optional sequence number check.
  */
 public class StatsSigningTestingToolState extends PartialMerkleLeaf implements SwirldState, MerkleLeaf {
-
     private static final long CLASS_ID = 0x79900efa3127b6eL;
-    /**
-     * use this for all logging, as controlled by the optional data/log4j2.xml file
-     */
-    private static final Logger logger = LogManager.getLogger(StatsSigningTestingToolState.class);
-
-    private final Supplier<TransactionPool> transactionPoolSupplier;
 
     /** A running sum of transaction contents */
     private long runningSum = 0;
 
-    /** if true, artificially take {@link #HANDLE_MICROS} to handle each consensus transaction */
-    private static final boolean SYNTHETIC_HANDLE_TIME = false;
+    /** supplies the app config */
+    private final Supplier<SSTTConfig> configSupplier;
 
-    /** the number of microseconds to wait before returning from the handle method */
-    private static final int HANDLE_MICROS = 100;
-
+    @SuppressWarnings("unused")
     public StatsSigningTestingToolState() {
         this(() -> null);
     }
 
-    public StatsSigningTestingToolState(@NonNull final Supplier<TransactionPool> transactionPoolSupplier) {
-        this.transactionPoolSupplier = Objects.requireNonNull(transactionPoolSupplier);
+    public StatsSigningTestingToolState(@NonNull final Supplier<SSTTConfig> configSupplier) {
+        this.configSupplier = configSupplier;
     }
 
     private StatsSigningTestingToolState(@NonNull final StatsSigningTestingToolState sourceState) {
         super(sourceState);
-        this.transactionPoolSupplier = sourceState.transactionPoolSupplier;
+        runningSum = sourceState.runningSum;
+        configSupplier = sourceState.configSupplier;
         setImmutable(false);
         sourceState.setImmutable(true);
     }
@@ -108,13 +89,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      */
     @Override
     public void preHandle(final Event event) {
-        final TransactionPool transactionPool = transactionPoolSupplier.get();
-        if (transactionPool != null) {
-            event.forEachTransaction(transaction -> {
-                transactionPool.expandSignatures(transaction);
-                CryptographyHolder.get().verifyAsync(transaction.getSignatures());
-            });
-        }
+        busyWait(configSupplier.get().preHandleTime());
     }
 
     /**
@@ -127,93 +102,36 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
     }
 
     private void handleTransaction(final ConsensusTransaction trans) {
-        for (final TransactionSignature s : trans.getSignatures()) {
+        runningSum += ByteUtils.byteArrayToLong(trans.getContents(), 0);
 
-            if (!validateSignature(s, trans)) {
-                continue;
-            }
-
-            if (s.getSignatureStatus() != VerificationStatus.VALID) {
-                logger.error(
-                        EXCEPTION.getMarker(),
-                        "Invalid Transaction Signature [ transactionId = {}, status = {}, signatureType = {},"
-                                + " publicKey = {}, signature = {}, data = {} ]",
-                        TransactionCodec.txId(trans.getContents()),
-                        s.getSignatureStatus(),
-                        s.getSignatureType(),
-                        hex(Arrays.copyOfRange(
-                                s.getContentsDirect(),
-                                s.getPublicKeyOffset(),
-                                s.getPublicKeyOffset() + s.getPublicKeyLength())),
-                        hex(Arrays.copyOfRange(
-                                s.getContentsDirect(),
-                                s.getSignatureOffset(),
-                                s.getSignatureOffset() + s.getSignatureLength())),
-                        hex(Arrays.copyOfRange(
-                                s.getContentsDirect(),
-                                s.getMessageOffset(),
-                                s.getMessageOffset() + s.getMessageLength())));
-            }
-        }
-
-        runningSum += TransactionCodec.txId(trans.getContents());
-
-        maybeDelay();
+        busyWait(configSupplier.get().handleTime());
     }
 
-    private void maybeDelay() {
-        if (SYNTHETIC_HANDLE_TIME) {
+    @SuppressWarnings("all")
+    private void busyWait(@NonNull final Duration duration) {
+        if (!duration.isZero() && !duration.isNegative()) {
             final long start = System.nanoTime();
-            while (System.nanoTime() - start < (HANDLE_MICROS * 1_000)) {
+            final long nanos = duration.toNanos();
+            while (System.nanoTime() - start < nanos) {
                 // busy wait
             }
         }
     }
 
-    private boolean validateSignature(final TransactionSignature signature, final Transaction transaction) {
-        try {
-            final Future<Void> future = signature.waitForFuture();
-            // Block & Ignore the Void return
-            future.get();
-            return true;
-        } catch (final InterruptedException e) {
-            logger.info(
-                    TESTING_EXCEPTIONS_ACCEPTABLE_RECONNECT.getMarker(),
-                    "handleTransaction Interrupted. This should happen only during a reconnect");
-            Thread.currentThread().interrupt();
-        } catch (final ExecutionException e) {
-            logger.error(
-                    EXCEPTION.getMarker(),
-                    "error while validating transaction signature for transaction {}",
-                    transaction,
-                    e);
-        }
-        return false;
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(runningSum);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
-            out.writeLong(runningSum);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        if (version < ClassVersion.KEEP_STATE) {
-            // In this version we serialized an address book
-            in.readSerializable();
-        }
-
-        if (getVersion() >= ClassVersion.KEEP_STATE) {
-            runningSum = in.readLong();
-        }
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        runningSum = in.readLong();
     }
 
     /**
@@ -237,7 +155,7 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      */
     @Override
     public int getMinimumSupportedVersion() {
-        return ClassVersion.MIGRATE_TO_SERIALIZABLE;
+        return ClassVersion.NO_ADDRESS_BOOK_IN_STATE;
     }
 
     /**
@@ -245,22 +163,6 @@ public class StatsSigningTestingToolState extends PartialMerkleLeaf implements S
      * Versions that have been released must NEVER be given a different value.
      */
     private static class ClassVersion {
-        /**
-         * In this version, serialization was performed by copyTo/copyToExtra and deserialization was performed by
-         * copyFrom/copyFromExtra. This version is not supported by later deserialization methods and must be handled
-         * specially by the platform.
-         */
-        public static final int ORIGINAL = 1;
-        /**
-         * In this version, serialization was performed by serialize/deserialize.
-         */
-        public static final int MIGRATE_TO_SERIALIZABLE = 2;
-
-        /**
-         * In this version, a transaction counter was added to the state.
-         */
-        public static final int KEEP_STATE = 3;
-
         public static final int NO_ADDRESS_BOOK_IN_STATE = 4;
     }
 }
