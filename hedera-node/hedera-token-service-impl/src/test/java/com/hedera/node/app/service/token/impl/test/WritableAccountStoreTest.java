@@ -16,15 +16,21 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +44,55 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         resetStores();
+    }
+
+    @Test
+    void detectsPendingCreation() {
+        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
+        writableAccounts.put(contractIdByNum, contractWith(contractIdByNum, 123));
+        assertTrue(writableStore.isNewlyCreated(contractIdByNum));
+    }
+
+    @Test
+    void nonexistentContractNotNewlyCreated() {
+        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
+        assertFalse(writableStore.isNewlyCreated(contractIdByNum));
+    }
+
+    @Test
+    void extantContractNotNewlyCreated() {
+        final var beforeNonce = 123L;
+        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
+        writableAccounts.put(contractIdByNum, contractWith(contractIdByNum, beforeNonce));
+        writableAccounts.commit();
+        assertFalse(writableStore.isNewlyCreated(contractIdByNum));
+    }
+
+    @Test
+    void returnsOnlyUpdatedContractNonces() {
+        final var beforeNonce = 123L;
+        final var afterNonce = 456L;
+        final var unchangedOtherNonce = 789;
+        final var brandNewNonce = 999;
+        final var contractIdByNum = AccountID.newBuilder().accountNum(666).build();
+        final var otherContractIdByNum = AccountID.newBuilder().accountNum(777).build();
+        final var newContractIdByNum = AccountID.newBuilder().accountNum(888).build();
+        writableAccounts.put(contractIdByNum, contractWith(contractIdByNum, beforeNonce));
+        writableAccounts.put(otherContractIdByNum, contractWith(otherContractIdByNum, unchangedOtherNonce));
+        writableAccounts.commit();
+
+        final var newContract = requireNonNull(writableStore.getForModify(contractIdByNum))
+                .copyBuilder()
+                .ethereumNonce(afterNonce)
+                .build();
+        writableStore.put(newContract);
+        writableStore.put(contractWith(newContractIdByNum, brandNewNonce));
+
+        final var expectedUpdates = Set.of(
+                new ContractNonceInfo(ContractID.newBuilder().contractNum(666).build(), afterNonce),
+                new ContractNonceInfo(ContractID.newBuilder().contractNum(888).build(), brandNewNonce));
+
+        assertEquals(expectedUpdates, new HashSet<>(writableStore.updatedContractNonces()));
     }
 
     @Test
@@ -69,6 +124,14 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
 
         assertThat(readaccount).isNotNull();
         assertThat(account).isEqualTo(readaccount);
+    }
+
+    @Test
+    void canRemoveAlias() {
+        writableStore.putAlias(alias.aliasOrThrow(), id);
+        assertEquals(1, writableStore.sizeOfAliasesState());
+        writableStore.removeAlias(alias.aliasOrThrow());
+        assertEquals(0, writableStore.sizeOfAliasesState());
     }
 
     @Test
@@ -117,5 +180,13 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
         assertThat(writableStore.sizeOfAccountState()).isEqualTo(1);
         assertThat(writableStore.modifiedAccountsInState())
                 .isEqualTo(Set.of(AccountID.newBuilder().accountNum(3).build()));
+    }
+
+    private Account contractWith(final AccountID id, final long nonce) {
+        return Account.newBuilder()
+                .accountId(id)
+                .smartContract(true)
+                .ethereumNonce(nonce)
+                .build();
     }
 }
