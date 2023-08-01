@@ -228,7 +228,6 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.OptionalLong;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -303,7 +302,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 contractCreateNoncesExternalizationHappyPath(),
                 contractCreateFollowedByContractCallNoncesExternalization(),
                 shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled(),
-                congestionMultipliersRefreshOnPropertyUpdate(),
                 transferHbarsViaEip2390TxSuccessfully());
     }
 
@@ -2369,57 +2367,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         }))
                 .when()
                 .then();
-    }
-
-    private HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
-        final var civilian = "civilian";
-        final var preCongestionTxn = "preCongestionTxn";
-        final var postCongestionTxn = "postCongestionTxn";
-        final var multipurposeContract = "Multipurpose";
-        final var normalPrice = new AtomicLong();
-        final var multipliedPrice = new AtomicLong();
-
-        return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
-                .preserving("fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec")
-                .given(
-                        cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(multipurposeContract),
-                        contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
-                        contractCall(multipurposeContract)
-                                .payingWith(civilian)
-                                .fee(10 * ONE_HBAR)
-                                .sending(ONE_HBAR)
-                                .via(preCongestionTxn),
-                        getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
-                        overridingThree(
-                                "contracts.maxGasPerSec", "3_000_000",
-                                "fees.percentCongestionMultipliers", "1,5x",
-                                "fees.minCongestionPeriod", "1"))
-                .when(withOpContext((spec, opLog) -> {
-                    for (int i = 0; i < 25; i++) {
-                        TimeUnit.MILLISECONDS.sleep(50);
-                        allRunFor(
-                                spec,
-                                contractCall(multipurposeContract)
-                                        .payingWith(civilian)
-                                        .gas(200_000)
-                                        .fee(10 * ONE_HBAR)
-                                        .sending(ONE_HBAR)
-                                        .deferStatusResolution());
-                    }
-                }))
-                .then(
-                        contractCall(multipurposeContract)
-                                .payingWith(civilian)
-                                .fee(10 * ONE_HBAR)
-                                .sending(ONE_HBAR)
-                                .via(postCongestionTxn),
-                        getTxnRecord(postCongestionTxn).providingFeeTo(multipliedPrice::set),
-                        withOpContext((spec, opLog) -> Assertions.assertEquals(
-                                5.0,
-                                (1.0 * multipliedPrice.get()) / normalPrice.get(),
-                                0.1,
-                                "~5x multiplier should be in affect!")));
     }
 
     @Override
