@@ -13,9 +13,9 @@ The platform code is split into three categories:
 This code is maintained by the "Platform Base" team.
 
 - [Configuration](./base/configuration/configuration.md)
-- Metrics
+- [Metrics](./base/metrics/metrics.md)
     - Prometheus
-    - [Busy time metrics](./base/metrics/busy-time-metric.md)
+    - [Busy time metrics](base/metrics/metric-types/busy-time-metric.md)
 - Logging
 - Thread Management
 
@@ -25,10 +25,12 @@ This code is maintained by the "Platform Hashgraph" team.
 
 - [System Startup Sequence](./core/system-startup-sequence.svg)
 - [Platform Status](./core/platform-status.md)
+- [Threads](./core/core-platform-threads.drawio.svg)
 - Components
-    - Gossip
-        - Sync gossip algorithm
-        - Out of order gossip algorithm
+    - [Networking](core/network/network.md)
+    - [Gossip](./core/gossip/gossip.md)
+        - [Sync gossip algorithm](core/gossip/syncing/sync-protocol.md)
+        - [Out of order gossip algorithm](core/gossip/OOG/OOG-protocol.md)
     - Hashgraph
     - State management
         - [Rules for using SignedState objects](./core/signed-state-use.md)
@@ -42,9 +44,13 @@ This code is maintained by the "Platform Hashgraph" team.
     - Application Communication
 - Event Flow
     - Event Intake
-    - Pre-consensus event stream
+    - [Pre-consensus event stream](core/preconsensusEventStream.svg)
     - Post-consensus event stream
     - Threading Diagram
+- [Freeze](core/freeze/freeze.md)
+- WIP
+    - [Address book management](core/address-book-management.md)
+- [External docs](https://drive.google.com/drive/folders/161GObnZVBWXKy4MHulBZKFcBDsNTU5FB?usp=drive_link)
 
 ## Data
 
