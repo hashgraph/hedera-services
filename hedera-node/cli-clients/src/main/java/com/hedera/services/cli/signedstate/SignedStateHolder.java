@@ -111,12 +111,19 @@ public class SignedStateHolder implements AutoCloseableNonThrowing {
      *
      * @param ids - direct from the signed state file there's one contract id for each bytecode, but
      *     there are duplicates which can be coalesced and then there's a set of ids for the single
-     *     contract
+     *     contract; kept in sorted order by the container `TreeSet` so it's easy to get the canonical
+     *     id for the contract, and also you can't forget to process them in a deterministic order
      * @param bytecode - bytecode of the contract
      * @param validity - whether the contract is valid or note, aka active or deleted
      */
     public record Contract(
             @NonNull TreeSet</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode, @NonNull Validity validity) {
+
+        // For any set of contract ids with the same bytecode, the lowest contract id is used as the "canonical"
+        // id for that bytecode (useful for ordering contracts deterministically)
+        public int canonicalId() {
+            return ids.first();
+        }
 
         @Override
         public boolean equals(final Object o) {
