@@ -67,6 +67,7 @@ public class EmergencyReconnectProtocol implements Protocol {
 
     /**
      * @param threadManager            responsible for managing thread lifecycles
+     * @param notificationEngine       the notification engine to use
      * @param peerId                   the ID of the peer we are communicating with
      * @param emergencyRecoveryManager the state of emergency recovery, if any
      * @param teacherThrottle          restricts reconnects as a teacher
