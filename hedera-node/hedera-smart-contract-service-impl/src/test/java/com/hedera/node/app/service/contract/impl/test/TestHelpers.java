@@ -16,19 +16,33 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.*;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
-import com.hedera.node.app.service.contract.impl.hevm.*;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -36,6 +50,8 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -49,6 +65,7 @@ import org.hyperledger.besu.evm.operation.Operation;
 
 public class TestHelpers {
     public static final int HEDERA_MAX_REFUND_PERCENTAGE = 20;
+    public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final long REQUIRED_GAS = 123L;
     public static final long NONCE = 678;
     public static final long VALUE = 999_999;
@@ -65,9 +82,11 @@ public class TestHelpers {
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
     public static final Bytes LOG_DATA = Bytes.wrap(new byte[] {6, 6, 6});
     public static final Bytes OUTPUT_DATA = Bytes.wrap(new byte[] {9, 8, 7, 6, 5, 4, 3, 2, 1});
     public static final Bytes TOPIC = Bytes.wrap(new byte[] {11, 21, 31, 41, 51, 61, 71, 81, 91});
+    public static final Bytes OTHER_TOPIC = Bytes.wrap(new byte[] {99, 29, 39, 49, 59, 69, 79, 89, 99});
     public static final Bytes MAINNET_CHAIN_ID = Bytes.fromHex("0127");
     public static final AccountID SENDER_ID =
             AccountID.newBuilder().accountNum(1234).build();
@@ -75,13 +94,15 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(2345).build();
     public static final ContractID CALLED_CONTRACT_ID =
             ContractID.newBuilder().contractNum(666).build();
+    public static final ContractID CHILD_CONTRACT_ID =
+            ContractID.newBuilder().contractNum(777).build();
     public static final AccountID CALLED_EOA_ID =
             AccountID.newBuilder().accountNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
     public static final Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
-    public static final Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString("0x167");
+    public static final Address HTS_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x167");
     public static final Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
@@ -95,14 +116,25 @@ public class TestHelpers {
     public static final ContractID CALLED_CONTRACT_EVM_ADDRESS = ContractID.newBuilder()
             .evmAddress(tuweniToPbjBytes(EIP_1014_ADDRESS))
             .build();
+    public static final List<ContractNonceInfo> NONCES =
+            List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, NONCE), new ContractNonceInfo(CHILD_CONTRACT_ID, 1L));
+    public static final EntityNumber CALLED_CONTRACT_ENTITY_NUMBER = new EntityNumber(666);
     public static final Code CONTRACT_CODE = CodeFactory.createCode(pbjToTuweniBytes(CALL_DATA), 0, false);
     public static final Log BESU_LOG = new Log(
             NON_SYSTEM_LONG_ZERO_ADDRESS,
             pbjToTuweniBytes(TestHelpers.CALL_DATA),
             List.of(LogTopic.of(pbjToTuweniBytes(TestHelpers.TOPIC))));
+    public static final Log SECOND_BESU_LOG = new Log(
+            HTS_SYSTEM_CONTRACT_ADDRESS,
+            pbjToTuweniBytes(TestHelpers.CALL_DATA),
+            List.of(LogTopic.of(pbjToTuweniBytes(TestHelpers.OTHER_TOPIC))));
+    public static final List<Log> BESU_LOGS = List.of(BESU_LOG, SECOND_BESU_LOG);
 
     public static final GasCharges CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, MAX_GAS_ALLOWANCE / 2);
     public static final GasCharges NO_ALLOWANCE_CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, 0);
+
+    public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
+            SENDER_ID, null, CALLED_CONTRACT_ID, NONCE, CALL_DATA, MAINNET_CHAIN_ID, VALUE, GAS_LIMIT, 0L, 0L);
     public static final HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
             GAS_LIMIT / 2,
             Wei.of(NETWORK_GAS_PRICE),
@@ -110,6 +142,18 @@ public class TestHelpers {
             CALLED_CONTRACT_EVM_ADDRESS,
             pbjToTuweniBytes(CALL_DATA),
             List.of(BESU_LOG),
+            null);
+
+    public static final HederaEvmTransactionResult FAILURE_RESULT = new HederaEvmTransactionResult(
+            GAS_LIMIT / 2,
+            NETWORK_GAS_PRICE,
+            null,
+            null,
+            Bytes.EMPTY,
+            "I prefer not to",
+            null,
+            null,
+            Collections.emptyList(),
             null);
 
     public static final StorageAccesses ONE_STORAGE_ACCESSES =
@@ -148,6 +192,26 @@ public class TestHelpers {
             .recipientContract(CALLED_CONTRACT_ID)
             .gas(REMAINING_GAS)
             .build();
+    private static final ContractCreateTransactionBody MOCK_CREATE_BODY = ContractCreateTransactionBody.newBuilder()
+            .memo("Something to think about")
+            .build();
+    public static final TransactionBody MOCK_CREATION = TransactionBody.newBuilder()
+            .contractCreateInstance(MOCK_CREATE_BODY)
+            .build();
+
+    private static final ContractCallTransactionBody MOCK_CALL_BODY = ContractCallTransactionBody.newBuilder()
+            .contractID(CALLED_CONTRACT_ID)
+            .build();
+    public static final TransactionBody MOCK_CALL =
+            TransactionBody.newBuilder().contractCall(MOCK_CALL_BODY).build();
+
+    private static final EthereumTransactionBody MOCK_ETH_BODY =
+            EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
+    public static final TransactionBody MOCK_ETH =
+            TransactionBody.newBuilder().ethereumTransaction(MOCK_ETH_BODY).build();
+
+    public static final VerificationStrategy MOCK_VERIFICATION_STRATEGY =
+            new ActiveContractVerificationStrategy(1, Bytes.EMPTY, true);
 
     public static void assertSameResult(
             final Operation.OperationResult expected, final Operation.OperationResult actual) {

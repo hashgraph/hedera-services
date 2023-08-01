@@ -60,7 +60,7 @@ public class IterableStorageUtils {
     }
 
     public static String joinedStorageMappings(
-            final ContractKey firstKey, final VirtualMap<ContractKey, IterableContractValue> storage) {
+            final ContractKey firstKey, final VirtualMapLike<ContractKey, IterableContractValue> storage) {
         if (firstKey == null) {
             return NO_ITERABLE_STORAGE;
         }

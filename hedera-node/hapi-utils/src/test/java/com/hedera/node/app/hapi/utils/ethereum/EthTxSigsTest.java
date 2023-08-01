@@ -153,7 +153,7 @@ class EthTxSigsTest {
     }
 
     @Test
-    void doesntSignEIP2930() {
+    void signsEIP2930() {
         final var tx = new EthTxData(
                 null,
                 EthTxData.EthTransactionType.EIP2930,
@@ -172,7 +172,10 @@ class EthTxSigsTest {
                 new byte[0],
                 new byte[0]);
 
-        assertThrows(IllegalArgumentException.class, () -> EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY));
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+
+        assertNotNull(signedTx.r());
+        assertNotNull(signedTx.s());
     }
 
     @Test
