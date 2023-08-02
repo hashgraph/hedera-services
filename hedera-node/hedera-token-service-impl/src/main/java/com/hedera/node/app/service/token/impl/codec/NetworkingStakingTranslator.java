@@ -39,37 +39,4 @@ public final class NetworkingStakingTranslator {
                 .pendingRewards(merkleNetworkContext.pendingRewards())
                 .build();
     }
-    /*
-    @NonNull
-    /***
-     * Converts a {@link ReadableNetworkStakingRewardsStore} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}.
-     * @param readableNetworkStakingRewardsStore the {@link ReadableNetworkStakingRewardsStore} to convert
-     * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
-     */
-    /*   public static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
-            merkleNetworkContextFromNetworkStakingRewards(
-                    @NonNull ReadableNetworkStakingRewardsStore readableNetworkStakingRewardsStore) {
-        requireNonNull(readableNetworkStakingRewardsStore);
-        final var networkStakingRewards = readableNetworkStakingRewardsStore.get();
-        return merkleNetworkContextFromNetworkStakingRewards(networkStakingRewards);
-    }*/
-
-    /*   @NonNull
-    /***
-     * Converts a {@link NetworkStakingRewards} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}.
-     * @param networkStakingRewards the {@link NetworkStakingRewards} to convert
-     * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
-     */
-    /*  public static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
-            merkleNetworkContextFromNetworkStakingRewards(@NonNull NetworkStakingRewards networkStakingRewards) {
-        requireNonNull(networkStakingRewards);
-        final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
-                new com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext();
-
-        merkleNetworkContext.setStakingRewardsActivated(networkStakingRewards.stakingRewardsActivated());
-        merkleNetworkContext.setTotalStakedRewardStart(networkStakingRewards.totalStakedRewardStart());
-        merkleNetworkContext.setTotalStakedStart(networkStakingRewards.totalStakedStart());
-        merkleNetworkContext.setPendingRewards(networkStakingRewards.pendingRewards());
-        return merkleNetworkContext;
-    }*/
 }

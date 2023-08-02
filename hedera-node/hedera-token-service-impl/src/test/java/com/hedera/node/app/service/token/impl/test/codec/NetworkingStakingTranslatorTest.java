@@ -49,23 +49,6 @@ public class NetworkingStakingTranslatorTest {
         subject = new ReadableNetworkStakingRewardsStoreImpl(states);
     }
 
-    /*  @Test
-    void createMerkleNetworkContextFromNetworkStakingRewards() {
-
-        final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
-                NetworkingStakingTranslator.merkleNetworkContextFromNetworkStakingRewards(subject.get());
-
-        assertMatch(merkleNetworkContext, getExpectedMerkleNetworkContext());
-    }
-
-    @Test
-    void createMerkleNetworkContextFromReadableSingletonState() {
-        final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
-                NetworkingStakingTranslator.merkleNetworkContextFromNetworkStakingRewards(subject);
-
-        assertMatch(merkleNetworkContext, getExpectedMerkleNetworkContext());
-    }*/
-
     @Test
     void createNetworkStakingRewardsFromMerkleNetworkContext() {
         final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
@@ -80,15 +63,6 @@ public class NetworkingStakingTranslatorTest {
                 NetworkingStakingTranslator.networkStakingRewardsFromMerkleNetworkContext(merkleNetworkContext);
 
         assertEquals(getExpectedNetworkStakingRewards(), convertedNetworkStakingRewards);
-    }
-
-    private void assertMatch(
-            com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext expected,
-            com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext actual) {
-        assertEquals(expected.areRewardsActivated(), actual.areRewardsActivated());
-        assertEquals(expected.getTotalStakedRewardStart(), actual.getTotalStakedRewardStart());
-        assertEquals(expected.getTotalStakedStart(), actual.getTotalStakedStart());
-        assertEquals(expected.pendingRewards(), actual.pendingRewards());
     }
 
     private com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext getExpectedMerkleNetworkContext() {
