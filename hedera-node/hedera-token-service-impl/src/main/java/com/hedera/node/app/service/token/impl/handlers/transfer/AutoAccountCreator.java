@@ -131,7 +131,7 @@ public class AutoAccountCreator {
                 }
             }
         }
-        // TODO: Not sure if fee should be set here childRecord.transactionFee(fee);
+        childRecord.transactionFee(fee);
 
         final var createdAccountId = accountStore.getAccountIDByAlias(alias);
         validateTrue(createdAccountId != null, FAIL_INVALID);

@@ -43,4 +43,7 @@ public interface CryptoCreateRecordBuilder {
      */
     @NonNull
     CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress);
+
+    @NonNull
+    CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee);
 }
