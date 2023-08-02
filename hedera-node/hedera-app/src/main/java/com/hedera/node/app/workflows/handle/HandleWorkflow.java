@@ -87,6 +87,7 @@ public class HandleWorkflow {
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
     public HandleWorkflow(
@@ -101,7 +102,8 @@ public class HandleWorkflow {
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
             @NonNull final HederaRecordCache recordCache,
-            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook) {
+            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -114,6 +116,7 @@ public class HandleWorkflow {
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     /**
@@ -176,6 +179,9 @@ public class HandleWorkflow {
                 // in this case, recorder hash the transaction itself, not its' bodyBytes.
                 transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
             }
+            // FutureWork: set a check for changes in file 0.0.112
+            final var exchangeRate = exchangeRateManager.createUpdateExchangeRates(state, configuration);
+
             recordBuilder
                     .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionBytes)

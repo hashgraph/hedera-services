@@ -149,6 +149,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private StakingPeriodTimeHook stakingPeriodTimeHook;
 
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
@@ -193,7 +196,8 @@ class HandleWorkflowTest extends AppTestBase {
                 configProvider,
                 instantSource,
                 recordCache,
-                stakingPeriodTimeHook);
+                stakingPeriodTimeHook,
+                exchangeRateManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -211,8 +215,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -225,8 +230,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -239,8 +245,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -253,8 +260,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -267,8 +275,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -281,8 +290,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -295,8 +305,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -309,8 +320,9 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -323,8 +335,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         null,
                         instantSource,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -337,8 +350,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         null,
-                        recordCache,
-                        stakingPeriodTimeHook))
+                recordCache,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -351,8 +365,9 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        null,
-                        stakingPeriodTimeHook))
+                null,
+                stakingPeriodTimeHook,
+                exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -365,8 +380,24 @@ class HandleWorkflowTest extends AppTestBase {
                         serviceLookup,
                         configProvider,
                         instantSource,
-                        recordCache,
-                        null))
+                recordCache,
+                null,
+                exchangeRateManager))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                recordCache,
+                stakingPeriodTimeHook,
+                null))
                 .isInstanceOf(NullPointerException.class);
     }
 
