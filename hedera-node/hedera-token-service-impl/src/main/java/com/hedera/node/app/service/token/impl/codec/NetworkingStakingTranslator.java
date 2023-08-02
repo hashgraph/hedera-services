@@ -19,7 +19,6 @@ package com.hedera.node.app.service.token.impl.codec;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public final class NetworkingStakingTranslator {
@@ -40,28 +39,28 @@ public final class NetworkingStakingTranslator {
                 .pendingRewards(merkleNetworkContext.pendingRewards())
                 .build();
     }
-
+    /*
     @NonNull
     /***
      * Converts a {@link ReadableNetworkStakingRewardsStore} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}.
      * @param readableNetworkStakingRewardsStore the {@link ReadableNetworkStakingRewardsStore} to convert
      * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
      */
-    public static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
+    /*   public static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
             merkleNetworkContextFromNetworkStakingRewards(
                     @NonNull ReadableNetworkStakingRewardsStore readableNetworkStakingRewardsStore) {
         requireNonNull(readableNetworkStakingRewardsStore);
         final var networkStakingRewards = readableNetworkStakingRewardsStore.get();
         return merkleNetworkContextFromNetworkStakingRewards(networkStakingRewards);
-    }
+    }*/
 
-    @NonNull
+    /*   @NonNull
     /***
      * Converts a {@link NetworkStakingRewards} to a {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}.
      * @param networkStakingRewards the {@link NetworkStakingRewards} to convert
      * @return the {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext}
      */
-    public static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
+    /*  public static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
             merkleNetworkContextFromNetworkStakingRewards(@NonNull NetworkStakingRewards networkStakingRewards) {
         requireNonNull(networkStakingRewards);
         final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
@@ -72,5 +71,5 @@ public final class NetworkingStakingTranslator {
         merkleNetworkContext.setTotalStakedStart(networkStakingRewards.totalStakedStart());
         merkleNetworkContext.setPendingRewards(networkStakingRewards.pendingRewards());
         return merkleNetworkContext;
-    }
+    }*/
 }

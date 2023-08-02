@@ -49,7 +49,7 @@ public class NetworkingStakingTranslatorTest {
         subject = new ReadableNetworkStakingRewardsStoreImpl(states);
     }
 
-    @Test
+    /*  @Test
     void createMerkleNetworkContextFromNetworkStakingRewards() {
 
         final com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext merkleNetworkContext =
@@ -64,7 +64,7 @@ public class NetworkingStakingTranslatorTest {
                 NetworkingStakingTranslator.merkleNetworkContextFromNetworkStakingRewards(subject);
 
         assertMatch(merkleNetworkContext, getExpectedMerkleNetworkContext());
-    }
+    }*/
 
     @Test
     void createNetworkStakingRewardsFromMerkleNetworkContext() {
