@@ -20,7 +20,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;

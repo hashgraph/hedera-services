@@ -45,6 +45,7 @@ import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.io.FileManipulation;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.preconsensus.AsyncPreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileManager;
@@ -52,7 +53,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventMultiFileIterato
 import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamSequencer;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventWriter;
 import com.swirlds.platform.event.preconsensus.SyncPreconsensusEventWriter;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
 import com.swirlds.test.framework.config.TestConfigBuilder;

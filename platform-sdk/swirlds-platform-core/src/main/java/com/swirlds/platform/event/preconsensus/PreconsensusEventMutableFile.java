@@ -19,7 +19,7 @@ package com.swirlds.platform.event.preconsensus;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;

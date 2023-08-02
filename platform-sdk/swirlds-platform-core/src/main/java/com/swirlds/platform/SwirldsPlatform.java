@@ -122,7 +122,6 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraphEventObserver;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.intake.IntakeCycleStats;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.AddedEventMetrics;
 import com.swirlds.platform.metrics.ConsensusHandlingMetrics;
 import com.swirlds.platform.metrics.ConsensusMetrics;

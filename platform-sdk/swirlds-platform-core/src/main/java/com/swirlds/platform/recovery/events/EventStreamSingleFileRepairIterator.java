@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.recovery.internal;
+package com.swirlds.platform.recovery.events;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 

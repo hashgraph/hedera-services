@@ -101,7 +101,8 @@ module com.swirlds.platform {
             com.swirlds.platform.test;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.recovery.internal to
+    exports com.swirlds.platform.recovery.events to
+            com.hedera.node.services.cli,
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to
             com.swirlds.config.impl;

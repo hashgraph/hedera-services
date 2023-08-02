@@ -20,8 +20,8 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.events.ConsensusData;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.event.InternalEventData;
-import com.swirlds.platform.internal.EventImpl;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**

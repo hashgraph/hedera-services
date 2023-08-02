@@ -20,7 +20,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.consensus.RoundNumberProvider;
-import com.swirlds.platform.internal.EventImpl;
 import java.util.List;
 
 /**

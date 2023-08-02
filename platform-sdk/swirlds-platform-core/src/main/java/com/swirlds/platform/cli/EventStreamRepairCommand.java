@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer.DAMAGED_SUFFIX;
+import static com.swirlds.platform.recovery.events.EventStreamSingleFileRepairer.DAMAGED_SUFFIX;
 import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistry;
 
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer;
+import com.swirlds.platform.recovery.events.EventStreamSingleFileRepairer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

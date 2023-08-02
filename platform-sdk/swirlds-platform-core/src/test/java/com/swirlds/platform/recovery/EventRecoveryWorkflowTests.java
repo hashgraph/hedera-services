@@ -40,7 +40,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.EventImpl;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.MinGenInfo;
 import java.io.IOException;

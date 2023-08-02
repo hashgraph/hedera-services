@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.internal;
+package com.swirlds.platform;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndLogIfInterrupted;
 
@@ -42,8 +42,6 @@ import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SystemTransaction;
 import com.swirlds.common.utility.CommonUtils;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.RoundInfo;
 import com.swirlds.platform.event.EventCounter;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.InternalEventData;

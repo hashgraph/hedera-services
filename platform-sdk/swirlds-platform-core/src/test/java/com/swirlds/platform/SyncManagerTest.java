@@ -47,7 +47,6 @@ import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.sync.SyncManagerImpl;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.test.framework.config.TestConfigBuilder;
