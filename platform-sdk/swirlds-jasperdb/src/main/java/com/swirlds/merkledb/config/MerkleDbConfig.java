@@ -49,7 +49,7 @@ import java.time.temporal.ChronoUnit;
  * 		to be one of the constants of the {@link ChronoUnit} enum ("SECONDS", "MINUTES", or "HOURS" are the most
  * 		likely to be used). Default is MINUTES.
  * @param maxNumberOfFilesInMerge
- * 		The maximum number of files to include in a single merge. Sets a maximum value for the number of files we will
+ *  	(Deprecated, no longer in use) The maximum number of files to include in a single merge. Sets a maximum value for the number of files we will
  * 		permit to be used in a single merge. The merging algorithm scales at something near O(n^2), and under some
  * 		conditions can get into a runaway state where we are never able to merge all the files. By keeping the number
  * 		fixed, we can use a fixed amount of memory no matter how many files there are, and we can keep each merge round
@@ -112,8 +112,7 @@ public record MerkleDbConfig(
         @ConfigProperty(defaultValue = "10240") int mediumMergeCutoffMb,
         @ConfigProperty(defaultValue = "3072") int smallMergeCutoffMb,
         @ConfigProperty(defaultValue = "MINUTES") ChronoUnit mergePeriodUnit,
-        @ConstraintMethod("maxNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "64")
-                int maxNumberOfFilesInMerge,
+        @Deprecated(forRemoval = true) @ConfigProperty(defaultValue = "64") int maxNumberOfFilesInMerge,
         @ConstraintMethod("minNumberOfFilesInMergeValidation") @ConfigProperty(defaultValue = "8")
                 int minNumberOfFilesInMerge,
         @Min(0) @ConfigProperty(defaultValue = "1") long mergeActivatePeriod,
@@ -133,31 +132,13 @@ public record MerkleDbConfig(
 
     static double UNIT_FRACTION_PERCENT = 100.0;
 
-    public ConfigViolation maxNumberOfFilesInMergeValidation(final Configuration configuration) {
-        final long maxNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).maxNumberOfFilesInMerge();
-        final long minNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).minNumberOfFilesInMerge();
-        if (maxNumberOfFilesInMerge <= minNumberOfFilesInMerge) {
-            return new DefaultConfigViolation(
-                    "maxNumberOfFilesInMerge",
-                    "%d".formatted(maxNumberOfFilesInMerge),
-                    true,
-                    "Cannot configure maxNumberOfFilesInMerge to " + maxNumberOfFilesInMerge + ", it must be > "
-                            + minNumberOfFilesInMerge);
-        }
-        return null;
-    }
-
     public ConfigViolation minNumberOfFilesInMergeValidation(final Configuration configuration) {
-        final long maxNumberOfFilesInMerge =
-                configuration.getConfigData(MerkleDbConfig.class).maxNumberOfFilesInMerge();
         final long minNumberOfFilesInMerge =
                 configuration.getConfigData(MerkleDbConfig.class).minNumberOfFilesInMerge();
         if (minNumberOfFilesInMerge < 2) {
             return new DefaultConfigViolation(
-                    "maxNumberOfFilesInMerge",
-                    "%d".formatted(maxNumberOfFilesInMerge),
+                    "minNumberOfFilesInMerge",
+                    "%d".formatted(minNumberOfFilesInMerge),
                     true,
                     "Cannot configure minNumberOfFilesInMerge to " + minNumberOfFilesInMerge + ", it must be >= 2");
         }

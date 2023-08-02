@@ -64,7 +64,7 @@ public final class DataFileMetadata {
     /** Serialization version for data stored in the file */
     private final long serializationVersion;
     /** The level of compaction this file has. See {@link DataFileCompactor}*/
-    private final int compactionLevel;
+    private final byte compactionLevel;
 
     /**
      * Create a new DataFileMetadata with complete set of data
@@ -95,7 +95,7 @@ public final class DataFileMetadata {
         this.creationDate = creationDate;
         this.serializationVersion = serializationVersion;
         assert compactionLevel >= 0 && compactionLevel < 127;
-        this.compactionLevel = compactionLevel;
+        this.compactionLevel = (byte) compactionLevel;
     }
 
     /**
@@ -135,7 +135,7 @@ public final class DataFileMetadata {
         buf.putInt(this.index);
         buf.putLong(this.creationDate.getEpochSecond());
         buf.putInt(this.creationDate.getNano());
-        buf.put((byte) compactionLevel);
+        buf.put(compactionLevel);
         buf.putLong(this.serializationVersion);
         buf.rewind();
         return buf;

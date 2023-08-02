@@ -35,11 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -62,18 +58,12 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
     @BeforeAll
     public static void setup() {
-        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        final Configuration config = ctx.getConfiguration();
-        final LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
-        currentLogLevel = loggerConfig.getLevel();
-        // To prevent excessive logging we reduce the log level to WARN for this test.
-        // See https://github.com/hashgraph/hedera-services/issues/7083 for the context
-        loggerConfig.setLevel(Level.WARN);
+        Configurator.setRootLevel(Level.WARN);
     }
 
     @AfterAll
     public static void cleanUp() {
-        Configurator.setLevel(LogManager.ROOT_LOGGER_NAME, currentLogLevel);
+        Configurator.reconfigure();
     }
 
     /**
@@ -180,6 +170,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
                 (ThrowingSupplier<Void>) modifierFuture::get, "Should not throw, something failed while modifying.");
         assertDoesNotThrow(
                 (ThrowingSupplier<Void>) mergeFuture::get, "Should not throw, something failed while merging.");
+        index.close();
     }
 
     /**

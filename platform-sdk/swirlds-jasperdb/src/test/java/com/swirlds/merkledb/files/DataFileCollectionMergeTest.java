@@ -66,7 +66,12 @@ class DataFileCollectionMergeTest {
         final Map<Long, Long> index = new HashMap<>();
         final var serializer = new ExampleFixedSizeDataSerializer();
         final var coll = new DataFileCollection<>(tempFileDir.resolve("mergeTest"), "mergeTest", serializer, null);
-        final var compactor = new DataFileCompactor(coll);
+        final var compactor = new DataFileCompactor(coll) {
+            @Override
+            int getMinNumberOfFilesToMerge() {
+                return 2;
+            }
+        };
 
         coll.startWriting();
         index.put(1L, coll.storeDataItem(new long[] {1, APPLE}));
