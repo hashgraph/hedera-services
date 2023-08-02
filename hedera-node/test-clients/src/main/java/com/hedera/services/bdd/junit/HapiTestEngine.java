@@ -33,6 +33,7 @@ import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -44,10 +45,13 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
@@ -71,22 +75,28 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
 import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.discovery.ClassSelector;
+import org.junit.platform.engine.discovery.ClasspathRootSelector;
 import org.junit.platform.engine.discovery.MethodSelector;
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor;
 import org.junit.platform.engine.support.descriptor.ClassSource;
@@ -138,17 +148,49 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
+
+        // We obtain the selectors using MethodSelector and ClassSelector because we don't know how the
+        // tests will be executed. If we run tests at the class level, we will have a ClassSelector.
+        // If we run a single test, we will have a MethodSelector.
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            if (IS_HAPI_TEST_SUITE.test(javaClass)) {
-                discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
-                final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
-                if (!classDescriptor.skip) {
-                    engineDescriptor.addChild(classDescriptor);
-                }
-            }
+            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
         });
+
+        discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
+            final var javaClass = selector.getJavaClass();
+            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+        });
+
+        // This is not working as expected, but it's still useful. Because in the EngineDiscoveryRequest we only
+        // have access up-to the main package this code will execute all HapiTests under it.
+        // This means that if you run the tests from whatever package all HapiTests will be started.
+        // We should fix that but for now this can still be useful.
+        // For more information: https://github.com/hashgraph/hedera-services/pull/7730#discussion_r1279360505
+        discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
+            appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
+        });
+
         return engineDescriptor;
+    }
+
+    private static void addChildToEngineDescriptor(
+            Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
+        if (IS_HAPI_TEST_SUITE.test(javaClass)) {
+            discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
+            final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
+            if (!classDescriptor.skip) {
+                engineDescriptor.addChild(classDescriptor);
+            }
+        }
+    }
+
+    private void appendTestsInClasspathRoot(
+            URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
+        ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
+                .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
+                .filter(classTestDescriptor -> !classTestDescriptor.skip)
+                .forEach(engineDescriptor::addChild);
     }
 
     /**
@@ -242,6 +284,19 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 registry.registerConstructables("com.swirlds.merkle.tree");
 
                 // 1. Create a configuration instance with any desired overrides.
+                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
+                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
+                System.setProperty(
+                        "hedera.recordStream.logDir",
+                        tmpDir.resolve("recordStream").toString());
+                System.setProperty("accounts.storeOnDisk", "true");
+                System.setProperty("grpc.port", "0");
+                System.setProperty("grpc.tlsPort", "0");
+                System.setProperty("grpc.workflowsPort", "0");
+                System.setProperty("grpc.workflowsTlsPort", "0");
+                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
+                System.setProperty("platformStatus.observingStatusDelay", "0");
+
                 final var factory = ServiceLoader.load(ConfigurationBuilderFactory.class);
                 final var configBuilder = factory.findFirst().orElseThrow().create();
                 final var config = configBuilder
@@ -269,26 +324,16 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(WiringConfig.class)
                         .withConfigDataType(SyncConfig.class)
                         .withConfigDataType(UptimeConfig.class)
+                        .withConfigDataType(PlatformStatusConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
+                        .withSource(SystemPropertiesConfigSource.getInstance())
                         .build();
 
                 ConfigurationHolder.getInstance().setConfiguration(config);
                 CryptographyHolder.reset();
 
                 final var port = new InetSocketAddress(0).getPort();
-
-                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty(
-                        "hedera.recordStream.logDir",
-                        tmpDir.resolve("recordStream").toString());
-                System.setProperty("accounts.storeOnDisk", "true");
-                System.setProperty("grpc.port", "0");
-                System.setProperty("grpc.tlsPort", "0");
-                System.setProperty("grpc.workflowsPort", "0");
-                System.setProperty("grpc.workflowsTlsPort", "0");
-                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
 
                 // 3. Create a new Node ID for our node
                 final var nodeId = new NodeId(0);
@@ -356,9 +401,18 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 // 10. Init and Start
                 hedera.init(platform, nodeId);
+                final var latch = new CountDownLatch(1);
+                platform.getNotificationEngine().register(PlatformStatusChangeListener.class, notification -> {
+                    if (notification.getNewStatus() == PlatformStatus.ACTIVE) {
+                        latch.countDown();
+                    }
+                });
                 platform.start();
 
                 // 11. Initialize the HAPI Spec system
+                latch.await(30, TimeUnit.SECONDS);
+                hedera.run();
+
                 final var defaultProperties = JutilPropertySource.getDefaultInstance();
                 HapiSpec.runInCiMode(
                         String.valueOf(hedera.getGrpcPort()),
