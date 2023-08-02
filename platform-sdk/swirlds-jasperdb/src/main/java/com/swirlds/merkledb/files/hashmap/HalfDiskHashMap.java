@@ -23,7 +23,6 @@ import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.merkledb.CompactionType;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;
@@ -267,11 +266,11 @@ public class HalfDiskHashMap<K extends VirtualKey> implements AutoCloseable, Sna
      * @throws IOException if there was a problem merging
      * @throws InterruptedException If the merge thread was interupted
      */
-    public void compact(
-            @Nullable final BiConsumer<CompactionType, Long> reportDurationMetricFunction,
-            @Nullable final BiConsumer<CompactionType, Double> reportSavedSpaceMetricFunction)
+    public boolean compact(
+            @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
+            @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
             throws IOException, InterruptedException {
-        fileCompactor.compact(
+        return fileCompactor.compact(
                 bucketIndexToBucketLocation, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
     }
 

@@ -17,7 +17,6 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
-import static com.swirlds.merkledb.CompactionType.SMALL;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
@@ -456,7 +455,7 @@ class DataFileCollectionTest {
                         }
                     };
 
-                    mergedFiles = fileCompactor.compactFiles(indexUpdater, filesToMerge, SMALL);
+                    mergedFiles = fileCompactor.compactFiles(indexUpdater, filesToMerge, 1);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                     System.out.println(
                             "============= MERGE [" + numMoves.get() + "] MOVES DONE ===========================");
@@ -498,7 +497,7 @@ class DataFileCollectionTest {
         assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
-        List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft, SMALL);
+        List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft, 1);
         assertNotNull(secondMergeResults, "null merged files list");
         assertEquals(0, secondMergeResults.size(), "unexpected results from second merge");
     }
@@ -604,7 +603,7 @@ class DataFileCollectionTest {
                             storedOffsets.forEach(action);
                         }
                     };
-                    fileCompactor.compactFiles(indexUpdater, allFiles, SMALL);
+                    fileCompactor.compactFiles(indexUpdater, allFiles, 1);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -701,7 +700,7 @@ class DataFileCollectionTest {
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // merge
         fileCompactor.compactFiles(
-                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles(), SMALL);
+                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles(), 1);
         // check 1 files were opened and data is correct
         assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
         assertEquals(
@@ -751,7 +750,7 @@ class DataFileCollectionTest {
     public void testClosedByInterruptException() throws IOException {
         // mock appender to capture the log statements
         final MockAppender mockAppender = new MockAppender("testClosedByInterruptException");
-        Logger logger = (Logger) LogManager.getLogger(DataFileCollection.class);
+        Logger logger = (Logger) LogManager.getLogger(DataFileCompactor.class);
         mockAppender.start();
         logger.addAppender(mockAppender);
         final Path dbDir = tempFileDir.resolve("testClosedByInterruptException");
@@ -761,6 +760,7 @@ class DataFileCollectionTest {
         final DataFileCollection<long[]> fileCollection =
                 new DataFileCollection<>(dbDir, storeName, FilesTestType.fixed.dataItemSerializer, null);
         final LongListHeap storedOffsets = new LongListHeap(5000);
+        final DataFileCompactor compactor = new DataFileCompactor(fileCollection);
         populateDataFileCollection(FilesTestType.fixed, fileCollection, storedOffsets);
 
         // a flag to make sure that `compactFiles` th
@@ -780,9 +780,9 @@ class DataFileCollectionTest {
                     return invocation.callRealMethod();
                 });
 
-                List<DataFileReader<long[]>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
+                List<DataFileReader<?>> allCompletedFilesUpdated = new ArrayList<>(allCompletedFiles);
                 allCompletedFilesUpdated.set(0, spy);
-                fileCollection.compactFiles(storedOffsets, allCompletedFilesUpdated);
+                compactor.compactFiles(storedOffsets, allCompletedFilesUpdated, 1);
             } catch (InterruptedException e) {
                 // we expect interrupted exception here
                 closedByInterruptFromCompaction.set(true);

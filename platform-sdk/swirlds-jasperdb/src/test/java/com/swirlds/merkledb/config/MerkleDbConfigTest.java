@@ -34,11 +34,11 @@ class MerkleDbConfigTest {
     }
 
     @Test
-    public void testMinNumberOfFilesInMergeViolation() {
+    public void testMinNumberOfFilesInCompactionViolation() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
                 .withConfigDataTypes(MerkleDbConfig.class)
-                .withSources(new SimpleConfigSource("merkleDb.minNumberOfFilesInMerge", 1));
+                .withSources(new SimpleConfigSource("merkleDb.minNumberOfFilesInCompaction", 1));
 
         // when
         final ConfigViolationException configViolationException = Assertions.assertThrows(

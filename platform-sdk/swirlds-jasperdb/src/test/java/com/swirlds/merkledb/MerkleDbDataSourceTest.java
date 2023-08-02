@@ -509,6 +509,22 @@ class MerkleDbDataSourceTest {
         }
     }
 
+    //    @Test
+    //    void testStartCompactionIfNecessary_firstCompaction() throws IOException {
+    //        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+    //                createDataSource(testDirectory, "compaction_success", variable_variable, 1);
+    //        dataSource.enableBackgroundCompaction();
+    //
+    //        MerkleDbDataSource<?, ?> mockDataSource = mock(MerkleDbDataSource.class);
+    //
+    //        dataSource.startCompactionIfNecessary(mockDataSource);
+    //
+    //        assertEventuallyDoesNotThrow(() -> {
+    //            verify(mockDataSource, times(1)).doCompaction();
+    //        }, Duration.ofSeconds(1), "Expected doCompaction to be called once");
+    //
+    //    }
+
     // =================================================================================================================
     // Helper Methods
 
@@ -552,7 +568,7 @@ class MerkleDbDataSourceTest {
             // things that should have changed
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(key));
             assertEqualsAndPrint(expectedRecord, dataSource.loadLeafRecord(path));
-            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value");
+            assertEquals(hash(i), dataSource.loadHash(path), "unexpected Hash value for path " + path);
         } catch (final Exception e) {
             e.printStackTrace();
             fail("Exception should not have been thrown here!");

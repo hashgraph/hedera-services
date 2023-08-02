@@ -17,10 +17,20 @@
 package com.swirlds.merkledb;
 
 import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -28,6 +38,7 @@ import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Supports parameterized testing of {@link MerkleDbDataSource} with
@@ -160,6 +171,23 @@ public enum TestType {
             return (keySerializer.getSerializedSize() != Long.BYTES);
         }
 
+        private static Metrics createMetrics() {
+            final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+            MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+
+            final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
+            when(registry.register(any(), any(), any())).thenReturn(true);
+            Metrics metrics = new DefaultMetrics(
+                    null,
+                    registry,
+                    mock(ScheduledExecutorService.class),
+                    new DefaultMetricsFactory(metricsConfig),
+                    metricsConfig);
+            MerkleDbStatistics statistics = new MerkleDbStatistics("test");
+            statistics.registerMetrics(metrics);
+            return metrics;
+        }
+
         public MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> createDataSource(
                 final Path dbPath,
                 final String name,
@@ -177,7 +205,10 @@ public enum TestType {
                             .preferDiskIndices(preferDiskBasedIndexes)
                             .maxNumberOfKeys(size * 10L)
                             .hashesRamToDiskThreshold(hashesRamToDiskThreshold);
-            return database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
+            MerkleDbDataSource dataSource =
+                    database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
+            dataSource.registerMetrics(createMetrics());
+            return dataSource;
         }
 
         public MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> getDataSource(

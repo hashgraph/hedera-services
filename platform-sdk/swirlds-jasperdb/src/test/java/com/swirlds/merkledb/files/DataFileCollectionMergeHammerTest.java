@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.CompactionType.SMALL;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -91,7 +90,7 @@ class DataFileCollectionMergeHammerTest {
 
             final long start = System.currentTimeMillis();
             final var filesToMerge = (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
-            compactor.compactFiles(index, filesToMerge, SMALL);
+            compactor.compactFiles(index, filesToMerge, 1);
             System.out.println(numFiles + " files took " + (System.currentTimeMillis() - start) + "ms");
             index.close();
         });
@@ -165,7 +164,7 @@ class DataFileCollectionMergeHammerTest {
                     if (filesToMerge.size() > 10000) {
                         stop.set(true);
                     }
-                    compactor.compactFiles(index, filesToMerge, SMALL);
+                    compactor.compactFiles(index, filesToMerge, 1);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -332,5 +332,15 @@ public abstract class VirtualMapReconnectTestBase {
         public long getLastLeafPath() {
             return delegate.getLastLeafPath();
         }
+
+        @Override
+        public void enableBackgroundCompaction() {
+            // no op
+        }
+
+        @Override
+        public void stopAndDisableBackgroundCompaction() {
+            // no op
+        }
     }
 }

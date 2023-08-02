@@ -1360,7 +1360,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
         // shutdown background compaction on original data source as it is no longer needed to be running as all data
         // in that data source is only there as a starting point for reconnect now. So compacting it further is not
         // helpful and will just burn resources.
-        originalMap.dataSource.stopBackgroundCompaction();
+        originalMap.dataSource.stopAndDisableBackgroundCompaction();
 
         // Take a snapshot, and use the snapshot database as my data source
         this.dataSource = dataSourceBuilder.copy(originalMap.dataSource, true);
@@ -1485,7 +1485,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             learnerTreeView = null;
             postInit(fullyReconnectedState);
             // Start up data source compaction now
-            dataSource.startBackgroundCompaction();
+            dataSource.enableBackgroundCompaction();
         } catch (ExecutionException e) {
             final var message = "VirtualMap@" + getRoute() + " failed to get hash during learner reconnect";
             throw new MerkleSynchronizationException(message, e);

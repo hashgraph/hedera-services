@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.swirlds.common.utility.StopWatch;
 import com.swirlds.merkledb.collections.LongListOffHeap;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
@@ -48,7 +50,7 @@ import org.junit.jupiter.params.provider.CsvSource;
  * Hammers the {@link MemoryIndexDiskKeyValueStore} with a ton of concurrent changes to validate the
  * index and the data files are in sync and have all the data they should have.
  */
-class MemoryIndexDiskKeyValueStoreMergeHammerTest {
+class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
     private static Level currentLogLevel;
     /** Temporary directory provided by JUnit */
@@ -114,7 +116,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
         // nothing extra
         // was included.
         //
-        // The second thread merges files together. Before it merges the files it walks over each
+        // The second thread compacts files. Before it merges the files it walks over each
         // file and creates
         // a record of the most recent versions of each data item. Then after the merge it walks
         // over the resulting
@@ -133,8 +135,8 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
         // Start a thread for merging files together. The future will throw an exception if one
         // occurs on the thread.
-        final Merger merger = new Merger(index);
-        final Future<Void> mergeFuture = executor.submit(merger);
+        final Compactor compactor = new Compactor(index);
+        final Future<Void> mergeFuture = executor.submit(compactor);
 
         // We need to terminate the test if an error occurs in fail-fast manner. So we will keep a
         // record of
@@ -162,7 +164,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
 
         // OK, the test has completed, so stop both background threads (gracefully).
         modifier.stop();
-        merger.stop();
+        compactor.stop();
 
         // Check both futures with a blocking call to see if they through errors. If not, we're good
         // (no ISS).
@@ -174,7 +176,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
     }
 
     /**
-     * Helper class extended by both The {@link FakeVirtualMap} and {@link Merger}. Can be stopped.
+     * Helper class extended by both The {@link FakeVirtualMap} and {@link Compactor}. Can be stopped.
      */
     private abstract static class Worker implements Callable<Void> {
         /** For convenience of subclasses */
@@ -240,6 +242,8 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
         /** Represents the database */
         private final MemoryIndexDiskKeyValueStore<long[]> coll;
 
+        private final AtomicInteger counter = new AtomicInteger(0);
+
         public FakeVirtualMap(
                 final MemoryIndexDiskKeyValueStore<long[]> coll,
                 final int chanceOfAddElement,
@@ -277,6 +281,7 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
             save(cache);
             validate();
             MILLISECONDS.sleep(10);
+            counter.getAndIncrement();
         }
 
         /**
@@ -376,17 +381,31 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
          * FUNDAMENTAL CHECK of the test! If something goes wrong with merging, this check will find
          * it.
          *
-         * @throws IOException In case of error
          */
-        private void validate() throws IOException {
+        private void validate() {
+            StopWatch stopWatch = null;
+            if (counter.get() % 8 == 0) {
+                stopWatch = new StopWatch();
+                stopWatch.start();
+            }
+
             assertEquals(expected.size(), getNumElements(), "Expected map is incongruent with first and last paths");
 
-            for (final var key : expected.keySet()) {
-                assertNotNull(coll.get(key), () -> String.format("Missing key %s in DB that we expected!", key));
-                assertEquals(
-                        expected.get(key),
-                        coll.get(key)[1],
-                        () -> String.format("Not the value for key %s from DB that we expected!", key));
+            expected.keySet().parallelStream().forEach(key -> {
+                try {
+                    assertNotNull(coll.get(key), () -> String.format("Missing key %s in DB that we expected!", key));
+                    assertEquals(
+                            expected.get(key),
+                            coll.get(key)[1],
+                            () -> String.format("Not the value for key %s from DB that we expected!", key));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            if (counter.get() % 8 == 0) {
+                stopWatch.stop();
+                System.out.printf("Validate took %s ms%n", stopWatch.getTime(MILLISECONDS));
             }
         }
 
@@ -443,11 +462,11 @@ class MemoryIndexDiskKeyValueStoreMergeHammerTest {
     }
 
     /** Merges files together. */
-    private static final class Merger extends Worker {
+    private static final class Compactor extends Worker {
         private int iteration = 1;
         private final MemoryIndexDiskKeyValueStore<long[]> coll;
 
-        Merger(final MemoryIndexDiskKeyValueStore<long[]> coll) {
+        Compactor(final MemoryIndexDiskKeyValueStore<long[]> coll) {
             this.coll = coll;
         }
 

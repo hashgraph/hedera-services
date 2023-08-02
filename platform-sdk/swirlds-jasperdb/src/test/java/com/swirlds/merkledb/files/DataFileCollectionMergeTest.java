@@ -16,7 +16,6 @@
 
 package com.swirlds.merkledb.files;
 
-import static com.swirlds.merkledb.CompactionType.SMALL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -118,7 +117,7 @@ class DataFileCollectionMergeTest {
                 }
             }
         };
-        compactor.compactFiles(indexUpdater, getFilesToMerge(coll), SMALL);
+        compactor.compactFiles(indexUpdater, getFilesToMerge(coll), 1);
 
         long prevKey = -1;
         for (int i = 5; i < 10; i++) {
@@ -211,7 +210,7 @@ class DataFileCollectionMergeTest {
                     };
 
                     try {
-                        compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
+                        compactor.compactFiles(indexUpdater, filesToMerge, 1);
                         store.close();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -256,7 +255,7 @@ class DataFileCollectionMergeTest {
                     }
                 }
             };
-            compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
+            compactor.compactFiles(indexUpdater, filesToMerge, 1);
         } finally {
             store2.close();
         }
@@ -309,7 +308,7 @@ class DataFileCollectionMergeTest {
 
                 if (filesToMerge.size() > 1) {
                     try {
-                        compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
+                        compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -380,7 +379,7 @@ class DataFileCollectionMergeTest {
 
                 if (filesToMerge.size() > 1) {
                     try {
-                        compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
+                        compactor.compactFiles(indexUpdater, filesToMerge, 1);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -450,7 +449,7 @@ class DataFileCollectionMergeTest {
             try {
                 final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
                 assertEquals(numFiles, filesToMerge.size());
-                compactor.compactFiles(index, filesToMerge, SMALL);
+                compactor.compactFiles(index, filesToMerge, 1);
                 // Wait for the new file to be available. Without this wait, there
                 // may be 1 or 2
                 // files available for merge, as this thread may be complete before
@@ -586,7 +585,7 @@ class DataFileCollectionMergeTest {
         };
 
         try {
-            compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
+            compactor.compactFiles(indexUpdater, filesToMerge, 1);
             store.close();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -619,7 +618,7 @@ class DataFileCollectionMergeTest {
         };
 
         try {
-            compactor.compactFiles(indexUpdater2, filesToMerge2, SMALL);
+            compactor.compactFiles(indexUpdater2, filesToMerge2, 1);
         } finally {
             store2.close();
         }

@@ -19,9 +19,11 @@ package com.swirlds.merkledb;
 import static com.swirlds.common.io.utility.FileUtils.hardLinkTree;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -70,6 +72,13 @@ import org.apache.logging.log4j.Logger;
  */
 public final class MerkleDb {
 
+    /**
+     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
+     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
+     * holder will have been configured by the time this static initializer runs.
+     */
+    private static final MerkleDbConfig config = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
+
     /** MerkleDb logger. */
     private static final Logger logger = LogManager.getLogger(MerkleDb.class);
 
@@ -78,7 +87,7 @@ public final class MerkleDb {
      * data source is opened, or when an existing data source is copied. Copies are removed
      * automatically on close
      */
-    private static final int MAX_TABLES = 1024;
+    static final int MAX_TABLES = 1024;
 
     /** Sub-folder name for shared database data. Relative to database storage dir */
     private static final String SHARED_DIRNAME = "shared";
@@ -140,7 +149,6 @@ public final class MerkleDb {
      *
      * Secondary tables are not included to snapshots and aren't written to DB metadata.
      */
-    @SuppressWarnings("rawtypes")
     private final Set<Integer> primaryTables = ConcurrentHashMap.newKeySet();
 
     /**
@@ -386,13 +394,13 @@ public final class MerkleDb {
         }
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
         try {
-            dataSource.pauseMerging();
+            dataSource.pauseCompaction();
             dataSource.snapshot(getTableDir(label, tableId));
         } finally {
-            dataSource.resumeMerging();
+            dataSource.resumeCompaction();
         }
         if (!leaveSourcePrimary) {
-            dataSource.stopBackgroundCompaction();
+            dataSource.stopAndDisableBackgroundCompaction();
             primaryTables.remove(dataSource.getTableId());
         }
         if (makeCopyPrimary) {

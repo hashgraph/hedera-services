@@ -221,6 +221,16 @@ public class CloseFlushTest {
                 public long getLastLeafPath() {
                     return delegate.getLastLeafPath();
                 }
+
+                @Override
+                public void enableBackgroundCompaction() {
+                    delegate.enableBackgroundCompaction();
+                }
+
+                @Override
+                public void stopAndDisableBackgroundCompaction() {
+                    delegate.stopAndDisableBackgroundCompaction();
+                }
             };
         }
     }

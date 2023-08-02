@@ -22,6 +22,7 @@ import static com.swirlds.common.units.UnitConstants.KIBIBYTES_TO_BYTES;
 import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static java.util.stream.Collectors.joining;
 
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.IndexedObject;
@@ -311,15 +312,19 @@ public final class DataFileCommon {
             final Collection<DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
+            int targetCompactionLevel,
             final DataFileCollection<?> fileCollection)
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);
         final double tookSeconds = tookMillis / 1000;
-        Integer levelToCompact = filesToMerge.stream()
-                .findFirst()
+        String levelsCompacted = filesToMerge.stream()
                 .map(v -> v.getMetadata().getCompactionLevel())
-                .orElse(-1);
+                .distinct()
+                .map(v -> Integer.toString(v))
+                .sorted()
+                .collect(joining(","));
+
         Object[] fileToMergeIndexes = filesToMerge.stream()
                 .map(reader -> reader.getMetadata().getIndex())
                 .toArray();
@@ -332,7 +337,7 @@ public final class DataFileCommon {
                 // because we consult in-memory index and skip some entries. Effective read/write speed
                 // in this context means how much data files were covered by the compaction.
                 """
-                        [{}] Compacted {} file(s) / {} at level {} into {} file(s) at level {} / {} in {} second(s)
+                        [{}] Compacted {} file(s) / {} at level {} into {} file(s) of level {} / {} in {} second(s)
                                 effectively read at {} effectively written at {},
                                 compactedFiles[{}] = {},
                                 filesToMerge[{}] = {}
@@ -340,11 +345,11 @@ public final class DataFileCommon {
                 storeName,
                 filesToMerge.size(),
                 formatSizeBytes(filesToMergeSize),
-                levelToCompact,
+                levelsCompacted,
                 mergedFilesCount,
+                targetCompactionLevel,
                 formatSizeBytes(mergedFilesSize),
-                levelToCompact + 1,
-                tookMillis,
+                tookSeconds,
                 formatSizeBytes((long) (filesToMergeSize / tookSeconds)) + "/sec",
                 formatSizeBytes((long) (mergedFilesSize / tookSeconds)) + "/sec",
                 mergedFilesCount,

@@ -126,4 +126,14 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     public long estimatedSize(final long dirtyInternals, final long dirtyLeaves) {
         return delegate.estimatedSize(dirtyInternals, dirtyLeaves);
     }
+
+    @Override
+    public void enableBackgroundCompaction() {
+        delegate.enableBackgroundCompaction();
+    }
+
+    @Override
+    public void stopAndDisableBackgroundCompaction() {
+        delegate.stopAndDisableBackgroundCompaction();
+    }
 }

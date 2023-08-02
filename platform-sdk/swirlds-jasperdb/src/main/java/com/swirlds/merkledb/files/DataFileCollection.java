@@ -38,7 +38,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -122,7 +121,7 @@ public class DataFileCollection<D> implements Snapshotable {
     /**
      * The list of current files in this data file collection. The files are added to this list
      * during flushes in {@link #endWriting(long, long)}, after the file is completely written. They
-     * are also added during compaction in {@link DataFileCompactor#compactFiles(CASableLongIndex, List)}, even
+     * are also added during compaction in {@link DataFileCompactor#compactFiles(CASableLongIndex, List, int)}, even
      * before compaction is complete. In the end of compaction, all the compacted files are removed
      * from this list.
      *
@@ -192,7 +191,7 @@ public class DataFileCollection<D> implements Snapshotable {
      * @param storeDir The directory to store data files
      * @param storeName Base name for the data files, allowing more than one DataFileCollection to
      *     share a directory
-     * @param legacyStoreName Base name for the data files. If not null, data files with this prefix
+     * @param legacyStoreName Base name for the data files. If not null, data files with this prefixas
      *     are processed by this file collection at startup same way as files prefixed with
      *     storeName
      * @param dataItemSerializer Serializer responsible for serializing/deserializing data items

@@ -18,7 +18,6 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 
-import com.swirlds.merkledb.CompactionType;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
@@ -55,7 +54,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      */
     private final LongList index;
     /** On disk set of DataFiles that contain our key/value pairs */
-    private final DataFileCollection<D> fileCollection;
+    final DataFileCollection<D> fileCollection;
 
     private final DataFileCompactor fileCompactor;
     /**
@@ -122,10 +121,14 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
         // create file collection
         fileCollection = new DataFileCollection<>(
                 storeDir, storeName, legacyStoreName, dataItemSerializer, combinedLoadedDataCallback);
-        fileCompactor = new DataFileCompactor(fileCollection);
+        fileCompactor = createFileCompactor();
         // no limits for the keys on init
         minValidKey = new AtomicLong(0);
         maxValidKey = new AtomicLong(Long.MAX_VALUE);
+    }
+
+    DataFileCompactor createFileCompactor() {
+        return new DataFileCompactor(fileCollection);
     }
 
     /**
@@ -136,31 +139,31 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @throws IOException if there was a problem merging
      * @throws InterruptedException if the merge thread was interupted
      */
-    public void compact(
-            @Nullable final BiConsumer<CompactionType, Long> reportDurationMetricFunction,
-            @Nullable final BiConsumer<CompactionType, Double> reportSavedSpaceMetricFunction)
+    public boolean compact(
+            @Nullable final BiConsumer<Integer, Long> reportDurationMetricFunction,
+            @Nullable final BiConsumer<Integer, Double> reportSavedSpaceMetricFunction)
             throws IOException, InterruptedException {
-        fileCompactor.compact(index, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
+        return fileCompactor.compact(index, reportDurationMetricFunction, reportSavedSpaceMetricFunction);
     }
 
     /**
-     * Puts this store compaction on hold, if in progress, until {@link #resumeMerging()} is called.
+     * Puts this store compaction on hold, if in progress, until {@link #resumeCompaction()} is called.
      * If compaction is not in progress, calling this method will prevent new compactions from
      * starting until resumed.
      *
      * @throws IOException If an I/O error occurs.
      */
-    public void pauseMerging() throws IOException {
+    public void pauseCompaction() throws IOException {
         fileCompactor.pauseCompaction();
     }
 
     /**
      * Resumes this store compaction if it was in progress, or unblocks a new compaction if it was
-     * blocked to start because of {@link #pauseMerging()}.
+     * blocked to start because of {@link #pauseCompaction()}.
      *
      * @throws IOException If an I/O error occurs.
      */
-    public void resumeMerging() throws IOException {
+    public void resumeCompaction() throws IOException {
         fileCompactor.resumeCompaction();
     }
 

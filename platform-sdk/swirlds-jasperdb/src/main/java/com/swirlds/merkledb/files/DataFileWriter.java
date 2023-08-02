@@ -122,7 +122,8 @@ public final class DataFileWriter<D> {
                 0, // data item count will be updated later in finishWriting()
                 index,
                 creationInstant,
-                dataItemSerializer.getCurrentDataVersion());
+                dataItemSerializer.getCurrentDataVersion(),
+                compactionLevel);
         Files.createFile(path);
         moveMmapBuffer(0);
     }

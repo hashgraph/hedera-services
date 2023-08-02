@@ -43,7 +43,7 @@ public class MerkleDbTest {
     }
 
     @AfterEach
-    public void shutdownTest() throws Exception {
+    public void shutdownTest() {
         // check db count
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");
     }
@@ -138,7 +138,6 @@ public class MerkleDbTest {
         // create datasource reusing existing metadata
         MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource =
                 new MerkleDbDataSource<>(instance, tableName, instance.getNextTableId() - 1, tableConfig, false);
-        Assertions.assertNotNull(dataSource);
         // This datasource cannot be properly closed because MerkleDb instance is not aware of this.
         // Assertion error is expected
         assertThrows(AssertionError.class, dataSource::close);
