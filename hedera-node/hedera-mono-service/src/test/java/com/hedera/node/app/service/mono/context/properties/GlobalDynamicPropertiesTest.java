@@ -81,6 +81,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_RECORD_FILE_VERSION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
@@ -237,6 +238,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.isCryptoCreateWithAliasEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
         assertFalse(subject.isContractsNoncesExternalizationEnabled());
+        assertFalse(subject.isEip2930Enabled());
         assertTrue(subject.isHRCAssociateEnabled());
         assertFalse(subject.isImplicitCreationEnabled());
     }
@@ -700,6 +702,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getIntProperty(CONFIG_VERSION)).willReturn(i + 99);
         given(properties.getLongProperty(STAKING_MAX_STAKE_REWARDED)).willReturn(i + 100L);
         given(properties.getLongProperty(STAKING_REWARD_BALANCE_THRESHOLD)).willReturn(i + 101L);
+        given(properties.getBooleanProperty(HEDERA_TXN_EIP2930_ENABLED)).willReturn(i % 2 == 0);
     }
 
     private Set<EntityType> typesFor(final int i) {

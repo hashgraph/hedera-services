@@ -24,10 +24,13 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.FileNotFoundException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +45,8 @@ import org.junit.jupiter.api.Timeout;
 public class MerkleSynchronizationBenchmarks {
 
     private static MerkleCryptography cryptography;
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     @BeforeAll
     public static void setUp() throws FileNotFoundException {
@@ -67,7 +72,7 @@ public class MerkleSynchronizationBenchmarks {
         sw.start();
 
         try {
-            MerkleTestUtils.testSynchronization(startingTree, desiredTree, latencyMilliseconds);
+            MerkleTestUtils.testSynchronization(startingTree, desiredTree, latencyMilliseconds, reconnectConfig);
         } catch (Exception e) {
             fail(e);
         }

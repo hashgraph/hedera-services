@@ -21,10 +21,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_RE
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertExhaustsResourceLimit;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -37,7 +36,7 @@ class StorageSizeValidatorTest {
     private static final long PRETEND_MAX_AGGREGATE = 123456L;
 
     @Mock
-    private Dispatch dispatch;
+    private HederaOperations extWorldScope;
 
     private StorageSizeValidator subject;
 
@@ -47,10 +46,10 @@ class StorageSizeValidatorTest {
                 .withValue("contracts.maxKvPairs.aggregate", PRETEND_MAX_AGGREGATE)
                 .getOrCreateConfig();
 
-        subject = new StorageSizeValidator(config.getConfigData(ContractsConfig.class));
+        subject = new StorageSizeValidator(config);
 
         assertExhaustsResourceLimit(
-                () -> subject.assertValid(PRETEND_MAX_AGGREGATE + 1, dispatch, List.of()),
+                () -> subject.assertValid(PRETEND_MAX_AGGREGATE + 1, extWorldScope, List.of()),
                 MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
     }
 
@@ -64,12 +63,13 @@ class StorageSizeValidatorTest {
                 .getOrCreateConfig();
         final var sizeChanges =
                 List.of(new StorageSizeChange(underLimitNumber, 1, 2), new StorageSizeChange(overLimitNumber, 0, 1));
-        given(dispatch.getOriginalSlotsUsed(underLimitNumber)).willReturn(pretendMaxIndividual - 1);
-        given(dispatch.getOriginalSlotsUsed(overLimitNumber)).willReturn(pretendMaxIndividual);
+        given(extWorldScope.getOriginalSlotsUsed(underLimitNumber)).willReturn(pretendMaxIndividual - 1);
+        given(extWorldScope.getOriginalSlotsUsed(overLimitNumber)).willReturn(pretendMaxIndividual);
 
-        subject = new StorageSizeValidator(config.getConfigData(ContractsConfig.class));
+        subject = new StorageSizeValidator(config);
 
         assertExhaustsResourceLimit(
-                () -> subject.assertValid(PRETEND_MAX_AGGREGATE, dispatch, sizeChanges), MAX_CONTRACT_STORAGE_EXCEEDED);
+                () -> subject.assertValid(PRETEND_MAX_AGGREGATE, extWorldScope, sizeChanges),
+                MAX_CONTRACT_STORAGE_EXCEEDED);
     }
 }
