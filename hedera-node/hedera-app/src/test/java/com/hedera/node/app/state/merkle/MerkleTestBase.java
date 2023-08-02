@@ -52,6 +52,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * This base class provides helpful methods and defaults for simplifying the other merkle related
@@ -97,6 +99,10 @@ public class MerkleTestBase extends StateTestBase {
     public static final long F_LONG_KEY = 5L;
     public static final long G_LONG_KEY = 6L;
 
+    // MerkleDb storage dir for virtual map nodes
+    @TempDir
+    Path storageDir;
+
     /**
      * This {@link ConstructableRegistry} is required for serialization tests. It is expensive to
      * configure it, so it is null unless {@link #setupConstructableRegistry()} has been called by
@@ -133,6 +139,12 @@ public class MerkleTestBase extends StateTestBase {
     protected String countryLabel;
     protected StateMetadata<String, String> countryMetadata;
     protected SingletonNode<String> countrySingleton;
+
+    @BeforeEach
+    void setupVirtualMapStorage() {
+        // Use a fresh MerkleDb instance for every test
+        MerkleDb.setDefaultPath(storageDir);
+    }
 
     /** Sets up the "Fruit" merkle map, label, and metadata. */
     protected void setupFruitMerkleMap() {
@@ -221,8 +233,6 @@ public class MerkleTestBase extends StateTestBase {
     @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
-        // Use a fresh MerkleDb instance for every test
-        MerkleDb.setDefaultPath(null);
         final MerkleDbTableConfig<OnDiskKey<String>, OnDiskValue<String>> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1,
                 DigestType.SHA_384,
@@ -234,7 +244,7 @@ public class MerkleTestBase extends StateTestBase {
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
         final VirtualDataSourceBuilder<OnDiskKey<String>, OnDiskValue<String>> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
         return new VirtualMap<>(label, builder);
     }
 

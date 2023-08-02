@@ -32,7 +32,6 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
@@ -40,7 +39,6 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +54,6 @@ class OnDiskTest extends MerkleTestBase {
     private static final String SERVICE_NAME = "CryptoService";
     private static final String ACCOUNT_STATE_KEY = "Account";
 
-    private Path storageDir;
     private Schema schema;
     private StateDefinition<AccountID, Account> def;
     private StateMetadata<AccountID, Account> md;
@@ -66,7 +63,6 @@ class OnDiskTest extends MerkleTestBase {
     @BeforeEach
     void setUp() throws IOException {
         setupConstructableRegistry();
-        storageDir = TemporaryFileBuilder.buildTemporaryDirectory();
 
         def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, new AccountIDCodec(), new AccountCodec(), 100);
 
@@ -92,8 +88,7 @@ class OnDiskTest extends MerkleTestBase {
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
-        MerkleDb.setDefaultPath(null); // use a fresh MerkleDb instance for every test run
-        final var builder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        final var builder = new MerkleDbDataSourceBuilder<>(tableConfig);
 
         virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
 

@@ -42,7 +42,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.virtualmap.VirtualMap;
-import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -187,7 +186,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
                     hederaState.putServiceStateIfAbsent(md, map);
                 } else {
-                    final MerkleDbTableConfig<OnDiskKey, OnDiskValue> tableConfig = new MerkleDbTableConfig<>(
+                    final var tableConfig = new MerkleDbTableConfig<>(
                             (short) 1,
                             DigestType.SHA_384,
                             (short) 1,
@@ -197,8 +196,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     tableConfig.maxNumberOfKeys(def.maxKeysHint());
                     // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                     // PREFER_DISK_BASED_INDICES = false
-                    final VirtualDataSourceBuilder<OnDiskKey, OnDiskValue> ds =
-                            new MerkleDbDataSourceBuilder<>(tableConfig);
+                    final var ds = new MerkleDbDataSourceBuilder<>(tableConfig);
                     final var label = StateUtils.computeLabel(serviceName, stateKey);
                     hederaState.putServiceStateIfAbsent(md, new VirtualMap<>(label, ds));
                 }
