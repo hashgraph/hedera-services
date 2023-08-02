@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermission
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -87,6 +88,9 @@ class ConfigCallbacksTest {
     private PropertySource properties;
 
     @Mock
+    private MultiplierSources multiplierSources;
+
+    @Mock
     private SigImpactHistorian sigImpactHistorian;
 
     @Mock
@@ -110,7 +114,8 @@ class ConfigCallbacksTest {
                 () -> networkCtx,
                 () -> MerkleMapLike.from(stakingInfos),
                 sigImpactHistorian,
-                fileNumbers);
+                fileNumbers,
+                multiplierSources);
     }
 
     @Test
@@ -138,6 +143,7 @@ class ConfigCallbacksTest {
         verify(dynamicProps).reload();
         verify(functionalityThrottling, times(3)).applyGasConfig();
         verify(networkCtx).renumberBlocksToMatch(blockValues);
+        verify(multiplierSources).resetExpectations();
         // and:
         final var updatedNode0Info = stakingInfos.get(EntityNum.fromLong(0L));
         assertStakes(updatedNode0Info, historicalMaxStake / 2, overrideMaxStake);
