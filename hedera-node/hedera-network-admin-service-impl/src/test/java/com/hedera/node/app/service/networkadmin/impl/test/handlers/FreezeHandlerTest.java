@@ -27,6 +27,8 @@ import static com.hedera.hapi.node.freeze.FreezeType.PREPARE_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.TELEMETRY_UPGRADE;
 import static com.hedera.hapi.node.freeze.FreezeType.UNKNOWN_FREEZE_TYPE;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -38,19 +40,22 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.networkadmin.ReadableUpdateFileStore;
-import com.hedera.node.app.service.networkadmin.impl.WritableUpdateFileStore;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
+import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
+import com.hedera.node.app.service.networkadmin.impl.WritableUpgradeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import java.util.Optional;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +65,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
-    WritableUpdateFileStore specialFileStore;
+    WritableUpgradeStore upgradeStore;
+
+    @Mock(strictness = LENIENT)
+    ReadableUpgradeFileStore upgradeFileStore;
 
     @Mock(strictness = LENIENT)
     private WritableFreezeStore freezeStore;
@@ -93,15 +101,17 @@ class FreezeHandlerTest {
         given(account.key()).willReturn(key);
 
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(preHandleContext.createStore(ReadableUpdateFileStore.class)).willReturn(specialFileStore);
+        given(preHandleContext.createStore(ReadableUpgradeStore.class)).willReturn(upgradeStore);
+        given(preHandleContext.createStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.writableStore(WritableUpdateFileStore.class)).willReturn(specialFileStore);
+        given(handleContext.writableStore(WritableUpgradeStore.class)).willReturn(upgradeStore);
+        given(handleContext.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
         given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
     }
 
     @Test
-    void pureChecksFailIfUnknownFreezeType() {
+    void failsUnknownFreezeType() {
         TransactionBody txn = TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder()
                         .accountID(nonAdminAccount)
@@ -112,6 +122,11 @@ class FreezeHandlerTest {
                         .build())
                 .build();
         assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
+
+        given(handleContext.body()).willReturn(txn);
+        assertThatThrownBy(() -> subject.handle(handleContext))
+                .isInstanceOf(HandleException.class)
+                .has(responseCode(INVALID_FREEZE_TRANSACTION_BODY));
     }
 
     @Test
@@ -155,6 +170,48 @@ class FreezeHandlerTest {
     }
 
     @Test
+    void rejectIfUpdateFileIdNotSetForCertainFreezeTypes() {
+        // when using these freeze types, it is required to set an update file
+        FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
+        for (FreezeType freezeType : freezeTypes) {
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            // do not set update file Id
+                            .startTime(Timestamp.newBuilder().seconds(2000).build()))
+                    .build();
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+        }
+    }
+
+    @Test
+    void rejectIfUpdateFileIdSetIncorrectlyForCertainFreezeTypes() {
+        // when using these freeze types, it is required to set an update file
+        FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
+        for (FreezeType freezeType : freezeTypes) {
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .updateFile(FileID.newBuilder().fileNum(200L)) // set to anything other than 150
+                            .startTime(Timestamp.newBuilder().seconds(2000).build()))
+                    .build();
+            given(preHandleContext.body()).willReturn(txn);
+            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+        }
+    }
+
+    @Test
     void rejectIfUpdateFileNotSetForCertainFreezeTypes() {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
@@ -167,6 +224,7 @@ class FreezeHandlerTest {
                     .transactionID(txnId)
                     .freeze(FreezeTransactionBody.newBuilder()
                             .freezeType(freezeType)
+                            .updateFile(FileID.newBuilder().fileNum(150L))
                             .startTime(Timestamp.newBuilder().seconds(2000).build()))
                     .build();
             given(preHandleContext.body()).willReturn(txn);
@@ -175,12 +233,11 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void rejectIfFileHashNotSetForCertainFreezeTypes() {
+    void rejectIfFileHashNotSetForCertainFreezeTypes() throws IOException {
         // when using these freeze types, it is required to set an update file
         FreezeType[] freezeTypes = {PREPARE_UPGRADE, FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
-        FileID fileId = FileID.newBuilder().fileNum(1234L).build();
-        given(specialFileStore.get(fileId)).willReturn(Optional.of(new byte[0]));
+        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
 
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
@@ -192,11 +249,42 @@ class FreezeHandlerTest {
                     .freeze(FreezeTransactionBody.newBuilder()
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(2000).build())
-                            .updateFile(fileId)
+                            .updateFile(FileID.newBuilder().fileNum(150L))
                             .build())
                     .build();
             given(preHandleContext.body()).willReturn(txn);
             assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+        }
+    }
+
+    @Test
+    void rejectOnInvalidFile() throws IOException {
+        // these freeze types require a valid update file to have been set via FileService
+        FreezeType[] freezeTypes = {PREPARE_UPGRADE, TELEMETRY_UPGRADE};
+
+        // set up the file store to return a fake upgrade file
+        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull()).willThrow(IOException.class);
+
+        for (FreezeType freezeType : freezeTypes) {
+            TransactionID txnId = TransactionID.newBuilder()
+                    .accountID(nonAdminAccount)
+                    .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
+                    .build();
+            TransactionBody txn = TransactionBody.newBuilder()
+                    .transactionID(txnId)
+                    .freeze(FreezeTransactionBody.newBuilder()
+                            .freezeType(freezeType)
+                            .startTime(Timestamp.newBuilder().seconds(2000).build())
+                            .updateFile(FileID.newBuilder().fileNum(150L))
+                            .fileHash(Bytes.wrap(new byte[48]))
+                            .build())
+                    .build();
+            given(preHandleContext.body()).willReturn(txn);
+            assertDoesNotThrow(() -> subject.preHandle(preHandleContext));
+
+            given(handleContext.body()).willReturn(txn);
+            assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(IllegalStateException.class);
         }
     }
 
@@ -220,13 +308,15 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void happyPathFreezeUpgradeOrTelemetryUpgrade() {
+    void happyPathFreezeUpgradeOrTelemetryUpgrade() throws IOException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // also must set start time to a time after the effective consensus time
         FreezeType[] freezeTypes = {FREEZE_UPGRADE, TELEMETRY_UPGRADE};
 
-        FileID fileId = FileID.newBuilder().fileNum(1234L).build();
-        given(specialFileStore.get(fileId)).willReturn(Optional.of(new byte[0]));
+        // set up the file store to return a fake upgrade file
+        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull()).willReturn(Bytes.wrap("Upgrade file bytes"));
+
         for (FreezeType freezeType : freezeTypes) {
             TransactionID txnId = TransactionID.newBuilder()
                     .accountID(nonAdminAccount)
@@ -237,7 +327,7 @@ class FreezeHandlerTest {
                     .freeze(FreezeTransactionBody.newBuilder()
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(2000).build())
-                            .updateFile(fileId)
+                            .updateFile(FileID.newBuilder().fileNum(150L))
                             .fileHash(Bytes.wrap(new byte[48]))
                             .build())
                     .build();
@@ -250,12 +340,14 @@ class FreezeHandlerTest {
     }
 
     @Test
-    void happyPathPrepareUpgrade() {
+    void happyPathPrepareUpgrade() throws IOException {
         // when using these freeze types, it is required to set an update file and file hash and they must match
         // start time not required
 
-        FileID fileId = FileID.newBuilder().fileNum(1234L).build();
-        given(specialFileStore.get(fileId)).willReturn(Optional.of(new byte[0]));
+        // set up the file store to return a fake upgrade file
+        given(upgradeFileStore.peek()).willReturn(File.newBuilder().build());
+        given(upgradeFileStore.getFull()).willReturn(Bytes.wrap("Upgrade file bytes"));
+
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
                 .transactionValidStart(Timestamp.newBuilder().seconds(1000).build())
@@ -264,7 +356,7 @@ class FreezeHandlerTest {
                 .transactionID(txnId)
                 .freeze(FreezeTransactionBody.newBuilder()
                         .freezeType(PREPARE_UPGRADE)
-                        .updateFile(fileId)
+                        .updateFile(FileID.newBuilder().fileNum(150L))
                         .fileHash(Bytes.wrap(new byte[48]))
                         .build())
                 .build();

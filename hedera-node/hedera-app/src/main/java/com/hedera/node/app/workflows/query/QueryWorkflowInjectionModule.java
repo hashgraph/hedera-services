@@ -34,6 +34,7 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 /**
@@ -60,16 +61,16 @@ public interface QueryWorkflowInjectionModule {
             @NonNull final ConsensusHandlers consensusHandlers,
             @NonNull final FileHandlers fileHandlers,
             @NonNull final NetworkAdminHandlers networkHandlers,
-            @NonNull final ContractHandlers contractHandlers,
+            @NonNull final Supplier<ContractHandlers> contractHandlers,
             @NonNull final ScheduleHandlers scheduleHandlers,
             @NonNull final TokenHandlers tokenHandlers) {
         return new QueryHandlers(
                 consensusHandlers.consensusGetTopicInfoHandler(),
-                contractHandlers.contractGetBySolidityIDHandler(),
-                contractHandlers.contractCallLocalHandler(),
-                contractHandlers.contractGetInfoHandler(),
-                contractHandlers.contractGetBytecodeHandler(),
-                contractHandlers.contractGetRecordsHandler(),
+                contractHandlers.get().contractGetBySolidityIDHandler(),
+                contractHandlers.get().contractCallLocalHandler(),
+                contractHandlers.get().contractGetInfoHandler(),
+                contractHandlers.get().contractGetBytecodeHandler(),
+                contractHandlers.get().contractGetRecordsHandler(),
                 tokenHandlers.cryptoGetAccountBalanceHandler(),
                 tokenHandlers.cryptoGetAccountInfoHandler(),
                 tokenHandlers.cryptoGetAccountRecordsHandler(),

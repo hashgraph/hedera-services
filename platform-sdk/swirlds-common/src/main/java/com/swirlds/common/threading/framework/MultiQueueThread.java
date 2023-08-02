@@ -31,4 +31,12 @@ public interface MultiQueueThread extends StoppableThread, Clearable {
      * @return the inserter for the data type
      */
     <T> BlockingQueueInserter<T> getInserter(final Class<T> clazz);
+
+    /**
+     * Wait until this queue thread has handled all enqueued work and is no longer busy. This method may continue
+     * to block indefinitely if new work is continuously added to the queue.
+     *
+     * @throws InterruptedException if this method is interrupted during execution
+     */
+    void waitUntilNotBusy() throws InterruptedException;
 }

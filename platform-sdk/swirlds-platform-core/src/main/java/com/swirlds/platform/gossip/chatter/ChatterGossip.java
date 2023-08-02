@@ -172,6 +172,7 @@ public class ChatterGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -223,6 +224,7 @@ public class ChatterGossip extends AbstractGossip {
             final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
             shadowgraphExecutor.start();
             final ShadowGraphSynchronizer chatterSynchronizer = new ShadowGraphSynchronizer(
+                    platformContext,
                     shadowGraph,
                     addressBook.getSize(),
                     syncMetrics,
@@ -268,7 +270,8 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectConfig.asyncStreamTimeout(),
                                             reconnectMetrics,
                                             reconnectController,
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -279,7 +282,8 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             new DefaultSignedStateValidator(),
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            platformContext.getConfiguration()),
                                     new ChatterSyncProtocol(
                                             otherId,
                                             chatterPeer.communicationState(),

@@ -30,6 +30,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -118,7 +119,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(2);
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.serialNumbers()).isEmpty();
+        assertThat(recordBuilder.build().record().receipt().serialNumbers()).isEmpty();
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -132,7 +133,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
         // treasury relation supply will not increase since its not fungible token change
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.serialNumbers()).isEqualTo(List.of(3L, 4L));
+        assertThat(recordBuilder.build().record().receipt().serialNumbers()).isEqualTo(List.of(3L, 4L));
     }
 
     @Test
@@ -229,15 +230,18 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         if (amount != null) {
             builder.amount(amount);
         }
-        final var txn = TransactionBody.newBuilder()
+        final var txnBody = TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .tokenMint(builder.build())
                 .build();
 
-        given(handleContext.body()).willReturn(txn);
+        final var txn = Transaction.newBuilder().body(txnBody).build();
+        recordBuilder.transaction(txn);
+
+        given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
         given(handleContext.recordBuilder(TokenMintRecordBuilder.class)).willReturn(recordBuilder);
 
-        return txn;
+        return txnBody;
     }
 }

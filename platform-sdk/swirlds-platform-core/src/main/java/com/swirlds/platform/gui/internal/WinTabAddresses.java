@@ -21,6 +21,7 @@ import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
+import com.swirlds.gui.PrePaintableJPanel;
 import javax.swing.JTextArea;
 
 /**

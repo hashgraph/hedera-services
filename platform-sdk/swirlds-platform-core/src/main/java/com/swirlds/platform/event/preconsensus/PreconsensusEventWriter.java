@@ -60,7 +60,7 @@ public interface PreconsensusEventWriter extends Startable, Stoppable {
      *
      * @param minimumGenerationToStore the minimum generation required to be stored on disk
      */
-    void setMinimumGenerationToStore(long minimumGenerationToStore);
+    void setMinimumGenerationToStore(long minimumGenerationToStore) throws InterruptedException;
 
     /**
      * Request that the event writer perform a flush as soon as all events currently added have been written.

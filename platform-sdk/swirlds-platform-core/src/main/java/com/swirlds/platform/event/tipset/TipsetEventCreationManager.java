@@ -23,7 +23,6 @@ import static com.swirlds.base.state.LifecyclePhase.STOPPED;
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.stream.Signer;
 import com.swirlds.common.system.NodeId;
@@ -146,7 +145,6 @@ public class TipsetEventCreationManager implements Lifecycle {
         Objects.requireNonNull(latestReconnectRound);
         Objects.requireNonNull(latestSavedStateRound);
 
-        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
@@ -154,9 +152,8 @@ public class TipsetEventCreationManager implements Lifecycle {
         rules.add(new TipsetMaximumRateRule(platformContext, time));
         rules.add(new TipsetBackpressureRule(platformContext, eventIntakeQueueSize));
         rules.add(new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager));
-        if (stateConfig.saveReconnectStateToDisk()) {
-            rules.add(new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
-        }
+        rules.add(new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
+
         eventCreationRules = AggregateTipsetEventCreationRules.of(rules);
 
         eventCreator = new TipsetEventCreatorImpl(

@@ -129,7 +129,16 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
                 ethTx.callData(),
                 new Object[0]
             });
-            case EIP2930 -> throw new IllegalArgumentException("Unsupported transaction type " + ethTx.type());
+            case EIP2930 -> RLPEncoder.encodeSequentially(Integers.toBytes(1), new Object[] {
+                ethTx.chainId(),
+                Integers.toBytes(ethTx.nonce()),
+                ethTx.gasPrice(),
+                Integers.toBytes(ethTx.gasLimit()),
+                ethTx.to(),
+                Integers.toBytesUnsigned(ethTx.value()),
+                ethTx.callData(),
+                new Object[0]
+            });
         };
     }
 

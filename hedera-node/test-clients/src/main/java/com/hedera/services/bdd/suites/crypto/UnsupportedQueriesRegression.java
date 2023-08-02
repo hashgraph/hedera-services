@@ -24,12 +24,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSup
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class UnsupportedQueriesRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(UnsupportedQueriesRegression.class);
 

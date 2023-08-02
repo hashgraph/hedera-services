@@ -20,7 +20,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
 import com.hedera.node.app.spi.state.WritableFreezeStore;
-import com.hedera.node.config.data.NetworkAdminServiceConfig;
+import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
@@ -53,13 +54,12 @@ public class FreezeUpgradeActions {
 
     public static final String MARK = "✓";
 
-    private final NetworkAdminServiceConfig adminServiceConfig;
+    private final NetworkAdminConfig adminServiceConfig;
     private final WritableFreezeStore freezeStore;
 
     @Inject
     public FreezeUpgradeActions(
-            @NonNull final NetworkAdminServiceConfig adminServiceConfig,
-            @NonNull final WritableFreezeStore freezeStore) {
+            @NonNull final NetworkAdminConfig adminServiceConfig, @NonNull final WritableFreezeStore freezeStore) {
         requireNonNull(adminServiceConfig);
         requireNonNull(freezeStore);
 
@@ -78,12 +78,12 @@ public class FreezeUpgradeActions {
     }
 
     public CompletableFuture<Void> extractTelemetryUpgrade(
-            @NonNull final byte[] archiveData, @Nullable final Instant now) {
+            @NonNull final Bytes archiveData, @Nullable final Instant now) {
         requireNonNull(archiveData);
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
 
-    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final byte[] archiveData) {
+    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData) {
         requireNonNull(archiveData);
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
@@ -123,7 +123,7 @@ public class FreezeUpgradeActions {
     /* --- Internal methods --- */
 
     private CompletableFuture<Void> extractNow(
-            @NonNull final byte[] archiveData,
+            @NonNull final Bytes archiveData,
             @NonNull final String desc,
             @NonNull final String marker,
             @Nullable final Instant now) {
@@ -131,7 +131,7 @@ public class FreezeUpgradeActions {
         requireNonNull(desc);
         requireNonNull(marker);
 
-        final int size = archiveData.length;
+        final long size = archiveData.length();
         final String artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
         requireNonNull(artifactsLoc);
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
@@ -141,7 +141,7 @@ public class FreezeUpgradeActions {
     }
 
     private void extractAndReplaceArtifacts(
-            String artifactsLoc, byte[] archiveData, int size, String desc, String marker, Instant now) {
+            String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Instant now) {
         try {
             try (Stream<Path> paths = Files.walk(Paths.get(artifactsLoc))) {
                 // delete any existing files in the artifacts directory
@@ -153,7 +153,7 @@ public class FreezeUpgradeActions {
             log.error("Failed to delete existing files in {}", artifactsLoc, e);
         }
         try {
-            UnzipUtility.unzip(archiveData, Paths.get(artifactsLoc));
+            UnzipUtility.unzip(archiveData.toByteArray(), Paths.get(artifactsLoc));
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             writeSecondMarker(marker, now);
         } catch (final IOException e) {

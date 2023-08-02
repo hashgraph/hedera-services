@@ -16,17 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -47,11 +50,32 @@ public record HederaEvmTransactionResult(
         @Nullable String haltReason,
         @Nullable ResponseCodeEnum abortReason,
         @Nullable Bytes revertReason,
-        @NonNull List<ContractLoginfo> logs,
+        @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
     public HederaEvmTransactionResult {
         requireNonNull(output);
         requireNonNull(logs);
+    }
+
+    public ContractFunctionResult asProtoResultForBase(@NonNull final RootProxyWorldUpdater updater) {
+        final var errorMessage = maybeErrorMessage();
+        if (errorMessage == null) {
+            return asSuccessResultForCommitted(updater);
+        } else {
+            throw new AssertionError("Not implemented");
+        }
+    }
+
+    public ResponseCodeEnum finalStatus() {
+        if (abortReason != null) {
+            return abortReason;
+        } else if (haltReason != null) {
+            throw new AssertionError("Not implemented");
+        } else if (revertReason != null) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return SUCCESS;
+        }
     }
 
     /**
@@ -59,7 +83,7 @@ public record HederaEvmTransactionResult(
      * Hedera-specific reason.
      *
      * @param reason the reason for the abort
-     * @return the result
+     *
      */
     public static HederaEvmTransactionResult abortFor(@NonNull final ResponseCodeEnum reason) {
         return new HederaEvmTransactionResult(
@@ -105,7 +129,7 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 null,
-                pbjLogsFrom(requireNonNull(logs)),
+                requireNonNull(logs),
                 stateChanges);
     }
 
@@ -144,6 +168,32 @@ public record HederaEvmTransactionResult(
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
                 null);
+    }
+
+    private ContractFunctionResult asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
+        final var createdIds = updater.getCreatedContractIds();
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .bloom(bloomForAll(logs))
+                .contractCallResult(output)
+                .errorMessage(maybeErrorMessage())
+                .contractID(recipientId)
+                .createdContractIDs(createdIds)
+                .logInfo(pbjLogsFrom(logs))
+                .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
+                .contractNonces(updater.getUpdatedContractNonces())
+                .build();
+    }
+
+    private @Nullable Bytes recipientEvmAddressIfCreatedIn(@NonNull final List<ContractID> contractIds) {
+        return contractIds.contains(recipientId)
+                ? requireNonNull(recipientEvmAddress).evmAddressOrThrow()
+                : null;
+    }
+
+    private @Nullable String maybeErrorMessage() {
+        // TODO - convert any abort, revert, or halt reason if present to an error message
+        return null;
     }
 
     public boolean isSuccess() {

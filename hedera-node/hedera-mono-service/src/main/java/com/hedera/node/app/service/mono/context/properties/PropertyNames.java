@@ -138,6 +138,7 @@ public class PropertyNames {
     public static final String HEDERA_TXN_MAX_VALID_DURATION = "hedera.transaction.maxValidDuration";
     public static final String HEDERA_TXN_MIN_VALID_DURATION = "hedera.transaction.minValidDuration";
     public static final String HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS = "hedera.transaction.minValidityBufferSecs";
+    public static final String HEDERA_TXN_EIP2930_ENABLED = "hedera.transaction.eip2930.enabled";
     public static final String HEDERA_RECORD_STREAM_RECORD_FILE_VERSION = "hedera.recordStream.recordFileVersion";
     public static final String HEDERA_RECORD_STREAM_SIG_FILE_VERSION = "hedera.recordStream.signatureFileVersion";
     public static final String AUTO_RENEW_TARGET_TYPES = "autoRenew.targetTypes";
