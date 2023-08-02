@@ -51,8 +51,8 @@ class EthTxDataTest {
     //  s: '0x249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53',
     //  v: 28, accessList: []
     // }
-    static final String RAW_TX_TYPE_1 = "01" + // type
-                    "f873" // total length
+    static final String RAW_TX_TYPE_1 = "01" // type
+                    + "f873" // total length
                     + "82012a" // chain id => 82 - 80 = 2 (hex) = 2 (dec) bytes length
                     + "82160c" // nonce  => same length
                     + "85a54f4c3c00" // gas price => 5 bytes
