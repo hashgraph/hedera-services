@@ -18,6 +18,7 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.gui.GuiUtils.wrap;
 
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -33,7 +34,7 @@ class WinTabSecurity extends PrePaintableJPanel {
     String s = "";
 
     public WinTabSecurity() {
-        text = WinBrowser.newJTextArea();
+        text = GuiUtils.newJTextArea("");
         add(text);
     }
 

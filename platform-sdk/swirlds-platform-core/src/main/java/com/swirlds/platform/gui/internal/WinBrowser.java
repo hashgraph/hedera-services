@@ -16,16 +16,14 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 
-import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.PrePaintableJPanel;
-import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.gui.ScrollableJPanel;
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -39,11 +37,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.Timer;
@@ -100,45 +95,6 @@ public class WinBrowser extends JFrame {
         Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
     }
 
-    /**
-     * A JScrollPane containing the given UpdatableJPanel.
-     *
-     * @author Leemon
-     */
-    public static class ScrollableJPanel extends JScrollPane {
-        private static final long serialVersionUID = 1L;
-        PrePaintableJPanel contents;
-
-        /**
-         * Wrap the given panel in scroll bars, and remember it so that calls to prePaint() can be passed on
-         * to it.
-         */
-        ScrollableJPanel(PrePaintableJPanel contents) {
-            super(contents);
-            this.contents = contents;
-            contents.setVisible(true);
-        }
-
-        /**
-         * Recalculate the contents of each Component, maybe slowly, so that the next repaint() will trigger
-         * a fast render of everything.
-         */
-        void prePaint() {
-            if (contents != null) {
-                contents.prePaint();
-            }
-        }
-    }
-
-    /** set the component to have a white background, and wrap it in scroll bars */
-    private ScrollableJPanel makeScrollableJPanel(PrePaintableJPanel comp) {
-        comp.setBackground(Color.WHITE);
-        ScrollableJPanel scroll = new ScrollableJPanel(comp);
-        scroll.setBackground(Color.WHITE);
-        scroll.setVisible(true);
-        return scroll;
-    }
-
     /** when clicked on, switch to the Swirlds tab in the browser window */
     private class ClickForTabSwirlds extends MouseAdapter {
         public void mouseClicked(MouseEvent mouseEvent) {
@@ -163,7 +119,7 @@ public class WinBrowser extends JFrame {
                 nameBarName.setText("    " + WinBrowser.memberDisplayed.getName() + "    ");
             } else { // retry once a second until at least one member exists. Then choose the first one.
                 if (tabSwirlds != null) {
-                    ((WinTabSwirlds) tabSwirlds.contents).chooseMemberDisplayed();
+                    ((WinTabSwirlds) tabSwirlds.getContents()).chooseMemberDisplayed();
                 }
             }
             // call prePaint() on the current tab, only if it has such a method
@@ -243,12 +199,12 @@ public class WinBrowser extends JFrame {
         nameBarLabel = new JTextArea();
         nameBarName = new JTextArea();
         tabbed = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.WRAP_TAB_LAYOUT);
-        tabSwirlds = makeScrollableJPanel(new WinTabSwirlds());
-        tabAddresses = makeScrollableJPanel(new WinTabAddresses());
-        tabCalls = makeScrollableJPanel(new WinTabCalls());
-        tabPosts = makeScrollableJPanel(new WinTabPosts());
-        tabNetwork = makeScrollableJPanel(new WinTabNetwork(hashgraphSource));
-        tabSecurity = makeScrollableJPanel(new WinTabSecurity());
+        tabSwirlds = GuiUtils.makeScrollableJPanel(new WinTabSwirlds());
+        tabAddresses = GuiUtils.makeScrollableJPanel(new WinTabAddresses());
+        tabCalls = GuiUtils.makeScrollableJPanel(new WinTabCalls());
+        tabPosts = GuiUtils.makeScrollableJPanel(new WinTabPosts());
+        tabNetwork = GuiUtils.makeScrollableJPanel(new WinTabNetwork(hashgraphSource));
+        tabSecurity = GuiUtils.makeScrollableJPanel(new WinTabSecurity());
 
         Rectangle winRect = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
 
@@ -260,7 +216,7 @@ public class WinBrowser extends JFrame {
         setLocation(winRect.x, winRect.y + topGap);
         setFocusable(true);
         requestFocusInWindow();
-        addWindowListener(stopper());
+        addWindowListener(GuiUtils.stopper());
 
         nameBar.setLayout(new GridBagLayout());
         nameBar.setPreferredSize(new Dimension(1000, 42));
@@ -320,27 +276,5 @@ public class WinBrowser extends JFrame {
         requestFocus(true);
         tabbed.setSelectedComponent(contents);
         prePaintThenRepaint();
-    }
-
-    /**
-     * Add this to a window as a listener so that when the window closes, so does the entire program,
-     * including the browser and all platforms.
-     *
-     * @return a listener that responds to the window closing
-     */
-    static WindowAdapter stopper() {
-        return new WindowAdapter() {
-            public void windowClosed(WindowEvent e) {
-                exitSystem(SystemExitCode.NO_ERROR, "window closed", true);
-            }
-        };
-    }
-
-    /**
-     * Instantiates and returns a JTextArea whose settings are suitable for use inside the browser window's
-     * scroll area in a tab.
-     */
-    static JTextArea newJTextArea() {
-        return GuiUtils.newJTextArea("");
     }
 }

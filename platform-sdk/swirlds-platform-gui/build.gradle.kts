@@ -23,5 +23,6 @@ plugins {
 
 dependencies {
     api(project(":swirlds-base"))
+    implementation(project(":swirlds-common"))
     implementation(libs.commons.lang3)
 }

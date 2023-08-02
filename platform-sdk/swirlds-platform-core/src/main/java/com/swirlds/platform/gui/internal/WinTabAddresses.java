@@ -21,6 +21,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatform
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import javax.swing.JTextArea;
 
@@ -38,7 +39,7 @@ class WinTabAddresses extends PrePaintableJPanel {
      * Instantiate and initialize content of this tab.
      */
     public WinTabAddresses() {
-        text = WinBrowser.newJTextArea();
+        text = GuiUtils.newJTextArea("");
         add(text);
     }
 

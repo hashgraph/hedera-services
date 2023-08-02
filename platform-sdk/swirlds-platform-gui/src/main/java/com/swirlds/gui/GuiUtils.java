@@ -16,10 +16,21 @@
 
 package com.swirlds.gui;
 
+import com.swirlds.common.Console;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Rectangle;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.WindowConstants;
 import javax.swing.text.DefaultCaret;
 import org.apache.commons.lang3.SystemUtils;
 
@@ -126,5 +137,82 @@ public final class GuiUtils {
         final int width = contentWidth + WindowConfig.getInsets().left + WindowConfig.getInsets().right;
         final int height = screenSize.height;
         return new Rectangle(x, y, width, height);
+    }
+
+    /**
+     * Add this to a window as a listener so that when the window closes, so does the entire program, including the
+     * browser and all platforms.
+     *
+     * @return a listener that responds to the window closing
+     */
+    public static WindowAdapter stopper() {
+        return new WindowAdapter() {
+            public void windowClosed(WindowEvent e) {
+                SystemExitUtils.exitSystem(SystemExitCode.NO_ERROR, "window closed", true);
+            }
+        };
+    }
+
+    /** set the component to have a white background, and wrap it in scroll bars */
+    public static ScrollableJPanel makeScrollableJPanel(PrePaintableJPanel comp) {
+        comp.setBackground(Color.WHITE);
+        ScrollableJPanel scroll = new ScrollableJPanel(comp);
+        scroll.setBackground(Color.WHITE);
+        scroll.setVisible(true);
+        return scroll;
+    }
+
+    public static JPanel createPairPanel(final JPanel controls, final JPanel picture) {
+        final JPanel pairPanel = new JPanel();
+        pairPanel.setLayout(new GridBagLayout());
+        pairPanel.setBackground(Color.WHITE);
+        pairPanel.setVisible(true);
+        final GridBagConstraints c3 = new GridBagConstraints();
+        c3.anchor = GridBagConstraints.FIRST_LINE_START; // left align each component in its cell
+        c3.gridx = 0;
+        c3.gridy = 0;
+        c3.gridwidth = GridBagConstraints.RELATIVE;
+        c3.gridheight = GridBagConstraints.REMAINDER;
+        c3.fill = GridBagConstraints.BOTH;
+        c3.weightx = 0; // don't put extra space in the checkbox side
+        c3.weighty = 0;
+        pairPanel.add(controls, c3);
+        c3.gridx = 1;
+        c3.gridwidth = GridBagConstraints.REMAINDER;
+        c3.gridheight = GridBagConstraints.REMAINDER;
+        c3.weightx = 1.0f;
+        c3.weighty = 1.0f;
+        c3.fill = GridBagConstraints.BOTH;
+        pairPanel.add(picture, c3);
+
+        /////////////////// create spacer ///////////////////
+        final JPanel spacer = new JPanel();
+        spacer.setBackground(Color.YELLOW);
+        spacer.setVisible(true);
+
+        picture.setVisible(true);
+
+        return pairPanel;
+    }
+
+    public static JFrame createBasicWindow(final String name, final Rectangle winRect, final boolean visible) {
+        final JFrame frame = new JFrame(name);
+
+        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        frame.setBackground(Color.DARK_GRAY);
+        frame.setSize(winRect.width, winRect.height);
+        frame.setPreferredSize(new Dimension(winRect.width, winRect.height));
+        frame.setLocation(winRect.x, winRect.y);
+        frame.setFocusable(true);
+        frame.requestFocusInWindow();
+        frame.setVisible(visible); // show it
+        return frame;
+    }
+
+    public static Console createBasicConsole(final String name, final Rectangle winRect, final boolean visible) {
+        final Console console = new Console(name, winRect);
+        console.getWindow().setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        console.setVisible(visible);
+        return console;
     }
 }

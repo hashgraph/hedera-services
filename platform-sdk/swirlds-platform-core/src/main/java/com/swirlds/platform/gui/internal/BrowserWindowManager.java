@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
@@ -79,14 +80,13 @@ public final class BrowserWindowManager {
     }
 
     /**
-     * Make the browser window visible. If it doesn't yet exist, then create it. Then switch to the given
-     * tab, with a component name of the form Browser.browserWindow.tab* such as
-     * Browser.browserWindow.tabCalls to switch to the "Calls" tab.
+     * Make the browser window visible. If it doesn't yet exist, then create it. Then switch to the given tab, with a
+     * component name of the form Browser.browserWindow.tab* such as Browser.browserWindow.tabCalls to switch to the
+     * "Calls" tab.
      *
-     * @param comp
-     * 		the index of the tab to select
+     * @param comp the index of the tab to select
      */
-    public static void showBrowserWindow(final WinBrowser.ScrollableJPanel comp) {
+    public static void showBrowserWindow(final ScrollableJPanel comp) {
         showBrowserWindow();
         getBrowserWindow().goTab(comp);
     }

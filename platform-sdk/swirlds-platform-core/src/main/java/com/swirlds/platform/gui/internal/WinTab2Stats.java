@@ -24,6 +24,7 @@ import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.gui.GuiConstants;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -470,8 +471,8 @@ class WinTab2Stats extends PrePaintableJPanel {
         chartsPanel.setBackground(Color.WHITE);
         setBackground(Color.WHITE);
 
-        JTextArea instructions = WinBrowser.newJTextArea();
-        JTextArea spacer = WinBrowser.newJTextArea();
+        JTextArea instructions = GuiUtils.newJTextArea("");
+        JTextArea spacer = GuiUtils.newJTextArea("");
         instructions.setText(wrap(
                 50,
                 ""
@@ -506,7 +507,7 @@ class WinTab2Stats extends PrePaintableJPanel {
             c.weightx = 0;
             boxesPanel.add(txt, c);
             if (i % numCols == numCols - 1) {
-                JTextArea spacer2 = WinBrowser.newJTextArea();
+                JTextArea spacer2 = GuiUtils.newJTextArea("");
                 c.gridx++;
                 c.weightx = 1.0f;
                 c.gridwidth = GridBagConstraints.REMAINDER; // end of row
@@ -539,7 +540,7 @@ class WinTab2Stats extends PrePaintableJPanel {
                 showChart(j);
             }
         }
-        descriptions = WinBrowser.newJTextArea();
+        descriptions = GuiUtils.newJTextArea("");
         descriptions.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
         final StringBuilder s = new StringBuilder();
         for (final Metric metric : metrics) {
@@ -565,7 +566,7 @@ class WinTab2Stats extends PrePaintableJPanel {
         add(chartsPanel, c);
         c.gridy = 3;
         add(descriptions, c);
-        JTextArea spacer2 = WinBrowser.newJTextArea();
+        JTextArea spacer2 = GuiUtils.newJTextArea("");
         c.gridy = 4;
         c.weighty = 1.0f;
         add(spacer2, c);
