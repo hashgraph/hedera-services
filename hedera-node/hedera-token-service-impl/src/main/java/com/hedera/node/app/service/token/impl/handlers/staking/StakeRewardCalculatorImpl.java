@@ -23,7 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -44,7 +44,7 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
     @Override
     public long computePendingReward(
             @NonNull final Account account,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore,
+            @NonNull final WritableStakingInfoStore stakingInfoStore,
             @NonNull final ReadableNetworkStakingRewardsStore rewardsStore,
             @NonNull final Instant consensusNow) {
         final var effectiveStart = stakePeriodManager.effectivePeriod(account.stakePeriodStart());
@@ -55,7 +55,7 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         // At this point all the accounts that are eligible for computing rewards should have a
         // staked to a node
         final var nodeId = account.stakedNodeIdOrThrow();
-        final var stakingInfo = stakingInfoStore.get(nodeId);
+        final var stakingInfo = stakingInfoStore.getOriginalValue(nodeId);
         final var rewardOffered = computeRewardFromDetails(
                 account, stakingInfo, stakePeriodManager.currentStakePeriod(consensusNow), effectiveStart);
         return account.declineReward() ? 0 : rewardOffered;
