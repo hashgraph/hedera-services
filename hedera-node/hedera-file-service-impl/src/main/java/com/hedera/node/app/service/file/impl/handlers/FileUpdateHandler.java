@@ -71,9 +71,10 @@ public class FileUpdateHandler implements TransactionHandler {
         requireNonNull(context);
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-
         preValidate(transactionBody.fileID(), fileStore, context, false);
-        validateAndAddRequiredKeys(transactionBody.keys(), context, true);
+
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), transactionBody.keys(), context);
     }
 
     @Override
@@ -105,7 +106,8 @@ public class FileUpdateHandler implements TransactionHandler {
         validateFalse(file.deleted(), FILE_DELETED);
 
         // First validate this file is mutable; and the pending mutations are allowed
-        validateFalse(file.keys() == null && wantsToMutateNonExpiryField(fileUpdate), UNAUTHORIZED);
+        // TODO: add or condition for privilege accounts from context
+        validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
 
