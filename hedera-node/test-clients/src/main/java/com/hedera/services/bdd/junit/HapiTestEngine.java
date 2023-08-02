@@ -243,7 +243,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         return true;
                     })
                     .map(method -> new MethodTestDescriptor(method, this))
-                    .filter(method -> !method.shouldBeSkipped(null).isSkipped())
                     .forEach(this::addChild);
 
             // Skip construction of the Hedera instance if there are no test methods
@@ -263,6 +262,12 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         @Override
         public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
             try {
+                // If we have a HapiTestSuite that is without tests we still want to show it as ignored,
+                // but we don't want to waste time setting up a node
+                if (allTestsSkipped()) {
+                    return new HapiTestEngineExecutionContext(null, null);
+                }
+
                 final var tmpDir = Files.createTempDirectory("hapiTest");
 
                 // Setup logging
@@ -444,6 +449,10 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public void after(HapiTestEngineExecutionContext context) throws Exception {
+            if (allTestsSkipped()) {
+                return;
+            }
+
             if (hedera != null) {
                 hedera.shutdown();
                 hedera = null;
@@ -454,6 +463,12 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             // are interfering with each other
             FileUtils.deleteDirectory(context.getSavedStateDirectory());
             FileUtils.deleteDirectory(context.getEventsLogDir());
+        }
+
+        private boolean allTestsSkipped() {
+            return getChildren().stream()
+                .allMatch(ch ->
+                    ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
         }
     }
 
