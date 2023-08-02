@@ -56,8 +56,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 /**
  * Tests for the {@link EmergencyReconnectProtocol}
  */
-class EmergencyReconnectProtocolTests {
-
+public class EmergencyReconnectProtocolTests {
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
@@ -113,7 +113,8 @@ class EmergencyReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 fallenBehindManager,
-                mock(StatusActionSubmitter.class));
+                mock(StatusActionSubmitter.class),
+                configuration);
 
         assertEquals(initiateParams.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -139,7 +140,8 @@ class EmergencyReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 fallenBehindManager,
-                mock(StatusActionSubmitter.class));
+                mock(StatusActionSubmitter.class),
+                configuration);
 
         assertEquals(!teacherIsThrottled, protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -170,7 +172,8 @@ class EmergencyReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 fallenBehindManager,
-                mock(StatusActionSubmitter.class));
+                mock(StatusActionSubmitter.class),
+                configuration);
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -222,7 +225,8 @@ class EmergencyReconnectProtocolTests {
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 fallenBehindManager,
-                mock(StatusActionSubmitter.class));
+                mock(StatusActionSubmitter.class),
+                configuration);
 
         assertTrue(protocol.shouldAccept(), "expected protocol to accept initiation");
 

@@ -33,10 +33,12 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.io.exceptions.BadIOException;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.SocketConnection;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -48,6 +50,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class SocketConnectionTests {
+
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
     private NodeId selfId = new NodeId(0L);
     private NodeId otherId = new NodeId(1L);
@@ -61,7 +65,8 @@ class SocketConnectionTests {
     }
 
     private void initConnection(final boolean isOutbound) {
-        conn = SocketConnection.create(selfId, otherId, mock(ConnectionTracker.class), isOutbound, socket, dis, dos);
+        conn = SocketConnection.create(
+                selfId, otherId, mock(ConnectionTracker.class), isOutbound, socket, dis, dos, configuration);
     }
 
     @BeforeEach
@@ -206,7 +211,8 @@ class SocketConnectionTests {
     void testNullSocket(final boolean outbound) {
         assertThrows(
                 Exception.class,
-                () -> SocketConnection.create(selfId, otherId, mock(ConnectionTracker.class), outbound, null, dis, dos),
+                () -> SocketConnection.create(
+                        selfId, otherId, mock(ConnectionTracker.class), outbound, null, dis, dos, configuration),
                 "Expected an exception when a null socket is provided.");
     }
 
@@ -216,7 +222,7 @@ class SocketConnectionTests {
         assertThrows(
                 Exception.class,
                 () -> SocketConnection.create(
-                        selfId, otherId, mock(ConnectionTracker.class), outbound, socket, null, dos),
+                        selfId, otherId, mock(ConnectionTracker.class), outbound, socket, null, dos, configuration),
                 "Expected an exception when a null dis is provided.");
     }
 
@@ -226,7 +232,7 @@ class SocketConnectionTests {
         assertThrows(
                 Exception.class,
                 () -> SocketConnection.create(
-                        selfId, otherId, mock(ConnectionTracker.class), outbound, socket, dis, null),
+                        selfId, otherId, mock(ConnectionTracker.class), outbound, socket, dis, null, configuration),
                 "Expected an exception when a null dos is provided.");
     }
 

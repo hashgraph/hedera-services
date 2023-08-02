@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModel
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V1_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
@@ -37,8 +38,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractCreateV1SecurityModelSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ContractCreateV1SecurityModelSuite.class);
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";

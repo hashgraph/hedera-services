@@ -18,6 +18,7 @@ package com.swirlds.common.test.threading;
 
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 
+import com.swirlds.common.test.fixtures.threading.ConcurrentTesting;
 import com.swirlds.common.threading.BlockingResourceProvider;
 import com.swirlds.common.threading.locks.locked.LockedResource;
 import com.swirlds.common.threading.utility.ThrowingRunnable;

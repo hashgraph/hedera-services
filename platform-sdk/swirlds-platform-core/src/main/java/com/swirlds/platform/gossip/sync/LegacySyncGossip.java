@@ -193,9 +193,6 @@ public class LegacySyncGossip extends AbstractGossip {
         simultaneousSyncThrottle = new SimultaneousSyncThrottle(
                 platformContext.getMetrics(), syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
 
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
                         UnidirectionalProtocols.SYNC.getInitialByte(),
@@ -209,7 +206,7 @@ public class LegacySyncGossip extends AbstractGossip {
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                reconnectConfig,
+                                platformContext.getConfiguration(),
                                 reconnectThrottle,
                                 fallenBehindManager,
                                 reconnectMetrics)),

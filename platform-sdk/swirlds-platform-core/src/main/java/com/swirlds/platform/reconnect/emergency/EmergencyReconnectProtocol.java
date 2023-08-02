@@ -25,6 +25,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
@@ -56,6 +57,7 @@ public class EmergencyReconnectProtocol implements Protocol {
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final NotificationEngine notificationEngine;
+    private final Configuration configuration;
 
     @NonNull
     private final FallenBehindManager fallenBehindManager;
@@ -77,31 +79,36 @@ public class EmergencyReconnectProtocol implements Protocol {
      * @param reconnectController      controls reconnecting as a learner
      * @param fallenBehindManager      maintains this node's behind status
      * @param statusActionSubmitter    enables submitting platform status actions
+     * @param configuration            the platform configuration
      */
     public EmergencyReconnectProtocol(
-            final ThreadManager threadManager,
-            final NotificationEngine notificationEngine,
-            final NodeId peerId,
-            final EmergencyRecoveryManager emergencyRecoveryManager,
-            final ReconnectThrottle teacherThrottle,
-            final SignedStateFinder stateFinder,
-            final Duration reconnectSocketTimeout,
-            final ReconnectMetrics reconnectMetrics,
-            final ReconnectController reconnectController,
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NotificationEngine notificationEngine,
+            @NonNull final NodeId peerId,
+            @NonNull final EmergencyRecoveryManager emergencyRecoveryManager,
+            @NonNull final ReconnectThrottle teacherThrottle,
+            @NonNull final SignedStateFinder stateFinder,
+            @NonNull final Duration reconnectSocketTimeout,
+            @NonNull final ReconnectMetrics reconnectMetrics,
+            @NonNull final ReconnectController reconnectController,
             @NonNull final FallenBehindManager fallenBehindManager,
-            @NonNull final StatusActionSubmitter statusActionSubmitter) {
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
+            @NonNull final Configuration configuration) {
 
-        this.threadManager = threadManager;
-        this.notificationEngine = notificationEngine;
-        this.peerId = peerId;
-        this.emergencyRecoveryManager = emergencyRecoveryManager;
-        this.teacherThrottle = teacherThrottle;
-        this.stateFinder = stateFinder;
-        this.reconnectSocketTimeout = reconnectSocketTimeout;
-        this.reconnectMetrics = reconnectMetrics;
-        this.reconnectController = reconnectController;
-        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager);
+        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
+        this.notificationEngine = Objects.requireNonNull(notificationEngine, "notificationEngine must not be null");
+        this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
+        this.emergencyRecoveryManager =
+                Objects.requireNonNull(emergencyRecoveryManager, "emergencyRecoveryManager must not be null");
+        this.teacherThrottle = Objects.requireNonNull(teacherThrottle, "teacherThrottle must not be null");
+        this.stateFinder = Objects.requireNonNull(stateFinder, "stateFinder must not be null");
+        this.reconnectSocketTimeout =
+                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
+        this.reconnectController = Objects.requireNonNull(reconnectController, "reconnectController must not be null");
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
     @Override
@@ -165,7 +172,8 @@ public class EmergencyReconnectProtocol implements Protocol {
                             stateFinder,
                             reconnectSocketTimeout,
                             fallenBehindManager::hasFallenBehind,
-                            reconnectMetrics)
+                            reconnectMetrics,
+                            configuration)
                     .execute(connection);
         } finally {
             teacherThrottle.reconnectAttemptFinished();

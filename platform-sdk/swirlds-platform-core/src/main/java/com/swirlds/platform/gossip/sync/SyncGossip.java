@@ -260,7 +260,8 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            statusActionSubmitter),
+                                            statusActionSubmitter,
+                                            platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -271,7 +272,8 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             new DefaultSignedStateValidator(),
-                                            fallenBehindManager),
+                                            fallenBehindManager,
+                                            platformContext.getConfiguration()),
                                     new SyncProtocol(
                                             otherId,
                                             syncShadowgraphSynchronizer,

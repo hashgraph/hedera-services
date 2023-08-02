@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -85,7 +86,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ContractKeysStillWorkAsExpectedSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ContractKeysStillWorkAsExpectedSuite.class);
     private static final String EVM_ALIAS_ENABLED_PROP = "cryptoCreateWithAliasAndEvmAddress.enabled";
 
