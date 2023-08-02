@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -45,6 +47,7 @@ import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -102,6 +105,9 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     private RecordListBuilder recordListBuilder;
 
     @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
     private TransactionChecker checker;
 
     @Mock(strictness = Strictness.LENIENT)
@@ -126,6 +132,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                 txBody,
                 ALICE.accountID(),
                 ALICE.account().keyOrThrow(),
+                networkInfo,
                 TransactionCategory.USER,
                 recordBuilder,
                 stack,
@@ -147,6 +154,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         null,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -162,6 +170,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         null,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -177,6 +186,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         null,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -192,6 +202,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         null,
                         recordBuilder,
                         stack,
@@ -207,6 +218,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         null,
                         stack,
@@ -222,6 +234,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         null,
@@ -237,6 +250,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -252,6 +266,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -267,6 +282,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -282,6 +298,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -297,6 +314,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -312,6 +330,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -327,6 +346,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -362,6 +382,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     TransactionBody.DEFAULT,
                     payer,
                     payerKey,
+                    networkInfo,
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
@@ -386,6 +407,17 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
         }
 
         @Test
+        void testPeekingAtNewEntityNumWithInitialState() {
+            // when
+            final var actual = handleContext.peekAtNewEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(1L);
+            verify(entityNumberState).get();
+            verify(entityNumberState, never()).put(any());
+        }
+
+        @Test
         void testNewEntityNum() {
             // given
             when(entityNumberState.get())
@@ -398,6 +430,21 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             assertThat(actual).isEqualTo(43L);
             verify(entityNumberState).get();
             verify(entityNumberState).put(EntityNumber.newBuilder().number(43L).build());
+        }
+
+        @Test
+        void testPeekingAtNewEntityNum() {
+            // given
+            when(entityNumberState.get())
+                    .thenReturn(EntityNumber.newBuilder().number(42L).build());
+
+            // when
+            final var actual = handleContext.peekAtNewEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(43L);
+            verify(entityNumberState).get();
+            verify(entityNumberState, never()).put(any());
         }
     }
 
@@ -618,6 +665,52 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
     }
 
     @Nested
+    @DisplayName("Requesting network info")
+    final class NetworkInfoTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void exposesGivenNetworkInfo() {
+            assertSame(networkInfo, context.networkInfo());
+        }
+    }
+
+    @Nested
+    @DisplayName("Creating Service APIs")
+    final class ServiceApiTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void failsAsExpectedWithoutAvailableApi() {
+            assertThrows(IllegalArgumentException.class, () -> context.serviceApi(Object.class));
+        }
+    }
+
+    @Nested
     @DisplayName("Handling of record builder")
     final class RecordBuilderTest {
 
@@ -745,6 +838,7 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     txBody,
                     ALICE.accountID(),
                     ALICE.account().keyOrThrow(),
+                    networkInfo,
                     category,
                     recordBuilder,
                     stack,

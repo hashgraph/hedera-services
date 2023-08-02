@@ -272,7 +272,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
-                                            configuration),
+                                            platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
                                             otherId,
@@ -284,7 +284,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectController,
                                             new DefaultSignedStateValidator(),
                                             fallenBehindManager,
-                                            configuration),
+                                            platformContext.getConfiguration()),
                                     new ChatterSyncProtocol(
                                             otherId,
                                             chatterPeer.communicationState(),

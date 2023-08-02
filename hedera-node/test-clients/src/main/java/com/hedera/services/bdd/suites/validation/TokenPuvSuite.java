@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureDissociated;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.serializeEntity;
 import static com.hedera.services.bdd.suites.validation.YamlHelper.yaml;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.persistence.Account;
 import com.hedera.services.bdd.spec.persistence.Entity;
@@ -45,7 +46,9 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class TokenPuvSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(TokenPuvSuite.class);
 
     private final MiscConfig miscConfig;
@@ -191,6 +194,7 @@ public class TokenPuvSuite extends HapiSuite {
     }
 
     static class Names {
+
         static final String CAT_TOKEN = "puvCatToken";
         static final String CAT_TOKEN_ADMIN = "puvCatTokenAdmin";
         static final String TACO_TOKEN = "puvTacoToken";
@@ -206,6 +210,7 @@ public class TokenPuvSuite extends HapiSuite {
     }
 
     static class Amounts {
+
         static final long BESTOWED_CAT_TOKENS = 123;
         static final long BESTOWED_TACO_TOKENS = 456;
     }

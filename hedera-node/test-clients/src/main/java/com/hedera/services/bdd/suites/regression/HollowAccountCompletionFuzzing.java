@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.hollowAccountFuzzingWith;
 import static com.hedera.services.bdd.suites.regression.factories.AccountCompletionFuzzingFactory.initOperations;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Fuzz test, testing the completion of hollow accounts, by running a set of random operations for a period of time
  */
+@HapiTestSuite
 public class HollowAccountCompletionFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HollowAccountCompletionFuzzing.class);
 

@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.staking.StakingSuite.STAKING_REWARD_RATE;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -63,6 +64,7 @@ import org.apache.logging.log4j.Logger;
  *      {@literal stakerNum,balance,stakedToMe,totalStake,stakedToNode,declinedRewards}
  * </pre>
  */
+@HapiTestSuite
 public class StartStaking extends HapiSuite {
     private static final Logger log = LogManager.getLogger(StartStaking.class);
 

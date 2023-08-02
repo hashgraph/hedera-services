@@ -52,7 +52,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,7 +67,6 @@ public class AutoAccountCreator {
             CryptoUpdateTransactionBody.newBuilder()
                     .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build());
 
-    @Inject
     public AutoAccountCreator(@NonNull final HandleContext handleContext) {
         this.handleContext = requireNonNull(handleContext);
         this.accountStore = handleContext.writableStore(WritableAccountStore.class);

@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -38,7 +39,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class ExtCodeCopyOperationSuite extends HapiSuite {
+
     private static final Logger LOG = LogManager.getLogger(ExtCodeCopyOperationSuite.class);
 
     public static void main(String[] args) {

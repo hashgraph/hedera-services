@@ -198,7 +198,6 @@ public class LegacySyncGossip extends AbstractGossip {
                 configuration.getConfigData(MetricsConfig.class),
                 platformContext.getMetrics(),
                 syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
-
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
                         UnidirectionalProtocols.SYNC.getInitialByte(),
@@ -212,7 +211,7 @@ public class LegacySyncGossip extends AbstractGossip {
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                configuration,
+                                platformContext.getConfiguration(),
                                 reconnectThrottle,
                                 fallenBehindManager,
                                 reconnectMetrics)),

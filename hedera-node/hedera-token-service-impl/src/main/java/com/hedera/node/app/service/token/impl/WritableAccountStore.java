@@ -20,12 +20,16 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -68,6 +72,18 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
+     * Returns true if the given id was created in the current savepoint. (That is, it exists
+     * but its original value is null.)
+     *
+     * @param id - the id of the account to be checked
+     * @return true if the given id was created in the current savepoint
+     */
+    public boolean isNewlyCreated(@NonNull final AccountID id) {
+        final var modifiedState = accountState();
+        return modifiedState.getOriginalValue(id) == null && modifiedState.get(id) != null;
+    }
+
+    /**
      * Persists a new alias linked to the account persisted to state
      *
      * @param alias - the alias to be added to modifications in state.
@@ -76,6 +92,11 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
         Objects.requireNonNull(alias);
         aliases().put(alias, accountId);
+    }
+
+    public void removeAlias(@NonNull final Bytes alias) {
+        Objects.requireNonNull(alias);
+        aliases().remove(alias);
     }
 
     /**
@@ -159,6 +180,28 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     @NonNull
     public Set<AccountID> modifiedAccountsInState() {
         return accountState().modifiedKeys();
+    }
+
+    /**
+     * Returns the list of contract nonces modified in existing state.
+     *
+     * @return the list of contract nonces modified in existing state
+     */
+    public @NonNull List<ContractNonceInfo> updatedContractNonces() {
+        final List<ContractNonceInfo> updates = new ArrayList<>();
+        accountState().modifiedKeys().forEach(accountId -> {
+            final var newAccount = accountState().get(accountId);
+            if (newAccount != null && newAccount.smartContract()) {
+                final var oldAccount = accountState().getOriginalValue(accountId);
+                if (oldAccount == null || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
+                    final var contractId = ContractID.newBuilder()
+                            .contractNum(accountId.accountNumOrThrow())
+                            .build();
+                    updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                }
+            }
+        });
+        return updates;
     }
 
     /**

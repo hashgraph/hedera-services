@@ -64,6 +64,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -75,6 +76,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
     private static final long depositAmount = 20_000L;

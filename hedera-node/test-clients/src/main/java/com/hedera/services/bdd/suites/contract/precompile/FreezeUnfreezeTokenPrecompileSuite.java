@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -51,7 +52,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
     public static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
     private static final String IS_FROZEN_FUNC = "isTokenFrozen";

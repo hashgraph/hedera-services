@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -69,6 +70,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ScheduleCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
 

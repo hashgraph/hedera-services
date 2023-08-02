@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.leaky;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallV1SecurityModelSuite;
@@ -48,6 +49,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class LeakySecurityModelV1Suite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(LeakySecurityModelV1Suite.class);
