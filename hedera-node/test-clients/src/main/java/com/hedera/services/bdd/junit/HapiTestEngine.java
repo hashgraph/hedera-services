@@ -242,6 +242,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         return true;
                     })
                     .map(method -> new MethodTestDescriptor(method, this))
+                    .filter(method -> !method.shouldBeSkipped(null).isSkipped())
                     .forEach(this::addChild);
 
             // Skip construction of the Hedera instance if there are no test methods
@@ -464,7 +465,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         }
 
         @Override
-        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) throws Exception {
+        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
                 return SkipResult.skip("No @HapiTest annotation");
