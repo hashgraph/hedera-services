@@ -27,9 +27,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
@@ -40,8 +47,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Hammer the merging subsystem with as many small merges as possible to try to overwhelm it.
  */
-@Disabled
 class DataFileCollectionMergeHammerTest {
+
+    @BeforeAll
+    public static void setup() {
+        Configurator.setRootLevel(Level.WARN);
+    }
+
+    @AfterAll
+    public static void cleanUp() {
+        Configurator.reconfigure();
+    }
 
     @SuppressWarnings("unchecked")
     @ParameterizedTest
@@ -104,7 +120,7 @@ class DataFileCollectionMergeHammerTest {
     @SuppressWarnings("unchecked")
     @Test
     @Tags({@Tag(TestTypeTags.HAMMER)})
-    void hammer() throws IOException, InterruptedException {
+    void hammer() throws IOException, InterruptedException, ExecutionException {
         final Path tempFileDir = TemporaryFileBuilder.buildTemporaryDirectory("DataFileCollectionMergeHammerTest");
         final LongListHeap index = new LongListHeap();
         final var serializer = new ExampleFixedSizeDataSerializer();
@@ -114,56 +130,60 @@ class DataFileCollectionMergeHammerTest {
 
         final Random rand = new Random(777);
         final AtomicBoolean stop = new AtomicBoolean(false);
-        new Thread(() -> {
-                    while (!stop.get()) {
-                        try {
-                            coll.startWriting();
-                            final int numRecords = rand.nextInt(2500);
-                            long prevId = 0;
-                            for (int i = 0; i < numRecords; i++) {
-                                final long id = prevId + rand.nextInt((10_000) - (int) prevId);
-                                if (id == prevId) {
-                                    break;
-                                }
-                                prevId = id;
-                                index.put(id, coll.storeDataItem(new long[] {id, rand.nextLong()}));
-                            }
-                            coll.endWriting(index.size() * 2L - 1, index.size() * 2L)
-                                    .setFileCompleted();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+        ExecutorService writerService = Executors.newSingleThreadExecutor();
+        Future<?> writerFuture = writerService.submit(() -> {
+            while (!stop.get()) {
+                try {
+                    coll.startWriting();
+                    final int numRecords = rand.nextInt(2500);
+                    long prevId = 0;
+                    for (int i = 0; i < numRecords; i++) {
+                        final long id = prevId + rand.nextInt((10_000) - (int) prevId);
+                        if (id == prevId) {
+                            break;
                         }
+                        prevId = id;
+                        index.put(id, coll.storeDataItem(new long[] {id, rand.nextLong()}));
                     }
-                })
-                .start();
+                    coll.endWriting(index.size() * 2L - 1, index.size() * 2L).setFileCompleted();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-        new Thread(() -> {
-                    while (!stop.get()) {
-                        try {
-                            final List<DataFileReader<?>> filesToMerge =
-                                    (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
-                            System.out.println(filesToMerge.size());
-                            if (filesToMerge.size() > 10000) {
-                                stop.set(true);
-                            }
-                            compactor.compactFiles(index, filesToMerge);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+        ExecutorService compactorService = Executors.newSingleThreadExecutor();
+        Future<?> compactorFuture = compactorService.submit(() -> {
+            while (!stop.get()) {
+                try {
+                    final List<DataFileReader<?>> filesToMerge =
+                            (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
+                    if (filesToMerge.size() > compactor.getMinNumberOfFilesToMerge()) {
+                        System.out.println(filesToMerge.size());
                     }
-                })
-                .start();
+                    if (filesToMerge.size() > 10000) {
+                        stop.set(true);
+                    }
+                    compactor.compactFiles(index, filesToMerge);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         for (int i = 0; i < 100; i++) {
+            System.out.println("Iteration " + i);
             compactor.pauseCompaction();
             SECONDS.sleep(3);
             compactor.resumeCompaction();
             SECONDS.sleep(1);
         }
-
         stop.set(true);
+        compactorFuture.get();
+        writerFuture.get();
         final var filesToMerge = coll.getAllCompletedFiles();
         assertTrue(filesToMerge.size() < 10000, "Too many files! We didn't keep up");
+        coll.close();
         index.close();
     }
 }

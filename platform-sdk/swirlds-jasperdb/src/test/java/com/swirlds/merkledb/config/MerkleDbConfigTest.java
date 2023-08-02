@@ -34,24 +34,6 @@ class MerkleDbConfigTest {
     }
 
     @Test
-    public void testMaxNumberOfFilesInMergeViolation() {
-        // given
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
-                .withConfigDataTypes(MerkleDbConfig.class)
-                .withSources(new SimpleConfigSource("merkleDb.maxNumberOfFilesInMerge", 3))
-                .withSources(new SimpleConfigSource("merkleDb.minNumberOfFilesInMerge", 10));
-
-        // when
-        final ConfigViolationException configViolationException = Assertions.assertThrows(
-                ConfigViolationException.class,
-                () -> configurationBuilder.build(),
-                "A violation should cancel the initialization");
-
-        // then
-        Assertions.assertEquals(1, configViolationException.getViolations().size());
-    }
-
-    @Test
     public void testMinNumberOfFilesInMergeViolation() {
         // given
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
