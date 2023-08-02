@@ -320,6 +320,9 @@ public class SignedStateFileManager implements Startable {
 
     /**
      * Dump a state to disk out of band.
+     * <p>
+     * The state will be saved in a subdirectory of the signed states base directory, with the subdirectory being named
+     * after the reason the state is being written out of band.
      *
      * @param signedState the signed state to write to disk
      * @param reason      the reason why the state is being written
@@ -430,7 +433,7 @@ public class SignedStateFileManager implements Startable {
                 "Signed state from round {} created, "
                         + "will eventually be written to disk once sufficient signatures are collected, for reason: {}",
                 signedState.getRound(),
-                reason.getDescription());
+                reason);
 
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
         signedState.setStateToDiskReason(reason);
