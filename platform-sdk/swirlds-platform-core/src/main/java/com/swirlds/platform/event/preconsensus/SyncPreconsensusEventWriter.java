@@ -187,7 +187,7 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
 
         try {
             prepareOutputStream(event);
-            currentMutableFile.writeEvent(event);
+            currentMutableFile.writeEvent(event.getBaseEvent());
             lastWrittenEvent = event.getStreamSequenceNumber();
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

@@ -20,6 +20,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -30,13 +31,13 @@ import java.util.NoSuchElementException;
 /**
  * Iterates over the events in a single preconsensus event file.
  */
-public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
+public class PreconsensusEventFileIterator implements IOIterator<GossipEvent> {
 
     private final long minimumGeneration;
     private final SerializableDataInputStream stream;
     private boolean hasPartialEvent = false;
     private final CountingStreamExtension counter;
-    private EventImpl next;
+    private GossipEvent next;
 
     /**
      * Create a new iterator that walks over events in a preconsensus event file.
@@ -56,6 +57,7 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
                 new BufferedInputStream(
                         new FileInputStream(fileDescriptor.getPath().toFile())),
                 counter));
+        stream.readInt();// read the version number, but we don't need it atm
     }
 
     /**
@@ -67,7 +69,7 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
             final long initialCount = counter.getCount();
 
             try {
-                final EventImpl candidate = stream.readSerializable(false, EventImpl::new);
+                final GossipEvent candidate = stream.readSerializable(false, GossipEvent::new);
                 if (candidate.getGeneration() >= minimumGeneration) {
                     next = candidate;
                 }
@@ -103,7 +105,7 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
      * {@inheritDoc}
      */
     @Override
-    public EventImpl next() throws IOException {
+    public GossipEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("no files remain in this iterator");
         }
