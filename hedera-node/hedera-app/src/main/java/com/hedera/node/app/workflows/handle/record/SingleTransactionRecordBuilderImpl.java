@@ -119,6 +119,7 @@ public class SingleTransactionRecordBuilderImpl
     private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
+    // These are not persisted to the record file
     private Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
 
     /**
@@ -815,7 +816,7 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
-    /* ------------- information needed by token service for building transfer list and staking -------- */
+    // ------------- Information needed by token service for redirecting staking rewards to appropriate accounts
 
     /**
      * Adds a beneficiary for a deleted account into the map. This is needed while computing staking rewards.
@@ -837,6 +838,7 @@ public class SingleTransactionRecordBuilderImpl
      * Gets the map of deleted account ID to beneficiary account ID.
      * @return the map of deleted account ID to beneficiary account ID
      */
+    @NonNull
     public Map<AccountID, AccountID> getDeletedAccountBeneficiaries() {
         return deletedAccountBeneficiaries;
     }

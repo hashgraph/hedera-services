@@ -86,7 +86,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
      * @param accountStore  The account store
      * @param tokenRelStore The token relation store
      * @param handleContext The context
-     * @param recordBuilder
+     * @param recordBuilder The record builder
      */
     private void validateAndAutoAssociate(
             @NonNull final AccountID accountId,

@@ -80,7 +80,7 @@ public class StakingRewardsDistributor {
 
                 // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
                 // accounts until we find a non-deleted account to try to reward (it may still decline)
-                if (originalAccount.deleted()) {
+                if (modifiedAccount.deleted()) {
                     final var beneficiaries = recordBuilder.getDeletedAccountBeneficiaries();
                     final var maxRedirects = beneficiaries.size();
                     var j = 1;
