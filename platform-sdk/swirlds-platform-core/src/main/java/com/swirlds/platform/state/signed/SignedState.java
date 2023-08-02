@@ -110,9 +110,10 @@ public class SignedState implements SignedStateInfo {
     private final Instant creationTimestamp = Instant.now();
 
     /**
-     * If true, then this state should eventually be written to disk.
+     * If not null, then this state should eventually be written to disk. The enum value indicates the reason that the
+     * state should be written to disk
      */
-    private boolean stateToSave;
+    private StateToDiskReason stateToDiskReason;
 
     /**
      * Signed states are deleted on this background thread.
@@ -487,21 +488,22 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Check if this is a state that needs to be eventually written to disk.
+     * Set the reason why this state needs to be written to disk.
      *
-     * @return true if this state eventually needs to be written to disk
+     * @param reason the reason why this state needs to be written to disk
      */
-    public boolean isStateToSave() {
-        return stateToSave;
+    public void setStateToDiskReason(@NonNull final StateToDiskReason reason) {
+        stateToDiskReason = reason;
     }
 
     /**
-     * Set if this state eventually needs to be written to disk.
+     * Get the reason why this state needs to be eventually written to disk, or null if it doesn't need to be
      *
-     * @param stateToSave true if this state eventually needs to be written to disk
+     * @return the reason why this state needs to be written to disk, or null if this state does not need to be written
      */
-    public void setStateToSave(final boolean stateToSave) {
-        this.stateToSave = stateToSave;
+    @Nullable
+    public StateToDiskReason getStateToDiskReason() {
+        return stateToDiskReason;
     }
 
     /**

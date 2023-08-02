@@ -62,6 +62,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedReader;
@@ -161,7 +162,7 @@ class SignedStateFileReadWriteTest {
         final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test");
+        writeSignedStateToDisk(new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
@@ -299,7 +300,7 @@ class SignedStateFileReadWriteTest {
             final SignedState signedState =
                     new RandomSignedStateGenerator().setRound(round).build();
 
-            manager.saveSignedStateToDisk(signedState);
+            manager.saveSignedStateToDisk(signedState, StateToDiskReason.PERIODIC_SNAPSHOT);
         }
 
         // The states should have been written by now

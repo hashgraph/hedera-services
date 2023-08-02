@@ -169,24 +169,25 @@ public final class SignedStateFileWriter {
      * @param selfId              the id of the platform
      * @param savedStateDirectory the directory where the state will be stored
      * @param signedState         the object to be written
-     * @param taskDescription     a description of the task
+     * @param stateToDiskReason   the reason the state is being written to disk
      */
     public static void writeSignedStateToDisk(
             @Nullable final NodeId selfId,
             @NonNull final Path savedStateDirectory,
             @NonNull final SignedState signedState,
-            @NonNull final String taskDescription)
+            @NonNull final StateToDiskReason stateToDiskReason)
             throws IOException {
-        Objects.requireNonNull(savedStateDirectory, "savedStateDirectory must not be null");
-        Objects.requireNonNull(signedState, "signedState must not be null");
-        Objects.requireNonNull(taskDescription, "taskDescription must not be null");
+
+        Objects.requireNonNull(savedStateDirectory);
+        Objects.requireNonNull(signedState);
+        Objects.requireNonNull(stateToDiskReason);
 
         try {
             logger.info(
                     STATE_TO_DISK.getMarker(),
                     "Started writing round {} state to disk. Reason: {}, directory: {}",
                     signedState.getRound(),
-                    taskDescription,
+                    stateToDiskReason,
                     savedStateDirectory);
 
             executeAndRename(
