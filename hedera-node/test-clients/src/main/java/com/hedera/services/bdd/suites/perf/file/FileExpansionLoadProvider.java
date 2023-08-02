@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -67,6 +68,7 @@ import org.apache.logging.log4j.Logger;
  *       out of rotation" and a new target file created).
  * </ul>
  */
+@HapiTestSuite
 public class FileExpansionLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileExpansionLoadProvider.class);
 

@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModel
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -52,7 +53,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ERCPrecompileV1SecurityModelSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ERCPrecompileV1SecurityModelSuite.class);
 
     private static final long GAS_TO_OFFER = 1_000_000L;

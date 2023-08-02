@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class UpdateServerFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
     private static final String zipFile = "Archive.zip";
