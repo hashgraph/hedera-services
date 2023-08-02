@@ -68,13 +68,13 @@ public class JrsTestReaderTests {
 
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
         //"gs://swirlds-circleci-jrs-results/cody-littley/"
-        final String root = "gs://swirlds-circleci-jrs-results/alittley/";
+        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/";
 
         JrsTestReader.generateTestReport(
                 terminal,
                 executor,
                 root,
-                Instant.now().minus(2, ChronoUnit.DAYS),
+                Instant.now().minus(1, ChronoUnit.DAYS),
                 getAbsolutePath(Path.of("~/Desktop/out.csv")));
     }
 }
