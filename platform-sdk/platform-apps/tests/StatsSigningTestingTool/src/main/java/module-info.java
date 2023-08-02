@@ -4,5 +4,5 @@ module com.swirlds.demo.stats.signing {
     requires com.swirlds.logging;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-	requires com.swirlds.config;
+    requires com.swirlds.config;
 }

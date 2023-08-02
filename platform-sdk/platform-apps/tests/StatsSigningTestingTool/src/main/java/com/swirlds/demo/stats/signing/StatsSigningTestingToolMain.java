@@ -26,6 +26,12 @@ package com.swirlds.demo.stats.signing;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.logging.LogMarker.STARTUP;
+
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.BasicSoftwareVersion;
@@ -39,16 +45,9 @@ import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Browser;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.concurrent.atomic.AtomicReference;
-
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.logging.LogMarker.STARTUP;
 
 /**
  * A testing tool which generates a number of transactions per second, and simulates handling them
@@ -134,20 +133,13 @@ public class StatsSigningTestingToolMain implements SwirldMain {
         this.platform = platform;
         final SSTTConfig config = platform.getContext().getConfiguration().getConfigData(SSTTConfig.class);
         configHolder.set(config);
-        // parse the config.txt parameters, and allow optional _ as in 1_000_000
-//        final String[] parameters = ParameterProvider.getInstance().getParameters();
-//        bytesPerTrans = Integer.parseInt(parameters[3].replaceAll("_", ""));
-//        transPerEventMax = Integer.parseInt(parameters[4].replaceAll("_", ""));
-//        transPerSecToCreate = Integer.parseInt(parameters[5].replaceAll("_", ""));
-
-        expectedTPS = config.transPerSecToCreate() / (double) platform.getAddressBook().getSize();
+        expectedTPS = config.transPerSecToCreate()
+                / (double) platform.getAddressBook().getSize();
 
         // the higher the expected TPS, the smaller the window
         tps_measure_window_milliseconds = (int) (WINDOW_CALCULATION_CONST / expectedTPS);
 
-        transactionPool = new TransactionPool(
-                config.transPoolSize(),
-                config.bytesPerTrans());
+        transactionPool = new TransactionPool(config.transPoolSize(), config.bytesPerTrans());
 
         final Metrics metrics = platform.getContext().getMetrics();
         transactionSubmitSpeedometer = metrics.getOrCreate(TRAN_SUBMIT_TPS_SPEED_CONFIG);
@@ -204,7 +196,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             return;
         }
 
-
         // ramp up the TPS to the expected value
         long elapsedTime = now / MILLISECONDS_TO_NANOSECONDS - rampUpStartTimeMilliSeconds;
         final double rampUpTPS;
@@ -219,7 +210,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             toCreate = ((double) now - lastTPSMeasureTime) * NANOSECONDS_TO_SECONDS * rampUpTPS;
             lastTPSMeasureTime = now;
         }
-
 
         while (true) {
             if (toCreate < 1) {

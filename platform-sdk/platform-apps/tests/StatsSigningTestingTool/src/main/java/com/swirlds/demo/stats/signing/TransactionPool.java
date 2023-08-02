@@ -42,9 +42,7 @@ final class TransactionPool {
      * @throws IllegalArgumentException
      * 		if the {@code poolSize} or the {@code transactionSize} parameters are less than one (1)
      */
-    TransactionPool(
-            final int poolSize,
-            final int transactionSize) {
+    TransactionPool(final int poolSize, final int transactionSize) {
         if (poolSize < 1) {
             throw new IllegalArgumentException("poolSize");
         }
