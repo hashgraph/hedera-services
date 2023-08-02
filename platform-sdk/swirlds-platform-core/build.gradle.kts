@@ -25,12 +25,12 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
     // Individual Dependencies
-    implementation(project(":swirlds-base"))
     api(project(":swirlds-fchashmap"))
     api(project(":swirlds-fcqueue"))
     api(project(":swirlds-jasperdb"))
     api(project(":swirlds-cli"))
     api(project(":swirlds-base"))
+    api(project(":swirlds-platform-gui"))
     compileOnly(libs.spotbugs.annotations)
     runtimeOnly(project(":swirlds-config-impl"))
 
@@ -52,6 +52,7 @@ dependencies {
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)
     testImplementation(project(":swirlds-config-impl"))
+    testImplementation(project(":swirlds-unit-tests:core:swirlds-platform-test"))
     testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testFixtures(project(":swirlds-config-api")))

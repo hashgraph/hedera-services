@@ -18,28 +18,21 @@ package com.swirlds.platform.util;
 
 import static com.swirlds.logging.LogMarker.STARTUP;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.Log4jSetup;
 import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,24 +95,6 @@ public final class BootstrapUtils {
                 | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Load configuration.
-     */
-    public static Configuration loadConfiguration(final List<Path> configurationPaths) throws IOException {
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
-
-        for (final Path configPath : configurationPaths) {
-            configurationBuilder.withSource(new LegacyFileConfigSource(configPath));
-        }
-
-        final Configuration configuration = configurationBuilder.build();
-        ConfigurationHolder.getInstance().setConfiguration(configuration);
-
-        return configuration;
     }
 
     /**

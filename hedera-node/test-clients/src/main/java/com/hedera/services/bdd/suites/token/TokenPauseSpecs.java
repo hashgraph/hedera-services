@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
@@ -68,7 +69,9 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public final class TokenPauseSpecs extends HapiSuite {
+
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
     public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
     public static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
@@ -426,6 +429,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     public static class TokenIdOrderingAsserts extends BaseErroringAssertsProvider<List<TokenTransferList>> {
+
         private final String[] expectedTokenIds;
 
         public TokenIdOrderingAsserts(final String[] expectedTokenIds) {
