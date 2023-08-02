@@ -49,6 +49,7 @@ import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
@@ -56,7 +57,6 @@ import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hederahashgraph.api.proto.java.TokenRelation;
 import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -95,7 +95,8 @@ public class SingleTransactionRecordBuilderImpl
                 TokenCreateRecordBuilder,
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
-                CryptoDeleteRecordBuilder {
+                CryptoDeleteRecordBuilder,
+                CryptoUpdateRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -118,9 +119,7 @@ public class SingleTransactionRecordBuilderImpl
     private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new ArrayList<>();
 
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
-    // and building transferList correctly
     private Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
-    private List<TokenRelation> autoAssociations = new ArrayList<>();
 
     /**
      * Creates new transaction record builder.
@@ -835,15 +834,10 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Adds the token relations that are auto associations. This information is needed while building
-     * the transfer list, to set the auto association flag.
-     * @param tokenRelation the token relation that is created by auto association
-     * @return the builder
+     * Gets the map of deleted account ID to beneficiary account ID.
+     * @return the map of deleted account ID to beneficiary account ID
      */
-    @NonNull
-    public SingleTransactionRecordBuilderImpl addAutoAssociation(@NonNull final TokenRelation tokenRelation) {
-        requireNonNull(tokenRelation, "tokenRelation must not be null");
-        autoAssociations.add(tokenRelation);
-        return this;
+    public Map<AccountID, AccountID> getDeletedAccountBeneficiaries() {
+        return deletedAccountBeneficiaries;
     }
 }

@@ -32,6 +32,8 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -72,6 +74,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
         final var consensusNow = context.consensusNow();
 
+        // TODO: confirm if the getDeletedAccountBeneficiaries should be in
+        //  SingleTransactionRecordBuilder interface instead
+        final var recordBuilder = context.recordBuilder(CryptoDeleteRecordBuilder.class);
+
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
         adjustStakedToMeForAccountStakees(writableStore, readableStore);
@@ -79,7 +85,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var rewardReceivers = getPossibleRewardReceivers(writableStore, readableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
-                rewardReceivers, readableStore, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow);
+                rewardReceivers, readableStore, writableStore, stakingRewardsStore,
+                stakingInfoStore, consensusNow, recordBuilder);
         // Adjust stakes for nodes
         adjustStakeMetadata(
                 writableStore, readableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
