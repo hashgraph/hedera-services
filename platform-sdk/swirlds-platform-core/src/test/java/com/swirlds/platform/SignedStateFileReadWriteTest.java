@@ -162,7 +162,8 @@ class SignedStateFileReadWriteTest {
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
         final Configuration configuration = changeConfigAndConfigHolder("data/saved");
-        writeSignedStateToDisk(new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT, configuration);
+        writeSignedStateToDisk(
+                new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT, configuration);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

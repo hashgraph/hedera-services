@@ -435,7 +435,11 @@ public class SavedStateLoaderTests {
         states.forEach(ss -> {
             try {
                 SignedStateFileWriter.writeSignedStateToDisk(
-                        new NodeId(0), getStateDir(ss.getRound()), ss, StateToDiskReason.PERIODIC_SNAPSHOT, prepareConfiguration());
+                        new NodeId(0),
+                        getStateDir(ss.getRound()),
+                        ss,
+                        StateToDiskReason.PERIODIC_SNAPSHOT,
+                        prepareConfiguration());
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
