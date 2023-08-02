@@ -42,6 +42,11 @@ public class RecordFinalizerBase {
     private static final AccountID ZERO_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(0).build();
 
+    /**
+     * Gets all hbar changes for all modified accounts from the given {@link WritableAccountStore}.
+     * @param writableAccountStore the {@link WritableAccountStore} to get the hbar changes from
+     * @return a {@link Map} of {@link AccountID} to {@link Long} representing the hbar changes for all modified
+     */
     @NonNull
     protected Map<AccountID, Long> hbarChangesFrom(@NonNull final WritableAccountStore writableAccountStore) {
         final var hbarChanges = new HashMap<AccountID, Long>();
@@ -70,6 +75,12 @@ public class RecordFinalizerBase {
         return hbarChanges;
     }
 
+    /**
+     * Gets all fungible tokenRelation balances for all modified token relations from the given {@link WritableTokenRelationStore}.
+     * @param writableTokenRelStore the {@link WritableTokenRelationStore} to get the token relation balances from
+     * @return a {@link Map} of {@link EntityIDPair} to {@link Long} representing the token relation balances for all
+     * modified token relations
+     */
     @NonNull
     protected Map<EntityIDPair, Long> fungibleChangesFrom(
             @NonNull final WritableTokenRelationStore writableTokenRelStore) {
@@ -97,6 +108,12 @@ public class RecordFinalizerBase {
         return fungibleChanges;
     }
 
+    /**
+     * Given a map of {@link EntityIDPair} to {@link Long} representing the changes to the balances of the token
+     * relations, returns a list of {@link TokenTransferList} representing the changes to the token relations.
+     * @param fungibleChanges the map of {@link EntityIDPair} to {@link Long} representing the changes to the balances
+     * @return a list of {@link TokenTransferList} representing the changes to the token relations
+     */
     @NonNull
     protected List<TokenTransferList> asTokenTransferListFrom(@NonNull final Map<EntityIDPair, Long> fungibleChanges) {
         final var fungibleTokenTransferLists = new ArrayList<TokenTransferList>();
@@ -129,6 +146,11 @@ public class RecordFinalizerBase {
         return fungibleTokenTransferLists;
     }
 
+    /**
+     * Gets all nft ownership changes for all modified nfts from the given {@link WritableNftStore}.
+     * @param writableNftStore the {@link WritableNftStore} to get the nft ownership changes from
+     * @return a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
+     */
     @NonNull
     protected Map<TokenID, List<NftTransfer>> nftChangesFrom(@NonNull final WritableNftStore writableNftStore) {
         final var nftChanges = new HashMap<TokenID, List<NftTransfer>>();
@@ -139,7 +161,7 @@ public class RecordFinalizerBase {
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             final var senderAccountId = persistedNft != null ? persistedNft.ownerId() : null;
             // If the NFT has been burned, modifiedNft will be null. In that case the receiverId
-            // will be explicit;y set as 0-.0.0
+            // will be explicit;y set as 0.0.0
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
                 builder.serialNumber(modifiedNft.id().serialNumber());
@@ -160,6 +182,12 @@ public class RecordFinalizerBase {
         return nftChanges;
     }
 
+    /**
+     * Given a {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft ownership
+     * changes, returns a list of {@link TokenTransferList} representing the changes to the nft ownership.
+     * @param nftChanges the {@link Map} of {@link TokenID} to {@link List} of {@link NftTransfer} representing the nft
+     * @return a list of {@link TokenTransferList} representing the changes to the nft ownership
+     */
     protected List<TokenTransferList> asTokenTransferListFromNftChanges(
             final Map<TokenID, List<NftTransfer>> nftChanges) {
 

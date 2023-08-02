@@ -384,7 +384,6 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.configuration()).willReturn(configuration);
 
         subject.finalizeChildRecord(context);
-        ;
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(
@@ -448,7 +447,6 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.configuration()).willReturn(configuration);
 
         subject.finalizeChildRecord(context);
-        ;
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
