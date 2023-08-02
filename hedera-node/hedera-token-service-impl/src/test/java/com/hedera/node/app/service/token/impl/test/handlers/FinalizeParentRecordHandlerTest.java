@@ -261,7 +261,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void handleFungibleTokenTransfersToAccountDeductsFromChildRecordsSuccess() {
         // This case handles a successful fungible token transfer to an auto-created account
-        // deducts all child record transfers from parent transfer list
+        // does not deduct all child record transfers from parent transfer list
 
         final var senderAcct = ACCOUNT_1212;
         final var senderTokenRel = givenFungibleTokenRelation()
@@ -319,11 +319,11 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                         .transfers(
                                 AccountAmount.newBuilder()
                                         .accountID(ACCOUNT_1212_ID)
-                                        .amount(-fungibleAmountToTransfer + childAmount)
+                                        .amount(-fungibleAmountToTransfer)
                                         .build(),
                                 AccountAmount.newBuilder()
                                         .accountID(ACCOUNT_3434_ID)
-                                        .amount(fungibleAmountToTransfer - childAmount)
+                                        .amount(fungibleAmountToTransfer)
                                         .build())
                         .build()));
     }
@@ -331,7 +331,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void handleNFTTransfersToAccountDeductsFromChildRecordsSuccess() {
         // This case handles a successful NFT transfer to an auto-created account
-        // deducts all child record transfers from parent transfer list
+        // does not deduct all child record transfers from parent transfer list
         final var existingTokenRel = givenNonFungibleTokenRelation()
                 .copyBuilder()
                 .tokenId(TOKEN_321)
@@ -382,11 +382,17 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)
-                        .nftTransfers(NftTransfer.newBuilder()
-                                .serialNumber(2)
-                                .senderAccountID(ACCOUNT_1212_ID)
-                                .receiverAccountID(ACCOUNT_3434_ID)
-                                .build())
+                        .nftTransfers(
+                                NftTransfer.newBuilder()
+                                        .serialNumber(1)
+                                        .senderAccountID(ACCOUNT_1212_ID)
+                                        .receiverAccountID(ACCOUNT_3434_ID)
+                                        .build(),
+                                NftTransfer.newBuilder()
+                                        .serialNumber(2)
+                                        .senderAccountID(ACCOUNT_1212_ID)
+                                        .receiverAccountID(ACCOUNT_3434_ID)
+                                        .build())
                         .build()));
     }
 
