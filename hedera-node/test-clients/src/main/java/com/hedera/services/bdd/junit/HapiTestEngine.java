@@ -460,15 +460,18 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
             // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
             // We need to do that in order to be able to run all tests at the same time. Without that the tests
-            // are interfering with each other
+            // are interfering with each other.
+            // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
+            // can move this logic inside the after method in the MethodTestDescriptor class.
+            // This way we will clean up the data after each test.
             FileUtils.deleteDirectory(context.getSavedStateDirectory());
             FileUtils.deleteDirectory(context.getEventsLogDir());
         }
 
         private boolean allTestsSkipped() {
             return getChildren().stream()
-                .allMatch(ch ->
-                    ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
+                    .allMatch(ch ->
+                            ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
         }
     }
 
