@@ -99,8 +99,7 @@ class MockFCQueueTest {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.fcqueue");
         registry.registerConstructables("com.swirlds.common.merkle");
-        registry.registerConstructables("com.swirlds.common.test.merkle");
-        registry.registerConstructables("com.swirlds.common.test.fcqueue");
+        registry.registerConstructables("com.swirlds.common.test.fixtures.fcqueue");
     }
 
     /**
