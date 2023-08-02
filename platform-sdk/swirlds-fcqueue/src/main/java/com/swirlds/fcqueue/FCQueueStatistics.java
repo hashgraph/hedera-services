@@ -87,7 +87,7 @@ public class FCQueueStatistics {
 
     /**
      * Gets a value indicating whether the {@link SwirldMain} has called the {@link
-     * #register(Metrics)} method on this factory.
+     * #register(MetricsConfig, Metrics)} method on this factory.
      *
      * @return true if these statistics have been registered by the application; otherwise false
      */
