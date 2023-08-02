@@ -21,7 +21,6 @@ import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
@@ -57,7 +56,7 @@ public class PreconsensusEventFileIterator implements IOIterator<GossipEvent> {
                 new BufferedInputStream(
                         new FileInputStream(fileDescriptor.getPath().toFile())),
                 counter));
-        stream.readInt();// read the version number, but we don't need it atm
+        stream.readInt(); // read the version number, but we don't need it atm
     }
 
     /**

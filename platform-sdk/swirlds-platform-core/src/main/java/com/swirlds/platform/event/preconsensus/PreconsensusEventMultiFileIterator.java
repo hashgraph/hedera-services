@@ -18,7 +18,6 @@ package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Iterator;

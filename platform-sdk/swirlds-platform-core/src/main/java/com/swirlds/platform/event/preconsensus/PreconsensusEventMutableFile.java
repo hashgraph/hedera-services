@@ -20,7 +20,6 @@ import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -95,8 +94,9 @@ public class PreconsensusEventMutableFile {
      */
     public void writeEvent(final GossipEvent event) throws IOException {
         if (!descriptor.canContain(event.getGeneration())) {
-            throw new IllegalStateException("Cannot write event " + event.getHashedData().getHash() + " with generation "
-                    + event.getGeneration() + " to file " + descriptor);
+            throw new IllegalStateException(
+                    "Cannot write event " + event.getHashedData().getHash() + " with generation "
+                            + event.getGeneration() + " to file " + descriptor);
         }
         out.writeSerializable(event, false);
         highestGenerationInFile = Math.max(highestGenerationInFile, event.getGeneration());
