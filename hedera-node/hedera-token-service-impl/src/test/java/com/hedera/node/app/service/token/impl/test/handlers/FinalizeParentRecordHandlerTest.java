@@ -17,11 +17,13 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -296,9 +298,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var childRecord = mock(TransactionRecord.class);
         // child record has  1212 (-) -> 3434(+) transfer
-        given(childRecord.transferList()).willReturn(TransferList.newBuilder().build());
-        given(childRecord.tokenTransferListsOrElse(List.of()))
-                .willReturn(List.of(TokenTransferList.newBuilder()
+        lenient()
+                .when(childRecord.transferList())
+                .thenReturn(TransferList.newBuilder().build());
+        lenient()
+                .when(childRecord.tokenTransferListsOrElse(List.of()))
+                .thenReturn(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)
                         .transfers(
                                 AccountAmount.newBuilder()
@@ -329,9 +334,49 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void handleNFTTransfersToAccountDeductsFromChildRecordsSuccess() {
-        // This case handles a successful NFT transfer to an auto-created account
-        // does not deduct all child record transfers from parent transfer list
+    void accountsForDissociatedTokenRelations() {
+        // This case handles a successful fungible token relation dissociation when token is deleted
+        // When just token is dissociated without any token delete, then transfer list doesn't show that case
+
+        final var senderAcct = ACCOUNT_1212;
+        final var senderTokenRel = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_1212_ID)
+                .build();
+        final var receiverRel = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(TOKEN_321)
+                .accountId(ACCOUNT_3434_ID)
+                .build();
+        final var fungibleAmountToTransfer = senderTokenRel.balance() - 1;
+        readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(senderAcct);
+        writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(senderAcct);
+        readableTokenRelStore = TestStoreFactory.newReadableStoreWithTokenRels(senderTokenRel, receiverRel);
+        writableTokenRelStore = TestStoreFactory.newWritableStoreWithTokenRels(senderTokenRel, receiverRel);
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(); // Intentionally empty
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(); // Intentionally empty
+        // Simulate the receiver's token relation being dissociated, when token is deleted.
+        // This shows as a single debit in transfer list, instead of a debit and a credit.
+        writableTokenRelStore.remove(senderTokenRel);
+        context = mockContext();
+        given(context.configuration()).willReturn(configuration);
+
+        subject.finalizeParentRecord(context, List.of());
+
+        BDDMockito.verify(recordBuilder)
+                .tokenTransferLists(List.of(TokenTransferList.newBuilder()
+                        .token(TOKEN_321)
+                        .transfers(AccountAmount.newBuilder()
+                                .accountID(ACCOUNT_1212_ID)
+                                .amount(-1000L)
+                                .build())
+                        .build()));
+    }
+
+    @Test
+    void nftBurnsOrWipesAreAccounted() {
+        // This case handles a successful NFT burn or wipe
         final var existingTokenRel = givenNonFungibleTokenRelation()
                 .copyBuilder()
                 .tokenId(TOKEN_321)
@@ -346,53 +391,24 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .copyBuilder()
                 .ownerId(ACCOUNT_1212_ID)
                 .build();
-        final var nft2 = givenNft(
-                        NftID.newBuilder().tokenId(TOKEN_321).serialNumber(2).build())
-                .copyBuilder()
-                .ownerId(ACCOUNT_1212_ID)
-                .build();
-        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(nft1, nft2);
-        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(nft1, nft2);
-        // Simulate the token receiver's account (ACCOUNT_3434) being auto-created
-        writableAccountStore.put(ACCOUNT_3434
-                .copyBuilder()
-                .tinybarBalance(0)
-                .alias(Bytes.wrap("00000000000000000003"))
-                .build());
-        writableNftStore.put(nft1.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
-        writableNftStore.put(nft2.copyBuilder().ownerId(ACCOUNT_3434_ID).build());
+        readableNftStore = TestStoreFactory.newReadableStoreWithNfts(nft1);
+        writableNftStore = TestStoreFactory.newWritableStoreWithNfts(nft1);
+
+        writableNftStore.remove(
+                NftID.newBuilder().tokenId(TOKEN_321).serialNumber(1).build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        final var childRecord = mock(TransactionRecord.class);
-
-        given(childRecord.transferList()).willReturn(TransferList.newBuilder().build());
-        given(childRecord.tokenTransferListsOrElse(List.of()))
-                .willReturn(List.of(TokenTransferList.newBuilder()
-                        .token(TOKEN_321)
-                        .nftTransfers(NftTransfer.newBuilder()
-                                .serialNumber(1)
-                                .senderAccountID(ACCOUNT_1212_ID)
-                                .receiverAccountID(ACCOUNT_3434_ID)
-                                .build())
-                        .build()));
-
-        subject.finalizeParentRecord(context, List.of(childRecord));
+        subject.finalizeParentRecord(context, List.of());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)
-                        .nftTransfers(
-                                NftTransfer.newBuilder()
-                                        .serialNumber(1)
-                                        .senderAccountID(ACCOUNT_1212_ID)
-                                        .receiverAccountID(ACCOUNT_3434_ID)
-                                        .build(),
-                                NftTransfer.newBuilder()
-                                        .serialNumber(2)
-                                        .senderAccountID(ACCOUNT_1212_ID)
-                                        .receiverAccountID(ACCOUNT_3434_ID)
-                                        .build())
+                        .nftTransfers(NftTransfer.newBuilder()
+                                .serialNumber(1)
+                                .senderAccountID(ACCOUNT_1212_ID)
+                                .receiverAccountID(asAccount(0))
+                                .build())
                         .build()));
     }
 

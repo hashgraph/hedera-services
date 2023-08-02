@@ -90,16 +90,18 @@ public class RecordFinalizerBase {
             final var relTokenId = modifiedRel.tokenId();
             final var modifiedTokenRel = writableTokenRelStore.get(relAcctId, relTokenId);
             final var persistedTokenRel = writableTokenRelStore.getOriginalValue(relAcctId, relTokenId);
-            final var modifiedBalance = modifiedTokenRel.balance();
+
             // It's possible the modified token rel was created in this transaction. If so, use a persisted balance of 0
             // for the token rel that didn't exist
             final var persistedBalance = persistedTokenRel != null ? persistedTokenRel.balance() : 0;
-
+            // It is possible that the account is dissociated with the token in this transaction. If so, use a
+            // balance of 0 for the token rel that didn't exist
+            final var modifiedTokenRelBalance = modifiedTokenRel != null ? modifiedTokenRel.balance() : 0;
             // Never allow a fungible token's balance to be negative
-            validateTrue(modifiedTokenRel.balance() >= 0, FAIL_INVALID);
+            validateTrue(modifiedTokenRelBalance >= 0, FAIL_INVALID);
 
             // If the token rel's balance has changed, add it to the list of changes
-            final var netFungibleChange = modifiedBalance - persistedBalance;
+            final var netFungibleChange = modifiedTokenRelBalance - persistedBalance;
             if (netFungibleChange != 0) {
                 fungibleChanges.put(modifiedRel, netFungibleChange);
             }
@@ -160,16 +162,17 @@ public class RecordFinalizerBase {
 
             // The NFT may not have existed before, in which case we'll use a null sender account ID
             final var senderAccountId = persistedNft != null ? persistedNft.ownerId() : null;
-            // If the NFT has been burned, modifiedNft will be null. In that case the receiverId
-            // will be explicit;y set as 0.0.0
+            // If the NFT has been burned or wiped, modifiedNft will be null. In that case the receiverId
+            // will be explicitly set as 0.0.0
             final var builder = NftTransfer.newBuilder();
             if (modifiedNft != null) {
-                builder.serialNumber(modifiedNft.id().serialNumber());
                 builder.receiverAccountID(modifiedNft.ownerId());
             } else {
                 builder.receiverAccountID(ZERO_ACCOUNT_ID);
             }
-            final var nftTransfer = builder.senderAccountID(senderAccountId).build();
+            final var nftTransfer = builder.serialNumber(nftId.serialNumber())
+                    .senderAccountID(senderAccountId)
+                    .build();
 
             if (!nftChanges.containsKey(nftId.tokenId())) {
                 nftChanges.put(nftId.tokenId(), new ArrayList<>());
