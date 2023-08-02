@@ -179,7 +179,6 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
         topology = new StaticTopology(
                 addressBook, selfId, basicConfig.numConnections(), unidirectionalConnectionsEnabled());
 
-        final Configuration configuration = platformContext.getConfiguration();
         final SocketFactory socketFactory =
                 PlatformConstructor.socketFactory(crypto.getKeysAndCerts(), cryptoConfig, socketConfig);
         // create an instance that can create new outbound connections
