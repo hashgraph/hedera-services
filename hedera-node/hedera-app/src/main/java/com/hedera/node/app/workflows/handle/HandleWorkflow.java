@@ -179,8 +179,10 @@ public class HandleWorkflow {
                 // in this case, recorder hash the transaction itself, not its' bodyBytes.
                 transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
             }
-            // FutureWork: set a check for changes in file 0.0.112
-            final var exchangeRate = exchangeRateManager.createUpdateExchangeRates(state, configuration);
+            // FutureWork: set additional check for changes in file 0.0.112
+            if (!exchangeRateManager.isInitiated()) {
+                exchangeRateManager.createUpdateExchangeRates(state, configuration);
+            }
 
             recordBuilder
                     .transaction(transactionInfo.transaction())
