@@ -17,25 +17,34 @@
 package com.hedera.services.bdd.suites.issues;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.suites.HapiSuite;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 @HapiTestSuite
 public class Issue305Spec extends HapiSuite {
@@ -48,9 +57,11 @@ public class Issue305Spec extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return IntStream.range(0, 5)
+        final var repeatedSpecs = new ArrayList<>(IntStream.range(0, 5)
                 .mapToObj(ignore -> createDeleteInSameRoundWorks())
-                .collect(toList());
+                .toList());
+        repeatedSpecs.add(congestionMultipliersRefreshOnPropertyUpdate());
+        return repeatedSpecs;
     }
 
     private HapiSpec createDeleteInSameRoundWorks() {
@@ -73,6 +84,57 @@ public class Issue305Spec extends HapiSuite {
                         fileCreate("tbd").key(KEY).deferStatusResolution(),
                         fileDelete(nextFileId::get).signedBy(GENESIS, KEY).logged(),
                         getFileInfo(nextFileId::get).logged());
+    }
+
+    private HapiSpec congestionMultipliersRefreshOnPropertyUpdate() {
+        final var civilian = "civilian";
+        final var preCongestionTxn = "preCongestionTxn";
+        final var postCongestionTxn = "postCongestionTxn";
+        final var multipurposeContract = "Multipurpose";
+        final var normalPrice = new AtomicLong();
+        final var multipliedPrice = new AtomicLong();
+
+        return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
+                .preserving("fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec")
+                .given(
+                        cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(multipurposeContract),
+                        contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
+                        contractCall(multipurposeContract)
+                                .payingWith(civilian)
+                                .fee(10 * ONE_HBAR)
+                                .sending(ONE_HBAR)
+                                .via(preCongestionTxn),
+                        getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
+                        overridingThree(
+                                "contracts.maxGasPerSec", "3_000_000",
+                                "fees.percentCongestionMultipliers", "1,5x",
+                                "fees.minCongestionPeriod", "1"))
+                .when(withOpContext((spec, opLog) -> {
+                    for (int i = 0; i < 25; i++) {
+                        TimeUnit.MILLISECONDS.sleep(50);
+                        allRunFor(
+                                spec,
+                                contractCall(multipurposeContract)
+                                        .payingWith(civilian)
+                                        .gas(200_000)
+                                        .fee(10 * ONE_HBAR)
+                                        .sending(ONE_HBAR)
+                                        .deferStatusResolution());
+                    }
+                }))
+                .then(
+                        contractCall(multipurposeContract)
+                                .payingWith(civilian)
+                                .fee(10 * ONE_HBAR)
+                                .sending(ONE_HBAR)
+                                .via(postCongestionTxn),
+                        getTxnRecord(postCongestionTxn).providingFeeTo(multipliedPrice::set),
+                        withOpContext((spec, opLog) -> Assertions.assertEquals(
+                                5.0,
+                                (1.0 * multipliedPrice.get()) / normalPrice.get(),
+                                0.1,
+                                "~5x multiplier should be in affect!")));
     }
 
     @Override
