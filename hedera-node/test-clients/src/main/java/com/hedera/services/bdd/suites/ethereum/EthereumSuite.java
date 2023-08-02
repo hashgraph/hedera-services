@@ -744,7 +744,7 @@ public class EthereumSuite extends HapiSuite {
     }
 
     HapiSpec transferHbarsViaEip2390TxSuccessfully() {
-        String RECEIVER = "RECEIVER";
+        final String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec("etx010TransferToCryptoAccountSucceeds")
                 .given(
