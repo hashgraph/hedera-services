@@ -26,8 +26,8 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.Units;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import java.time.Instant;
@@ -53,7 +53,7 @@ class StakeRewardCalculatorImplTest {
     private StakePeriodManager stakePeriodManager;
 
     @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
+    private WritableStakingInfoStore stakingInfoStore;
 
     @Mock
     private StakingNodeInfo stakingNodeInfo;
@@ -92,7 +92,7 @@ class StakeRewardCalculatorImplTest {
         rewardHistory.set(1, 3L);
         rewardHistory.set(2, 1L);
         setUpMocks();
-        given(stakingInfoStore.get(0L)).willReturn(stakingNodeInfo);
+        given(stakingInfoStore.getOriginalValue(0L)).willReturn(stakingNodeInfo);
         given(stakePeriodManager.currentStakePeriod(consensusTime)).willReturn(TODAY_NUMBER);
         given(stakingNodeInfo.rewardSumHistory()).willReturn(rewardHistory);
         // Staked node ID of -1 will return a node ID address of 0
