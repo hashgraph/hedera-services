@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.internal;
 
+import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;

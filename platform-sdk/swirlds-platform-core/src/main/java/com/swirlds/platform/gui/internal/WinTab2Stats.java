@@ -17,12 +17,13 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
+import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -86,7 +87,7 @@ class WinTab2Stats extends PrePaintableJPanel {
      * Instantiate and initialize content of this tab.
      */
     public WinTab2Stats() {
-        metrics = WinBrowser.memberDisplayed.platform.getContext().getMetrics().getAll().stream()
+        metrics = WinBrowser.memberDisplayed.getPlatform().getContext().getMetrics().getAll().stream()
                 .sorted(Comparator.comparing(m -> m.getName().toUpperCase()))
                 .toList();
         int numStats = metrics.size();
@@ -329,7 +330,7 @@ class WinTab2Stats extends PrePaintableJPanel {
 
                 if (buffer.numBins() == 0) {
                     final BasicConfig basicConfig = WinBrowser.memberDisplayed
-                            .platform
+                            .getPlatform()
                             .getContext()
                             .getConfiguration()
                             .getConfigData(BasicConfig.class);
@@ -431,7 +432,7 @@ class WinTab2Stats extends PrePaintableJPanel {
         int j = cm2rm[index];
         chartsPanel.add(charts[index]);
         charts[index].setVisible(true); // flag this as having been added
-        statBoxes[j].setBackground(WinBrowser.MEMBER_HIGHLIGHT_COLOR);
+        statBoxes[j].setBackground(GuiConstants.MEMBER_HIGHLIGHT_COLOR);
         revalidate();
     }
 

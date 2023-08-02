@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.InfoEntity;
+
 /**
  * Metadata about a state stored by a member in a swirld running on an app.
  */
 class InfoState extends InfoEntity {
-    InfoMember member;
 
     public InfoState(InfoMember member, String name) {
-        this.member = member;
-        this.name = name;
-        member.states.add(this);
+        super(name);
+        member.getStates().add(this);
     }
 }

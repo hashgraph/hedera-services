@@ -18,7 +18,6 @@ package com.swirlds.platform.gui.internal;
 
 import com.swirlds.platform.SwirldsPlatform;
 import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -33,11 +32,6 @@ public final class BrowserWindowManager {
      * the primary window used by Browser
      */
     private static WinBrowser browserWindow = null;
-
-    /**
-     * the number of pixels between the edges of a window and interior region that can be used
-     */
-    private static Insets insets;
 
     /**
      * metadata about all known apps, swirlds, members, signed states
@@ -61,20 +55,6 @@ public final class BrowserWindowManager {
      */
     public static void setBrowserWindow(final WinBrowser browserWindow) {
         BrowserWindowManager.browserWindow = browserWindow;
-    }
-
-    /**
-     * Get the number of pixels between the edges of a window and interior region that can be used.
-     */
-    public static Insets getInsets() {
-        return insets;
-    }
-
-    /**
-     * Set the number of pixels between the edges of a window and interior region that can be used.
-     */
-    public static void setInsets(final Insets insets) {
-        BrowserWindowManager.insets = insets;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui;
 
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getInsets;
-
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
@@ -82,16 +78,32 @@ public final class GuiUtils {
     }
 
     /**
-     * return the rectangle of the recommended window size and location for this instance of the Platform.
-     * Both consoles and windows are created to fit in this rectangle, by default.
+     * Instantiates and returns a JTextArea whose settings are suitable for use inside the browser window's
+     * scroll area in a tab.
+     */
+    public static JTextArea newJTextArea(final String text) {
+        JTextArea txt = new JTextArea(0, 0);
+        ((DefaultCaret) txt.getCaret()).setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+        txt.setBackground(Color.WHITE);
+        txt.setForeground(Color.BLACK);
+        txt.setDisabledTextColor(Color.BLACK);
+        txt.setFont(GuiConstants.FONT);
+        txt.setEditable(false);
+        txt.setEnabled(false);
+        txt.setText(text);
+        txt.setVisible(true);
+        return txt;
+    }
+
+    /**
+     * return the rectangle of the recommended window size and location for this instance of the Platform. Both consoles
+     * and windows are created to fit in this rectangle, by default.
      *
-     * @param addressBook
-     * 		the address book for the network
-     * @param winNum
-     * 		this is the Nth Platform running on this machine (N=winNum)
+     * @param winCount the window count
+     * @param winNum   this is the Nth Platform running on this machine (N=winNum)
      * @return the recommended Rectangle for this Platform's window
      */
-    public static Rectangle winRect(final AddressBook addressBook, final int winNum) {
+    public static Rectangle winRect(final int winCount, final int winNum) {
         // the goal is to arrange windows on the screen so that the leftmost and rightmost windows just
         // touch the edge of the screen with their outermost border. But the rest of the windows overlap
         // with them and with each other such that all of the border of one window (ecept 2 pixels) overlaps
@@ -106,31 +118,13 @@ public final class GuiUtils {
         final int rightGap = (SystemUtils.IS_OS_WINDOWS ? 50 : 0); // extra space at right screen edge
         final Rectangle screenSize =
                 GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(addressBook);
         final int contentWidth =
-                (screenSize.width - leftGap - rightGap - getInsets().left - getInsets().right) / winCount;
+                (screenSize.width - leftGap - rightGap - WindowConfig.getInsets().left - WindowConfig.getInsets().right)
+                        / winCount;
         final int x = screenSize.x + leftGap + contentWidth * winNum;
         final int y = screenSize.y;
-        final int width = contentWidth + getInsets().left + getInsets().right;
+        final int width = contentWidth + WindowConfig.getInsets().left + WindowConfig.getInsets().right;
         final int height = screenSize.height;
         return new Rectangle(x, y, width, height);
-    }
-
-    /**
-     * Instantiates and returns a JTextArea whose settings are suitable for use inside the browser window's
-     * scroll area in a tab.
-     */
-    public static JTextArea newJTextArea(final String text) {
-        JTextArea txt = new JTextArea(0, 0);
-        ((DefaultCaret) txt.getCaret()).setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
-        txt.setBackground(Color.WHITE);
-        txt.setForeground(Color.BLACK);
-        txt.setDisabledTextColor(Color.BLACK);
-        txt.setFont(WinBrowser.FONT);
-        txt.setEditable(false);
-        txt.setEnabled(false);
-        txt.setText(text);
-        txt.setVisible(true);
-        return txt;
     }
 }

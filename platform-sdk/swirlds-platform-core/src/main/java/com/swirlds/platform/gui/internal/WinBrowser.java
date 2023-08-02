@@ -22,13 +22,14 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserW
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 
 import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.gui.GuiConstants;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagLayout;
@@ -70,8 +71,6 @@ public class WinBrowser extends JFrame {
 
     /** refresh the screen every this many milliseconds */
     final int refreshPeriod = 500;
-    /** use this font for all text in the browser window */
-    static Font FONT = new Font("SansSerif", Font.PLAIN, 16);
     /** the InfoMember that is currently being shown by all tabs in the browser window */
     static volatile InfoMember memberDisplayed = null;
     /** have all the tabs been initialized yet? */
@@ -81,8 +80,6 @@ public class WinBrowser extends JFrame {
     private static Timer updater = null;
     /** gap at top of the screen (to let you click on app windows), in pixels */
     private static final int topGap = 40;
-    /** light blue used to highlight which member all the tabs are currently displaying */
-    static final Color MEMBER_HIGHLIGHT_COLOR = new Color(0.8f, 0.9f, 1.0f);
 
     static ScrollableJPanel tabSwirlds;
     static ScrollableJPanel tabAddresses;
@@ -163,7 +160,7 @@ public class WinBrowser extends JFrame {
 
             // perform the equivalent of prePaint on nameBarName:
             if (WinBrowser.memberDisplayed != null) {
-                nameBarName.setText("    " + WinBrowser.memberDisplayed.name + "    ");
+                nameBarName.setText("    " + WinBrowser.memberDisplayed.getName() + "    ");
             } else { // retry once a second until at least one member exists. Then choose the first one.
                 if (tabSwirlds != null) {
                     ((WinTabSwirlds) tabSwirlds.contents).chooseMemberDisplayed();
@@ -297,7 +294,7 @@ public class WinBrowser extends JFrame {
         setBackground(Color.WHITE); // this color flashes briefly at startup, then is hidden
         nameBar.setBackground(Color.WHITE); // color of name bar outside label and name
         nameBarLabel.setBackground(Color.WHITE); // color of name bar label
-        nameBarName.setBackground(MEMBER_HIGHLIGHT_COLOR); // color of name
+        nameBarName.setBackground(GuiConstants.MEMBER_HIGHLIGHT_COLOR); // color of name
         tabbed.setBackground(Color.WHITE); // color of non-highlighted tab buttons
         tabbed.setForeground(Color.BLACK); // color of words on the tab buttons
 

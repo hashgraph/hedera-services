@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.InfoEntity;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,15 +24,22 @@ import java.util.List;
  * Metadata about a swirld running on an app.
  */
 public class InfoSwirld extends InfoEntity {
-    public InfoApp app; // parent
-    List<InfoMember> members = new ArrayList<InfoMember>(); // children
 
-    Reference swirldId;
+    private final InfoApp app; // parent
+
+    private final List<InfoMember> members = new ArrayList<>(); // children
 
     public InfoSwirld(InfoApp app, byte[] swirldIdBytes) {
+        super("Swirld " + new Reference(swirldIdBytes).to62Prefix());
         this.app = app;
-        this.swirldId = new Reference(swirldIdBytes);
-        name = "Swirld " + swirldId.to62Prefix();
-        app.swirlds.add(this);
+        this.app.getSwirlds().add(this);
+    }
+
+    public InfoApp getApp() {
+        return app;
+    }
+
+    public List<InfoMember> getMembers() {
+        return members;
     }
 }
