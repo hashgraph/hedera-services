@@ -39,6 +39,7 @@ import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -200,7 +201,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     @Override
     protected HapiTestEngineExecutionContext createExecutionContext(ExecutionRequest request) {
-        return new HapiTestEngineExecutionContext();
+        return new HapiTestEngineExecutionContext(null, null);
     }
 
     /**
@@ -254,13 +255,19 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         }
 
         @Override
-        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) throws Exception {
+        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             return skip ? SkipResult.skip("No test methods") : SkipResult.doNotSkip();
         }
 
         @Override
-        public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) throws Exception {
+        public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
             try {
+                // If we have a HapiTestSuite that is without tests we still want to show it as ignored,
+                // but we don't want to waste time setting up a node
+                if (allTestsSkipped()) {
+                    return new HapiTestEngineExecutionContext(null, null);
+                }
+
                 final var tmpDir = Files.createTempDirectory("hapiTest");
 
                 // Setup logging
@@ -425,7 +432,15 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                                 "recordStream.path",
                                 tmpDir.resolve("recordStream").toString()));
 
-                return new HapiTestEngineExecutionContext(); // <--- Actually, this is going to have connection info to
+                // Populating the data needed for the context
+                StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+                Path savedStateDirectory = stateConfig.savedStateDirectory();
+
+                EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+                Path eventsLogDir = Path.of(eventConfig.eventsLogDir());
+
+                return new HapiTestEngineExecutionContext(
+                        savedStateDirectory, eventsLogDir); // <--- Actually, this is going to have connection info to
                 // connect to the node!?
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -434,10 +449,29 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public void after(HapiTestEngineExecutionContext context) throws Exception {
+            if (allTestsSkipped()) {
+                return;
+            }
+
             if (hedera != null) {
                 hedera.shutdown();
                 hedera = null;
             }
+
+            // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
+            // We need to do that in order to be able to run all tests at the same time. Without that the tests
+            // are interfering with each other.
+            // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
+            // can move this logic inside the after method in the MethodTestDescriptor class.
+            // This way we will clean up the data after each test.
+            FileUtils.deleteDirectory(context.getSavedStateDirectory());
+            FileUtils.deleteDirectory(context.getEventsLogDir());
+        }
+
+        private boolean allTestsSkipped() {
+            return getChildren().stream()
+                    .allMatch(ch ->
+                            ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
         }
     }
 
@@ -464,7 +498,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         }
 
         @Override
-        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) throws Exception {
+        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
                 return SkipResult.skip("No @HapiTest annotation");
