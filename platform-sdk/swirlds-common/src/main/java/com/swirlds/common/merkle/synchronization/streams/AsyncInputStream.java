@@ -20,14 +20,15 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.common.Releasable;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -85,17 +86,18 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
      * @param workGroup      the work group that is managing this stream's thread
      * @param messageFactory this function constructs new message objects. These messages objects are then used to read
      *                       data via {@link SelfSerializable#deserialize(SerializableDataInputStream, int)}.
+     * @param config         the configuration to use
      */
     public AsyncInputStream(
-            final SerializableDataInputStream inputStream,
-            final StandardWorkGroup workGroup,
-            final Supplier<T> messageFactory) {
+            @NonNull final SerializableDataInputStream inputStream,
+            @NonNull final StandardWorkGroup workGroup,
+            @NonNull final Supplier<T> messageFactory,
+            @NonNull final ReconnectConfig config) {
+        Objects.requireNonNull(config, "config must not be null");
 
-        final ReconnectConfig config = ConfigurationHolder.getConfigData(ReconnectConfig.class);
-
-        this.inputStream = inputStream;
-        this.workGroup = workGroup;
-        this.messageFactory = messageFactory;
+        this.inputStream = Objects.requireNonNull(inputStream, "inputStream must not be null");
+        this.workGroup = Objects.requireNonNull(workGroup, "workGroup must not be null");
+        this.messageFactory = Objects.requireNonNull(messageFactory, "messageFactory must not be null");
         this.pollTimeout = config.asyncStreamTimeout();
         this.anticipatedMessages = new AtomicInteger(0);
         this.receivedMessages = new LinkedBlockingQueue<>(config.asyncStreamBufferSize());

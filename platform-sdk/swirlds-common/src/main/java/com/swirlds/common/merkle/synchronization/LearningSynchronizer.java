@@ -17,7 +17,6 @@
 package com.swirlds.common.merkle.synchronization;
 
 import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_SECONDS;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
@@ -26,6 +25,7 @@ import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.LearnerThread;
 import com.swirlds.common.merkle.synchronization.internal.Lesson;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
@@ -39,8 +39,10 @@ import com.swirlds.common.merkle.synchronization.views.StandardLearnerTreeView;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.logging.payloads.SynchronizationCompletePayload;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,6 +85,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
     private long hashTimeMilliseconds;
     private long initializationTimeMilliseconds;
 
+    protected final ReconnectConfig reconnectConfig;
+
     /**
      * Responsible for creating and managing threads used by this object.
      */
@@ -98,18 +102,21 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      * @param breakConnection a method that breaks the connection. Used iff an exception is encountered. Prevents
      *                        deadlock if there is a thread stuck on a blocking IO operation that will never finish due
      *                        to a failure.
+     * @param reconnectConfig the configuration for the reconnect
      */
     public LearningSynchronizer(
-            final ThreadManager threadManager,
-            final MerkleDataInputStream in,
-            final MerkleDataOutputStream out,
-            final MerkleNode root,
-            final Runnable breakConnection) {
+            @NonNull final ThreadManager threadManager,
+            @NonNull final MerkleDataInputStream in,
+            @NonNull final MerkleDataOutputStream out,
+            @NonNull final MerkleNode root,
+            @NonNull final Runnable breakConnection,
+            @NonNull final ReconnectConfig reconnectConfig) {
 
-        this.threadManager = throwArgNull(threadManager, "threadManager");
+        this.threadManager = Objects.requireNonNull(threadManager, "threadManager is null");
 
-        inputStream = in;
-        outputStream = out;
+        inputStream = Objects.requireNonNull(in, "inputStream is null");
+        outputStream = Objects.requireNonNull(out, "outputStream is null");
+        this.reconnectConfig = Objects.requireNonNull(reconnectConfig, "reconnectConfig is null");
 
         rootsToReceive = new LinkedList<>();
         viewsToInitialize = new LinkedList<>();
@@ -254,7 +261,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             view = ((CustomReconnectRoot<?, T>) root).buildLearnerView();
         }
 
-        final AsyncInputStream<Lesson<T>> in = new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(view));
+        final AsyncInputStream<Lesson<T>> in =
+                new AsyncInputStream<>(inputStream, workGroup, () -> new Lesson<>(view), reconnectConfig);
         final AsyncOutputStream<QueryResponse> out = buildOutputStream(workGroup, outputStream);
 
         in.start();
@@ -301,7 +309,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     protected AsyncOutputStream<QueryResponse> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
-        return new AsyncOutputStream<>(out, workGroup);
+        return new AsyncOutputStream<>(out, workGroup, reconnectConfig);
     }
 
     /**

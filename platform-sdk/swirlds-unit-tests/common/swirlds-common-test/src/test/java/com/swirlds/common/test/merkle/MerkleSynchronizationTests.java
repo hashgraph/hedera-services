@@ -30,6 +30,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.utility.MerkleUtils;
 import com.swirlds.common.test.merkle.dummy.DummyCustomReconnectRoot;
@@ -37,6 +38,7 @@ import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
@@ -55,6 +57,8 @@ import org.junit.jupiter.api.Timeout;
 
 @DisplayName("Merkle Synchronization Tests")
 public class MerkleSynchronizationTests {
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    private final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     @BeforeAll
     public static void startup() throws ConstructableRegistryException, FileNotFoundException {
@@ -89,7 +93,7 @@ public class MerkleSynchronizationTests {
 
         for (final MerkleNode nodeI : listI) {
             for (final MerkleNode nodeJ : listJ) {
-                final MerkleNode result = MerkleTestUtils.hashAndTestSynchronization(nodeI, nodeJ);
+                final MerkleNode result = MerkleTestUtils.hashAndTestSynchronization(nodeI, nodeJ, reconnectConfig);
                 if (result != null && result != nodeI) {
                     result.release();
                 }
@@ -255,7 +259,7 @@ public class MerkleSynchronizationTests {
         desiredTree.reserve();
         ((DummyMerkleInternal) desiredTree.getChild(3)).setChild(0, new DummyMerkleLeaf("D"));
 
-        MerkleTestUtils.hashAndTestSynchronization(startingTree, desiredTree);
+        MerkleTestUtils.hashAndTestSynchronization(startingTree, desiredTree, reconnectConfig);
     }
 
     @Test
@@ -268,7 +272,8 @@ public class MerkleSynchronizationTests {
         final DummyMerkleNode desiredTree = MerkleTestUtils.buildLessSimpleTree();
         desiredTree.reserve();
         assertThrows(
-                MerkleSynchronizationException.class, () -> MerkleTestUtils.testSynchronization(null, desiredTree));
+                MerkleSynchronizationException.class,
+                () -> MerkleTestUtils.testSynchronization(null, desiredTree, reconnectConfig));
     }
 
     @Test
@@ -283,7 +288,7 @@ public class MerkleSynchronizationTests {
 
         ((DummyMerkleLeaf) root1.asInternal().getChild(0)).setValue("this is not the hashed value");
 
-        final MerkleNode newRoot1 = MerkleTestUtils.hashAndTestSynchronization(null, root1);
+        final MerkleNode newRoot1 = MerkleTestUtils.hashAndTestSynchronization(null, root1, reconnectConfig);
         final Hash resultingHash1 = newRoot1.getHash();
         assertNotEquals(root1.getHash(), resultingHash1, "we should not derive the same hash since data was changed");
         MerkleUtils.rehashTree(newRoot1);
@@ -301,7 +306,7 @@ public class MerkleSynchronizationTests {
         root2.asInternal().setChild(3, null);
         root2.setHash(oldHash);
 
-        final MerkleNode newRoot2 = MerkleTestUtils.hashAndTestSynchronization(null, root2);
+        final MerkleNode newRoot2 = MerkleTestUtils.hashAndTestSynchronization(null, root2, reconnectConfig);
         final Hash resultingHash2 = newRoot2.getHash();
         assertNotEquals(root2.getHash(), resultingHash2, "we should not derive the same hash since data was changed");
         MerkleUtils.rehashTree(newRoot2);

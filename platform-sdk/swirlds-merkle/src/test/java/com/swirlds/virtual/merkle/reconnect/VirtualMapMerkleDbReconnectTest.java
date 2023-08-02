@@ -546,7 +546,8 @@ class VirtualMapMerkleDbReconnectTest extends VirtualMapMerkleDbReconnectTestBas
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
         // reconnect happening
-        DummyMerkleInternal afterSyncLearnerTree = MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+        DummyMerkleInternal afterSyncLearnerTree =
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         // not sure what is the better way to get the embedded Virtual map
         DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
