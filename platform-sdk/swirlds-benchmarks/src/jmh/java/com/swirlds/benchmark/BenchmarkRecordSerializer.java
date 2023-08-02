@@ -16,16 +16,15 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataItemHeader;
-import com.swirlds.jasperdb.files.DataItemSerializer;
+import com.swirlds.merkledb.serialize.DataItemHeader;
+import com.swirlds.merkledb.serialize.DataItemSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRecord> {
 
     @Override
-    public int getSerializedSize(final long dataVersion) {
+    public int getSerializedSize() {
         return Integer.BYTES + BenchmarkRecord.getSerializedSize();
     }
 
@@ -43,9 +42,9 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public int serialize(BenchmarkRecord data, SerializableDataOutputStream outputStream) throws IOException {
-        outputStream.writeInt(getSerializedSize());
-        data.serialize(outputStream);
+    public int serialize(BenchmarkRecord data, ByteBuffer buffer) throws IOException {
+        buffer.putInt(getSerializedSize());
+        data.serialize(buffer);
         return getSerializedSize();
     }
 
@@ -55,7 +54,7 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer, final long dataVersion) {
+    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
         int size = buffer.getInt();
         long key = buffer.getLong();
         return new DataItemHeader(size, key);
