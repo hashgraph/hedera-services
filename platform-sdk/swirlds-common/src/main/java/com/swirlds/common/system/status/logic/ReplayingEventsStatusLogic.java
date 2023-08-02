@@ -94,7 +94,7 @@ public class ReplayingEventsStatusLogic implements PlatformStatusLogic {
      * <p>
      * Receiving an {@link EmergencyReconnectStartedAction} while in {@link PlatformStatus#REPLAYING_EVENTS} throws an
      * exception, since the check for potentially beginning an emergency reconnect doesn't happen until after
-     * events have been replayed.
+     * the platform has transitioned out of the {@link PlatformStatus#REPLAYING_EVENTS} status.
      */
     @NonNull
     @Override
