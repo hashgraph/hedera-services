@@ -54,7 +54,6 @@ class TransactionSerializationTest {
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common.system.transaction");
-        registry.registerConstructables("com.swirlds.common");
     }
 
     @ParameterizedTest
