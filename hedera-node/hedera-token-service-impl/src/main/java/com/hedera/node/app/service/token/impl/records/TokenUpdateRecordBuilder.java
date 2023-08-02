@@ -20,15 +20,15 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the effects of a {@code CryptoUpdate}
+ * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenUpdate}
  * transaction.
  */
-public interface CryptoUpdateRecordBuilder {
+public interface TokenUpdateRecordBuilder {
     /**
      * Adds the token relations that are created by auto associations.
      * This information is needed while building the transfer list, to set the auto association flag.
      * @param tokenAssociation the token association that is created by auto association
      * @return the builder
      */
-    CryptoUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
+    TokenUpdateRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }
