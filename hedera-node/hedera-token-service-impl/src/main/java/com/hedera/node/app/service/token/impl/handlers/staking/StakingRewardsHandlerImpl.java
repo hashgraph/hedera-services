@@ -32,7 +32,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -83,8 +82,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var rewardReceivers = getPossibleRewardReceivers(writableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
-                rewardReceivers, writableStore, stakingRewardsStore,
-                stakingInfoStore, consensusNow, recordBuilder);
+                rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
         // Adjust stakes for nodes
         adjustStakeMetadata(writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
         // Decrease staking reward account balance by rewardPaid amount

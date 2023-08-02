@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Map;
 
 /**
