@@ -159,7 +159,8 @@ class TransactionProcessorTest {
                 VALUE,
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
-                MAX_GAS_ALLOWANCE);
+                MAX_GAS_ALLOWANCE,
+                null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
     }

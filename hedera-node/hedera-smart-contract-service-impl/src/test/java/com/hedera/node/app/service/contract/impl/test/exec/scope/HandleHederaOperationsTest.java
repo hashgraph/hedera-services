@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
@@ -147,6 +148,13 @@ class HandleHederaOperationsTest {
     @Test
     void createContractNotImplemented() {
         assertThrows(AssertionError.class, () -> subject.createContract(1L, 2L, 3L, Bytes.EMPTY));
+    }
+
+    @Test
+    void createContractWithBodyNotImplemented() {
+        assertThrows(
+                AssertionError.class,
+                () -> subject.createContract(1L, ContractCreateTransactionBody.DEFAULT, 3L, Bytes.EMPTY));
     }
 
     @Test

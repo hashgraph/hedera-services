@@ -77,7 +77,8 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     @Override
     public CallOutcome call() {
-        // Translate the HAPI operation to a Hedera EVM transaction
+        // Translate the HAPI operation to a Hedera EVM transaction; throws HandleException
+        // if this translation fails for any reason
         final var hevmTransaction = hevmTransactionFactory.fromHapiTransaction(context.body());
 
         // Get the appropriate processor for the EVM version

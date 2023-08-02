@@ -14,6 +14,8 @@ module com.hedera.node.app.service.contract.impl {
     requires com.swirlds.config;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
+    requires com.hedera.node.app.service.token.impl;
+    requires com.hedera.node.app.service.file;
     requires com.swirlds.jasperdb;
     requires static com.github.spotbugs.annotations;
     requires org.bouncycastle.provider;

@@ -24,6 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Duration;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
@@ -46,7 +49,12 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -64,8 +72,22 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.Operation;
 
 public class TestHelpers {
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
+    public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);
+    public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
+    public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
+    public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
+            .withValue("contracts.allowAutoAssociations", true)
+            .getOrCreateConfig();
+    public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
+            AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
+    public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
+            AUTO_ASSOCIATING_CONFIG.getConfigData(ContractsConfig.class);
     public static final int HEDERA_MAX_REFUND_PERCENTAGE = 20;
     public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+    public static final Key AN_ED25519_KEY = Key.newBuilder()
+            .ed25519(Bytes.fromHex("0101010101010101010101010101010101010101010101010101010101010101"))
+            .build();
     public static final long REQUIRED_GAS = 123L;
     public static final long NONCE = 678;
     public static final long VALUE = 999_999;
@@ -74,6 +96,9 @@ public class TestHelpers {
     public static final long GAS_LIMIT = 1_000_000;
     public static final long REMAINING_GAS = GAS_LIMIT / 2;
     public static final long DEFAULT_COINBASE = 98;
+    public static final String SOME_MEMO = "Something to think about";
+    public static final Duration SOME_DURATION =
+            Duration.newBuilder().seconds(1234567).build();
     public static final long SOME_BLOCK_NO = 321321;
     public static final long USER_OFFERED_GAS_PRICE = 666;
     public static final long NETWORK_GAS_PRICE = 777;
@@ -81,7 +106,9 @@ public class TestHelpers {
     public static final long BESU_MAX_REFUND_QUOTIENT = 2;
     public static final long MAX_GAS_ALLOWANCE = 666_666_666;
     public static final int STACK_DEPTH = 1;
+    public static final Bytes INITCODE = Bytes.wrap("60a06040526000600b55".getBytes());
     public static final Bytes CALL_DATA = Bytes.wrap(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    public static final Bytes CONSTRUCTOR_PARAMS = Bytes.wrap(new byte[] {2, 3, 2, 3, 2, 3, 2, 3, 2, 3});
     public static final Bytecode BYTECODE = new Bytecode(CALL_DATA);
     public static final Bytes LOG_DATA = Bytes.wrap(new byte[] {6, 6, 6});
     public static final Bytes OUTPUT_DATA = Bytes.wrap(new byte[] {9, 8, 7, 6, 5, 4, 3, 2, 1});
@@ -104,6 +131,8 @@ public class TestHelpers {
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static final Address HTS_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x167");
     public static final Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
+    public static final FileID INITCODE_FILE_ID =
+            FileID.newBuilder().fileNum(6789L).build();
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
@@ -134,7 +163,17 @@ public class TestHelpers {
     public static final GasCharges NO_ALLOWANCE_CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, 0);
 
     public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
-            SENDER_ID, null, CALLED_CONTRACT_ID, NONCE, CALL_DATA, MAINNET_CHAIN_ID, VALUE, GAS_LIMIT, 0L, 0L);
+            SENDER_ID,
+            null,
+            CALLED_CONTRACT_ID,
+            NONCE,
+            CALL_DATA,
+            MAINNET_CHAIN_ID,
+            VALUE,
+            GAS_LIMIT,
+            0L,
+            0L,
+            ContractCreateTransactionBody.DEFAULT);
     public static final HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
             GAS_LIMIT / 2,
             Wei.of(NETWORK_GAS_PRICE),
@@ -267,7 +306,8 @@ public class TestHelpers {
                 value,
                 gasLimit,
                 userGasPrice,
-                maxGasAllowance);
+                maxGasAllowance,
+                null);
     }
 
     public static HederaEvmTransaction wellKnownHapiCreate() {
@@ -294,7 +334,8 @@ public class TestHelpers {
                 value,
                 gasLimit,
                 userGasPrice,
-                maxGasAllowance);
+                maxGasAllowance,
+                ContractCreateTransactionBody.DEFAULT);
     }
 
     public static HederaEvmContext wellKnownContextWith(@NonNull final HederaEvmBlocks blocks) {

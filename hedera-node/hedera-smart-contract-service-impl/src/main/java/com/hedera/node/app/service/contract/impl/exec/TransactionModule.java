@@ -29,11 +29,19 @@ import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
 import dagger.Binds;
 import dagger.Module;
@@ -54,6 +62,18 @@ public interface TransactionModule {
     @TransactionScope
     static ContractsConfig provideContractsConfig(@NonNull final Configuration configuration) {
         return requireNonNull(configuration).getConfigData(ContractsConfig.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static LedgerConfig provideLedgerConfig(@NonNull final Configuration configuration) {
+        return requireNonNull(configuration).getConfigData(LedgerConfig.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static StakingConfig provideStakingConfig(@NonNull final Configuration configuration) {
+        return requireNonNull(configuration).getConfigData(StakingConfig.class);
     }
 
     @Provides
@@ -80,6 +100,42 @@ public interface TransactionModule {
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
             @NonNull final HederaOperations extWorldScope, @NonNull final EvmFrameStateFactory factory) {
         return () -> new ProxyWorldUpdater(requireNonNull(extWorldScope), requireNonNull(factory), null);
+    }
+
+    @Provides
+    @TransactionScope
+    static HevmTransactionFactory provideHevmTransactionFactory(@NonNull final HandleContext context) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Provides
+    @TransactionScope
+    static AttributeValidator provideAttributeValidator(@NonNull final HandleContext context) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Provides
+    @TransactionScope
+    static ExpiryValidator provideExpiryValidator(@NonNull final HandleContext context) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Provides
+    @TransactionScope
+    static ReadableFileStore provideReadableFileStore(@NonNull final HandleContext context) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Provides
+    @TransactionScope
+    static ReadableAccountStore provideReadableAccountStore(@NonNull final HandleContext context) {
+        throw new AssertionError("Not implemented");
+    }
+
+    @Provides
+    @TransactionScope
+    static NetworkInfo provideNetworkInfo(@NonNull final HandleContext context) {
+        throw new AssertionError("Not implemented");
     }
 
     @Binds

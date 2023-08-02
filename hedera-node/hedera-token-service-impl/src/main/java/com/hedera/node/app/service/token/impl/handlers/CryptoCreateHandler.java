@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
@@ -49,6 +50,7 @@ import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -168,7 +170,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      */
     private Account validateSemantics(
             @NonNull final HandleContext context,
-            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoCreateTransactionBody op) {
         final var cryptoCreateWithAliasConfig =
                 context.configuration().getConfigData(CryptoCreateWithAliasConfig.class);
@@ -205,7 +207,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                context,
+                context.configuration().getConfigData(StakingConfig.class),
                 context.networkInfo());
 
         return payer;

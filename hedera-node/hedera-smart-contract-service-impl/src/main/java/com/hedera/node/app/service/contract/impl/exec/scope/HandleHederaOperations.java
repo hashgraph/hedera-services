@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -164,6 +165,14 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void createContract(
             final long number, final long parentNumber, final long nonce, @Nullable final Bytes evmAddress) {
+        throw new AssertionError("Not implemented");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void createContract(long number, ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress) {
         throw new AssertionError("Not implemented");
     }
 

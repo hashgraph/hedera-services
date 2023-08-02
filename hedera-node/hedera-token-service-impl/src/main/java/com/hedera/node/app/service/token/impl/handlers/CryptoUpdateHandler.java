@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -277,7 +278,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                context,
+                context.configuration().getConfigData(StakingConfig.class),
                 networkInfo);
     }
 }
