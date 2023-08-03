@@ -453,7 +453,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.getDeletedAccountBeneficiaries()).willReturn(Map.of(payerId, ownerId));
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
         final var rewards = subject.applyStakingRewards(handleContext);
         assertThat(rewards).hasSize(1);
@@ -690,7 +691,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.getDeletedAccountBeneficiaries()).willReturn(Map.of(payerId, ownerId));
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
         final var rewards = subject.applyStakingRewards(handleContext);
         assertThat(rewards).hasSize(1);
@@ -737,7 +739,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.getDeletedAccountBeneficiaries()).willReturn(Map.of(payerId, ownerId));
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
         final var rewards = subject.applyStakingRewards(handleContext);
         // because the transferId is owner and it declined reward
@@ -791,7 +794,10 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .toInstant());
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
-        given(recordBuilder.getDeletedAccountBeneficiaries()).willReturn(Map.of(payerId, ownerId, ownerId, spenderId));
+
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(ownerId)).willReturn(spenderId);
 
         assertThatThrownBy(() -> subject.applyStakingRewards(handleContext)).isInstanceOf(IllegalStateException.class);
     }
