@@ -183,11 +183,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     private void appendTestsInClasspathRoot(
             URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
         ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
-            .filter(aClass ->
-                discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
-                    .map(Filter::toPredicate)
-                    .allMatch(predicate -> predicate.test(aClass.getPackageName()))
-            )
+                .filter(aClass -> discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
+                        .map(Filter::toPredicate)
+                        .allMatch(predicate -> predicate.test(aClass.getPackageName())))
                 .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
                 .filter(classTestDescriptor -> !classTestDescriptor.skip)
                 .forEach(engineDescriptor::addChild);
