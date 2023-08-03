@@ -48,7 +48,7 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     }
 
     @Override
-    public @Nullable long resolveAlias(@NonNull final Bytes evmAddress) {
+    public long resolveAlias(@NonNull final Bytes evmAddress) {
         throw new AssertionError("Not implemented");
     }
 
