@@ -182,13 +182,12 @@ public final class SignedStateFileWriter {
             @Nullable final NodeId selfId,
             @NonNull final Path savedStateDirectory,
             @NonNull final SignedState signedState,
-            @NonNull final StateToDiskReason stateToDiskReason,
+            @Nullable final StateToDiskReason stateToDiskReason,
             @NonNull final Configuration configuration)
             throws IOException {
 
         Objects.requireNonNull(savedStateDirectory);
         Objects.requireNonNull(signedState);
-        Objects.requireNonNull(stateToDiskReason);
         Objects.requireNonNull(configuration);
 
         try {
@@ -196,7 +195,7 @@ public final class SignedStateFileWriter {
                     STATE_TO_DISK.getMarker(),
                     "Started writing round {} state to disk. Reason: {}, directory: {}",
                     signedState.getRound(),
-                    stateToDiskReason,
+                    stateToDiskReason == null ? "UNKNOWN" : stateToDiskReason,
                     savedStateDirectory);
 
             executeAndRename(

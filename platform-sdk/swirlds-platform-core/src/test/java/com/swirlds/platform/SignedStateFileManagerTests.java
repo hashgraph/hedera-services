@@ -28,7 +28,6 @@ import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedSt
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
 import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
-import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -208,7 +207,7 @@ class SignedStateFileManagerTests {
                 mock(StatusActionSubmitter.class));
         manager.start();
 
-        manager.saveSignedStateToDisk(signedState, PERIODIC_SNAPSHOT);
+        manager.saveSignedStateToDisk(signedState);
 
         completeBeforeTimeout(() -> latch.await(), Duration.ofSeconds(1), "latch did not complete on time");
 
@@ -327,11 +326,11 @@ class SignedStateFileManagerTests {
         if (stateIndex < queueSize + 1) {
             // Note that it's actually queueSize + 1. This is because one state will have been removed
             // from the queue for handling.
-            assertTrue(manager.saveSignedStateToDisk(state, PERIODIC_SNAPSHOT), "queue should have capacity");
+            assertTrue(manager.saveSignedStateToDisk(state), "queue should have capacity");
 
             assertEquals(1, state.getReservationCount(), "the state should have an extra reservation");
         } else {
-            assertFalse(manager.saveSignedStateToDisk(state, PERIODIC_SNAPSHOT), "queue should be full");
+            assertFalse(manager.saveSignedStateToDisk(state), "queue should be full");
             assertEquals(-1, state.getReservationCount(), "incorrect reservation count");
         }
 
@@ -527,7 +526,7 @@ class SignedStateFileManagerTests {
                         "timestamp should be after the boundary");
 
                 savedStates.add(signedState);
-                manager.saveSignedStateToDisk(signedState, PERIODIC_SNAPSHOT);
+                manager.saveSignedStateToDisk(signedState);
 
                 assertEventuallyDoesNotThrow(
                         () -> {
@@ -623,9 +622,8 @@ class SignedStateFileManagerTests {
 
         // Simulate the saving of an ISS state
         final int issRound = 666;
-        final Path issDirectory = getSignedStatesBaseDirectory()
-                .resolve(ISS.getDescription())
-                .resolve("node" + SELF_ID + "_round" + issRound);
+        final Path issDirectory =
+                getSignedStatesBaseDirectory().resolve(ISS.toString()).resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
         manager.dumpState(issState, ISS, false);
@@ -643,7 +641,7 @@ class SignedStateFileManagerTests {
         // Simulate the saving of a fatal state
         final int fatalRound = 667;
         final Path fatalDirectory = getSignedStatesBaseDirectory()
-                .resolve(FATAL_ERROR.getDescription())
+                .resolve(FATAL_ERROR.toString())
                 .resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
@@ -656,7 +654,7 @@ class SignedStateFileManagerTests {
             final SignedState signedState =
                     new RandomSignedStateGenerator(random).setRound(round).build();
             states.add(signedState);
-            manager.saveSignedStateToDisk(signedState, PERIODIC_SNAPSHOT);
+            manager.saveSignedStateToDisk(signedState);
 
             // Verify that the states we want to be on disk are still on disk
             for (int i = 1; i <= statesOnDisk; i++) {

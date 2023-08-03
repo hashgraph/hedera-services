@@ -488,11 +488,20 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Set the reason why this state needs to be written to disk.
+     * Check if this is a state that needs to be eventually written to disk.
+     *
+     * @return true if this state eventually needs to be written to disk
+     */
+    public boolean isStateToSave() {
+        return stateToDiskReason != null;
+    }
+
+    /**
+     * Mark this state as one that needs to be eventually written to disk.
      *
      * @param reason the reason why this state needs to be written to disk
      */
-    public void setStateToDiskReason(@NonNull final StateToDiskReason reason) {
+    public void markAsStateToSave(@NonNull final StateToDiskReason reason) {
         stateToDiskReason = reason;
     }
 

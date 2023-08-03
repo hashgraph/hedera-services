@@ -25,7 +25,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedSt
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSignedStateToDisk;
-import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND;
+import static com.swirlds.platform.state.signed.StateToDiskReason.FIRST_ROUND_AFTER_GENESIS;
 import static com.swirlds.platform.state.signed.StateToDiskReason.FREEZE_STATE;
 import static com.swirlds.platform.state.signed.StateToDiskReason.PERIODIC_SNAPSHOT;
 import static com.swirlds.platform.state.signed.StateToDiskReason.RECONNECT;
@@ -226,23 +226,22 @@ public class SignedStateFileManager implements Startable {
      * reservation when the state has been fully written to disk (or if state saving fails).
      * </p>
      *
-     * @param signedState       the signed state to be written
-     * @param directory         the directory where the signed state will be written
-     * @param stateToDiskReason the reason this state is being written to disk
-     * @param finishedCallback  a function that is called after state writing is complete. Is passed true if writing
-     *                          succeeded, else is passed false.
-     * @param configuration     the configuration of the platform
+     * @param signedState      the signed state to be written
+     * @param directory        the directory where the signed state will be written
+     * @param reason           the reason this state is being written to disk
+     * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
+     *                         succeeded, else is passed false.
+     * @param configuration    the configuration of the platform
      * @return true if it will be written to disk, false otherwise
      */
     private boolean saveSignedStateToDisk(
             @NonNull SignedState signedState,
             @NonNull final Path directory,
-            @NonNull final StateToDiskReason stateToDiskReason,
+            @Nullable final StateToDiskReason reason,
             @Nullable final Consumer<Boolean> finishedCallback,
             @NonNull final Configuration configuration) {
 
         Objects.requireNonNull(directory);
-        Objects.requireNonNull(stateToDiskReason);
         Objects.requireNonNull(configuration);
 
         final ReservedSignedState reservedSignedState =
@@ -254,8 +253,7 @@ public class SignedStateFileManager implements Startable {
             final long round = reservedSignedState.get().getRound();
             try (reservedSignedState) {
                 try {
-                    writeSignedStateToDisk(
-                            selfId, directory, reservedSignedState.get(), stateToDiskReason, configuration);
+                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), reason, configuration);
                     if (round > latestSavedStateRound.get()) {
                         latestSavedStateRound.set(round);
                     }
@@ -301,15 +299,12 @@ public class SignedStateFileManager implements Startable {
      * Save a signed state to disk. This method will be called periodically under standard operations.
      *
      * @param signedState the signed state to be written to disk.
-     * @param reason      the reason why the state is being written
      */
-    public boolean saveSignedStateToDisk(final SignedState signedState, @NonNull final StateToDiskReason reason) {
-        Objects.requireNonNull(reason);
-
+    public boolean saveSignedStateToDisk(final SignedState signedState) {
         return saveSignedStateToDisk(
                 signedState,
                 getSignedStateDir(signedState.getRound()),
-                reason,
+                signedState.getStateToDiskReason(),
                 success -> {
                     if (success) {
                         deleteOldStates();
@@ -325,7 +320,7 @@ public class SignedStateFileManager implements Startable {
      * after the reason the state is being written out of band.
      *
      * @param signedState the signed state to write to disk
-     * @param reason      the reason why the state is being written
+     * @param reason      the reason why the state is being written out of band
      * @param blocking    if true then block until the state has been fully written to disk
      */
     public void dumpState(
@@ -339,7 +334,7 @@ public class SignedStateFileManager implements Startable {
         saveSignedStateToDisk(
                 signedState,
                 getSignedStatesBaseDirectory()
-                        .resolve(reason.getDescription())
+                        .resolve(reason.toString())
                         .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())),
                 reason,
                 success -> latch.countDown(),
@@ -392,7 +387,7 @@ public class SignedStateFileManager implements Startable {
 
         if (previousTimestamp == null) {
             // the first round should be saved
-            return FIRST_ROUND;
+            return FIRST_ROUND_AFTER_GENESIS;
         }
 
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
@@ -413,7 +408,7 @@ public class SignedStateFileManager implements Startable {
 
     /**
      * Determine if a signed state should eventually be written to disk. If the state should eventually be written, the
-     * state's {@link SignedState#setStateToDiskReason} method will be called, to indicate the reason
+     * state's {@link SignedState#markAsStateToSave} method will be called, to indicate the reason
      *
      * @param signedState the signed state in question
      * @param source      the source of the signed state
@@ -436,7 +431,7 @@ public class SignedStateFileManager implements Startable {
                 reason);
 
         previousSavedStateTimestamp = signedState.getConsensusTimestamp();
-        signedState.setStateToDiskReason(reason);
+        signedState.markAsStateToSave(reason);
     }
 
     /**

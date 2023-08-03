@@ -292,14 +292,12 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the newly complete signed state
      */
     private void stateHasEnoughSignatures(final SignedState signedState) {
-        final StateToDiskReason reason = signedState.getStateToDiskReason();
-
-        // state shouldn't be written to disk
-        if (reason == null) {
+        // there isn't anything to do if this isn't a state to save
+        if (!signedState.isStateToSave()) {
             return;
         }
 
-        signedStateFileManager.saveSignedStateToDisk(signedState, reason);
+        signedStateFileManager.saveSignedStateToDisk(signedState);
     }
 
     /**
@@ -308,10 +306,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the signed state that lacks signatures
      */
     private void stateLacksSignatures(final SignedState signedState) {
-        final StateToDiskReason reason = signedState.getStateToDiskReason();
-
-        // state shouldn't be written to disk
-        if (reason == null) {
+        // there isn't anything to do if this isn't a state to save
+        if (!signedState.isStateToSave()) {
             return;
         }
 
@@ -336,7 +332,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                                 signedState.getAddressBook().getTotalWeight(),
                                 newCount)));
 
-        signedStateFileManager.saveSignedStateToDisk(signedState, reason);
+        signedStateFileManager.saveSignedStateToDisk(signedState);
     }
 
     private void newSignedStateBeingTracked(final SignedState signedState, final SourceOfSignedState source) {
@@ -405,6 +401,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public ReservedSignedState getLatestSignedState(@NonNull final String reason) {
         return signedStateManager.getLatestSignedState(reason);
     }
