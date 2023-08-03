@@ -56,6 +56,7 @@ import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.app.workflows.handle.SpecialFileUpdateHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -925,6 +926,7 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
+                    .specialFileUpdateHandler(new SpecialFileUpdateHandler(configProvider))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
