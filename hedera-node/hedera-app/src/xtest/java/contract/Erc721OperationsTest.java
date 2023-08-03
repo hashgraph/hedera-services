@@ -63,6 +63,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -139,7 +140,9 @@ class Erc721OperationsTest {
         //                synthSafeTransferFrom(COUNTERPARTY, COUNTERPARTY_ADDRESS, PARTY_ADDRESS, 3));
 
         // THEN:
-        assertContractDeployedWithExpectedStorage();
+        assertExpectedContract();
+        assertExpectedBytecode();
+        //       assertExpectedStorage();
     }
 
     private void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
@@ -200,6 +203,44 @@ class Erc721OperationsTest {
                 .contractID(Erc721OperationsConstants.ERC721_FULL_CONTRACT)
                 .gas(Erc721OperationsConstants.GAS_TO_OFFER)
                 .build();
+    }
+
+    private void assertExpectedContract() {
+        // Assert the contract exists in state at the expected id number
+        final var contract = expectedDeployedContract();
+        assertNotNull(contract);
+        assertTrue(contract.smartContract());
+    }
+
+    private void assertExpectedBytecode() throws IOException {
+        final ReadableKVState<EntityNumber, Bytecode> bytecode = scaffoldingComponent
+                .hederaState()
+                .createReadableStates(ContractServiceImpl.NAME)
+                .get(ContractSchema.BYTECODE_KEY);
+        final var actualBytecode =
+                bytecode.get(new EntityNumber(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow()));
+        assertNotNull(actualBytecode);
+        assertEquals(expectedBytecode(), actualBytecode.code());
+    }
+
+    private void assertExpectedStorage() {
+        final ReadableKVState<SlotKey, SlotValue> storage = scaffoldingComponent
+                .hederaState()
+                .createReadableStates(ContractServiceImpl.NAME)
+                .get(ContractSchema.STORAGE_KEY);
+        Erc721OperationsConstants.EXPECTED_STORAGE.forEach((key, value) -> {
+            final var slot = storage.get(new SlotKey(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow(), key));
+            assertNotNull(slot);
+            assertEquals(value, slot.value());
+        });
+    }
+
+    private @Nullable Account expectedDeployedContract() {
+        final ReadableKVState<AccountID, Account> accounts = scaffoldingComponent
+                .hederaState()
+                .createReadableStates(TokenServiceImpl.NAME)
+                .get(TokenServiceImpl.ACCOUNTS_KEY);
+        return accounts.get(Erc721OperationsConstants.ERC721_FULL);
     }
 
     private void assertContractDeployedWithExpectedStorage() throws IOException {

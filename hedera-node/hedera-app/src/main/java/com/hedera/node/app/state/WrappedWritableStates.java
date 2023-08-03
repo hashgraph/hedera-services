@@ -18,6 +18,7 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.state.TerminalStates;
 import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableQueueState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
@@ -25,7 +26,6 @@ import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -125,8 +125,8 @@ public class WrappedWritableStates implements WritableStates {
             singletonState.commit();
         }
 
-        if (delegate instanceof MerkleHederaState.MerkleWritableStates mws) {
-            mws.commit();
+        if (delegate instanceof TerminalStates terminalStates) {
+            terminalStates.commit();
         }
     }
 }

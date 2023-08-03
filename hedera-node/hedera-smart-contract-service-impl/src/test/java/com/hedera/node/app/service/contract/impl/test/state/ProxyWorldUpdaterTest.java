@@ -361,7 +361,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesTransfer() {
-        given(evmFrameState.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
+        given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
                 .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
         final var maybeHaltReason = subject.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
         assertTrue(maybeHaltReason.isPresent());

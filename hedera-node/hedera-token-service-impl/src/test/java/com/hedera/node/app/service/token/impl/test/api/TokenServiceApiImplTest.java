@@ -237,6 +237,17 @@ class TokenServiceApiImplTest {
     }
 
     @Test
+    void setsAccountNonce() {
+        accountStore.put(Account.newBuilder()
+                .accountId(EOA_ACCOUNT_ID)
+                .ethereumNonce(123L)
+                .build());
+        subject.setNonce(EOA_ACCOUNT_ID, 321L);
+        final var postIncrementAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
+        assertEquals(321L, postIncrementAccount.ethereumNonce());
+    }
+
+    @Test
     void updatesContractAccountNonce() {
         accountStore.put(Account.newBuilder()
                 .accountId(CONTRACT_ACCOUNT_ID)

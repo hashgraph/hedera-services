@@ -319,7 +319,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
+    public Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull final Address sendingContract,
             @NonNull final Address recipient,
             final long amount,
@@ -327,9 +327,6 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         final var from = (ProxyEvmAccount) getAccount(sendingContract);
         if (from == null) {
             return Optional.of(MISSING_ADDRESS);
-        }
-        if (!from.isContract()) {
-            throw new IllegalArgumentException("EVM should not initiate transfer from EOA 0.0." + from.number);
         }
         final var to = getAccount(recipient);
         if (to == null) {

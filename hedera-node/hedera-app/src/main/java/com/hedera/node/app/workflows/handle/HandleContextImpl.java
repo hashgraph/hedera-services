@@ -396,6 +396,8 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final HandleContextVerifier childVerifier,
             @NonNull final SingleTransactionRecordBuilderImpl childRecordBuilder) {
         try {
+            // Synthetic transaction bodies do not have transaction ids, node account
+            // ids, and so on; hence we don't need to validate them with the checker
             dispatcher.dispatchPureChecks(txBody);
         } catch (PreCheckException e) {
             childRecordBuilder.status(e.responseCode());

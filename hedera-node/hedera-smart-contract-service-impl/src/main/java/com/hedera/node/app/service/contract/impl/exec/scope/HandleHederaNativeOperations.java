@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
@@ -24,6 +26,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,7 +80,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void setNonce(final long contractNumber, final long nonce) {
-        throw new AssertionError("Not implemented");
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.setNonce(
+                AccountID.newBuilder().accountNum(contractNumber).build(), nonce);
     }
 
     /**
@@ -121,7 +126,13 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
             final long fromEntityNumber,
             final long toEntityNumber,
             @NonNull final VerificationStrategy strategy) {
-        throw new AssertionError("Not implemented");
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.transferFromTo(
+                AccountID.newBuilder().accountNum(fromEntityNumber).build(),
+                AccountID.newBuilder().accountNum(toEntityNumber).build(),
+                amount);
+        // TODO - enforce receiver sig requirement
+        return OK;
     }
 
     /**

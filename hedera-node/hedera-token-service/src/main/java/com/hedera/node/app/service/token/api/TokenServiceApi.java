@@ -58,6 +58,14 @@ public interface TokenServiceApi {
     void incrementSenderNonce(@NonNull AccountID senderId);
 
     /**
+     * Sets the nonce of the given account.
+     *
+     * @param accountId the id of the account whose nonce should set
+     * @param nonce the nonce to set
+     */
+    void setNonce(@NonNull AccountID accountId, long nonce);
+
+    /**
      * Transfers the given amount from the given sender to the given recipient.
      *
      * @param from the id of the sender

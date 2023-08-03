@@ -35,6 +35,8 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -44,6 +46,10 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class HandleHederaOperations implements HederaOperations {
+    private static final Comparator<ContractID> CONTRACT_ID_NUM_COMPARATOR =
+            Comparator.comparingLong(ContractID::contractNumOrThrow);
+    private static final Comparator<ContractNonceInfo> NONCE_INFO_CONTRACT_ID_COMPARATOR =
+            Comparator.comparing(ContractNonceInfo::contractIdOrThrow, CONTRACT_ID_NUM_COMPARATOR);
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
@@ -70,7 +76,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void commit() {
-        throw new AssertionError("Not implemented");
+        // Currently the savepoint stack only supports reverting savepoints; then commits all remaining at the end
     }
 
     /**
@@ -136,7 +142,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long valueInTinybars(final long tinycents) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return tinycents;
     }
 
     /**
@@ -144,6 +151,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         final var coinbaseId =
                 AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
@@ -155,7 +163,11 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
-        throw new AssertionError("Not implemented");
+        requireNonNull(payerId);
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var coinbaseId =
+                AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
+        tokenServiceApi.transferFromTo(coinbaseId, payerId, amount);
     }
 
     /**
@@ -163,7 +175,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void chargeStorageRent(final long contractNumber, final long amount, final boolean itemizeStoragePayments) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement before enabling contract expiry
     }
 
     /**
@@ -239,7 +251,14 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public List<ContractID> createdContractIds() {
-        throw new AssertionError("Not implemented");
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        // TODO - add a newContractIds() method to TokenServiceApi instead
+        return tokenServiceApi.modifiedAccountIds().stream()
+                .map(accountId -> ContractID.newBuilder()
+                        .contractNum(accountId.accountNumOrThrow())
+                        .build())
+                .sorted(CONTRACT_ID_NUM_COMPARATOR)
+                .toList();
     }
 
     /**
@@ -247,7 +266,10 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public List<ContractNonceInfo> updatedContractNonces() {
-        throw new AssertionError("Not implemented");
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var updatedNonces = new ArrayList<>(tokenServiceApi.updatedContractNonces());
+        updatedNonces.sort(NONCE_INFO_CONTRACT_ID_COMPARATOR);
+        return updatedNonces;
     }
 
     /**
@@ -255,6 +277,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public int getOriginalSlotsUsed(final long contractNumber) {
-        throw new AssertionError("Not implemented");
+        // TODO - extend API and use getOriginalValue() from writable store
+        return 0;
     }
 }

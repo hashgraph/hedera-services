@@ -209,9 +209,9 @@ public interface HederaOperations {
     List<Long> getModifiedAccountNumbers();
 
     /**
-     * Returns a list of the contract numbers that have been created in this scope.
+     * Returns a list of the contract ids that have been created in this scope, in increasing id order.
      *
-     * @return the list of created contract numbers
+     * @return the list of created contract ids
      */
     List<ContractID> createdContractIds();
 

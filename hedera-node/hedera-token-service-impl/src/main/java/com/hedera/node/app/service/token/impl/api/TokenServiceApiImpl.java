@@ -77,7 +77,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void incrementParentNonce(@NonNull ContractID parentId) {
+    public void incrementParentNonce(@NonNull final ContractID parentId) {
+        requireNonNull(parentId);
         final var store = new WritableAccountStore(writableStates);
         final var contract = requireNonNull(store.getContractById(parentId));
         store.put(contract.copyBuilder()
@@ -89,10 +90,22 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void incrementSenderNonce(@NonNull AccountID senderId) {
+    public void incrementSenderNonce(@NonNull final AccountID senderId) {
+        requireNonNull(senderId);
         final var store = new WritableAccountStore(writableStates);
         final var sender = requireNonNull(store.get(senderId));
         store.put(sender.copyBuilder().ethereumNonce(sender.ethereumNonce() + 1).build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setNonce(@NonNull final AccountID accountId, final long nonce) {
+        requireNonNull(accountId);
+        final var store = new WritableAccountStore(writableStates);
+        final var target = requireNonNull(store.get(accountId));
+        store.put(target.copyBuilder().ethereumNonce(nonce).build());
     }
 
     /**

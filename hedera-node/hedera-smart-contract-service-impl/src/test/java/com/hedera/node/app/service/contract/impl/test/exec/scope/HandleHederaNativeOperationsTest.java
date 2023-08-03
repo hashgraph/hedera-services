@@ -16,22 +16,27 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +55,9 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private ReadableAccountStore accountStore;
+
+    @Mock
+    private TokenServiceApi tokenServiceApi;
 
     private HandleHederaNativeOperations subject;
 
@@ -87,11 +95,6 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void setNonceNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.setNonce(1L, 2L));
-    }
-
-    @Test
     void createHollowAccountNotImplemented() {
         assertThrows(AssertionError.class, () -> subject.createHollowAccount(Bytes.EMPTY));
     }
@@ -112,14 +115,32 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void transferWithReceiverSigCheckNotImplemented() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.transferWithReceiverSigCheck(1L, 2L, 3L, TestHelpers.MOCK_VERIFICATION_STRATEGY));
+    void transferWithReceiverSigCheckUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        final var result = subject.transferWithReceiverSigCheck(
+                1L,
+                NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(),
+                NON_SYSTEM_CONTRACT_ID.contractNumOrThrow(),
+                TestHelpers.MOCK_VERIFICATION_STRATEGY);
+        assertEquals(OK, result);
+        final var contractAccountId = AccountID.newBuilder()
+                .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
+                .build();
+        verify(tokenServiceApi).transferFromTo(NON_SYSTEM_ACCOUNT_ID, contractAccountId, 1L);
     }
 
     @Test
     void trackDeletionNotImplemented() {
         assertThrows(AssertionError.class, () -> subject.trackDeletion(1L, 2L));
+    }
+
+    @Test
+    void settingNonceUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.setNonce(123L, 456L);
+
+        verify(tokenServiceApi).setNonce(AccountID.newBuilder().accountNum(123L).build(), 456L);
     }
 }

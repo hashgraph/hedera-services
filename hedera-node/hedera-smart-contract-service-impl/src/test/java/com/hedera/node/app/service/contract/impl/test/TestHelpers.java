@@ -143,6 +143,11 @@ public class TestHelpers {
     public static final AccountID NON_SYSTEM_ACCOUNT_ID = AccountID.newBuilder()
             .accountNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
+
+    public static final AccountID A_NEW_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(191919L).build();
+    public static final AccountID B_NEW_ACCOUNT_ID =
+            AccountID.newBuilder().accountNum(919191L).build();
     public static final org.apache.tuweni.bytes.Bytes SOME_REVERT_REASON =
             org.apache.tuweni.bytes.Bytes.wrap("I prefer not to".getBytes());
     public static final ContractID NON_SYSTEM_CONTRACT_ID = ContractID.newBuilder()

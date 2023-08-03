@@ -188,7 +188,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             @NonNull final Address recipient,
             final long amount,
             final boolean delegateCall) {
-        return evmFrameState.tryTransferFromContract(sendingContract, recipient, amount, delegateCall);
+        return evmFrameState.tryTransfer(sendingContract, recipient, amount, delegateCall);
     }
 
     /**
