@@ -37,21 +37,16 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessm
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CustomFeeAssessmentStepTest extends StepsBase {
-    @Mock
-    private CryptoTransferRecordBuilder recordBuilder;
-
     private TransferContextImpl transferContext;
     private CustomFeeAssessmentStep subject;
 
@@ -72,7 +67,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp, transferContext);
-        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
     }
 
     @Test
@@ -159,7 +153,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransfersContains(
                 givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
 
-        verify(recordBuilder).assessedCustomFees(anyList());
+        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -241,7 +235,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransfersContains(
                 givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
 
-        verify(recordBuilder).assessedCustomFees(anyList());
+        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -356,7 +350,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransfersContains(
                 givenOp.transfers().accountAmountsOrElse(emptyList()), expectedGivenOpHbarTransfers);
 
-        verify(recordBuilder).assessedCustomFees(anyList());
+        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -419,7 +413,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(level2Op.tokenTransfers(), expectedLevel2TokenTransfers);
 
-        verify(recordBuilder).assessedCustomFees(anyList());
+        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     private void givenDifferentTxn(final CryptoTransferTransactionBody body, final AccountID payerId) {

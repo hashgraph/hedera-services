@@ -81,8 +81,7 @@ public class StakingRewardsDistributor {
                 // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
                 // accounts until we find a non-deleted account to try to reward (it may still decline)
                 if (modifiedAccount.deleted()) {
-                    final var beneficiaries = recordBuilder.getDeletedAccountBeneficiaries();
-                    final var maxRedirects = beneficiaries.size();
+                    final var maxRedirects = recordBuilder.getNumberOfDeletedAccounts();
                     var j = 1;
                     do {
                         if (j++ > maxRedirects) {
@@ -93,7 +92,7 @@ public class StakingRewardsDistributor {
                                     receiverId);
                             throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
                         }
-                        receiverId = beneficiaries.get(receiverId);
+                        receiverId = recordBuilder.getDeletedAccountBeneficiaryFor(receiverId);
                         beneficiary = writableStore.getOriginalValue(receiverId);
                     } while (beneficiary.deleted());
                 }

@@ -120,7 +120,7 @@ public class SingleTransactionRecordBuilderImpl
 
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
-    private Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
+    private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
 
     /**
      * Creates new transaction record builder.
@@ -835,11 +835,19 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Gets the map of deleted account ID to beneficiary account ID.
-     * @return the map of deleted account ID to beneficiary account ID
+     * Gets number of deleted accounts in this transaction.
+     * @return number of deleted accounts in this transaction
      */
-    @NonNull
-    public Map<AccountID, AccountID> getDeletedAccountBeneficiaries() {
-        return deletedAccountBeneficiaries;
+    public int getNumberOfDeletedAccounts() {
+        return deletedAccountBeneficiaries.size();
+    }
+
+    /**
+     * Gets the beneficiary account ID for deleted account ID.
+     * @return the beneficiary account ID of deleted account ID
+     */
+    @Nullable
+    public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
+        return deletedAccountBeneficiaries.get(deletedAccountID);
     }
 }

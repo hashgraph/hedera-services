@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.records;
 
 import com.hedera.hapi.node.base.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoDelete}
@@ -36,10 +36,15 @@ public interface CryptoDeleteRecordBuilder {
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount);
 
     /**
-     * Gets the deleted account beneficiaries.
-     * @return the deleted account beneficiaries
+     * Gets number of deleted accounts in this transaction.
+     * @return number of deleted accounts in this transaction
      */
-    // TODO: Not sure if this should be here or in SingleTranssactionRecordBuilder
-    @NonNull
-    Map<AccountID, AccountID> getDeletedAccountBeneficiaries();
+    int getNumberOfDeletedAccounts();
+
+    /**
+     * Gets the beneficiary account ID for deleted account ID.
+     * @return the beneficiary account ID of deleted account ID
+     */
+    @Nullable
+    AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID);
 }
