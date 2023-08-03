@@ -5,7 +5,6 @@ open module com.swirlds.common.test {
     exports com.swirlds.common.test.benchmark;
     exports com.swirlds.common.test.set;
     exports com.swirlds.common.test.map;
-    exports com.swirlds.common.test.fcqueue;
 
     requires com.swirlds.base;
     requires com.swirlds.test.framework;

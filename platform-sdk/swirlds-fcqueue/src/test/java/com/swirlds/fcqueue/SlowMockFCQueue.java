@@ -27,7 +27,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
-import com.swirlds.common.test.fcqueue.FCInt;
+import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQHashAlgorithm;
 import com.swirlds.fcqueue.internal.FCQueueNode;
 import com.swirlds.fcqueue.internal.FCQueueNodeIterator;
