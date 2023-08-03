@@ -294,9 +294,6 @@ public class DataFileReaderPbj<D> implements DataFileReader<D> {
             }
             if (readingMmaps.compareAndSet(index, buf, newBuf)) {
                 mmapsToClean.add(newBuf);
-                if (buf != null) {
-                    DataFileCommon.closeMmapBuffer(buf);
-                }
                 buf = newBuf;
             } else {
                 DataFileCommon.closeMmapBuffer(newBuf);
