@@ -19,7 +19,7 @@ package com.swirlds.demo.stats.signing;
 import java.util.Random;
 
 /**
- * Provides pre-generated random transactions that are optionally pre-signed.
+ * Provides pre-generated random transactions.
  */
 final class TransactionPool {
     /**
