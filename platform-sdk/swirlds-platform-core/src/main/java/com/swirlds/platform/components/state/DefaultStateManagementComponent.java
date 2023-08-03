@@ -16,6 +16,11 @@
 
 package com.swirlds.platform.components.state;
 
+import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.StateConfig;
@@ -63,18 +68,12 @@ import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.platform.util.HashLogger;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
-import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link StateManagementComponent}.
@@ -141,7 +140,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     private final StateConfig stateConfig;
 
     private static final RunningAverageMetric.Config AVG_ROUND_SUPERMAJORITY_CONFIG = new RunningAverageMetric.Config(
-            PLATFORM_CATEGORY, "roundSup")
+                    PLATFORM_CATEGORY, "roundSup")
             .withDescription("latest round with state signed by a supermajority")
             .withUnit("round");
 
@@ -319,8 +318,8 @@ public class DefaultStateManagementComponent implements StateManagementComponent
                     EXCEPTION.getMarker(),
                     new InsufficientSignaturesPayload(
                             ("state written to disk for round %d did not have enough signatures. "
-                                    + "Collected signatures representing %d/%d weight. "
-                                    + "Total unsigned disk states so far: %d.")
+                                            + "Collected signatures representing %d/%d weight. "
+                                            + "Total unsigned disk states so far: %d.")
                                     .formatted(
                                             signedState.getRound(),
                                             signedState.getSigningWeight(),
@@ -471,7 +470,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
     public void onFatalError() {
         if (stateConfig.dumpStateOnFatal()) {
             try (final ReservedSignedState reservedState =
-                         signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
+                    signedStateManager.getLatestSignedState("DefaultStateManagementComponent.onFatalError()")) {
                 if (reservedState.isNotNull()) {
                     signedStateFileManager.dumpState(reservedState.get(), FATAL_ERROR, true);
                 }
@@ -510,7 +509,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
         }
 
         try (final ReservedSignedState reservedState =
-                     signedStateManager.find(state -> state.getRound() == round, "state dump requested for " + reason)) {
+                signedStateManager.find(state -> state.getRound() == round, "state dump requested for " + reason)) {
 
             if (reservedState.isNotNull()) {
                 // We were able to find the requested round. Dump it.
