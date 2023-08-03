@@ -19,11 +19,11 @@ package com.hedera.node.app.spi.state;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 
 /**
- * Marks a {@link WritableStates} implementation at the "bottom" of a {@link SavepointStack}; i.e.,
- * an implementation that is not buffering changes for a wrapped delegate, but itself knows how to
+ * A {@link WritableStates} implementation at the "bottom" of a {@link SavepointStack}; i.e., an
+ * implementation that is not buffering changes for a wrapped delegate, but itself knows how to
  * persist changes.
  */
-public interface TerminalStates {
+public interface CommittableWritableStates {
 
     /**
      * Commits all changes.

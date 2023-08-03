@@ -18,7 +18,7 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.TerminalStates;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableQueueState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
@@ -125,7 +125,7 @@ public class WrappedWritableStates implements WritableStates {
             singletonState.commit();
         }
 
-        if (delegate instanceof TerminalStates terminalStates) {
+        if (delegate instanceof CommittableWritableStates terminalStates) {
             terminalStates.commit();
         }
     }

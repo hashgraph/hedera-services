@@ -25,6 +25,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
@@ -178,8 +179,8 @@ public class TransactionProcessor {
      * </ol>
      *
      * <p>Note that if the transaction is a {@code CONTRACT_CREATION}, setup includes calling either
-     * {@link HederaWorldUpdater#setupInternalCreate(Address)} or
-     * {@link HederaWorldUpdater#setupInternalAliasedCreate(Address, Address)}.
+     * {@link HederaWorldUpdater#setupTopLevelCreate(ContractCreateTransactionBody)} or
+     * {@link HederaWorldUpdater#setupAliasedTopLevelCreate(ContractCreateTransactionBody, Address)}
      *
      * @param transaction the transaction to set up
      * @param updater     the updater for the transaction

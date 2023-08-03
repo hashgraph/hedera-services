@@ -18,13 +18,13 @@ package com.hedera.node.app.state.merkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableQueueState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.TerminalStates;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableQueueState;
@@ -595,7 +595,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * An implementation of {@link WritableStates} based on the merkle tree.
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public final class MerkleWritableStates extends MerkleStates implements WritableStates, TerminalStates {
+    public final class MerkleWritableStates extends MerkleStates implements WritableStates, CommittableWritableStates {
         /**
          * Create a new instance
          *

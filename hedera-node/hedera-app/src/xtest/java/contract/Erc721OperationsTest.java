@@ -121,7 +121,7 @@ class Erc721OperationsTest {
     }
 
     @Test
-    void erc721OperationsResultInExpectedState() throws IOException {
+    void recordedErc721OperationsResultInExpectedState() throws IOException {
         // GIVEN:
         setupFakeStates();
         setupErc721InitcodeAndWellKnownAccounts();
