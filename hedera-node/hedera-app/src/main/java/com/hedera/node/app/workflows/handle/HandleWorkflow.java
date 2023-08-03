@@ -233,6 +233,7 @@ public class HandleWorkflow {
             // Now that we have a created handle context object and a consensus timestamp, run the appropriate {@code
             // ConsensusTimeHook} event handlers
             stakingPeriodTimeHook.process(consensusNow, context);
+            // @future('7836'): update the exchange rate and call from here
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
