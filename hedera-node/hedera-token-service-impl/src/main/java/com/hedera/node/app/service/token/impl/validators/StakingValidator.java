@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -36,6 +37,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakingValidator {
+
+    @Inject
+    @SuppressWarnings("java:S1186")
+    public StakingValidator() {}
 
     /**
      * Validates staked id if present

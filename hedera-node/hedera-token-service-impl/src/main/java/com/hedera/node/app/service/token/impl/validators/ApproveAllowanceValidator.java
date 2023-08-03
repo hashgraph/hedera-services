@@ -49,6 +49,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -56,6 +57,10 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ApproveAllowanceValidator extends AllowanceValidator {
+
+    @Inject
+    @SuppressWarnings("java:S1186")
+    public ApproveAllowanceValidator() {}
 
     public void validate(
             @NonNull final HandleContext context, final Account payerAccount, final ReadableAccountStore accountStore) {

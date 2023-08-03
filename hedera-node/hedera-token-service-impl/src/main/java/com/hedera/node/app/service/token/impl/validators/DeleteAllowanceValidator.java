@@ -40,10 +40,15 @@ import com.hedera.node.config.data.HederaConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashSet;
 import java.util.List;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class DeleteAllowanceValidator extends AllowanceValidator {
+
+    @Inject
+    @SuppressWarnings("java:S1186")
+    public DeleteAllowanceValidator() {}
 
     /**
      * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}

@@ -39,6 +39,7 @@ import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -47,8 +48,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAttributesValidator {
+
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+
+    @Inject
+    @SuppressWarnings("java:S1186")
+    public TokenAttributesValidator() {}
 
     /**
      * Validates the token symbol, if it is exists and is not empty or not too long.

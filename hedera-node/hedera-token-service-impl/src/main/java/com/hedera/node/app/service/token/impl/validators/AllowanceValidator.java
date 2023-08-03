@@ -35,8 +35,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashSet;
 import java.util.List;
+import javax.inject.Inject;
 
 public class AllowanceValidator {
+
+    @Inject
+    @SuppressWarnings("java:S1186")
+    public AllowanceValidator() {}
 
     protected void validateTotalAllowancesPerTxn(final int totalAllowances, @NonNull final HederaConfig hederaConfig) {
         validateFalse(

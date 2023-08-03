@@ -34,12 +34,17 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.ToIntFunction;
+import javax.inject.Inject;
 
 /**
  * This class contains validations to be done in handle for Token Mint and
  * Token Burn operations in handle
  */
 public class TokenSupplyChangeOpsValidator {
+
+    @Inject
+    @SuppressWarnings("java:S1186")
+    public TokenSupplyChangeOpsValidator() {}
 
     /**
      * Validate the transaction data for a token mint operation
