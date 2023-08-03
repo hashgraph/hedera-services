@@ -248,8 +248,15 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         EventDescriptor bestOtherParent = null;
         TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
         for (final EventDescriptor otherParent : possibleOtherParents) {
+
+            final List<EventDescriptor> parents = new ArrayList<>(2);
+            parents.add(otherParent);
+            if (lastSelfEvent != null) {
+                parents.add(lastSelfEvent);
+            }
+
             final TipsetAdvancementWeight advancementWeight =
-                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(List.of(otherParent));
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
             if (advancementWeight.isGreaterThan(bestAdvancementWeight)) {
                 bestOtherParent = otherParent;
                 bestAdvancementWeight = advancementWeight;
