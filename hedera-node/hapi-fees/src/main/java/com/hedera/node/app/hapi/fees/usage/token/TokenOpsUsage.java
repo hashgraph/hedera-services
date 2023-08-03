@@ -21,6 +21,7 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
@@ -36,6 +37,7 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.SubType;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -160,8 +162,11 @@ public final class TokenOpsUsage {
             final SigUsage sigUsage,
             final BaseTransactionMeta baseMeta,
             final TokenMintMeta tokenMintMeta,
-            final UsageAccumulator accumulator) {
-        accumulator.resetForTransaction(baseMeta, sigUsage);
+            final UsageAccumulator accumulator,
+            final SubType subType) {
+        if (!TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+            accumulator.resetForTransaction(baseMeta, sigUsage);
+        }
 
         accumulator.addBpt(tokenMintMeta.getBpt());
         accumulator.addRbs(tokenMintMeta.getRbs());

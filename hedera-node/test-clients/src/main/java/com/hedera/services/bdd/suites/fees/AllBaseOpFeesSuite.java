@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -43,7 +42,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-//@HapiTestSuite
+// @HapiTestSuite
 public class AllBaseOpFeesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AllBaseOpFeesSuite.class);
 
@@ -93,7 +92,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
         return onlyDefaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(CIVILIAN_ACCT).key(SUPPLY_KEY),
+                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
                         tokenCreate(UNIQUE_TOKEN)
                                 .initialSupply(0L)
                                 .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
@@ -103,7 +102,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                         .payingWith(CIVILIAN_ACCT)
                         .signedBy(SUPPLY_KEY)
                         .blankMemo()
-                        .fee(10000 * ONE_HBAR)
+                        .fee(ONE_HUNDRED_HBARS)
                         .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_MINT_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }

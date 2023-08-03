@@ -1435,7 +1435,7 @@
               },
               "networkdata": {
                 "constant": 0,
-                "bpt": 0,
+                "bpt": 160000000000,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
@@ -1447,7 +1447,7 @@
               },
               "servicedata": {
                 "constant": 0,
-                "bpt": 160000000000,
+                "bpt": 0,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
@@ -4774,7 +4774,7 @@
               },
               "networkdata": {
                 "constant": 0,
-                "bpt": 0,
+                "bpt": 160000000000,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
@@ -4786,7 +4786,7 @@
               },
               "servicedata": {
                 "constant": 0,
-                "bpt": 160000000000,
+                "bpt": 0,
                 "vpt": 0,
                 "rbh": 0,
                 "sbh": 0,
