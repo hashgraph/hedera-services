@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.PrePaintableJPanel;
 import javax.swing.JLabel;
 
@@ -27,7 +28,7 @@ class WinTabPosts extends PrePaintableJPanel {
 
     public WinTabPosts() {
         JLabel label = new JLabel("There are no recent posts.");
-        label.setFont(WinBrowser.FONT);
+        label.setFont(GuiConstants.FONT);
         add(label);
     }
 
