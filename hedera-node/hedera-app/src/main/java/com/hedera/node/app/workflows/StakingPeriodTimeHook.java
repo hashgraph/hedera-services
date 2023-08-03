@@ -99,6 +99,6 @@ public class StakingPeriodTimeHook implements ConsensusTimeHook {
     private static boolean isLaterUtcDay(@NonNull final Instant now, @NonNull final Instant then) {
         final var nowDay = LocalDate.ofInstant(now, UTC);
         final var thenDay = LocalDate.ofInstant(then, UTC);
-        return nowDay.isAfter(thenDay) && nowDay.getDayOfYear() != thenDay.getDayOfYear();
+        return nowDay.isAfter(thenDay);
     }
 }
