@@ -44,7 +44,6 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.notification.listeners.StateLoadedFromDiskCompleteListener;
@@ -73,7 +72,6 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.common.utility.Clearable;
 import com.swirlds.common.utility.LoggingClearables;
-import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.components.EventCreator;
@@ -152,7 +150,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -578,19 +575,6 @@ public class SwirldsPlatform implements Platform, Startable {
                 startUpEventFrozenManager,
                 latestReconnectRound::get,
                 stateManagementComponent::getLatestSavedStateRound);
-
-        final RateLimitedLogger activeToCheckingLogger = new RateLimitedLogger(logger, time, Duration.ofHours(1));
-        notificationEngine.register(PlatformStatusChangeListener.class, notification -> {
-            if (notification.getPreviousStatus() == PlatformStatus.ACTIVE
-                    && notification.getNewStatus() == PlatformStatus.CHECKING) {
-
-                activeToCheckingLogger.warn(
-                        STARTUP.getMarker(),
-                        "Platform status changed from ACTIVE to CHECKING. "
-                                + "This may indicate an unhealthy node, a loss of quorum, or a bug.\n{}",
-                        tipsetEventCreator);
-            }
-        });
 
         transactionSubmitter = new SwirldTransactionSubmitter(
                 platformStatusManager::getCurrentStatus,
