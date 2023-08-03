@@ -81,4 +81,50 @@ class ChildlessEventTrackerTests {
 
         assertEquals(new HashSet<>(batch2), new HashSet<>(tracker.getChildlessEvents()));
     }
+
+    @Test
+    @DisplayName("Branching Test")
+    void branchingTest() {
+        final Random random = getRandomPrintSeed();
+
+        final ChildlessEventTracker tracker = new ChildlessEventTracker();
+
+        final EventDescriptor e0 = new EventDescriptor(randomHash(random), new NodeId(0), 0);
+        final EventDescriptor e1 = new EventDescriptor(randomHash(random), new NodeId(0), 1);
+        final EventDescriptor e2 = new EventDescriptor(randomHash(random), new NodeId(0), 2);
+
+        tracker.addEvent(e0, List.of());
+        tracker.addEvent(e1, List.of(e0));
+        tracker.addEvent(e2, List.of(e1));
+
+        final List<EventDescriptor> batch1 = tracker.getChildlessEvents();
+        assertEquals(1, batch1.size());
+        assertEquals(e2, batch1.get(0));
+
+        final EventDescriptor e3 = new EventDescriptor(randomHash(random), new NodeId(0), 3);
+        final EventDescriptor e3Branch = new EventDescriptor(randomHash(random), new NodeId(0), 3);
+
+        // Branch with the same generation, existing event should not be discarded.
+        tracker.addEvent(e3, List.of(e2));
+        tracker.addEvent(e3Branch, List.of(e2));
+
+        final List<EventDescriptor> batch2 = tracker.getChildlessEvents();
+        assertEquals(1, batch2.size());
+        assertEquals(e3, batch2.get(0));
+
+        // Branch with a lower generation, existing event should not be discarded.
+        final EventDescriptor e2Branch = new EventDescriptor(randomHash(random), new NodeId(0), 2);
+        tracker.addEvent(e2Branch, List.of(e1));
+
+        assertEquals(1, batch2.size());
+        assertEquals(e3, batch2.get(0));
+
+        // Branch with a higher generation, existing event should be discarded.
+        final EventDescriptor e99Branch = new EventDescriptor(randomHash(random), new NodeId(0), 99);
+        tracker.addEvent(e99Branch, List.of());
+
+        final List<EventDescriptor> batch3 = tracker.getChildlessEvents();
+        assertEquals(1, batch3.size());
+        assertEquals(e99Branch, batch3.get(0));
+    }
 }
