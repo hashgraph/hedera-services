@@ -18,9 +18,9 @@ package com.swirlds.platform.test.event.generator;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.test.event.DynamicValue;
-import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;

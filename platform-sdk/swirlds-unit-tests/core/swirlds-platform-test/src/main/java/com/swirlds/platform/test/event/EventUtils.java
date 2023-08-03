@@ -30,6 +30,8 @@ import com.swirlds.platform.state.PlatformData;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.state.DummySwirldState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;

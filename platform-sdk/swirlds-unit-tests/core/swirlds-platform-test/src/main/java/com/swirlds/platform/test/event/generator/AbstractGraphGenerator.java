@@ -19,7 +19,7 @@ package com.swirlds.platform.test.event.generator;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;

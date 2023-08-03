@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.CollectingEventEmitter;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
 import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
@@ -33,6 +32,7 @@ import com.swirlds.platform.test.event.emitter.ShuffledEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
 import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.util.List;

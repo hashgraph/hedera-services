@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.event;
 
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import java.util.Random;
 
 /**

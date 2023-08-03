@@ -27,6 +27,7 @@ import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

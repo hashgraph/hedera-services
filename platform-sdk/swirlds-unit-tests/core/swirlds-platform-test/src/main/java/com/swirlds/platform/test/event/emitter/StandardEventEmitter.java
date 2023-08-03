@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.emitter;
 
-import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 
 /**
  * Emits events in the order in which the generator creates them.

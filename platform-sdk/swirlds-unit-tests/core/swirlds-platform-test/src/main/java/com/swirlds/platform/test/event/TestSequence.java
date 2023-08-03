@@ -23,6 +23,7 @@ import static com.swirlds.platform.test.event.EventUtils.printGranularEventListC
 import static com.swirlds.platform.test.event.EventUtils.sortEventList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;

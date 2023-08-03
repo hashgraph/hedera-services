@@ -23,9 +23,9 @@ import static com.swirlds.platform.test.event.RandomEventUtils.randomEventWithTi
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.TransactionUtils;
-import com.swirlds.platform.test.event.DynamicValue;
 import com.swirlds.platform.test.event.DynamicValueGenerator;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.LinkedList;
