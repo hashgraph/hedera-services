@@ -520,7 +520,7 @@ class SignedStateFileManagerTests {
 
             manager.determineIfStateShouldBeSaved(signedState, SourceOfSignedState.TRANSACTIONS);
 
-            if (signedState.getStateToDiskReason() != null) {
+            if (signedState.isStateToSave()) {
                 assertTrue(
                         nextBoundary == null || CompareTo.isGreaterThanOrEqualTo(timestamp, nextBoundary),
                         "timestamp should be after the boundary");
