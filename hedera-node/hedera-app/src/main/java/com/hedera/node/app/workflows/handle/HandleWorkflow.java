@@ -230,11 +230,12 @@ public class HandleWorkflow {
                     blockRecordManager,
                     recordCache);
 
+            // Now that we have a created handle context object and a consensus timestamp, run the appropriate {@code
+            // ConsensusTimeHook} event handlers
+            stakingPeriodTimeHook.process(consensusNow, context);
+
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);
-
-            // Handle the end of a staking period
-            stakingPeriodTimeHook.process(consensusNow, context);
 
             // TODO: Finalize transaction with the help of the token service
 
