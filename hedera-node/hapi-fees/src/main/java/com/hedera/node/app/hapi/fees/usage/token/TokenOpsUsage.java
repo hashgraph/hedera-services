@@ -21,7 +21,6 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
@@ -164,7 +163,7 @@ public final class TokenOpsUsage {
             final TokenMintMeta tokenMintMeta,
             final UsageAccumulator accumulator,
             final SubType subType) {
-        if (TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+        if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
             accumulator.reset();
         } else {
             accumulator.resetForTransaction(baseMeta, sigUsage);
