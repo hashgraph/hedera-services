@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
+import com.swirlds.gui.InfoEntity;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,9 +24,13 @@ import java.util.List;
  * Metadata about an app that is installed locally.
  */
 public class InfoApp extends InfoEntity {
-    List<InfoSwirld> swirlds = new ArrayList<InfoSwirld>(); // children
+    private List<InfoSwirld> swirlds = new ArrayList<>(); // children
 
     public InfoApp(String name) {
-        this.name = name;
+        super(name);
+    }
+
+    public List<InfoSwirld> getSwirlds() {
+        return swirlds;
     }
 }

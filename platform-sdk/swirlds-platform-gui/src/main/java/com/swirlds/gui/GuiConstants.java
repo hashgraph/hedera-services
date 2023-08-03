@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui;
 
-import javax.swing.JPanel;
+import java.awt.Color;
+import java.awt.Font;
 
-/**
- * The class that all 4 levels of the hierarchy inherit from: InfoApp, InfoSwirld, InfoMember,
- * InfoState. This holds information common to all of them, such as the name, and the GUI component that
- * represents it in the browser window.
- */
-class InfoEntity {
-    /** name of this entity */
-    public String name;
-    /** the JPanel that shows this entity in the browser window (Swirlds tab), or null if none */
-    public JPanel panel;
+public class GuiConstants {
+
+    /** use this font for all text in the browser window */
+    public static final Font FONT = new Font("SansSerif", Font.PLAIN, 16);
+
+    /** light blue used to highlight which member all the tabs are currently displaying */
+    public static final Color MEMBER_HIGHLIGHT_COLOR = new Color(0.8f, 0.9f, 1.0f);
+
+    private GuiConstants() {}
 }
