@@ -163,7 +163,8 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
             return;
         }
 
-        final String previousStatusName = currentStatusLogic.getStatus().name();
+        final PlatformStatus previousStatus = currentStatus.get();
+        final String previousStatusName = previousStatus.name();
         final String newStatusName = newLogic.getStatus().name();
 
         final Duration statusDuration = Duration.between(currentStatusStartTime, time.now());
@@ -182,7 +183,8 @@ public class PlatformStatusStateMachine implements PlatformStatusGetter {
         currentStatusStartTime = time.now();
 
         notificationEngine.dispatch(
-                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newLogic.getStatus()));
+                PlatformStatusChangeListener.class,
+                new PlatformStatusChangeNotification(previousStatus, newLogic.getStatus()));
     }
 
     /**

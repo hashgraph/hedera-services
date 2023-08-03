@@ -463,8 +463,21 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         sb.append("Minimum generation non-ancient: ")
                 .append(tipsetTracker.getMinimumGenerationNonAncient())
                 .append("\n");
-        sb.append(childlessOtherEventTracker);
+        sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);
+
+        sb.append("Childless events:");
+        final List<EventDescriptor> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
+        if (childlessEvents.isEmpty()) {
+            sb.append(" none\n");
+        } else {
+            sb.append("\n");
+            for (final EventDescriptor event : childlessEvents) {
+                final Tipset tipset = tipsetTracker.getTipset(event);
+                sb.append("  - ").append(event).append(" ").append(tipset).append("\n");
+            }
+        }
+
         return sb.toString();
     }
 }

@@ -18,22 +18,36 @@ package com.swirlds.common.notification.listeners;
 
 import com.swirlds.common.notification.AbstractNotification;
 import com.swirlds.common.system.status.PlatformStatus;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * This notification is sent when the platform status changes.
  */
 public class PlatformStatusChangeNotification extends AbstractNotification {
 
+    private final PlatformStatus previousStatus;
     private final PlatformStatus newStatus;
 
     /**
      * Create a new platform status change notification.
      *
-     * @param newStatus
-     * 		the new status of the platform
+     * @param previousStatus the previous status of the platform
+     * @param newStatus      the new status of the platform
      */
-    public PlatformStatusChangeNotification(final PlatformStatus newStatus) {
-        this.newStatus = newStatus;
+    public PlatformStatusChangeNotification(
+            @NonNull final PlatformStatus previousStatus, @NonNull final PlatformStatus newStatus) {
+        this.previousStatus = Objects.requireNonNull(previousStatus);
+        this.newStatus = Objects.requireNonNull(newStatus);
+    }
+
+    /**
+     * Get the previous platform status.
+     *
+     * @return the previous platform status
+     */
+    public PlatformStatus getPreviousStatus() {
+        return previousStatus;
     }
 
     /**
