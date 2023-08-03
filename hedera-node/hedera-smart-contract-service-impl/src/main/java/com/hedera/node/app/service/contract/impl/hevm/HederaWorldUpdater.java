@@ -162,12 +162,10 @@ public interface HederaWorldUpdater extends WorldUpdater {
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
      * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of the new
-     * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}; returns the "long-zero" address
-     * to be assigned to the new account.
+     * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
      *
      * @param body the HAPI operation initiating the creation
      * @param alias the canonical address for the top-level creation
-     * @return the "long-zero" address to be assigned to the new account
      */
     void setupAliasedTopLevelCreate(@NonNull ContractCreateTransactionBody body, @NonNull Address alias);
 

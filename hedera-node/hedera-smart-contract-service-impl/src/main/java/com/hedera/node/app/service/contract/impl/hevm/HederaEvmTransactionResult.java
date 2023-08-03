@@ -57,8 +57,14 @@ public record HederaEvmTransactionResult(
         requireNonNull(logs);
     }
 
-    @Nullable
-    public ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
+    /**
+     * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
+     * {@link RootProxyWorldUpdater}. Returns null if the transaction was aborted before entering the EVM.
+     *
+     * @param updater the world updater
+     * @return the result
+     */
+    public @Nullable ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
         if (abortReason != null) {
             // If we aborted before entering an EVM transaction, we have no result to report
             return null;

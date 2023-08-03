@@ -243,39 +243,6 @@ class Erc721OperationsTest {
         return accounts.get(Erc721OperationsConstants.ERC721_FULL);
     }
 
-    private void assertContractDeployedWithExpectedStorage() throws IOException {
-        // Assert the contract exists in state at the expected id number
-        final ReadableKVState<AccountID, Account> accounts = scaffoldingComponent
-                .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.ACCOUNTS_KEY);
-        final var contract = accounts.get(Erc721OperationsConstants.ERC721_FULL);
-        assertNotNull(contract);
-        assertTrue(contract.smartContract());
-        assertEquals(contract.contractKvPairsNumber(), Erc721OperationsConstants.EXPECTED_STORAGE.size());
-
-        // Assert its deployed bytecode matches expectations
-        final ReadableKVState<EntityNumber, Bytecode> bytecode = scaffoldingComponent
-                .hederaState()
-                .createReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.BYTECODE_KEY);
-        final var actualBytecode =
-                bytecode.get(new EntityNumber(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow()));
-        assertNotNull(actualBytecode);
-        assertEquals(expectedBytecode(), actualBytecode.code());
-
-        // Assert its storage matches expectations
-        final ReadableKVState<SlotKey, SlotValue> storage = scaffoldingComponent
-                .hederaState()
-                .createReadableStates(ContractServiceImpl.NAME)
-                .get(ContractSchema.STORAGE_KEY);
-        Erc721OperationsConstants.EXPECTED_STORAGE.forEach((key, value) -> {
-            final var slot = storage.get(new SlotKey(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow(), key));
-            assertNotNull(slot);
-            assertEquals(value, slot.value());
-        });
-    }
-
     private void setupFakeStates() {
         final var fakeHederaState = (FakeHederaState) scaffoldingComponent.hederaState();
 
