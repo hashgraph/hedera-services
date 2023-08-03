@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.platform.test.event.EventUtils.areEventListsEquivalent;
-import static com.swirlds.platform.test.event.EventUtils.areGenerationNumbersValid;
-import static com.swirlds.platform.test.event.EventUtils.gatherOtherParentAges;
-import static com.swirlds.platform.test.event.EventUtils.integerPowerDistribution;
-import static com.swirlds.platform.test.event.EventUtils.isEventOrderValid;
-import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.areGenerationNumbersValid;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.gatherOtherParentAges;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.isEventOrderValid;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

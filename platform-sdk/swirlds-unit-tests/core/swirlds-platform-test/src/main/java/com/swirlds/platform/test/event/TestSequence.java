@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test.event;
 
-import static com.swirlds.platform.test.event.EventUtils.assertBaseEventLists;
-import static com.swirlds.platform.test.event.EventUtils.assertEventListsAreEqual;
-import static com.swirlds.platform.test.event.EventUtils.countConsensusAndStaleEvents;
-import static com.swirlds.platform.test.event.EventUtils.printGranularEventListComparison;
-import static com.swirlds.platform.test.event.EventUtils.sortEventList;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.assertBaseEventLists;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.assertEventListsAreEqual;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.countConsensusAndStaleEvents;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.printGranularEventListComparison;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.sortEventList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;

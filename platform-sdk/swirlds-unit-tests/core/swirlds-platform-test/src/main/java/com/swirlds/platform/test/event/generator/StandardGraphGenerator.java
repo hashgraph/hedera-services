@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.test.event.generator;
 
-import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
-import static com.swirlds.platform.test.event.EventUtils.weightedChoice;
 import static com.swirlds.platform.test.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
