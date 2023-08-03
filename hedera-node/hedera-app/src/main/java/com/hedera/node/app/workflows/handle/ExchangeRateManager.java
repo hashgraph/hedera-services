@@ -17,16 +17,9 @@
 package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.transaction.ExchangeRateSet.PROTOBUF;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
 
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.state.HederaState;
-import com.hedera.node.config.data.FilesConfig;
-import com.swirlds.config.api.Configuration;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.io.IOException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,7 +36,6 @@ public class ExchangeRateManager {
     private int nextHbarEquiv;
     private int nextCentEquiv;
     private long nextExpiry;
-    private boolean isInitiated;
     private ExchangeRateSet exchangeRateSet;
 
     @Inject
@@ -51,17 +43,8 @@ public class ExchangeRateManager {
         // For dagger
     }
 
-    public void createUpdateExchangeRates(final HederaState hederaState, final Configuration configuration)
-            throws IOException {
-        final var readableStates = hederaState.createReadableStates(FileService.NAME);
-        final ReadableKVState<FileID, File> files = readableStates.get(BLOBS_KEY);
-        final var fileConfig = configuration.getConfigData(FilesConfig.class);
-        final var fileId =
-                FileID.newBuilder().fileNum(fileConfig.exchangeRates()).build();
-        final var exchangeRateFile = files.get(fileId);
-
-        exchangeRateSet = PROTOBUF.parse(exchangeRateFile.contents().toReadableSequentialData());
-        isInitiated = true;
+    public void createUpdateExchangeRates(final Bytes contents) throws IOException {
+        exchangeRateSet = PROTOBUF.parse(contents.toReadableSequentialData());
         populateExchangeRateFields();
     }
 
@@ -102,10 +85,6 @@ public class ExchangeRateManager {
 
     public long getNextExpiry() {
         return nextExpiry;
-    }
-
-    public boolean isInitiated() {
-        return isInitiated;
     }
 
     public ExchangeRateSet getExchangeRateSet() {

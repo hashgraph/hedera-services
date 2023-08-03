@@ -179,16 +179,13 @@ public class HandleWorkflow {
                 // in this case, recorder hash the transaction itself, not its' bodyBytes.
                 transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
             }
-            // FutureWork: set additional check for changes in file 0.0.112
-            if (!exchangeRateManager.isInitiated()) {
-                exchangeRateManager.createUpdateExchangeRates(state, configuration);
-            }
 
             recordBuilder
                     .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionBytes)
                     .transactionID(txBody.transactionID())
-                    .memo(txBody.memo());
+                    .memo(txBody.memo())
+                    .exchangeRate(exchangeRateManager.getExchangeRateSet());
 
             // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
             switch (preHandleResult.status()) {
