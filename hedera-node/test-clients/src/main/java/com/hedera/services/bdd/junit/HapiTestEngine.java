@@ -162,11 +162,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
         });
 
-        // In the EngineDiscoveryRequest, we only have access up to the main package, so there is no way to get a
-        // specific package path. This means that if you run the tests from whatever package, all HapiTests
-        // will be started. To support package test runs, we are introducing the PACKAGE_PATH environment variable.
-        // If a PACKAGE_PATH environment variable is passed, we filter the classes that belong to this package.
-        // Otherwise, we execute all tests.
         discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
             appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
         });
