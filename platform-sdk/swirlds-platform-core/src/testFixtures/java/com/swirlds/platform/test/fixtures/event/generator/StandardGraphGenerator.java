@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.event.generator;
+package com.swirlds.platform.test.fixtures.event.generator;
 
-import static com.swirlds.platform.test.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 import static com.swirlds.platform.test.fixtures.event.EventUtils.weightedChoice;
+import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_FIRST_EVENT_TIME_CREATED;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
-import com.swirlds.platform.test.event.DynamicValueGenerator;
-import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;

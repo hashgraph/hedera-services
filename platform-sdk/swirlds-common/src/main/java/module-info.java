@@ -113,6 +113,7 @@ module com.swirlds.common {
     exports com.swirlds.common.system.transaction.internal to
             com.swirlds.platform,
             com.swirlds.platform.test,
+            com.swirlds.platform.test.fixtures,
             com.swirlds.common.test,
             com.swirlds.common.test.fixtures;
 

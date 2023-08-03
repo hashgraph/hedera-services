@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.event.generator;
+package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;

@@ -9,5 +9,7 @@ open module com.swirlds.platform.test.fixtures {
 
     exports com.swirlds.platform.test.fixtures.stream;
     exports com.swirlds.platform.test.fixtures.event;
+    exports com.swirlds.platform.test.fixtures.event.source;
+    exports com.swirlds.platform.test.fixtures.event.generator;
     exports com.swirlds.platform.test.fixtures.state;
 }

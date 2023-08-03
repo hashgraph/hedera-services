@@ -71,7 +71,8 @@ module com.swirlds.platform {
     exports com.swirlds.platform.observers to
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.platform.test.fixtures;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test;
     exports com.swirlds.platform.event.linking to
