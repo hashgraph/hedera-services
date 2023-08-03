@@ -130,9 +130,9 @@ module com.swirlds.platform {
     requires com.swirlds.test.framework;
     requires com.swirlds.logging;
     requires com.swirlds.cli;
+    requires transitive com.swirlds.gui;
 
     /* JDK Libraries */
-    requires java.desktop;
     requires java.management;
     requires java.scripting;
     requires java.sql;

@@ -50,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -62,7 +63,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class AssociatePrecompileSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;

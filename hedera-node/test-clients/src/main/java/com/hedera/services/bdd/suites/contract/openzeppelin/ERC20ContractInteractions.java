@@ -38,6 +38,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
@@ -46,7 +47,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
+@HapiTestSuite
 public class ERC20ContractInteractions extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
     private static final String TRANSFER = "transfer";
     private static final String TRANSFER_FROM = "transferFrom";

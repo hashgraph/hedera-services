@@ -264,7 +264,7 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
 
         // reconnect happening
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
@@ -303,7 +303,7 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);

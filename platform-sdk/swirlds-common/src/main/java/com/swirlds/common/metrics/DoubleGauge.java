@@ -17,10 +17,10 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
+import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -60,7 +60,7 @@ public interface DoubleGauge extends Metric {
      */
     @Override
     default Double get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }

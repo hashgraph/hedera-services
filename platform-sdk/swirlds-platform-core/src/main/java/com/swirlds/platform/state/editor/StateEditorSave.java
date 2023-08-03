@@ -23,6 +23,8 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -60,8 +62,9 @@ public class StateEditorSave extends StateEditorOperation {
                 Files.createDirectories(directory);
             }
 
+            final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
-                writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get());
+                writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get(), configuration);
             }
 
         } catch (final IOException e) {

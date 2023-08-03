@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AssertUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -41,6 +42,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class CryptoGetRecordsRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(CryptoGetRecordsRegression.class);
     private static final String LOW_THRESH_PAYER = "lowThreshPayer";

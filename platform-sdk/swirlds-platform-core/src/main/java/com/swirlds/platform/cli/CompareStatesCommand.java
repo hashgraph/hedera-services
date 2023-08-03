@@ -19,12 +19,13 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateComparison;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -151,11 +152,11 @@ public final class CompareStatesCommand extends AbstractCommand {
      */
     @Override
     public Integer call() throws IOException {
-        BootstrapUtils.loadConfiguration(configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                ConfigurationHolder.getInstance().get(), new NoOpMetrics(), CryptographyHolder.get());
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(configurationPaths);
+        final PlatformContext platformContext =
+                new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
         try (final ReservedSignedState stateA = loadAndHashState(platformContext, stateAPath)) {
             try (final ReservedSignedState stateB = loadAndHashState(platformContext, stateBPath)) {

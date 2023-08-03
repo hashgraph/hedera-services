@@ -222,7 +222,8 @@ public class StatsDemoMain implements SwirldMain {
             transPerEventMax = 1024;
         }
         if (!headless) { // create the window, make it visible
-            console = createConsole(platform, true);
+            final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+            console = createConsole(platform, winNum, true);
         }
         GuiPlatformAccessor.getInstance()
                 .setAbout(
