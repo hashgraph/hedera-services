@@ -164,7 +164,9 @@ public final class TokenOpsUsage {
             final TokenMintMeta tokenMintMeta,
             final UsageAccumulator accumulator,
             final SubType subType) {
-        if (!TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+        if (TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+            accumulator.reset();
+        } else {
             accumulator.resetForTransaction(baseMeta, sigUsage);
         }
 
