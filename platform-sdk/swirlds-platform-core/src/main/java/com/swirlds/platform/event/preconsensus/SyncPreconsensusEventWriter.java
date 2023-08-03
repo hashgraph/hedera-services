@@ -295,6 +295,13 @@ public class SyncPreconsensusEventWriter implements PreconsensusEventWriter, Sta
      * Delete old files from the disk.
      */
     private void pruneOldFiles() {
+        if (!streamingNewEvents) {
+            // Don't attempt to prune files until we are done replaying the event stream (at start up).
+            // Files are being iterated on a different thread, and so it isn't thread safe to prune files
+            // while they are being iterated.
+            return;
+        }
+
         try {
             fileManager.pruneOldFiles(minimumGenerationToStore);
         } catch (final IOException e) {
