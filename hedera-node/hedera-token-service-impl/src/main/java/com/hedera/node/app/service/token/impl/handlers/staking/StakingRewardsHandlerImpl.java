@@ -115,7 +115,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 final var roundedInitialBalance = roundedToHbar(originalAccount.tinybarBalance());
                 final var delta = roundedFinalBalance - roundedInitialBalance;
                 // Even if the stakee's total stake hasn't changed, we still want to
-                // trigger a reward situation whenever the staker balance changes;
+                // trigger a reward situation whenever the staker balance changes
                 if (roundedFinalBalance != roundedInitialBalance) {
                     updateStakedToMeFor(modifiedAccount.stakedAccountId(), delta, writableStore);
                 }
@@ -297,8 +297,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             //   4. Alice's stakePeriodStart is the current period.
             // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
             // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
-            // preserve an already-recorded memory of her stake at the beginning of this period;
-            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            // preserve an already-recorded memory of her stake at the beginning of this period.
+            // While in scenario 4 there is no point in recording anything---it will go unused.)
             if (earnedZeroRewardsBecauseOfZeroStake(account, stakingRewardStore, consensusNow)) {
                 return true;
             }

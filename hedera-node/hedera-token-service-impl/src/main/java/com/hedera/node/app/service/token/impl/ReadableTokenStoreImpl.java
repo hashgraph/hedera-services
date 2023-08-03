@@ -65,6 +65,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         return getTokenLeaf(id).orElse(null);
     }
 
+    @SuppressWarnings("java:S2637")
     private TokenMetadata tokenMetaFrom(final Token token) {
         boolean hasRoyaltyWithFallback = false;
         final var customFees = token.customFees();
@@ -76,6 +77,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
                 }
             }
         }
+        // TODO: remove SuppressWarnings when this is implemented
         return new TokenMetadata(
                 token.adminKeyOrElse(null),
                 token.kycKeyOrElse(null),

@@ -26,6 +26,7 @@ import javax.inject.Singleton;
  * not support Java records
  */
 @Singleton
+@SuppressWarnings("java:S6539")
 public class TokenHandlers {
 
     private final CryptoCreateHandler cryptoCreateHandler;

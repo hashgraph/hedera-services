@@ -332,6 +332,8 @@ class TokenDissociateFromAccountHandlerTest extends ParityTestBase {
         }
 
         @Test
+        @SuppressWarnings("java:S2699")
+        // TODO: remove when implemented
         void rejectsAccountThatStillOwnsUnexpiredFungibleUnits() {
             // @future('6864'): implement when token expiry is implemented
         }

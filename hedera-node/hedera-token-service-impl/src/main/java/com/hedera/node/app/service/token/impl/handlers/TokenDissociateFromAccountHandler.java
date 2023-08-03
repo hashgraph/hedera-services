@@ -248,6 +248,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     }
 
     // NOSONAR
+    @SuppressWarnings("java:S1172") // TODO: remove when the method is implemented
     private boolean tokenIsExpired(final Token token, final Instant consensusNow) {
         // @future('6864'): identify expired tokens
         // This method will need to identify a token that is expired or a token that is "detached", i.e. expired but

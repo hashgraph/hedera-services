@@ -65,6 +65,7 @@ public class CustomFractionalFeeAssessor {
      * @param sender the sender, who might be payer for the fee if netOfTransfers is true
      * @param result the result
      */
+    @SuppressWarnings("java:S135")
     public void assessFractionalFees(
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,

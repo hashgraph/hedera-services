@@ -59,7 +59,8 @@ class AutoAccountCreatorTest extends StepsBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
         transferContext = new TransferContextImpl(handleContext);
-        assertThatThrownBy(() -> subject.create(alias.alias(), false))
+        final var aliasBytes = alias.alias();
+        assertThatThrownBy(() -> subject.create(aliasBytes, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
     }

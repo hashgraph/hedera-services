@@ -135,6 +135,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreate() {
         setUpTxnContext();
 
@@ -181,6 +182,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreateWithSelfDenominatedToken() {
         setUpTxnContext();
         final var customFees = List.of(
@@ -367,6 +369,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @SuppressWarnings("java:S5961")
     void uniqueSupportedIfNftsEnabled() {
         setUpTxnContext();
         configuration = HederaTestConfigBuilder.create()

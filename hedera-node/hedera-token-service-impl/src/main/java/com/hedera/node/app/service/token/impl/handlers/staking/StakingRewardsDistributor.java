@@ -92,7 +92,7 @@ public class StakingRewardsDistributor {
                             throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
                         }
                         // TODO: need to get this info ?
-                        //                    receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
+                        // receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
                         beneficiary = writableStore.getOriginalValue(receiverId);
                     } while (beneficiary.deleted());
                 }

@@ -75,6 +75,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     @Override
+    @SuppressWarnings("java:S2259")
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
         final var query = context.query();

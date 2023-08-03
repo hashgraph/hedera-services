@@ -274,6 +274,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * @param addressRecovery    the function to recover EVM address
      * @return byte[] of EVM address
      */
+    @SuppressWarnings("java:S1168")
     public static byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
         if (key != null && key.hasEcdsaSecp256k1()) {
             // Only compressed keys are stored at the moment

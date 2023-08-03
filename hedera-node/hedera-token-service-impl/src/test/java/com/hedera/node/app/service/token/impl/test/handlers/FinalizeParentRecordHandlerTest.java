@@ -104,12 +104,14 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @SuppressWarnings("java:S5778")
     void handleNullArg() {
         assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
+    @SuppressWarnings("java:S5778")
     void handleHbarNetTransferAmountIsNotZero() {
         readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212);
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
@@ -126,6 +128,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @SuppressWarnings("java:S5778")
     void handleHbarAccountBalanceIsNegative() {
         readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434);
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434);
@@ -453,6 +456,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    @SuppressWarnings("java:S5778")
     void handleFungibleTokenBalanceIsNegative() {
         final var validAcct = givenValidAccountBuilder();
         final var tokenRel = givenFungibleTokenRelation(); // Already tied to validAcct's account ID

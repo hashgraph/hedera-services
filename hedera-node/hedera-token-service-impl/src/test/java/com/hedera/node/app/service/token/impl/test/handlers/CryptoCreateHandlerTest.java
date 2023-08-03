@@ -250,6 +250,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("handle works when account can be created without any alias")
+    @SuppressWarnings("java:S5961")
     void handleCryptoCreateVanilla() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
@@ -319,6 +320,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("handle works when account can be created without any alias using staked account id")
+    @SuppressWarnings("java:S5961")
     void handleCryptoCreateVanillaWithStakedAccountId() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
