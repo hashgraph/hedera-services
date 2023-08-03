@@ -20,11 +20,11 @@ import static com.swirlds.common.metrics.Metric.ValueType.MAX;
 import static com.swirlds.common.metrics.Metric.ValueType.MIN;
 import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -59,7 +59,7 @@ public interface StatEntry extends Metric {
      */
     @Override
     default Object get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (getBuffered() == null) {
             if (valueType == VALUE) {
                 return getStatsStringSupplier().get();
@@ -137,11 +137,11 @@ public interface StatEntry extends Metric {
                 final String category, final String name, final Class<T> type, final Supplier<T> statsStringSupplier) {
 
             super(category, name, FloatFormats.FORMAT_11_3);
-            this.type = throwArgNull(type, "type");
+            this.type = Objects.requireNonNull(type, "type");
             this.buffered = null;
             this.init = null;
             this.reset = null;
-            this.statsStringSupplier = throwArgNull(statsStringSupplier, "statsStringSupplier");
+            this.statsStringSupplier = Objects.requireNonNull(statsStringSupplier, "statsStringSupplier");
             this.resetStatsStringSupplier = statsStringSupplier;
         }
 
@@ -159,12 +159,13 @@ public interface StatEntry extends Metric {
                 final Supplier<T> statsStringSupplier,
                 final Supplier<T> resetStatsStringSupplier) {
             super(category, name, description, unit, format);
-            this.type = throwArgNull(type, "type");
+            this.type = Objects.requireNonNull(type, "type");
             this.buffered = buffered;
             this.init = init;
             this.reset = reset;
-            this.statsStringSupplier = throwArgNull(statsStringSupplier, "statsStringSupplier");
-            this.resetStatsStringSupplier = throwArgNull(resetStatsStringSupplier, "resetStatsStringSupplier");
+            this.statsStringSupplier = Objects.requireNonNull(statsStringSupplier, "statsStringSupplier");
+            this.resetStatsStringSupplier =
+                    Objects.requireNonNull(resetStatsStringSupplier, "resetStatsStringSupplier");
         }
 
         /**

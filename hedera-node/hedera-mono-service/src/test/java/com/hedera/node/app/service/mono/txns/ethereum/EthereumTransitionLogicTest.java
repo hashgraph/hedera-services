@@ -180,15 +180,15 @@ class EthereumTransitionLogicTest {
     }
 
     @Test
-    void transitionFailsFastGivenEip2930Txn() {
+    void transitionFailsFastGivenEip2930TxnAndDisabledFeatureFlag() {
         givenOkExtantContextualAccessor();
+        given(dynamicProperties.isEip2930Enabled()).willReturn(false);
         given(ethTxData.nonce()).willReturn(requiredNonce);
         given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(callTxn);
         given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
         given(ethTxData.type()).willReturn(EthTxData.EthTransactionType.EIP2930);
 
         assertFailsWith(() -> subject.doStateTransition(), INVALID_ETHEREUM_TRANSACTION);
-        ;
     }
 
     @Test

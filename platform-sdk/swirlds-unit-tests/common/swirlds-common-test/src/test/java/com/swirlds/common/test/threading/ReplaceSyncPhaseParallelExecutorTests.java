@@ -20,6 +20,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.test.fixtures.threading.ReplaceSyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -20,7 +20,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.ConfigMapping;
 import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
@@ -109,17 +108,6 @@ public class PlatformConfigUtils {
                                     propertyNamePrefix, component));
                 })
                 .collect(Collectors.toSet());
-    }
-
-    /**
-     * Write all the settings to the file settingsUsed.txt, some of which might have been changed by settings.txt.
-     *
-     * @param directory the directory to write to
-     */
-    public static void writeSettingsUsed(@NonNull final Path directory) {
-        Objects.requireNonNull(directory, "directory should not be null");
-        final Configuration configuration = ConfigurationHolder.getInstance().get();
-        writeSettingsUsed(directory, configuration);
     }
 
     /**

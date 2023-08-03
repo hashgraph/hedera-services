@@ -24,7 +24,7 @@ import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.test.state.DummySwirldState;
+import com.swirlds.platform.test.state.DummySwirldState;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;

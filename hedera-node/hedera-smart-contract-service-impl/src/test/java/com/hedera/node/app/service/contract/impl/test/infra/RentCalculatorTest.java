@@ -16,10 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +34,7 @@ class RentCalculatorTest {
 
     @BeforeEach
     void setUp() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig().getConfigData(ContractsConfig.class);
+        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         subject = new RentCalculator(NOW, config);
     }
 

@@ -57,13 +57,12 @@ class SpeedometerMetricConfigTest {
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(null, NAME)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(null, NAME)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(" \t\n", NAME))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, ""))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, " \t\n"))
@@ -104,14 +103,14 @@ class SpeedometerMetricConfigTest {
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
-        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withDescription("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(" \t\n")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(longDescription)).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
     }

@@ -29,6 +29,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -60,24 +61,27 @@ public class InboundConnectionHandler {
     /** Rate Limited Logger for SocketExceptions */
     private final RateLimitedLogger socketExceptionLogger;
 
+    private final Configuration configuration;
+
     public InboundConnectionHandler(
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final NodeId selfId,
             @NonNull final AddressBook addressBook,
             @NonNull final InterruptableConsumer<Connection> newConnectionConsumer,
-            @NonNull final SocketConfig socketConfig,
             final boolean doVersionCheck,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Time time) {
+            @NonNull final Time time,
+            @NonNull final Configuration configuration) {
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.selfId = Objects.requireNonNull(selfId);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.newConnectionConsumer = Objects.requireNonNull(newConnectionConsumer);
-        this.socketConfig = Objects.requireNonNull(socketConfig);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         Objects.requireNonNull(time);
         this.socketExceptionLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        this.configuration = Objects.requireNonNull(configuration);
+        this.socketConfig = configuration.getConfigData(SocketConfig.class);
     }
 
     /**
@@ -123,8 +127,8 @@ public class InboundConnectionHandler {
             final SyncOutputStream sos =
                     SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
 
-            final SocketConnection sc =
-                    SocketConnection.create(selfId, otherId, connectionTracker, false, clientSocket, sis, sos);
+            final SocketConnection sc = SocketConnection.create(
+                    selfId, otherId, connectionTracker, false, clientSocket, sis, sos, configuration);
             newConnectionConsumer.accept(sc);
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();

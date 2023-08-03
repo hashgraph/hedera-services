@@ -21,11 +21,13 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionTracker;
 import com.swirlds.platform.network.SocketConnection;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -34,6 +36,7 @@ import java.net.SocketException;
  * An implementation of {@link Connection} for local testing.
  */
 public class DummyConnection extends SocketConnection {
+    private static final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
     private final SyncInputStream dis;
     private final SyncOutputStream dos;
@@ -65,7 +68,15 @@ public class DummyConnection extends SocketConnection {
             final SyncInputStream syncInputStream,
             final SyncOutputStream syncOutputStream,
             final Socket socket) {
-        super(selfId, otherId, mock(ConnectionTracker.class), false, socket, syncInputStream, syncOutputStream);
+        super(
+                selfId,
+                otherId,
+                mock(ConnectionTracker.class),
+                false,
+                socket,
+                syncInputStream,
+                syncOutputStream,
+                configuration);
         this.dis = syncInputStream;
         this.dos = syncOutputStream;
         this.socket = socket;
@@ -73,7 +84,15 @@ public class DummyConnection extends SocketConnection {
 
     public DummyConnection(
             final SyncInputStream syncInputStream, final SyncOutputStream syncOutputStream, final Socket socket) {
-        super(null, null, mock(ConnectionTracker.class), false, socket, syncInputStream, syncOutputStream);
+        super(
+                null,
+                null,
+                mock(ConnectionTracker.class),
+                false,
+                socket,
+                syncInputStream,
+                syncOutputStream,
+                configuration);
         this.dis = syncInputStream;
         this.dos = syncOutputStream;
         this.socket = socket;

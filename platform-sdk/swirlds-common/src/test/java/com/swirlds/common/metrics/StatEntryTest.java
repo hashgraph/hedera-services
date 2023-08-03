@@ -86,11 +86,6 @@ class StatEntryTest {
 
         @Override
         public void reset() {}
-
-        @Override
-        public StatsBuffered getStatsBuffered() {
-            return null;
-        }
     };
 
     private final StatEntry sutWithStatsBuffered = new StatEntry() {
@@ -179,11 +174,6 @@ class StatEntryTest {
 
         @Override
         public void reset() {}
-
-        @Override
-        public StatsBuffered getStatsBuffered() {
-            return null;
-        }
     };
 
     @Test
