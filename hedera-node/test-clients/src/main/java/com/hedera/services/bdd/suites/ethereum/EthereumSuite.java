@@ -119,6 +119,8 @@ public class EthereumSuite extends HapiSuite {
     private static final String TOKEN = "token";
     private static final String MINT_TXN = "mintTxn";
     private static final String PAY_TXN = "payTxn";
+    private static final String TOTAL_SUPPLY_TX = "totalSupplyTx";
+    private static final String ERC20_ABI = "ERC20ABI";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteAsync();
@@ -522,11 +524,11 @@ public class EthereumSuite extends HapiSuite {
                         ethereumCallWithFunctionAbi(
                                         true,
                                         FUNGIBLE_TOKEN,
-                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
-                                .via("totalSupplyTxn")
+                                .via(TOTAL_SUPPLY_TX)
                                 .nonce(0)
                                 .gasPrice(50L)
                                 .maxGasAllowance(FIVE_HBARS)
@@ -534,7 +536,7 @@ public class EthereumSuite extends HapiSuite {
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(childRecordsCheck(
-                        "totalSupplyTxn",
+                        TOTAL_SUPPLY_TX,
                         SUCCESS,
                         recordWith()
                                 .status(SUCCESS)
@@ -719,7 +721,7 @@ public class EthereumSuite extends HapiSuite {
                         ethereumCallWithFunctionAbi(
                                         true,
                                         FUNGIBLE_TOKEN,
-                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", "ERC20ABI"),
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
                                         asHeadlongAddress(asHexedSolidityAddress(
                                                 spec.registry().getAccountID(ACCOUNT))),
                                         BigInteger.valueOf(tokenTransferAmount))
@@ -816,17 +818,17 @@ public class EthereumSuite extends HapiSuite {
                         ethereumCallWithFunctionAbi(
                                         true,
                                         FUNGIBLE_TOKEN,
-                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", "ERC20ABI"))
+                                        getABIFor(Utils.FunctionType.FUNCTION, "totalSupply", ERC20_ABI))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
-                                .via("totalSupplyTxn")
+                                .via(TOTAL_SUPPLY_TX)
                                 .nonce(0)
                                 .gasPrice(0L)
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(childRecordsCheck(
-                        "totalSupplyTxn",
+                        TOTAL_SUPPLY_TX,
                         SUCCESS,
                         recordWith()
                                 .status(SUCCESS)
@@ -864,7 +866,7 @@ public class EthereumSuite extends HapiSuite {
                         ethereumCallWithFunctionAbi(
                                         true,
                                         FUNGIBLE_TOKEN,
-                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", "ERC20ABI"),
+                                        getABIFor(Utils.FunctionType.FUNCTION, "transfer", ERC20_ABI),
                                         asHeadlongAddress(asHexedSolidityAddress(
                                                 spec.registry().getAccountID(ACCOUNT))),
                                         BigInteger.valueOf(tokenTransferAmount))
