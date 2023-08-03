@@ -140,18 +140,20 @@ class BusyTimeTest {
     }
 
     @Test
-    void metricNotReset(){
+    void metricNotReset() {
         metric.startingWork();
         clock.tick(Duration.ofMinutes(30));
         metric.finishedWork();
         clock.tick(Duration.ofMinutes(10));
         metric.startingWork();
         metric.finishedWork();
-        assertEquals(
-                -1.0, metric.getAndReset(), 0.01, "this in an overflow, so -1 is expected");
+        assertEquals(-1.0, metric.getAndReset(), 0.01, "this in an overflow, so -1 is expected");
         clock.tick(Duration.ofMinutes(1));
         metric.startingWork();
         clock.tick(Duration.ofMinutes(1));
-        assertEquals(0.5, metric.getAndReset(), "after the reset the metric should start tracking again, so 0.5 is expected");
+        assertEquals(
+                0.5,
+                metric.getAndReset(),
+                "after the reset the metric should start tracking again, so 0.5 is expected");
     }
 }
