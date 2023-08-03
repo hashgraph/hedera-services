@@ -89,6 +89,6 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                 hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 
         // Return the EVM result, maybe enriched with details of the base commit
-        return new CallOutcome(result.asProtoResultForBase(worldUpdater), result.finalStatus());
+        return new CallOutcome(result.asProtoResultOf(worldUpdater), result.finalStatus());
     }
 }

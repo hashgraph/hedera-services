@@ -23,11 +23,14 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 
@@ -38,11 +41,14 @@ import javax.inject.Inject;
 public class HandleHederaOperations implements HederaOperations {
     public static final Bytes ZERO_ENTROPY = Bytes.fromHex(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+
+    private final LedgerConfig ledgerConfig;
     private final HandleContext context;
 
     @Inject
-    public HandleHederaOperations(@NonNull final HandleContext context) {
-        this.context = context;
+    public HandleHederaOperations(@NonNull final LedgerConfig ledgerConfig, @NonNull final HandleContext context) {
+        this.ledgerConfig = Objects.requireNonNull(ledgerConfig);
+        this.context = Objects.requireNonNull(context);
     }
 
     /**
@@ -83,7 +89,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long peekNextEntityNumber() {
-        throw new AssertionError("Not implemented");
+        return context.peekAtNewEntityNum();
     }
 
     /**
@@ -91,7 +97,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long useNextEntityNumber() {
-        throw new AssertionError("Not implemented");
+        return context.newEntityNum();
     }
 
     /**
@@ -116,7 +122,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long gasPriceInTinybars() {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
@@ -132,7 +139,10 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
-        throw new AssertionError("Not implemented");
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var coinbaseId =
+                AccountID.newBuilder().accountNum(ledgerConfig.fundingAccount()).build();
+        tokenServiceApi.transferFromTo(payerId, coinbaseId, amount);
     }
 
     /**

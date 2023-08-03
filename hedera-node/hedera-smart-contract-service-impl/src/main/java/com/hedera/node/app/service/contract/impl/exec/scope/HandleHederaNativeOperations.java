@@ -16,11 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,7 +48,9 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @Nullable Account getAccount(final long number) {
-        throw new AssertionError("Not implemented");
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        return accountStore.getAccountById(
+                AccountID.newBuilder().accountNum(number).build());
     }
 
     /**
@@ -53,15 +58,18 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public @Nullable Token getToken(final long number) {
-        throw new AssertionError("Not implemented");
+        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        return tokenStore.get(TokenID.newBuilder().tokenNum(number).build());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public @Nullable EntityNumber resolveAlias(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+    public long resolveAlias(@NonNull final Bytes evmAddress) {
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var account = accountStore.getAccountIDByAlias(evmAddress);
+        return account == null ? MISSING_ENTITY_NUMBER : account.accountNumOrThrow();
     }
 
     /**

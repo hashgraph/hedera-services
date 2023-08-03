@@ -57,12 +57,17 @@ public record HederaEvmTransactionResult(
         requireNonNull(logs);
     }
 
-    public ContractFunctionResult asProtoResultForBase(@NonNull final RootProxyWorldUpdater updater) {
-        final var errorMessage = maybeErrorMessage();
-        if (errorMessage == null) {
-            return asSuccessResultForCommitted(updater);
-        } else {
+    @Nullable
+    public ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
+        if (abortReason != null) {
+            // If we aborted before entering an EVM transaction, we have no result to report
+            return null;
+        } else if (haltReason != null) {
             throw new AssertionError("Not implemented");
+        } else if (revertReason != null) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return asSuccessResultForCommitted(updater);
         }
     }
 
@@ -176,12 +181,12 @@ public record HederaEvmTransactionResult(
                 .gasUsed(gasUsed)
                 .bloom(bloomForAll(logs))
                 .contractCallResult(output)
-                .errorMessage(maybeErrorMessage())
                 .contractID(recipientId)
                 .createdContractIDs(createdIds)
                 .logInfo(pbjLogsFrom(logs))
                 .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
                 .contractNonces(updater.getUpdatedContractNonces())
+                .errorMessage(null)
                 .build();
     }
 

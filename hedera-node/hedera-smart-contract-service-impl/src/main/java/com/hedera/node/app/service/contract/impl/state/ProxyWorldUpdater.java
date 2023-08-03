@@ -100,7 +100,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * operations executing in this {@link ProxyWorldUpdater}'s frame.
      */
     @Nullable
-    private PendingCreation pendingCreation;
+    protected PendingCreation pendingCreation;
 
     public ProxyWorldUpdater(
             @NonNull final HederaOperations hederaOperations,
@@ -330,7 +330,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull WorldUpdater updater() {
+    public @NonNull ProxyWorldUpdater updater() {
         return new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
     }
 
@@ -389,5 +389,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         final long parentNumber = evmFrameState.getIdNumber(origin);
         final var number = hederaOperations.peekNextEntityNumber();
         pendingCreation = new PendingCreation(alias == null ? asLongZeroAddress(number) : alias, number, parentNumber);
+    }
+
+    // Visible for testing
+    public PendingCreation getPendingCreation() {
+        return pendingCreation;
     }
 }

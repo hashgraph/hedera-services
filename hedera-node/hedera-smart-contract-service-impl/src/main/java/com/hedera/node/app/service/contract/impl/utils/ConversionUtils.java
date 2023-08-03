@@ -45,7 +45,6 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
  */
 public class ConversionUtils {
     public static final long EVM_ADDRESS_LENGTH_AS_LONG = 20L;
-    public static final long MISSING_ENTITY_NUMBER = -1L;
     public static final int EVM_ADDRESS_LENGTH_AS_INT = 20;
     public static final int NUM_LONG_ZEROS = 12;
 
@@ -173,12 +172,12 @@ public class ConversionUtils {
 
     /**
      * Given an EVM address (possibly long-zero), returns the number of the corresponding Hedera entity
-     * within the given {@link HandleHederaNativeOperations}; or {@link #MISSING_ENTITY_NUMBER} if the address is not long-zero
+     * within the given {@link HandleHederaNativeOperations}; or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER} if the address is not long-zero
      * and does not correspond to a known Hedera entity.
      *
      * @param address  the EVM address
      * @param extFrameScope the {@link HandleHederaNativeOperations} to use for resolving aliases
-     * @return the number of the corresponding Hedera entity, or {@link #MISSING_ENTITY_NUMBER}
+     * @return the number of the corresponding Hedera entity, or {@link HederaNativeOperations#MISSING_ENTITY_NUMBER}
      */
     public static long maybeMissingNumberOf(
             @NonNull final Address address, @NonNull final HederaNativeOperations extFrameScope) {
@@ -195,8 +194,7 @@ public class ConversionUtils {
                     explicit[19]);
         } else {
             final var alias = aliasFrom(address);
-            final var maybeNumber = extFrameScope.resolveAlias(alias);
-            return (maybeNumber == null) ? MISSING_ENTITY_NUMBER : maybeNumber.number();
+            return extFrameScope.resolveAlias(alias);
         }
     }
 

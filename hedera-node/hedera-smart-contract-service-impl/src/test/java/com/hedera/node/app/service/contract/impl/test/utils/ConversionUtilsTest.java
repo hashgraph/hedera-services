@@ -35,7 +35,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractLoginfo;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -102,7 +101,7 @@ class ConversionUtilsTest {
 
     @Test
     void returnsGivenIfPresentAlias() {
-        given(extFrameScope.resolveAlias(any())).willReturn(new EntityNumber(0x1234L));
+        given(extFrameScope.resolveAlias(any())).willReturn(0x1234L);
         final var address = Address.fromHexString("0x010000000000000000");
         final var actual = ConversionUtils.maybeMissingNumberOf(address, extFrameScope);
         assertEquals(0x1234L, actual);

@@ -566,7 +566,6 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     public @NonNull SingleTransactionRecordBuilderImpl contractID(@Nullable ContractID contractID) {
-        requireNonNull(contractID, "contractID must not be null");
         this.transactionReceiptBuilder.contractID(contractID);
         return this;
     }

@@ -29,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
-import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
@@ -104,38 +103,32 @@ public interface TransactionModule {
 
     @Provides
     @TransactionScope
-    static HevmTransactionFactory provideHevmTransactionFactory(@NonNull final HandleContext context) {
-        throw new AssertionError("Not implemented");
-    }
-
-    @Provides
-    @TransactionScope
     static AttributeValidator provideAttributeValidator(@NonNull final HandleContext context) {
-        throw new AssertionError("Not implemented");
+        return context.attributeValidator();
     }
 
     @Provides
     @TransactionScope
     static ExpiryValidator provideExpiryValidator(@NonNull final HandleContext context) {
-        throw new AssertionError("Not implemented");
+        return context.expiryValidator();
     }
 
     @Provides
     @TransactionScope
     static ReadableFileStore provideReadableFileStore(@NonNull final HandleContext context) {
-        throw new AssertionError("Not implemented");
+        return context.readableStore(ReadableFileStore.class);
     }
 
     @Provides
     @TransactionScope
     static ReadableAccountStore provideReadableAccountStore(@NonNull final HandleContext context) {
-        throw new AssertionError("Not implemented");
+        return context.readableStore(ReadableAccountStore.class);
     }
 
     @Provides
     @TransactionScope
     static NetworkInfo provideNetworkInfo(@NonNull final HandleContext context) {
-        throw new AssertionError("Not implemented");
+        return context.networkInfo();
     }
 
     @Binds

@@ -150,12 +150,7 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
-            final var fallbackUpdater = feesOnlyUpdater.get();
-            // Note these calls cannot fail, or processTransaction() would have aborted immediately
-            final var parties = computeInvolvedParties(transaction, fallbackUpdater, config);
-            gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, fallbackUpdater, transaction);
-            fallbackUpdater.commit();
-            return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), e.getStatus());
+            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
         return result;
     }

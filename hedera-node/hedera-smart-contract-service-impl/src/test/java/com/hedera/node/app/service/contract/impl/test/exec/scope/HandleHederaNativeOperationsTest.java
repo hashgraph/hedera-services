@@ -16,10 +16,22 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.FUNGIBLE_TOKEN_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +45,12 @@ class HandleHederaNativeOperationsTest {
     @Mock
     private HandleContext context;
 
+    @Mock
+    private ReadableTokenStore tokenStore;
+
+    @Mock
+    private ReadableAccountStore accountStore;
+
     private HandleHederaNativeOperations subject;
 
     @BeforeEach
@@ -41,18 +59,31 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void getAccountNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.getAccount(1L));
+    void getAccountUsesContextReadableStore() {
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(Account.DEFAULT);
+        assertSame(Account.DEFAULT, subject.getAccount(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
     }
 
     @Test
-    void getTokenNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.getToken(1L));
+    void resolveAliasReturnsMissingNumIfNotPresent() {
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        assertEquals(MISSING_ENTITY_NUMBER, subject.resolveAlias(tuweniToPbjBytes(EIP_1014_ADDRESS)));
     }
 
     @Test
-    void resolveAliasNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.resolveAlias(Bytes.EMPTY));
+    void resolveAliasReturnsNumIfPresent() {
+        final var alias = tuweniToPbjBytes(EIP_1014_ADDRESS);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(accountStore.getAccountIDByAlias(alias)).willReturn(NON_SYSTEM_ACCOUNT_ID);
+        assertEquals(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), subject.resolveAlias(alias));
+    }
+
+    @Test
+    void getTokenUsesStore() {
+        given(context.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
+        given(tokenStore.get(FUNGIBLE_TOKEN_ID)).willReturn(FUNGIBLE_TOKEN);
+        assertSame(FUNGIBLE_TOKEN, subject.getToken(FUNGIBLE_TOKEN_ID.tokenNum()));
     }
 
     @Test

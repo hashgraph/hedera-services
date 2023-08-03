@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -25,6 +27,8 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -40,6 +44,9 @@ class HandleHederaOperationsTest {
     private HandleContext.SavepointStack savepointStack;
 
     @Mock
+    private TokenServiceApi tokenServiceApi;
+
+    @Mock
     private BlockRecordInfo blockRecordInfo;
 
     @Mock
@@ -52,7 +59,7 @@ class HandleHederaOperationsTest {
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(context);
+        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, context);
     }
 
     @Test
@@ -96,13 +103,15 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void peekNumberIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::peekNextEntityNumber);
+    void peekNumberUsesContext() {
+        given(context.peekAtNewEntityNum()).willReturn(123L);
+        assertEquals(123L, subject.peekNextEntityNumber());
     }
 
     @Test
-    void useNumberIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::useNextEntityNumber);
+    void useNumberUsesContext() {
+        given(context.newEntityNum()).willReturn(123L);
+        assertEquals(123L, subject.useNextEntityNumber());
     }
 
     @Test
@@ -117,7 +126,7 @@ class HandleHederaOperationsTest {
 
     @Test
     void gasPriceInTinybarsNotImplemented() {
-        assertThrows(AssertionError.class, subject::gasPriceInTinybars);
+        assertEquals(1L, subject.gasPriceInTinybars());
     }
 
     @Test
@@ -126,8 +135,18 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void collectFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.collectFee(AccountID.DEFAULT, 1L));
+    void collectFeeStillTransfersAllToNetworkFunding() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.collectFee(TestHelpers.NON_SYSTEM_ACCOUNT_ID, 123L);
+
+        verify(tokenServiceApi)
+                .transferFromTo(
+                        TestHelpers.NON_SYSTEM_ACCOUNT_ID,
+                        AccountID.newBuilder()
+                                .accountNum(DEFAULT_LEDGER_CONFIG.fundingAccount())
+                                .build(),
+                        123L);
     }
 
     @Test

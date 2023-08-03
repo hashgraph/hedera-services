@@ -68,7 +68,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState().put(account.accountId(), account);
+        accountState().put(account.accountIdOrThrow(), account);
     }
 
     /**

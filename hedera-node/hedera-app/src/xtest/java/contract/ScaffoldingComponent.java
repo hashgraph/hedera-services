@@ -21,6 +21,7 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.HandlersInjectionModule;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -66,6 +67,8 @@ public interface ScaffoldingComponent {
     }
 
     HederaState hederaState();
+
+    WorkingStateAccessor workingStateAccessor();
 
     Function<TransactionBody, HandleContext> contextFactory();
 

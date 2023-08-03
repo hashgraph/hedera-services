@@ -328,7 +328,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void returnsResolvedNumberForEvmAddress() {
-        given(extFrameScope.resolveAlias(tuweniToPbjBytes(EVM_ADDRESS))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        given(extFrameScope.resolveAlias(tuweniToPbjBytes(EVM_ADDRESS))).willReturn(ACCOUNT_NUM);
         assertEquals(ACCOUNT_NUM, subject.getIdNumber(EVM_ADDRESS));
     }
 
@@ -462,7 +462,7 @@ class DispatchingEvmFrameStateTest {
     void cannotLazyCreateOverExpiredAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).expiredAndPendingRemoval(true));
         given(extFrameScope.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
-                .willReturn(new EntityNumber(ACCOUNT_NUM));
+                .willReturn(ACCOUNT_NUM);
 
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
@@ -514,7 +514,7 @@ class DispatchingEvmFrameStateTest {
     void throwsOnLazyCreateOfNonExpiredAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         given(extFrameScope.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
-                .willReturn(new EntityNumber(ACCOUNT_NUM));
+                .willReturn(ACCOUNT_NUM);
 
         assertThrows(IllegalArgumentException.class, () -> subject.tryLazyCreation(EVM_ADDRESS));
     }
@@ -639,14 +639,14 @@ class DispatchingEvmFrameStateTest {
     @Test
     void missingAccountIsNotHollow() {
         given(extFrameScope.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
-                .willReturn(new EntityNumber(ACCOUNT_NUM));
+                .willReturn(ACCOUNT_NUM);
         assertFalse(subject.isHollowAccount(EVM_ADDRESS));
     }
 
     @Test
     void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
         given(extFrameScope.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
-                .willReturn(new EntityNumber(ACCOUNT_NUM));
+                .willReturn(ACCOUNT_NUM);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).key(Key.newBuilder().keyList(KeyList.DEFAULT)));
         assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
@@ -654,7 +654,7 @@ class DispatchingEvmFrameStateTest {
     @Test
     void usesResolvedNumberFromDispatch() {
         given(extFrameScope.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
-                .willReturn(new EntityNumber(ACCOUNT_NUM));
+                .willReturn(ACCOUNT_NUM);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         assertInstanceOf(ProxyEvmAccount.class, subject.getAccount(EVM_ADDRESS));
     }

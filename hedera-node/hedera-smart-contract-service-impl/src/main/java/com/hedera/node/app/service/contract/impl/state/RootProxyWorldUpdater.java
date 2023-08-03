@@ -26,11 +26,12 @@ import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
@@ -52,16 +53,32 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
     @Inject
     public RootProxyWorldUpdater(
             @NonNull final HederaOperations extWorldScope,
-            @NonNull final Configuration configuration,
+            @NonNull final ContractsConfig contractsConfig,
             @NonNull final EvmFrameStateFactory evmFrameStateFactory,
             @NonNull final RentCalculator rentCalculator,
             @NonNull final LegibleStorageManager storageManager,
             @NonNull final StorageSizeValidator storageSizeValidator) {
         super(extWorldScope, evmFrameStateFactory, null);
-        this.contractsConfig = configuration.getConfigData(ContractsConfig.class);
-        this.storageManager = storageManager;
-        this.rentCalculator = rentCalculator;
-        this.storageSizeValidator = storageSizeValidator;
+        this.contractsConfig = Objects.requireNonNull(contractsConfig);
+        this.storageManager = Objects.requireNonNull(storageManager);
+        this.rentCalculator = Objects.requireNonNull(rentCalculator);
+        this.storageSizeValidator = Objects.requireNonNull(storageSizeValidator);
+    }
+
+    /**
+     * Customizes the standard behavior by "handing off" any {@link PendingCreation} to the child updater,
+     * since the root updater won't actually be associated to the initial {@link MessageFrame}.
+     *
+     * @return the child updater with any {@link PendingCreation} "handed off"
+     */
+    @Override
+    public @NonNull ProxyWorldUpdater updater() {
+        final var child = super.updater();
+        if (this.pendingCreation != null) {
+            child.pendingCreation = this.pendingCreation;
+            this.pendingCreation = null;
+        }
+        return child;
     }
 
     /**

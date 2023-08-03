@@ -69,12 +69,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProxyWorldUpdaterTest {
     private static final long NUMBER = 123L;
-    private static final long NEXT_NUMBER = 124L;
+    static final long NEXT_NUMBER = 124L;
     private static final long NUMBER_OF_DELETED = 125L;
-    private static final long HAPI_PAYER_NUMBER = 777L;
     private static final Address LONG_ZERO_ADDRESS = asLongZeroAddress(NUMBER);
     private static final Address NEXT_LONG_ZERO_ADDRESS = asLongZeroAddress(NEXT_NUMBER);
-    private static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
+    static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
     private static final Address OTHER_EVM_ADDRESS =
             Address.fromHexString("0x1239123912391239123912391239123912391239");
 
@@ -94,7 +93,7 @@ class ProxyWorldUpdaterTest {
     private MessageFrame frame;
 
     @Mock
-    private HederaOperations extWorldScope;
+    private HederaOperations hederaOperations;
 
     @Mock
     private WorldUpdater parent;
@@ -109,15 +108,15 @@ class ProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyWorldUpdater(extWorldScope, () -> evmFrameState, null);
+        subject = new ProxyWorldUpdater(hederaOperations, () -> evmFrameState, null);
     }
 
     @Test
     void collectingAndRefundingFeesDelegate() {
         subject.collectFee(RELAYER_ID, 1L);
         subject.refundFee(SENDER_ID, 1L);
-        verify(extWorldScope).collectFee(RELAYER_ID, 1L);
-        verify(extWorldScope).refundFee(SENDER_ID, 1L);
+        verify(hederaOperations).collectFee(RELAYER_ID, 1L);
+        verify(hederaOperations).refundFee(SENDER_ID, 1L);
     }
 
     @Test
@@ -226,7 +225,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupCreate(ALTBN128_ADD);
 
@@ -240,8 +239,8 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(extWorldScope.useNextEntityNumber()).willReturn(NEXT_NUMBER + 1);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.useNextEntityNumber()).willReturn(NEXT_NUMBER + 1);
 
         subject.setupCreate(ALTBN128_ADD);
 
@@ -251,13 +250,13 @@ class ProxyWorldUpdaterTest {
     @Test
     void revertDelegatesToScope() {
         subject.revert();
-        verify(extWorldScope).revert();
+        verify(hederaOperations).revert();
     }
 
     @Test
     void commitDelegatesToScope() {
         subject.commit();
-        verify(extWorldScope).commit();
+        verify(hederaOperations).commit();
     }
 
     @Test
@@ -270,14 +269,14 @@ class ProxyWorldUpdaterTest {
         subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
-        verify(extWorldScope)
+        verify(hederaOperations)
                 .createContract(
                         NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), 1, aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
     void canResolvePendingCreationHederaId() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
 
@@ -287,7 +286,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void throwsIseWithoutCorrespondingAccount() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
         subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
 
@@ -306,7 +305,7 @@ class ProxyWorldUpdaterTest {
     void dispatchesDeletingLongZeroAddressByNumber() {
         subject.deleteAccount(ALTBN128_ADD);
 
-        verify(extWorldScope)
+        verify(hederaOperations)
                 .deleteUnaliasedContract(ALTBN128_ADD.toBigInteger().longValueExact());
     }
 
@@ -314,7 +313,7 @@ class ProxyWorldUpdaterTest {
     void dispatchesDeletingEvmAddressByAddress() {
         subject.deleteAccount(SOME_EVM_ADDRESS);
 
-        verify(extWorldScope).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
+        verify(hederaOperations).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
@@ -324,14 +323,14 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void hasGivenParentIfNonNull() {
-        subject = new ProxyWorldUpdater(extWorldScope, evmFrameStateFactory, parent);
+        subject = new ProxyWorldUpdater(hederaOperations, evmFrameStateFactory, parent);
         assertTrue(subject.parentUpdater().isPresent());
         assertSame(parent, subject.parentUpdater().get());
     }
 
     @Test
     void updaterHasExpectedProperties() {
-        given(extWorldScope.begin()).willReturn(extWorldScope);
+        given(hederaOperations.begin()).willReturn(hederaOperations);
         final var updater = subject.updater();
         assertInstanceOf(ProxyWorldUpdater.class, updater);
         assertTrue(updater.parentUpdater().isPresent());
@@ -350,7 +349,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void abortsLazyCreationIfRemainingGasInsufficient() {
         final var pretendCost = 1_234L;
-        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost - 1);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
         assertTrue(maybeHaltReason.isPresent());
@@ -360,7 +359,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesLazyCreationAndDecrementsGasCostOnSuccess() {
         final var pretendCost = 1_234L;
-        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(Optional.empty());
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -372,7 +371,7 @@ class ProxyWorldUpdaterTest {
     void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
         final var pretendCost = 1_234L;
         final var haltReason = Optional.<ExceptionalHaltReason>of(INVALID_VALUE_TRANSFER);
-        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -382,7 +381,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void onlyReturnsNonDeletedAccountsAsTouched() {
-        given(extWorldScope.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
+        given(hederaOperations.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
         given(evmFrameState.getAddress(NUMBER)).willReturn(asLongZeroAddress(NUMBER));
         given(evmFrameState.getAddress(NEXT_NUMBER)).willReturn(SOME_EVM_ADDRESS);
         given(evmFrameState.getAddress(NUMBER_OF_DELETED)).willReturn(null);
@@ -409,12 +408,12 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesEntropy() {
-        given(extWorldScope.entropy()).willReturn(OUTPUT_DATA);
+        given(hederaOperations.entropy()).willReturn(OUTPUT_DATA);
         assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
     }
 
     private void givenMatchingEntityNumbers() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(extWorldScope.useNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.useNextEntityNumber()).willReturn(NEXT_NUMBER);
     }
 }
