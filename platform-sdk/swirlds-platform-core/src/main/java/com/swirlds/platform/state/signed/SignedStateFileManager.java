@@ -301,6 +301,8 @@ public class SignedStateFileManager implements Startable {
      * @param signedState the signed state to be written to disk.
      */
     public boolean saveSignedStateToDisk(final SignedState signedState) {
+        signedState.stateSavedToDisk();
+
         return saveSignedStateToDisk(
                 signedState,
                 getSignedStateDir(signedState.getRound()),
