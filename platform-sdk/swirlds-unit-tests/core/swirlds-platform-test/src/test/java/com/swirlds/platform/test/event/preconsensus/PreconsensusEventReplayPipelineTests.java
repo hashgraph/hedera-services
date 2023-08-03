@@ -102,8 +102,8 @@ class PreconsensusEventReplayPipelineTests {
                 new StandardEventSource().setTransactionGenerator(transactionGenerator));
     }
 
-    private static IOIterator<EventImpl> buildIOIterator(@NonNull final List<EventImpl> events) {
-        final Iterator<EventImpl> baseIterator = events.iterator();
+    private static IOIterator<GossipEvent> buildIOIterator(@NonNull final List<GossipEvent> events) {
+        final Iterator<GossipEvent> baseIterator = events.iterator();
         return new IOIterator<>() {
             @Override
             public boolean hasNext() {
@@ -111,15 +111,15 @@ class PreconsensusEventReplayPipelineTests {
             }
 
             @Override
-            public EventImpl next() {
+            public GossipEvent next() {
                 return baseIterator.next();
             }
         };
     }
 
-    private static IOIterator<EventImpl> buildThrowingIOIterator(
-            @NonNull final List<EventImpl> events, final int throwIndex) {
-        final Iterator<EventImpl> baseIterator = events.iterator();
+    private static IOIterator<GossipEvent> buildThrowingIOIterator(
+            @NonNull final List<GossipEvent> events, final int throwIndex) {
+        final Iterator<GossipEvent> baseIterator = events.iterator();
         final AtomicInteger index = new AtomicInteger(0);
         return new IOIterator<>() {
             @Override
@@ -133,7 +133,7 @@ class PreconsensusEventReplayPipelineTests {
             }
 
             @Override
-            public EventImpl next() throws IOException {
+            public GossipEvent next() throws IOException {
                 if (index.get() == throwIndex) {
                     throw new IOException("intentional Exception");
                 } else if (index.get() > throwIndex) {
@@ -158,7 +158,7 @@ class PreconsensusEventReplayPipelineTests {
         final ThreadManager threadManager = AdHocThreadManager.getStaticThreadManager();
 
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
-        final List<EventImpl> events = new ArrayList<>(eventCount);
+        final List<GossipEvent> events = new ArrayList<>(eventCount);
 
         for (int index = 0; index < eventCount; index++) {
             final EventImpl event = graphGenerator.generateEvent();
@@ -176,7 +176,7 @@ class PreconsensusEventReplayPipelineTests {
                     .when(spyHashedData)
                     .setHash(any());
 
-            final EventImpl eventWithSpy = new EventImpl(spyHashedData, event.getBaseEventUnhashedData());
+            final GossipEvent eventWithSpy = new GossipEvent(spyHashedData, event.getBaseEventUnhashedData());
             events.add(eventWithSpy);
         }
 
@@ -215,7 +215,7 @@ class PreconsensusEventReplayPipelineTests {
         final ThreadManager threadManager = AdHocThreadManager.getStaticThreadManager();
 
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
-        final List<EventImpl> events = new ArrayList<>(eventCount);
+        final List<GossipEvent> events = new ArrayList<>(eventCount);
 
         for (int index = 0; index < eventCount; index++) {
             final EventImpl event = graphGenerator.generateEvent();
@@ -238,7 +238,7 @@ class PreconsensusEventReplayPipelineTests {
                     .when(spyHashedData)
                     .setHash(any());
 
-            final EventImpl eventWithSpy = new EventImpl(spyHashedData, event.getBaseEventUnhashedData());
+            final GossipEvent eventWithSpy = new GossipEvent(spyHashedData, event.getBaseEventUnhashedData());
             events.add(eventWithSpy);
         }
 
@@ -276,7 +276,7 @@ class PreconsensusEventReplayPipelineTests {
         final ThreadManager threadManager = AdHocThreadManager.getStaticThreadManager();
 
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
-        final List<EventImpl> events = new ArrayList<>(eventCount);
+        final List<GossipEvent> events = new ArrayList<>(eventCount);
 
         for (int index = 0; index < eventCount; index++) {
             final EventImpl event = graphGenerator.generateEvent();
@@ -294,7 +294,7 @@ class PreconsensusEventReplayPipelineTests {
                     .when(spyHashedData)
                     .setHash(any());
 
-            final EventImpl eventWithSpy = new EventImpl(spyHashedData, event.getBaseEventUnhashedData());
+            final GossipEvent eventWithSpy = new GossipEvent(spyHashedData, event.getBaseEventUnhashedData());
             events.add(eventWithSpy);
         }
 
@@ -337,7 +337,7 @@ class PreconsensusEventReplayPipelineTests {
         final ThreadManager threadManager = AdHocThreadManager.getStaticThreadManager();
 
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
-        final List<EventImpl> events = new ArrayList<>(eventCount);
+        final List<GossipEvent> events = new ArrayList<>(eventCount);
 
         for (int index = 0; index < eventCount; index++) {
             final EventImpl event = graphGenerator.generateEvent();
@@ -355,7 +355,7 @@ class PreconsensusEventReplayPipelineTests {
                     .when(spyHashedData)
                     .setHash(any());
 
-            final EventImpl eventWithSpy = new EventImpl(spyHashedData, event.getBaseEventUnhashedData());
+            final GossipEvent eventWithSpy = new GossipEvent(spyHashedData, event.getBaseEventUnhashedData());
             events.add(eventWithSpy);
         }
 
