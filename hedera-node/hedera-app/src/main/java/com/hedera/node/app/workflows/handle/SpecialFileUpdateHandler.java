@@ -27,6 +27,7 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,34 +83,40 @@ public class SpecialFileUpdateHandler {
         }
 
         // If it is a special file, call the updater.
+        // We load the file only, if there is an updater for it.
+        final var config = configuration.getConfigData(FilesConfig.class);
+        try {
+            if (fileNum == config.addressBook()) {
+                logger.error("Update of address book not implemented");
+            } else if (fileNum == config.nodeDetails()) {
+                logger.error("Update of node details not implemented");
+            } else if (fileNum == config.feeSchedules()) {
+                logger.error("Update of fee schedules not implemented");
+            } else if (fileNum == config.exchangeRates()) {
+                logger.error("Update of exchange rates not implemented");
+            } else if (fileNum == config.networkProperties()) {
+                configProvider.update(getFileContent(state, fileID));
+            } else if (fileNum == config.hapiPermissions()) {
+                logger.error("Update of HAPI permissions not implemented");
+            } else if (fileNum == config.throttleDefinitions()) {
+                logger.error("Update of throttle definitions not implemented");
+            } else if (fileNum == config.upgradeFileNumber()) {
+
+            }
+        } catch (final RuntimeException e) {
+            logger.warn(
+                    "Exception while calling updater for file {}. "
+                            + "If the file is incomplete, this is expected.",
+                    fileID,
+                    e);
+        }
+    }
+
+    @NonNull
+    private static Bytes getFileContent(@NonNull final HederaState state, @NonNull final FileID fileID) {
         final var states = state.createReadableStates(FileService.NAME);
         final var filesMap = states.<FileID, File>get(BLOBS_KEY);
         final var file = filesMap.get(fileID);
-        if (file != null) {
-            final var config = configuration.getConfigData(FilesConfig.class);
-            try {
-                if (fileNum == config.addressBook()) {
-                    logger.error("Update of address book not implemented");
-                } else if (fileNum == config.nodeDetails()) {
-                    logger.error("Update of node details not implemented");
-                } else if (fileNum == config.feeSchedules()) {
-                    logger.error("Update of fee schedules not implemented");
-                } else if (fileNum == config.exchangeRates()) {
-                    logger.error("Update of exchange rates not implemented");
-                } else if (fileNum == config.networkProperties()) {
-                    configProvider.update(file.contents());
-                } else if (fileNum == config.hapiPermissions()) {
-                    logger.error("Update of HAPI permissions not implemented");
-                } else if (fileNum == config.throttleDefinitions()) {
-                    logger.error("Update of throttle definitions not implemented");
-                }
-            } catch (final RuntimeException e) {
-                logger.warn(
-                        "Exception while calling updater for file {}. "
-                                + "If the file is incomplete, this is expected.",
-                        fileID,
-                        e);
-            }
-        }
+        return file != null ? file.contents() : Bytes.EMPTY;
     }
 }
