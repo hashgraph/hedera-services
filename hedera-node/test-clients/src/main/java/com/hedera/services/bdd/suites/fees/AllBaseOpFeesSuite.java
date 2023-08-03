@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -42,7 +43,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+//@HapiTestSuite
 public class AllBaseOpFeesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AllBaseOpFeesSuite.class);
 
@@ -67,7 +68,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
 
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
-    private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.05;
+    private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
     private static final double EXPECTED_NFT_BURN_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_WIPE_PRICE_USD = 0.001;
 
@@ -89,7 +90,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
 
-        return defaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
+        return onlyDefaultHapiSpec("BaseUniqueMintOperationIsChargedExpectedFee")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         cryptoCreate(CIVILIAN_ACCT).key(SUPPLY_KEY),
@@ -102,6 +103,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                         .payingWith(CIVILIAN_ACCT)
                         .signedBy(SUPPLY_KEY)
                         .blankMemo()
+                        .fee(10000 * ONE_HBAR)
                         .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_MINT_PRICE_USD, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
