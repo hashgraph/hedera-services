@@ -16,14 +16,14 @@
 
 package com.swirlds.platform.gossip.shadowgraph;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.SyncLock;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
+import com.swirlds.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Objects;

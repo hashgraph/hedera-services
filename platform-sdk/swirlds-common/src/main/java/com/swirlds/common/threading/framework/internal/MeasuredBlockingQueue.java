@@ -18,8 +18,8 @@ package com.swirlds.common.threading.framework.internal;
 
 import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.IntegerAccumulator;
+import com.swirlds.metrics.Metrics;
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;

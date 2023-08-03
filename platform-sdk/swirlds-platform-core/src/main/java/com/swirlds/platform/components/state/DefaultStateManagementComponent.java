@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.components.state;
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
+import static com.swirlds.metrics.Metrics.PLATFORM_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;

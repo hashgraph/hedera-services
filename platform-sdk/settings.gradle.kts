@@ -32,6 +32,8 @@ include(":swirlds-config-api")
 
 include(":swirlds-config-impl")
 
+include(":swirlds-metrics-api")
+
 include(":swirlds-config-benchmark")
 
 include(":swirlds-fchashmap")

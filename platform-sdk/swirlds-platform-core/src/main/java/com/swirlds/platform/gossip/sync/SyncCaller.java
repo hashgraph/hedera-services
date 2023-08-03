@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.logging.LogMarker.SOCKET_EXCEPTIONS;
 import static com.swirlds.logging.LogMarker.SYNC_START;
+import static com.swirlds.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.SpeedometerMetric;

@@ -17,7 +17,6 @@
 package com.swirlds.demo.platform;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_0;
 import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_MICROSECONDS;
 import static com.swirlds.common.utility.CommonUtils.hex;
@@ -28,6 +27,7 @@ import static com.swirlds.logging.LogMarker.TESTING_EXCEPTIONS_ACCEPTABLE_RECONN
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.STORAGE_DIRECTORY;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.createExpectedMapName;
 import static com.swirlds.merkle.map.test.lifecycle.SaveExpectedMapHandler.serialize;
+import static com.swirlds.metrics.FloatFormats.FORMAT_11_0;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.protobuf.InvalidProtocolBufferException;

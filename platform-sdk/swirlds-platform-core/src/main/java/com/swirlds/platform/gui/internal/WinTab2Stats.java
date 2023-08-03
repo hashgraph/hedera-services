@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.metrics.LegacyMetric;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.metrics.Metric;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;

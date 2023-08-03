@@ -16,10 +16,10 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
+import static com.swirlds.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 

@@ -22,13 +22,13 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 
 /**
- * This class measures how many times per second the cycle() method is called. It is recalculated every
- * period, where its period is 0.1 seconds by default. If instantiated with gamma=0.9, then half the
- * weighting comes from the last 7 periods. If 0.99 it's 70 periods, 0.999 is 700, etc.
+ * This class measures how many times per second the cycle() method is called. It is recalculated every period, where
+ * its period is 0.1 seconds by default. If instantiated with gamma=0.9, then half the weighting comes from the last 7
+ * periods. If 0.99 it's 70 periods, 0.999 is 700, etc.
  * <p>
  * The timer starts at instantiation, and can be reset with the reset() method.
  *
- * @deprecated Use {@link com.swirlds.common.metrics.SpeedometerMetric} instead
+ * @deprecated Use {@code SpeedometerMetric} instead
  */
 @Deprecated(forRemoval = true)
 public class StatsSpeedometer implements StatsBuffered {

@@ -16,15 +16,15 @@
 
 package com.swirlds.platform.eventhandling;
 
-import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
+import static com.swirlds.metrics.Metrics.INFO_CATEGORY;
 
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.platform.components.transaction.TransactionPool;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import edu.umd.cs.findbugs.annotations.NonNull;

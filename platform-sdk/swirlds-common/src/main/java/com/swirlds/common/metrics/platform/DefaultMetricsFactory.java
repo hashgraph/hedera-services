@@ -16,21 +16,22 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.DurationGauge;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.metrics.Counter;
+import com.swirlds.metrics.DoubleAccumulator;
+import com.swirlds.metrics.DoubleGauge;
+import com.swirlds.metrics.IntegerAccumulator;
+import com.swirlds.metrics.IntegerGauge;
+import com.swirlds.metrics.LongAccumulator;
+import com.swirlds.metrics.LongGauge;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.MetricConfig;
 
 /**
  * An implementation of {@link MetricsFactory} that creates platform-internal {@link Metric}-instances
@@ -112,6 +113,11 @@ public class DefaultMetricsFactory implements MetricsFactory {
     @Override
     public LongGauge createLongGauge(final LongGauge.Config config) {
         return new DefaultLongGauge(config);
+    }
+
+    @Override
+    public <M extends Metric, C extends MetricConfig<M, ?>> M createMetric(C config) {
+        return null;
     }
 
     /**

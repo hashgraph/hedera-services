@@ -26,9 +26,8 @@ package com.swirlds.demo.hashgraph;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
+import static com.swirlds.metrics.Metrics.PLATFORM_CATEGORY;
 
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -37,6 +36,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;

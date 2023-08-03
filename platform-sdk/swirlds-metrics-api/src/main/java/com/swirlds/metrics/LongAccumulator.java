@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -102,7 +102,7 @@ public interface LongAccumulator extends Metric {
     /**
      * Configuration of a {@link LongAccumulator}
      */
-    final class Config extends MetricConfig<LongAccumulator, LongAccumulator.Config> {
+    final class Config extends MetricConfig<LongAccumulator, Config> {
 
         private final LongBinaryOperator accumulator;
         private final LongSupplier initializer;
@@ -302,7 +302,7 @@ public interface LongAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        LongAccumulator create(final MetricsFactory factory) {
+        public LongAccumulator create(final BasicMetricsFactory factory) {
             return factory.createLongAccumulator(this);
         }
 

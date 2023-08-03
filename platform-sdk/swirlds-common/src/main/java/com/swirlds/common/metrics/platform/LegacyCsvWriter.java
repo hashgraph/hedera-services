@@ -26,13 +26,13 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.config.BasicConfig;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metric.ValueType;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.Metric.ValueType;
+import com.swirlds.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;

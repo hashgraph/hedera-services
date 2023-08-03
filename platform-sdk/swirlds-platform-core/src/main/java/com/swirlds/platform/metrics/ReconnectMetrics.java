@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.metrics;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.Counter;
+import com.swirlds.metrics.Metrics;
 
 /**
  * Collection of metrics related to reconnects

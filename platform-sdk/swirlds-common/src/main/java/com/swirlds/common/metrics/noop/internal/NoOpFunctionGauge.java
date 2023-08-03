@@ -17,7 +17,7 @@
 package com.swirlds.common.metrics.noop.internal;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.metrics.MetricConfig;
 
 /**
  * A no-op implementation of a function gauge.

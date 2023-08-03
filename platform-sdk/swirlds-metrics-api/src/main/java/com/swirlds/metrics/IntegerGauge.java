@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
@@ -84,7 +84,7 @@ public interface IntegerGauge extends Metric {
     /**
      * Configuration of a {@link IntegerGauge}
      */
-    final class Config extends MetricConfig<IntegerGauge, IntegerGauge.Config> {
+    final class Config extends MetricConfig<IntegerGauge, Config> {
 
         private final int initialValue;
 
@@ -184,8 +184,8 @@ public interface IntegerGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        IntegerGauge create(final MetricsFactory factory) {
-            return factory.createIntegerGauge(this);
+        public IntegerGauge create(final BasicMetricsFactory factory) {
+            return factory.createMetric(this);
         }
 
         /**

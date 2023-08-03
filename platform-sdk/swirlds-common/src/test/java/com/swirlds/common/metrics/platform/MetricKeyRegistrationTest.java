@@ -19,9 +19,9 @@ package com.swirlds.common.metrics.platform;
 import static com.google.common.truth.Truth.assertThat;
 import static com.swirlds.common.metrics.platform.DefaultMetrics.calculateMetricKey;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.metrics.Counter;
+import com.swirlds.metrics.IntegerGauge;
 import org.junit.jupiter.api.Test;
 
 class MetricKeyRegistrationTest {

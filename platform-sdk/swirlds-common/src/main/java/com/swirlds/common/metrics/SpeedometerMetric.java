@@ -16,14 +16,19 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.MAX;
+import static com.swirlds.metrics.Metric.ValueType.MIN;
+import static com.swirlds.metrics.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.metrics.BasicMetricsFactory;
+import com.swirlds.metrics.FloatFormats;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.MetricConfig;
+import com.swirlds.metrics.MetricType;
 import java.util.EnumSet;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -106,7 +111,7 @@ public interface SpeedometerMetric extends Metric {
     /**
      * Configuration of a {@link SpeedometerMetric}
      */
-    final class Config extends MetricConfig<SpeedometerMetric, SpeedometerMetric.Config> {
+    final class Config extends MetricConfig<SpeedometerMetric, Config> {
 
         private final double halfLife;
 
@@ -205,8 +210,8 @@ public interface SpeedometerMetric extends Metric {
          * {@inheritDoc}
          */
         @Override
-        SpeedometerMetric create(final MetricsFactory factory) {
-            return factory.createSpeedometerMetric(this);
+        protected SpeedometerMetric create(final BasicMetricsFactory factory) {
+            return factory.createMetric(this);
         }
 
         /**

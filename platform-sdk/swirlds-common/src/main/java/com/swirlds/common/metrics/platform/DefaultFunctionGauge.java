@@ -16,12 +16,12 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
+import com.swirlds.metrics.MetricConfig;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;

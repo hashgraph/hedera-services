@@ -29,6 +29,7 @@ dependencies {
     api(project(":swirlds-fcqueue"))
     api(project(":swirlds-jasperdb"))
     api(project(":swirlds-cli"))
+    api(project(":swirlds-metrics-api"))
     api(project(":swirlds-base"))
     api(project(":swirlds-platform-gui"))
     compileOnly(libs.spotbugs.annotations)

@@ -16,13 +16,13 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.IntegerAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.LongGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.Counter;
+import com.swirlds.metrics.IntegerAccumulator;
+import com.swirlds.metrics.IntegerGauge;
+import com.swirlds.metrics.LongAccumulator;
+import com.swirlds.metrics.LongGauge;
+import com.swirlds.metrics.Metrics;
 
 /**
  * Encapsulates statistics for a virtual map.

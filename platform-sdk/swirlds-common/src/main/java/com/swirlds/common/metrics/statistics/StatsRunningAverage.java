@@ -23,11 +23,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class maintains a running average of some numeric value. It is exponentially weighted in time, with
- * a given half life. If it is always given the same value, then that value will be the average, regardless
- * of the timing.
+ * This class maintains a running average of some numeric value. It is exponentially weighted in time, with a given half
+ * life. If it is always given the same value, then that value will be the average, regardless of the timing.
  *
- * @deprecated Use {@link com.swirlds.common.metrics.RunningAverageMetric} instead
+ * @deprecated Use {@code RunningAverageMetric} instead
  */
 @Deprecated(forRemoval = true)
 public class StatsRunningAverage implements StatsBuffered {

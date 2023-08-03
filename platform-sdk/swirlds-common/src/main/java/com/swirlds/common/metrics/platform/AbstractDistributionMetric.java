@@ -16,10 +16,10 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.MetricConfig;
 import java.util.List;
 
 /**

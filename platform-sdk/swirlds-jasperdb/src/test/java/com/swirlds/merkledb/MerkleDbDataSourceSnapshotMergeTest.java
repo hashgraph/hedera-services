@@ -16,22 +16,22 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.merkledb.MerkleDbDataSourceTest.assertLeaf;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getMetric;
 import static com.swirlds.merkledb.MerkleDbTestUtils.hash;
 import static com.swirlds.merkledb.files.DataFileCommon.deleteDirectoryAndContents;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.units.UnitConstants;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.nio.file.Files;

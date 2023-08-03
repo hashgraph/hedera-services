@@ -26,14 +26,12 @@ package com.swirlds.demo.stats;
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -41,6 +39,8 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;

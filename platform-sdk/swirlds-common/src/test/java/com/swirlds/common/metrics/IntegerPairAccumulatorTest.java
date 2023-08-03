@@ -16,17 +16,18 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.MAX;
-import static com.swirlds.common.metrics.Metric.ValueType.MIN;
-import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.metrics.MetricType.ACCUMULATOR;
+import static com.swirlds.metrics.Metric.ValueType.MAX;
+import static com.swirlds.metrics.Metric.ValueType.MIN;
+import static com.swirlds.metrics.Metric.ValueType.STD_DEV;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.MetricType.ACCUMULATOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.metrics.MetricType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
-
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+package com.swirlds.metrics;
 
 import com.swirlds.base.ArgumentUtils;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * An instance of {@code MetricConfig} contains all configuration parameters needed to create a {@link Metric}.
  * <p>
  * This class is abstract and contains only common parameters. If you want to define the configuration for a specific
- * {@code Metric}, there are special purpose configuration objects (e.g. {@link Counter.Config}).
+ * {@code Metric}, there are special purpose configuration objects (e.g. {@link DoubleGauge.Config}).
  * <p>
  * A {@code MetricConfig} should be used with {@link Metrics#getOrCreate(MetricConfig)} to create a new {@code Metric}
  * <p>
@@ -35,20 +34,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * @param <T> the {@code Class} for which the configuration is
  */
 @SuppressWarnings("removal")
-public abstract sealed class MetricConfig<T extends Metric, C extends MetricConfig<T, C>>
-        permits Counter.Config,
-                DoubleAccumulator.Config,
-                DoubleGauge.Config,
-                DurationGauge.Config,
-                FunctionGauge.Config,
-                IntegerAccumulator.Config,
-                IntegerGauge.Config,
-                IntegerPairAccumulator.Config,
-                LongAccumulator.Config,
-                LongGauge.Config,
-                RunningAverageMetric.Config,
-                SpeedometerMetric.Config,
-                StatEntry.Config {
+public abstract class MetricConfig<T extends Metric, C extends MetricConfig<T, C>> {
 
     private static final int MAX_DESCRIPTION_LENGTH = 255;
 
@@ -71,7 +57,7 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null} or consists only of whitespaces
      */
-    MetricConfig(
+    protected MetricConfig(
             final String category,
             final String name,
             final String description,
@@ -103,7 +89,7 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
      * @throws IllegalArgumentException
      * 		if one of the parameters is {@code null} or consists only of whitespaces
      */
-    MetricConfig(final String category, final String name, final String defaultFormat) {
+    protected MetricConfig(final String category, final String name, final String defaultFormat) {
         this(category, name, name, "", defaultFormat);
     }
 
@@ -182,23 +168,22 @@ public abstract sealed class MetricConfig<T extends Metric, C extends MetricConf
     public abstract Class<T> getResultClass();
 
     /**
-     * Create a {@code Metric} using the given {@link MetricsFactory}
+     * Create a {@code Metric} using the given {@link BasicMetricsFactory}
+     * <p>
+     * Implementation note: we use the double-dispatch pattern when creating a {@link Metric}. More details can be found
+     * at {@link Metrics#getOrCreate(MetricConfig)}.
      *
-     * Implementation note: we use the double-dispatch pattern when creating a {@link Metric}. More details
-     * can be found at {@link Metrics#getOrCreate(MetricConfig)}.
-     *
-     * @param factory
-     * 		the {@code MetricFactory}
+     * @param factory the {@code MetricFactory}
      * @return the new {@code Metric}-instance
      */
-    abstract T create(final MetricsFactory factory);
+    protected abstract T create(final BasicMetricsFactory factory);
 
     /**
      * {@inheritDoc}
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
                 .append("category", category)
                 .append("name", name)
                 .append("description", description)

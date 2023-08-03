@@ -30,7 +30,6 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.gui.SwirldsGui.createConsole;
 
 import com.swirlds.common.Console;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -39,6 +38,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import java.awt.event.KeyEvent;

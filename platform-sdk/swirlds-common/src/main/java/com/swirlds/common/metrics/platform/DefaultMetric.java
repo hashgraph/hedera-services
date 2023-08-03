@@ -19,11 +19,11 @@ package com.swirlds.common.metrics.platform;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.LegacyMetric;
-import com.swirlds.common.metrics.Metric;
-import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.MetricConfig;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;

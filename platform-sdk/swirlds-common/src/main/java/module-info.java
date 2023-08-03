@@ -154,7 +154,8 @@ module com.swirlds.common {
             com.swirlds.platform.test;
 
     requires transitive com.swirlds.base;
-    requires com.swirlds.config;
+    requires transitive com.swirlds.config;
+    requires transitive com.swirlds.metrics;
     requires com.swirlds.logging;
     requires java.desktop;
     requires jdk.management;

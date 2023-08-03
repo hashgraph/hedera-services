@@ -16,13 +16,13 @@
 
 package com.swirlds.jasperdb;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.FloatFormats.FORMAT_9_6;
 
-import com.swirlds.common.metrics.DoubleGauge;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.DoubleGauge;
+import com.swirlds.metrics.IntegerGauge;
+import com.swirlds.metrics.Metrics;
 
 /**
  * Encapsulates statistics for an instance of a {@link VirtualDataSourceJasperDB}.

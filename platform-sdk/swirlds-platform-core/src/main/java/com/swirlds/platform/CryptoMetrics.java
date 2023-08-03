@@ -16,13 +16,13 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_3;
+import static com.swirlds.metrics.FloatFormats.FORMAT_11_3;
 
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.metrics.Counter;
+import com.swirlds.metrics.LongAccumulator;
+import com.swirlds.metrics.Metrics;
 
 /**
  * This class collects and reports various statistics about advanced cryptography module operation.

@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.MetricConfig;
+import com.swirlds.metrics.IntegerGauge;
+import com.swirlds.metrics.MetricConfig;
 
 /**
  * A no-op implementation of an integer gauge.

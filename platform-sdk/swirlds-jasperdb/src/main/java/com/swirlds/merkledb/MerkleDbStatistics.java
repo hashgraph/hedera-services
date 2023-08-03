@@ -16,13 +16,13 @@
 
 package com.swirlds.merkledb;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
+import static com.swirlds.metrics.FloatFormats.FORMAT_9_6;
 
-import com.swirlds.common.metrics.DoubleAccumulator;
-import com.swirlds.common.metrics.IntegerGauge;
-import com.swirlds.common.metrics.LongAccumulator;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.metrics.DoubleAccumulator;
+import com.swirlds.metrics.IntegerGauge;
+import com.swirlds.metrics.LongAccumulator;
+import com.swirlds.metrics.Metrics;
 
 /**
  * Encapsulates statistics for an instance of a {@link MerkleDbDataSource}.

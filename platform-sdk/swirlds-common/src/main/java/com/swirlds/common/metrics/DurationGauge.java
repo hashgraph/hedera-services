@@ -16,10 +16,15 @@
 
 package com.swirlds.common.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 
 import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.units.UnitConstants;
+import com.swirlds.metrics.BasicMetricsFactory;
+import com.swirlds.metrics.FloatFormats;
+import com.swirlds.metrics.Metric;
+import com.swirlds.metrics.MetricConfig;
+import com.swirlds.metrics.MetricType;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
@@ -88,7 +93,7 @@ public interface DurationGauge extends Metric {
     /**
      * Configuration of a {@link DurationGauge}
      */
-    final class Config extends MetricConfig<DurationGauge, DurationGauge.Config> {
+    final class Config extends MetricConfig<DurationGauge, Config> {
 
         private static final String TIME_UNIT = "timeUnit";
         private static final String UNSUPPORTED_TIME_UNIT = "Unsupported time unit: ";
@@ -156,8 +161,8 @@ public interface DurationGauge extends Metric {
          * {@inheritDoc}
          */
         @Override
-        DurationGauge create(final MetricsFactory factory) {
-            return factory.createDurationGauge(this);
+        protected DurationGauge create(final BasicMetricsFactory factory) {
+            return factory.createMetric(this);
         }
 
         private static String getFormat(final ChronoUnit timeUnit) {

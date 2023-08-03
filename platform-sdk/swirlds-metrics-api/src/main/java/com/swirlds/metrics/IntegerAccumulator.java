@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
@@ -100,7 +100,7 @@ public interface IntegerAccumulator extends Metric {
     /**
      * Configuration of an {@link IntegerAccumulator}
      */
-    final class Config extends MetricConfig<IntegerAccumulator, IntegerAccumulator.Config> {
+    final class Config extends MetricConfig<IntegerAccumulator, Config> {
 
         private final IntBinaryOperator accumulator;
         private final IntSupplier initializer;
@@ -298,7 +298,7 @@ public interface IntegerAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        IntegerAccumulator create(final MetricsFactory factory) {
+        public IntegerAccumulator create(final BasicMetricsFactory factory) {
             return factory.createIntegerAccumulator(this);
         }
 

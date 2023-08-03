@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.components;
 
-import static com.swirlds.common.metrics.Metrics.INFO_CATEGORY;
+import static com.swirlds.metrics.Metrics.INFO_CATEGORY;
 
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.event.SelfEventStorage;
 import com.swirlds.platform.internal.EventImpl;

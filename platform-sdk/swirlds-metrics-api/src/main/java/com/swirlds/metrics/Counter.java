@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics;
 
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import java.util.EnumSet;
@@ -93,7 +93,7 @@ public interface Counter extends Metric {
     /**
      * Configuration of a {@link Counter}.
      */
-    final class Config extends MetricConfig<Counter, Counter.Config> {
+    final class Config extends MetricConfig<Counter, Config> {
 
         /**
          * Constructor of {@code Counter.Config}
@@ -141,7 +141,7 @@ public interface Counter extends Metric {
          * {@inheritDoc}
          */
         @Override
-        Counter create(final MetricsFactory factory) {
+        public Counter create(final BasicMetricsFactory factory) {
             return factory.createCounter(this);
         }
 

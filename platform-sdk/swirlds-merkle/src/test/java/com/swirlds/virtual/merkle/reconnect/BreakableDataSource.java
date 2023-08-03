@@ -17,7 +17,7 @@
 package com.swirlds.virtual.merkle.reconnect;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.metrics.Metrics;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;

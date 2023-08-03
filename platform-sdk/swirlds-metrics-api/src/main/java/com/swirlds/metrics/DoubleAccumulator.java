@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.metrics;
+package com.swirlds.metrics;
 
-import static com.swirlds.common.metrics.FloatFormats.FORMAT_11_3;
-import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -103,7 +102,7 @@ public interface DoubleAccumulator extends Metric {
     /**
      * Configuration of a {@link DoubleAccumulator}
      */
-    final class Config extends MetricConfig<DoubleAccumulator, DoubleAccumulator.Config> {
+    final class Config extends MetricConfig<DoubleAccumulator, Config> {
 
         private final DoubleBinaryOperator accumulator;
         private final DoubleSupplier initializer;
@@ -124,7 +123,7 @@ public interface DoubleAccumulator extends Metric {
          * 		if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name) {
-            super(category, name, FORMAT_11_3);
+            super(category, name, FloatFormats.FORMAT_11_3);
             this.accumulator = Double::max;
             this.initializer = null;
             this.initialValue = 0.0;
@@ -302,7 +301,7 @@ public interface DoubleAccumulator extends Metric {
          * {@inheritDoc}
          */
         @Override
-        DoubleAccumulator create(final MetricsFactory factory) {
+        public DoubleAccumulator create(final BasicMetricsFactory factory) {
             return factory.createDoubleAccumulator(this);
         }
 

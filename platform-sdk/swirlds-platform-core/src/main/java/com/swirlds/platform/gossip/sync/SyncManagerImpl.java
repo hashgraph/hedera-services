@@ -16,16 +16,16 @@
 
 package com.swirlds.platform.gossip.sync;
 
-import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.logging.LogMarker.FREEZE;
 import static com.swirlds.logging.LogMarker.SYNC;
+import static com.swirlds.metrics.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.EventCreationRuleResponse;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.metrics.Metrics;
 import com.swirlds.platform.components.CriticalQuorum;
 import com.swirlds.platform.components.EventCreationRules;
 import com.swirlds.platform.event.EventIntakeTask;
