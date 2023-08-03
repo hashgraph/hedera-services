@@ -268,7 +268,8 @@ class SignedStateFileManagerTests {
         thread.join(1000);
         assertTrue(finished.get(), "should be finished");
 
-        final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
+        final Path stateDirectory =
+                testDirectory.resolve(FATAL_ERROR.toString()).resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
 
         manager.stop();
@@ -310,7 +311,8 @@ class SignedStateFileManagerTests {
 
         assertEventuallyTrue(finished::get, Duration.ofSeconds(1), "should eventually be written to disk");
 
-        final Path stateDirectory = testDirectory.resolve("iss").resolve("node1234_round" + signedState.getRound());
+        final Path stateDirectory =
+                testDirectory.resolve(ISS.toString()).resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
 
         // cleanup
