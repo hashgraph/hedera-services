@@ -72,18 +72,6 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns true if the given id was created in the current savepoint. (That is, it exists
-     * but its original value is null.)
-     *
-     * @param id - the id of the account to be checked
-     * @return true if the given id was created in the current savepoint
-     */
-    public boolean isNewlyCreated(@NonNull final AccountID id) {
-        final var modifiedState = accountState();
-        return modifiedState.getOriginalValue(id) == null && modifiedState.get(id) != null;
-    }
-
-    /**
      * Persists a new alias linked to the account persisted to state
      *
      * @param alias - the alias to be added to modifications in state.

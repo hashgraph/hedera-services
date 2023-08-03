@@ -117,14 +117,18 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
-        final var payer = validateSemantics(handleContext, accountStore, op);
+        validateSemantics(handleContext, accountStore, op);
 
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        // Change payer's balance to reflect the deduction of the initial balance for the new
-        // account
-        final var modifiedPayer =
-                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
-        accountStore.put(modifiedPayer);
+        if (op.initialBalance() > 0) {
+            final var payer = accountStore.getAccountById(
+                    handleContext.body().transactionIDOrThrow().accountIDOrThrow());
+            final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+            // Change payer's balance to reflect the deduction of the initial balance for the new
+            // account
+            final var modifiedPayer =
+                    payer.copyBuilder().tinybarBalance(newPayerBalance).build();
+            accountStore.put(modifiedPayer);
+        }
 
         // Build the new account to be persisted based on the transaction body
         final var accountCreated = buildAccount(op, handleContext);
@@ -168,7 +172,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      * @param op crypto create transaction body
      * @return the payer account if validated successfully
      */
-    private Account validateSemantics(
+    private void validateSemantics(
             @NonNull final HandleContext context,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoCreateTransactionBody op) {
@@ -178,15 +182,16 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
-        // validate payer account exists and has enough balance
-        final var payer = getIfUsable(
-                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                accountStore,
-                context.expiryValidator(),
-                INVALID_PAYER_ACCOUNT_ID);
-
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        validatePayer(payer, newPayerBalance);
+        if (op.initialBalance() > 0) {
+            // validate payer account exists and has enough balance
+            final var payer = getIfUsable(
+                    context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                    accountStore,
+                    context.expiryValidator(),
+                    INVALID_PAYER_ACCOUNT_ID);
+            final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+            validatePayer(payer, newPayerBalance);
+        }
 
         context.attributeValidator().validateMemo(op.memo());
         cryptoCreateValidator.validateKeyAliasAndEvmAddressCombinations(
@@ -209,8 +214,6 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 accountStore,
                 context.configuration().getConfigData(StakingConfig.class),
                 context.networkInfo());
-
-        return payer;
     }
 
     /**

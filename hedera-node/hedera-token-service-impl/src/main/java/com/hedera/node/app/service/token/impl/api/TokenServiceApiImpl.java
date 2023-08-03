@@ -44,13 +44,10 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void markNewlyCreatedAsContract(@NonNull final AccountID justCreated) {
-        requireNonNull(justCreated);
+    public void markAsContract(@NonNull final AccountID accountId) {
+        requireNonNull(accountId);
         final var store = new WritableAccountStore(writableStates);
-        if (!store.isNewlyCreated(justCreated)) {
-            throw new IllegalArgumentException("Account " + justCreated + " is not newly created");
-        }
-        final var accountAsContract = requireNonNull(store.get(justCreated))
+        final var accountAsContract = requireNonNull(store.get(accountId))
                 .copyBuilder()
                 .smartContract(true)
                 .build();

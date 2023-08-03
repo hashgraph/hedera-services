@@ -178,8 +178,8 @@ public class TransactionProcessor {
      * </ol>
      *
      * <p>Note that if the transaction is a {@code CONTRACT_CREATION}, setup includes calling either
-     * {@link HederaWorldUpdater#setupCreate(Address)} or
-     * {@link HederaWorldUpdater#setupAliasedCreate(Address, Address)}.
+     * {@link HederaWorldUpdater#setupInternalCreate(Address)} or
+     * {@link HederaWorldUpdater#setupInternalAliasedCreate(Address, Address)}.
      *
      * @param transaction the transaction to set up
      * @param updater     the updater for the transaction
@@ -202,9 +202,9 @@ public class TransactionProcessor {
             final Address to;
             if (transaction.isEthereumTransaction()) {
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
-                updater.setupAliasedCreate(sender.getAddress(), to);
+                updater.setupAliasedTopLevelCreate(requireNonNull(transaction.hapiCreation()), to);
             } else {
-                to = updater.setupCreate(sender.getAddress());
+                to = updater.setupTopLevelCreate(requireNonNull(transaction.hapiCreation()));
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {

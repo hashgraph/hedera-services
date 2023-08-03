@@ -149,9 +149,9 @@ public class TestHelpers {
             .contractNum(numberOfLongZero(NON_SYSTEM_LONG_ZERO_ADDRESS))
             .build();
     public static final Address EIP_1014_ADDRESS = Address.fromHexString("0x89abcdef89abcdef89abcdef89abcdef89abcdef");
-    public static final ContractID CALLED_CONTRACT_EVM_ADDRESS = ContractID.newBuilder()
-            .evmAddress(tuweniToPbjBytes(EIP_1014_ADDRESS))
-            .build();
+    public static final Bytes CANONICAL_ALIAS = tuweniToPbjBytes(EIP_1014_ADDRESS);
+    public static final ContractID CALLED_CONTRACT_EVM_ADDRESS =
+            ContractID.newBuilder().evmAddress(CANONICAL_ALIAS).build();
     public static final List<ContractNonceInfo> NONCES =
             List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, NONCE), new ContractNonceInfo(CHILD_CONTRACT_ID, 1L));
     public static final EntityNumber CALLED_CONTRACT_ENTITY_NUMBER = new EntityNumber(666);

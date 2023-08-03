@@ -181,7 +181,7 @@ public interface HederaOperations {
      * @param nonce        the nonce of the contract to create
      * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
      */
-    void createContract(long number, ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress);
+    void createContract(long number, @NonNull ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress);
 
     /**
      * Deletes the contract whose alias is the given {@code evmAddress}, and also "unlinks" the alias.

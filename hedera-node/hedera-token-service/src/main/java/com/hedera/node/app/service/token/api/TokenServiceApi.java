@@ -34,7 +34,7 @@ public interface TokenServiceApi {
      * Marks an account as a contract.
      *
      */
-    void markNewlyCreatedAsContract(@NonNull AccountID justCreated);
+    void markAsContract(@NonNull AccountID justCreated);
 
     /**
      * Deletes the contract with the given id.

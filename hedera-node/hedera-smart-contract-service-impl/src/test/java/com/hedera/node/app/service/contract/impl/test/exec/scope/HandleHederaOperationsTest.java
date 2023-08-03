@@ -16,7 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,11 +31,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -54,6 +64,9 @@ class HandleHederaOperationsTest {
 
     @Mock
     private WritableContractStateStore stateStore;
+
+    @Mock
+    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
 
     private HandleHederaOperations subject;
 
@@ -170,10 +183,44 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void createContractWithBodyNotImplemented() {
-        assertThrows(
-                AssertionError.class,
-                () -> subject.createContract(1L, ContractCreateTransactionBody.DEFAULT, 3L, Bytes.EMPTY));
+    void createContractWithBodyDispatchesThenMarksAsContract() {
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+
+        subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS);
+
+        verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
+    }
+
+    @Test
+    void createContractWithFailedDispatchNotImplemented() {
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS));
     }
 
     @Test

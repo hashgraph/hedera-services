@@ -188,7 +188,8 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void createContract(long number, ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress) {
+    public void createContract(
+            long number, @NonNull final ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create a contract");
     }
 

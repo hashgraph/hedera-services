@@ -103,7 +103,7 @@ class RootProxyWorldUpdaterTest {
         given(evmFrameState.getIdNumber(ALTBN128_ADD))
                 .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
 
-        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
         final var pendingCreation = subject.getPendingCreation();
         final var updater = subject.updater();
 
