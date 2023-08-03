@@ -93,12 +93,14 @@ import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
+import org.junit.platform.engine.Filter;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.engine.discovery.ClasspathRootSelector;
 import org.junit.platform.engine.discovery.MethodSelector;
+import org.junit.platform.engine.discovery.PackageNameFilter;
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor;
 import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
@@ -185,17 +187,12 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
     private void appendTestsInClasspathRoot(
             URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
-        final var packagePath = System.getenv("PACKAGE_PATH");
         ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
-                .filter(aClass -> {
-                    // Filtering only the classes that have package equal to the one passed as env variable or
-                    // if it belongs to a subpackage of the specified one.
-                    // If there is no env variable the filter is skipped(running all the tests)
-                    final var packagePathInner = packagePath + ".";
-                    return packagePath == null
-                            || (aClass.getPackageName().equals(packagePath)
-                                    || aClass.getPackageName().startsWith(packagePathInner));
-                })
+            .filter(aClass ->
+                discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
+                    .map(Filter::toPredicate)
+                    .allMatch(predicate -> predicate.test(aClass.getPackageName()))
+            )
                 .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
                 .filter(classTestDescriptor -> !classTestDescriptor.skip)
                 .forEach(engineDescriptor::addChild);
