@@ -176,7 +176,6 @@ public class BusyTime {
                 || (statusChange == WORK_END && isIdle(currentStatus))) {
             // this means that the metric has not been updated correctly, we will not change the value
             if (logLimiter.requestAndTrigger()) {
-                System.out.println("error");
                 log.error(
                         LogMarker.EXCEPTION.getMarker(),
                         "BusyTime metric has been updated incorrectly. "
