@@ -498,7 +498,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
-                return SkipResult.skip("No @HapiTest annotation");
+                return SkipResult.skip(testMethod.getName() + " No @HapiTest annotation");
             } else if (annotation.isPresent()) {
                 final var msg = annotation.get().value();
                 return SkipResult.skip(msg == null || msg.isBlank() ? "Disabled" : msg);
