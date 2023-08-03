@@ -150,9 +150,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
 
-        // We obtain the selectors using MethodSelector and ClassSelector because we don't know how the
-        // tests will be executed. If we run tests at the class level, we will have a ClassSelector.
-        // If we run a single test, we will have a MethodSelector.
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
             addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
@@ -163,11 +160,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
             addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
         });
 
-        // This is not working as expected, but it's still useful. Because in the EngineDiscoveryRequest we only
-        // have access up-to the main package this code will execute all HapiTests under it.
-        // This means that if you run the tests from whatever package all HapiTests will be started.
-        // We should fix that but for now this can still be useful.
-        // For more information: https://github.com/hashgraph/hedera-services/pull/7730#discussion_r1279360505
+        // In the EngineDiscoveryRequest, we only have access up to the main package, so there is no way to get a
+        // specific package path. This means that if you run the tests from whatever package, all HapiTests
+        // will be started. To support package test runs, we are introducing the PACKAGE_PATH environment variable.
+        // If a PACKAGE_PATH environment variable is passed, we filter the classes that belong to this package.
+        // Otherwise, we execute all tests.
         discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
             appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
         });
@@ -188,7 +185,17 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
     private void appendTestsInClasspathRoot(
             URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
+        final var packagePath = System.getenv("PACKAGE_PATH");
         ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
+                .filter(aClass -> {
+                    // Filtering only the classes that have package equal to the one passed as env variable or
+                    // if it belongs to a subpackage of the specified one.
+                    // If there is no env variable the filter is skipped(running all the tests)
+                    final var packagePathInner = packagePath + ".";
+                    return packagePath == null
+                            || (aClass.getPackageName().equals(packagePath)
+                                    || aClass.getPackageName().startsWith(packagePathInner));
+                })
                 .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
                 .filter(classTestDescriptor -> !classTestDescriptor.skip)
                 .forEach(engineDescriptor::addChild);
