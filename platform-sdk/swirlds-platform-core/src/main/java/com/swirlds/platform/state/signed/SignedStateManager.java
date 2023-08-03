@@ -311,7 +311,7 @@ public class SignedStateManager implements SignedStateFinder {
      * @param transaction the signature transaction
      */
     public synchronized void handlePostconsensusSignatureTransaction(
-            @NonNull NodeId signerId, @NonNull StateSignatureTransaction transaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
 
         Objects.requireNonNull(signerId);
 
