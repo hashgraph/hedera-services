@@ -41,6 +41,7 @@ marker_regex = '([A-Za-z0-9_]+)'
 thread_name_regex = '(<<?[^>]+>>?)'
 class_thread_name_regex = '([A-Za-z0-9_]+)'
 remainder_of_line_regex = '(.*)'
+status_log_regex = '(.*spent )(.*)( in )(.*)(\. Now in )([A-Z_]+)(.*)'
 
 full_regex = timestamp_regex + whitespace_regex + \
              log_number_regex + captured_whitespace_regex + \
@@ -63,75 +64,123 @@ BRIGHT_WHITE = '\033[97m'
 END = '\033[0m'
 
 def format_timestamp(timestamp):
-  return GRAY + timestamp + END
+    return GRAY + timestamp + END
 
 def format_log_number(log_number):
-  return WHITE + log_number + END
+    return WHITE + log_number + END
 
 def format_log_level(log_level):
     if log_level in ('TRACE', 'DEBUG', 'INFO'):
-      return GREEN + log_level + END
+        return GREEN + log_level + END
     elif log_level == 'WARN':
-      return YELLOW + log_level + END
+        return YELLOW + log_level + END
     else:
-      return RED + log_level + END
+        return RED + log_level + END
 
 def format_marker(marker):
-  return BRIGHT_BLUE + marker + END
+    if marker == 'PLATFORM_STATUS':
+        return PURPLE + marker + END
+    else:
+        return BRIGHT_BLUE + marker + END
 
 def format_thread_name(thread_name):
-  return BRIGHT_WHITE + thread_name + END
+    return BRIGHT_WHITE + thread_name + END
 
 def format_class_name(class_name):
-  return TEAL + class_name + END
+    return TEAL + class_name + END
+
+# Provide specific formatting for the platform status log message
+def format_platform_status_log(log_message):
+    status_regex = re.compile(status_log_regex)
+    status_match = status_regex.match(log_message)
+    if status_match is None:
+        return log_message
+
+    index = 1
+
+    platform_spent = status_match.group(index)
+    index += 1
+
+    duration = status_match.group(index)
+    index += 1
+
+    in_text = status_match.group(index)
+    index += 1
+
+    previous_status = status_match.group(index)
+    index += 1
+
+    now_in_text = status_match.group(index)
+    index += 1
+
+    new_status = status_match.group(index)
+    index += 1
+
+    remainder = status_match.group(index)
+    index += 1
+
+    return (platform_spent +
+            PURPLE + duration + END +
+            in_text +
+            PURPLE + previous_status + END +
+            now_in_text +
+            PURPLE + new_status + END +
+            remainder)
+
+def format_remainder(marker, remainder):
+    if marker == 'PLATFORM_STATUS':
+        return format_platform_status_log(remainder)
+    else:
+        return remainder
 
 def format(line):
-  match = regex.match(line)
-  if match is None:
-    return line
+    match = regex.match(line)
+    if match is None:
+        return line
 
-  index = 1
+    index = 1
 
-  timestamp = match.group(index)
-  index += 1
+    timestamp = match.group(index)
+    index += 1
 
-  log_number = match.group(index)
-  index += 1
+    log_number = match.group(index)
+    index += 1
 
-  log_number_whitespace = match.group(index)
-  index += 1
+    log_number_whitespace = match.group(index)
+    index += 1
 
-  log_level = match.group(index)
-  index += 1
+    log_level = match.group(index)
+    index += 1
 
-  log_level_whitespace = match.group(index)
-  index += 1
+    log_level_whitespace = match.group(index)
+    index += 1
 
-  marker = match.group(index)
-  index += 1
+    marker = match.group(index)
+    index += 1
 
-  marker_whitespace = match.group(index)
-  index += 1
+    marker_whitespace = match.group(index)
+    index += 1
 
-  thread_name = match.group(index)
-  index += 1
+    thread_name = match.group(index)
+    index += 1
 
-  class_name = match.group(index)
-  index += 1
+    class_name = match.group(index)
+    index += 1
 
-  remainder = match.group(index)
-  index += 1
+    remainder = match.group(index)
+    index += 1
 
-  return format_timestamp(timestamp) + ' ' + \
-          format_log_number(log_number) + log_number_whitespace + \
-          format_log_level(log_level) + log_level_whitespace + \
-          format_marker(marker) + marker_whitespace + \
-          format_thread_name(thread_name) + ' ' + \
-          format_class_name(class_name) + \
-          remainder + "\n"
+    return format_timestamp(timestamp) + ' ' + \
+        format_log_number(log_number) + log_number_whitespace + \
+        format_log_level(log_level) + log_level_whitespace + \
+        format_marker(marker) + marker_whitespace + \
+        format_thread_name(thread_name) + ' ' + \
+        format_class_name(class_name) + \
+        format_remainder(marker, remainder) + '\n'
+
 
 try:
-  for line in stdin:
-    print(format(line), end='')
+    for line in stdin:
+        print(format(line), end='')
 except KeyboardInterrupt:
-  pass
+    pass
