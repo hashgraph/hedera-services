@@ -29,6 +29,7 @@ import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -53,6 +54,9 @@ class TransactionModuleTest {
 
     @Mock
     private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private TokenServiceApi tokenServiceApi;
 
     @Mock
     private ReadableFileStore readableFileStore;
@@ -107,11 +111,19 @@ class TransactionModuleTest {
         given(context.configuration()).willReturn(config);
         assertSame(config, TransactionModule.provideConfiguration(context));
         assertNotNull(TransactionModule.provideContractsConfig(config));
+        assertNotNull(TransactionModule.provideLedgerConfig(config));
+        assertNotNull(TransactionModule.provideStakingConfig(config));
     }
 
     @Test
     void providesExpectedConsTime() {
         given(context.consensusNow()).willReturn(Instant.MAX);
         assertSame(Instant.MAX, TransactionModule.provideConsensusTime(context));
+    }
+
+    @Test
+    void providesTokenServiceApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        assertSame(tokenServiceApi, TransactionModule.provideInitialTokenServiceApi(context));
     }
 }
