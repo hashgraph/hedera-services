@@ -27,8 +27,6 @@ module com.hedera.node.app.service.token.impl {
             com.hedera.node.app.service.token.impl.test;
     exports com.hedera.node.app.service.token.impl.serdes;
     exports com.hedera.node.app.service.token.impl;
-    exports com.hedera.node.app.service.token.records.records to
-            com.hedera.node.app;
     exports com.hedera.node.app.service.token.impl.api to
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.api.test;
