@@ -48,7 +48,7 @@ class RunningAverageMetricConfigTest {
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
         assertThat(config.getHalfLife()).isEqualTo(DEFAULT_HALF_LIFE);
-        assertThat(config.isUseDefaultHalfLife()).isEqualTo(true);
+        assertThat(config.isUseDefaultHalfLife()).isTrue();
     }
 
     @Test
@@ -86,7 +86,7 @@ class RunningAverageMetricConfigTest {
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
         assertThat(config.getHalfLife()).isEqualTo(DEFAULT_HALF_LIFE);
-        assertThat(config.isUseDefaultHalfLife()).isEqualTo(true);
+        assertThat(config.isUseDefaultHalfLife()).isTrue();
 
         assertThat(result.getCategory()).isEqualTo(CATEGORY);
         assertThat(result.getName()).isEqualTo(NAME);
@@ -94,7 +94,7 @@ class RunningAverageMetricConfigTest {
         assertThat(result.getUnit()).isEqualTo(UNIT);
         assertThat(result.getFormat()).isEqualTo(FORMAT);
         assertThat(result.getHalfLife()).isEqualTo(Math.PI, within(EPSILON));
-        assertThat(result.isUseDefaultHalfLife()).isEqualTo(false);
+        assertThat(result.isUseDefaultHalfLife()).isFalse();
     }
 
     @Test
