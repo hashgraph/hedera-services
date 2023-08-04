@@ -90,14 +90,14 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
             RecordStreamItemV7 recordStreamItemV7 = hasFirstItemBeenSerializedYet
                     ? new RecordStreamItemV7(
                             singleTransactionRecord.transaction(),
-                            singleTransactionRecord.record(),
+                            singleTransactionRecord.transactionRecord(),
                             sidecarHash,
                             null,
                             0,
                             0)
                     : new RecordStreamItemV7(
                             singleTransactionRecord.transaction(),
-                            singleTransactionRecord.record(),
+                            singleTransactionRecord.transactionRecord(),
                             sidecarHash,
                             hapiVersion,
                             blockNumber,
@@ -181,7 +181,7 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
     /** Temporary fake record stream item format for V7 */
     public record RecordStreamItemV7(
             @Nullable Transaction transaction,
-            @Nullable TransactionRecord record,
+            @Nullable TransactionRecord transactionRecord,
             @Nullable Bytes hashOfSidecarItems,
             @Nullable SemanticVersion hapiVersion,
             long blockNumber,

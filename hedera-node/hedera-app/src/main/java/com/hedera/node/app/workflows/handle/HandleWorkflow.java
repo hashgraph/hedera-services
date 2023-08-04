@@ -263,7 +263,7 @@ public class HandleWorkflow {
             // FUTURE: This needs to be replaced by a proper implementation, as can be found in PR
             // https://github.com/hashgraph/hedera-services/pull/7473
             recordCache.add(
-                    0, preHandleResult.payer(), recordListResult.mainRecord().record(), consensusNow);
+                    0, preHandleResult.payer(), recordListResult.mainRecord().transactionRecord(), consensusNow);
         } else {
             throw new IllegalStateException("pre handle result was null!");
         }

@@ -119,7 +119,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).tinybarBalance()).isEqualTo(10000L);
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(2);
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.build().record().receipt().serialNumbers()).isEmpty();
+        assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
+                .isEmpty();
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -133,7 +134,8 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(writableAccountStore.get(treasuryId).numberOwnedNfts()).isEqualTo(4);
         // treasury relation supply will not increase since its not fungible token change
         assertThat(writableTokenStore.get(nonFungibleTokenId).totalSupply()).isEqualTo(1000L);
-        assertThat(recordBuilder.build().record().receipt().serialNumbers()).isEqualTo(List.of(3L, 4L));
+        assertThat(recordBuilder.build().transactionRecord().receipt().serialNumbers())
+                .isEqualTo(List.of(3L, 4L));
     }
 
     @Test
