@@ -16,22 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.test.infra;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-
-import java.util.List;
-
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,9 +43,7 @@ class IterableStorageManagerTest {
     @Test
     void rewriteUpdatesKvCountStorageMetadataOnly() {
         final var sizeChanges = List.of(
-                new StorageSizeChange(1L, 2, 3),
-                new StorageSizeChange(2L, 3, 2),
-                new StorageSizeChange(3L, 4, 4));
+                new StorageSizeChange(1L, 2, 3), new StorageSizeChange(2L, 3, 2), new StorageSizeChange(3L, 4, 4));
 
         subject.rewrite(hederaOperations, List.of(), sizeChanges, store);
 

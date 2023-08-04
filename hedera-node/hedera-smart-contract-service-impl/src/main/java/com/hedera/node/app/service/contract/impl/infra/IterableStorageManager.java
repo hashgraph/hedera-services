@@ -56,12 +56,6 @@ public class IterableStorageManager {
             @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
             @NonNull final ContractStateStore store) {
-        changes.forEach(storageAccesses -> {
-            System.out.println("For 0.0." + storageAccesses.contractNumber() + ":");
-            storageAccesses.accesses().forEach(access -> {
-                System.out.println("  " + access);
-            });
-        });
         sizeChanges.forEach(change -> {
             if (change.netChange() != 0) {
                 hederaOperations.updateStorageMetadata(change.contractNumber(), Bytes.EMPTY, change.netChange());

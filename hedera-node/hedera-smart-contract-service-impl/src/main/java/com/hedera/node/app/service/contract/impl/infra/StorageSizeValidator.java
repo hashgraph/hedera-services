@@ -19,13 +19,11 @@ package com.hedera.node.app.service.contract.impl.infra;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException.validateResource;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
 import com.hedera.node.config.data.ContractsConfig;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import javax.inject.Inject;

@@ -167,7 +167,8 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void updateStorageMetadata(final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+    public void updateStorageMetadata(
+            final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         throw new UnsupportedOperationException("Queries cannot update storage metadata");
     }
 

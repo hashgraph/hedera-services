@@ -27,8 +27,6 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 import java.util.Set;
 
@@ -159,7 +157,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void updateStorageMetadata(@NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+    public void updateStorageMetadata(
+            @NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         requireNonNull(firstKey);
         requireNonNull(accountId);
         final var store = new WritableAccountStore(writableStates);
@@ -169,13 +168,12 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         }
         final var newNumKvPairs = target.contractKvPairsNumber() + netChangeInSlotsUsed;
         if (newNumKvPairs < 0) {
-            throw new IllegalArgumentException(
-                    "Cannot change # of storage slots (currently "
-                            + target.contractKvPairsNumber()
-                            + ") by "
-                            + netChangeInSlotsUsed
-                            + " for contract "
-                            + accountId);
+            throw new IllegalArgumentException("Cannot change # of storage slots (currently "
+                    + target.contractKvPairsNumber()
+                    + ") by "
+                    + netChangeInSlotsUsed
+                    + " for contract "
+                    + accountId);
         }
         store.put(target.copyBuilder()
                 .firstContractStorageKey(firstKey)

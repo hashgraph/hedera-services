@@ -62,6 +62,7 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -140,8 +141,6 @@ class Erc721OperationsTest {
                 synthSafeTransferFrom(PARTY_ID, TOKEN_TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 3),
                 synthSafeTransferFrom(TOKEN_TREASURY_ID, TOKEN_TREASURY_ADDRESS, PARTY_ADDRESS, 8),
                 synthSafeTransferFrom(COUNTERPARTY_ID, COUNTERPARTY_ADDRESS, PARTY_ADDRESS, 3));
-        // and:
-        scaffoldingComponent.stack().commit();
 
         // then:
         assertExpectedContract();
@@ -153,6 +152,7 @@ class Erc721OperationsTest {
         for (final var txn : txns) {
             final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
+            ((SavepointStackImpl) context.savepointStack()).commit();
         }
     }
 
@@ -237,7 +237,7 @@ class Erc721OperationsTest {
             assertEquals(value, slot.value());
         });
         final var contract = Objects.requireNonNull(expectedDeployedContract());
-//        assertEquals(EXPECTED_STORAGE.size(), contract.contractKvPairsNumber());
+        assertEquals(EXPECTED_STORAGE.size(), contract.contractKvPairsNumber());
     }
 
     private @Nullable Account expectedDeployedContract() {

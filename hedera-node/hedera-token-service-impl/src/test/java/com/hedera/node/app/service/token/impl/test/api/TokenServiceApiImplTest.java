@@ -38,12 +38,9 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,7 +106,9 @@ class TokenServiceApiImplTest {
                 .smartContract(true)
                 .build());
 
-        assertThrows(IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -4));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -4));
     }
 
     @Test
@@ -119,7 +118,9 @@ class TokenServiceApiImplTest {
                 .contractKvPairsNumber(3)
                 .build());
 
-        assertThrows(IllegalArgumentException.class, () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -3));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -3));
     }
 
     @Test
