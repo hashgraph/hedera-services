@@ -268,8 +268,7 @@ class SignedStateFileManagerTests {
         thread.join(1000);
         assertTrue(finished.get(), "should be finished");
 
-        final Path stateDirectory =
-                testDirectory.resolve(FATAL_ERROR.toString()).resolve("node1234_round" + signedState.getRound());
+        final Path stateDirectory = testDirectory.resolve("fatal").resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
 
         manager.stop();
@@ -311,8 +310,7 @@ class SignedStateFileManagerTests {
 
         assertEventuallyTrue(finished::get, Duration.ofSeconds(1), "should eventually be written to disk");
 
-        final Path stateDirectory =
-                testDirectory.resolve(ISS.toString()).resolve("node1234_round" + signedState.getRound());
+        final Path stateDirectory = testDirectory.resolve("iss").resolve("node1234_round" + signedState.getRound());
         validateSavingOfState(signedState, stateDirectory);
 
         // cleanup
@@ -625,7 +623,7 @@ class SignedStateFileManagerTests {
         // Simulate the saving of an ISS state
         final int issRound = 666;
         final Path issDirectory =
-                getSignedStatesBaseDirectory().resolve(ISS.toString()).resolve("node" + SELF_ID + "_round" + issRound);
+                getSignedStatesBaseDirectory().resolve("iss").resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
         manager.dumpState(issState, ISS, false);
@@ -642,9 +640,8 @@ class SignedStateFileManagerTests {
 
         // Simulate the saving of a fatal state
         final int fatalRound = 667;
-        final Path fatalDirectory = getSignedStatesBaseDirectory()
-                .resolve(FATAL_ERROR.toString())
-                .resolve("node" + SELF_ID + "_round" + fatalRound);
+        final Path fatalDirectory =
+                getSignedStatesBaseDirectory().resolve("fatal").resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
         manager.dumpState(fatalState, FATAL_ERROR, true);

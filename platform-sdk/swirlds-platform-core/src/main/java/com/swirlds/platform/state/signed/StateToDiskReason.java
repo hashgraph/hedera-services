@@ -16,6 +16,9 @@
 
 package com.swirlds.platform.state.signed;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
+
 /**
  * The reason for writing the state to disk
  */
@@ -23,25 +26,50 @@ public enum StateToDiskReason {
     /**
      * The state was written to disk because the platform is starting up without a previous saved state
      */
-    FIRST_ROUND_AFTER_GENESIS,
+    FIRST_ROUND_AFTER_GENESIS("first-round-after-genesis"),
     /**
      * The state was written to disk because it is a freeze state
      */
-    FREEZE_STATE,
+    FREEZE_STATE("freeze-state"),
     /**
      * The state was written to disk because it is time to take a periodic snapshot
      */
-    PERIODIC_SNAPSHOT,
+    PERIODIC_SNAPSHOT("periodic-snapshot"),
     /**
      * The state was written to disk because it is a reconnect state
      */
-    RECONNECT,
+    RECONNECT("reconnect"),
     /**
      * The state was written to disk because an ISS was detected
      */
-    ISS,
+    ISS("iss"),
     /**
      * The state was written to disk because a fatal error was encountered
      */
-    FATAL_ERROR;
+    FATAL_ERROR("fatal");
+
+    /**
+     * The description of the reason
+     * <p>
+     * This string will be used as part of file paths, so it should not contain any characters that are not suitable
+     */
+    private final String description;
+
+    /**
+     * Constructor
+     *
+     * @param description the description of the reason
+     */
+    StateToDiskReason(@NonNull final String description) {
+        this.description = Objects.requireNonNull(description);
+    }
+
+    /**
+     * Get the description of the reason
+     *
+     * @return the description of the reason
+     */
+    public String getDescription() {
+        return description;
+    }
 }

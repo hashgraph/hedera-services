@@ -334,7 +334,7 @@ public class SignedStateFileManager implements Startable {
         saveSignedStateToDisk(
                 signedState,
                 getSignedStatesBaseDirectory()
-                        .resolve(reason.toString())
+                        .resolve(reason.getDescription())
                         .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())),
                 reason,
                 success -> latch.countDown(),
