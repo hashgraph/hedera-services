@@ -62,21 +62,29 @@ public class JrsTestReaderTests {
     @Test
     void test() {
         final VirtualTerminal terminal = new VirtualTerminal()
-                .setProgressIndicatorEnabled(true)
+                .setPrintCommand(true)
+                .setPrintExitCode(true)
                 .setThrowOnError(true);
-        terminal.getProgressIndicator().setColorEnabled(true);
 
-        final ExecutorService executor = Executors.newFixedThreadPool(12);
+        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
+        //"gs://swirlds-circleci-jrs-results/cody-littley"
+        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
 
-        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
-        //"gs://swirlds-circleci-jrs-results/cody-littley/"
-        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/";
+//        JrsTestReader.generateTestReport(
+//                terminal,
+//                executor,
+//                root,
+//                Instant.now().minus(1, ChronoUnit.DAYS),
+//                getAbsolutePath(Path.of("~/Desktop/out.csv")));
 
-        JrsTestReader.generateTestReport(
+        final List<JrsTestResult> results = JrsTestReader.getTestResults(
                 terminal,
-                executor,
-                root,
-                Instant.now().minus(1, ChronoUnit.DAYS),
-                getAbsolutePath(Path.of("~/Desktop/out.csv")));
+                root);
+
+
+        for (final JrsTestResult result : results) {
+            System.out.println(result);
+        }
+
     }
 }

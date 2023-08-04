@@ -176,7 +176,7 @@ run () {
 
 if [[ "$COLOR" = true ]]; then
   if [[ "$SQUELCH_SPAM" = true ]]; then
-    run 2>&1 | $SQUELCH_SPAM_PATH | $COLOR_LOGS_PATH
+    run 2>&1 #| $SQUELCH_SPAM_PATH | $COLOR_LOGS_PATH TODO: fix this
   else
     run | $COLOR_LOGS_PATH
   fi

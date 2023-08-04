@@ -16,8 +16,14 @@
 
 package com.swirlds.platform.cli;
 
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+
 import com.swirlds.cli.commands.DevCommand;
+import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.testreader.JrsTestReader;
+import com.swirlds.platform.util.VirtualTerminal;
+import java.nio.file.Path;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -25,4 +31,29 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true,
         description = "Read JRS test results and create a report.")
 @SubcommandOf(DevCommand.class)
-public class JrsTestReaderCommand {}
+public class JrsTestReaderCommand extends AbstractCommand {
+
+    private JrsTestReaderCommand() {}
+
+    @Override
+    public Integer call() {
+
+        final VirtualTerminal terminal = new VirtualTerminal()
+                .setPrintCommand(true)
+                .setPrintExitCode(true)
+                .setThrowOnError(true);
+
+        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
+        //"gs://swirlds-circleci-jrs-results/cody-littley"
+        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
+        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
+
+        JrsTestReader.generateTestReport(
+                terminal,
+                root,
+                getAbsolutePath(Path.of("~/Desktop/report.html")));
+
+        return 0;
+    }
+
+}

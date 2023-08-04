@@ -17,13 +17,6 @@
 package com.swirlds.platform.util;
 
 import static com.swirlds.common.formatting.TextEffect.BLUE;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_BLUE;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_CYAN;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_GREEN;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_PURPLE;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_RED;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_WHITE;
-import static com.swirlds.common.formatting.TextEffect.BRIGHT_YELLOW;
 import static com.swirlds.common.formatting.TextEffect.CYAN;
 import static com.swirlds.common.formatting.TextEffect.GRAY;
 import static com.swirlds.common.formatting.TextEffect.GREEN;
@@ -43,26 +36,24 @@ public class ProgressIndicator {
     private static final String[] LOADING_CHARACTERS = {"↑", "↗", "→", "↘", "↓", "↙", "←", "↖"};
     private static final int CHARACTERS_PER_LINE = LOADING_CHARACTERS.length * 10;
     private static TextEffect[] COLORS = {
-            RED,
-            GREEN,
-            YELLOW,
-            BLUE,
-            PURPLE,
-            CYAN,
             WHITE,
-            GRAY,
-            BRIGHT_RED,
-            BRIGHT_GREEN,
-            BRIGHT_YELLOW,
-            BRIGHT_BLUE,
-            BRIGHT_PURPLE,
-            BRIGHT_CYAN,
-            BRIGHT_WHITE};
+            YELLOW,
+            RED,
+            PURPLE,
+            GREEN,
+            CYAN,
+            BLUE,
+            GRAY};
 
     private int count = 0;
+    private int lineNumber = 0;
     private boolean colorEnabled = true;
+    private final int threshold;
+    private String endOfLineMessage = "";
 
-    public ProgressIndicator() {}
+    public ProgressIndicator(final int threshold) {
+        this.threshold = threshold;
+    }
 
     /**
      * Enable or disable color.
@@ -73,27 +64,76 @@ public class ProgressIndicator {
         this.colorEnabled = colorEnabled;
     }
 
+    @NonNull
+    final String generateCurrentLine(final int lineNumber, final int charactersInLine) {
+        final StringBuilder sb = new StringBuilder();
+        for (int index = 0; index < charactersInLine; index++) {
+            final int characterIndex = index % LOADING_CHARACTERS.length;
+            final int colorIndex = (index + lineNumber) % COLORS.length;
+            final String nextCharacter;
+            if (colorEnabled) {
+                nextCharacter = COLORS[colorIndex].apply(LOADING_CHARACTERS[characterIndex]);
+            } else {
+                nextCharacter = LOADING_CHARACTERS[characterIndex];
+            }
+            sb.append(nextCharacter);
+        }
+
+        return sb.toString();
+    }
+
     /**
      * Increment the progress indicator.
      */
-    public synchronized void increment() {
-        final int index = count % LOADING_CHARACTERS.length;
+    public void increment() {
 
-        final String string;
-
-        if (colorEnabled) {
-            string = COLORS[count % COLORS.length].apply(LOADING_CHARACTERS[index]);
-        } else {
-            string = LOADING_CHARACTERS[index];
-        }
-        System.out.print(string);
-
+        final int previousProgress = count / threshold;
         count++;
-        if (count % CHARACTERS_PER_LINE == 0) {
-            System.out.println();
-        } else {
-            System.out.flush();
+        final int currentProgress = count / threshold;
+
+        if (previousProgress == currentProgress) {
+            // We haven't passed a threshold yet
+            return;
         }
+
+        final int charactersOnCurrentLine = currentProgress % CHARACTERS_PER_LINE;
+        final boolean endOfLine = charactersOnCurrentLine % CHARACTERS_PER_LINE == 0;
+
+        final String line = (charactersOnCurrentLine > 0 ? "\r" : "") +
+                generateCurrentLine(lineNumber, charactersOnCurrentLine) + endOfLineMessage;
+
+        System.out.print(line);
+        System.out.flush();
+        if (endOfLine) {
+            System.out.println();
+            lineNumber++;
+        }
+
+//        final int characterIndex = currentProgress % LOADING_CHARACTERS.length;
+//        final int colorIndex = currentProgress % COLORS.length;
+//
+//        final String string;
+//        if (colorEnabled) {
+//            string = COLORS[colorIndex].apply(LOADING_CHARACTERS[characterIndex]);
+//        } else {
+//            string = LOADING_CHARACTERS[characterIndex];
+//        }
+//        System.out.print(string);
+//
+//        if (currentProgress % CHARACTERS_PER_LINE == 0) {
+//            System.out.println("  " + endOfLineMessage);
+//        } else {
+//            System.out.flush();
+//        }
+    }
+
+    /**
+     * Set a message that will be displayed when we reach the end of a line
+     *
+     * @param endOfLineMessage the message to display
+     */
+    public void setEndOfLineMessage(@NonNull final String endOfLineMessage) {
+        this.endOfLineMessage = endOfLineMessage;
     }
 
     /**
@@ -101,7 +141,7 @@ public class ProgressIndicator {
      *
      * @param message the message to write
      */
-    public synchronized void writeMessage(@NonNull final String message) {
+    public void writeMessage(@NonNull final String message) {
         System.out.println("\n" + message);
         count = 0;
     }
