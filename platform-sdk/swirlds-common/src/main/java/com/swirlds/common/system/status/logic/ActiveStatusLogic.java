@@ -21,6 +21,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
@@ -85,6 +86,22 @@ public class ActiveStatusLogic implements PlatformStatusLogic {
     @NonNull
     @Override
     public PlatformStatusLogic processDoneReplayingEventsAction(@NonNull final DoneReplayingEventsAction action) {
+        Objects.requireNonNull(action);
+
+        throw new IllegalPlatformStatusException(action, getStatus());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving an {@link EmergencyReconnectStartedAction} while in {@link PlatformStatus#ACTIVE} throws an exception,
+     * since an emergency reconnect is only ever performed right after the platform starts up.
+     */
+    @NonNull
+    @Override
+    public PlatformStatusLogic processEmergencyReconnectStartedAction(
+            @NonNull final EmergencyReconnectStartedAction action) {
+
         Objects.requireNonNull(action);
 
         throw new IllegalPlatformStatusException(action, getStatus());
