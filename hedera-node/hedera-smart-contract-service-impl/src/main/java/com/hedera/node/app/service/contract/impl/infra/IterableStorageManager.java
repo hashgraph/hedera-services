@@ -35,7 +35,9 @@ import javax.inject.Singleton;
 @Singleton
 public class IterableStorageManager {
     @Inject
-    public IterableStorageManager() {}
+    public IterableStorageManager() {
+        // Dagger2
+    }
 
     /**
      * Given a writable storage K/V state and the pending changes to storage values and sizes made in this
