@@ -223,7 +223,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             Response.PROTOBUF.write(response, responseBuffer);
             logger.debug("Finished handling a query request in Query workflow");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error while writing response to buffer", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
     }
