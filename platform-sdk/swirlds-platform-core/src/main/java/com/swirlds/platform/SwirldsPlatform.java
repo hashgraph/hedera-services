@@ -84,6 +84,7 @@ import com.swirlds.platform.components.transaction.system.ConsensusSystemTransac
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.components.wiring.ManualWiring;
 import com.swirlds.platform.config.ThreadConfig;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.DispatchConfiguration;
 import com.swirlds.platform.dispatch.triggers.flow.DiskStateLoadedTrigger;
@@ -533,7 +534,7 @@ public class SwirldsPlatform implements Platform, Startable {
         validators.add(StaticValidators.buildParentValidator(initialAddressBook.getSize()));
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(initialAddressBook));
+            validators.add(new SignatureValidator(List.of(initialAddressBook), CryptoStatic::verifySignature));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 

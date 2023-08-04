@@ -26,9 +26,15 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEvent;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.crypto.CryptoStatic;
+import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
+
 import java.security.PublicKey;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,10 +43,17 @@ import org.apache.logging.log4j.Logger;
  */
 public class SignatureValidator implements GossipEventValidator {
     private static final Logger logger = LogManager.getLogger(SignatureValidator.class);
-    private final AddressBook addressBook;
+    private final SignatureVerifier signatureVerifier;
+    private final Map<NodeId, PublicKey> keyMap;
 
-    public SignatureValidator(final AddressBook addressBook) {
-        this.addressBook = addressBook;
+    public SignatureValidator(@NonNull final List<AddressBook> addressBooks, @NonNull final SignatureVerifier signatureVerifier) {
+        this.signatureVerifier = signatureVerifier;
+        this.keyMap = new HashMap<>();
+        for (final AddressBook addressBook : addressBooks) {
+            for (final Address address : addressBook) {
+                keyMap.put(address.getNodeId(), address.getSigPublicKey());
+            }
+        }
     }
 
     /**
@@ -52,13 +65,13 @@ public class SignatureValidator implements GossipEventValidator {
      * 		the public used to validate the event signature
      * @return true iff the signature is crypto-verified to be correct
      */
-    private static boolean isValidSignature(final BaseEvent event, final PublicKey publicKey) {
+    private boolean isValidSignature(final BaseEvent event, final PublicKey publicKey) {
         logger.debug(
                 EVENT_SIG.getMarker(),
                 "event signature is about to be verified. {}",
                 () -> EventStrings.toShortString(event));
 
-        final boolean valid = CryptoStatic.verifySignature(
+        final boolean valid = signatureVerifier.verifySignature(
                 event.getHashedData().getHash().getValue(),
                 event.getUnhashedData().getSignature(),
                 publicKey);
@@ -86,12 +99,12 @@ public class SignatureValidator implements GossipEventValidator {
     @Override
     public boolean isEventValid(final GossipEvent event) {
         final NodeId creatorId = event.getHashedData().getCreatorId();
-        final Address address = addressBook.getAddress(creatorId);
-        if (address == null) {
-            logger.error(EXCEPTION.getMarker(), "Cannot find address for creator with ID: {}", () -> creatorId);
+        final PublicKey publicKey = keyMap.get(creatorId);
+        if (publicKey == null) {
+            logger.error(EXCEPTION.getMarker(), "Cannot find publicKey for creator with ID: {}", () -> creatorId);
             return false;
         }
-        final PublicKey publicKey = address.getSigPublicKey();
+
         return isValidSignature(event, publicKey);
     }
 }
