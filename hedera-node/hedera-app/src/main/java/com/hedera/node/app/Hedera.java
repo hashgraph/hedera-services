@@ -362,7 +362,9 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     public void init(@NonNull final Platform platform, @NonNull final NodeId nodeId) {
-        assert this.platform == platform : "Platform must be the same instance";
+        if (this.platform != platform) {
+            throw new IllegalArgumentException("Platform must be the same instance");
+        }
         logger.info("Initializing Hedera app with HederaNode#{}", nodeId);
 
         // Check that UTF-8 is in use. Otherwise, the node will be subject to subtle bugs in string handling that will

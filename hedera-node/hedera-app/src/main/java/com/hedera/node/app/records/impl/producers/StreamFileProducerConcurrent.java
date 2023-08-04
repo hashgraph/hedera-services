@@ -145,7 +145,10 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
             @NonNull final Instant newBlockFirstTransactionConsensusTime) {
 
         assert lastRecordHashingResult != null : "initRunningHash() must be called before switchBlocks";
-        assert newBlockNumber == lastBlockNumber + 1 : "block numbers must be sequential";
+        if (newBlockNumber != lastBlockNumber + 1) {
+            throw new IllegalArgumentException("Block numbers must be sequential, newBlockNumber=" + newBlockNumber
+                    + ", lastBlockNumber=" + lastBlockNumber);
+        }
 
         this.currentBlockNumber = newBlockNumber;
         requireNonNull(newBlockFirstTransactionConsensusTime);

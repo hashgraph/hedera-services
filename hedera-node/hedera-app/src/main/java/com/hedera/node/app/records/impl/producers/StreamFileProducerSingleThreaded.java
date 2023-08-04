@@ -91,7 +91,10 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
             final long newBlockNumber,
             @NonNull final Instant newBlockFirstTransactionConsensusTime) {
 
-        assert newBlockNumber == lastBlockNumber + 1 : "block numbers must be sequential";
+        if (newBlockNumber != lastBlockNumber + 1) {
+            throw new IllegalArgumentException("Block numbers must be sequential, newBlockNumber=" + newBlockNumber
+                    + ", lastBlockNumber=" + lastBlockNumber);
+        }
         requireNonNull(newBlockFirstTransactionConsensusTime);
         this.currentBlockNumber = newBlockNumber;
         final var lastRunningHash = asHashObject(getRunningHash());
