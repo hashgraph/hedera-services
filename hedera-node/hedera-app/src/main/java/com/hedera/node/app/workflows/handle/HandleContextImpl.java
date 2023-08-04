@@ -323,7 +323,7 @@ public class HandleContextImpl implements HandleContext {
 
         // run the transaction
         final var precedingRecordBuilder = recordListBuilder.addPreceding(configuration());
-        dispatch(txBody, PRECEDING, verifier, precedingRecordBuilder);
+        dispatchSyntheticTxn(txBody, PRECEDING, verifier, precedingRecordBuilder);
 
         return castRecordBuilder(precedingRecordBuilder, recordBuilderClass);
     }
@@ -380,7 +380,7 @@ public class HandleContextImpl implements HandleContext {
         stack.createSavepoint();
 
         // run the child-transaction
-        dispatch(txBody, CHILD, childVerifier, childRecordBuilder);
+        dispatchSyntheticTxn(txBody, CHILD, childVerifier, childRecordBuilder);
 
         // rollback if the child-transaction failed
         if (childRecordBuilder.status() != ResponseCodeEnum.OK) {
@@ -390,7 +390,7 @@ public class HandleContextImpl implements HandleContext {
         return castRecordBuilder(childRecordBuilder, recordBuilderClass);
     }
 
-    private void dispatch(
+    private void dispatchSyntheticTxn(
             @NonNull final TransactionBody txBody,
             @NonNull final TransactionCategory childCategory,
             @NonNull final HandleContextVerifier childVerifier,
