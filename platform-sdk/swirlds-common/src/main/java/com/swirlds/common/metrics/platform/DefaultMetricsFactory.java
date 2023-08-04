@@ -16,6 +16,7 @@
 
 package com.swirlds.common.metrics.platform;
 
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
@@ -31,11 +32,17 @@ import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 
 /**
  * An implementation of {@link MetricsFactory} that creates platform-internal {@link Metric}-instances
  */
 public class DefaultMetricsFactory implements MetricsFactory {
+    private final MetricsConfig metricsConfig;
+
+    public DefaultMetricsFactory() {
+        metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
+    }
 
     /**
      * {@inheritDoc}
@@ -119,6 +126,9 @@ public class DefaultMetricsFactory implements MetricsFactory {
      */
     @Override
     public RunningAverageMetric createRunningAverageMetric(final RunningAverageMetric.Config config) {
+        if (config.isUseDefaultHalfLife()) {
+            return new DefaultRunningAverageMetric(config.withHalfLife(metricsConfig.halfLife()));
+        }
         return new DefaultRunningAverageMetric(config);
     }
 
@@ -127,6 +137,9 @@ public class DefaultMetricsFactory implements MetricsFactory {
      */
     @Override
     public SpeedometerMetric createSpeedometerMetric(final SpeedometerMetric.Config config) {
+        if (config.isUseDefaultHalfLife()) {
+            return new DefaultSpeedometerMetric(config.withHalfLife(metricsConfig.halfLife()));
+        }
         return new DefaultSpeedometerMetric(config);
     }
 
