@@ -4,6 +4,10 @@ module com.hedera.node.app.service.token {
             com.hedera.node.app.service.contract.impl,
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl;
+    exports com.hedera.node.app.service.token.records to
+            com.hedera.node.app.service.contract.impl,
+            com.hedera.node.app,
+            com.hedera.node.app.service.token.impl;
 
     uses com.hedera.node.app.service.token.TokenService;
 

@@ -21,12 +21,16 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
 
@@ -35,10 +39,34 @@ import java.util.Set;
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
     private final WritableStates writableStates;
+    private final StakingValidator stakingValidator;
 
-    public TokenServiceApiImpl(@NonNull final Configuration config, @NonNull final WritableStates writableStates) {
+    public TokenServiceApiImpl(
+            @NonNull final Configuration config,
+            @NonNull final StakingValidator stakingValidator,
+            @NonNull final WritableStates writableStates) {
         requireNonNull(config);
         this.writableStates = requireNonNull(writableStates);
+        this.stakingValidator = requireNonNull(stakingValidator);
+    }
+
+    @Override
+    public void assertValidStakingElection(
+            final boolean isStakingEnabled,
+            final boolean hasDeclineRewardChange,
+            @NonNull final String stakedIdKind,
+            @Nullable final AccountID stakedAccountIdInOp,
+            @Nullable final Long stakedNodeIdInOp,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkInfo networkInfo) {
+        stakingValidator.validateStakedId(
+                isStakingEnabled,
+                hasDeclineRewardChange,
+                stakedIdKind,
+                stakedAccountIdInOp,
+                stakedNodeIdInOp,
+                accountStore,
+                networkInfo);
     }
 
     /**

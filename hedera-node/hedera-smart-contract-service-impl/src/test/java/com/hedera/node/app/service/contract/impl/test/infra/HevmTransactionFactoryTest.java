@@ -75,7 +75,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -99,6 +99,9 @@ class HevmTransactionFactoryTest {
     private NetworkInfo networkInfo;
 
     @Mock
+    private TokenServiceApi tokenServiceApi;
+
+    @Mock
     private GasCalculator gasCalculator;
 
     @Mock
@@ -109,9 +112,6 @@ class HevmTransactionFactoryTest {
 
     @Mock
     private ExpiryValidator expiryValidator;
-
-    @Mock
-    private StakingValidator stakingValidator;
 
     @Mock
     private AttributeValidator attributeValidator;
@@ -128,9 +128,9 @@ class HevmTransactionFactoryTest {
                 DEFAULT_CONTRACTS_CONFIG,
                 accountStore,
                 expiryValidator,
-                stakingValidator,
                 fileStore,
-                attributeValidator);
+                attributeValidator,
+                tokenServiceApi);
     }
 
     @Test
@@ -248,9 +248,15 @@ class HevmTransactionFactoryTest {
     @Test
     void fromHapiCreationValidatesStaking() {
         doThrow(new HandleException(INVALID_STAKING_ID))
-                .when(stakingValidator)
-                .validateStakedId(
-                        false, "STAKED_NODE_ID", null, 123L, accountStore, DEFAULT_STAKING_CONFIG, networkInfo);
+                .when(tokenServiceApi)
+                .assertValidStakingElection(
+                        DEFAULT_STAKING_CONFIG.isEnabled(),
+                        false,
+                        "STAKED_NODE_ID",
+                        null,
+                        123L,
+                        accountStore,
+                        networkInfo);
         assertCreateFailsWith(INVALID_STAKING_ID, b -> b.stakedNodeId(123)
                 .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
                 .proxyAccountID(AccountID.DEFAULT)
@@ -460,8 +466,8 @@ class HevmTransactionFactoryTest {
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
                 accountStore,
                 expiryValidator,
-                stakingValidator,
                 fileStore,
-                attributeValidator);
+                attributeValidator,
+                tokenServiceApi);
     }
 }

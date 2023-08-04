@@ -17,12 +17,15 @@
 package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
+import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.config.BasicConfig;
+import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
+import com.swirlds.gui.GuiConstants;
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -86,7 +89,7 @@ class WinTab2Stats extends PrePaintableJPanel {
      * Instantiate and initialize content of this tab.
      */
     public WinTab2Stats() {
-        metrics = WinBrowser.memberDisplayed.platform.getContext().getMetrics().getAll().stream()
+        metrics = WinBrowser.memberDisplayed.getPlatform().getContext().getMetrics().getAll().stream()
                 .sorted(Comparator.comparing(m -> m.getName().toUpperCase()))
                 .toList();
         int numStats = metrics.size();
@@ -289,11 +292,16 @@ class WinTab2Stats extends PrePaintableJPanel {
             super.paintComponent(g);
             try {
                 StatsBuffer buffer;
-                if (allHistory) {
-                    buffer = metric.getStatsBuffered().getAllHistory();
+                if (metric instanceof LegacyMetric legacyMetric) {
+                    if (allHistory) {
+                        buffer = legacyMetric.getStatsBuffered().getAllHistory();
+                    } else {
+                        buffer = legacyMetric.getStatsBuffered().getRecentHistory();
+                    }
                 } else {
-                    buffer = metric.getStatsBuffered().getRecentHistory();
+                    buffer = new StatsBuffer(0, 0, 0);
                 }
+
                 minXs = 120;
                 maxXs = getWidth() - 55;
                 minYs = 40;
@@ -329,7 +337,7 @@ class WinTab2Stats extends PrePaintableJPanel {
 
                 if (buffer.numBins() == 0) {
                     final BasicConfig basicConfig = WinBrowser.memberDisplayed
-                            .platform
+                            .getPlatform()
                             .getContext()
                             .getConfiguration()
                             .getConfigData(BasicConfig.class);
@@ -431,7 +439,7 @@ class WinTab2Stats extends PrePaintableJPanel {
         int j = cm2rm[index];
         chartsPanel.add(charts[index]);
         charts[index].setVisible(true); // flag this as having been added
-        statBoxes[j].setBackground(WinBrowser.MEMBER_HIGHLIGHT_COLOR);
+        statBoxes[j].setBackground(GuiConstants.MEMBER_HIGHLIGHT_COLOR);
         revalidate();
     }
 
@@ -469,8 +477,8 @@ class WinTab2Stats extends PrePaintableJPanel {
         chartsPanel.setBackground(Color.WHITE);
         setBackground(Color.WHITE);
 
-        JTextArea instructions = WinBrowser.newJTextArea();
-        JTextArea spacer = WinBrowser.newJTextArea();
+        JTextArea instructions = GuiUtils.newJTextArea("");
+        JTextArea spacer = GuiUtils.newJTextArea("");
         instructions.setText(wrap(
                 50,
                 ""
@@ -505,13 +513,15 @@ class WinTab2Stats extends PrePaintableJPanel {
             c.weightx = 0;
             boxesPanel.add(txt, c);
             if (i % numCols == numCols - 1) {
-                JTextArea spacer2 = WinBrowser.newJTextArea();
+                JTextArea spacer2 = GuiUtils.newJTextArea("");
                 c.gridx++;
                 c.weightx = 1.0f;
                 c.gridwidth = GridBagConstraints.REMAINDER; // end of row
                 boxesPanel.add(spacer2, c);
             }
-            if (metric.getStatsBuffered() == null || metric.getStatsBuffered().getAllHistory() == null) {
+            if (metric instanceof LegacyMetric legacyMetric
+                    && (legacyMetric.getStatsBuffered() == null
+                            || legacyMetric.getStatsBuffered().getAllHistory() == null)) {
                 // if no history, then box is gray, and not clickable
                 statBoxes[i].setBackground(LIGHT_GRAY);
                 statBoxes[i].setOpaque(true);
@@ -538,7 +548,7 @@ class WinTab2Stats extends PrePaintableJPanel {
                 showChart(j);
             }
         }
-        descriptions = WinBrowser.newJTextArea();
+        descriptions = GuiUtils.newJTextArea("");
         descriptions.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
         final StringBuilder s = new StringBuilder();
         for (final Metric metric : metrics) {
@@ -564,7 +574,7 @@ class WinTab2Stats extends PrePaintableJPanel {
         add(chartsPanel, c);
         c.gridy = 3;
         add(descriptions, c);
-        JTextArea spacer2 = WinBrowser.newJTextArea();
+        JTextArea spacer2 = GuiUtils.newJTextArea("");
         c.gridy = 4;
         c.weighty = 1.0f;
         add(spacer2, c);

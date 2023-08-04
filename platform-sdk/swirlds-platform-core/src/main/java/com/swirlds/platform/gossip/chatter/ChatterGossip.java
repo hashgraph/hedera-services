@@ -271,6 +271,7 @@ public class ChatterGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
+                                            statusActionSubmitter,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,

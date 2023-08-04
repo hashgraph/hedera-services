@@ -16,7 +16,7 @@
 
 package com.swirlds.fcqueue;
 
-import com.swirlds.common.test.fcqueue.FCInt;
+import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQueueNode;
 import java.util.ArrayList;
 import java.util.HashMap;

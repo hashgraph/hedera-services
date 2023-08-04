@@ -38,9 +38,9 @@ import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -207,12 +207,12 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
 
         stakingValidator.validateStakedId(
+                context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.declineReward(),
                 op.stakedId().kind().name(),
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                context.configuration().getConfigData(StakingConfig.class),
                 context.networkInfo());
     }
 

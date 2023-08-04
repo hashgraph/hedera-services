@@ -273,12 +273,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         }
 
         stakingValidator.validateStakedId(
+                context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.hasDeclineReward(),
                 op.stakedId().kind().name(),
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                context.configuration().getConfigData(StakingConfig.class),
                 networkInfo);
     }
 }

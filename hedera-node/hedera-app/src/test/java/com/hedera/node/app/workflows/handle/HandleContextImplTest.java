@@ -41,7 +41,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;

@@ -16,11 +16,12 @@
 
 package com.swirlds.platform.gui.hashgraph;
 
+import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.CachingGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.HashgraphGuiControls;
 import com.swirlds.platform.gui.hashgraph.internal.HashgraphPicture;
-import com.swirlds.platform.gui.hashgraph.internal.PairPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -70,7 +71,7 @@ public class HashgraphGui extends PrePaintableJPanel {
 
         /////////////////// create pairPanel (contains checkboxesPanel, picturePnel) ///////////////////
 
-        final JPanel pairPanel = PairPanel.create(checkboxesPanel, picturePanel);
+        final JPanel pairPanel = GuiUtils.createPairPanel(checkboxesPanel, picturePanel);
 
         /////////////////// add everything to this ///////////////////
 

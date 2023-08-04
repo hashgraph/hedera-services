@@ -46,7 +46,7 @@ class SavepointStackImplTest extends StateTestBase {
     private static final Configuration BASE_CONFIGURATION = HederaTestConfigBuilder.createConfig();
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
-    private static final Map<String, String> BASE_DATA = new HashMap<>(Map.of(
+    private final Map<String, String> BASE_DATA = new HashMap<>(Map.of(
             A_KEY, APPLE,
             B_KEY, BANANA,
             C_KEY, CHERRY,

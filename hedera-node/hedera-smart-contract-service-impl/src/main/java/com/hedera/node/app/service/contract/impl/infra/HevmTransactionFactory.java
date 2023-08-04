@@ -44,11 +44,12 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.annotations.InitialTokenServiceApi;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -73,9 +74,9 @@ public class HevmTransactionFactory {
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
     private final ReadableFileStore fileStore;
+    private final TokenServiceApi tokenServiceApi;
     private final ReadableAccountStore accountStore;
     private final ExpiryValidator expiryValidator;
-    private final StakingValidator stakingValidator;
     private final AttributeValidator attributeValidator;
 
     @Inject
@@ -87,18 +88,18 @@ public class HevmTransactionFactory {
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final StakingValidator stakingValidator,
             @NonNull final ReadableFileStore fileStore,
-            @NonNull final AttributeValidator attributeValidator) {
-        this.gasCalculator = gasCalculator;
+            @NonNull final AttributeValidator attributeValidator,
+            @InitialTokenServiceApi @NonNull final TokenServiceApi tokenServiceApi) {
+        this.gasCalculator = Objects.requireNonNull(gasCalculator);
         this.fileStore = Objects.requireNonNull(fileStore);
         this.networkInfo = Objects.requireNonNull(networkInfo);
         this.accountStore = Objects.requireNonNull(accountStore);
         this.ledgerConfig = Objects.requireNonNull(ledgerConfig);
         this.stakingConfig = Objects.requireNonNull(stakingConfig);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
+        this.tokenServiceApi = Objects.requireNonNull(tokenServiceApi);
         this.expiryValidator = Objects.requireNonNull(expiryValidator);
-        this.stakingValidator = Objects.requireNonNull(stakingValidator);
         this.attributeValidator = Objects.requireNonNull(attributeValidator);
     }
 
@@ -182,13 +183,13 @@ public class HevmTransactionFactory {
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
         final var usesNonDefaultProxyId = body.hasProxyAccountID() && !AccountID.DEFAULT.equals(body.proxyAccountID());
         validateFalse(usesNonDefaultProxyId, PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
-        stakingValidator.validateStakedId(
+        tokenServiceApi.assertValidStakingElection(
+                stakingConfig.isEnabled(),
                 body.declineReward(),
                 body.stakedId().kind().name(),
                 body.stakedAccountId(),
                 body.stakedNodeId(),
                 accountStore,
-                stakingConfig,
                 networkInfo);
         attributeValidator.validateMemo(body.memo());
         final var effectiveKey = body.adminKeyOrElse(Key.DEFAULT);

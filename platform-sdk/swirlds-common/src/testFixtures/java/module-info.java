@@ -5,6 +5,7 @@ open module com.swirlds.common.test.fixtures {
     exports com.swirlds.common.test.fixtures.merkle.util;
     exports com.swirlds.common.test.fixtures.threading;
     exports com.swirlds.common.test.fixtures.stream;
+    exports com.swirlds.common.test.fixtures.fcqueue;
 
     requires com.swirlds.common;
     requires org.junit.jupiter.api;

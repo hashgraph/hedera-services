@@ -44,6 +44,7 @@ import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.IpAddressStatus;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Component;
@@ -410,7 +411,11 @@ public class HashgraphDemoMain implements SwirldMain {
                                 + "Witnesses are colored circles, non-witnesses are black/gray.\n"
                                 + "Dark circles are part of the consensus, light are not.\n"
                                 + "Fame is true for green, false for blue, unknown for red.\n");
-        window = SwirldsGui.createWindow(platform, false); // Uses BorderLayout. Size is chosen by the Platform
+        final Address address = platform.getAddressBook().getAddress(platform.getSelfId());
+        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(platform.getAddressBook());
+        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(platform.getSelfId());
+        window = SwirldsGui.createWindow(
+                platform, address, winCount, winNum, false); // Uses BorderLayout. Size is chosen by the Platform
         window.setLayout(new GridBagLayout()); // use a layout more powerful than BorderLayout
         int p = 0; // which parameter to use
         final BiFunction<Integer, String, Checkbox> cb = (n, s) -> new Checkbox(
