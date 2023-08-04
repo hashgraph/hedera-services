@@ -19,6 +19,8 @@ package com.swirlds.cli.utility;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import picocli.CommandLine;
 
 /**
@@ -27,6 +29,7 @@ import picocli.CommandLine;
 public class ParameterizedClass {
 
     @CommandLine.Spec
+    @SuppressWarnings("unused") // used by picocli
     private CommandLine.Model.CommandSpec spec;
 
     /**
@@ -41,7 +44,7 @@ public class ParameterizedClass {
      *
      * @param message the message on the exception
      */
-    protected CommandLine.ParameterException buildParameterException(final String message) {
+    protected @NonNull CommandLine.ParameterException buildParameterException(@NonNull final String message) {
         throw new CommandLine.ParameterException(spec.commandLine(), message);
     }
 
@@ -51,7 +54,7 @@ public class ParameterizedClass {
      * @param path a path from the command line
      * @return the path if it passes validation
      */
-    protected Path pathMustExist(final Path path) {
+    protected @NonNull Path pathMustExist(@NonNull final Path path) {
         if (!Files.exists(path)) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " does not exist");
         }
@@ -67,7 +70,7 @@ public class ParameterizedClass {
      * @param path a path from the command line
      * @return the path if it passes validation
      */
-    protected Path dirMustExist(final Path path) {
+    protected @NonNull Path dirMustExist(@NonNull final Path path) {
         pathMustExist(path);
         if (!Files.isDirectory(path)) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " is not a directory");
@@ -81,7 +84,7 @@ public class ParameterizedClass {
      * @param path a path from the command line
      * @return the path if it passes validation
      */
-    protected Path pathMustNotExist(final Path path) {
+    protected @NonNull Path pathMustNotExist(@NonNull final Path path) {
         if (Files.exists(path)) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " already exists");
         }
@@ -94,7 +97,7 @@ public class ParameterizedClass {
      * @param path a path from the command line
      * @return the file if it passes validation
      */
-    protected File fileMustExist(final Path path) {
+    protected @NonNull File fileMustExist(@NonNull final Path path) {
         if (!Files.isRegularFile(pathMustExist(path))) {
             throw new CommandLine.ParameterException(spec.commandLine(), "Path " + path + " is not a file.");
         }
