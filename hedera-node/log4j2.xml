@@ -40,6 +40,25 @@
       <DefaultRolloverStrategy max="1000"/>
     </RollingFile>
 
+    <!-- Platform hash stream logs -->
+    <RollingFile name="swirldsHashStream" fileName="output/swirlds-hashstream/swirlds-hashstream.log"
+                 filePattern="output/swirlds-hashstream/swirlds-hashstream-%d{yyyy-MM-dd}-%i.log.gz">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-8sn %-5p %-16marker &lt;%t&gt; %c{1}: %msg{nolookups}%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="100 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10">
+        <Delete basePath="output" maxDepth="3">
+          <IfFileName glob="swirlds-hashstream/swirlds-hashstream-*.log.gz">
+            <IfLastModified age="P3D"/>
+          </IfFileName>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
   </Appenders>
   <Loggers>
     <Root level="FATAL">
@@ -48,16 +67,43 @@
     </Root>
 
     <Logger name="com.swirlds" level="DEBUG" additivity="false">
-      <AppenderRef ref="fileLog"/>
+      <AppenderRef ref="fileLog">
+        <Filters>
+          <!-- JasperDB / MerkleDb & Virtual Merkle -->
+          <MarkerFilter marker="JASPER_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="MERKLE_DB"              onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="DENY" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="STATE_HASH"             onMatch="DENY" onMismatch="NEUTRAL"/>
+        </Filters>
+      </AppenderRef>
+
+      <AppenderRef ref="vMapLog">
+        <Filters>
+          <!-- JasperDB / MerkleDb & Virtual Merkle -->
+          <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="MERKLE_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
+        </Filters>
+      </AppenderRef>
+
+      <AppenderRef ref="swirldsHashStream">
+        <Filters>
+          <!-- Hash stream log -->
+          <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT"  onMismatch="NEUTRAL"/>
+          <MarkerFilter marker="DISABLED"               onMatch="DENY"    onMismatch="DENY" />
+        </Filters>
+      </AppenderRef>
+
       <!--
-	 Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
-	 to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
-	 future is to use a top-level <Filter> and <Logger> specific filters in combination to achieve the desired
-	 multi-logger setup for diagnostic logging.
-	 -->
+	  Due to known log4j2 issues with how Markers and LogLevels are evaluated there must be a top level <Filter> element
+	  to ensure that the root logger does not execute all the lambda arguments erroneously. Potential work around in the
+	  future is to use a top-level <Filter> and <Logger> specific filters in combination to achieve the desired
+	  multi-logger setup for diagnostic logging.
+	  -->
       <Filters>
         <!-- Filter out levels above INFO (ex: DEBUG & TRACE) -->
-        <!-- Intentially left disabled by default -->
+        <!-- Intentionally left disabled by default -->
         <!-- <ThresholdFilter level="INFO"                 onMatch="NEUTRAL" onMismatch="DENY" />-->
 
         <!-- In the following, enable a marker with onMatch="ACCEPT" and disable with onMatch="DENY". -->
@@ -95,10 +141,12 @@
         <MarkerFilter marker="CERTIFICATES"           onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="LOCKS"                  onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="TIME_MEASURE"           onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="THREADS"                onMatch="ACCEPT"   onMismatch="NEUTRAL"/>
 
         <!-- Signed State Signatures -->
         <MarkerFilter marker="STATE_SIG_DIST"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_DELETER"          onMatch="DENY"   onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="OBJECT_STREAM_DETAIL"   onMatch="DENY"   onMismatch="NEUTRAL"/>
 
         <!-- Cryptography -->
         <MarkerFilter marker="OPENCL_INIT_EXCEPTIONS" onMatch="DENY"   onMismatch="NEUTRAL"/>
@@ -113,6 +161,7 @@
         <!-- Saved States -->
         <MarkerFilter marker="SNAPSHOT_MANAGER"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
         <MarkerFilter marker="STATE_TO_DISK"          onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="STATE_HASH"             onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <!-- Beta Mirror -->
         <MarkerFilter marker="BETA_MIRROR_NODE"       onMatch="ACCEPT" onMismatch="NEUTRAL"/>
@@ -131,6 +180,11 @@
         <MarkerFilter marker="MERKLE_HASHING"         onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_GENERATION"      onMatch="DENY"   onMismatch="NEUTRAL"/>
         <MarkerFilter marker="MERKLE_LOCKS"           onMatch="DENY"   onMismatch="NEUTRAL"/>
+
+        <!-- JasperDB / MerkleDb & Virtual Merkle -->
+        <MarkerFilter marker="JASPER_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="MERKLE_DB"              onMatch="ACCEPT" onMismatch="NEUTRAL"/>
+        <MarkerFilter marker="VIRTUAL_MERKLE_STATS"   onMatch="ACCEPT" onMismatch="NEUTRAL"/>
 
         <MarkerFilter marker="DISABLED"               onMatch="DENY"   onMismatch="DENY" />
       </Filters>
