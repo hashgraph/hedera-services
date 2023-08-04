@@ -47,6 +47,7 @@ public class FakeHederaState implements HederaState {
 
     @NonNull
     @Override
+    @SuppressWarnings("java:S3740")
     public ReadableStates createReadableStates(@NonNull String serviceName) {
         final var serviceStates = states.get(serviceName);
         final var data = new HashMap<String, Object>();
@@ -66,6 +67,7 @@ public class FakeHederaState implements HederaState {
 
     @NonNull
     @Override
+    @SuppressWarnings("java:S3740")
     public WritableStates createWritableStates(@NonNull String serviceName) {
         final var serviceStates = states.get(serviceName);
         final var data = new HashMap<String, Object>();
