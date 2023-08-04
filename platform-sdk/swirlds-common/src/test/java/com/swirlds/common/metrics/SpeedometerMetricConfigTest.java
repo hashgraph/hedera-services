@@ -48,7 +48,7 @@ class SpeedometerMetricConfigTest {
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
         assertThat(config.getHalfLife()).isEqualTo(DEFAULT_HALF_LIFE);
-        assertThat(config.isUseDefaultHalfLife()).isEqualTo(true);
+        assertThat(config.isUseDefaultHalfLife()).isTrue();
     }
 
     @Test
