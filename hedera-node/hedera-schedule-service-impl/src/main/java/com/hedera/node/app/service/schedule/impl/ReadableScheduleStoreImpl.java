@@ -17,7 +17,10 @@
 package com.hedera.node.app.service.schedule.impl;
 
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.state.primitive.ProtoLong;
+import com.hedera.hapi.node.state.primitive.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.handlers.ScheduleUtility;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -37,8 +40,8 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
             "Null states instance passed to ReadableScheduleStore constructor, possible state corruption.";
 
     private final ReadableKVState<ScheduleID, Schedule> schedulesById;
-    private final ReadableKVState<Long, List<Schedule>> schedulesByExpirationSecond;
-    private final ReadableKVState<String, List<Schedule>> schedulesByStringHash;
+    private final ReadableKVState<ProtoLong, ScheduleList> schedulesByExpirationSecond;
+    private final ReadableKVState<ProtoString, ScheduleList> schedulesByStringHash;
 
     /**
      * Create a new {@link ReadableScheduleStore} instance.
@@ -70,12 +73,14 @@ public class ReadableScheduleStoreImpl implements ReadableScheduleStore {
     @Nullable
     public List<Schedule> getByEquality(final @NonNull Schedule scheduleToMatch) {
         String stringHash = ScheduleUtility.calculateStringHash(scheduleToMatch);
-        return schedulesByStringHash.get(stringHash);
+        final ScheduleList inStateValue = schedulesByStringHash.get(new ProtoString(stringHash));
+        return inStateValue != null ? inStateValue.schedules() : null;
     }
 
     @Nullable
     @Override
     public List<Schedule> getByExpirationSecond(final long expirationTime) {
-        return schedulesByExpirationSecond.get(expirationTime);
+        final ScheduleList inStateValue = schedulesByExpirationSecond.get(new ProtoLong(expirationTime));
+        return inStateValue != null ? inStateValue.schedules() : null;
     }
 }

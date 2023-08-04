@@ -19,6 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.primitive.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -32,7 +33,7 @@ import java.util.Optional;
 public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
     /** The underlying data storage class that holds the prepared update file hash.
      * May be null if no prepared update file has been set. */
-    private final ReadableSingletonState<Bytes> updateFileHash;
+    private final ReadableSingletonState<ProtoBytes> updateFileHash;
 
     /**
      * Create a new {@link ReadableUpgradeStoreImpl} instance.
@@ -47,7 +48,7 @@ public class ReadableUpgradeStoreImpl implements ReadableUpgradeStore {
     @Override
     @NonNull
     public Optional<Bytes> updateFileHash() {
-        Bytes hash = updateFileHash.get();
-        return (hash == null ? Optional.empty() : Optional.of(hash));
+        ProtoBytes hash = updateFileHash.get();
+        return (hash == null || hash.value() == null ? Optional.empty() : Optional.of(hash.value()));
     }
 }
