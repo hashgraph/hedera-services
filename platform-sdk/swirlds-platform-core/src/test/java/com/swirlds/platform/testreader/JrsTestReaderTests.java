@@ -62,7 +62,9 @@ public class JrsTestReaderTests {
     @Test
     void test() {
         final VirtualTerminal terminal = new VirtualTerminal()
+                .setProgressIndicatorEnabled(true)
                 .setThrowOnError(true);
+        terminal.getProgressIndicator().setColorEnabled(true);
 
         final ExecutorService executor = Executors.newFixedThreadPool(12);
 

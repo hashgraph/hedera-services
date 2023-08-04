@@ -34,32 +34,51 @@ public final class VirtualTerminal {
     private boolean printCommand;
     private boolean printExitCode;
     private boolean throwOnError;
+    private boolean progressIndicatorEnabled;
+
+    private final ProgressIndicator progressIndicator = new ProgressIndicator();
 
     public VirtualTerminal() {}
 
+    @NonNull
     public VirtualTerminal setPrintStdout(boolean printStdout) {
         this.printStdout = printStdout;
         return this;
     }
 
+    @NonNull
     public VirtualTerminal setPrintStderr(boolean printStderr) {
         this.printStderr = printStderr;
         return this;
     }
 
+    @NonNull
     public VirtualTerminal setPrintCommand(boolean printCommand) {
         this.printCommand = printCommand;
         return this;
     }
 
+    @NonNull
     public VirtualTerminal setPrintExitCode(boolean printExitCode) {
         this.printExitCode = printExitCode;
         return this;
     }
 
+    @NonNull
     public VirtualTerminal setThrowOnError(boolean throwOnError) {
         this.throwOnError = throwOnError;
         return this;
+    }
+
+    @NonNull
+    public VirtualTerminal setProgressIndicatorEnabled(boolean progressIndicatorEnabled) {
+        this.progressIndicatorEnabled = progressIndicatorEnabled;
+        return this;
+    }
+
+    @NonNull
+    public ProgressIndicator getProgressIndicator() {
+        return progressIndicator;
     }
 
     /**
@@ -122,6 +141,10 @@ public final class VirtualTerminal {
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while running command", e);
+        } finally {
+            if (progressIndicatorEnabled) {
+                progressIndicator.increment();
+            }
         }
     }
 }

@@ -129,8 +129,7 @@ public final class JrsTestReader {
             @NonNull final String rootDirectory,
             @NonNull final Instant minimumTimestamp) {
 
-        System.out.println("Searching for panel directories.");
-        final ProgressIndicator progressIndicator = new ProgressIndicator();
+        terminal.getProgressIndicator().writeMessage("Searching for panel directories.");
 
         final Queue<String> directoriesToExplore = new LinkedBlockingQueue<>();
         directoriesToExplore.add(rootDirectory);
@@ -152,7 +151,6 @@ public final class JrsTestReader {
                     } else if (!timestamp.isBefore(minimumTimestamp)) {
                         directoriesWithTimestamps.add(next);
                     }
-                    progressIndicator.increment();
                     latch.countDown();
                 });
             }
@@ -160,7 +158,8 @@ public final class JrsTestReader {
             abortAndThrowIfInterrupted(latch::await, "interrupted while waiting for directory search to complete");
         }
 
-        System.out.println("\nFound " + directoriesWithTimestamps.size() + " panel directories.");
+        terminal.getProgressIndicator()
+                .writeMessage("Found " + directoriesWithTimestamps.size() + " panel directories.");
 
         final List<String> dirList = new ArrayList<>(directoriesWithTimestamps.size());
         dirList.addAll(directoriesWithTimestamps);
@@ -186,9 +185,7 @@ public final class JrsTestReader {
         final List<String> panelDirectories =
                 findTestPanelDirectories(terminal, executorService, rootDirectory, minimumTimestamp);
 
-        System.out.println("Searching for test directories.");
-
-        final ProgressIndicator progressIndicator = new ProgressIndicator();
+        terminal.getProgressIndicator().writeMessage("Searching for test directories.");
 
         final Queue<String> testDirectories = new LinkedBlockingDeque<>();
         final CountDownLatch latch = new CountDownLatch(panelDirectories.size());
@@ -203,14 +200,13 @@ public final class JrsTestReader {
                     }
                     testDirectories.add(potentialTestDirectory);
                 }
-                progressIndicator.increment();
                 latch.countDown();
             });
         }
 
         abortAndThrowIfInterrupted(latch::await, "interrupted while waiting for directory search to complete");
 
-        System.out.println("\nFound " + testDirectories.size() + " test directories.");
+        terminal.getProgressIndicator().writeMessage("Found " + testDirectories.size() + " test directories.");
 
         final List<String> dirList = new ArrayList<>(testDirectories.size());
         dirList.addAll(testDirectories);
@@ -233,6 +229,8 @@ public final class JrsTestReader {
             @NonNull final ExecutorService executorService,
             @NonNull final String rootDirectory,
             @NonNull final Instant minimumTimestamp) {
+
+        terminal.getProgressIndicator().writeMessage("Scanning tests for data.");
 
         final List<String> testDirectories =
                 findTestDirectories(terminal, executorService, rootDirectory, minimumTimestamp);
@@ -266,6 +264,8 @@ public final class JrsTestReader {
             testResults.add(result);
         }
 
+        terminal.getProgressIndicator().writeMessage("Found results for " + testResults.size() + " tests.");
+
         return testResults;
     }
 
@@ -295,6 +295,8 @@ public final class JrsTestReader {
         }
 
         final String report = sb.toString();
+        terminal.getProgressIndicator().writeMessage(
+                "\n\n===================================================================================\n\n");
         System.out.println(report);
 
         if (Files.exists(reportPath)) {

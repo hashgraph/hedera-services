@@ -49,7 +49,6 @@ public record JrsTestResult(
     /**
      * Generate a CSV line for this test result.
      * @param sb the string builder to append to
-     * @return a CSV line
      */
     public void renderCsvLine(@NonNull final StringBuilder sb) {
         final String browserUrl = generateWebBrowserUrl();
