@@ -38,6 +38,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
@@ -200,25 +201,7 @@ public class SingleTransactionRecordBuilderTest {
         assertEquals(paidStakingRewards, singleTransactionRecord.record().paidStakingRewards());
         assertEquals(evmAddress, singleTransactionRecord.record().evmAddress());
 
-        assertEquals(status, singleTransactionRecord.record().receipt().status());
-        assertEquals(accountID, singleTransactionRecord.record().receipt().accountID());
-        assertEquals(fileID, singleTransactionRecord.record().receipt().fileID());
-        assertEquals(contractID, singleTransactionRecord.record().receipt().contractID());
-        assertEquals(exchangeRate, singleTransactionRecord.record().receipt().exchangeRate());
-        assertEquals(topicID, singleTransactionRecord.record().receipt().topicID());
-        assertEquals(
-                TOPIC_SEQUENCE_NUMBER,
-                singleTransactionRecord.record().receipt().topicSequenceNumber());
-        assertEquals(
-                topicRunningHash, singleTransactionRecord.record().receipt().topicRunningHash());
-        assertEquals(tokenID, singleTransactionRecord.record().receipt().tokenID());
-        assertEquals(
-                NEW_TOTAL_SUPPLY, singleTransactionRecord.record().receipt().newTotalSupply());
-        assertEquals(scheduleID, singleTransactionRecord.record().receipt().scheduleID());
-        assertEquals(
-                scheduledTransactionID,
-                singleTransactionRecord.record().receipt().scheduledTransactionID());
-        assertEquals(serialNumbers, singleTransactionRecord.record().receipt().serialNumbers());
+        assertTransactionReceiptProps(singleTransactionRecord.record().receipt(), serialNumbers);
 
         final var expectedTransactionSidecarRecords = List.of(
                 new TransactionSidecarRecord(
@@ -235,6 +218,22 @@ public class SingleTransactionRecordBuilderTest {
                         false,
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, contractBytecode)));
         assertEquals(expectedTransactionSidecarRecords, singleTransactionRecord.transactionSidecarRecords());
+    }
+
+    private void assertTransactionReceiptProps(TransactionReceipt receipt, List<Long> serialNumbers) {
+        assertEquals(status, receipt.status());
+        assertEquals(accountID, receipt.accountID());
+        assertEquals(fileID, receipt.fileID());
+        assertEquals(contractID, receipt.contractID());
+        assertEquals(exchangeRate, receipt.exchangeRate());
+        assertEquals(topicID, receipt.topicID());
+        assertEquals(TOPIC_SEQUENCE_NUMBER, receipt.topicSequenceNumber());
+        assertEquals(topicRunningHash, receipt.topicRunningHash());
+        assertEquals(tokenID, receipt.tokenID());
+        assertEquals(NEW_TOTAL_SUPPLY, receipt.newTotalSupply());
+        assertEquals(scheduleID, receipt.scheduleID());
+        assertEquals(scheduledTransactionID, receipt.scheduledTransactionID());
+        assertEquals(serialNumbers, receipt.serialNumbers());
     }
 
     @Test
