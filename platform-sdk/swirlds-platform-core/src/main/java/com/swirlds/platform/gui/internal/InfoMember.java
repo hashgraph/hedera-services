@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.gui.internal;
 
-import com.swirlds.common.system.address.Address;
+import com.swirlds.gui.InfoEntity;
 import com.swirlds.platform.SwirldsPlatform;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,18 +25,23 @@ import java.util.List;
  * Metadata about a member in a swirld running on an app.
  */
 public class InfoMember extends InfoEntity {
-    public InfoSwirld swirld; // parent
-    List<InfoState> states = new ArrayList<InfoState>(); // children
 
-    long memberId;
-    SwirldsPlatform platform;
+    private final List<InfoState> states = new ArrayList<>(); // children
 
-    public InfoMember(InfoSwirld swirld, long memberId, SwirldsPlatform platform) {
-        this.swirld = swirld;
-        this.memberId = memberId;
+    private final SwirldsPlatform platform;
+
+    public InfoMember(final InfoSwirld swirld, final SwirldsPlatform platform) {
+        super(platform.getSelfAddress().getNickname() + " - "
+                + platform.getSelfAddress().getSelfName());
         this.platform = platform;
-        final Address address = platform.getSelfAddress();
-        this.name = address.getNickname() + " - " + address.getSelfName();
-        swirld.members.add(this);
+        swirld.getMembers().add(this);
+    }
+
+    public List<InfoState> getStates() {
+        return states;
+    }
+
+    public SwirldsPlatform getPlatform() {
+        return platform;
     }
 }

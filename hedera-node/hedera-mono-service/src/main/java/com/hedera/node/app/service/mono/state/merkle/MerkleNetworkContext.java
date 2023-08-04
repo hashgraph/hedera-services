@@ -1049,8 +1049,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
     }
 
-    @VisibleForTesting
-    FCQueue<BytesElement> getBlockHashes() {
+    public FCQueue<BytesElement> getBlockHashes() {
         return blockHashes;
     }
 
@@ -1065,7 +1064,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @VisibleForTesting
-    void setBlockHashes(final FCQueue<BytesElement> blockHashes) {
+    public void setBlockHashes(final FCQueue<BytesElement> blockHashes) {
         this.blockHashes = blockHashes;
     }
 

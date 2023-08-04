@@ -23,6 +23,7 @@ dependencies {
         annotationProcessor(gav("dagger.compiler"))
 
         testImplementation(project(":app-service-token"))
+        testImplementation(project(":app"))
         testImplementation(testFixtures(project(":app-service-mono")))
         testImplementation(testFixtures(project(":config")))
         testImplementation(testFixtures(project(":app-spi")))

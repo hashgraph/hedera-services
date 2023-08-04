@@ -27,7 +27,6 @@ import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
@@ -80,6 +79,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
+import com.swirlds.gui.WindowConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
@@ -284,7 +284,7 @@ public class Browser {
                 final JFrame jframe = new JFrame();
                 jframe.setPreferredSize(new Dimension(200, 200));
                 jframe.pack();
-                setInsets(jframe.getInsets());
+                WindowConfig.setInsets(jframe.getInsets());
                 jframe.dispose();
             }
 
@@ -632,8 +632,8 @@ public class Browser {
                 // this is a node to start locally.
                 final String platformName = address.getNickname()
                         + " - " + address.getSelfName()
-                        + " - " + infoSwirld.name
-                        + " - " + infoSwirld.app.name;
+                        + " - " + infoSwirld.getName()
+                        + " - " + infoSwirld.getApp().getName();
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
@@ -711,7 +711,7 @@ public class Browser {
 
                 platforms.add(platform);
 
-                new InfoMember(infoSwirld, instanceNumber, platform);
+                new InfoMember(infoSwirld, platform);
 
                 appMain.init(platform, nodeId);
 

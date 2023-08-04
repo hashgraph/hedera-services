@@ -29,7 +29,7 @@ import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

@@ -42,6 +42,7 @@ import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -127,6 +128,9 @@ public class FileTestBase {
 
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    protected SignatureVerification signatureVerification;
 
     protected MapReadableKVState<FileID, File> readableFileState;
     protected MapWritableKVState<FileID, File> writableFileState;
