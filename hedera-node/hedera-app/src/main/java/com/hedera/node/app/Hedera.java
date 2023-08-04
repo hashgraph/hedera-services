@@ -18,7 +18,6 @@ package com.hedera.node.app;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.node.app.spi.HapiUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.common.system.InitTrigger.GENESIS;
 import static com.swirlds.common.system.InitTrigger.RESTART;
@@ -872,7 +871,6 @@ public final class Hedera implements SwirldMain {
         final var selfId = platform.getSelfId();
         if (daggerApp == null) {
             final var nodeAddress = platform.getAddressBook().getAddress(selfId);
-            final var nodeSelfAccount = parseAccount(nodeAddress.getMemo());
             final var runningHashStore = new ReadableStoreFactory(state).getStore(ReadableRunningHashLeafStore.class);
             final var initialHash = runningHashStore.getRunningHash();
             // Fully qualified so as to not confuse javadoc
