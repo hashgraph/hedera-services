@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.annotations.InitialTokenServiceApi;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -34,6 +35,7 @@ import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -123,6 +125,13 @@ public interface TransactionModule {
     @TransactionScope
     static ReadableAccountStore provideReadableAccountStore(@NonNull final HandleContext context) {
         return context.readableStore(ReadableAccountStore.class);
+    }
+
+    @Provides
+    @TransactionScope
+    @InitialTokenServiceApi
+    static TokenServiceApi provideInitialTokenServiceApi(@NonNull final HandleContext context) {
+        return context.serviceApi(TokenServiceApi.class);
     }
 
     @Provides

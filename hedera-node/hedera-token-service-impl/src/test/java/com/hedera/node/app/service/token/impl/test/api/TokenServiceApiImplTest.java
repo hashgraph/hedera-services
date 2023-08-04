@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -30,11 +31,14 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -44,6 +48,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,12 +79,37 @@ class TokenServiceApiImplTest {
             TokenServiceImpl.ACCOUNTS_KEY, accountState,
             TokenServiceImpl.ALIASES_KEY, aliasesState));
     private final WritableAccountStore accountStore = new WritableAccountStore(writableStates);
+    @Mock
+    private StakingValidator stakingValidator;
+    @Mock
+    private NetworkInfo networkInfo;
 
     private TokenServiceApiImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, writableStates);
+        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, stakingValidator, writableStates);
+    }
+
+    @Test
+    void delegatesStakingValidationAsExpected() {
+        subject.assertValidStakingElection(
+                true,
+                false,
+                "STAKED_NODE_ID",
+                null,
+                123L,
+                accountStore,
+                networkInfo);
+
+        verify(stakingValidator).validateStakedId(
+                true,
+                false,
+                "STAKED_NODE_ID",
+                null,
+                123L,
+                accountStore,
+                networkInfo);
     }
 
     @Test
