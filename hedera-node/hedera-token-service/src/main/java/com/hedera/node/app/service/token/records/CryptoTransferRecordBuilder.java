@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.impl.records;
+package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.TokenTransferList;

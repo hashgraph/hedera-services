@@ -36,7 +36,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.records.TokenCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CustomFeesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;

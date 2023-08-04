@@ -37,7 +37,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;

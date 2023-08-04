@@ -46,7 +46,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;

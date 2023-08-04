@@ -61,7 +61,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;

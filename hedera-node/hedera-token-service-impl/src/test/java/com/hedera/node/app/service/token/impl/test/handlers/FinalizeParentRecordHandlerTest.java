@@ -46,7 +46,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;

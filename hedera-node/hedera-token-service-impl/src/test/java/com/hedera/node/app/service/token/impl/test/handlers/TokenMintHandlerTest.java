@@ -36,7 +36,7 @@ import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
-import com.hedera.node.app.service.token.impl.records.TokenMintRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
