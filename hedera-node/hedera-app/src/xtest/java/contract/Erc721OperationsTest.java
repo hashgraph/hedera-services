@@ -131,8 +131,8 @@ class Erc721OperationsTest {
         scaffoldingComponent.workingStateAccessor().setHederaState(scaffoldingComponent.hederaState());
 
         // when:
-        handle(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
-        handle(
+        handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
+        handleAndCommit(
                 CONTRACT_SERVICE.handlers().contractCallHandler(),
                 synthApproveTxn(TOKEN_TREASURY_ID, PARTY_ADDRESS, 2),
                 synthApproveTxn(TOKEN_TREASURY_ID, PARTY_ADDRESS, 3),
@@ -148,7 +148,7 @@ class Erc721OperationsTest {
         assertExpectedStorage();
     }
 
-    private void handle(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
+    private void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
             final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
