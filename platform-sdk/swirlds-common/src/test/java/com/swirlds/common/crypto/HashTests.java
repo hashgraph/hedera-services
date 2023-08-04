@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.crypto;
+package com.swirlds.common.crypto;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -27,11 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.EmptyHashValueException;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.HashBuilder;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
