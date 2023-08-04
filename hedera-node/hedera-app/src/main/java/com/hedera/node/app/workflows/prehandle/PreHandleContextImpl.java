@@ -216,6 +216,7 @@ public class PreHandleContextImpl implements PreHandleContext {
 
     @Override
     @NonNull
+    @SuppressWarnings("java:S2637")
     public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         requireNonNull(responseCode);
