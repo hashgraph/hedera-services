@@ -382,7 +382,7 @@ public class ContractMintHTSV1SecurityModelSuite extends HapiSuite {
                                                         .withStatus(SUCCESS)
                                                         .withTotalSupply(2L)
                                                         .withSerialNumbers(1L, 2L))
-                                                .gasUsed(704226L))
+                                                .gasUsed(563380L))
                                         .newTotalSupply(2)
                                         .serialNos(Arrays.asList(1L, 2L))));
     }
