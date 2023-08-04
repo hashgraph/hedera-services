@@ -22,7 +22,6 @@ import com.hedera.services.cli.signedstate.DumpStateCommand.Format;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.ThingsToStrings;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,7 +34,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -47,19 +48,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 
-// TODO: SPS/TSL -1 is default, not 0
-// TODO: Validate both CSV and elided output does output all fields correctly
-
+/** Dump all Hedera account objects, from a signed state file, to a text file, in deterministic order.
+ * Can output in either CSV format (actually: semicolon-separated) or in a "elided field" format where fields are
+ * dumped in "name:value" pairs and missing fields or fields with default values are skipped.
+ */
 @SuppressWarnings("java:S106") // "use of system.out/system.err instead of logger" - not needed/desirable for CLI tool
 public class DumpAccountsSubcommand {
 
     static void doit(
             @NonNull final SignedStateHolder state,
             @NonNull final Path accountPath,
-            final int limit,
+            final int lowLimit,
+            final int highLimit,
             @NonNull final Format format,
             @NonNull final Verbosity verbosity) {
-        new DumpAccountsSubcommand(state, accountPath, limit, format, verbosity).doit();
+        new DumpAccountsSubcommand(state, accountPath, lowLimit, highLimit, format, verbosity).doit();
     }
 
     @NonNull
@@ -74,17 +77,21 @@ public class DumpAccountsSubcommand {
     @NonNull
     final Format format;
 
-    final int limit;
+    final int lowLimit;
+
+    final int highLimit;
 
     DumpAccountsSubcommand(
             @NonNull final SignedStateHolder state,
             @NonNull final Path accountPath,
-            final int limit,
+            final int lowLimit,
+            final int highLimit,
             @NonNull final Format format,
             @NonNull final Verbosity verbosity) {
         this.state = state;
         this.accountPath = accountPath;
-        this.limit = limit >= 0 ? limit : Integer.MAX_VALUE;
+        this.lowLimit = Math.max(lowLimit, 0);
+        this.highLimit = Math.max(highLimit, 0);
         this.format = format;
         this.verbosity = verbosity;
     }
@@ -125,33 +132,63 @@ public class DumpAccountsSubcommand {
         }
 
         System.out.printf("=== report is %d bytes%n", reportSize[0]);
+        System.out.printf("=== fields with exceptions: %s%n", String.join(",", fieldsWithExceptions));
     }
 
+    /** Traverses the dehydrated signed state file to pull out all the accounts for later processing.
+     *
+     * Currently, we pull out _all_ of the accounts at once and _sort_ them before processing any. This is because we
+     * want to output accounts in a deterministic order and the traversal - multithreaded - gives you accounts in a
+     * non-deterministic order.
+     *
+     * But another approach would be to _format_ the accounts into strings as you do the traversal, saving those
+     * strings, and then after the traversal is complete sorting _them_ into a deterministic order.  Not sure which
+     * way is better.  No need to find out, either:  This approach works, is fast enough, and runs on current mainnet
+     * state on my laptop.  If in fact it doesn't run (say, memory issues) on larger states (e.g., testnet) then we can
+     * try another approach that may save memory.  (But the fact is the entire state must be resident in memory
+     * anyway - except for the on-disk portions (for the mono service) and so we're talking about the difference
+     * between the `HederaAccount` objects and the things they own vs. the formatted strings.)
+     */
     @NonNull
     HederaAccount[] gatherAccounts(@NonNull AccountStorageAdapter accountStore) {
         final var accounts = new ConcurrentLinkedQueue<HederaAccount>();
         final var processed = new AtomicInteger();
         accountStore.forEach((entityNum, hederaAccount) -> {
             final var n = processed.incrementAndGet();
-            if (n > limit) return;
-            accounts.add(hederaAccount);
+            if (lowLimit <= entityNum.longValue() && entityNum.longValue() <= highLimit) accounts.add(hederaAccount);
         });
         final var accountsArr = accounts.toArray(new HederaAccount[0]);
         Arrays.parallelSort(accountsArr, Comparator.comparingInt(HederaAccount::number));
         System.out.printf(
-                "=== %d accounts iterated over (%d saved, %d limit)%n", processed.get(), accountsArr.length, limit);
+                "=== %d accounts iterated over (%d saved%s)%n",
+                processed.get(),
+                accountsArr.length,
+                lowLimit > 0 || highLimit < Integer.MAX_VALUE
+                        ? ", limits: [%d..%d]".formatted(lowLimit, highLimit)
+                        : "");
         return accountsArr;
     }
 
+    /** String that separates all fields in the CSV format, and also the primitive-typed fields from each other and
+     * the other-typed fields from each other in the compressed format.
+     */
     static final String FIELD_SEPARATOR = ";";
+
+    /** String that separates sub-fields (the primitive-type fields) in the compressed format. */
     static final String SUBFIELD_SEPARATOR = ",";
+
+    /** String that separates field names from field values in the compressed format */
     static final String NAME_TO_VALUE_SEPARATOR = ":";
 
+    /** Produces the CSV header line: A CSV line from all the field names in the deterministic order. */
     @NonNull
     String formatCsvHeader(@NonNull final List<String> names) {
         return String.join(FIELD_SEPARATOR, names);
     }
 
+    /** Returns the list of _all_ field names in the deterministic order, expanding the abbreviations to the full
+     * field name.
+     */
     @NonNull
     List<String> allFieldNamesInOrder() {
         final var r = new ArrayList<String>(50);
@@ -162,12 +199,18 @@ public class DumpAccountsSubcommand {
         return r.stream().map(s -> fieldNameMap.getOrDefault(s, s)).toList();
     }
 
+    /** For the purpose of getting the field names from the field accessors, via the existing method, I need a dummy
+     * account.  This is the way to get one.  (Only done once per execution of this tool.)
+     */
     @NonNull
     HederaAccount getMockAccount() {
         return (HederaAccount) Proxy.newProxyInstance(
                 HederaAccount.class.getClassLoader(), new Class<?>[] {HederaAccount.class}, (p, m, as) -> null);
     }
 
+    /** Formats an entire account as a text string.  First field of the string is the account number, followed by all
+     * of its fields.
+     */
     @NonNull
     String formatAccount(@NonNull final StringBuilder sb, @NonNull final HederaAccount a) {
         sb.setLength(0);
@@ -179,6 +222,10 @@ public class DumpAccountsSubcommand {
         return sb.toString();
     }
 
+    /** For the compressed field output we want to have field name abbreviations (for compactness), but for the CSV
+     * output we can afford the full names.  This maps between them.  (Only the primitive-valued fields have the
+     * abbreviations.)
+     */
     static final Map<String, String> fieldNameMap = toMap(
             "#+B", "numPositiveBalances",
             "#A", "numAssociations",
@@ -212,6 +259,10 @@ public class DumpAccountsSubcommand {
             "TT", "tokenTreasury",
             "^AA", "maxAutomaticAssociations");
 
+    /** `Map.of` only has 11 overloads - for up to 10 entries.  After that there's a variadic `Map.ofEntries` which is
+     * klunky because it takes `Map.Entry`s.  So this is the variadic form of `Map.of`.  Not sure why the Java people
+     * didn't just put this in the `Map` class.
+     */
     @NonNull
     static Map<String, String> toMap(String... es) {
         if (0 != es.length % 2)
@@ -224,6 +275,7 @@ public class DumpAccountsSubcommand {
         return r;
     }
 
+    /** A simple formatter for field names in the compressed fields case: writes the field separator then `{name}:` */
     void formatFieldSep(@NonNull final StringBuilder sb, @NonNull final String name) {
         sb.append(FIELD_SEPARATOR);
         sb.append(name);
@@ -248,7 +300,7 @@ public class DumpAccountsSubcommand {
     void formatAccountBooleans(
             @NonNull final StringBuilder sb, @NonNull final HederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
-                sb, a, name, booleanFieldsMapping, b -> !b, DumpAccountsSubcommand::tagOnlyFieldFormatter);
+                sb, a, name, booleanFieldsMapping, false, b -> !b, DumpAccountsSubcommand::tagOnlyFieldFormatter);
     }
 
     /** A mapping for all `int`-valued fields that takes the field name to the field extractor. */
@@ -264,7 +316,7 @@ public class DumpAccountsSubcommand {
     void formatAccountInts(
             @NonNull final StringBuilder sb, @NonNull final HederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
-                sb, a, name, intFieldsMapping, n -> n == 0, DumpAccountsSubcommand::taggedFieldFormatter);
+                sb, a, name, intFieldsMapping, 0, n -> n == 0, DumpAccountsSubcommand::taggedFieldFormatter);
     }
 
     /** A mapping for all `long`-valued fields that takes the field name to the field extractor. */
@@ -279,16 +331,31 @@ public class DumpAccountsSubcommand {
             Pair.of("N", HederaAccount::getEthereumNonce),
             Pair.of("SID", HederaAccount::getStakedId),
             Pair.of("SNID", HederaAccount::getStakedNodeAddressBookId),
-            Pair.of("SPS", HederaAccount::getStakePeriodStart),
+            Pair.of("SPS", coerceMinus1ToBeDefault(HederaAccount::getStakePeriodStart)),
             Pair.of("STM", HederaAccount::getStakedToMe),
             Pair.of("TS", HederaAccount::totalStake),
-            Pair.of("TSL", HederaAccount::totalStakeAtStartOfLastRewardedPeriod));
+            Pair.of("TSL", coerceMinus1ToBeDefault(HederaAccount::totalStakeAtStartOfLastRewardedPeriod)));
+
+    /** Unfortunately this is a hack to handle the two long-valued fields where `-1` is used as the "missing" marker.
+     * Probably all of the primitive-valued fields should be changed to use `Field` descriptors, which would then be
+     * enhanced to have a per-field "is default value?" predicate.  But not now.)
+     */
+    @SuppressWarnings(
+            "java:S4276") // Functional interfaces should be as specialized as possible - except not in this case, for
+    // consistency
+    @NonNull
+    static Function<HederaAccount, Long> coerceMinus1ToBeDefault(@NonNull final Function<HederaAccount, Long> fn) {
+        return a -> {
+            final var v = fn.apply(a);
+            return v == -1 ? 0 : v;
+        };
+    }
 
     /** Formats all the `long`-valued fields of an account, using the mapping `longFieldsMapping`. */
     void formatAccountLongs(
             @NonNull final StringBuilder sb, @NonNull final HederaAccount a, @NonNull final String name) {
         formatAccountFieldsForDifferentOutputFormats(
-                sb, a, name, longFieldsMapping, n -> n == 0, DumpAccountsSubcommand::taggedFieldFormatter);
+                sb, a, name, longFieldsMapping, 0L, n -> n == 0L, DumpAccountsSubcommand::taggedFieldFormatter);
     }
 
     /** A mapping for all account fields that are _not_ of primitive type.  Takes the field name to a `Field`, which
@@ -350,10 +417,11 @@ public class DumpAccountsSubcommand {
                     switch (format) {
                         case CSV:
                             sb.append(FIELD_SEPARATOR);
-                            yield fieldAccessor.apply();
+                            applySwallowingExceptions(fieldAccessor);
+                            yield true;
                         case ELIDED_DEFAULT_FIELDS: {
                             formatFieldSep(sb, fieldAccessor.name());
-                            yield fieldAccessor.apply();
+                            yield applySwallowingExceptions(fieldAccessor);
                         }
                     };
             if (!r) sb.setLength(l);
@@ -374,6 +442,7 @@ public class DumpAccountsSubcommand {
             @NonNull final HederaAccount a,
             @NonNull final String name,
             @NonNull List<Pair<String, Function<HederaAccount, T>>> mapping,
+            @NonNull T missingValue,
             @NonNull Predicate<T> isDefaultValue,
             @NonNull Function<Pair<String, T>, String> formatField) {
         final var l = sb.length();
@@ -385,13 +454,15 @@ public class DumpAccountsSubcommand {
                                 sb,
                                 a,
                                 mapping,
+                                missingValue,
                                 ignored -> false,
-                                DumpAccountsSubcommand::fieldOnlyFieldFormatter,
+                                getNonDefaultOnlyFieldFormatter(isDefaultValue),
                                 noWrappingJoiner);
                         yield true;
                     case ELIDED_DEFAULT_FIELDS:
                         formatFieldSep(sb, name);
-                        formatAccountFields(sb, a, mapping, isDefaultValue, formatField, parenWrappingJoiner);
+                        formatAccountFields(
+                                sb, a, mapping, missingValue, isDefaultValue, formatField, parenWrappingJoiner);
                         yield sb.length() - l > 0;
                 };
         if (!r) sb.setLength(l);
@@ -411,11 +482,12 @@ public class DumpAccountsSubcommand {
             @NonNull final StringBuilder sb,
             @NonNull final HederaAccount a,
             @NonNull List<Pair<String, Function<HederaAccount, T>>> mapping,
+            @NonNull T missingValue,
             @NonNull Predicate<T> isDefaultValue,
             @NonNull Function<Pair<String, T>, String> formatField,
             @NonNull Collector<CharSequence, ?, String> joinFields) {
         sb.append(mapping.stream()
-                .map(p -> Pair.of(p.getLeft(), applySwallowingExceptions(p.getRight(), a)))
+                .map(p -> Pair.of(p.getLeft(), applySwallowingExceptions(p.getLeft(), p.getRight(), a, missingValue)))
                 .filter(p -> p.getRight() != null && !isDefaultValue.test(p.getRight()))
                 .sorted(Comparator.comparing(Pair::getLeft))
                 .map(formatField)
@@ -435,36 +507,57 @@ public class DumpAccountsSubcommand {
         return fields.stream().map(Field::name).sorted().toList();
     }
 
+    final Set<String> fieldsWithExceptions = new TreeSet<>();
+
     /** Exceptions coming out of lambdas need to be swallowed.  This is ok because the cause is always a missing field
-     * that should not have been accessed, and the check is always made by the caller to see if anything got added to
-     * the accumulating stringbuffer, or not.
+     * that should not have been accessed, and the check for that is always made by the caller: The caller sees if
+     * anything got added to the accumulating stringbuffer, or not.
      */
-    @Nullable
-    static <R> R applySwallowingExceptions(
-            @NonNull final Function<HederaAccount, R> fn, @NonNull final HederaAccount a) {
+    @NonNull
+    <R> R applySwallowingExceptions(
+            @NonNull final String name,
+            @NonNull final Function<HederaAccount, R> fn,
+            @NonNull final HederaAccount a,
+            @NonNull R missingValue) {
         try {
             return fn.apply(a);
         } catch (final RuntimeException ex) {
-            return null;
+            fieldsWithExceptions.add(name);
+            return missingValue;
+        }
+    }
+
+    <R> boolean applySwallowingExceptions(@NonNull final Field<R> field) {
+        try {
+            return field.apply();
+        } catch (final RuntimeException ex) {
+            fieldsWithExceptions.add(field.name());
+            return false;
         }
     }
 
     /** A Field formatter that emits fields as "name:value". Used for non-boolean fields in compressed format. */
     @NonNull
-    static <T> String taggedFieldFormatter(Pair<String, T> p) {
+    static <T> String taggedFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getLeft() + NAME_TO_VALUE_SEPARATOR + p.getRight();
     }
 
     /** A field formatter that only emits the _name_ of the field.  Used for boolean fields in compressed format. */
     @NonNull
-    static <T> String tagOnlyFieldFormatter(Pair<String, T> p) {
+    static <T> String tagOnlyFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getLeft();
     }
 
     /** A field formatter that only emits the value of the field itself.  Used for CSV output. */
     @NonNull
-    static <T> String fieldOnlyFieldFormatter(Pair<String, T> p) {
+    static <T> String fieldOnlyFieldFormatter(@NonNull final Pair<String, T> p) {
         return p.getRight().toString();
+    }
+
+    @NonNull
+    static <T> Function<Pair<String, T>, String> getNonDefaultOnlyFieldFormatter(
+            @NonNull final Predicate<T> isDefaultValue) {
+        return p -> isDefaultValue.test(p.getRight()) ? "" : p.getRight().toString();
     }
 
     /** A field joiner that joins _subfields_ with the CSV field separator. */

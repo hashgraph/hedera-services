@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -146,18 +147,29 @@ public class DumpStateCommand extends AbstractCommand {
                             description = "If present output is in pure csv form")
                     final boolean doCsv,
             @Option(
-                            names = {"--limit"},
+                            names = {"--low"},
                             arity = "0..1",
-                            defaultValue = "-1",
-                            description = "Limit #of accounts processed (default: all)")
-                    int limit) {
+                            defaultValue = "0",
+                            description = "Lowest acount number (inclusive) to dump")
+                    int lowLimit,
+            @Option(
+                            names = {"--high"},
+                            arity = "0..1",
+                            defaultValue = "2147483647",
+                            description = "highest account number (inclusive) to dump")
+                    int highLimit) {
         Objects.requireNonNull(accountPath);
+        if (lowLimit > highLimit)
+            throw new CommandLine.ParameterException(
+                    parent.getSpec().commandLine(), "--highLimit must be >= --lowLimit");
+
         init();
         System.out.println("=== accounts ===");
         DumpAccountsSubcommand.doit(
                 parent.signedState,
                 accountPath,
-                limit,
+                lowLimit,
+                highLimit,
                 doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();

@@ -48,7 +48,7 @@ public class ThingsToStrings {
     }
 
     // All of these converters from something to a String will check to see if that something is a "null" or is
-    // an "empty" (whatever "empty" might mean for that thing).  They return `true` iff the thing _existed, otherwise
+    // an "empty" (whatever "empty" might mean for that thing).  They return `true` if the thing _existed_, otherwise
     // (null or "empty") return false.  (Thus, they are predicates.)
 
     // P.S. I had started by naming nearly all of them simply `toString`.  (The couple of exceptions were the ones
