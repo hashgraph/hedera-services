@@ -363,8 +363,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         // then
         final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
-        assertThat(alice).isNotNull();
-        assertThat(alice).isEqualTo(ALICE.account().accountId());
+        assertThat(alice).isNotNull().isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
     }
 
@@ -457,8 +456,7 @@ class HandleWorkflowTest extends AppTestBase {
 
             // then
             final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
-            assertThat(alice).isNotNull();
-            assertThat(alice).isEqualTo(ALICE.account().accountId());
+            assertThat(alice).isNotNull().isEqualTo(ALICE.account().accountId());
             // TODO: Check that record was created
         }
 
@@ -1026,9 +1024,9 @@ class HandleWorkflowTest extends AppTestBase {
             workflow.handleRound(state, round);
 
             // then
-            verify(blockRecordManager).startUserTransaction(eq(CONSENSUS_NOW), eq(state));
+            verify(blockRecordManager).startUserTransaction(CONSENSUS_NOW, state);
             verify(blockRecordManager).endUserTransaction(any(), eq(state));
-            verify(blockRecordManager).endRound(eq(state));
+            verify(blockRecordManager).endRound(state);
         }
     }
 }
