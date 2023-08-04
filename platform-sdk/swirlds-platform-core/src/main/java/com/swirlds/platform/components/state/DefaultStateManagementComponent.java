@@ -292,7 +292,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the newly complete signed state
      */
     private void stateHasEnoughSignatures(final SignedState signedState) {
-        if (signedState.isStateToSave() && !signedState.hasStateBeenSavedToDisk()) {
+        if (signedState.isStateToSave()) {
             signedStateFileManager.saveSignedStateToDisk(signedState);
         }
     }
@@ -303,7 +303,7 @@ public class DefaultStateManagementComponent implements StateManagementComponent
      * @param signedState the signed state that lacks signatures
      */
     private void stateLacksSignatures(final SignedState signedState) {
-        if (signedState.isStateToSave() && !signedState.hasStateBeenSavedToDisk()) {
+        if (signedState.isStateToSave()) {
             final long previousCount =
                     signedStateMetrics.getTotalUnsignedDiskStatesMetric().get();
             signedStateMetrics.getTotalUnsignedDiskStatesMetric().increment();

@@ -299,8 +299,19 @@ public class SignedStateFileManager implements Startable {
      * Save a signed state to disk. This method will be called periodically under standard operations.
      *
      * @param signedState the signed state to be written to disk.
+     *
+     * @return true if the state will be written to disk, false otherwise
      */
     public boolean saveSignedStateToDisk(final SignedState signedState) {
+        if (signedState.hasStateBeenSavedToDisk()) {
+            logger.info(
+                    STATE_TO_DISK.getMarker(),
+                    "Not saving signed state for round {} to disk because it has already been saved.",
+                    signedState.getRound());
+
+            return false;
+        }
+
         signedState.stateSavedToDisk();
 
         return saveSignedStateToDisk(
