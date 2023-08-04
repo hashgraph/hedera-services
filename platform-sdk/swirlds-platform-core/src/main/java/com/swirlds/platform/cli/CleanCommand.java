@@ -24,10 +24,11 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
-import com.swirlds.platform.util.BootstrapUtils;
+import com.swirlds.platform.config.DefaultConfiguration;
+import picocli.CommandLine;
+
 import java.nio.file.Path;
 import java.util.List;
-import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "clean",
@@ -38,7 +39,9 @@ public final class CleanCommand extends AbstractCommand {
     /** The path to the sdk directory */
     private Path sdkPath;
 
+
     /** Set the path to the sdk directory */
+    @SuppressWarnings("unused") // used by picocli
     @CommandLine.Parameters(description = "the path to the sdk directory")
     private void setSdkPath(final Path sdkPath) {
         this.sdkPath = dirMustExist(sdkPath.toAbsolutePath());
@@ -46,7 +49,7 @@ public final class CleanCommand extends AbstractCommand {
 
     @Override
     public Integer call() throws Exception {
-        final Configuration configuration = BootstrapUtils.loadConfiguration(
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
                 List.of(sdkPath.resolve("config.txt"), sdkPath.resolve("settings.txt")));
 
         // delete all logs
