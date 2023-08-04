@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -33,6 +34,7 @@ import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static org.apache.tuweni.bytes.Bytes.*;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -59,11 +61,15 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import javax.inject.Inject;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 @TransactionScope
 public class HevmTransactionFactory {
+    private static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
+
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
+    private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
     private final ReadableFileStore fileStore;
@@ -76,6 +82,7 @@ public class HevmTransactionFactory {
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
+            @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final ReadableAccountStore accountStore,
@@ -83,6 +90,7 @@ public class HevmTransactionFactory {
             @NonNull final StakingValidator stakingValidator,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final AttributeValidator attributeValidator) {
+        this.gasCalculator = gasCalculator;
         this.fileStore = Objects.requireNonNull(fileStore);
         this.networkInfo = Objects.requireNonNull(networkInfo);
         this.accountStore = Objects.requireNonNull(accountStore);
@@ -105,7 +113,8 @@ public class HevmTransactionFactory {
         return switch (body.data().kind()) {
             case CONTRACT_CREATE_INSTANCE -> fromHapiCreate(
                     body.transactionIDOrThrow().accountIDOrThrow(), body.contractCreateInstanceOrThrow());
-            case CONTRACT_CALL -> fromHapiCall(body.contractCallOrThrow());
+            case CONTRACT_CALL -> fromHapiCall(
+                    body.transactionIDOrThrow().accountIDOrThrow(), body.contractCallOrThrow());
             case ETHEREUM_TRANSACTION -> fromHapiEthereum(body.ethereumTransactionOrThrow());
             default -> throw new IllegalArgumentException("Not a contract operation");
         };
@@ -129,12 +138,33 @@ public class HevmTransactionFactory {
                 body);
     }
 
-    private HederaEvmTransaction fromHapiCall(@NonNull final ContractCallTransactionBody body) {
-        throw new AssertionError("Not implemented");
+    private HederaEvmTransaction fromHapiCall(
+            @NonNull final AccountID payer, @NonNull final ContractCallTransactionBody body) {
+        assertValidCall(body);
+        return new HederaEvmTransaction(
+                payer,
+                null,
+                body.contractIDOrThrow(),
+                NOT_APPLICABLE,
+                body.functionParameters(),
+                null,
+                body.amount(),
+                body.gas(),
+                NOT_APPLICABLE,
+                NOT_APPLICABLE,
+                null);
     }
 
     private HederaEvmTransaction fromHapiEthereum(@NonNull final EthereumTransactionBody body) {
         throw new AssertionError("Not implemented");
+    }
+
+    private void assertValidCall(@NonNull final ContractCallTransactionBody body) {
+        final var minGasLimit =
+                Math.max(INTRINSIC_GAS_LOWER_BOUND, gasCalculator.transactionIntrinsicGasCost(EMPTY, false));
+        validateTrue(body.gas() >= minGasLimit, INSUFFICIENT_GAS);
+        validateTrue(body.amount() >= 0, CONTRACT_NEGATIVE_VALUE);
+        validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
     }
 
     private void assertValidCreation(@NonNull final ContractCreateTransactionBody body) {
