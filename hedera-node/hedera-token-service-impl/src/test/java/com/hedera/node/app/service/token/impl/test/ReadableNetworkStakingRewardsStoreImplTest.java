@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_REWARDS_KEY;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -43,7 +43,7 @@ class ReadableNetworkStakingRewardsStoreImplTest {
 
     @BeforeEach
     void setUp() {
-        given(states.getSingleton(STAKING_REWARDS_KEY)).willReturn(stakingRewardsState);
+        given(states.getSingleton(STAKING_NETWORK_REWARDS_KEY)).willReturn(stakingRewardsState);
         given(stakingRewardsState.get()).willReturn(new NetworkStakingRewards(true, 1L, 2L, 3L));
         subject = new ReadableNetworkStakingRewardsStoreImpl(states);
     }

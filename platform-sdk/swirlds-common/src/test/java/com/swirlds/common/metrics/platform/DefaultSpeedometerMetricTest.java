@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
@@ -62,7 +62,7 @@ class DefaultSpeedometerMetricTest {
                 .withUnit(UNIT)
                 .withFormat(FORMAT)
                 .withHalfLife(Math.PI);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config);
+        final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config);
 
         // then
         assertEquals(CATEGORY, metric.getCategory(), "The category was not set correctly");
@@ -236,7 +236,7 @@ class DefaultSpeedometerMetricTest {
         // given
         final FakeTime time = new FakeTime();
         final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
-        final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
+        final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
         sendCycles(metric, time, 0, 1000, 1000);

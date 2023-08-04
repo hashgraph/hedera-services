@@ -76,7 +76,7 @@ class DefaultStatEntryTest {
                 .withInit(init)
                 .withReset(reset)
                 .withResetStatsStringSupplier(getAndReset);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final DefaultStatEntry statEntry = new DefaultStatEntry(config);
 
         // then
         assertEquals(CATEGORY, statEntry.getCategory(), "The category was not set correctly in the constructor");
@@ -209,9 +209,7 @@ class DefaultStatEntryTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> statEntry.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> statEntry.get(null), "Calling get() with null should throw an IAE");
     }
 
     @SuppressWarnings({"unchecked", "removal"})
@@ -224,9 +222,7 @@ class DefaultStatEntryTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> statEntry.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> statEntry.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> statEntry.get(Metric.ValueType.MIN),

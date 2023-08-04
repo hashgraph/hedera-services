@@ -23,6 +23,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.logging.payloads.ReconnectDataUsagePayload;
@@ -182,8 +183,10 @@ public class ReconnectLearner {
         connection.getDis().getSyncByteCounter().resetCount();
         connection.getDos().getSyncByteCounter().resetCount();
 
+        final ReconnectConfig reconnectConfig =
+                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
         final LearningSynchronizer synchronizer =
-                new LearningSynchronizer(threadManager, in, out, currentState, connection::disconnect);
+                new LearningSynchronizer(threadManager, in, out, currentState, connection::disconnect, reconnectConfig);
         synchronizer.synchronize();
 
         final State state = (State) synchronizer.getRoot();

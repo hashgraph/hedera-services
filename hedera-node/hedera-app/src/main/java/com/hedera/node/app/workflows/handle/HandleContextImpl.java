@@ -27,6 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -39,6 +40,7 @@ import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -64,6 +66,7 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionBody txBody;
     private final AccountID payer;
     private final Key payerKey;
+    private final NetworkInfo networkInfo;
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
@@ -72,6 +75,7 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
     private final ServiceScopeLookup serviceScopeLookup;
+    private final ServiceApiFactory serviceApiFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final BlockRecordInfo blockRecordInfo;
     private final RecordCache recordCache;
@@ -83,22 +87,24 @@ public class HandleContextImpl implements HandleContext {
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txBody The {@link TransactionBody} of the transaction
-     * @param payer The {@link AccountID} of the payer
-     * @param payerKey The {@link Key} of the payer
-     * @param category The {@link TransactionCategory} of the transaction (either user, preceding, or child)
-     * @param recordBuilder The main {@link SingleTransactionRecordBuilderImpl}
-     * @param stack The {@link SavepointStackImpl} used to manage savepoints
-     * @param verifier The {@link HandleContextVerifier} used to verify signatures and hollow accounts
-     * @param recordListBuilder The {@link RecordListBuilder} used to build the record stream
-     * @param checker The {@link TransactionChecker} used to check dispatched transaction
-     * @param dispatcher The {@link TransactionDispatcher} used to dispatch child transactions
+     * @param txBody             The {@link TransactionBody} of the transaction
+     * @param payer              The {@link AccountID} of the payer
+     * @param payerKey           The {@link Key} of the payer
+     * @param networkInfo
+     * @param category           The {@link TransactionCategory} of the transaction (either user, preceding, or child)
+     * @param recordBuilder      The main {@link SingleTransactionRecordBuilderImpl}
+     * @param stack              The {@link SavepointStackImpl} used to manage savepoints
+     * @param verifier           The {@link HandleContextVerifier} used to verify signatures and hollow accounts
+     * @param recordListBuilder  The {@link RecordListBuilder} used to build the record stream
+     * @param checker            The {@link TransactionChecker} used to check dispatched transaction
+     * @param dispatcher         The {@link TransactionDispatcher} used to dispatch child transactions
      * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
      */
     public HandleContextImpl(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID payer,
             @NonNull final Key payerKey,
+            @NonNull final NetworkInfo networkInfo,
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
@@ -112,6 +118,7 @@ public class HandleContextImpl implements HandleContext {
         this.txBody = requireNonNull(txBody, "txBody must not be null");
         this.payer = requireNonNull(payer, "payer must not be null");
         this.payerKey = requireNonNull(payerKey, "payerKey must not be null");
+        this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
@@ -125,6 +132,7 @@ public class HandleContextImpl implements HandleContext {
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
+        this.serviceApiFactory = new ServiceApiFactory(stack);
     }
 
     private Savepoint current() {
@@ -175,8 +183,17 @@ public class HandleContextImpl implements HandleContext {
      */
     @Override
     public long newEntityNum() {
-        final var writableStoreFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
-        return writableStoreFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
+        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        return entityIdsFactory.getStore(WritableEntityIdStore.class).incrementAndGet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long peekAtNewEntityNum() {
+        final var entityIdsFactory = new WritableStoreFactory(stack, EntityIdService.NAME);
+        return entityIdsFactory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 
     @Override
@@ -256,6 +273,17 @@ public class HandleContextImpl implements HandleContext {
     public <C> C writableStore(@NonNull final Class<C> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
         return writableStoreFactory.getStore(storeInterface);
+    }
+
+    @Override
+    public <T> @NonNull T serviceApi(@NonNull final Class<T> apiInterface) {
+        requireNonNull(apiInterface, "apiInterface must not be null");
+        return serviceApiFactory.getApi(apiInterface);
+    }
+
+    @Override
+    public @NonNull NetworkInfo networkInfo() {
+        return networkInfo;
     }
 
     @Override
@@ -380,6 +408,7 @@ public class HandleContextImpl implements HandleContext {
                 txBody,
                 payer,
                 payerKey,
+                networkInfo,
                 childCategory,
                 childRecordBuilder,
                 childStack,

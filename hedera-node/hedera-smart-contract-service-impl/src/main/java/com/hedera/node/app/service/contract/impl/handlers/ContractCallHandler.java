@@ -19,12 +19,15 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -32,19 +35,31 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ContractCallHandler implements TransactionHandler {
+    private final Provider<TransactionComponent.Factory> provider;
+
     @Inject
-    public ContractCallHandler() {
-        // Exists for injection
+    public ContractCallHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
+        this.provider = requireNonNull(provider);
+    }
+
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        // Create the transaction-scoped component
+        final var component = provider.get().create(context);
+
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
+
+        // Assemble the appropriate top-level record for the result
+        context.recordBuilder(ContractCallRecordBuilder.class)
+                .contractCallResult(outcome.result())
+                .contractID(outcome.recipientIdIfCalled())
+                .status(outcome.status());
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
         // Nothing to do
-    }
-
-    @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
     }
 }

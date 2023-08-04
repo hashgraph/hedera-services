@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.state.LifecyclePhase;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
@@ -94,6 +95,7 @@ public class LegacySyncGossip extends AbstractGossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
+     * @param time                          the time object used to get the current time
      * @param crypto                        can be used to sign things
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -118,6 +120,7 @@ public class LegacySyncGossip extends AbstractGossip {
     public LegacySyncGossip(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull final Crypto crypto,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
@@ -140,6 +143,7 @@ public class LegacySyncGossip extends AbstractGossip {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -164,6 +168,7 @@ public class LegacySyncGossip extends AbstractGossip {
         final ParallelExecutor shadowgraphExecutor = PlatformConstructor.parallelExecutor(threadManager);
         thingsToStart.add(shadowgraphExecutor);
         syncShadowgraphSynchronizer = new ShadowGraphSynchronizer(
+                platformContext,
                 shadowGraph,
                 addressBook.getSize(),
                 syncMetrics,
@@ -188,9 +193,6 @@ public class LegacySyncGossip extends AbstractGossip {
         simultaneousSyncThrottle = new SimultaneousSyncThrottle(
                 platformContext.getMetrics(), syncConfig.maxIncomingSyncsInc() + syncConfig.maxOutgoingSyncs());
 
-        final ReconnectConfig reconnectConfig =
-                platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-
         final MultiProtocolResponder protocolHandlers = new MultiProtocolResponder(List.of(
                 ProtocolMapping.map(
                         UnidirectionalProtocols.SYNC.getInitialByte(),
@@ -204,7 +206,7 @@ public class LegacySyncGossip extends AbstractGossip {
                         new ReconnectProtocolResponder(
                                 threadManager,
                                 stateManagementComponent,
-                                reconnectConfig,
+                                platformContext.getConfiguration(),
                                 reconnectThrottle,
                                 fallenBehindManager,
                                 reconnectMetrics)),

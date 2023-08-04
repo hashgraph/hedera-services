@@ -118,4 +118,18 @@ public class WritableNftStore extends ReadableNftStoreImpl {
     public void remove(final @NonNull TokenID tokenId, final long serialNum) {
         remove(NftID.newBuilder().tokenId(tokenId).serialNumber(serialNum).build());
     }
+
+    /**
+     * Gets the original value associated with the given nftId before any modifications were made to
+     * it. The returned value will be {@code null} if the nftId does not exist.
+     *
+     * @param nftId The nftId. Cannot be null, otherwise an exception is thrown.
+     * @return The original value, or null if there is no such nftId in the state
+     * @throws NullPointerException if the accountId is null.
+     */
+    @Nullable
+    public Nft getOriginalValue(@NonNull final NftID nftId) {
+        requireNonNull(nftId);
+        return nftState.getOriginalValue(nftId);
+    }
 }

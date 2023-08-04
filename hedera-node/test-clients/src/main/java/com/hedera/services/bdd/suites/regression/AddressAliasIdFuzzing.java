@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>See <a href="https://github.com/hashgraph/hedera-services/issues/4565">#4565</a> for details.
  */
+@HapiTestSuite
 public class AddressAliasIdFuzzing extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 

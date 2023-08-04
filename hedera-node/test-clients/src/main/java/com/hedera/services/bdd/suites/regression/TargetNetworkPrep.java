@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -56,6 +57,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class TargetNetworkPrep extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
     public static final int SYSTEM_ENTITY_EXPIRY = 1812637686;

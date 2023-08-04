@@ -26,6 +26,7 @@ import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
 import com.swirlds.common.stream.RunningHashCalculatorForStream;
+import com.swirlds.common.test.fixtures.stream.CountDownLatchStream;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;

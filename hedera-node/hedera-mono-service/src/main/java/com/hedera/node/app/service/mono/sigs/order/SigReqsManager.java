@@ -39,7 +39,6 @@ import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.events.Event;
 import java.util.function.Function;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,7 +60,6 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>This class is <b>NOT</b> thread-safe.
  */
-@Singleton
 public class SigReqsManager {
     private static final Logger log = LogManager.getLogger(SigReqsManager.class);
 

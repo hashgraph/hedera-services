@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
@@ -49,6 +50,7 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
@@ -160,10 +162,19 @@ public class HandleWorkflow {
 
             preHandleResult = getCurrentPreHandleResult(state, platformEvent, platformTxn, configuration);
             final var transactionInfo = preHandleResult.txInfo();
+            final var transaction = transactionInfo.transaction();
             final var txBody = transactionInfo.txBody();
+            final Bytes transactionBytes;
+
+            if (transaction.signedTransactionBytes().length() > 0) {
+                transactionBytes = transaction.signedTransactionBytes();
+            } else {
+                // in this case, recorder hash the transaction itself, not its' bodyBytes.
+                transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
+            }
             recordBuilder
                     .transaction(transactionInfo.transaction())
-                    .transactionBytes(transactionInfo.signedBytes())
+                    .transactionBytes(transactionBytes)
                     .transactionID(txBody.transactionID())
                     .memo(txBody.memo());
 
@@ -203,6 +214,7 @@ public class HandleWorkflow {
                     txBody,
                     preHandleResult.payer(),
                     preHandleResult.payerKey(),
+                    networkInfo,
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,

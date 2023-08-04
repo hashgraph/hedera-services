@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.network.framework;
 
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.test.simulated.NetworkLatency;
 import com.swirlds.platform.test.simulated.config.NetworkConfig;
