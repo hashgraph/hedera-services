@@ -38,7 +38,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -79,8 +78,10 @@ class TokenServiceApiImplTest {
             TokenServiceImpl.ACCOUNTS_KEY, accountState,
             TokenServiceImpl.ALIASES_KEY, aliasesState));
     private final WritableAccountStore accountStore = new WritableAccountStore(writableStates);
+
     @Mock
     private StakingValidator stakingValidator;
+
     @Mock
     private NetworkInfo networkInfo;
 
@@ -93,23 +94,9 @@ class TokenServiceApiImplTest {
 
     @Test
     void delegatesStakingValidationAsExpected() {
-        subject.assertValidStakingElection(
-                true,
-                false,
-                "STAKED_NODE_ID",
-                null,
-                123L,
-                accountStore,
-                networkInfo);
+        subject.assertValidStakingElection(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
 
-        verify(stakingValidator).validateStakedId(
-                true,
-                false,
-                "STAKED_NODE_ID",
-                null,
-                123L,
-                accountStore,
-                networkInfo);
+        verify(stakingValidator).validateStakedId(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
     }
 
     @Test

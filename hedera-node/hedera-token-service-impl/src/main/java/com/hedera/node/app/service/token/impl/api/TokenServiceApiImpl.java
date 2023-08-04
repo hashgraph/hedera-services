@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 import java.util.Set;
 
@@ -55,8 +54,18 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
-            @Nullable final AccountID stakedAccountIdInOp, @Nullable final Long stakedNodeIdInOp, @NonNull final ReadableAccountStore accountStore, @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedId(isStakingEnabled, hasDeclineRewardChange, stakedIdKind, stakedAccountIdInOp, stakedNodeIdInOp, accountStore, networkInfo);
+            @Nullable final AccountID stakedAccountIdInOp,
+            @Nullable final Long stakedNodeIdInOp,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkInfo networkInfo) {
+        stakingValidator.validateStakedId(
+                isStakingEnabled,
+                hasDeclineRewardChange,
+                stakedIdKind,
+                stakedAccountIdInOp,
+                stakedNodeIdInOp,
+                accountStore,
+                networkInfo);
     }
 
     /**

@@ -93,6 +93,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HevmTransactionFactoryTest {
     @Mock
     private NetworkInfo networkInfo;
+
     @Mock
     private TokenServiceApi tokenServiceApi;
 
@@ -184,7 +185,12 @@ class HevmTransactionFactoryTest {
                 .when(tokenServiceApi)
                 .assertValidStakingElection(
                         DEFAULT_STAKING_CONFIG.isEnabled(),
-                        false, "STAKED_NODE_ID", null, 123L, accountStore,  networkInfo);
+                        false,
+                        "STAKED_NODE_ID",
+                        null,
+                        123L,
+                        accountStore,
+                        networkInfo);
         assertCreateFailsWith(INVALID_STAKING_ID, b -> b.stakedNodeId(123)
                 .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
                 .proxyAccountID(AccountID.DEFAULT)
