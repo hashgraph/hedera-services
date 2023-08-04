@@ -199,7 +199,9 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
             return new RecordStreamItemV7(null, null, null, null, 0, 0);
         }
 
-        public void write(@NonNull RecordStreamItemV7 item, @NonNull WritableSequentialData output) {}
+        public void write(@NonNull RecordStreamItemV7 item, @NonNull WritableSequentialData output) {
+            // TBD
+        }
 
         public int measure(@NonNull ReadableSequentialData input) {
             return 0;
