@@ -24,15 +24,37 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.ChildlessEventTracker;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("ChildlessEventTracker Tests")
 class ChildlessEventTrackerTests {
+
+    /**
+     * The childless event tracker doesn't track branches in the hashgraph, it only stores whatever branch has produced
+     * the event with the highest generation. Return a set that contains only the event from the latest branch from each
+     * creator.
+     */
+    @NonNull
+    private Set<EventDescriptor> removeBranches(@NonNull List<EventDescriptor> events) {
+        final Map<NodeId, EventDescriptor> uniqueEvents = new HashMap<>();
+
+        for (final EventDescriptor event : events) {
+            final EventDescriptor existingEvent = uniqueEvents.get(event.getCreator());
+            if (existingEvent == null || existingEvent.getGeneration() < event.getGeneration()) {
+                uniqueEvents.put(event.getCreator(), event);
+            }
+        }
+
+        return new HashSet<>(uniqueEvents.values());
+    }
 
     @Test
     @DisplayName("Basic Behavior Test")
@@ -67,19 +89,19 @@ class ChildlessEventTrackerTests {
             batch2.add(descriptor);
         }
 
-        final Set<EventDescriptor> expectedEvents = new HashSet<>(batch2);
+        final List<EventDescriptor> expectedEvents = new ArrayList<>(batch2);
         for (final EventDescriptor descriptor : batch1) {
             if (descriptor.getCreator().id() % 2 == 0) {
                 expectedEvents.add(descriptor);
             }
         }
 
-        assertEquals(expectedEvents, new HashSet<>(tracker.getChildlessEvents()));
+        assertEquals(removeBranches(expectedEvents), new HashSet<>(tracker.getChildlessEvents()));
 
         // Increase the minimum generation non-ancient to 1, all events from batch1 should be removed
         tracker.pruneOldEvents(1);
 
-        assertEquals(new HashSet<>(batch2), new HashSet<>(tracker.getChildlessEvents()));
+        assertEquals(removeBranches(batch2), new HashSet<>(tracker.getChildlessEvents()));
     }
 
     @Test
