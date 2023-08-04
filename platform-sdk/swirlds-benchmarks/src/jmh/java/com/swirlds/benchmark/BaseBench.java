@@ -18,12 +18,16 @@ package com.swirlds.benchmark;
 
 import com.swirlds.benchmark.config.BenchmarkConfig;
 import com.swirlds.common.config.export.ConfigExport;
+import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
@@ -89,9 +93,13 @@ public abstract class BaseBench {
                 .withConfigDataType(BenchmarkConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(JasperDbConfig.class)
+                .withConfigDataType(MetricsConfig.class)
+                .withConfigDataType(CryptoConfig.class)
                 .build();
+        ConfigurationHolder.getInstance().setConfiguration(configuration);
 
-        StringBuilder settingsUsed = new StringBuilder();
+        final StringBuilder settingsUsed = new StringBuilder();
         ConfigExport.addConfigContents(configuration, settingsUsed);
         try (OutputStream os = Files.newOutputStream(Path.of(".", "settingsUsed.txt"))) {
             os.write(settingsUsed.toString().getBytes(StandardCharsets.UTF_8));
