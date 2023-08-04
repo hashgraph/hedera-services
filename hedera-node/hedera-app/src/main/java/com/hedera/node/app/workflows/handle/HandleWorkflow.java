@@ -123,7 +123,7 @@ public class HandleWorkflow {
         round.forEachEventTransaction((event, txn) -> {
             try {
                 handlePlatformTransaction(state, event, txn);
-            } catch (final Throwable e) {
+            } catch (final Exception e) {
                 logger.fatal(
                         "A fatal unhandled exception occurred during transaction handling. "
                                 + "While this node may not die right away, it is in a bad way, most likely fatally.",
@@ -246,7 +246,7 @@ public class HandleWorkflow {
         } catch (final TimeoutException e) {
             logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (final Throwable e) {
+        } catch (final Exception e) {
             logger.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         }

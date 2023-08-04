@@ -305,8 +305,8 @@ public final class Hedera implements SwirldMain {
                     // We exited from this method early if we were recovering from an event stream.
                 case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
             }
-        } catch (final Throwable th) {
-            logger.fatal("Critical failure during initialization", th);
+        } catch (final Exception e) {
+            logger.fatal("Critical failure during initialization", e);
             System.exit(CRITICAL_FAILURE_EXIT_CODE);
         }
 
@@ -485,8 +485,8 @@ public final class Hedera implements SwirldMain {
         // we start loading massive amounts of state from disk.
         try {
             daggerApp.ledgerValidator().validate(state);
-        } catch (Throwable th) {
-            logger.fatal("Ledger validation failed", th);
+        } catch (Exception e) {
+            logger.fatal("Ledger validation failed", e);
             daggerApp.systemExits().fail(1); // TBD What code to use?
         }
     }

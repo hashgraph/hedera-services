@@ -134,11 +134,11 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             // Track the number of times we successfully handled a call
             callsHandledCounter.increment();
             callsHandledSpeedometer.cycle();
-        } catch (final Throwable th) {
+        } catch (final Exception e) {
             // Track the number of times we failed to handle a call
-            logger.error("Failed to handle call! Unexpected exception", th);
+            logger.error("Failed to handle call! Unexpected exception", e);
             callsFailedCounter.increment();
-            responseObserver.onError(th);
+            responseObserver.onError(e);
         }
     }
 
