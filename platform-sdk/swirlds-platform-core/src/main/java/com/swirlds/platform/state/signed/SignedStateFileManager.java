@@ -385,16 +385,20 @@ public class SignedStateFileManager implements Startable {
             return RECONNECT;
         }
 
-        if (previousTimestamp == null) {
-            // the first round should be saved
-            return FIRST_ROUND_AFTER_GENESIS;
-        }
-
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final int saveStatePeriod = stateConfig.saveStatePeriod();
         if (saveStatePeriod <= 0) {
             // periodic state saving is disabled
             return null;
+        }
+
+        // FUTURE WORK: writing genesis state to disk is currently disabled if the saveStatePeriod is 0.
+        // This is for testing purposes, to have a method of disabling state saving for tests.
+        // Once a feature to disable all state saving has been added, this block should be moved in front of the
+        // saveStatePeriod <=0 block, so that saveStatePeriod doesn't impact the saving of genesis state.
+        if (previousTimestamp == null) {
+            // the first round should be saved
+            return FIRST_ROUND_AFTER_GENESIS;
         }
 
         if ((signedState.getConsensusTimestamp().getEpochSecond() / saveStatePeriod)
