@@ -66,9 +66,16 @@ public class DumpContractBytecodesSubcommand {
     @NonNull
     final Path bytecodePath;
 
+    @NonNull
     final EmitSummary emitSummary;
+
+    @NonNull
     final Uniqify uniqify;
+
+    @NonNull
     final WithIds withIds;
+
+    @NonNull
     final Verbosity verbosity;
 
     DumpContractBytecodesSubcommand(
