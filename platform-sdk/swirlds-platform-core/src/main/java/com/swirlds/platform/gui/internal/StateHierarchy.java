@@ -100,7 +100,7 @@ public class StateHierarchy {
      */
     public InfoApp getInfoApp(String name) {
         for (InfoApp app : apps) {
-            if (name.equals(app.getName())) {
+            if (name.equals(app.name)) {
                 return app;
             }
         }

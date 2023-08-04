@@ -16,12 +16,10 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
+import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
-import com.swirlds.gui.GuiConstants;
-import com.swirlds.gui.InfoEntity;
 import com.swirlds.gui.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -53,7 +51,7 @@ class WinTabSwirlds extends PrePaintableJPanel {
     public WinTabSwirlds() {
         GridBagLayout gridbag = new GridBagLayout();
         setLayout(gridbag);
-        setFont(GuiConstants.FONT);
+        setFont(WinBrowser.FONT);
         chooseMemberDisplayed();
 
         instructions = new JTextPane();
@@ -86,14 +84,14 @@ class WinTabSwirlds extends PrePaintableJPanel {
         for (InfoApp app : getStateHierarchy().apps) {
             addEntity(this, app, c, 0, "", false);
             c.gridy++;
-            for (InfoSwirld swirld : app.getSwirlds()) {
+            for (InfoSwirld swirld : app.swirlds) {
                 addEntity(this, swirld, c, 1, "", false);
                 c.gridy++;
-                for (InfoMember member : swirld.getMembers()) {
+                for (InfoMember member : swirld.members) {
                     if (WinBrowser.memberDisplayed == null) {
                         setMemberDisplayed(member);
                     }
-                    addEntity(this, member, c, 2, member.getPlatform() == null ? "" : " (running)    ", true);
+                    addEntity(this, member, c, 2, member.platform == null ? "" : " (running)    ", true);
                     c.gridy++;
                 }
             }
@@ -116,15 +114,15 @@ class WinTabSwirlds extends PrePaintableJPanel {
 
     void setMemberDisplayed(InfoMember member) {
         WinBrowser.memberDisplayed = member;
-        WinBrowser.nameBarName.setText("    " + member.getName() + "    ");
+        WinBrowser.nameBarName.setText("    " + member.name + "    ");
         for (InfoApp app : getStateHierarchy().apps) {
-            for (InfoSwirld swirld : app.getSwirlds()) {
-                for (InfoMember mem : swirld.getMembers()) {
-                    if (mem.getPanel() != null) {
-                        ((EntityRow) mem.getPanel())
+            for (InfoSwirld swirld : app.swirlds) {
+                for (InfoMember mem : swirld.members) {
+                    if (mem.panel != null) {
+                        ((EntityRow) mem.panel)
                                 .setColor(
                                         WinBrowser.memberDisplayed == mem
-                                                ? GuiConstants.MEMBER_HIGHLIGHT_COLOR
+                                                ? WinBrowser.MEMBER_HIGHLIGHT_COLOR
                                                 : Color.WHITE);
                     }
                 }
@@ -139,11 +137,11 @@ class WinTabSwirlds extends PrePaintableJPanel {
             int level,
             String suffix,
             boolean selectable) {
-        if (entity.getPanel() != null) { // ignore if it has already been added
+        if (entity.panel != null) { // ignore if it has already been added
             return;
         }
         EntityRow row = new EntityRow(entity, level, suffix, selectable);
-        row.setColor((WinBrowser.memberDisplayed == entity) ? GuiConstants.MEMBER_HIGHLIGHT_COLOR : Color.WHITE);
+        row.setColor((WinBrowser.memberDisplayed == entity) ? WinBrowser.MEMBER_HIGHLIGHT_COLOR : Color.WHITE);
         add(row, c);
     }
 
@@ -221,19 +219,19 @@ class WinTabSwirlds extends PrePaintableJPanel {
             this.setLayout(new FlowLayout(FlowLayout.LEADING, 0, 2));
             indent.setPreferredSize(new Dimension(30 * level, 10));
             indent.setMinimumSize(new Dimension(30 * level, 10));
-            name.setText("    " + entity.getName() + "    ");
+            name.setText("    " + entity.name + "    ");
             freeze(name);
             freeze(suf);
             suf.setText(suffix);
             add(indent);
             add(name);
             add(suf);
-            entity.setPanel(this);
+            entity.panel = this;
         }
     }
 
     void freeze(JTextPane text) {
-        text.setFont(GuiConstants.FONT);
+        text.setFont(WinBrowser.FONT);
         text.setEditable(false);
         text.setEnabled(false);
         text.setBackground(Color.WHITE);
@@ -246,8 +244,8 @@ class WinTabSwirlds extends PrePaintableJPanel {
         // then put the first member there
         try { // if there is concurrent modification, then do nothing, and try again later
             for (InfoApp app : getStateHierarchy().apps) {
-                for (InfoSwirld swirld : app.getSwirlds()) {
-                    for (InfoMember member : swirld.getMembers()) {
+                for (InfoSwirld swirld : app.swirlds) {
+                    for (InfoMember member : swirld.members) {
                         if (WinBrowser.memberDisplayed == null) {
                             this.setMemberDisplayed(member);
                         }

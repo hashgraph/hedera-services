@@ -16,7 +16,6 @@
 
 package com.swirlds.platform.gui.internal;
 
-import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.PrePaintableJPanel;
 import javax.swing.JLabel;
 
@@ -28,7 +27,7 @@ class WinTabCalls extends PrePaintableJPanel {
 
     public WinTabCalls() {
         JLabel label = new JLabel("There are no recent calls.");
-        label.setFont(GuiConstants.FONT);
+        label.setFont(WinBrowser.FONT);
         add(label);
     }
 

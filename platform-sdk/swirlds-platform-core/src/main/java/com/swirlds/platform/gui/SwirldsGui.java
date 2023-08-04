@@ -16,21 +16,21 @@
 
 package com.swirlds.platform.gui;
 
-import static com.swirlds.gui.GuiUtils.winRect;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.platform.gui.internal.GuiUtils.winRect;
 
 import com.swirlds.common.Console;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.gui.GuiUtils;
 import com.swirlds.platform.gui.internal.SwirldMenu;
-import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import javax.swing.JFrame;
+import javax.swing.WindowConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,18 +50,23 @@ public final class SwirldsGui {
      * @param visible  should the window be initially visible? If not, call setVisible(true) later.
      * @return the new window
      */
-    public static Console createConsole(final Platform platform, final int winNum, final boolean visible) {
+    public static Console createConsole(final Platform platform, final boolean visible) {
+
         if (GraphicsEnvironment.isHeadless()) {
             return null;
         }
-        final NodeId selfId = platform.getSelfId();
+
         final AddressBook addressBook = platform.getAddressBook();
-        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(addressBook);
-        final Rectangle winRect = winRect(winCount, winNum);
+        final NodeId selfId = platform.getSelfId();
+        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+
+        final Rectangle winRect = winRect(addressBook, winNum);
         // if SwirldMain calls createConsole, this remembers the window created
-        final Console console =
-                GuiUtils.createBasicConsole(addressBook.getAddress(selfId).getSelfName(), winRect, visible);
+        final Console console = new Console(addressBook.getAddress(selfId).getSelfName(), winRect);
+        console.getWindow().setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
         SwirldMenu.addTo(platform, console.getWindow(), 40, Color.white, false);
+        console.setVisible(visible);
         return console;
     }
 
@@ -71,17 +76,33 @@ public final class SwirldsGui {
      * @param visible should the window be initially visible? If not, call setVisible(true) later.
      * @return the new window
      */
-    public static JFrame createWindow(
-            final Platform platform, final Address address, final int winCount, int winNum, final boolean visible) {
+    public static JFrame createWindow(final Platform platform, final boolean visible) {
+
         if (GraphicsEnvironment.isHeadless()) {
             return null;
         }
-        final Rectangle winRect = winRect(winCount, winNum);
+
+        final AddressBook addressBook = platform.getAddressBook();
+        final NodeId selfId = platform.getSelfId();
+        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(selfId);
+
+        final Rectangle winRect = winRect(addressBook, winNum);
+
         JFrame frame = null;
         try {
-            final String name = address.getSelfName();
-            frame = GuiUtils.createBasicWindow(name, winRect, visible);
+            final Address addr = addressBook.getAddress(selfId);
+            final String name = addr.getSelfName();
+            frame = new JFrame(name); // create a new window
+
+            frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+            frame.setBackground(Color.DARK_GRAY);
+            frame.setSize(winRect.width, winRect.height);
+            frame.setPreferredSize(new Dimension(winRect.width, winRect.height));
+            frame.setLocation(winRect.x, winRect.y);
             SwirldMenu.addTo(platform, frame, 40, Color.BLUE, false);
+            frame.setFocusable(true);
+            frame.requestFocusInWindow();
+            frame.setVisible(visible); // show it
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "", e);
         }

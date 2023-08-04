@@ -16,15 +16,13 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
-import static com.swirlds.gui.hashgraph.HashgraphGuiConstants.HASHGRAPH_PICTURE_FONT;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.platform.gui.hashgraph.internal.HashgraphGuiUtils.HASHGRAPH_PICTURE_FONT;
 
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.gui.hashgraph.HashgraphGuiConstants;
-import com.swirlds.gui.hashgraph.HashgraphGuiSource;
-import com.swirlds.gui.hashgraph.HashgraphPictureOptions;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Font;
@@ -194,7 +192,7 @@ public class HashgraphPicture extends JPanel {
         if (options.writeConsensusTimeStamp()) {
             final Instant t = event.getConsensusTimestamp();
             if (t != null) {
-                s += " " + HashgraphGuiConstants.FORMATTER.format(t);
+                s += " " + HashgraphGuiUtils.FORMATTER.format(t);
             }
         }
         if (options.writeGeneration()) {
@@ -204,7 +202,7 @@ public class HashgraphPicture extends JPanel {
             final Rectangle2D rect = fm.getStringBounds(s, g);
             final int x = (int) (pictureMetadata.xpos(e2, event) - rect.getWidth() / 2. - fa / 4.);
             final int y = (int) (pictureMetadata.ypos(event) + rect.getHeight() / 2. - fd / 2);
-            g.setColor(HashgraphGuiConstants.LABEL_OUTLINE);
+            g.setColor(HashgraphGuiUtils.LABEL_OUTLINE);
             g.drawString(s, x - 1, y - 1);
             g.drawString(s, x + 1, y - 1);
             g.drawString(s, x - 1, y + 1);

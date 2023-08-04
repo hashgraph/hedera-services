@@ -16,12 +16,11 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
+import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
-import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import javax.swing.JTextArea;
 
@@ -39,7 +38,7 @@ class WinTabAddresses extends PrePaintableJPanel {
      * Instantiate and initialize content of this tab.
      */
     public WinTabAddresses() {
-        text = GuiUtils.newJTextArea("");
+        text = WinBrowser.newJTextArea();
         add(text);
     }
 

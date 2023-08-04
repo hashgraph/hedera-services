@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.gui.internal;
 
-import static com.swirlds.gui.GuiUtils.wrap;
+import static com.swirlds.platform.gui.internal.GuiUtils.wrap;
 
-import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.PrePaintableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -34,7 +33,7 @@ class WinTabSecurity extends PrePaintableJPanel {
     String s = "";
 
     public WinTabSecurity() {
-        text = GuiUtils.newJTextArea("");
+        text = WinBrowser.newJTextArea();
         add(text);
     }
 
@@ -44,7 +43,7 @@ class WinTabSecurity extends PrePaintableJPanel {
                 || swirldId != null) { // already set this up once
             return;
         }
-        SwirldsPlatform platform = WinBrowser.memberDisplayed.getPlatform();
+        SwirldsPlatform platform = WinBrowser.memberDisplayed.platform;
         swirldId = new Reference(GuiPlatformAccessor.getInstance().getSwirldId(platform.getSelfId()));
 
         s += "Swirld ID: \n        " + swirldId.to62() + "\n";

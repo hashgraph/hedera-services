@@ -21,8 +21,4 @@ plugins {
     id("org.gradle.java-test-fixtures")
 }
 
-dependencies {
-    api(project(":swirlds-base"))
-    implementation(project(":swirlds-common"))
-    implementation(libs.commons.lang3)
-}
+dependencies { api(project(":swirlds-base")) }

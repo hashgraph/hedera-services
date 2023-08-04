@@ -17,15 +17,41 @@
 package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.common.system.events.PlatformEvent;
-import com.swirlds.gui.hashgraph.HashgraphGuiConstants;
-import com.swirlds.gui.hashgraph.HashgraphPictureOptions;
 import java.awt.Color;
+import java.awt.Font;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Various static utils for the {@link com.swirlds.platform.gui.hashgraph.HashgraphGui}
  */
 public final class HashgraphGuiUtils {
     private HashgraphGuiUtils() {}
+
+    public static final int DEFAULT_GENERATIONS_TO_DISPLAY = 25;
+    /** outline of labels */
+    public static final Color LABEL_OUTLINE = new Color(255, 255, 255);
+    /** unknown-fame witness, non-consensus */
+    public static final Color LIGHT_RED = new Color(192, 0, 0);
+    /** unknown-fame witness, consensus (which can't happen) */
+    public static final Color DARK_RED = new Color(128, 0, 0);
+    /** unknown-fame witness, consensus */
+    public static final Color LIGHT_GREEN = new Color(0, 192, 0);
+    /** famous witness, non-consensus */
+    public static final Color DARK_GREEN = new Color(0, 128, 0);
+    /** famous witness, consensus */
+    public static final Color LIGHT_BLUE = new Color(0, 0, 192);
+    /** non-famous witness, non-consensus */
+    public static final Color DARK_BLUE = new Color(0, 0, 128);
+    /** non-witness witness, consensus */
+    public static final Color LIGHT_GRAY = new Color(160, 160, 160);
+    /** non-witness, non-consensus */
+    public static final Color DARK_GRAY = new Color(0, 0, 0);
+
+    public static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("H:m:s.n").withLocale(Locale.US).withZone(ZoneId.systemDefault());
+    public static final Font HASHGRAPH_PICTURE_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 12);
 
     /**
      * return the member number for column x, if there are m members. This is set up so each member appears
@@ -72,17 +98,17 @@ public final class HashgraphGuiUtils {
      */
     public static Color eventColor(final PlatformEvent event, final HashgraphPictureOptions options) {
         if (options.simpleColors()) { // if checkbox checked
-            return event.isConsensus() ? HashgraphGuiConstants.LIGHT_BLUE : HashgraphGuiConstants.LIGHT_GREEN;
+            return event.isConsensus() ? LIGHT_BLUE : LIGHT_GREEN;
         }
         if (!event.isWitness()) {
-            return event.isConsensus() ? HashgraphGuiConstants.DARK_GRAY : HashgraphGuiConstants.LIGHT_GRAY;
+            return event.isConsensus() ? DARK_GRAY : LIGHT_GRAY;
         }
         if (!event.isFameDecided()) {
-            return event.isConsensus() ? HashgraphGuiConstants.DARK_RED : HashgraphGuiConstants.LIGHT_RED;
+            return event.isConsensus() ? DARK_RED : LIGHT_RED;
         }
         if (event.isFamous()) {
-            return event.isConsensus() ? HashgraphGuiConstants.DARK_GREEN : HashgraphGuiConstants.LIGHT_GREEN;
+            return event.isConsensus() ? DARK_GREEN : LIGHT_GREEN;
         }
-        return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
+        return event.isConsensus() ? DARK_BLUE : LIGHT_BLUE;
     }
 }
