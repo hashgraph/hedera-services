@@ -154,7 +154,9 @@ public final class BlockRecordFormatV6 implements BlockRecordFormat {
             }
             return Bytes.wrap(previousHash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(
+                    e); // TODO: there are a lot of this "Generic exceptions should never be thrown" should we suppress
+            // them?
         }
     }
 }

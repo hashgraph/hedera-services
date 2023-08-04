@@ -163,7 +163,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * @deprecated This constructor is only for use by the ConstructableRegistry.
      */
     @Deprecated(forRemoval = true)
-    public MerkleHederaState() {
+    public
+    MerkleHederaState() { // TODO: leave deprecated classes and any calls to them in place until we can remove them OR
+        // suppress the warning?
         // ConstructableRegistry requires a "working" no-arg constructor
         aliases = null;
         onPreHandle = null;

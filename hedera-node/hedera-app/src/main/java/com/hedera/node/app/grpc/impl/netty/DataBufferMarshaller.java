@@ -41,7 +41,9 @@ final class DataBufferMarshaller implements MethodDescriptor.Marshaller<Buffered
      * have control over the thread pool used by the underlying gRPC server.
      */
     private static final ThreadLocal<BufferedData> BUFFER_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> BufferedData.allocate(TOO_BIG_MESSAGE_SIZE));
+            ThreadLocal.withInitial(() -> BufferedData.allocate(
+                    TOO_BIG_MESSAGE_SIZE)); // TODO: should we address this "ThreadLocal" variables should be cleaned up
+    // when no longer used i.e. call remove() on BUFFER_THREAD_LOCAL somewhere?
 
     /** Constructs a new {@link DataBufferMarshaller}. Only called by {@link GrpcServiceBuilder}. */
     DataBufferMarshaller() {}
