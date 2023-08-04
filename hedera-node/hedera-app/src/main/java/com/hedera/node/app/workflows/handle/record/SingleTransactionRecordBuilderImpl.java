@@ -284,9 +284,10 @@ public class SingleTransactionRecordBuilderImpl
      * @param contractCallResult the contractCall result
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl contractCallResult(
-            @NonNull final ContractFunctionResult contractCallResult) {
+            @Nullable final ContractFunctionResult contractCallResult) {
         this.transactionRecordBuilder.contractCallResult(contractCallResult);
         return this;
     }
@@ -359,8 +360,8 @@ public class SingleTransactionRecordBuilderImpl
      * @param assessedCustomFees the assessedCustomFees
      * @return the builder
      */
-    @NonNull
     @Override
+    @NonNull
     public SingleTransactionRecordBuilderImpl assessedCustomFees(
             @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
