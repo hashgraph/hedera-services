@@ -24,13 +24,11 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import java.io.IOException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ExchangeRateManagerTest {
     static final int hbarEquiv = 30_000;
     static final int centEquiv = 120_000;
-
     TimestampSeconds expirationTime =
             TimestampSeconds.newBuilder().setSeconds(150_000L).build();
     ExchangeRate.Builder someRate = ExchangeRate.newBuilder()
@@ -43,17 +41,13 @@ class ExchangeRateManagerTest {
             .build();
 
     Bytes validRateBytes = Bytes.wrap(validRatesObj.toByteArray());
-    ExchangeRateManager subject;
-
-    @BeforeEach
-    void setup() throws IOException {
-        subject = new ExchangeRateManager();
-        subject.createUpdateExchangeRates(validRateBytes);
-    }
+    ExchangeRateManager subject = new ExchangeRateManager();
 
     @Test
     void hasExpectedFields() throws IOException {
-        // expect:
+        // when
+        subject.createUpdateExchangeRates(validRateBytes);
+        // expect
         assertEquals(hbarEquiv, subject.getCurrHbarEquiv());
         assertEquals(hbarEquiv, subject.getNextHbarEquiv());
         assertEquals(centEquiv, subject.getCurrCentEquiv());
@@ -61,5 +55,43 @@ class ExchangeRateManagerTest {
         assertEquals(expirationTime.getSeconds(), subject.getCurrExpiry());
         assertEquals(expirationTime.getSeconds(), subject.getNextExpiry());
         assertEquals(PROTOBUF.parse(validRateBytes.toReadableSequentialData()), subject.getExchangeRateSet());
+    }
+
+    @Test
+    void onlyCurrentRates() throws IOException {
+        // given
+        final var onlyCurrentRates =
+                ExchangeRateSet.newBuilder().setCurrentRate(someRate).build();
+        subject = new ExchangeRateManager();
+
+        // when
+        subject.createUpdateExchangeRates(Bytes.wrap(onlyCurrentRates.toByteArray()));
+
+        // expect
+        assertEquals(hbarEquiv, subject.getCurrHbarEquiv());
+        assertEquals(0, subject.getNextHbarEquiv());
+        assertEquals(centEquiv, subject.getCurrCentEquiv());
+        assertEquals(0, subject.getNextCentEquiv());
+        assertEquals(expirationTime.getSeconds(), subject.getCurrExpiry());
+        assertEquals(0, subject.getNextExpiry());
+    }
+
+    @Test
+    void onlyNextRates() throws IOException {
+        // given
+        final var onlyNextRates =
+                ExchangeRateSet.newBuilder().setNextRate(someRate).build();
+        subject = new ExchangeRateManager();
+
+        // when
+        subject.createUpdateExchangeRates(Bytes.wrap(onlyNextRates.toByteArray()));
+
+        // expect
+        assertEquals(0, subject.getCurrHbarEquiv());
+        assertEquals(hbarEquiv, subject.getNextHbarEquiv());
+        assertEquals(0, subject.getCurrCentEquiv());
+        assertEquals(centEquiv, subject.getNextCentEquiv());
+        assertEquals(0, subject.getCurrExpiry());
+        assertEquals(expirationTime.getSeconds(), subject.getNextExpiry());
     }
 }
