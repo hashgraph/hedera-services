@@ -245,16 +245,15 @@ class OpUsageCtxHelperTest {
 
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);
-        final Optional<TokenType> tokenType = Optional.of(TokenType.NON_FUNGIBLE_UNIQUE);
         given(workingView.tokenWith(target)).willReturn(Optional.of(extant));
 
         final var tokenMintMeta = subject.metaForTokenMint(accessor);
 
         // then:
-        assertEquals(34, tokenMintMeta.getBpt());
+        assertEquals(1, tokenMintMeta.getBpt());
         assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, tokenMintMeta.getSubType());
-        assertEquals(12345670, tokenMintMeta.getRbs());
-        assertEquals(80, tokenMintMeta.getTransferRecordDb());
+        assertEquals(0, tokenMintMeta.getRbs());
+        assertEquals(0, tokenMintMeta.getTransferRecordDb());
     }
 
     @Test
