@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_A
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -189,8 +190,12 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void updateStorageMetadataNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.updateStorageMetadata(1L, Bytes.EMPTY, 2));
+    void updateStorageMetadataUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), Bytes.EMPTY, 2);
+
+        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID, Bytes.EMPTY, 2);
     }
 
     @Test

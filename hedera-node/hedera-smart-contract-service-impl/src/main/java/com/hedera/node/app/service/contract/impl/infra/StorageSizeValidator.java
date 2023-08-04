@@ -38,20 +38,20 @@ public class StorageSizeValidator {
     private final ContractsConfig contractsConfig;
 
     @Inject
-    public StorageSizeValidator(@NonNull final Configuration configuration) {
-        this.contractsConfig = requireNonNull(configuration).getConfigData(ContractsConfig.class);
+    public StorageSizeValidator(@NonNull final ContractsConfig contractsConfig) {
+        this.contractsConfig = contractsConfig;
     }
 
     /**
      * Validates that a set of storage size changes are valid, given the current contract service configuration.
      *
      * @param aggregateSlotsUsed the number of slots that would be used by all contracts combined after the transaction
-     * @param extWorldScope the extended world scope used to create the size changes being validated
+     * @param hederaOperations the extended world scope used to create the size changes being validated
      * @param storageSizeChanges the summarized storage size changes to validate
      */
     public void assertValid(
             final long aggregateSlotsUsed,
-            @NonNull final HederaOperations extWorldScope,
+            @NonNull final HederaOperations hederaOperations,
             @NonNull final List<StorageSizeChange> storageSizeChanges) {
         final var maxAggregateSlots = contractsConfig.maxKvPairsAggregate();
         validateResource(maxAggregateSlots >= aggregateSlotsUsed, MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
@@ -59,7 +59,7 @@ public class StorageSizeValidator {
         final var maxIndividualSlots = contractsConfig.maxKvPairsIndividual();
         storageSizeChanges.forEach(change -> {
             final var contractSlotsUsed =
-                    change.numAdded() + extWorldScope.getOriginalSlotsUsed(change.contractNumber());
+                    change.numAdded() + hederaOperations.getOriginalSlotsUsed(change.contractNumber());
             validateResource(maxIndividualSlots >= contractSlotsUsed, MAX_CONTRACT_STORAGE_EXCEEDED);
         });
     }

@@ -182,8 +182,10 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void updateStorageMetadata(final long contractNumber, @Nullable final Bytes firstKey, final int slotsUsed) {
-        throw new AssertionError("Not implemented");
+    public void updateStorageMetadata(final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var accountId = AccountID.newBuilder().accountNum(contractNumber).build();
+        tokenServiceApi.updateStorageMetadata(accountId, firstKey, netChangeInSlotsUsed);
     }
 
     /**

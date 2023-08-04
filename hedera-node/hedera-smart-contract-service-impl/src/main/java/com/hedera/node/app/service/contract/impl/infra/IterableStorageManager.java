@@ -33,9 +33,9 @@ import javax.inject.Singleton;
  * "legible" even though all slots are stored in a single map.
  */
 @Singleton
-public class LegibleStorageManager {
+public class IterableStorageManager {
     @Inject
-    public LegibleStorageManager() {}
+    public IterableStorageManager() {}
 
     /**
      * Given a writable storage K/V state and the pending changes to storage values and sizes made in this
@@ -46,16 +46,26 @@ public class LegibleStorageManager {
      * slots used per contract via
      * {@link HandleHederaOperations#updateStorageMetadata(long, Bytes, int)}.
      *
-     * @param scope the scope of the current transaction
+     * @param hederaOperations the scope of the current transaction
      * @param changes the pending changes to storage values
      * @param sizeChanges the pending changes to storage sizes
      * @param store the writable state store
      */
     public void rewrite(
-            @NonNull final HederaOperations scope,
+            @NonNull final HederaOperations hederaOperations,
             @NonNull final List<StorageAccesses> changes,
             @NonNull final List<StorageSizeChange> sizeChanges,
             @NonNull final ContractStateStore store) {
-        // TODO - refactor mono-service code for this before perf tests
+        changes.forEach(storageAccesses -> {
+            System.out.println("For 0.0." + storageAccesses.contractNumber() + ":");
+            storageAccesses.accesses().forEach(access -> {
+                System.out.println("  " + access);
+            });
+        });
+        sizeChanges.forEach(change -> {
+            if (change.netChange() != 0) {
+                hederaOperations.updateStorageMetadata(change.contractNumber(), Bytes.EMPTY, change.netChange());
+            }
+        });
     }
 }

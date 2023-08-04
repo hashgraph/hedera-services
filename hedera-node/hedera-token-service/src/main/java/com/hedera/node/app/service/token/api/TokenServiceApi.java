@@ -19,7 +19,10 @@ package com.hedera.node.app.service.token.api;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 import java.util.Set;
 
@@ -87,4 +90,13 @@ public interface TokenServiceApi {
      * @return a list of all the account ids that were modified by this {@link TokenServiceApi}
      */
     List<ContractNonceInfo> updatedContractNonces();
+
+    /**
+     * Updates the storage metadata for the given contract.
+     *
+     * @param accountId the id of the contract
+     * @param firstKey       the first key in the storage linked list, empty if the storage is empty
+     * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
+     */
+    void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 }

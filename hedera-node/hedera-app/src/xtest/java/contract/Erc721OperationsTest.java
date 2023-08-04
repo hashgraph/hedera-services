@@ -20,10 +20,12 @@ import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONT
 import static contract.Erc721OperationsConstants.COINBASE_ID;
 import static contract.Erc721OperationsConstants.COUNTERPARTY_ADDRESS;
 import static contract.Erc721OperationsConstants.COUNTERPARTY_ID;
+import static contract.Erc721OperationsConstants.EXPECTED_STORAGE;
 import static contract.Erc721OperationsConstants.INITIAL_BALANCE;
 import static contract.Erc721OperationsConstants.NEXT_ENTITY_NUM;
 import static contract.Erc721OperationsConstants.OPERATOR_ADDRESS;
 import static contract.Erc721OperationsConstants.OPERATOR_ID;
+import static contract.Erc721OperationsConstants.PARTY_ADDRESS;
 import static contract.Erc721OperationsConstants.PARTY_ID;
 import static contract.Erc721OperationsConstants.STANDARD_AUTO_RENEW_PERIOD;
 import static contract.Erc721OperationsConstants.TOKEN_TREASURY_ADDRESS;
@@ -122,34 +124,35 @@ class Erc721OperationsTest {
 
     @Test
     void recordedErc721OperationsResultInExpectedState() throws IOException {
-        // GIVEN:
+        // given:
         setupFakeStates();
         setupErc721InitcodeAndWellKnownAccounts();
         scaffoldingComponent.workingStateAccessor().setHederaState(scaffoldingComponent.hederaState());
 
-        // WHEN:
-        handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
-        //        handleAndCommit(
-        //                        CONTRACT_SERVICE.handlers().contractCallHandler(),
-        //                synthApproveTxn(TREASURY, PARTY_ADDRESS, 2),
-        //                synthApproveTxn(TREASURY, PARTY_ADDRESS, 3),
-        //                synthSetApprovalForAll(TREASURY, OPERATOR_ADDRESS, true),
-        //                synthSafeTransferFrom(OPERATOR, TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 13),
-        //                synthSafeTransferFrom(PARTY, TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 3),
-        //                synthSafeTransferFrom(TREASURY, TREASURY_ADDRESS, PARTY_ADDRESS, 8),
-        //                synthSafeTransferFrom(COUNTERPARTY, COUNTERPARTY_ADDRESS, PARTY_ADDRESS, 3));
+        // when:
+        handle(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
+        handle(
+                CONTRACT_SERVICE.handlers().contractCallHandler(),
+                synthApproveTxn(TOKEN_TREASURY_ID, PARTY_ADDRESS, 2),
+                synthApproveTxn(TOKEN_TREASURY_ID, PARTY_ADDRESS, 3),
+                synthSetApprovalForAll(TOKEN_TREASURY_ID, OPERATOR_ADDRESS, true),
+                synthSafeTransferFrom(OPERATOR_ID, TOKEN_TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 13),
+                synthSafeTransferFrom(PARTY_ID, TOKEN_TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 3),
+                synthSafeTransferFrom(TOKEN_TREASURY_ID, TOKEN_TREASURY_ADDRESS, PARTY_ADDRESS, 8),
+                synthSafeTransferFrom(COUNTERPARTY_ID, COUNTERPARTY_ADDRESS, PARTY_ADDRESS, 3));
+        // and:
+        scaffoldingComponent.stack().commit();
 
-        // THEN:
+        // then:
         assertExpectedContract();
         assertExpectedBytecode();
-        //       assertExpectedStorage();
+        assertExpectedStorage();
     }
 
-    private void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
+    private void handle(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
             final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
-            scaffoldingComponent.stack().commit();
         }
     }
 
@@ -228,11 +231,13 @@ class Erc721OperationsTest {
                 .hederaState()
                 .createReadableStates(ContractServiceImpl.NAME)
                 .get(ContractSchema.STORAGE_KEY);
-        Erc721OperationsConstants.EXPECTED_STORAGE.forEach((key, value) -> {
+        EXPECTED_STORAGE.forEach((key, value) -> {
             final var slot = storage.get(new SlotKey(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow(), key));
             assertNotNull(slot);
             assertEquals(value, slot.value());
         });
+        final var contract = Objects.requireNonNull(expectedDeployedContract());
+//        assertEquals(EXPECTED_STORAGE.size(), contract.contractKvPairsNumber());
     }
 
     private @Nullable Account expectedDeployedContract() {
