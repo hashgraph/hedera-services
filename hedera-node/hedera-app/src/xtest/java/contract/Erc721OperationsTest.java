@@ -231,6 +231,7 @@ class Erc721OperationsTest {
                 .hederaState()
                 .createReadableStates(ContractServiceImpl.NAME)
                 .get(ContractSchema.STORAGE_KEY);
+        assertEquals(EXPECTED_STORAGE.size(), storage.size());
         EXPECTED_STORAGE.forEach((key, value) -> {
             final var slot = storage.get(new SlotKey(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow(), key));
             assertNotNull(slot);

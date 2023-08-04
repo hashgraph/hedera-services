@@ -101,7 +101,8 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         // Charge rent for each increase in storage size
         chargeRentFor(sizeEffects);
         // "Rewrite" the pending storage changes to preserve per-contract linked lists
-        storageManager.rewrite(hederaOperations, changes, sizeEffects.sizeChanges(), hederaOperations.getStore());
+        storageManager.persistChanges(
+                hederaOperations, changes, sizeEffects.sizeChanges(), hederaOperations.getStore());
 
         // We now have an apparently valid change set, and want to capture some summary
         // information for the Hedera record

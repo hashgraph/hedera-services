@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.infra;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+
+import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -49,16 +52,25 @@ public class IterableStorageManager {
      * {@link HandleHederaOperations#updateStorageMetadata(long, Bytes, int)}.
      *
      * @param hederaOperations the scope of the current transaction
-     * @param changes the pending changes to storage values
-     * @param sizeChanges the pending changes to storage sizes
+     * @param allAccesses the pending changes to storage values
+     * @param allSizeChanges the pending changes to storage sizes
      * @param store the writable state store
      */
-    public void rewrite(
+    public void persistChanges(
             @NonNull final HederaOperations hederaOperations,
-            @NonNull final List<StorageAccesses> changes,
-            @NonNull final List<StorageSizeChange> sizeChanges,
+            @NonNull final List<StorageAccesses> allAccesses,
+            @NonNull final List<StorageSizeChange> allSizeChanges,
             @NonNull final ContractStateStore store) {
-        sizeChanges.forEach(change -> {
+        // TODO - include storage linked list management before performance testing
+
+        // Remove all zeroed-out slots from the linked lists
+        allAccesses.forEach(contractAccesses -> contractAccesses.accesses().forEach(access -> {
+            if (access.isRemoval()) {
+                store.removeSlot(new SlotKey(contractAccesses.contractNumber(), tuweniToPbjBytes(access.key())));
+            }
+        }));
+        // Update contract metadata with the net change in slots used
+        allSizeChanges.forEach(change -> {
             if (change.netChange() != 0) {
                 hederaOperations.updateStorageMetadata(change.contractNumber(), Bytes.EMPTY, change.netChange());
             }

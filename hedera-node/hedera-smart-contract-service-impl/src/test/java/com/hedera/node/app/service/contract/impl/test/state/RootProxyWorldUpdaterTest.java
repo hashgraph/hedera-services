@@ -146,7 +146,7 @@ class RootProxyWorldUpdaterTest {
         inOrder.verify(storageSizeValidator)
                 .assertValid(sizeExcludingPendingRemovals, hederaOperations, expectedSizeChanges());
         inOrder.verify(hederaOperations).chargeStorageRent(A_NUM, rentInTinybars, true);
-        inOrder.verify(storageManager).rewrite(hederaOperations, pendingChanges(), expectedSizeChanges(), store);
+        inOrder.verify(storageManager).persistChanges(hederaOperations, pendingChanges(), expectedSizeChanges(), store);
         inOrder.verify(hederaOperations).commit();
 
         assertSame(createdIds, subject.getCreatedContractIds());
