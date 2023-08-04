@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
@@ -65,15 +64,6 @@ class HederaEvmTransactionResultTest {
 
     @Mock
     private StorageAccessTracker accessTracker;
-
-    @Test
-    void abortsWithTranslatedStatus() {
-        final var subject = HederaEvmTransactionResult.abortFor(INVALID_SIGNATURE);
-
-        assertEquals(INVALID_SIGNATURE, subject.abortReason());
-        assertEquals(INVALID_SIGNATURE, subject.finalStatus());
-        assertNull(subject.asProtoResultOf(rootProxyWorldUpdater));
-    }
 
     @Test
     void finalStatusFromHaltNotImplemented() {

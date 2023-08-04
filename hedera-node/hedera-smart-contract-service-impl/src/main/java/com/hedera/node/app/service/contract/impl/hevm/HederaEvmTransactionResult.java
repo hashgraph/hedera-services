@@ -48,7 +48,6 @@ public record HederaEvmTransactionResult(
         @Nullable ContractID recipientEvmAddress,
         @NonNull Bytes output,
         @Nullable String haltReason,
-        @Nullable ResponseCodeEnum abortReason,
         @Nullable Bytes revertReason,
         @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
@@ -59,16 +58,13 @@ public record HederaEvmTransactionResult(
 
     /**
      * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
-     * {@link RootProxyWorldUpdater}. Returns null if the transaction was aborted before entering the EVM.
+     * {@link RootProxyWorldUpdater}.
      *
      * @param updater the world updater
      * @return the result
      */
-    public @Nullable ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
-        if (abortReason != null) {
-            // If we aborted before entering an EVM transaction, we have no result to report
-            return null;
-        } else if (haltReason != null) {
+    public ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
+        if (haltReason != null) {
             throw new AssertionError("Not implemented");
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
@@ -77,28 +73,19 @@ public record HederaEvmTransactionResult(
         }
     }
 
+    /**
+     * Returns the final status of this transaction result.
+     *
+     * @return the status
+     */
     public ResponseCodeEnum finalStatus() {
-        if (abortReason != null) {
-            return abortReason;
-        } else if (haltReason != null) {
+        if (haltReason != null) {
             throw new AssertionError("Not implemented");
         } else if (revertReason != null) {
             throw new AssertionError("Not implemented");
         } else {
             return SUCCESS;
         }
-    }
-
-    /**
-     * Create a result for a transaction that was aborted before entering the EVM due to a
-     * Hedera-specific reason.
-     *
-     * @param reason the reason for the abort
-     *
-     */
-    public static HederaEvmTransactionResult abortFor(@NonNull final ResponseCodeEnum reason) {
-        return new HederaEvmTransactionResult(
-                0, 0, null, null, Bytes.EMPTY, null, reason, null, Collections.emptyList(), null);
     }
 
     /**
@@ -139,7 +126,6 @@ public record HederaEvmTransactionResult(
                 tuweniToPbjBytes(requireNonNull(output)),
                 null,
                 null,
-                null,
                 requireNonNull(logs),
                 stateChanges);
     }
@@ -159,12 +145,19 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.EMPTY,
                 frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
-                null,
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
                 stateReadsFrom(frame));
     }
 
+    /**
+     * Create a result for a transaction that failed due to resource exhaustion.
+     *
+     * @param gasUsed the gas used by the transaction
+     * @param gasPrice the gas price of the transaction
+     * @param reason the reason for the failure
+     * @return the result
+     */
     public static HederaEvmTransactionResult resourceExhaustionFrom(
             final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
         requireNonNull(reason);
@@ -174,7 +167,6 @@ public record HederaEvmTransactionResult(
                 null,
                 null,
                 Bytes.EMPTY,
-                null,
                 null,
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
@@ -202,13 +194,8 @@ public record HederaEvmTransactionResult(
                 : null;
     }
 
-    private @Nullable String maybeErrorMessage() {
-        // TODO - convert any abort, revert, or halt reason if present to an error message
-        return null;
-    }
-
     public boolean isSuccess() {
-        return abortReason == null && revertReason == null && haltReason == null;
+        return revertReason == null && haltReason == null;
     }
 
     private static @Nullable ContractStateChanges allStateAccessesFrom(@NonNull final MessageFrame frame) {
