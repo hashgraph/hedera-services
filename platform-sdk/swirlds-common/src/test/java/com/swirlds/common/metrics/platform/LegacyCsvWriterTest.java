@@ -71,7 +71,11 @@ class LegacyCsvWriterTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
-                NODE_ID, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                NODE_ID,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
     }
 
     @Test

@@ -16,7 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
@@ -33,6 +32,8 @@ import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * An implementation of {@link MetricsFactory} that creates platform-internal {@link Metric}-instances
@@ -40,8 +41,8 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 public class DefaultMetricsFactory implements MetricsFactory {
     private final MetricsConfig metricsConfig;
 
-    public DefaultMetricsFactory() {
-        metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
+    public DefaultMetricsFactory(@NonNull final MetricsConfig metricsConfig) {
+        this.metricsConfig = Objects.requireNonNull(metricsConfig, "metricsConfig is null");
     }
 
     /**
