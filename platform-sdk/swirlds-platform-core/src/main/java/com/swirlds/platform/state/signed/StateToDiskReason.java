@@ -69,6 +69,7 @@ public enum StateToDiskReason {
      *
      * @return the description of the reason
      */
+    @NonNull
     public String getDescription() {
         return description;
     }
