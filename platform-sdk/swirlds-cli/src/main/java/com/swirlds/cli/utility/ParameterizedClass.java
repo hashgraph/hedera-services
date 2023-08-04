@@ -16,11 +16,10 @@
 
 package com.swirlds.cli.utility;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import picocli.CommandLine;
 
 /**

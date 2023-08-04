@@ -26,12 +26,11 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.config.AddressBookConfig;
 import com.swirlds.platform.config.DefaultConfiguration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import picocli.CommandLine;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "clean",
@@ -41,7 +40,6 @@ import java.util.Objects;
 public final class CleanCommand extends AbstractCommand {
     /** The path to the sdk directory */
     private Path sdkPath;
-
 
     /** Set the path to the sdk directory */
     @SuppressWarnings("unused") // used by picocli
@@ -89,6 +87,5 @@ public final class CleanCommand extends AbstractCommand {
         // event streams
         FileUtils.deleteDirectory(
                 sdkPath.resolve(configuration.getConfigData(EventConfig.class).eventsLogDir()));
-
     }
 }

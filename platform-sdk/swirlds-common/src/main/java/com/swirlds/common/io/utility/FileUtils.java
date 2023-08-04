@@ -22,6 +22,8 @@ import static com.swirlds.logging.LogMarker.STATE_TO_DISK;
 import static java.nio.file.Files.exists;
 
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -34,9 +36,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -216,7 +215,8 @@ public final class FileUtils {
      * @param directory the name of directory after it is renamed
      * @param operation an operation that writes to a directory
      */
-    public static void executeAndRename(@NonNull final Path directory,@NonNull  final IOConsumer<Path> operation) throws IOException {
+    public static void executeAndRename(@NonNull final Path directory, @NonNull final IOConsumer<Path> operation)
+            throws IOException {
         executeAndRename(directory, buildTemporaryDirectory(), operation);
     }
 
@@ -228,7 +228,8 @@ public final class FileUtils {
      * @param tmpDirectory the name of the temporary directory, if it does not exist then it is created
      * @param operation    an operation that writes to a directory
      */
-    public static void executeAndRename(@NonNull final Path directory, @NonNull final Path tmpDirectory, @NonNull final IOConsumer<Path> operation)
+    public static void executeAndRename(
+            @NonNull final Path directory, @NonNull final Path tmpDirectory, @NonNull final IOConsumer<Path> operation)
             throws IOException {
 
         try {
@@ -267,7 +268,8 @@ public final class FileUtils {
      * @param file        the file to be written to, should not exist prior to this method being called
      * @param writeMethod the method that writes
      */
-    public static void writeAndFlush(@NonNull final Path file, @NonNull final IOConsumer<MerkleDataOutputStream> writeMethod)
+    public static void writeAndFlush(
+            @NonNull final Path file, @NonNull final IOConsumer<MerkleDataOutputStream> writeMethod)
             throws IOException {
 
         throwIfFileExists(file);
@@ -301,7 +303,8 @@ public final class FileUtils {
      * @return a list of paths to files that match the given suffix
      * @throws IOException if there is a problem walking the directory
      */
-    public static @NonNull List<Path> findFiles(@NonNull final Path dir, @NonNull final String suffix) throws IOException {
+    public static @NonNull List<Path> findFiles(@NonNull final Path dir, @NonNull final String suffix)
+            throws IOException {
         try (Stream<Path> files = Files.walk(dir)) {
             return files.filter(Files::isRegularFile)
                     .filter(f -> f.toString().endsWith(suffix))
