@@ -22,11 +22,8 @@ import static java.util.Objects.requireNonNull;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
-
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.TimeUnit;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;

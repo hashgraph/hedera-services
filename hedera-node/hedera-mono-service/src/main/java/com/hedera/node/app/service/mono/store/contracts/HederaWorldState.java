@@ -414,7 +414,9 @@ public class HederaWorldState implements HederaMutableWorldState {
         }
 
         private void commitSizeLimitedStorageTo(
-                final EntityAccess entityAccess, final Collection<UpdateTrackingAccount<Account>> updatedAccounts, final CodeCache codeCache) {
+                final EntityAccess entityAccess,
+                final Collection<UpdateTrackingAccount<Account>> updatedAccounts,
+                final CodeCache codeCache) {
             for (final var updatedAccount : updatedAccounts) {
                 // We don't check updatedAccount.getStorageWasCleared(), because we only purge
                 // storage
@@ -433,7 +435,8 @@ public class HederaWorldState implements HederaMutableWorldState {
                     final var accountId = accountIdFromEvmAddress(address);
                     entityAccess.storeCode(accountId, code);
                     codeCache.invalidateIfPresentAndNot(address, code);
-                    System.out.println("Code of size " + updatedAccount.getCode().size() + " stored for " + accountId);
+                    System.out.println(
+                            "Code of size " + updatedAccount.getCode().size() + " stored for " + accountId);
                 }
             }
         }

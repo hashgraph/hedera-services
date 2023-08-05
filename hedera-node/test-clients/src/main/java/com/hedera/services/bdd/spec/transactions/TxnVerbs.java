@@ -432,7 +432,8 @@ public class TxnVerbs {
         if (asBytes.length == 21) {
             asBytes = Arrays.copyOfRange(asBytes, 1, 21);
         }
-        System.out.println("address as bytes: " + CommonUtils.hex(address.value().toByteArray()));
+        System.out.println(
+                "address as bytes: " + CommonUtils.hex(address.value().toByteArray()));
         return HapiEthereumCall.explicitlyTo(explicitBytesOf(address), amount);
     }
 

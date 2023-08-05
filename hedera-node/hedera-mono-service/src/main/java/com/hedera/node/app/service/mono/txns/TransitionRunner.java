@@ -141,7 +141,9 @@ public class TransitionRunner implements TransactionLastStep {
                             final var storage = app.workingState().contractStorage();
                             final var firstKey = account.getFirstContractStorageKey();
                             System.out.println("Contract storage for 0.0." + id.getAccountNum()
-                                    + " (deleted? " + account.isDeleted() + "):");
+                                    + " (deleted? " + account.isDeleted()
+                                    + ", balance=" + account.getBalance()
+                                    + ", nonce=" + account.getEthereumNonce() + "):");
                             System.out.println(IterableStorageUtils.joinedStorageMappings(firstKey, storage));
                         }
                     });

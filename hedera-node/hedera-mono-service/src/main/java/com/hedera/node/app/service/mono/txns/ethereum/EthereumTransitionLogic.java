@@ -50,14 +50,13 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,7 +113,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         validateFalse(
                 !dynamicProperties.isEip2930Enabled() && ethTxData.type() == EthTxData.EthTransactionType.EIP2930,
                 INVALID_ETHEREUM_TRANSACTION);
-        log.info("Processing type {} transaction {} -> {}",
+        log.info(
+                "Processing type {} transaction {} -> {}",
                 ethTxData.type(),
                 CommonUtils.hex(ethTxData.rawTx()),
                 ethTxData);
