@@ -159,7 +159,12 @@ class DataFileCollectionMergeTest {
         final Path testDir = tempFileDir.resolve("testDoubleMerge");
         final DataFileCollection<long[]> store =
                 new DataFileCollection<>(testDir, "testDoubleMerge", new ExampleFixedSizeDataSerializer(), null);
-        final DataFileCompactor compactor = new DataFileCompactor(store);
+        final DataFileCompactor compactor = new DataFileCompactor(store) {
+            @Override
+            int getMinNumberOfFilesToMerge() {
+                return 2;
+            }
+        };
 
         final int numFiles = 2;
         for (long i = 0; i < numFiles; i++) {
