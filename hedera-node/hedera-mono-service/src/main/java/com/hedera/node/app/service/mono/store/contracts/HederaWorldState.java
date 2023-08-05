@@ -339,7 +339,7 @@ public class HederaWorldState implements HederaMutableWorldState {
                     Objects.requireNonNull(wrapped.recordsHistorian).hasThrottleCapacityForChildTransactions();
             validateResourceLimit(consThrottleCapacityIsAvailable, CONSENSUS_GAS_EXHAUSTED);
             // Throws an ITE if any storage limit is exceeded, or if storage fees cannot be paid
-            commitSizeLimitedStorageTo(entityAccess, updatedAccounts);
+            commitSizeLimitedStorageTo(entityAccess, updatedAccounts, wrapped.codeCache);
             entityAccess.recordNewKvUsageTo(trackingAccounts());
 
             // Because we have tracked all account creations, deletions, and balance changes in the
@@ -414,7 +414,9 @@ public class HederaWorldState implements HederaMutableWorldState {
         }
 
         private void commitSizeLimitedStorageTo(
-                final EntityAccess entityAccess, final Collection<UpdateTrackingAccount<Account>> updatedAccounts) {
+                final EntityAccess entityAccess,
+                final Collection<UpdateTrackingAccount<Account>> updatedAccounts,
+                final CodeCache codeCache) {
             for (final var updatedAccount : updatedAccounts) {
                 // We don't check updatedAccount.getStorageWasCleared(), because we only purge
                 // storage
@@ -428,8 +430,11 @@ public class HederaWorldState implements HederaMutableWorldState {
             entityAccess.flushStorage(trackingAccounts());
             for (final var updatedAccount : updatedAccounts) {
                 if (updatedAccount.codeWasUpdated()) {
-                    final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-                    entityAccess.storeCode(accountId, updatedAccount.getCode());
+                    final var code = updatedAccount.getCode();
+                    final var address = updatedAccount.getAddress();
+                    final var accountId = accountIdFromEvmAddress(address);
+                    entityAccess.storeCode(accountId, code);
+                    codeCache.invalidateIfPresentAndNot(address, code);
                 }
             }
         }
