@@ -32,6 +32,8 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
@@ -126,7 +128,13 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
         } else {
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
+            System.out.println("Resolved " + to + " to " + resolvedForEvm);
             code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
+        }
+        if (code != null) {
+            System.out.println("Got code (calling " + to + "): " + CommonUtils.hex(code.getBytes().toArray()));
+        } else {
+            System.out.println("No code (calling " + to + ")");
         }
         /* The ContractCallTransitionLogic would have rejected a missing or deleted
          * contract, so at this point we should have non-null bytecode available.

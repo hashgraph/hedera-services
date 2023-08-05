@@ -56,6 +56,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,6 +114,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         validateFalse(
                 !dynamicProperties.isEip2930Enabled() && ethTxData.type() == EthTxData.EthTransactionType.EIP2930,
                 INVALID_ETHEREUM_TRANSACTION);
+        log.info("Processing type {} transaction {} -> {}",
+                ethTxData.type(),
+                CommonUtils.hex(ethTxData.rawTx()),
+                ethTxData);
         final var relayerId = Id.fromGrpcAccount(accessor.getPayer());
         final var maxGasAllowance = accessor.getTxn().getEthereumTransaction().getMaxGasAllowance();
         final var userOfferedGasPrice = ethTxData.getMaxGasAsBigInteger();
@@ -221,6 +227,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);
         final var callerNum = aliasManager.lookupIdBy(wrapUnsafely(ethTxSigs.address()));
         validateTrue(callerNum != MISSING_NUM, INVALID_ACCOUNT_ID);
+        log.info("Validated caller 0.0.{} ({})", callerNum.longValue(), CommonUtils.hex(ethTxSigs.address()));
 
         final var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
         final var expectedNonce = (long) accountsLedger.get(callerNum.toGrpcAccountId(), ETHEREUM_NONCE);

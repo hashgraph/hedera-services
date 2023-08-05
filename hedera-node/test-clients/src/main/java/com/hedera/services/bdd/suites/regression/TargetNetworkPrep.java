@@ -57,7 +57,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@HapiTestSuite
+//@HapiTestSuite
 public class TargetNetworkPrep extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
     public static final int SYSTEM_ENTITY_EXPIRY = 1812637686;

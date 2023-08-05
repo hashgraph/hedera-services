@@ -45,6 +45,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -61,6 +63,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private List<ExpectedTokenRel> relationships = new ArrayList<>();
     private Optional<ContractInfoAsserts> expectations = Optional.empty();
     private Optional<Consumer<String>> exposingEvmAddress = Optional.empty();
+    @Nullable
+    private Consumer<ContractID> exposingContractId = null;
 
     public HapiGetContractInfo(String contract) {
         this.contract = contract;
@@ -111,6 +115,11 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         return this;
     }
 
+    public HapiGetContractInfo exposingContractId(Consumer<ContractID> obs) {
+        exposingContractId = obs;
+        return this;
+    }
+
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.ContractGetInfo;
@@ -154,6 +163,9 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
             spec.registry().saveContractInfo(registryEntry.get(), contractInfo);
         }
         exposingEvmAddress.ifPresent(stringConsumer -> stringConsumer.accept(contractInfo.getContractAccountID()));
+        if (exposingContractId != null) {
+            exposingContractId.accept(contractInfo.getContractID());
+        }
     }
 
     @Override
