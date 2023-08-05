@@ -389,7 +389,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void merge(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor fileCompactor = new DataFileCompactor(fileCollection);
+        final DataFileCompactor fileCompactor = createFileCompactor(fileCollection);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         final int NUM_OF_KEYS = 1000;
@@ -555,7 +555,7 @@ class DataFileCollectionTest {
     @EnumSource(FilesTestType.class)
     void merge2(final FilesTestType testType) throws Exception {
         final DataFileCollection<long[]> fileCollection = fileCollectionMap.get(testType);
-        final DataFileCompactor fileCompactor = new DataFileCompactor(fileCollection);
+        final DataFileCompactor fileCompactor = createFileCompactor(fileCollection);
         final LongListHeap storedOffsets = storedOffsetsMap.get(testType);
         final AtomicBoolean mergeComplete = new AtomicBoolean(false);
         // start compaction paused so that we can test pausing
@@ -634,6 +634,15 @@ class DataFileCollectionTest {
                         .filter(f -> f.toString().endsWith(".jdb"))
                         .count(),
                 "unexpected # of files");
+    }
+
+    private static DataFileCompactor createFileCompactor(DataFileCollection<long[]> fileCollection) {
+        return new DataFileCompactor(fileCollection){
+            @Override
+            int getMinNumberOfFilesToMerge() {
+                return 2;
+            }
+        };
     }
 
     @Order(203)
