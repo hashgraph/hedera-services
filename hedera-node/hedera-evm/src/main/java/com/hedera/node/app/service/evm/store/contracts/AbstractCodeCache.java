@@ -78,6 +78,7 @@ public class AbstractCodeCache {
      * @param bytes the correct bytes that waive invalidation
      */
     public void invalidateIfPresentAndNot(@NonNull final Address address, @NonNull final Bytes bytes) {
+        requireNonNull(bytes);
         requireNonNull(address);
         final var key = new BytesKey(address.toArray());
         final var code = cache.getIfPresent(key);

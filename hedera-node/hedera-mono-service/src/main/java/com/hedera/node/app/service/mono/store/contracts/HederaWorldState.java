@@ -434,6 +434,11 @@ public class HederaWorldState implements HederaMutableWorldState {
                     final var address = updatedAccount.getAddress();
                     final var accountId = accountIdFromEvmAddress(address);
                     entityAccess.storeCode(accountId, code);
+                    // If an account's code was updated, 99.9% of the time this will be because
+                    // it was just created (and hence could not have any cached bytecode)...but
+                    // it's also possible to finalize a hollow account as a contract, and in this
+                    // case the bytecode changes from empty to non-empty; so just be completely
+                    // safe and invalidate any out-of-date code in the code cache here
                     codeCache.invalidateIfPresentAndNot(address, code);
                 }
             }

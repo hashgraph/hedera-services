@@ -726,7 +726,6 @@ public class Create2OperationSuite extends HapiSuite {
     private HapiSpec canCallFinalizedContractViaHapi() {
         final var contract = "FinalizedDestructible";
         final var salt = BigInteger.valueOf(1_234_567_890L);
-        final var lazyCreateKey = "lazyCreateKey";
         final AtomicReference<Address> childAddress = new AtomicReference<>();
         final AtomicReference<ContractID> childId = new AtomicReference<>();
         final var vacateAddressAbi =
@@ -734,7 +733,6 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("CanCallFinalizedContractViaHapi")
                 .given(
-                        newKeyNamed(lazyCreateKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
