@@ -66,7 +66,6 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
         final var toBeDeleted = frame.getRecipientAddress();
-        System.out.println("HederaSelfDestructOperation: beneficiaryAddress: " + beneficiaryAddress + " toBeDeleted: " + toBeDeleted);
         if (!addressValidator.test(beneficiaryAddress, frame)) {
             return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
