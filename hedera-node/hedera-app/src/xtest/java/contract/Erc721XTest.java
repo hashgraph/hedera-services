@@ -36,7 +36,6 @@ import static contract.Erc721XTestConstants.OPERATOR_ADDRESS;
 import static contract.Erc721XTestConstants.OPERATOR_ID;
 import static contract.Erc721XTestConstants.PARTY_ADDRESS;
 import static contract.Erc721XTestConstants.PARTY_ID;
-import static contract.Erc721XTestConstants.STANDARD_AUTO_RENEW_PERIOD;
 import static contract.Erc721XTestConstants.TOKEN_TREASURY_ADDRESS;
 import static contract.Erc721XTestConstants.TOKEN_TREASURY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,7 +98,7 @@ public class Erc721XTest extends AbstractContractXTest {
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
                         .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
                         .fileID(Erc721XTestConstants.ERC721_FULL_INITCODE_FILE_ID)
-                        .gas(Erc721XTestConstants.GAS_TO_OFFER)
+                        .gas(AbstractContractXTest.GAS_TO_OFFER)
                         .build())
                 .build();
     }
@@ -141,7 +140,7 @@ public class Erc721XTest extends AbstractContractXTest {
         return ContractCallTransactionBody.newBuilder()
                 .functionParameters(Bytes.wrap(encoded.array()))
                 .contractID(Erc721XTestConstants.ERC721_FULL_CONTRACT)
-                .gas(Erc721XTestConstants.GAS_TO_OFFER)
+                .gas(AbstractContractXTest.GAS_TO_OFFER)
                 .build();
     }
 

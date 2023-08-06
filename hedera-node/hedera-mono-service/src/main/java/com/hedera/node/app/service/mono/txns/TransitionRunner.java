@@ -52,6 +52,7 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.TreeSet;
@@ -129,24 +130,6 @@ public class TransitionRunner implements TransactionLastStep {
                 transition.doStateTransition();
                 if (opsWithDefaultSuccessStatus.contains(function)) {
                     txnCtx.setStatus(SUCCESS);
-                }
-                if (function == ContractCall) {
-                    final var app = AppsManager.APPS.get(new NodeId(0));
-                    final var accounts = app.backingAccounts();
-                    final var orderedIds = new TreeSet<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
-                    orderedIds.addAll(accounts.idSet());
-                    orderedIds.forEach(id -> {
-                        final var account = accounts.getRef(id);
-                        if (account.isSmartContract()) {
-                            final var storage = app.workingState().contractStorage();
-                            final var firstKey = account.getFirstContractStorageKey();
-                            System.out.println("Contract storage for 0.0." + id.getAccountNum()
-                                    + " (deleted? " + account.isDeleted()
-                                    + ", balance=" + account.getBalance()
-                                    + ", nonce=" + account.getEthereumNonce() + "):");
-                            System.out.println(IterableStorageUtils.joinedStorageMappings(firstKey, storage));
-                        }
-                    });
                 }
             } catch (final InvalidTransactionException e) {
                 resolveFailure(e.getResponseCode(), accessor, e);

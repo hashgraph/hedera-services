@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.mono.state.logic;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
+import com.hedera.node.app.service.mono.context.AppsManager;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertyNames;
@@ -30,10 +32,14 @@ import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
 import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition;
 import com.hedera.node.app.service.mono.state.initialization.BlocklistAccountCreator;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
+import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.TreeSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -147,6 +153,26 @@ public class ServicesTxnManager {
     private void attemptCommit(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
         try {
             ledger.commit();
+            if (accessor.getFunction() == ContractCall) {
+                final var app = AppsManager.APPS.get(new NodeId(0));
+                final var accounts = app.backingAccounts();
+                final var orderedIds = new TreeSet<>(HederaLedger.ACCOUNT_ID_COMPARATOR);
+                orderedIds.addAll(accounts.idSet());
+                orderedIds.forEach(id -> {
+                    final var account = accounts.getRef(id);
+                    if (account.number() >= 1001) {
+                        final var storage = app.workingState().contractStorage();
+                        final var firstKey = account.getFirstContractStorageKey();
+                        System.out.println("Storage for 0.0." + id.getAccountNum()
+                                + " (contract? " + account.isSmartContract()
+                                + ", deleted? " + account.isDeleted()
+                                + ", alias=" + CommonUtils.hex(account.getAlias().toByteArray())
+                                + ", balance=" + account.getBalance()
+                                + ", nonce=" + account.getEthereumNonce() + "):");
+                        System.out.println("  -> " + IterableStorageUtils.joinedStorageMappings(firstKey, storage));
+                    }
+                });
+            }
             createdStreamableRecord = true;
         } catch (Exception e) {
             logContextualizedError(e, "txn commit");

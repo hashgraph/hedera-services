@@ -2,6 +2,7 @@ package contract;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -43,6 +44,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractContractXTest {
+    static final long GAS_TO_OFFER = 2_000_000L;
+    static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
+
     @Mock
     private Metrics metrics;
 

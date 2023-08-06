@@ -19,7 +19,6 @@ package contract;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
@@ -29,13 +28,6 @@ import java.util.Map;
  */
 class Erc721XTestConstants {
     static final long NEXT_ENTITY_NUM = 1006L;
-    static final long GAS_TO_OFFER = 2_000_000L;
-    static final Bytes[] ACCOUNT_KEYS = {
-        Bytes.fromHex("0323350d977f06926ea7522c05392d73bd994eda850225088c1e0f46cc2eec6ab8"),
-        Bytes.fromHex("022b80534c9e022c1b8f1b5f053411577242beb595b91039fad4e233df5814e01f"),
-        Bytes.fromHex("038b87d8bd6206cdf1d84b054224209a00ae504b81d40218e1929f8ec2fd67ad4e"),
-        Bytes.fromHex("dc1e04e0efc0a23cc68f105a2a7bd5b7e72b08d20e8df0bf02f3dfe5e322538b"),
-    };
     static final Bytes[] ACCOUNT_ALIASES = {
         Bytes.fromHex("096959f155eE025b17E5C537b6dCB4a29BBAd8c2"),
         Bytes.fromHex("D893F18B69A06F7ffFfaD77202c2f627CB2C9605"),
@@ -90,12 +82,8 @@ class Erc721XTestConstants {
     static final AccountID OPERATOR_ID =
             AccountID.newBuilder().accountNum(1003L).build();
     static final AccountID PARTY_ID = AccountID.newBuilder().accountNum(1004L).build();
-    static final AccountID[] ACCOUNTS = {
-        TOKEN_TREASURY_ID, COUNTERPARTY_ID, OPERATOR_ID, PARTY_ID,
-    };
     static final Bytes PARTY_ADDRESS = Bytes.fromHex("00000000000000000000000000000000000003ec");
     static final FileID ERC721_FULL_INITCODE_FILE_ID = new FileID(0, 0, 1005);
-    static final Duration STANDARD_AUTO_RENEW_PERIOD = new Duration(7776000L);
     static final AccountID ERC721_FULL = AccountID.newBuilder().accountNum(1006).build();
     static final ContractID ERC721_FULL_CONTRACT =
             ContractID.newBuilder().contractNum(ERC721_FULL.accountNumOrThrow()).build();
