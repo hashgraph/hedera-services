@@ -25,10 +25,9 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Map;
 
 /**
- * Constants used in the {@link Erc721OperationsTest}, extracted here to improve
- * readability of that file.
+ * Constants used in the {@link Erc721XTest}, extracted here to improve readability of that file.
  */
-class Erc721OperationsConstants {
+class Erc721XTestConstants {
     static final long NEXT_ENTITY_NUM = 1006L;
     static final long GAS_TO_OFFER = 2_000_000L;
     static final Bytes[] ACCOUNT_KEYS = {
