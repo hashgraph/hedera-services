@@ -26,7 +26,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
@@ -127,14 +126,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
         } else {
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
-            System.out.println("Resolved " + to + " to " + resolvedForEvm);
             code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
-        }
-        if (code != null) {
-            System.out.println("Got code (calling " + to + "): "
-                    + CommonUtils.hex(code.getBytes().toArray()));
-        } else {
-            System.out.println("No code (calling " + to + ")");
         }
         /* The ContractCallTransitionLogic would have rejected a missing or deleted
          * contract, so at this point we should have non-null bytecode available.

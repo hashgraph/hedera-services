@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_NFT_SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -34,7 +33,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -89,11 +87,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -423,18 +419,6 @@ public class TxnVerbs {
 
     public static HapiEthereumCall ethereumCryptoTransferToExplicit(@NonNull final byte[] to, final long amount) {
         return HapiEthereumCall.explicitlyTo(to, amount);
-    }
-
-    public static HapiEthereumCall ethereumCryptoTransferToAddress(@NonNull final Address address, final long amount) {
-        System.out.println("address         : " + address);
-        var asBytes = address.value().toByteArray();
-        // Might have a leading zero byte to make it positive
-        if (asBytes.length == 21) {
-            asBytes = Arrays.copyOfRange(asBytes, 1, 21);
-        }
-        System.out.println(
-                "address as bytes: " + CommonUtils.hex(address.value().toByteArray()));
-        return HapiEthereumCall.explicitlyTo(explicitBytesOf(address), amount);
     }
 
     /**

@@ -103,7 +103,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
@@ -232,13 +231,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {
-    @Test
-    void hmm() throws TextFormat.InvalidEscapeSequenceException {
-        final var encoded = "s{\\303\\311";
-        final var decoded = TextFormat.unescapeBytes(encoded);
-        System.out.println(com.swirlds.common.utility.CommonUtils.hex(decoded.toByteArray()));
-    }
-
     @Test
     void canGetSynthAccessor() {
         final var synth = MiscUtils.synthAccessorFor(TransactionBody.newBuilder()

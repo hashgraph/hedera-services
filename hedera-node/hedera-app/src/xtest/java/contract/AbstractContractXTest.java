@@ -57,6 +57,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Base class for {@code xtest} scenarios that focus on contract operations.
+ */
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractContractXTest {
     static final long GAS_TO_OFFER = 2_000_000L;

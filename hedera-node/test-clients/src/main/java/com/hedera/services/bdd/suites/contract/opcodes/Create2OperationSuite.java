@@ -16,18 +16,14 @@
 
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_EIP2930_ENABLED;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
-import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -38,11 +34,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -52,17 +46,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransferToAddress;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -114,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -131,10 +123,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
-import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -143,9 +132,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-// @HapiTestSuite
+@HapiTestSuite
 public class Create2OperationSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Create2OperationSuite.class);
 
     public static final String GET_BYTECODE = "getBytecode";
     public static final String DEPLOY = "deploy";
@@ -183,7 +171,6 @@ public class Create2OperationSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                recordAssortedXTest(),
                 create2FactoryWorksAsExpected(),
                 payableCreate2WorksAsExpected(),
                 canDeleteViaAlias(),
@@ -366,100 +353,6 @@ public class Create2OperationSuite extends HapiSuite {
                                 "Test contract create2", "testCreate2", tcMirrorAddr2, tcAliasAddr2))
                 .then(sourcing(() ->
                         getContractInfo(tcMirrorAddr2.get()).has(contractWith().balance(100))));
-    }
-
-    private HapiSpec recordAssortedXTest() {
-        final var contract = "AssortedXTest";
-        final var salt = BigInteger.valueOf(1_234_567_890L);
-        final AtomicReference<Address> childAddress = new AtomicReference<>();
-        final AtomicReference<ContractID> childId = new AtomicReference<>();
-        final var vacateAddressAbi =
-                "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
-        return onlyDefaultHapiSpec("RecordAssortedXTest")
-                .given(
-                        overridingTwo(
-                                HEDERA_TXN_EIP2930_ENABLED, "true",
-                                CHAIN_ID_PROP, "298"),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS).advertisingCreation(),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged(),
-                        uploadInitCode(contract),
-                        contractCreate(contract).advertisingCreation().payingWith(GENESIS),
-                        getContractInfo(contract).logged(),
-                        getContractBytecode(contract).exposingBytecodeTo(bytes -> {
-                            try {
-                                Files.write(Paths.get("AssortedXTest.bin"), bytes);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }),
-                        contractCallLocal(contract, "computeChildAddress", salt).exposingTypedResultsTo(results -> {
-                            log.info("CREATE2 address for salt is {}", results[0]);
-                            childAddress.set((Address) results[0]);
-                        }),
-                        sourcing(() -> ethereumCryptoTransferToAddress(childAddress.get(), ONE_HBAR)
-                                .gasLimit(2_000_000)))
-                .when(
-                        sourcing(() -> getAliasedAccountInfo(ByteString.copyFrom(explicitBytesOf(childAddress.get())))
-                                .logged()),
-                        contractCall(contract, "deployDeterministicChild", salt)
-                                .sending(ONE_HBAR)
-                                .gas(2_000_000),
-                        sourcing(() -> getLiteralAliasContractInfo(asLiteralHexed(childAddress.get()))
-                                .exposingContractId(childId::set)
-                                .logged()),
-                        sourcing(() -> getContractBytecode(asLiteralHexed(childAddress.get()))
-                                .exposingBytecodeTo(bytes -> {
-                                    try {
-                                        Files.write(Paths.get("FirstChild.bin"), bytes);
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })),
-                        sourcing(() ->
-                                contractCallWithFunctionAbi(asLiteralHexed(childAddress.get()), vacateAddressAbi)),
-                        sourcing(() -> getContractInfo("0.0." + childId.get().getContractNum())
-                                .has(contractWith().isDeleted())
-                                .logged()))
-                .then(
-                        contractCall(contract, "deployRubeGoldbergesque", salt)
-                                .sending(2 * ONE_HBAR)
-                                .gas(2_000_000)
-                                .via("rube"),
-                        getTxnRecord("rube").logged(),
-                        // Notice that hollow account finalization still consumes an entity id in mono-service
-                        sourcing(() -> getContractBytecode(
-                                        "0.0." + (childId.get().getContractNum() + 2))
-                                .exposingBytecodeTo(bytes -> {
-                                    try {
-                                        Files.write(Paths.get("PointlessIntermediary.bin"), bytes);
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })),
-                        sourcing(() -> getContractBytecode(asLiteralHexed(childAddress.get()))
-                                .exposingBytecodeTo(bytes -> {
-                                    try {
-                                        Files.write(Paths.get("SecondChild.bin"), bytes);
-                                    } catch (IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })),
-                        sourcing(() -> getLiteralAliasContractInfo(asLiteralHexed(childAddress.get()))
-                                .logged()),
-                        balanceSnapshot("beforeTakeFive", contract),
-                        contractCall(contract, "takeFive")
-                                .payingWith(RELAYER)
-                                .gas(2_000_000)
-                                .via("takeFive"),
-                        getTxnRecord("takeFive").logged(),
-                        getAccountBalance(contract, true).hasTinyBars(changeFromSnapshot("beforeTakeFive", -5)));
-    }
-
-    private String asLiteralHexed(final Address address) {
-        return address.toString().substring(2);
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2867

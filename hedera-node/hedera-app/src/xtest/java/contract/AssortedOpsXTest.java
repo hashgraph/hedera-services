@@ -70,6 +70,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * <p>Please see <a href="https://github.com/hashgraph/hedera-services/pull/7868">this PR</a>
+ * for the {@code HapiSpec} scenario run against {@code mono-service} to determine the expected
+ * values.
+ */
 public class AssortedOpsXTest extends AbstractContractXTest {
     @Override
     protected void handleAndCommitScenarioTransactions() {
