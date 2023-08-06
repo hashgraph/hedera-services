@@ -23,7 +23,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;

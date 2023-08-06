@@ -41,7 +41,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

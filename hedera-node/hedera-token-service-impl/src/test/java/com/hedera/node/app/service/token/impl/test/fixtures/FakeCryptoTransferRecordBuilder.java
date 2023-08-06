@@ -21,7 +21,7 @@ import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;

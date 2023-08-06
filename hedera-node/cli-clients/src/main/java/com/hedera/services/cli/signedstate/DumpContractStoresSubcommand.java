@@ -59,8 +59,13 @@ public class DumpContractStoresSubcommand {
     @NonNull
     final Path storePath;
 
+    @NonNull
     final EmitSummary emitSummary;
+
+    @NonNull
     final WithSlots withSlots;
+
+    @NonNull
     final Verbosity verbosity;
 
     DumpContractStoresSubcommand(

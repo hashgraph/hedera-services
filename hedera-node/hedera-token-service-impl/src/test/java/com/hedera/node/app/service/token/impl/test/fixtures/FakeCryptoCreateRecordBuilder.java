@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.jetbrains.annotations.NotNull;
 

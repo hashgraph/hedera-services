@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -57,6 +58,11 @@ public class DumpStateCommand extends AbstractCommand {
     enum WithSlots {
         NO,
         YES
+    }
+
+    enum Format {
+        CSV,
+        ELIDED_DEFAULT_FIELDS
     }
 
     // We want to open the signed state file only once but run a bunch of dumps against it
@@ -123,6 +129,48 @@ public class DumpStateCommand extends AbstractCommand {
                 storePath,
                 emitSummary ? EmitSummary.YES : EmitSummary.NO,
                 withSlots ? WithSlots.YES : WithSlots.NO,
+                parent.verbosity);
+        finish();
+    }
+
+    @Command(name = "accounts")
+    void accounts(
+            @Option(
+                            names = {"--account"},
+                            arity = "1",
+                            description = "Output file for accounts dump")
+                    @NonNull
+                    final Path accountPath,
+            @Option(
+                            names = {"--csv"},
+                            arity = "0..1",
+                            description = "If present output is in pure csv form")
+                    final boolean doCsv,
+            @Option(
+                            names = {"--low"},
+                            arity = "0..1",
+                            defaultValue = "0",
+                            description = "Lowest acount number (inclusive) to dump")
+                    int lowLimit,
+            @Option(
+                            names = {"--high"},
+                            arity = "0..1",
+                            defaultValue = "2147483647",
+                            description = "highest account number (inclusive) to dump")
+                    int highLimit) {
+        Objects.requireNonNull(accountPath);
+        if (lowLimit > highLimit)
+            throw new CommandLine.ParameterException(
+                    parent.getSpec().commandLine(), "--highLimit must be >= --lowLimit");
+
+        init();
+        System.out.println("=== accounts ===");
+        DumpAccountsSubcommand.doit(
+                parent.signedState,
+                accountPath,
+                lowLimit,
+                highLimit,
+                doCsv ? Format.CSV : Format.ELIDED_DEFAULT_FIELDS,
                 parent.verbosity);
         finish();
     }

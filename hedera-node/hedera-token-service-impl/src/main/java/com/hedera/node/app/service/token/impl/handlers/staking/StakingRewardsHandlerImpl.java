@@ -31,7 +31,7 @@ import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;

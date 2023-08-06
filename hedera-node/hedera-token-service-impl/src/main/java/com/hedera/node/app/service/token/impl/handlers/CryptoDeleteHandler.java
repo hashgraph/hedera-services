@@ -35,7 +35,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoDeleteTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;

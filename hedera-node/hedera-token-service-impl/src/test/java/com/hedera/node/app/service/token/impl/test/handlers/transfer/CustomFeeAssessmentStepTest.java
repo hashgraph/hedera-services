@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.CustomFeeAssessm
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

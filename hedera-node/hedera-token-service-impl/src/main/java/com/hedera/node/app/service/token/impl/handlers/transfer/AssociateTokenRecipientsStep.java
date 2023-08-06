@@ -31,7 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

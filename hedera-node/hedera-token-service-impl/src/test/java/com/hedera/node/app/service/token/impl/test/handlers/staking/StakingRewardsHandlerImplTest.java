@@ -35,8 +35,8 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsDistributor;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
-import com.hedera.node.app.service.token.impl.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
 import java.time.Instant;
