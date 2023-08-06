@@ -1,4 +1,39 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
+
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static contract.Erc721XTestConstants.COINBASE_ID;
+import static contract.Erc721XTestConstants.COUNTERPARTY_ADDRESS;
+import static contract.Erc721XTestConstants.COUNTERPARTY_ID;
+import static contract.Erc721XTestConstants.ERC721_FULL_ID;
+import static contract.Erc721XTestConstants.ERC721_FULL_INITCODE_FILE_ID;
+import static contract.Erc721XTestConstants.EXPECTED_STORAGE;
+import static contract.Erc721XTestConstants.INITIAL_BALANCE;
+import static contract.Erc721XTestConstants.NEXT_ENTITY_NUM;
+import static contract.Erc721XTestConstants.OPERATOR_ADDRESS;
+import static contract.Erc721XTestConstants.OPERATOR_ID;
+import static contract.Erc721XTestConstants.PARTY_ADDRESS;
+import static contract.Erc721XTestConstants.PARTY_ID;
+import static contract.Erc721XTestConstants.TOKEN_TREASURY_ADDRESS;
+import static contract.Erc721XTestConstants.TOKEN_TREASURY_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
@@ -15,32 +50,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.jetbrains.annotations.NotNull;
-
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static contract.Erc721XTestConstants.COINBASE_ID;
-import static contract.Erc721XTestConstants.COUNTERPARTY_ADDRESS;
-import static contract.Erc721XTestConstants.COUNTERPARTY_ID;
-import static contract.Erc721XTestConstants.ERC721_FULL;
-import static contract.Erc721XTestConstants.ERC721_FULL_INITCODE_FILE_ID;
-import static contract.Erc721XTestConstants.EXPECTED_STORAGE;
-import static contract.Erc721XTestConstants.INITIAL_BALANCE;
-import static contract.Erc721XTestConstants.NEXT_ENTITY_NUM;
-import static contract.Erc721XTestConstants.OPERATOR_ADDRESS;
-import static contract.Erc721XTestConstants.OPERATOR_ID;
-import static contract.Erc721XTestConstants.PARTY_ADDRESS;
-import static contract.Erc721XTestConstants.PARTY_ID;
-import static contract.Erc721XTestConstants.TOKEN_TREASURY_ADDRESS;
-import static contract.Erc721XTestConstants.TOKEN_TREASURY_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * <p><b>GIVEN</b>
@@ -127,8 +142,7 @@ public class Erc721XTest extends AbstractContractXTest {
 
     private TransactionBody synthSetApprovalForAll(
             @NonNull final AccountID payer, @NonNull final Bytes operator, final boolean approved) {
-        final var encoded =
-                Erc721XTestConstants.SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
+        final var encoded = Erc721XTestConstants.SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
         System.out.println(Erc721XTestConstants.SET_APPROVAL_FOR_ALL.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
@@ -150,11 +164,11 @@ public class Erc721XTest extends AbstractContractXTest {
             @NotNull final ReadableKVState<AccountID, Account> accounts) {
         assertEquals(EXPECTED_STORAGE.size(), storage.size());
         EXPECTED_STORAGE.forEach((key, value) -> {
-            final var slot = storage.get(new SlotKey(ERC721_FULL.accountNumOrThrow(), key));
+            final var slot = storage.get(new SlotKey(ERC721_FULL_ID.accountNumOrThrow(), key));
             assertNotNull(slot);
             assertEquals(value, slot.value());
         });
-        final var contract = Objects.requireNonNull(accounts.get(ERC721_FULL));
+        final var contract = Objects.requireNonNull(accounts.get(ERC721_FULL_ID));
         assertEquals(EXPECTED_STORAGE.size(), contract.contractKvPairsNumber());
     }
 
@@ -165,14 +179,14 @@ public class Erc721XTest extends AbstractContractXTest {
 
     @Override
     protected void assertExpectedAccounts(@NotNull final ReadableKVState<AccountID, Account> accounts) {
-        final var contract = accounts.get(ERC721_FULL);
+        final var contract = accounts.get(ERC721_FULL_ID);
         assertNotNull(contract);
         assertTrue(contract.smartContract());
     }
 
     @Override
     protected void assertExpectedBytecodes(@NotNull final ReadableKVState<EntityNumber, Bytecode> bytecodes) {
-        final var actualBytecode = bytecodes.get(new EntityNumber(ERC721_FULL.accountNumOrThrow()));
+        final var actualBytecode = bytecodes.get(new EntityNumber(ERC721_FULL_ID.accountNumOrThrow()));
         assertNotNull(actualBytecode);
         assertEquals(resourceAsBytes("bytecode/ERC721Full.bin"), actualBytecode.code());
     }
@@ -225,7 +239,9 @@ public class Erc721XTest extends AbstractContractXTest {
         final var files = new HashMap<FileID, File>();
         files.put(
                 ERC721_FULL_INITCODE_FILE_ID,
-                File.newBuilder().contents(resourceAsBytes("initcode/ERC721Full.bin")).build());
+                File.newBuilder()
+                        .contents(resourceAsBytes("initcode/ERC721Full.bin"))
+                        .build());
         return files;
     }
 }

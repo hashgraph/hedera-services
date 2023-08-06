@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package contract;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -27,12 +43,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
@@ -41,6 +51,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class AbstractContractXTest {
@@ -69,22 +84,25 @@ public abstract class AbstractContractXTest {
         assertExpectedStorage(finalStorage(), finalAccounts());
     }
 
-    abstract protected long initialEntityNum();
+    protected abstract long initialEntityNum();
 
-    abstract protected Map<FileID, File> initialFiles();
+    protected abstract Map<FileID, File> initialFiles();
 
-    abstract protected Map<Bytes, AccountID> initialAliases();
+    protected abstract Map<Bytes, AccountID> initialAliases();
 
-    abstract protected Map<AccountID, Account> initialAccounts();
+    protected abstract Map<AccountID, Account> initialAccounts();
 
-    abstract protected void handleAndCommitScenarioTransactions();
+    protected abstract void handleAndCommitScenarioTransactions();
 
-    abstract protected void assertExpectedStorage(
+    protected abstract void assertExpectedStorage(
             @NonNull ReadableKVState<SlotKey, SlotValue> storage,
             @NonNull ReadableKVState<AccountID, Account> accounts);
-    abstract protected void assertExpectedAliases(@NonNull ReadableKVState<Bytes, AccountID> aliases);
-    abstract protected void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts);
-    abstract protected void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes);
+
+    protected abstract void assertExpectedAliases(@NonNull ReadableKVState<Bytes, AccountID> aliases);
+
+    protected abstract void assertExpectedAccounts(@NonNull ReadableKVState<AccountID, Account> accounts);
+
+    protected abstract void assertExpectedBytecodes(@NonNull ReadableKVState<EntityNumber, Bytecode> bytecodes);
 
     protected void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
@@ -113,8 +131,7 @@ public abstract class AbstractContractXTest {
         final var fakeHederaState = (FakeHederaState) scaffoldingComponent.hederaState();
 
         fakeHederaState.addService(
-                EntityIdService.NAME,
-                Map.of("ENTITY_ID", new AtomicReference<>(new EntityNumber(initialEntityNum()))));
+                EntityIdService.NAME, Map.of("ENTITY_ID", new AtomicReference<>(new EntityNumber(initialEntityNum()))));
 
         fakeHederaState.addService("RecordCache", Map.of("TransactionRecordQueue", new ArrayDeque<>()));
 
@@ -130,8 +147,7 @@ public abstract class AbstractContractXTest {
                         TokenServiceImpl.ACCOUNTS_KEY, initialAccounts(),
                         TokenServiceImpl.ALIASES_KEY, initialAliases(),
                         TokenServiceImpl.TOKENS_KEY, new HashMap<>()));
-        fakeHederaState.addService(
-                FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFiles()));
+        fakeHederaState.addService(FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFiles()));
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
                 Map.of(

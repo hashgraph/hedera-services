@@ -84,9 +84,11 @@ class Erc721XTestConstants {
     static final AccountID PARTY_ID = AccountID.newBuilder().accountNum(1004L).build();
     static final Bytes PARTY_ADDRESS = Bytes.fromHex("00000000000000000000000000000000000003ec");
     static final FileID ERC721_FULL_INITCODE_FILE_ID = new FileID(0, 0, 1005);
-    static final AccountID ERC721_FULL = AccountID.newBuilder().accountNum(1006).build();
-    static final ContractID ERC721_FULL_CONTRACT =
-            ContractID.newBuilder().contractNum(ERC721_FULL.accountNumOrThrow()).build();
+    static final AccountID ERC721_FULL_ID =
+            AccountID.newBuilder().accountNum(1006).build();
+    static final ContractID ERC721_FULL_CONTRACT = ContractID.newBuilder()
+            .contractNum(ERC721_FULL_ID.accountNumOrThrow())
+            .build();
     static final Function APPROVE = new Function("approve(address,uint256)");
     static final Function SET_APPROVAL_FOR_ALL = new Function("setApprovalForAll(address,bool)");
     static final Function SAFE_TRANSFER_FROM = new Function("safeTransferFrom(address,address,uint256)");

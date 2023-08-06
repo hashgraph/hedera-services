@@ -70,7 +70,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshots;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -453,10 +452,10 @@ public class Create2OperationSuite extends HapiSuite {
                         balanceSnapshot("beforeTakeFive", contract),
                         contractCall(contract, "takeFive")
                                 .payingWith(RELAYER)
-                                .gas(2_000_000).via("takeFive"),
+                                .gas(2_000_000)
+                                .via("takeFive"),
                         getTxnRecord("takeFive").logged(),
-                        getAccountBalance(contract, true)
-                                .hasTinyBars(changeFromSnapshot("beforeTakeFive", -5)));
+                        getAccountBalance(contract, true).hasTinyBars(changeFromSnapshot("beforeTakeFive", -5)));
     }
 
     private String asLiteralHexed(final Address address) {

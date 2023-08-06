@@ -166,7 +166,8 @@ public class ServicesTxnManager {
                         System.out.println("Storage for 0.0." + id.getAccountNum()
                                 + " (contract? " + account.isSmartContract()
                                 + ", deleted? " + account.isDeleted()
-                                + ", alias=" + CommonUtils.hex(account.getAlias().toByteArray())
+                                + ", alias="
+                                + CommonUtils.hex(account.getAlias().toByteArray())
                                 + ", balance=" + account.getBalance()
                                 + ", nonce=" + account.getEthereumNonce() + "):");
                         System.out.println("  -> " + IterableStorageUtils.joinedStorageMappings(firstKey, storage));
