@@ -77,14 +77,14 @@ class PreconsensusEventReplayWorkflowTests {
         final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.REPLAY_EVENTS);
         final long minimumGenerationNonAncient = random.nextLong(1, 1000);
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
         final int eventCount = 1000;
         for (int i = 0; i < eventCount; i++) {
             final EventImpl event = graphGenerator.generateEvent();
-            events.add(event);
+            events.add(event.getBaseEvent());
         }
-        final Iterator<EventImpl> eventIterator = events.iterator();
+        final Iterator<GossipEvent> eventIterator = events.iterator();
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong(), anyBoolean()))
@@ -106,7 +106,7 @@ class PreconsensusEventReplayWorkflowTests {
                     assertNotNull(event.getHashedData().getHash());
 
                     final int index = nextIndex.getAndIncrement();
-                    final EventImpl expectedEvent = events.get(index);
+                    final GossipEvent expectedEvent = events.get(index);
 
                     assertSame(event.getHashedData(), expectedEvent.getHashedData());
 

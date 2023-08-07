@@ -44,6 +44,8 @@ public class BusyTime {
     private static final long WORK_END = 1;
     /** the initial value of status when the instance is created */
     private static final int INITIAL_STATUS = -1;
+    /** the value of start time when the metric has overflowed */
+    private static final int OVERFLOW = -1;
     /** if an error occurs, do not write a log statement more often than this */
     private static final Duration LOG_PERIOD = Duration.ofSeconds(5);
     /** An instance that provides the current time */
@@ -135,10 +137,13 @@ public class BusyTime {
      * @param status
      * 		the current status of the thread and the time spent in the opposite status
      * @return the fraction of time that the thread has been busy, where 0.0 means the thread is not at all busy, and
-     * 1.0
-     * 		means that the thread is 100% busy
+     * 1.0 means that the thread is 100% busy, or -1 if the metric has overflowed because it was not reset
+     *
      */
     private double busyFraction(final int measurementStart, final int status) {
+        if (measurementStart < 0) {
+            return OVERFLOW;
+        }
         final int elapsedTime = time.microsElapsed(measurementStart);
         if (elapsedTime == 0) {
             return 0;
@@ -183,20 +188,22 @@ public class BusyTime {
         }
         // the time elapsed since the last reset
         final int elapsedTime = IntegerEpochTime.elapsed(measurementStart, currentTime);
+        // the time spent in the opposite status, either busy or idle
+        final int statusTime = Math.abs(currentStatus) - 1;
+        // the time spent idle is all the elapsed time minus the time spent busy
+        // the time spent busy is all the elapsed time minus the time spent idle
+        final int newTime = elapsedTime - statusTime;
+        if (newTime < 0 || measurementStart < 0) {
+            // this is an overflow because the metric was not reset, we are in a state where we can no longer track
+            // the time spent idle or busy
+            return ByteUtils.combineInts(OVERFLOW, statusChange == WORK_START ? 1 : -1);
+        }
         if (statusChange == WORK_START) {
             // this means the thread was previously idle and now started working
-            // the time spent being busy beforehand
-            final int busyTime = Math.abs(currentStatus) - 1;
-            // the time spent idle is all the elapsed time minus the time spent busy
-            final int idleTime = elapsedTime - busyTime;
-            return ByteUtils.combineInts(measurementStart, idleTime + 1);
+            return ByteUtils.combineInts(measurementStart, newTime + 1);
         }
         // this means the thread was previously busy and now stopped working
-        // the time spent being idle beforehand
-        final int idleTime = currentStatus - 1;
-        // the time spent busy is all the elapsed time minus the time spent idle
-        final int busyTime = elapsedTime - idleTime;
-        return ByteUtils.combineInts(measurementStart, -busyTime - 1);
+        return ByteUtils.combineInts(measurementStart, -newTime - 1);
     }
 
     private long reset(final long currentPair) {

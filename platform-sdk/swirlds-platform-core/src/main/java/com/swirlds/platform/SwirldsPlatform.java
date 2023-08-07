@@ -409,6 +409,9 @@ public class SwirldsPlatform implements Platform, Startable {
         consensusSystemTransactionManager.addHandler(
                 StateSignatureTransaction.class,
                 (ignored, nodeId, txn) -> consensusHashManager.handlePostconsensusSignatureTransaction(nodeId, txn));
+        consensusSystemTransactionManager.addHandler(
+                StateSignatureTransaction.class,
+                (ignored, nodeId, txn) -> signedStateManager.handlePostconsensusSignatureTransaction(nodeId, txn));
 
         // FUTURE WORK remove this when there are no more ShutdownRequestedTriggers being dispatched
         components.add(new Shutdown());

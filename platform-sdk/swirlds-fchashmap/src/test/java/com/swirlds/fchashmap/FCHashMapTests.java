@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.exceptions.ReferenceCountException;
-import com.swirlds.common.test.fcqueue.FCInt;
+import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;

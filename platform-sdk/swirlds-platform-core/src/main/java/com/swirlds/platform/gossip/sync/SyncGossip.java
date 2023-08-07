@@ -260,6 +260,7 @@ public class SyncGossip extends AbstractGossip {
                                             reconnectMetrics,
                                             reconnectController,
                                             fallenBehindManager,
+                                            statusActionSubmitter,
                                             platformContext.getConfiguration()),
                                     new ReconnectProtocol(
                                             threadManager,
