@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -31,9 +32,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asChainIdBytes;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -172,22 +173,52 @@ public class HevmTransactionFactory {
     }
 
     private HederaEvmTransaction fromHapiEthereum(
-            @NonNull final AccountID payer, @NonNull final EthereumTransactionBody body) {
+            @NonNull final AccountID payerId, @NonNull final EthereumTransactionBody body) {
         final var ethTxData = assertValidEthTx(body);
         final var ethTxSig = ethereumSignatures.impliedBy(ethTxData);
-        // TODO - also support missing "to" address
+        final var senderId =
+                AccountID.newBuilder().alias(Bytes.wrap(ethTxSig.address())).build();
+        return ethTxData.hasToAddress()
+                ? fromEthTxCall(payerId, senderId, ethTxData, body.maxGasAllowance())
+                : fromEthTxCreate(payerId, senderId, ethTxData, body.maxGasAllowance());
+    }
+
+    private @NonNull HederaEvmTransaction fromEthTxCall(
+            @NonNull final AccountID relayerId,
+            @NonNull final AccountID senderId,
+            @NonNull final EthTxData ethTxData,
+            final long maxGasAllowance) {
         return new HederaEvmTransaction(
-                AccountID.newBuilder().alias(Bytes.wrap(ethTxSig.address())).build(),
-                payer,
+                senderId,
+                relayerId,
                 ContractID.newBuilder().evmAddress(Bytes.wrap(ethTxData.to())).build(),
                 ethTxData.nonce(),
                 ethTxData.hasCallData() ? Bytes.wrap(ethTxData.callData()) : Bytes.EMPTY,
                 Bytes.wrap(ethTxData.chainId()),
-                ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact(),
+                ethTxData.effectiveTinybarValue(),
                 ethTxData.gasLimit(),
-                ethTxData.getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS).longValueExact(),
-                body.maxGasAllowance(),
+                ethTxData.effectiveOfferedGasPriceInTinybars(),
+                maxGasAllowance,
                 null);
+    }
+
+    private @NonNull HederaEvmTransaction fromEthTxCreate(
+            @NonNull final AccountID relayerId,
+            @NonNull final AccountID senderId,
+            @NonNull final EthTxData ethTxData,
+            final long maxGasAllowance) {
+        return new HederaEvmTransaction(
+                senderId,
+                relayerId,
+                null,
+                ethTxData.nonce(),
+                Bytes.wrap(ethTxData.callData()),
+                Bytes.wrap(ethTxData.chainId()),
+                ethTxData.effectiveTinybarValue(),
+                ethTxData.gasLimit(),
+                ethTxData.effectiveOfferedGasPriceInTinybars(),
+                maxGasAllowance,
+                synthEthTxCreation(ledgerConfig.autoRenewPeriodMinDuration(), ethTxData));
     }
 
     private @NonNull EthTxData assertValidEthTx(@NonNull final EthereumTransactionBody body) {
@@ -197,6 +228,7 @@ public class HevmTransactionFactory {
         }
         final var ethTxData = requireNonNull(hydratedEthTxData.ethTxData());
         validateTrue(ethTxData.matchesChainId(asChainIdBytes(contractsConfig.chainId())), WRONG_CHAIN_ID);
+        validateTrue(ethTxData.hasToAddress() || ethTxData.hasCallData(), INVALID_ETHEREUM_TRANSACTION);
         return ethTxData;
     }
 

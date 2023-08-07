@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.ERROR_DECODING_BYTESTRI
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
@@ -47,6 +48,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEV_CHAIN_ID_CONTRACTS_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.INITCODE;
@@ -441,6 +443,12 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
+    void fromHapiEthFailsImmediatelyWithoutToAddressButNoCallData() {
+        givenInsteadHydratedEthTxWithRightChainId(ETH_DATA_WITHOUT_TO_ADDRESS.replaceCallData(new byte[0]));
+        assertEthTxFailsWith(INVALID_ETHEREUM_TRANSACTION, b -> {});
+    }
+
+    @Test
     void fromHapiEthRepresentsCallAsExpected() {
         givenInsteadHydratedEthTxWithRightChainId(ETH_DATA_WITH_TO_ADDRESS);
         final var sig = EthTxSigs.extractSignatures(ETH_DATA_WITH_TO_ADDRESS);
@@ -470,6 +478,40 @@ class HevmTransactionFactoryTest {
                 transaction.offeredGasPrice());
         assertEquals(MAX_GAS_ALLOWANCE, transaction.maxGasAllowance());
         assertNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiEthRepresentsCreateAsExpected() {
+        final var dataToUse = ETH_DATA_WITHOUT_TO_ADDRESS.replaceCallData(CALL_DATA.toByteArray());
+        givenInsteadHydratedEthTxWithRightChainId(dataToUse);
+        final var sig = EthTxSigs.extractSignatures(dataToUse);
+        given(ethereumSignatures.impliedBy(dataToUse)).willReturn(sig);
+        System.out.println(dataToUse);
+        final var transaction = getManufacturedEthTx(b -> b.maxGasAllowance(MAX_GAS_ALLOWANCE));
+        final var expectedSenderId =
+                AccountID.newBuilder().alias(Bytes.wrap(sig.address())).build();
+        assertEquals(expectedSenderId, transaction.senderId());
+        assertEquals(RELAYER_ID, transaction.relayerId());
+        assertNull(transaction.contractId());
+        assertTrue(transaction.hasExpectedNonce());
+        assertEquals(0, transaction.nonce());
+        assertEquals(CALL_DATA, transaction.payload());
+        assertEquals(Bytes.wrap(dataToUse.chainId()), transaction.chainId());
+        assertEquals(dataToUse.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), transaction.value());
+        assertEquals(dataToUse.gasLimit(), transaction.gasLimit());
+        assertEquals(dataToUse.effectiveOfferedGasPriceInTinybars(), transaction.offeredGasPrice());
+        assertEquals(MAX_GAS_ALLOWANCE, transaction.maxGasAllowance());
+
+        final var minAutoRenewPeriod = Duration.newBuilder()
+                .seconds(DEFAULT_LEDGER_CONFIG.autoRenewPeriodMinDuration())
+                .build();
+        final var expectedCreation = ContractCreateTransactionBody.newBuilder()
+                .autoRenewPeriod(minAutoRenewPeriod)
+                .gas(dataToUse.gasLimit())
+                .initialBalance(dataToUse.effectiveTinybarValue())
+                .initcode(CALL_DATA)
+                .build();
+        assertEquals(expectedCreation, transaction.hapiCreation());
     }
 
     private void assertCreateFailsWith(

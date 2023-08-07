@@ -25,6 +25,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -98,6 +99,25 @@ public class SynthTxnUtils {
                 .key(IMMUTABILITY_SENTINEL_KEY)
                 .memo(LAZY_CREATION_MEMO)
                 .autoRenewPeriod(DEFAULT_AUTO_RENEW_PERIOD)
+                .build();
+    }
+
+    /**
+     * Given an {@link com.hedera.node.app.hapi.utils.ethereum.EthTxData} representing a {@code CONTRACT_CREATION}
+     * call, returns the implied {@link ContractCreateTransactionBody} with the request auto-renew period.
+     *
+     * @param autoRenewPeriod the auto-renew period
+     * @param ethTxData the {@link com.hedera.node.app.hapi.utils.ethereum.EthTxData}
+     * @return the corresponding {@link CryptoCreateTransactionBody}
+     */
+    public static ContractCreateTransactionBody synthEthTxCreation(
+            final long autoRenewPeriod, @NonNull final EthTxData ethTxData) {
+        requireNonNull(ethTxData);
+        return ContractCreateTransactionBody.newBuilder()
+                .gas(ethTxData.gasLimit())
+                .initialBalance(ethTxData.effectiveTinybarValue())
+                .autoRenewPeriod(Duration.newBuilder().seconds(autoRenewPeriod))
+                .initcode(Bytes.wrap(ethTxData.callData()))
                 .build();
     }
 }
