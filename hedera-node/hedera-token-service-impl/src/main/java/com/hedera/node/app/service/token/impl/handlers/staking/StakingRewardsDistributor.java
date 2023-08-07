@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
@@ -57,7 +58,8 @@ public class StakingRewardsDistributor {
             @NonNull final WritableAccountStore writableStore,
             @NonNull final WritableNetworkStakingRewardsStore stakingRewardsStore,
             @NonNull final WritableStakingInfoStore stakingInfoStore,
-            @NonNull final Instant consensusNow) {
+            @NonNull final Instant consensusNow,
+            @NonNull final CryptoDeleteRecordBuilder recordBuilder) {
         requireNonNull(possibleRewardReceivers);
 
         final Map<AccountID, Long> rewardsPaid = new HashMap<>();
@@ -68,7 +70,7 @@ public class StakingRewardsDistributor {
                     originalAccount, stakingInfoStore, stakingRewardsStore, consensusNow);
 
             var receiverId = receiver;
-            var beneficiary = originalAccount;
+            var beneficiary = modifiedAccount;
             // Only if reward is greater than zero do all operations below.
             // But, even if reward is zero add it to the rewardsPaid map, if the account is not declining reward.
             // It is important to know that if the reward is zero because of its zero stake in last period.
@@ -78,21 +80,19 @@ public class StakingRewardsDistributor {
 
                 // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
                 // accounts until we find a non-deleted account to try to reward (it may still decline)
-                if (originalAccount.deleted()) {
-                    // TODO: need to get this info ?
-                    final var maxRedirects = 0;
+                if (modifiedAccount.deleted()) {
+                    final var maxRedirects = recordBuilder.getNumberOfDeletedAccounts();
                     var j = 1;
                     do {
                         if (j++ > maxRedirects) {
                             log.error(
-                                    "With {}5 accounts deleted, last redirect in modifications led to deleted"
-                                            + " beneficiary 0.0.{}",
+                                    "With {} accounts deleted, last redirect in modifications led to deleted"
+                                            + " beneficiary {}",
                                     maxRedirects,
                                     receiverId);
                             throw new IllegalStateException("Had to redirect reward to a deleted beneficiary");
                         }
-                        // TODO: need to get this info ?
-                        //                    receiverId = txnCtx.getBeneficiaryOfDeleted(receiverNum);
+                        receiverId = recordBuilder.getDeletedAccountBeneficiaryFor(receiverId);
                         beneficiary = writableStore.getOriginalValue(receiverId);
                     } while (beneficiary.deleted());
                 }
@@ -100,8 +100,8 @@ public class StakingRewardsDistributor {
 
             if (!beneficiary.declineReward() && reward >= 0) {
                 // even if reward is zero it will be added to rewardsPaid
-                applyReward(reward, modifiedAccount, writableStore);
-                rewardsPaid.merge(receiver, reward, Long::sum);
+                applyReward(reward, beneficiary, writableStore);
+                rewardsPaid.merge(receiverId, reward, Long::sum);
             }
         }
         return rewardsPaid;

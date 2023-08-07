@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
@@ -55,12 +56,20 @@ public interface CryptoTransferRecordBuilder {
      * @return this builder
      */
     @NonNull
-    CryptoTransferRecordBuilder assessedCustomFees(List<AssessedCustomFee> assessedCustomFees);
+    CryptoTransferRecordBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees);
 
     /**
      * Tracks the total amount of hbars paid as staking rewards in the transaction
      * @param paidStakingRewards the total amount of hbars paid as staking rewards
      * @return this builder
      */
-    CryptoTransferRecordBuilder paidStakingRewards(List<AccountAmount> paidStakingRewards);
+    CryptoTransferRecordBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards);
+
+    /**
+     * Adds the token relations that are created by auto associations.
+     * This information is needed while building the transfer list, to set the auto association flag.
+     * @param tokenAssociation the token association that is created by auto association
+     * @return the builder
+     */
+    CryptoTransferRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 }
