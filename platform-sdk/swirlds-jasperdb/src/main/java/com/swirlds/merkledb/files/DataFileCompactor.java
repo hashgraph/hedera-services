@@ -18,10 +18,14 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.merkledb.CompactionType.FULL;
+import static com.swirlds.merkledb.CompactionType.MEDIUM;
+import static com.swirlds.merkledb.CompactionType.NO_COMPACTION;
+import static com.swirlds.merkledb.CompactionType.SMALL;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
-import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
+import static com.swirlds.merkledb.files.DataFileCommon.logCompactStats;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.units.UnitConstants;
@@ -32,6 +36,7 @@ import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -112,10 +117,10 @@ public class DataFileCompactor {
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
     /** When was the last medium-sized merge, only touched from single merge thread. */
-    private Instant lastMediumMerge;
+    private Instant lastMediumCompact;
 
     /** When was the last full merge, only touched from single merge thread. */
-    private Instant lastFullMerge;
+    private Instant lastFullCompact;
 
     /** A nanosecond-precise Clock */
     private final NanoClock clock = new NanoClock();
@@ -125,10 +130,10 @@ public class DataFileCompactor {
         // Compute initial merge periods to a randomized value of now +/- 50% of merge period. So
         // each node will do
         // medium and full merges at random times.
-        lastMediumMerge = Instant.now()
+        lastMediumCompact = Instant.now()
                 .minus(config.mediumMergePeriod() / 2, config.mergePeriodUnit())
                 .plus((long) (config.mediumMergePeriod() * Math.random()), config.mergePeriodUnit());
-        lastFullMerge = Instant.now()
+        lastFullCompact = Instant.now()
                 .minus(config.fullMergePeriod() / 2, config.mergePeriodUnit())
                 .plus((long) (config.fullMergePeriod() * Math.random()), config.mergePeriodUnit());
     }
@@ -140,14 +145,16 @@ public class DataFileCompactor {
      *                       returns it is assumed all readers will no longer be looking in old location, so old files
      *                       can be safely deleted.
      * @param filesToCompact   list of files to compact
+     * @param compactionType the type of the compaction to perform
      * @return list of files created during the compaction
      * @throws IOException          If there was a problem with the compaction
      * @throws InterruptedException If the compaction thread was interrupted
      */
     // visible for testing
-    synchronized List<Path> compactFiles(final CASableLongIndex index, final List<DataFileReader<?>> filesToCompact)
+    synchronized List<Path> compactFiles(
+            final CASableLongIndex index, final List<DataFileReader<?>> filesToCompact, CompactionType compactionType)
             throws IOException, InterruptedException {
-        if (filesToCompact.size() < getMinNumberOfFilesToMerge()) {
+        if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
             logger.debug(
                     MERKLE_DB.getMarker(),
@@ -156,7 +163,6 @@ public class DataFileCompactor {
             return Collections.emptyList();
         }
 
-        int currentLevel = filesToCompact.get(0).getMetadata().getCompactionLevel();
         // create a merge time stamp, this timestamp is the newest time of the set of files we are
         // merging
         final Instant startTime = filesToCompact.stream()
@@ -167,7 +173,7 @@ public class DataFileCompactor {
         try {
             currentCompactionStartTime.set(startTime);
             newCompactedFiles.clear();
-            startNewCompactionFile(currentLevel + 1);
+            startNewCompactionFile(compactionType.getLevel());
         } finally {
             snapshotCompactionLock.release();
         }
@@ -216,6 +222,14 @@ public class DataFileCompactor {
                             serializationVersion, reader.readDataItemBytes(fileOffset));
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
+                } catch (final ClosedByInterruptException e) {
+                    logger.info(
+                            MERKLE_DB.getMarker(),
+                            "Failed to copy data item {} / {} due to thread interruption",
+                            fileIndex,
+                            fileOffset,
+                            e);
+                    throw e;
                 } catch (final IOException z) {
                     logger.error(EXCEPTION.getMarker(), "Failed to copy data item {} / {}", fileIndex, fileOffset, z);
                     throw z;
@@ -246,7 +260,7 @@ public class DataFileCompactor {
     }
 
     // visible for testing
-    int getMinNumberOfFilesToMerge() {
+    int getMinNumberOfFilesToCompact() {
         return config.minNumberOfFilesInMerge();
     }
 
@@ -365,17 +379,17 @@ public class DataFileCompactor {
         Instant timestamp = Instant.now(clock);
 
         final UnaryOperator<List<DataFileReader<?>>> filesToCompactFilter;
-        final CompactionType compactionLevel;
+        final CompactionType targetCompactionLevel;
         final String storeName = dataFileCollection.getStoreName();
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
 
-        if (isTimeForFullMerge(timestamp)) {
-            lastFullMerge = timestamp;
+        if (isTimeForFullCompaction(timestamp)) {
+            lastFullCompact = timestamp;
             /* Filter nothing during a full merge */
             filesToCompactFilter = dataFileReaders -> dataFileReaders;
-            compactionLevel = CompactionType.FULL;
+            targetCompactionLevel = FULL;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", storeName);
-        } else if (isTimeForMediumMerge(timestamp)
+        } else if (isTimeForMediumCompaction(timestamp)
                 ||
                 // This is a temporary solution for the intense load (like hammer tests) where we create too many files.
                 // It will be removed once the solution comes with #7501 is implemented. The plan is to have a
@@ -385,17 +399,17 @@ public class DataFileCompactor {
                 // See https://www.notion.so/swirldslabs/Compaction-Improvements-247726614d924fbaa34aa82a157a2f20 for
                 // details
 
-                readersOfLevel(1)
+                (readersOfLevel(SMALL)
                                 .apply((List<DataFileReader<?>>) allCompactableFiles)
                                 .size()
-                        > MAX_FIRST_LEVEL_FILES_ALLOWED) {
-            lastMediumMerge = timestamp;
-            filesToCompactFilter = readersOfLevel(1);
-            compactionLevel = CompactionType.MEDIUM;
+                        > MAX_FIRST_LEVEL_FILES_ALLOWED)) {
+            lastMediumCompact = timestamp;
+            filesToCompactFilter = readersOfLevel(SMALL);
+            targetCompactionLevel = MEDIUM;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", storeName);
         } else {
-            filesToCompactFilter = readersOfLevel(0);
-            compactionLevel = CompactionType.SMALL;
+            filesToCompactFilter = readersOfLevel(NO_COMPACTION);
+            targetCompactionLevel = SMALL;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", storeName);
         }
 
@@ -406,71 +420,72 @@ public class DataFileCompactor {
             return;
         }
         final int filesCount = filesToCompact.size();
-        if (filesCount < getMinNumberOfFilesToMerge()) {
+        if (filesCount < getMinNumberOfFilesToCompact()) {
             logger.debug(
                     MERKLE_DB.getMarker(),
                     "[{}] No need to merge as {} is less than the minimum {} files to merge.",
                     storeName,
                     filesCount,
-                    getMinNumberOfFilesToMerge());
+                    getMinNumberOfFilesToCompact());
             return;
         }
 
         final long start = System.currentTimeMillis();
 
-        final long filesToMergeSize = getSizeOfFiles(filesToCompact);
+        final long filesToCompactSize = getSizeOfFiles(filesToCompact);
         logger.debug(
                 MERKLE_DB.getMarker(),
                 "[{}] Starting merging {} files / {}",
                 storeName,
                 filesCount,
-                formatSizeBytes(filesToMergeSize));
+                formatSizeBytes(filesToCompactSize));
 
-        final List<Path> newFilesCreated = compactFiles(index, filesToCompact);
+        final List<Path> newFilesCreated = compactFiles(index, filesToCompact, targetCompactionLevel);
 
         final long end = System.currentTimeMillis();
         final long tookMillis = end - start;
         if (reportDurationMetricFunction != null) {
-            reportDurationMetricFunction.accept(compactionLevel, tookMillis);
+            reportDurationMetricFunction.accept(targetCompactionLevel, tookMillis);
         }
 
-        final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
+        final long compactedFilesSize = getSizeOfFilesByPath(newFilesCreated);
         if (reportSavedSpaceMetricFunction != null) {
             reportSavedSpaceMetricFunction.accept(
-                    compactionLevel, (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
+                    targetCompactionLevel,
+                    (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
-        logMergeStats(storeName, tookMillis, filesToCompact, filesToMergeSize, newFilesCreated, dataFileCollection);
+        logCompactStats(storeName, tookMillis, filesToCompact, filesToCompactSize, newFilesCreated, dataFileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),
-                "[{}] Finished merging {} files / {} in {} ms",
+                "[{}] Finished compaction {} files / {} in {} ms",
                 storeName,
                 filesCount,
-                formatSizeBytes(filesToMergeSize),
+                formatSizeBytes(filesToCompactSize),
                 tookMillis);
     }
 
-    private boolean isTimeForFullMerge(final Instant startMerge) {
-        return startMerge
+    private boolean isTimeForFullCompaction(final Instant startCompaction) {
+        return startCompaction
                 .minus(config.fullMergePeriod(), config.mergePeriodUnit())
-                .isAfter(lastFullMerge);
+                .isAfter(lastFullCompact);
     }
 
-    boolean isTimeForMediumMerge(final Instant startMerge) {
-        return startMerge
+    boolean isTimeForMediumCompaction(final Instant startCompaction) {
+        return startCompaction
                 .minus(config.mediumMergePeriod(), config.mergePeriodUnit())
-                .isAfter(lastMediumMerge);
+                .isAfter(lastMediumCompact);
     }
 
     /**
      * Create a filter to only return all new files that belong to certain compaction level
      *
-     * @param expectedCompactionLevel compaction level to filter by
+     * @param compactionType compaction type to filter by
      * @return filter to filter list of files
      */
-    public static UnaryOperator<List<DataFileReader<?>>> readersOfLevel(int expectedCompactionLevel) {
+    public static UnaryOperator<List<DataFileReader<?>>> readersOfLevel(CompactionType compactionType) {
         return dataFileReaders -> dataFileReaders.stream()
-                .filter(file -> file.getMetadata().getCompactionLevel() == expectedCompactionLevel)
+                .filter(file -> file.getMetadata().getCompactionLevel() == compactionType.getLevel())
                 .collect(Collectors.toList());
     }
 }

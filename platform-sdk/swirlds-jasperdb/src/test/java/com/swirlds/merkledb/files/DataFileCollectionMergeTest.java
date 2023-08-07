@@ -16,6 +16,7 @@
 
 package com.swirlds.merkledb.files;
 
+import static com.swirlds.merkledb.CompactionType.SMALL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,7 +69,7 @@ class DataFileCollectionMergeTest {
         final var coll = new DataFileCollection<>(tempFileDir.resolve("mergeTest"), "mergeTest", serializer, null);
         final var compactor = new DataFileCompactor(coll) {
             @Override
-            int getMinNumberOfFilesToMerge() {
+            int getMinNumberOfFilesToCompact() {
                 return 2;
             }
         };
@@ -117,7 +118,7 @@ class DataFileCollectionMergeTest {
                 }
             }
         };
-        compactor.compactFiles(indexUpdater, getFilesToMerge(coll));
+        compactor.compactFiles(indexUpdater, getFilesToMerge(coll), SMALL);
 
         long prevKey = -1;
         for (int i = 5; i < 10; i++) {
@@ -161,7 +162,7 @@ class DataFileCollectionMergeTest {
                 new DataFileCollection<>(testDir, "testDoubleMerge", new ExampleFixedSizeDataSerializer(), null);
         final DataFileCompactor compactor = new DataFileCompactor(store) {
             @Override
-            int getMinNumberOfFilesToMerge() {
+            int getMinNumberOfFilesToCompact() {
                 return 2;
             }
         };
@@ -210,7 +211,7 @@ class DataFileCollectionMergeTest {
                     };
 
                     try {
-                        compactor.compactFiles(indexUpdater, filesToMerge);
+                        compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
                         store.close();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -255,7 +256,7 @@ class DataFileCollectionMergeTest {
                     }
                 }
             };
-            compactor.compactFiles(indexUpdater, filesToMerge);
+            compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
         } finally {
             store2.close();
         }
@@ -308,7 +309,7 @@ class DataFileCollectionMergeTest {
 
                 if (filesToMerge.size() > 1) {
                     try {
-                        compactor.compactFiles(indexUpdater, filesToMerge);
+                        compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -379,7 +380,7 @@ class DataFileCollectionMergeTest {
 
                 if (filesToMerge.size() > 1) {
                     try {
-                        compactor.compactFiles(indexUpdater, filesToMerge);
+                        compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -449,7 +450,7 @@ class DataFileCollectionMergeTest {
             try {
                 final List<DataFileReader<?>> filesToMerge = getFilesToMerge(store);
                 assertEquals(numFiles, filesToMerge.size());
-                compactor.compactFiles(index, filesToMerge);
+                compactor.compactFiles(index, filesToMerge, SMALL);
                 // Wait for the new file to be available. Without this wait, there
                 // may be 1 or 2
                 // files available for merge, as this thread may be complete before
@@ -585,7 +586,7 @@ class DataFileCollectionMergeTest {
         };
 
         try {
-            compactor.compactFiles(indexUpdater, filesToMerge);
+            compactor.compactFiles(indexUpdater, filesToMerge, SMALL);
             store.close();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -618,7 +619,7 @@ class DataFileCollectionMergeTest {
         };
 
         try {
-            compactor.compactFiles(indexUpdater2, filesToMerge2);
+            compactor.compactFiles(indexUpdater2, filesToMerge2, SMALL);
         } finally {
             store2.close();
         }

@@ -21,6 +21,7 @@ import static com.swirlds.merkledb.MerkleDbStatistics.STAT_CATEGORY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -224,6 +225,7 @@ class MerkleDbStatisticsTest {
 
     private static String ctypeStr(final CompactionType c) {
         return switch (c) {
+            case NO_COMPACTION -> "No compaction";
             case SMALL -> "Small";
             case MEDIUM -> "Medium";
             case FULL -> "Full";
@@ -231,7 +233,10 @@ class MerkleDbStatisticsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(CompactionType.class)
+    @EnumSource(
+            value = CompactionType.class,
+            mode = EXCLUDE,
+            names = {"NO_COMPACTION"})
     void testSetHashesStoreMergeTime(final CompactionType compactionType) {
         // given
         final Metric metric = getMetric("compactions_", "hashes" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
@@ -242,7 +247,10 @@ class MerkleDbStatisticsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(CompactionType.class)
+    @EnumSource(
+            value = CompactionType.class,
+            mode = EXCLUDE,
+            names = {"NO_COMPACTION"})
     void testSetHashesStoreSavedSpace(final CompactionType compactionType) {
         // given
         final Metric metric = getMetric("compactions_", "hashes" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);
@@ -253,7 +261,10 @@ class MerkleDbStatisticsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(CompactionType.class)
+    @EnumSource(
+            value = CompactionType.class,
+            mode = EXCLUDE,
+            names = {"NO_COMPACTION"})
     void testSetLeafKeysStoreMergeTime(final CompactionType compactionType) {
         // given
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
@@ -275,7 +286,10 @@ class MerkleDbStatisticsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(CompactionType.class)
+    @EnumSource(
+            value = CompactionType.class,
+            mode = EXCLUDE,
+            names = {"NO_COMPACTION"})
     void testSetLeafKeysStoreSavedSpace(final CompactionType compactionType) {
         // given
         final Metric metric =
@@ -287,7 +301,10 @@ class MerkleDbStatisticsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(CompactionType.class)
+    @EnumSource(
+            value = CompactionType.class,
+            mode = EXCLUDE,
+            names = {"NO_COMPACTION"})
     void testSetLeavesStoreMergeTime(final CompactionType compactionType) {
         // given
         final Metric metric = getMetric("compactions_", "leaves" + ctypeStr(compactionType) + "TimeMs_" + LABEL);
@@ -298,7 +315,10 @@ class MerkleDbStatisticsTest {
     }
 
     @ParameterizedTest
-    @EnumSource(CompactionType.class)
+    @EnumSource(
+            value = CompactionType.class,
+            mode = EXCLUDE,
+            names = {"NO_COMPACTION"})
     void testSetLeavesStoreSavedSpace(final CompactionType compactionType) {
         // given
         final Metric metric = getMetric("compactions_", "leaves" + ctypeStr(compactionType) + "SavedSpaceMb_" + LABEL);

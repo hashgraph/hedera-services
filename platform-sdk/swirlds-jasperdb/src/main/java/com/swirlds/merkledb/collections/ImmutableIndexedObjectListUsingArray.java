@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -116,7 +115,6 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> imple
             return this;
         }
 
-        Set<T> objectsToDeleteSet = Set.copyOf(objectsToDelete);
         // Create a temp array list with just non-null objects that belong to the new list
         final List<T> newDataArray = new ArrayList<>();
         for (final T datum : dataArray) {
@@ -124,7 +122,7 @@ public class ImmutableIndexedObjectListUsingArray<T extends IndexedObject> imple
                 continue;
             }
 
-            if (objectsToDeleteSet.contains(datum)) {
+            if (objectsToDelete.contains(datum)) {
                 continue;
             }
 

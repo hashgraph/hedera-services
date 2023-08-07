@@ -17,6 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.merkledb.CompactionType.SMALL;
 import static com.swirlds.merkledb.MerkleDbTestUtils.checkDirectMemoryIsCleanedUpToLessThanBaseUsage;
 import static com.swirlds.merkledb.MerkleDbTestUtils.getDirectMemoryUsedBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.FOOTER_SIZE;
@@ -455,7 +456,7 @@ class DataFileCollectionTest {
                         }
                     };
 
-                    mergedFiles = fileCompactor.compactFiles(indexUpdater, filesToMerge);
+                    mergedFiles = fileCompactor.compactFiles(indexUpdater, filesToMerge, SMALL);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                     System.out.println(
                             "============= MERGE [" + numMoves.get() + "] MOVES DONE ===========================");
@@ -497,7 +498,7 @@ class DataFileCollectionTest {
         assertEquals(1, filesLeft.size(), "unexpected # of files #3");
 
         // and trying to merge just one file is a no-op
-        List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft);
+        List<Path> secondMergeResults = fileCompactor.compactFiles(null, filesLeft, SMALL);
         assertNotNull(secondMergeResults, "null merged files list");
         assertEquals(0, secondMergeResults.size(), "unexpected results from second merge");
     }
@@ -603,7 +604,7 @@ class DataFileCollectionTest {
                             storedOffsets.forEach(action);
                         }
                     };
-                    fileCompactor.compactFiles(indexUpdater, allFiles);
+                    fileCompactor.compactFiles(indexUpdater, allFiles, SMALL);
                     assertTrue(allKeysExpectedToBeThere.isEmpty(), "check there were no missed keys");
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -637,9 +638,9 @@ class DataFileCollectionTest {
     }
 
     private static DataFileCompactor createFileCompactor(DataFileCollection<long[]> fileCollection) {
-        return new DataFileCompactor(fileCollection){
+        return new DataFileCompactor(fileCollection) {
             @Override
-            int getMinNumberOfFilesToMerge() {
+            int getMinNumberOfFilesToCompact() {
                 return 2;
             }
         };
@@ -700,7 +701,7 @@ class DataFileCollectionTest {
         assertSame(10, fileCollection2.getAllCompletedFiles().size(), "Should be 10 files available for merging");
         // merge
         fileCompactor.compactFiles(
-                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles());
+                storedOffsets, (List<DataFileReader<?>>) (Object) fileCollection2.getAllCompletedFiles(), SMALL);
         // check 1 files were opened and data is correct
         assertSame(1, fileCollection2.getAllCompletedFiles().size(), "Should be 1 files");
         assertEquals(

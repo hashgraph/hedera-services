@@ -305,9 +305,9 @@ public final class DataFileCommon {
         return (double) Math.round(d * ROUNDING_SCALE_FACTOR) / ROUNDING_SCALE_FACTOR;
     }
 
-    public static void logMergeStats(
+    public static void logCompactStats(
             final String storeName,
-            final double tookSeconds,
+            final double tookMillis,
             final Collection<DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
@@ -315,27 +315,44 @@ public final class DataFileCommon {
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);
-        logger.info(
+        final double tookSeconds = tookMillis / 1000;
+        Integer levelToCompact = filesToMerge.stream()
+                .findFirst()
+                .map(v -> v.getMetadata().getCompactionLevel())
+                .orElse(-1);
+        Object[] fileToMergeIndexes = filesToMerge.stream()
+                .map(reader -> reader.getMetadata().getIndex())
+                .toArray();
+        Object[] allFileIndexes = fileCollection.getAllCompletedFiles().stream()
+                .map(reader -> reader.getMetadata().getIndex())
+                .toArray();
+        logger.warn(
                 MERKLE_DB.getMarker(),
+                // Note that speed of read and write doesn't exactly map to the real read/write speed
+                // because we consult in-memory index and skip some entries. Effective read/write speed
+                // in this context means how much data files were covered by the compaction.
                 """
-                        [{}] Merged {} file(s) / {} into {} file(s) / {} in {} second(s)
-                                read at {} written at {}
-                                filesToMerge = {}
-                                allFilesAfter = {}""",
+                        [{}] Compacted {} file(s) / {} at level {} into {} file(s) at level {} / {} in {} second(s)
+                                effectively read at {} effectively written at {},
+                                compactedFiles[{}] = {},
+                                filesToMerge[{}] = {}
+                                allFilesAfter[{}] = {}""",
                 storeName,
                 filesToMerge.size(),
                 formatSizeBytes(filesToMergeSize),
+                levelToCompact,
                 mergedFilesCount,
                 formatSizeBytes(mergedFilesSize),
-                tookSeconds,
+                levelToCompact + 1,
+                tookMillis,
                 formatSizeBytes((long) (filesToMergeSize / tookSeconds)) + "/sec",
                 formatSizeBytes((long) (mergedFilesSize / tookSeconds)) + "/sec",
-                Arrays.toString(filesToMerge.stream()
-                        .map(reader -> reader.getMetadata().getIndex())
-                        .toArray()),
-                Arrays.toString(fileCollection.getAllCompletedFiles().stream()
-                        .map(reader -> reader.getMetadata().getIndex())
-                        .toArray()));
+                mergedFilesCount,
+                Arrays.toString(mergedFiles.stream().map(Path::getFileName).toArray()),
+                fileToMergeIndexes.length,
+                Arrays.toString(fileToMergeIndexes),
+                allFileIndexes.length,
+                Arrays.toString(allFileIndexes));
     }
 
     /**

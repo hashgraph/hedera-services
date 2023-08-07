@@ -20,13 +20,24 @@ package com.swirlds.merkledb;
  * Data file collection compaction type.
  */
 public enum CompactionType {
+    NO_COMPACTION(0),
 
     /** Small compactions */
-    SMALL,
+    SMALL(1),
 
     /** Medium compactions */
-    MEDIUM,
+    MEDIUM(2),
 
     /** Full (large) compactions */
-    FULL
+    FULL(3);
+
+    CompactionType(int level) {
+        this.level = level;
+    }
+
+    private int level;
+
+    public int getLevel() {
+        return level;
+    }
 }

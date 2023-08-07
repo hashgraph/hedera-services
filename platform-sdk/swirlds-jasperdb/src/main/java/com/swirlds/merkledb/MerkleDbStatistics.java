@@ -494,6 +494,7 @@ public class MerkleDbStatistics {
     public void setHashesStoreCompactionTimeMs(final CompactionType type, final long value) {
         final LongAccumulator metric =
                 switch (type) {
+                    case NO_COMPACTION -> null;
                     case SMALL -> hashesStoreSmallCompactionTimeMs;
                     case MEDIUM -> hashesStoreMediumCompactionTimeMs;
                     case FULL -> hashesStoreFullCompactionTimeMs;
@@ -513,6 +514,7 @@ public class MerkleDbStatistics {
     public void setHashesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
         final DoubleAccumulator metric =
                 switch (type) {
+                    case NO_COMPACTION -> null;
                     case SMALL -> hashesStoreSmallCompactionSavedSpaceMb;
                     case MEDIUM -> hashesStoreMediumCompactionSavedSpaceMb;
                     case FULL -> hashesStoreFullCompactionSavedSpaceMb;
@@ -532,6 +534,7 @@ public class MerkleDbStatistics {
     public void setLeavesStoreCompactionTimeMs(final CompactionType type, final long value) {
         final LongAccumulator metric =
                 switch (type) {
+                    case NO_COMPACTION -> null;
                     case SMALL -> leavesStoreSmallCompactionTimeMs;
                     case MEDIUM -> leavesStoreMediumCompactionTimeMs;
                     case FULL -> leavesStoreFullCompactionTimeMs;
@@ -551,6 +554,7 @@ public class MerkleDbStatistics {
     public void setLeavesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
         final DoubleAccumulator metric =
                 switch (type) {
+                    case NO_COMPACTION -> null;
                     case SMALL -> leavesStoreSmallCompactionSavedSpaceMb;
                     case MEDIUM -> leavesStoreMediumCompactionSavedSpaceMb;
                     case FULL -> leavesStoreFullCompactionSavedSpaceMb;
@@ -570,6 +574,7 @@ public class MerkleDbStatistics {
     public void setLeafKeysStoreCompactionTimeMs(final CompactionType type, final long value) {
         final LongAccumulator metric =
                 switch (type) {
+                    case NO_COMPACTION -> null;
                     case SMALL -> leafKeysStoreSmallCompactionTimeMs;
                     case MEDIUM -> leafKeysStoreMediumCompactionTimeMs;
                     case FULL -> leafKeysStoreFullCompactionTimeMs;
@@ -589,6 +594,7 @@ public class MerkleDbStatistics {
     public void setLeafKeysStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
         final DoubleAccumulator metric =
                 switch (type) {
+                    case NO_COMPACTION -> null;
                     case SMALL -> leafKeysStoreSmallCompactionSavedSpaceMb;
                     case MEDIUM -> leafKeysStoreMediumCompactionSavedSpaceMb;
                     case FULL -> leafKeysStoreFullCompactionSavedSpaceMb;
