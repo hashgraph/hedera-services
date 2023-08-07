@@ -2,6 +2,7 @@ module com.swirlds.gui {
     exports com.swirlds.gui;
     exports com.swirlds.gui.hashgraph;
     exports com.swirlds.gui.components;
+    exports com.swirlds.gui.model;
 
     requires transitive java.desktop;
     requires org.apache.commons.lang3;

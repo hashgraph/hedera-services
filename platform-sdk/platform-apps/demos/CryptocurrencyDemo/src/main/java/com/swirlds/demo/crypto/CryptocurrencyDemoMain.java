@@ -39,7 +39,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.gui.GuiModel;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;

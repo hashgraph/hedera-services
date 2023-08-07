@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.gui;
+package com.swirlds.gui.model;
 
 import com.swirlds.common.system.NodeId;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GuiModel {
 
     private static final GuiModel INSTANCE = new GuiModel();
-
     private final Map<NodeId, String> aboutStrings = new ConcurrentHashMap<>();
     private final Map<NodeId, String> platformNames = new ConcurrentHashMap<>();
     private final Map<NodeId, byte[]> swirldIds = new ConcurrentHashMap<>();

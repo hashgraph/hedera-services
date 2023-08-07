@@ -24,6 +24,7 @@ import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.GuiUtils;
 import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.gui.model.InfoMember;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;

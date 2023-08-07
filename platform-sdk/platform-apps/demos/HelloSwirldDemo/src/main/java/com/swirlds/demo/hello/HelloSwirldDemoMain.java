@@ -38,7 +38,7 @@ import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.gui.GuiModel;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.SwirldsPlatform;
 import java.nio.charset.StandardCharsets;

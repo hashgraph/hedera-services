@@ -78,7 +78,7 @@ import com.swirlds.demo.virtualmerkle.state.VirtualMerkleStateInitializer;
 import com.swirlds.demo.virtualmerkle.transaction.handler.VirtualMerkleTransactionHandler;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.fcqueue.FCQueueStatistics;
-import com.swirlds.gui.GuiModel;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.logging.payloads.ApplicationFinishedPayload;
 import com.swirlds.logging.payloads.CreateTransactionFailedPayload;
 import com.swirlds.merkle.map.MerkleMap;
