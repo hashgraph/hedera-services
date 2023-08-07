@@ -162,7 +162,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -543,9 +542,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 .filter(Objects::nonNull)
                 .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(
-                    validationAddressBooks,
-                    CryptoStatic::verifySignature));
+            validators.add(new SignatureValidator(validationAddressBooks, CryptoStatic::verifySignature));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 

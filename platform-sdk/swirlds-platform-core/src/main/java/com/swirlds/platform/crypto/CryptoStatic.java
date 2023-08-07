@@ -249,7 +249,8 @@ public final class CryptoStatic {
     /**
      * See {@link SignatureVerifier#verifySignature(byte[], byte[], PublicKey)}
      */
-    public static boolean verifySignature(@NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
+    public static boolean verifySignature(
+            @NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
         try {
             final Signature sig = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
             sig.initVerify(publicKey);

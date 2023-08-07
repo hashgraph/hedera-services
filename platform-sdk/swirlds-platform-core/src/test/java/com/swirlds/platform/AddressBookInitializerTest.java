@@ -106,9 +106,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the expected address book.");
-        assertNull(
-                initializer.getPreviousAddressBook(),
-                "The previous address book should be null.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -131,9 +129,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
-        assertNull(
-                initializer.getPreviousAddressBook(),
-                "The previous address book should be null.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }
@@ -156,9 +152,7 @@ class AddressBookInitializerTest {
                 configAddressBook,
                 inititializedAddressBook,
                 "The initial address book must equal the config address book.");
-        assertNull(
-                initializer.getPreviousAddressBook(),
-                "The previous address book should be null.");
+        assertNull(initializer.getPreviousAddressBook(), "The previous address book should be null.");
         assertAddressBookFileContent(
                 initializer, configAddressBook, signedState.getAddressBook(), inititializedAddressBook);
     }

@@ -28,13 +28,11 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.EventStrings;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.event.GossipEvent;
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +44,8 @@ public class SignatureValidator implements GossipEventValidator {
     private final SignatureVerifier signatureVerifier;
     private final Map<NodeId, PublicKey> keyMap;
 
-    public SignatureValidator(@NonNull final List<AddressBook> addressBooks, @NonNull final SignatureVerifier signatureVerifier) {
+    public SignatureValidator(
+            @NonNull final List<AddressBook> addressBooks, @NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = signatureVerifier;
         this.keyMap = new HashMap<>();
         for (final AddressBook addressBook : addressBooks) {

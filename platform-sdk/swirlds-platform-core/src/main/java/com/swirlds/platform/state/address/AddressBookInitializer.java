@@ -307,6 +307,6 @@ public class AddressBookInitializer {
      *  @param currentAddressBook the address book that should be used by the platform
      *  @param previousAddressBook the address book that was used before the current address book
      */
-    private record InitializedAddressBooks(@NonNull AddressBook currentAddressBook, @Nullable AddressBook previousAddressBook) {
-    }
+    private record InitializedAddressBooks(
+            @NonNull AddressBook currentAddressBook, @Nullable AddressBook previousAddressBook) {}
 }
