@@ -39,6 +39,7 @@ import static contract.AssortedOpsXTestConstants.POINTLESS_INTERMEDIARY_ID;
 import static contract.AssortedOpsXTestConstants.RELAYER_ID;
 import static contract.AssortedOpsXTestConstants.RUBE_GOLDBERG_CHILD_ID;
 import static contract.AssortedOpsXTestConstants.SALT;
+import static contract.AssortedOpsXTestConstants.SENDER_ADDRESS;
 import static contract.AssortedOpsXTestConstants.SENDER_ALIAS;
 import static contract.AssortedOpsXTestConstants.SENDER_ID;
 import static contract.AssortedOpsXTestConstants.TAKE_FIVE;
@@ -79,8 +80,8 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     @Override
     protected void handleAndCommitScenarioTransactions() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
-        // TODO - uncomment and fix remaining transactions
         handleAndCommit(CONTRACT_SERVICE.handlers().ethereumTransactionHandler(), synthLazyCreateTxn());
+        // TODO - uncomment and fix remaining transactions
         //        handleAndCommit(CONTRACT_SERVICE.handlers().contractCallHandler(),
         //                synthDeterministicDeploy(),
         //                synthVacateAddress(),
@@ -165,6 +166,7 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     protected Map<Bytes, AccountID> initialAliases() {
         final var aliases = new HashMap<Bytes, AccountID>();
         aliases.put(SENDER_ALIAS, SENDER_ID);
+        aliases.put(SENDER_ADDRESS, SENDER_ID);
         return aliases;
     }
 

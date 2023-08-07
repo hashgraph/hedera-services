@@ -41,8 +41,8 @@ public class EthereumSignatures {
 
     public EthTxSigs impliedBy(@NonNull final EthTxData data) {
         // Since preHandle() is multi-threaded, we are happy to synchronously load the signatures
-        // for this EthTxData if they are not already cached; with a 15s TTL, this will make the
-        // subsequent lookup in handle() very fast
+        // for this EthTxData if they are not already cached; with a 15s TTL, this should make the
+        // subsequent lookup in handle() very fast almost always
         return cache.get(data);
     }
 }

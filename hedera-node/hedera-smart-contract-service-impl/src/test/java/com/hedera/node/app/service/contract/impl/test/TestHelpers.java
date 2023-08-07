@@ -94,10 +94,15 @@ public class TestHelpers {
     public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.allowAutoAssociations", true)
             .getOrCreateConfig();
+
+    public static final Configuration DEV_CHAIN_ID_CONFIG =
+            HederaTestConfigBuilder.create().withValue("contracts.chainId", 298).getOrCreateConfig();
     public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
     public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
             AUTO_ASSOCIATING_CONFIG.getConfigData(ContractsConfig.class);
+    public static final ContractsConfig DEV_CHAIN_ID_CONTRACTS_CONFIG =
+            DEV_CHAIN_ID_CONFIG.getConfigData(ContractsConfig.class);
     public static final int HEDERA_MAX_REFUND_PERCENTAGE = 20;
     public static final Instant ETERNAL_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Key AN_ED25519_KEY = Key.newBuilder()
@@ -268,9 +273,6 @@ public class TestHelpers {
     private static final ContractCallTransactionBody MOCK_CALL_BODY = ContractCallTransactionBody.newBuilder()
             .contractID(CALLED_CONTRACT_ID)
             .build();
-    public static final TransactionBody MOCK_CALL =
-            TransactionBody.newBuilder().contractCall(MOCK_CALL_BODY).build();
-
     private static final EthereumTransactionBody MOCK_ETH_BODY =
             EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
     public static final TransactionBody MOCK_ETH =

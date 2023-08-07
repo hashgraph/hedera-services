@@ -153,9 +153,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pbjToTuweniBytes(hederaOperations.entropy());
     }
 
-    @Nullable
     @Override
-    public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
+    public @Nullable HederaEvmAccount getHederaAccount(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
             address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -171,11 +171,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.collectFee(payerId, amount);
     }
 
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.refundFee(payerId, amount);
     }
 

@@ -25,18 +25,24 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asChainIdBytes;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
@@ -44,9 +50,11 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -60,7 +68,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
@@ -78,6 +86,8 @@ public class HevmTransactionFactory {
     private final ReadableAccountStore accountStore;
     private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
+    private final HydratedEthTxData hydratedEthTxData;
+    private final EthereumSignatures ethereumSignatures;
 
     @Inject
     public HevmTransactionFactory(
@@ -86,21 +96,25 @@ public class HevmTransactionFactory {
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
+            @Nullable final HydratedEthTxData hydratedEthTxData,
             @NonNull @InitialState final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull @InitialState final ReadableFileStore fileStore,
             @NonNull final AttributeValidator attributeValidator,
-            @NonNull @InitialState final TokenServiceApi tokenServiceApi) {
-        this.gasCalculator = Objects.requireNonNull(gasCalculator);
-        this.fileStore = Objects.requireNonNull(fileStore);
-        this.networkInfo = Objects.requireNonNull(networkInfo);
-        this.accountStore = Objects.requireNonNull(accountStore);
-        this.ledgerConfig = Objects.requireNonNull(ledgerConfig);
-        this.stakingConfig = Objects.requireNonNull(stakingConfig);
-        this.contractsConfig = Objects.requireNonNull(contractsConfig);
-        this.tokenServiceApi = Objects.requireNonNull(tokenServiceApi);
-        this.expiryValidator = Objects.requireNonNull(expiryValidator);
-        this.attributeValidator = Objects.requireNonNull(attributeValidator);
+            @NonNull @InitialState final TokenServiceApi tokenServiceApi,
+            @NonNull final EthereumSignatures ethereumSignatures) {
+        this.hydratedEthTxData = hydratedEthTxData;
+        this.gasCalculator = requireNonNull(gasCalculator);
+        this.fileStore = requireNonNull(fileStore);
+        this.networkInfo = requireNonNull(networkInfo);
+        this.accountStore = requireNonNull(accountStore);
+        this.ledgerConfig = requireNonNull(ledgerConfig);
+        this.stakingConfig = requireNonNull(stakingConfig);
+        this.contractsConfig = requireNonNull(contractsConfig);
+        this.tokenServiceApi = requireNonNull(tokenServiceApi);
+        this.expiryValidator = requireNonNull(expiryValidator);
+        this.attributeValidator = requireNonNull(attributeValidator);
+        this.ethereumSignatures = ethereumSignatures;
     }
 
     /**
@@ -116,7 +130,8 @@ public class HevmTransactionFactory {
                     body.transactionIDOrThrow().accountIDOrThrow(), body.contractCreateInstanceOrThrow());
             case CONTRACT_CALL -> fromHapiCall(
                     body.transactionIDOrThrow().accountIDOrThrow(), body.contractCallOrThrow());
-            case ETHEREUM_TRANSACTION -> fromHapiEthereum(body.ethereumTransactionOrThrow());
+            case ETHEREUM_TRANSACTION -> fromHapiEthereum(
+                    body.transactionIDOrThrow().accountIDOrThrow(), body.ethereumTransactionOrThrow());
             default -> throw new IllegalArgumentException("Not a contract operation");
         };
     }
@@ -156,8 +171,33 @@ public class HevmTransactionFactory {
                 null);
     }
 
-    private HederaEvmTransaction fromHapiEthereum(@NonNull final EthereumTransactionBody body) {
-        throw new AssertionError("Not implemented");
+    private HederaEvmTransaction fromHapiEthereum(
+            @NonNull final AccountID payer, @NonNull final EthereumTransactionBody body) {
+        final var ethTxData = assertValidEthTx(body);
+        final var ethTxSig = ethereumSignatures.impliedBy(ethTxData);
+        // TODO - also support missing "to" address
+        return new HederaEvmTransaction(
+                AccountID.newBuilder().alias(Bytes.wrap(ethTxSig.address())).build(),
+                payer,
+                ContractID.newBuilder().evmAddress(Bytes.wrap(ethTxData.to())).build(),
+                ethTxData.nonce(),
+                ethTxData.hasCallData() ? Bytes.wrap(ethTxData.callData()) : Bytes.EMPTY,
+                Bytes.wrap(ethTxData.chainId()),
+                ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact(),
+                ethTxData.gasLimit(),
+                ethTxData.getMaxGasAsBigInteger().divide(WEIBARS_TO_TINYBARS).longValueExact(),
+                body.maxGasAllowance(),
+                null);
+    }
+
+    private @NonNull EthTxData assertValidEthTx(@NonNull final EthereumTransactionBody body) {
+        validateTrue(body.maxGasAllowance() >= 0, NEGATIVE_ALLOWANCE_AMOUNT);
+        if (!requireNonNull(hydratedEthTxData).isAvailable()) {
+            throw new HandleException(hydratedEthTxData.status());
+        }
+        final var ethTxData = requireNonNull(hydratedEthTxData.ethTxData());
+        validateTrue(ethTxData.matchesChainId(asChainIdBytes(contractsConfig.chainId())), WRONG_CHAIN_ID);
+        return ethTxData;
     }
 
     private void assertValidCall(@NonNull final ContractCallTransactionBody body) {
