@@ -39,7 +39,8 @@ public class AssortedOpsXTestConstants {
     static final Bytes POINTLESS_INTERMEDIARY_ADDRESS = Bytes.fromHex("f9f3aa959ec3a248f8ff8ea1602e6714ae9cc4e3");
     static final Bytes DETERMINISTIC_CHILD_ADDRESS = Bytes.fromHex("fee687d5088faff48013a6767505c027e2742536");
     static final AccountID COINBASE_ID = AccountID.newBuilder().accountNum(98L).build();
-    static final AccountID MISC_PAYER_ID = AccountID.newBuilder().accountNum(2L).build();
+    static final AccountID MISC_PAYER_ID =
+            AccountID.newBuilder().accountNum(950L).build();
     static final AccountID RELAYER_ID = AccountID.newBuilder().accountNum(1001L).build();
     static final AccountID SENDER_ID = AccountID.newBuilder().accountNum(1002L).build();
     static final AccountID ASSORTED_OPS_ID =

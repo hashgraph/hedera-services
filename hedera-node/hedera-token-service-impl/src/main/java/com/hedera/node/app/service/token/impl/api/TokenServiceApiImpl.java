@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.api;
 
+import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -38,6 +40,9 @@ import java.util.Set;
  * Implements {@link TokenServiceApi} via {@link WritableAccountStore} calls.
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
+    private static final Key STANDIN_CONTRACT_KEY =
+            Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
+
     private final WritableStates writableStates;
     private final StakingValidator stakingValidator;
 
@@ -87,18 +92,34 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void deleteAndMaybeUnaliasContract(@NonNull final AccountID idToDelete) {
-        requireNonNull(idToDelete);
+    public void finalizeHollowAccountAsContract(@NonNull final AccountID hollowAccountId, final long initialNonce) {
+        requireNonNull(hollowAccountId);
         final var store = new WritableAccountStore(writableStates);
-        if (idToDelete.hasAccountNum()) {
-            store.remove(idToDelete);
-        } else {
-            final var alias = idToDelete.aliasOrThrow();
-            final var contractAccountId = store.getAccountIDByAlias(alias);
-            if (contractAccountId != null) {
-                store.remove(contractAccountId);
-                store.removeAlias(alias);
-            }
+        final var hollowAccount = requireNonNull(store.get(hollowAccountId));
+        if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
+            throw new IllegalArgumentException(
+                    "Cannot finalize non-hollow account " + hollowAccountId + " as contract");
+        }
+        final var accountAsContract = hollowAccount
+                .copyBuilder()
+                .key(STANDIN_CONTRACT_KEY)
+                .smartContract(true)
+                .ethereumNonce(initialNonce)
+                .build();
+        store.put(accountAsContract);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deleteAndMaybeUnaliasContract(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
+        final var store = new WritableAccountStore(writableStates);
+        final var contract = requireNonNull(store.getContractById(contractId));
+        store.put(contract.copyBuilder().deleted(true).build());
+        if (contractId.hasEvmAddress()) {
+            store.removeAlias(contractId.evmAddressOrThrow());
         }
     }
 

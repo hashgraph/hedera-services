@@ -362,7 +362,12 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Override
     public @NonNull ProxyWorldUpdater updater() {
-        return new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        final var child = new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        // "Hand off" the pending creation to the child, if there is one
+        if (this.pendingCreation != null) {
+            child.pendingCreation = this.pendingCreation;
+        }
+        return child;
     }
 
     /**

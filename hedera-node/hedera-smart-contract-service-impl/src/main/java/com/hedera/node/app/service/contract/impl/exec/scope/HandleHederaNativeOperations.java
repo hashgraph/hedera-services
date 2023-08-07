@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule.INITIAL_CONTRACT_NONCE;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthHollowAccountCreation;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -34,11 +36,10 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Objects;
 import javax.inject.Inject;
 
 /**
- * TODO - a fully mutable {@link HederaNativeOperations} based on a {@link HandleContext}.
+ * A fully-mutable {@link HederaNativeOperations} implemented with a {@link HandleContext}.
  */
 @TransactionScope
 public class HandleHederaNativeOperations implements HederaNativeOperations {
@@ -46,7 +47,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
 
     @Inject
     public HandleHederaNativeOperations(@NonNull final HandleContext context) {
-        this.context = Objects.requireNonNull(context);
+        this.context = requireNonNull(context);
     }
 
     /**
@@ -109,7 +110,11 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+        requireNonNull(evmAddress);
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId, INITIAL_CONTRACT_NONCE);
     }
 
     /**
@@ -151,6 +156,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void trackDeletion(final long deletedNumber, final long beneficiaryNumber) {
-        throw new AssertionError("Not implemented");
+        // TODO - implement after merging upstream
     }
 }

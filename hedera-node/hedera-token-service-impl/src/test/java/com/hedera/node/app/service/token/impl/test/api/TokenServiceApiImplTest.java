@@ -16,16 +16,18 @@
 
 package com.hedera.node.app.service.token.impl.test.api;
 
+import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
@@ -52,6 +54,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenServiceApiImplTest {
+    private static final Key STANDIN_CONTRACT_KEY =
+            Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Bytes EVM_ADDRESS = Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
     private static final Bytes SOME_STORE_KEY = Bytes.fromHex("0123456789");
@@ -60,8 +64,8 @@ class TokenServiceApiImplTest {
             ContractID.newBuilder().contractNum(666).build();
     public static final ContractID OTHER_CONTRACT_ID_BY_NUM =
             ContractID.newBuilder().contractNum(777).build();
-    public static final AccountID CONTRACT_ID_BY_ALIAS =
-            AccountID.newBuilder().alias(EVM_ADDRESS).build();
+    public static final ContractID CONTRACT_ID_BY_ALIAS =
+            ContractID.newBuilder().evmAddress(EVM_ADDRESS).build();
     public static final AccountID EOA_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(888).build();
     public static final AccountID CONTRACT_ACCOUNT_ID = AccountID.newBuilder()
@@ -141,6 +145,34 @@ class TokenServiceApiImplTest {
     }
 
     @Test
+    void finalizesHollowAccountAsContractAsExpected() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .key(IMMUTABILITY_SENTINEL_KEY)
+                .build());
+
+        subject.finalizeHollowAccountAsContract(CONTRACT_ACCOUNT_ID, 1L);
+
+        assertEquals(1, accountStore.sizeOfAccountState());
+        final var finalizedAccount = accountStore.getContractById(CONTRACT_ID_BY_NUM);
+        assertNotNull(finalizedAccount);
+        assertEquals(STANDIN_CONTRACT_KEY, finalizedAccount.key());
+        assertEquals(1L, finalizedAccount.ethereumNonce());
+        assertTrue(finalizedAccount.smartContract());
+    }
+
+    @Test
+    void refusesToFinalizeNonHollowAccountAsContract() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .key(Key.DEFAULT)
+                .build());
+
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.finalizeHollowAccountAsContract(CONTRACT_ACCOUNT_ID, 1L));
+    }
+
+    @Test
     void createsExpectedContractWithAliasIfSet() {
         accountStore.put(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
@@ -152,15 +184,17 @@ class TokenServiceApiImplTest {
     }
 
     @Test
-    void removesByNumberIfSet() {
+    void marksDeletedByNumberIfSet() {
         accountStore.put(Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
                 .smartContract(true)
                 .build());
 
-        subject.deleteAndMaybeUnaliasContract(CONTRACT_ACCOUNT_ID);
+        subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_NUM);
 
-        assertEquals(0, accountStore.sizeOfAccountState());
+        assertEquals(1, accountStore.sizeOfAccountState());
+        final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
+        assertTrue(deletedContract.deleted());
     }
 
     @Test
@@ -174,20 +208,10 @@ class TokenServiceApiImplTest {
 
         subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_ALIAS);
 
-        assertEquals(0, accountStore.sizeOfAccountState());
-        assertEquals(0, accountStore.sizeOfAliasesState());
-    }
-
-    @Test
-    void noopIfAliasReferencesNothing() {
-        accountStore.put(Account.newBuilder()
-                .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
-                .smartContract(true)
-                .build());
-
-        assertDoesNotThrow(() -> subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_ALIAS));
-
         assertEquals(1, accountStore.sizeOfAccountState());
+        final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
+        assertTrue(deletedContract.deleted());
+        assertEquals(0, accountStore.sizeOfAliasesState());
     }
 
     @Test

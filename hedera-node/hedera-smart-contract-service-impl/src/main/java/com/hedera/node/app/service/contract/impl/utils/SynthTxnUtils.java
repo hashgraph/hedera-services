@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -54,7 +55,7 @@ public class SynthTxnUtils {
      * @param body the {@link ContractCreateTransactionBody}
      * @return the corresponding {@link CryptoCreateTransactionBody}
      */
-    public static CryptoCreateTransactionBody synthAccountCreationForContract(
+    public static CryptoCreateTransactionBody synthAccountCreationFromHapi(
             @NonNull final ContractID pendingId,
             @Nullable final com.hedera.pbj.runtime.io.buffer.Bytes evmAddress,
             @NonNull final ContractCreateTransactionBody body) {
@@ -79,6 +80,41 @@ public class SynthTxnUtils {
         }
         if (evmAddress != null) {
             builder.alias(evmAddress);
+        }
+        return builder.build();
+    }
+
+    /**
+     * Given a validated {@link ContractCreateTransactionBody} and its pending id, returns the
+     * corresponding {@link CryptoCreateTransactionBody} to dispatch.
+     *
+     * @param pendingId the pending id
+     * @param parent the {@link Account} creating the contract
+     * @return the corresponding {@link CryptoCreateTransactionBody}
+     */
+    public static ContractCreateTransactionBody synthContractCreationFromParent(
+            @NonNull final ContractID pendingId, @NonNull final Account parent) {
+        requireNonNull(parent);
+        requireNonNull(pendingId);
+        // TODO - for mono-service equivalence, need to set the initial balance here
+        final var builder = ContractCreateTransactionBody.newBuilder()
+                .maxAutomaticTokenAssociations(parent.maxAutoAssociations())
+                .declineReward(parent.declineReward())
+                .memo(parent.memo())
+                .autoRenewPeriod(Duration.newBuilder().seconds(parent.autoRenewSecs()));
+        if (parent.hasAutoRenewAccountId()) {
+            builder.autoRenewAccountId(parent.autoRenewAccountIdOrThrow());
+        }
+        if (parent.hasStakedNodeId()) {
+            builder.stakedNodeId(parent.stakedNodeIdOrThrow());
+        } else if (parent.hasStakedAccountId()) {
+            builder.stakedAccountId(parent.stakedAccountIdOrThrow());
+        }
+        final var parentAdminKey = parent.keyOrThrow();
+        if (!parentAdminKey.hasContractID()) {
+            builder.adminKey(parentAdminKey);
+        } else {
+            builder.adminKey(Key.newBuilder().contractID(pendingId));
         }
         return builder.build();
     }

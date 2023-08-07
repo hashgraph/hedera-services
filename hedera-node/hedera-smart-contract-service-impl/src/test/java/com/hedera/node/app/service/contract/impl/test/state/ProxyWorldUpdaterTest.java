@@ -372,6 +372,17 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void updaterPreservesPendingCreation() {
+        given(hederaOperations.begin()).willReturn(hederaOperations);
+        subject.setupTopLevelLazyCreate(SOME_EVM_ADDRESS);
+        final var updater = subject.updater();
+        assertInstanceOf(ProxyWorldUpdater.class, updater);
+        assertTrue(updater.parentUpdater().isPresent());
+        assertSame(subject, updater.parentUpdater().get());
+        assertSame(subject.getPendingCreation(), updater.getPendingCreation());
+    }
+
+    @Test
     void delegatesTransfer() {
         given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
                 .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));

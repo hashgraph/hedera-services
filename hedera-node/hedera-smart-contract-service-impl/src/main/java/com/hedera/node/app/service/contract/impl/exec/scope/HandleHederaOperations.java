@@ -17,17 +17,20 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationForContract;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationFromHapi;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthContractCreationFromParent;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -36,6 +39,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -196,7 +200,15 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void createContract(
             final long number, final long parentNumber, final long nonce, @Nullable final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var parent = accountStore.getAccountById(
+                AccountID.newBuilder().accountNum(parentNumber).build());
+        final var impliedContractCreation = synthContractCreationFromParent(
+                ContractID.newBuilder().contractNum(number).build(), requireNonNull(parent));
+        dispatchAndMarkCreation(
+                number,
+                synthAccountCreationFromHapi(
+                        ContractID.newBuilder().contractNum(number).build(), evmAddress, impliedContractCreation));
     }
 
     /**
@@ -208,22 +220,11 @@ public class HandleHederaOperations implements HederaOperations {
             @NonNull final ContractCreateTransactionBody body,
             final long nonce,
             @Nullable final Bytes evmAddress) {
-        // Create the contract account by dispatching a synthetic HAPI transaction
-        final var contractId = ContractID.newBuilder().contractNum(number).build();
-        final var synthAccountCreation = synthAccountCreationForContract(contractId, evmAddress, requireNonNull(body));
-        final var synthTxn = TransactionBody.newBuilder()
-                .cryptoCreateAccount(synthAccountCreation)
-                .build();
-        final var childRecordBuilder = context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
-        // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
-        if (childRecordBuilder.status() != OK) {
-            throw new AssertionError("Not implemented");
-        }
-
-        // Then use the TokenService API to mark the created account as a contract
-        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
-        final var accountId = AccountID.newBuilder().accountNum(number).build();
-        tokenServiceApi.markAsContract(accountId);
+        requireNonNull(body);
+        dispatchAndMarkCreation(
+                number,
+                synthAccountCreationFromHapi(
+                        ContractID.newBuilder().contractNum(number).build(), evmAddress, body));
     }
 
     /**
@@ -231,7 +232,10 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void deleteAliasedContract(@NonNull final Bytes evmAddress) {
-        throw new AssertionError("Not implemented");
+        requireNonNull(evmAddress);
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.deleteAndMaybeUnaliasContract(
+                ContractID.newBuilder().evmAddress(evmAddress).build());
     }
 
     /**
@@ -239,7 +243,9 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void deleteUnaliasedContract(final long number) {
-        throw new AssertionError("Not implemented");
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        tokenServiceApi.deleteAndMaybeUnaliasContract(
+                ContractID.newBuilder().contractNum(number).build());
     }
 
     /**
@@ -247,7 +253,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public List<Long> getModifiedAccountNumbers() {
-        throw new AssertionError("Not implemented");
+        // TODO - remove this method, isn't needed
+        return Collections.emptyList();
     }
 
     /**
@@ -283,5 +290,19 @@ public class HandleHederaOperations implements HederaOperations {
     public int getOriginalSlotsUsed(final long contractNumber) {
         // TODO - extend API and use getOriginalValue() from writable store
         return 0;
+    }
+
+    private void dispatchAndMarkCreation(final long number, @NonNull final CryptoCreateTransactionBody body) {
+        // Create the contract account by dispatching a synthetic HAPI transaction
+        final var recordBuilder = context.dispatchChildTransaction(
+                TransactionBody.newBuilder().cryptoCreateAccount(body).build(), CryptoCreateRecordBuilder.class);
+        // TODO - switch OK to SUCCESS once some status-setting responsibilities are clarified
+        if (recordBuilder.status() != OK) {
+            throw new AssertionError("Not implemented");
+        }
+        // Then use the TokenService API to mark the created account as a contract
+        final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
+        final var accountId = AccountID.newBuilder().accountNum(number).build();
+        tokenServiceApi.markAsContract(accountId);
     }
 }
