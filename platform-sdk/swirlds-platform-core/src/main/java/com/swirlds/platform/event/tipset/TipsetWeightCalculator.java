@@ -336,6 +336,7 @@ public class TipsetWeightCalculator {
                 .append(previousAdvancementWeight)
                 .append("\n");
         sb.append("Latest self event tipset: ").append(latestSelfEventTipset).append("\n");
+        sb.append("Snapshot: ").append(snapshot).append("\n");
         sb.append("Snapshot history: ").append("\n");
         for (final Tipset tipset : snapshotHistory) {
             sb.append("  - ").append(tipset).append("\n");
