@@ -300,6 +300,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 System.setProperty("grpc.workflowsTlsPort", "0");
                 System.setProperty("hedera.workflows.enabled", "CryptoCreate");
                 System.setProperty("platformStatus.observingStatusDelay", "0");
+                // This setting is needed for a single node network to run correctly.
+                // This is by default set to 0 in platform code, which will not work for single node network.
+                System.setProperty("event.creation.maxCreationRate", "20");
 
                 final var factory = ServiceLoader.load(ConfigurationBuilderFactory.class);
                 final var configBuilder = factory.findFirst().orElseThrow().create();
