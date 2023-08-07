@@ -261,7 +261,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         }
         // If we can recover an Ethereum EOA address from the account key, we should return that
         final var evmAddress = tryAddressRecovery(account.key(), EthSigsUtils::recoverAddressFromPubKey);
-        if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
+        if (evmAddress.length == EVM_ADDRESS_LEN) {
             return Bytes.wrap(evmAddress).toHex();
         } else {
             return hex(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
@@ -274,7 +274,6 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * @param addressRecovery    the function to recover EVM address
      * @return byte[] of EVM address
      */
-    @SuppressWarnings("java:S1168")
     public static byte[] tryAddressRecovery(@Nullable final Key key, final UnaryOperator<byte[]> addressRecovery) {
         if (key != null && key.hasEcdsaSecp256k1()) {
             // Only compressed keys are stored at the moment
@@ -290,7 +289,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                 }
             }
         }
-        return null;
+        return new byte[0];
     }
 
     /**

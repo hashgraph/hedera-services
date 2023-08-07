@@ -47,8 +47,9 @@ import javax.inject.Singleton;
 public class DeleteAllowanceValidator extends AllowanceValidator {
 
     @Inject
-    @SuppressWarnings("java:S1186")
-    public DeleteAllowanceValidator() {}
+    public DeleteAllowanceValidator() {
+        // Dagger
+    }
 
     /**
      * Validates all allowances provided in {@link CryptoDeleteAllowanceTransactionBody}

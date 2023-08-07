@@ -39,8 +39,9 @@ import javax.inject.Singleton;
 public class StakingValidator {
 
     @Inject
-    @SuppressWarnings("java:S1186")
-    public StakingValidator() {}
+    public StakingValidator() {
+        // Dagger
+    }
 
     /**
      * Validates staked id if present

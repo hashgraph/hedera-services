@@ -61,6 +61,7 @@ public class CustomRoyaltyFeeAssessor {
      * @param result
      * @param handleContext
      */
+    // Suppressing the warning about using two "continue" statements and having unused variable
     @SuppressWarnings({"java:S1854", "java:S135"})
     public void assessRoyaltyFees(
             @NonNull final CustomFeeMeta feeMeta,

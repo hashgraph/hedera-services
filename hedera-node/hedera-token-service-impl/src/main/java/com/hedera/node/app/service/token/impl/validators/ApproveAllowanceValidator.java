@@ -59,8 +59,9 @@ import javax.inject.Singleton;
 public class ApproveAllowanceValidator extends AllowanceValidator {
 
     @Inject
-    @SuppressWarnings("java:S1186")
-    public ApproveAllowanceValidator() {}
+    public ApproveAllowanceValidator() {
+        // Dagger
+    }
 
     public void validate(
             @NonNull final HandleContext context, final Account payerAccount, final ReadableAccountStore accountStore) {

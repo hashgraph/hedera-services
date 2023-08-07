@@ -80,6 +80,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
             .tinybarBalance(10000)
             .build();
     private static final TokenID TOKEN_321 = asToken(321);
+    private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = List.of();
 
     @Mock(strictness = LENIENT)
     private HandleContext context;
@@ -104,14 +105,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    @SuppressWarnings("java:S5778")
     void handleNullArg() {
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    @SuppressWarnings("java:S5778")
     void handleHbarNetTransferAmountIsNotZero() {
         readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212);
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212);
@@ -122,13 +121,12 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
 
     @Test
-    @SuppressWarnings("java:S5778")
     void handleHbarAccountBalanceIsNegative() {
         readableAccountStore = TestStoreFactory.newReadableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434);
         writableAccountStore = TestStoreFactory.newWritableStoreWithAccounts(ACCOUNT_1212, ACCOUNT_3434);
@@ -145,7 +143,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -456,7 +454,6 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    @SuppressWarnings("java:S5778")
     void handleFungibleTokenBalanceIsNegative() {
         final var validAcct = givenValidAccountBuilder();
         final var tokenRel = givenFungibleTokenRelation(); // Already tied to validAcct's account ID
@@ -468,7 +465,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }

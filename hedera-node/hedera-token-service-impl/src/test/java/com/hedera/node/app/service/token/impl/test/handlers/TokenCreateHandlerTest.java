@@ -135,6 +135,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
     @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreate() {
         setUpTxnContext();
@@ -182,6 +183,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
     @SuppressWarnings("java:S5961")
     void handleWorksForFungibleCreateWithSelfDenominatedToken() {
         setUpTxnContext();
@@ -369,6 +371,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
     @SuppressWarnings("java:S5961")
     void uniqueSupportedIfNftsEnabled() {
         setUpTxnContext();

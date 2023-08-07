@@ -53,8 +53,9 @@ public class TokenAttributesValidator {
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     @Inject
-    @SuppressWarnings("java:S1186")
-    public TokenAttributesValidator() {}
+    public TokenAttributesValidator() {
+        // Dagger
+    }
 
     /**
      * Validates the token symbol, if it is exists and is not empty or not too long.

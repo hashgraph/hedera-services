@@ -186,6 +186,7 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
     @SuppressWarnings("java:S5961")
     void happyPathForUpdatingAllowances() {
         final var txn = cryptoApproveAllowanceTransaction(

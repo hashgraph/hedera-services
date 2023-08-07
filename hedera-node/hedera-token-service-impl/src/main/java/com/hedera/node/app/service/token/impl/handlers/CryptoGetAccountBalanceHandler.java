@@ -75,7 +75,6 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     @Override
-    @SuppressWarnings("java:S2259")
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
         final var query = context.query();
@@ -88,7 +87,9 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         } else if (op.hasContractID()) {
             final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
             validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
-            validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
+            if (contract != null) {
+                validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
+            }
         } else {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }

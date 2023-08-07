@@ -43,8 +43,9 @@ import javax.inject.Inject;
 public class TokenSupplyChangeOpsValidator {
 
     @Inject
-    @SuppressWarnings("java:S1186")
-    public TokenSupplyChangeOpsValidator() {}
+    public TokenSupplyChangeOpsValidator() {
+        // Dagger
+    }
 
     /**
      * Validate the transaction data for a token mint operation
