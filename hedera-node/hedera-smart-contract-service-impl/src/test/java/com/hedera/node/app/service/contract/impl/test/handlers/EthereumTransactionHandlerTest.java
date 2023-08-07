@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
@@ -32,10 +33,13 @@ import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.infra.EthereumSignatures;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -49,7 +53,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class EthereumTransactionHandlerTest {
     @Mock
+    private EthereumCallDataHydration callDataHydration;
+
+    @Mock
     private EthereumSignatures ethereumSignatures;
+
+    @Mock
+    private ReadableFileStore fileStore;
 
     @Mock
     private TransactionComponent component;
@@ -76,13 +86,13 @@ class EthereumTransactionHandlerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new EthereumTransactionHandler(ethereumSignatures, () -> factory);
+        subject = new EthereumTransactionHandler(ethereumSignatures, callDataHydration, () -> factory);
     }
 
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCallWithToAddress() {
         given(factory.create(handleContext)).willReturn(component);
-        given(component.ethTxData()).willReturn(ETH_DATA_WITH_TO_ADDRESS);
+        given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
@@ -102,7 +112,7 @@ class EthereumTransactionHandlerTest {
     @Test
     void delegatesToCreatedComponentAndExposesEthTxDataCreateWithoutToAddress() {
         given(factory.create(handleContext)).willReturn(component);
-        given(component.ethTxData()).willReturn(ETH_DATA_WITHOUT_TO_ADDRESS);
+        given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         given(component.contextTransactionProcessor()).willReturn(processor);
         given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
                 .willReturn(recordBuilder);
@@ -121,24 +131,30 @@ class EthereumTransactionHandlerTest {
     }
 
     @Test
-    void preHandleCachesTheSignatures() {
+    void preHandleCachesTheSignaturesIfDataCanBeHydrated() {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
                 .build();
         final var body =
                 TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(preHandleContext.body()).willReturn(body);
+        given(preHandleContext.createStore(ReadableFileStore.class)).willReturn(fileStore);
+        given(callDataHydration.tryToHydrate(ethTxn, fileStore))
+                .willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         subject.preHandle(preHandleContext);
         verify(ethereumSignatures).impliedBy(ETH_DATA_WITH_TO_ADDRESS);
     }
 
     @Test
-    void preHandleIgnoresUnparseable() {
+    void preHandleIgnoresFailureToHydrate() {
         final var ethTxn =
                 EthereumTransactionBody.newBuilder().ethereumData(Bytes.EMPTY).build();
         final var body =
                 TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(preHandleContext.body()).willReturn(body);
+        given(preHandleContext.createStore(ReadableFileStore.class)).willReturn(fileStore);
+        given(callDataHydration.tryToHydrate(ethTxn, fileStore))
+                .willReturn(HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION));
         subject.preHandle(preHandleContext);
         verifyNoInteractions(ethereumSignatures);
     }

@@ -16,13 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.handlers;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.infra.EthereumSignatures;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -40,24 +41,28 @@ import javax.inject.Singleton;
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
     private final EthereumSignatures ethereumSignatures;
+    private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
 
     @Inject
     public EthereumTransactionHandler(
             @NonNull final EthereumSignatures ethereumSignatures,
+            @NonNull final EthereumCallDataHydration callDataHydration,
             @NonNull final Provider<TransactionComponent.Factory> provider) {
-        this.ethereumSignatures = ethereumSignatures;
+        this.ethereumSignatures = requireNonNull(ethereumSignatures);
+        this.callDataHydration = requireNonNull(callDataHydration);
         this.provider = requireNonNull(provider);
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var rawEthTx =
-                context.body().ethereumTransactionOrThrow().ethereumData().toByteArray();
-        final var maybeParsedEthTx = populateEthTxData(rawEthTx);
-        if (maybeParsedEthTx != null) {
-            ethereumSignatures.impliedBy(maybeParsedEthTx);
+        final var body = context.body().ethereumTransactionOrThrow();
+        final var fileStore = context.createStore(ReadableFileStore.class);
+        final var ethTxData = callDataHydration.tryToHydrate(body, fileStore).ethTxData();
+        if (ethTxData != null) {
+            // Ignore the return value; we just want to cache the signature for use in handle()
+            ethereumSignatures.impliedBy(ethTxData);
         }
     }
 
@@ -70,7 +75,8 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var outcome = component.contextTransactionProcessor().call();
 
         // Assemble the appropriate top-level record for the result
-        final var ethTxData = requireNonNull(component.ethTxData());
+        final var ethTxData =
+                requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         final var recordBuilder = context.recordBuilder(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()))
                 .status(outcome.status());

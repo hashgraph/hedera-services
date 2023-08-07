@@ -44,7 +44,7 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.EthereumTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.annotations.InitialTokenServiceApi;
+import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -86,11 +86,11 @@ public class HevmTransactionFactory {
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
-            @NonNull final ReadableAccountStore accountStore,
+            @NonNull @InitialState final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
-            @NonNull final ReadableFileStore fileStore,
+            @NonNull @InitialState final ReadableFileStore fileStore,
             @NonNull final AttributeValidator attributeValidator,
-            @InitialTokenServiceApi @NonNull final TokenServiceApi tokenServiceApi) {
+            @NonNull @InitialState final TokenServiceApi tokenServiceApi) {
         this.gasCalculator = Objects.requireNonNull(gasCalculator);
         this.fileStore = Objects.requireNonNull(fileStore);
         this.networkInfo = Objects.requireNonNull(networkInfo);

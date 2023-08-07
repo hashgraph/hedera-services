@@ -25,9 +25,11 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -45,13 +47,14 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class ContextTransactionProcessor implements Callable<CallOutcome> {
-    @Nullable
-    private final EthTxData ethTxData;
-
     private final HandleContext context;
     private final ContractsConfig contractsConfig;
     private final Configuration configuration;
     private final HederaEvmContext hederaEvmContext;
+
+    @Nullable
+    private final HydratedEthTxData hydratedEthTxData;
+
     private final ActionSidecarContentTracer tracer;
     private final RootProxyWorldUpdater worldUpdater;
     private final HevmTransactionFactory hevmTransactionFactory;
@@ -60,7 +63,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     @Inject
     public ContextTransactionProcessor(
-            @Nullable final EthTxData ethTxData,
+            @Nullable final HydratedEthTxData hydratedEthTxData,
             @NonNull final HandleContext context,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final Configuration configuration,
@@ -71,7 +74,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors) {
         this.context = Objects.requireNonNull(context);
-        this.ethTxData = ethTxData;
+        this.hydratedEthTxData = hydratedEthTxData;
         this.tracer = Objects.requireNonNull(tracer);
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
         this.processors = Objects.requireNonNull(processors);
@@ -84,6 +87,9 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     @Override
     public CallOutcome call() {
+        // Ensure that if this is an EthereumTransaction, we have a valid EthTxData
+        assertEthTxDataValidIfApplicable();
+
         // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
         final var hevmTransaction = hevmTransactionFactory.fromHapiTransaction(context.body());
 
@@ -95,6 +101,16 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
                 hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 
         // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
-        return new CallOutcome(result.asProtoResultOf(ethTxData, worldUpdater), result.finalStatus());
+        return new CallOutcome(result.asProtoResultOf(ethTxDataIfApplicable(), worldUpdater), result.finalStatus());
+    }
+
+    private void assertEthTxDataValidIfApplicable() {
+        if (hydratedEthTxData != null && !hydratedEthTxData.isAvailable()) {
+            throw new HandleException(hydratedEthTxData.status());
+        }
+    }
+
+    private @Nullable EthTxData ethTxDataIfApplicable() {
+        return hydratedEthTxData == null ? null : hydratedEthTxData.ethTxData();
     }
 }

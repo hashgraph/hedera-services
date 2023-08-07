@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.service.contract.impl.annotations.InitialTokenServiceApi;
+import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -32,12 +30,12 @@ import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmBlocks;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -50,7 +48,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-@Module(includes = TransactionConfigModule.class)
+@Module(includes = {TransactionConfigModule.class, TransactionInitialStateModule.class})
 public interface TransactionModule {
     @Provides
     @TransactionScope
@@ -62,11 +60,13 @@ public interface TransactionModule {
     @Nullable
     @javax.annotation.Nullable
     @TransactionScope
-    static EthTxData maybeProvideEthTxData(@NonNull final HandleContext context) {
+    static HydratedEthTxData maybeProvideHydratedEthTxData(
+            @NonNull final HandleContext context,
+            @NonNull final EthereumCallDataHydration hydration,
+            @NonNull @InitialState final ReadableFileStore fileStore) {
         final var body = context.body();
         return body.hasEthereumTransaction()
-                ? populateEthTxData(
-                        body.ethereumTransactionOrThrow().ethereumData().toByteArray())
+                ? hydration.tryToHydrate(body.ethereumTransactionOrThrow(), fileStore)
                 : null;
     }
 
@@ -100,25 +100,6 @@ public interface TransactionModule {
     @TransactionScope
     static ExpiryValidator provideExpiryValidator(@NonNull final HandleContext context) {
         return context.expiryValidator();
-    }
-
-    @Provides
-    @TransactionScope
-    static ReadableFileStore provideReadableFileStore(@NonNull final HandleContext context) {
-        return context.readableStore(ReadableFileStore.class);
-    }
-
-    @Provides
-    @TransactionScope
-    static ReadableAccountStore provideReadableAccountStore(@NonNull final HandleContext context) {
-        return context.readableStore(ReadableAccountStore.class);
-    }
-
-    @Provides
-    @TransactionScope
-    @InitialTokenServiceApi
-    static TokenServiceApi provideInitialTokenServiceApi(@NonNull final HandleContext context) {
-        return context.serviceApi(TokenServiceApi.class);
     }
 
     @Provides

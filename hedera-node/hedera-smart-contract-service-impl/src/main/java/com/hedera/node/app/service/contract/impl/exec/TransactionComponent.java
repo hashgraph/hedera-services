@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
@@ -35,5 +35,5 @@ public interface TransactionComponent {
 
     @Nullable
     @javax.annotation.Nullable
-    EthTxData ethTxData();
+    HydratedEthTxData hydratedEthTxData();
 }

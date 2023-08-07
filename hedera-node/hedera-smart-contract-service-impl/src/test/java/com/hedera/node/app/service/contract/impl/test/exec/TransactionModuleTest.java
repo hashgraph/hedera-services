@@ -17,8 +17,7 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_CALL_DATA;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -30,12 +29,12 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -58,19 +57,16 @@ class TransactionModuleTest {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private ReadableAccountStore readableAccountStore;
-
-    @Mock
-    private TokenServiceApi tokenServiceApi;
-
-    @Mock
-    private ReadableFileStore readableFileStore;
-
-    @Mock
     private HederaOperations hederaOperations;
 
     @Mock
     private EvmFrameStateFactory factory;
+
+    @Mock
+    private EthereumCallDataHydration hydration;
+
+    @Mock
+    private ReadableFileStore fileStore;
 
     @Mock
     private HandleContext context;
@@ -96,7 +92,9 @@ class TransactionModuleTest {
         final var body =
                 TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(context.body()).willReturn(body);
-        assertEquals(ETH_DATA_WITH_TO_ADDRESS, TransactionModule.maybeProvideEthTxData(context));
+        final var expectedHydration = HydratedEthTxData.successFrom(ETH_DATA_WITH_CALL_DATA);
+        given(hydration.tryToHydrate(ethTxn, fileStore)).willReturn(expectedHydration);
+        assertSame(expectedHydration, TransactionModule.maybeProvideHydratedEthTxData(context, hydration, fileStore));
     }
 
     @Test
@@ -106,7 +104,7 @@ class TransactionModuleTest {
                 .build();
         final var body = TransactionBody.newBuilder().contractCall(callTxn).build();
         given(context.body()).willReturn(body);
-        assertNull(TransactionModule.maybeProvideEthTxData(context));
+        assertNull(TransactionModule.maybeProvideHydratedEthTxData(context, hydration, fileStore));
     }
 
     @Test
@@ -115,14 +113,6 @@ class TransactionModuleTest {
         given(context.expiryValidator()).willReturn(expiryValidator);
         assertSame(attributeValidator, TransactionModule.provideAttributeValidator(context));
         assertSame(expiryValidator, TransactionModule.provideExpiryValidator(context));
-    }
-
-    @Test
-    void providesStores() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
-        given(context.readableStore(ReadableFileStore.class)).willReturn(readableFileStore);
-        assertSame(readableAccountStore, TransactionModule.provideReadableAccountStore(context));
-        assertSame(readableFileStore, TransactionModule.provideReadableFileStore(context));
     }
 
     @Test
@@ -135,11 +125,5 @@ class TransactionModuleTest {
     void providesExpectedConsTime() {
         given(context.consensusNow()).willReturn(Instant.MAX);
         assertSame(Instant.MAX, TransactionModule.provideConsensusTime(context));
-    }
-
-    @Test
-    void providesTokenServiceApi() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        assertSame(tokenServiceApi, TransactionModule.provideInitialTokenServiceApi(context));
     }
 }
