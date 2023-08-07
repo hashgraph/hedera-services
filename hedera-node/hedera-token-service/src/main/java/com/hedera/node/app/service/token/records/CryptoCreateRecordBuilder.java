@@ -44,4 +44,7 @@ public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilde
      */
     @NonNull
     CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress);
+
+    @NonNull
+    CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee);
 }

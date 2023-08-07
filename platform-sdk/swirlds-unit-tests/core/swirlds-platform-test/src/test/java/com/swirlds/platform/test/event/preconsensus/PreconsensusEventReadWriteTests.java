@@ -30,6 +30,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFile;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventFileIterator;
 import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
@@ -110,13 +111,13 @@ class PreconsensusEventReadWriteTests {
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
-            mutableFile.writeEvent(event);
+            mutableFile.writeEvent(event.getBaseEvent());
         }
 
         mutableFile.close();
 
-        final IOIterator<EventImpl> iterator = file.iterator(Long.MIN_VALUE);
-        final List<EventImpl> deserializedEvents = new ArrayList<>();
+        final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
+        final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
@@ -157,13 +158,13 @@ class PreconsensusEventReadWriteTests {
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
-            mutableFile.writeEvent(event);
+            mutableFile.writeEvent(event.getBaseEvent());
         }
 
         mutableFile.close();
 
-        final IOIterator<EventImpl> iterator = file.iterator(middle);
-        final List<EventImpl> deserializedEvents = new ArrayList<>();
+        final IOIterator<GossipEvent> iterator = file.iterator(middle);
+        final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
 
         // We don't want any events with a generation less than the middle
@@ -197,7 +198,7 @@ class PreconsensusEventReadWriteTests {
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         mutableFile.close();
 
-        final IOIterator<EventImpl> iterator = file.iterator(Long.MIN_VALUE);
+        final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
         assertFalse(iterator.hasNext());
     }
 
@@ -236,7 +237,7 @@ class PreconsensusEventReadWriteTests {
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
             final EventImpl event = events.get(i);
-            mutableFile.writeEvent(event);
+            mutableFile.writeEvent(event.getBaseEvent());
             byteBoundaries.put(i, (int) mutableFile.fileSize());
         }
 
@@ -250,7 +251,7 @@ class PreconsensusEventReadWriteTests {
         truncateFile(file.getPath(), truncationPosition);
 
         final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
-        final List<EventImpl> deserializedEvents = new ArrayList<>();
+        final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
 
         assertEquals(truncateOnBoundary, !iterator.hasPartialEvent());
@@ -296,7 +297,7 @@ class PreconsensusEventReadWriteTests {
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
             final EventImpl event = events.get(i);
-            mutableFile.writeEvent(event);
+            mutableFile.writeEvent(event.getBaseEvent());
             byteBoundaries.put(i, (int) mutableFile.fileSize());
         }
 
@@ -361,16 +362,16 @@ class PreconsensusEventReadWriteTests {
         for (final EventImpl event : events) {
             if (event.getGeneration() >= restrictedMinimumGeneration
                     && event.getGeneration() <= restrictedMaximumGeneration) {
-                mutableFile.writeEvent(event);
+                mutableFile.writeEvent(event.getBaseEvent());
                 validEvents.add(event);
             } else {
-                assertThrows(IllegalStateException.class, () -> mutableFile.writeEvent(event));
+                assertThrows(IllegalStateException.class, () -> mutableFile.writeEvent(event.getBaseEvent()));
             }
         }
 
         mutableFile.close();
 
-        final IOIterator<EventImpl> iterator = file.iterator(Long.MIN_VALUE);
+        final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
         for (final EventImpl event : validEvents) {
             assertTrue(iterator.hasNext());
             assertEventsAreEqual(event, iterator.next());
@@ -416,7 +417,7 @@ class PreconsensusEventReadWriteTests {
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
-            mutableFile.writeEvent(event);
+            mutableFile.writeEvent(event.getBaseEvent());
         }
 
         mutableFile.close();
@@ -434,8 +435,8 @@ class PreconsensusEventReadWriteTests {
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
-        final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
-        final List<EventImpl> deserializedEvents = new ArrayList<>();
+        final IOIterator<GossipEvent> iterator = compressedFile.iterator(Long.MIN_VALUE);
+        final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
@@ -482,7 +483,7 @@ class PreconsensusEventReadWriteTests {
 
         final PreconsensusEventMutableFile mutableFile = file.getMutableFile();
         for (final EventImpl event : events) {
-            mutableFile.writeEvent(event);
+            mutableFile.writeEvent(event.getBaseEvent());
         }
 
         mutableFile.close();
@@ -501,8 +502,8 @@ class PreconsensusEventReadWriteTests {
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
-        final IOIterator<EventImpl> iterator = compressedFile.iterator(Long.MIN_VALUE);
-        final List<EventImpl> deserializedEvents = new ArrayList<>();
+        final IOIterator<GossipEvent> iterator = compressedFile.iterator(Long.MIN_VALUE);
+        final List<GossipEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
