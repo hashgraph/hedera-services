@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.state;
+package com.swirlds.platform.test.fixtures.state;
 
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
 

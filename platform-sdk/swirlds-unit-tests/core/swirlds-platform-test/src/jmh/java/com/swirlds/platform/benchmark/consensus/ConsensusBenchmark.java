@@ -24,7 +24,7 @@ import com.swirlds.platform.ConsensusImpl;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.consensus.ConsensusTestDefinition;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
