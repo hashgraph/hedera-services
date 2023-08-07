@@ -637,9 +637,9 @@ class DataFileCollectionTest {
     }
 
     private static DataFileCompactor createFileCompactor(DataFileCollection<long[]> fileCollection) {
-        return new DataFileCompactor(fileCollection){
+        return new DataFileCompactor(fileCollection) {
             @Override
-            int getMinNumberOfFilesToMerge() {
+            int getMinNumberOfFilesToCompact() {
                 return 2;
             }
         };

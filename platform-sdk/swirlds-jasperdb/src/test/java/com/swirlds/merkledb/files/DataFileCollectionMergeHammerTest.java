@@ -158,7 +158,7 @@ class DataFileCollectionMergeHammerTest {
                 try {
                     final List<DataFileReader<?>> filesToMerge =
                             (List<DataFileReader<?>>) (Object) coll.getAllCompletedFiles();
-                    if (filesToMerge.size() > compactor.getMinNumberOfFilesToMerge()) {
+                    if (filesToMerge.size() > compactor.getMinNumberOfFilesToCompact()) {
                         System.out.println(filesToMerge.size());
                     }
                     if (filesToMerge.size() > 10000) {

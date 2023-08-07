@@ -307,7 +307,7 @@ public final class DataFileCommon {
 
     public static void logMergeStats(
             final String storeName,
-            final double tookSeconds,
+            final double tookMillis,
             final Collection<DataFileReader<?>> filesToMerge,
             final long filesToMergeSize,
             final List<Path> mergedFiles,
@@ -315,11 +315,15 @@ public final class DataFileCommon {
             throws IOException {
         final long mergedFilesCount = mergedFiles.size();
         final long mergedFilesSize = getSizeOfFilesByPath(mergedFiles);
+        final double tookSeconds = tookMillis / 1000;
         logger.info(
                 MERKLE_DB.getMarker(),
+                // Note that speed of read and write doesn't exactly map to the real read/write speed
+                // because we consult in-memory index and skip some entries. Effective read/write speed
+                // in this context means how much data files were covered by the compaction.
                 """
                         [{}] Merged {} file(s) / {} into {} file(s) / {} in {} second(s)
-                                read at {} written at {}
+                                effectively read at {} effectively written at {}
                                 filesToMerge = {}
                                 allFilesAfter = {}""",
                 storeName,
@@ -327,7 +331,7 @@ public final class DataFileCommon {
                 formatSizeBytes(filesToMergeSize),
                 mergedFilesCount,
                 formatSizeBytes(mergedFilesSize),
-                tookSeconds,
+                tookMillis,
                 formatSizeBytes((long) (filesToMergeSize / tookSeconds)) + "/sec",
                 formatSizeBytes((long) (mergedFilesSize / tookSeconds)) + "/sec",
                 Arrays.toString(filesToMerge.stream()

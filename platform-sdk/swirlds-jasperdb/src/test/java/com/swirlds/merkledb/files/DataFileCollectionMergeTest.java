@@ -68,7 +68,7 @@ class DataFileCollectionMergeTest {
         final var coll = new DataFileCollection<>(tempFileDir.resolve("mergeTest"), "mergeTest", serializer, null);
         final var compactor = new DataFileCompactor(coll) {
             @Override
-            int getMinNumberOfFilesToMerge() {
+            int getMinNumberOfFilesToCompact() {
                 return 2;
             }
         };
@@ -161,7 +161,7 @@ class DataFileCollectionMergeTest {
                 new DataFileCollection<>(testDir, "testDoubleMerge", new ExampleFixedSizeDataSerializer(), null);
         final DataFileCompactor compactor = new DataFileCompactor(store) {
             @Override
-            int getMinNumberOfFilesToMerge() {
+            int getMinNumberOfFilesToCompact() {
                 return 2;
             }
         };

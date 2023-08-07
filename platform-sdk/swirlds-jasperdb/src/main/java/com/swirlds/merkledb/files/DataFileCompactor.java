@@ -112,10 +112,10 @@ public class DataFileCompactor {
     private final AtomicInteger compactionLevelInProgress = new AtomicInteger(0);
 
     /** When was the last medium-sized merge, only touched from single merge thread. */
-    private Instant lastMediumMerge;
+    private Instant lastMediumCompact;
 
     /** When was the last full merge, only touched from single merge thread. */
-    private Instant lastFullMerge;
+    private Instant lastFullCompact;
 
     /** A nanosecond-precise Clock */
     private final NanoClock clock = new NanoClock();
@@ -125,10 +125,10 @@ public class DataFileCompactor {
         // Compute initial merge periods to a randomized value of now +/- 50% of merge period. So
         // each node will do
         // medium and full merges at random times.
-        lastMediumMerge = Instant.now()
+        lastMediumCompact = Instant.now()
                 .minus(config.mediumMergePeriod() / 2, config.mergePeriodUnit())
                 .plus((long) (config.mediumMergePeriod() * Math.random()), config.mergePeriodUnit());
-        lastFullMerge = Instant.now()
+        lastFullCompact = Instant.now()
                 .minus(config.fullMergePeriod() / 2, config.mergePeriodUnit())
                 .plus((long) (config.fullMergePeriod() * Math.random()), config.mergePeriodUnit());
     }
@@ -147,7 +147,7 @@ public class DataFileCompactor {
     // visible for testing
     synchronized List<Path> compactFiles(final CASableLongIndex index, final List<DataFileReader<?>> filesToCompact)
             throws IOException, InterruptedException {
-        if (filesToCompact.size() < getMinNumberOfFilesToMerge()) {
+        if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
             logger.debug(
                     MERKLE_DB.getMarker(),
@@ -246,7 +246,7 @@ public class DataFileCompactor {
     }
 
     // visible for testing
-    int getMinNumberOfFilesToMerge() {
+    int getMinNumberOfFilesToCompact() {
         return config.minNumberOfFilesInMerge();
     }
 
@@ -369,13 +369,13 @@ public class DataFileCompactor {
         final String storeName = dataFileCollection.getStoreName();
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
 
-        if (isTimeForFullMerge(timestamp)) {
-            lastFullMerge = timestamp;
+        if (isTimeForFullCompaction(timestamp)) {
+            lastFullCompact = timestamp;
             /* Filter nothing during a full merge */
             filesToCompactFilter = dataFileReaders -> dataFileReaders;
             compactionLevel = CompactionType.FULL;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", storeName);
-        } else if (isTimeForMediumMerge(timestamp)
+        } else if (isTimeForMediumCompaction(timestamp)
                 ||
                 // This is a temporary solution for the intense load (like hammer tests) where we create too many files.
                 // It will be removed once the solution comes with #7501 is implemented. The plan is to have a
@@ -389,7 +389,7 @@ public class DataFileCompactor {
                                 .apply((List<DataFileReader<?>>) allCompactableFiles)
                                 .size()
                         > MAX_FIRST_LEVEL_FILES_ALLOWED) {
-            lastMediumMerge = timestamp;
+            lastMediumCompact = timestamp;
             filesToCompactFilter = readersOfLevel(1);
             compactionLevel = CompactionType.MEDIUM;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", storeName);
@@ -406,13 +406,13 @@ public class DataFileCompactor {
             return;
         }
         final int filesCount = filesToCompact.size();
-        if (filesCount < getMinNumberOfFilesToMerge()) {
+        if (filesCount < getMinNumberOfFilesToCompact()) {
             logger.debug(
                     MERKLE_DB.getMarker(),
                     "[{}] No need to merge as {} is less than the minimum {} files to merge.",
                     storeName,
                     filesCount,
-                    getMinNumberOfFilesToMerge());
+                    getMinNumberOfFilesToCompact());
             return;
         }
 
@@ -450,16 +450,16 @@ public class DataFileCompactor {
                 tookMillis);
     }
 
-    private boolean isTimeForFullMerge(final Instant startMerge) {
+    private boolean isTimeForFullCompaction(final Instant startMerge) {
         return startMerge
                 .minus(config.fullMergePeriod(), config.mergePeriodUnit())
-                .isAfter(lastFullMerge);
+                .isAfter(lastFullCompact);
     }
 
-    boolean isTimeForMediumMerge(final Instant startMerge) {
+    boolean isTimeForMediumCompaction(final Instant startMerge) {
         return startMerge
                 .minus(config.mediumMergePeriod(), config.mergePeriodUnit())
-                .isAfter(lastMediumMerge);
+                .isAfter(lastMediumCompact);
     }
 
     /**
