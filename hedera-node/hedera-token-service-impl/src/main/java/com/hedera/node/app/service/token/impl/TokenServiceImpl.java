@@ -130,6 +130,16 @@ public class TokenServiceImpl implements TokenService {
                                     .tinybarBalance(accountTinyBars)
                                     //                                    .declineReward(true)
                                     .build());
+
+                    // Set genesis network rewards state
+                    final var networkRewardsState = ctx.newStates().getSingleton(STAKING_NETWORK_REWARDS_KEY);
+                    final var networkRewards = NetworkStakingRewards.newBuilder()
+                            .pendingRewards(0)
+                            .totalStakedRewardStart(0)
+                            .totalStakedStart(0)
+                            .stakingRewardsActivated(true)
+                            .build();
+                    networkRewardsState.put(networkRewards);
                 }
             }
         };
