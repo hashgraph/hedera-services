@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.test.crypto;
+package com.swirlds.common.crypto;
 
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.crypto.SignatureType;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeAll;
