@@ -30,7 +30,6 @@ javaModuleDependencies {
     moduleNameToGA.put("com.swirlds.common", "com.swirlds:swirlds-common")
     moduleNameToGA.put("com.swirlds.common.test.fixtures", "com.swirlds:swirlds-common|com.swirlds:swirlds-common-test-fixtures")
     moduleNameToGA.put("com.swirlds.common.testing", "com.swirlds:swirlds-common-testing")
-    moduleNameToGA.put("com.swirlds.config", "com.swirlds:swirlds-config-api")
     moduleNameToGA.put("com.swirlds.config.api", "com.swirlds:swirlds-config-api")
     moduleNameToGA.put("com.swirlds.config.impl", "com.swirlds:swirlds-config-impl")
     moduleNameToGA.put("com.swirlds.merkle.test", "com.swirlds:swirlds-merkle-test")

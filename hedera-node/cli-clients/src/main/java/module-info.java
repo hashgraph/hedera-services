@@ -5,13 +5,13 @@ module com.hedera.node.services.cli {
     requires transitive com.hedera.node.app.service.mono;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
-    requires transitive com.swirlds.platform;
+    requires transitive com.swirlds.platform.core;
     requires transitive info.picocli;
     requires com.hedera.node.app.hapi.utils;
     requires com.hedera.node.hapi;
     requires com.google.common;
     requires com.google.protobuf;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires com.swirlds.virtualmap;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;

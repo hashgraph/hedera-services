@@ -190,7 +190,7 @@ extraJavaModuleInfo {
     knownModule("com.swirlds:swirlds-fcqueue", "com.swirlds.fcqueue")
     knownModule("com.swirlds:swirlds-jasperdb", "com.swirlds.jasperdb")
     knownModule("com.swirlds:swirlds-merkle", "com.swirlds.merkle")
-    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform") // TODO -> com.swirlds.platform.core
+    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform.core")
     knownModule("com.swirlds:swirlds-virtualmap", "com.swirlds.virtualmap")
     knownModule("io.github.classgraph:classgraph", "io.github.classgraph")
     knownModule("io.helidon.grpc:io.grpc", "io.grpc")

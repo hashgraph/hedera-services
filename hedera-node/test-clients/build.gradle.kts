@@ -71,7 +71,7 @@ dependencies {
         implementation(gav("com.fasterxml.jackson.databind"))
         implementation(gav("com.github.docker.java.api"))
         implementation(gav("com.github.spotbugs.annotations"))
-        implementation(gav("com.swirlds.config"))
+        implementation(gav("com.swirlds.config.api"))
         implementation(gav("com.swirlds.fchashmap"))
         implementation(gav("com.swirlds.jasperdb"))
         implementation(gav("com.swirlds.platform"))

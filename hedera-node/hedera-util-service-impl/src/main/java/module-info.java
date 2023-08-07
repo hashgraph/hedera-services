@@ -9,7 +9,7 @@ module com.hedera.node.app.service.util.impl {
     requires com.hedera.node.config;
     requires com.hedera.node.hapi;
     requires com.swirlds.common;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 

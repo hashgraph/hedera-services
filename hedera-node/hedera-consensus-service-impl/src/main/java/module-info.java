@@ -10,7 +10,7 @@ module com.hedera.node.app.service.consensus.impl {
     requires transitive dagger;
     requires transitive javax.inject;
     requires com.hedera.node.config;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.consensus.ConsensusService with

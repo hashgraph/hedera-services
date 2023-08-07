@@ -14,7 +14,7 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive com.swirlds.common;
-    requires transitive com.swirlds.config;
+    requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.virtualmap;
@@ -32,7 +32,7 @@ module com.hedera.node.app {
     requires com.google.protobuf;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
-    requires com.swirlds.platform;
+    requires com.swirlds.platform.core;
     requires grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
