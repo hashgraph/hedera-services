@@ -18,7 +18,7 @@ package com.swirlds.platform.test;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
-import static com.swirlds.platform.test.event.RandomEventUtils.randomEvent;
+import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.randomEvent;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;

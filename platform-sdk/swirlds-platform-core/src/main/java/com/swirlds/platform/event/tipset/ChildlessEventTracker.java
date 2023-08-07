@@ -16,11 +16,14 @@
 
 package com.swirlds.platform.event.tipset;
 
+import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -36,19 +39,35 @@ import java.util.Set;
 public class ChildlessEventTracker {
 
     private final Set<EventDescriptor> childlessEvents = new HashSet<>();
+    private final Map<NodeId, EventDescriptor> eventsByCreator = new HashMap<>();
 
     /**
-     * Add a new event.
+     * Add a new event. Parents are removed from the set of childless events. Event is ignored if there is another event
+     * from the same creator with a higher generation. Causes any event by the same creator, if present, to be removed
+     * if it has a lower generation. This is true even if the event being added is not a direct child (possible if there
+     * has been branching).
      *
      * @param eventDescriptor the event to add
      * @param parents         the parents of the event being added
      */
     public void addEvent(@NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
         Objects.requireNonNull(eventDescriptor);
-        childlessEvents.add(eventDescriptor);
+
+        final EventDescriptor existingEvent = eventsByCreator.get(eventDescriptor.getCreator());
+        if (existingEvent != null) {
+            if (existingEvent.getGeneration() >= eventDescriptor.getGeneration()) {
+                // Only add a new event if it has the highest generation of all events observed so far.
+                return;
+            } else {
+                // Remove the existing event if it has a lower generation than the new event.
+                removeEvent(existingEvent);
+            }
+        }
+
+        insertEvent(eventDescriptor);
 
         for (final EventDescriptor parent : parents) {
-            childlessEvents.remove(parent);
+            removeEvent(parent);
         }
     }
 
@@ -69,7 +88,11 @@ public class ChildlessEventTracker {
      * @param minimumGenerationNonAncient the minimum generation of non-ancient events
      */
     public void pruneOldEvents(final long minimumGenerationNonAncient) {
-        childlessEvents.removeIf(event -> event.getGeneration() < minimumGenerationNonAncient);
+        for (final EventDescriptor event : getChildlessEvents()) {
+            if (event.getGeneration() < minimumGenerationNonAncient) {
+                removeEvent(event);
+            }
+        }
     }
 
     /**
@@ -80,6 +103,24 @@ public class ChildlessEventTracker {
     @NonNull
     public List<EventDescriptor> getChildlessEvents() {
         return new ArrayList<>(childlessEvents);
+    }
+
+    /**
+     * Insert an event into this data structure.
+     */
+    private void insertEvent(@NonNull final EventDescriptor eventDescriptor) {
+        childlessEvents.add(eventDescriptor);
+        eventsByCreator.put(eventDescriptor.getCreator(), eventDescriptor);
+    }
+
+    /**
+     * Remove an event from this data structure.
+     */
+    private void removeEvent(@NonNull final EventDescriptor eventDescriptor) {
+        final boolean removed = childlessEvents.remove(eventDescriptor);
+        if (removed) {
+            eventsByCreator.remove(eventDescriptor.getCreator());
+        }
     }
 
     @NonNull
