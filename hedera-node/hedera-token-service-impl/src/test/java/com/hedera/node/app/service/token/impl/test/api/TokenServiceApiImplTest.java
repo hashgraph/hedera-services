@@ -54,6 +54,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenServiceApiImplTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Bytes EVM_ADDRESS = Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
+    private static final Bytes SOME_STORE_KEY = Bytes.fromHex("0123456789");
 
     public static final ContractID CONTRACT_ID_BY_NUM =
             ContractID.newBuilder().contractNum(666).build();
@@ -97,6 +98,46 @@ class TokenServiceApiImplTest {
         subject.assertValidStakingElection(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
 
         verify(stakingValidator).validateStakedId(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+    }
+
+    @Test
+    void canUpdateStorageMetadata() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .contractKvPairsNumber(3)
+                .smartContract(true)
+                .build());
+
+        subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, 7);
+
+        final var postIncrementAccount = requireNonNull(accountState.get(CONTRACT_ACCOUNT_ID));
+        assertEquals(SOME_STORE_KEY, postIncrementAccount.firstContractStorageKey());
+        assertEquals(10, postIncrementAccount.contractKvPairsNumber());
+    }
+
+    @Test
+    void refusesToSetNegativeKvPairCount() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .contractKvPairsNumber(3)
+                .smartContract(true)
+                .build());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -4));
+    }
+
+    @Test
+    void refusesToUpdateKvCountsForNonContract() {
+        accountStore.put(Account.newBuilder()
+                .accountId(CONTRACT_ACCOUNT_ID)
+                .contractKvPairsNumber(3)
+                .build());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subject.updateStorageMetadata(CONTRACT_ACCOUNT_ID, SOME_STORE_KEY, -3));
     }
 
     @Test

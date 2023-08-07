@@ -71,6 +71,4 @@ public interface ScaffoldingComponent {
     WorkingStateAccessor workingStateAccessor();
 
     Function<TransactionBody, HandleContext> contextFactory();
-
-    SavepointStackImpl stack();
 }

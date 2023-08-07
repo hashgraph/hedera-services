@@ -189,8 +189,12 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void updateStorageMetadataNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.updateStorageMetadata(1L, Bytes.EMPTY, 2));
+    void updateStorageMetadataUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), Bytes.EMPTY, 2);
+
+        verify(tokenServiceApi).updateStorageMetadata(NON_SYSTEM_ACCOUNT_ID, Bytes.EMPTY, 2);
     }
 
     @Test
