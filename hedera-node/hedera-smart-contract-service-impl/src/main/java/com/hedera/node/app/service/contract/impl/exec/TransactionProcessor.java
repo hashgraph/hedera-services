@@ -28,7 +28,6 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
-import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.processors.CustomMessageCallProcessor;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameBuilder;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
@@ -37,13 +36,11 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 
 /**
@@ -74,8 +71,8 @@ public class TransactionProcessor {
     /**
      * Records the two or three parties involved in a transaction.
      *
-     * @param sender the externally-operated account that signed the transaction (AKA the "origin")
-     * @param relayer if non-null, the account relayed an Ethereum transaction on behalf of the sender
+     * @param sender          the externally-operated account that signed the transaction (AKA the "origin")
+     * @param relayer         if non-null, the account relayed an Ethereum transaction on behalf of the sender
      * @param receiverAddress the address of the account receiving the top-level call
      */
     private record InvolvedParties(
@@ -100,23 +97,18 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        final InvolvedParties parties;
-        final GasCharges gasCharges;
-        final MessageFrame initialFrame;
-        try {
-            parties = computeInvolvedParties(transaction, updater, config);
-            gasCharges = gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
-            initialFrame = frameBuilder.buildInitialFrameWith(
-                    transaction,
-                    updater,
-                    context,
-                    config,
-                    parties.sender().getAddress(),
-                    parties.receiverAddress(),
-                    gasCharges.intrinsicGas());
-        } catch (HandleException failure) {
-            return HederaEvmTransactionResult.abortFor(failure.getStatus());
-        }
+        // Setup for the EVM transaction; thrown HandleException's will propagate back to the workflow
+        final var parties = computeInvolvedParties(transaction, updater, config);
+        final var gasCharges =
+                gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, updater, transaction);
+        final var initialFrame = frameBuilder.buildInitialFrameWith(
+                transaction,
+                updater,
+                context,
+                config,
+                parties.sender().getAddress(),
+                parties.receiverAddress(),
+                gasCharges.intrinsicGas());
 
         // Compute the result of running the frame to completion
         final HederaEvmTransactionResult result;

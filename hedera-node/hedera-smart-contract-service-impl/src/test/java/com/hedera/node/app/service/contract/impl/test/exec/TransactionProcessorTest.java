@@ -37,6 +37,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.USER_OFFERED_GAS_PRICE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALUE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownContextWith;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCall;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCreate;
@@ -436,7 +437,6 @@ class TransactionProcessorTest {
         assertFalse(result.isSuccess());
         assertEquals(GAS_LIMIT, result.gasUsed());
         assertEquals(NETWORK_GAS_PRICE, result.gasPrice());
-        assertNull(result.abortReason());
         assertNull(result.haltReason());
         assertEquals(Bytes.wrap(reason.name()), result.revertReason());
     }
@@ -447,9 +447,15 @@ class TransactionProcessorTest {
 
     private void assertAbortsWith(
             @NonNull final HederaEvmTransaction transaction, @NonNull final ResponseCodeEnum reason) {
-        final var result = subject.processTransaction(
-                transaction, worldUpdater, () -> feesOnlyUpdater, wellKnownContextWith(blocks), tracer, config);
-        assertEquals(reason, result.abortReason());
+        assertFailsWith(
+                reason,
+                () -> subject.processTransaction(
+                        transaction,
+                        worldUpdater,
+                        () -> feesOnlyUpdater,
+                        wellKnownContextWith(blocks),
+                        tracer,
+                        config));
     }
 
     private void givenFeeOnlyParties() {

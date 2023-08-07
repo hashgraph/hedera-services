@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -36,6 +37,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
@@ -43,12 +45,12 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.INITCODE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.INITCODE_FILE_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_CALL;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.MOCK_ETH;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_MEMO;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -65,6 +67,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -83,6 +86,7 @@ import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,6 +100,9 @@ class HevmTransactionFactoryTest {
 
     @Mock
     private TokenServiceApi tokenServiceApi;
+
+    @Mock
+    private GasCalculator gasCalculator;
 
     @Mock
     private ReadableFileStore fileStore;
@@ -116,6 +123,7 @@ class HevmTransactionFactoryTest {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 DEFAULT_LEDGER_CONFIG,
+                gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
                 accountStore,
@@ -123,6 +131,64 @@ class HevmTransactionFactoryTest {
                 fileStore,
                 attributeValidator,
                 tokenServiceApi);
+    }
+
+    @Test
+    void fromHapiCallFailsWithGasBelowFixedLowerBound() {
+        assertCallFailsWith(INSUFFICIENT_GAS, b -> b.gas(20_999L));
+    }
+
+    @Test
+    void fromHapiCallFailsWithGasBelowGasCalculatorIntrinsicCost() {
+        given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.EMPTY, false))
+                .willReturn(22_000L);
+        assertCallFailsWith(INSUFFICIENT_GAS, b -> b.gas(21_999L));
+    }
+
+    @Test
+    void fromHapiCallFailsNegativeValue() {
+        assertCallFailsWith(CONTRACT_NEGATIVE_VALUE, b -> b.gas(30_000L).amount(-1L));
+    }
+
+    @Test
+    void fromHapiCallFailsOverMaxGas() {
+        assertCallFailsWith(MAX_GAS_LIMIT_EXCEEDED, b -> b.gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec() + 1));
+    }
+
+    @Test
+    void fromHapiCallUsesEmptyCallDataWhenNotSet() {
+        final var transaction = getManufacturedCall(
+                b -> b.amount(123L).contractID(CALLED_CONTRACT_ID).gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec()));
+        assertEquals(SENDER_ID, transaction.senderId());
+        assertEquals(CALLED_CONTRACT_ID, transaction.contractId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(Bytes.EMPTY, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(123L, transaction.value());
+        assertEquals(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec(), transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNull(transaction.hapiCreation());
+    }
+
+    @Test
+    void fromHapiCallUsesCallParamsWhenSet() {
+        final var transaction = getManufacturedCall(b -> b.amount(123L)
+                .functionParameters(CALL_DATA)
+                .contractID(CALLED_CONTRACT_ID)
+                .gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec()));
+        assertEquals(SENDER_ID, transaction.senderId());
+        assertEquals(CALLED_CONTRACT_ID, transaction.contractId());
+        assertNull(transaction.relayerId());
+        assertFalse(transaction.hasExpectedNonce());
+        assertEquals(CALL_DATA, transaction.payload());
+        assertNull(transaction.chainId());
+        assertEquals(123L, transaction.value());
+        assertEquals(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec(), transaction.gasLimit());
+        assertFalse(transaction.hasOfferedGasPrice());
+        assertFalse(transaction.hasMaxGasAllowance());
+        assertNull(transaction.hapiCreation());
     }
 
     @Test
@@ -268,7 +334,7 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
-    void fromHapiCreationTranslatesHexParsingExcepion() {
+    void fromHapiCreationTranslatesHexParsingException() {
         given(fileStore.getFileLeaf(INITCODE_FILE_ID))
                 .willReturn(Optional.of(File.newBuilder().contents(CALL_DATA).build()));
         assertCreateFailsWith(ERROR_DECODING_BYTESTRING, b -> b.memo(SOME_MEMO)
@@ -338,11 +404,6 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
-    void fromHapiCallNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.fromHapiTransaction(MOCK_CALL));
-    }
-
-    @Test
     void fromHapiEthNotImplemented() {
         assertThrows(AssertionError.class, () -> subject.fromHapiTransaction(MOCK_ETH));
     }
@@ -358,6 +419,16 @@ class HevmTransactionFactoryTest {
                         .build()));
     }
 
+    private void assertCallFailsWith(
+            @NonNull final ResponseCodeEnum status, @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
+        assertFailsWith(
+                status,
+                () -> subject.fromHapiTransaction(TransactionBody.newBuilder()
+                        .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                        .contractCall(callWith(spec))
+                        .build()));
+    }
+
     private HederaEvmTransaction getManufacturedCreation(
             @NonNull final Consumer<ContractCreateTransactionBody.Builder> spec) {
         return subject.fromHapiTransaction(TransactionBody.newBuilder()
@@ -366,9 +437,12 @@ class HevmTransactionFactoryTest {
                 .build());
     }
 
-    public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
-        final var ex = assertThrows(HandleException.class, something::run);
-        assertEquals(status, ex.getStatus());
+    private HederaEvmTransaction getManufacturedCall(
+            @NonNull final Consumer<ContractCallTransactionBody.Builder> spec) {
+        return subject.fromHapiTransaction(TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder().accountID(SENDER_ID))
+                .contractCall(callWith(spec))
+                .build());
     }
 
     private ContractCreateTransactionBody createWith(final Consumer<ContractCreateTransactionBody.Builder> spec) {
@@ -377,10 +451,17 @@ class HevmTransactionFactoryTest {
         return builder.build();
     }
 
+    private ContractCallTransactionBody callWith(final Consumer<ContractCallTransactionBody.Builder> spec) {
+        final var builder = ContractCallTransactionBody.newBuilder();
+        spec.accept(builder);
+        return builder.build();
+    }
+
     private void givenAutoAssociatingSubject() {
         subject = new HevmTransactionFactory(
                 networkInfo,
                 AUTO_ASSOCIATING_LEDGER_CONFIG,
+                gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 AUTO_ASSOCIATING_CONTRACTS_CONFIG,
                 accountStore,

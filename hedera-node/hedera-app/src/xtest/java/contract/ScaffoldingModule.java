@@ -175,13 +175,6 @@ public interface ScaffoldingModule {
 
     @Provides
     @Singleton
-    static SavepointStackImpl provideSavepointStackImpl(
-            @NonNull final Configuration configuration, @NonNull final HederaState state) {
-        return new SavepointStackImpl(state, configuration);
-    }
-
-    @Provides
-    @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
             @NonNull final NetworkInfo networkInfo,
@@ -191,7 +184,7 @@ public interface ScaffoldingModule {
             @NonNull final ServiceScopeLookup scopeLookup,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final SavepointStackImpl stack) {
+            @NonNull final HederaState state) {
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(Instant.now());
         return body -> new HandleContextImpl(
                 body,
@@ -200,7 +193,7 @@ public interface ScaffoldingModule {
                 networkInfo,
                 USER,
                 parentRecordBuilder,
-                stack,
+                new SavepointStackImpl(state, configuration),
                 new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
                 new RecordListBuilder(parentRecordBuilder),
                 new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),

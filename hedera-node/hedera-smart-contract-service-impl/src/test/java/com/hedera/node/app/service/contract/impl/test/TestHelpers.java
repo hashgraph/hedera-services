@@ -195,14 +195,13 @@ public class TestHelpers {
             List.of(BESU_LOG),
             null);
 
-    public static final HederaEvmTransactionResult FAILURE_RESULT = new HederaEvmTransactionResult(
+    public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
             GAS_LIMIT / 2,
             NETWORK_GAS_PRICE,
             null,
             null,
             Bytes.EMPTY,
             "I prefer not to",
-            null,
             null,
             Collections.emptyList(),
             null);

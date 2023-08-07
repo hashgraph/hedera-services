@@ -27,6 +27,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -178,5 +179,33 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     public List<ContractNonceInfo> updatedContractNonces() {
         final var store = new WritableAccountStore(writableStates);
         return store.updatedContractNonces();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateStorageMetadata(
+            @NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+        requireNonNull(firstKey);
+        requireNonNull(accountId);
+        final var store = new WritableAccountStore(writableStates);
+        final var target = requireNonNull(store.get(accountId));
+        if (!target.smartContract()) {
+            throw new IllegalArgumentException("Cannot update storage metadata for non-contract " + accountId);
+        }
+        final var newNumKvPairs = target.contractKvPairsNumber() + netChangeInSlotsUsed;
+        if (newNumKvPairs < 0) {
+            throw new IllegalArgumentException("Cannot change # of storage slots (currently "
+                    + target.contractKvPairsNumber()
+                    + ") by "
+                    + netChangeInSlotsUsed
+                    + " for contract "
+                    + accountId);
+        }
+        store.put(target.copyBuilder()
+                .firstContractStorageKey(firstKey)
+                .contractKvPairsNumber(newNumKvPairs)
+                .build());
     }
 }
