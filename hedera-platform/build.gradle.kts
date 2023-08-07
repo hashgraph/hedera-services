@@ -26,9 +26,11 @@ val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
 val jacksonVersion = "2.13.5"
+val lazysodiumVersion = "5.1.1"
 val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
 val nettyVersion = "4.1.87.Final"
+val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
 val swirldsVersion = "0.42.0-adhoc.x369ea419"
 val systemStubsVersion = "2.0.2"
@@ -51,7 +53,6 @@ dependencies.constraints {
         api(gav("com.google.jimfs", "1.2"))
         api(gav("com.google.protobuf", protobufVersion))
         api(gav("com.google.protobuf.util", protobufVersion))
-        api(gav("com.hedera.hashgraph.protobuf.java.api", "0.40.0-blocks-state-SNAPSHOT")) // TODO removed through other PR
         api(gav("com.hedera.pbj.runtime", "0.7.4"))
         api(gav("com.sun.jna", "5.12.1"))
         api(gav("com.swirlds.base", swirldsVersion))
@@ -88,6 +89,7 @@ dependencies.constraints {
         api(gav("org.apache.commons.collections4", "4.4"))
         api(gav("org.apache.commons.io", "2.11.0"))
         api(gav("org.apache.commons.lang3", "3.12.0"))
+        api(gav("org.apache.commons.math3", "3.2"))
         api(gav("org.apache.logging.log4j", log4jVersion))
         api(gav("org.apache.logging.log4j.core", log4jVersion))
         api(gav("org.apache.logging.log4j.jul", log4jVersion))
@@ -117,5 +119,9 @@ dependencies.constraints {
         api(gav("tuweni.units", tuweniVersion))
         api(gav("uk.org.webcompere.systemstubs.core", systemStubsVersion))
         api(gav("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion))
+
+        api(gav("io.prometheus.simpleclient", prometheusVersion))
+        api(gav("io.prometheus.simpleclient.httpserver", prometheusVersion))
+        api(gav("lazysodium.java", lazysodiumVersion))
     }
 }

@@ -17,8 +17,8 @@
 import com.adarshr.gradle.testlogger.theme.ThemeType
 
 plugins {
+    id("java-library")
     id("com.hedera.hashgraph.java")
-    id("com.hedera.hashgraph.jpms-module-dependencies")
     id("com.adarshr.test-logger")
     id("com.gorylenko.gradle-git-properties")
 }

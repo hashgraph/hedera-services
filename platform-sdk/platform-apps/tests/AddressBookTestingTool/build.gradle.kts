@@ -15,13 +15,5 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.sdk.conventions")
-  id("com.swirlds.platform.application")
-}
-
-dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
-  implementation(libs.bundles.logging.impl)
-  compileOnly(libs.spotbugs.annotations)
+    id("com.swirlds.platform.application")
 }

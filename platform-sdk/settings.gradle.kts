@@ -54,30 +54,6 @@ include(":swirlds-platform-core")
 
 include(":swirlds-cli")
 
-include(":platform-apps")
-
-project(":platform-apps").name = "swirlds-platform-apps"
-
-include(":swirlds-platform-apps:demos:CryptocurrencyDemo")
-
-include(":swirlds-platform-apps:demos:HashgraphDemo")
-
-include(":swirlds-platform-apps:demos:HelloSwirldDemo")
-
-include(":swirlds-platform-apps:demos:StatsDemo")
-
-include(":swirlds-platform-apps:tests:AddressBookTestingTool")
-
-include(":swirlds-platform-apps:tests:ISSTestingTool")
-
-include(":swirlds-platform-apps:tests:MigrationTestingTool")
-
-include(":swirlds-platform-apps:tests:PlatformTestingTool")
-
-include(":swirlds-platform-apps:tests:ConsistencyTestingTool")
-
-include(":swirlds-platform-apps:tests:StatsSigningTestingTool")
-
 include(":swirlds-benchmarks")
 
 include(":swirlds-test-framework", "swirlds-unit-tests/common/swirlds-test-framework")

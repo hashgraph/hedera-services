@@ -15,15 +15,13 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.sdk.conventions")
-  id("com.swirlds.platform.application")
+    id("com.swirlds.platform.application")
 }
 
 dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
-  implementation(libs.bundles.logging.impl)
-  compileOnly(libs.spotbugs.annotations)
-
-  testImplementation(testLibs.bundles.mocking)
+    javaModuleDependencies {
+        testImplementation(gav("com.swirlds.platform.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+    }
 }

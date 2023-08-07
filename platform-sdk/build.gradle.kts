@@ -18,6 +18,7 @@ plugins {
     id("com.swirlds.platform.aggregate-reports")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
+    id("com.hedera.hashgraph.dependency-analysis")
 }
 
 repositories { mavenCentral() }

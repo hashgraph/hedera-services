@@ -16,52 +16,47 @@
  */
 
 plugins {
-    `java-library`
+    id("application")
+    id("com.hedera.hashgraph.java")
+    id("com.hedera.hashgraph.dependency-analysis")
 }
+
+group = "com.swirlds"
 
 // Copy dependencies into `sdk/data/lib`
 val copyLib = tasks.register<Copy>("copyLib") {
-    from(project.configurations.getByName("runtimeClasspath"))
-    into(File(rootProject.projectDir, "sdk/data/lib"))
-    shouldRunAfter(tasks.assemble)
+    from(project.configurations.runtimeClasspath)
+    into(layout.projectDirectory.dir("../../../sdk/data/lib"))
 }
 
 // Copy built jar into `data/apps` and rename
 val copyApp = tasks.register<Copy>("copyApp") {
     from(tasks.jar)
-    into(File(rootProject.projectDir, "sdk/data/apps"))
+    into(File(rootProject.projectDir, "../../../sdk/data/apps"))
     rename { "${project.name}.jar" }
-    shouldRunAfter(tasks.assemble)
 }
 
 tasks.assemble {
-    dependsOn(copyApp)
     dependsOn(copyLib)
+    dependsOn(copyApp)
 }
 
-val cleanRun = tasks.register("cleanRun") {
-    doLast {
-        val sdkDir = File(rootProject.projectDir, "sdk")
-        rootProject.delete(File(sdkDir, "settingsUsed.txt"))
-        rootProject.delete(File(sdkDir, "swirlds.jar"))
-        sdkDir.list { _, fileName -> fileName.endsWith(".csv") }
-            ?.forEach { file ->
-                rootProject.delete(File(sdkDir, file))
-            }
+val cleanRun = tasks.register<Delete>("cleanRun") {
+    val sdkDir = layout.projectDirectory.dir("../../../sdk")
+    delete(sdkDir.asFileTree.matching {
+        include("settingsUsed.txt")
+        include("swirlds.jar")
+        include("metricsDoc.tsv")
+        include("*.csv")
+        include("*.log")
+    })
 
-        sdkDir.list { _, fileName -> fileName.endsWith(".log") }
-            ?.forEach { file ->
-                rootProject.delete(File(sdkDir, file))
-            }
-        rootProject.delete(File(sdkDir, "metricsDoc.tsv"))
-
-        val dataDir = File(sdkDir, "data")
-        rootProject.delete(File(dataDir, "accountBalances"))
-        rootProject.delete(File(dataDir, "apps"))
-        rootProject.delete(File(dataDir, "lib"))
-        rootProject.delete(File(dataDir, "recordstreams"))
-        rootProject.delete(File(dataDir, "saved"))
-    }
+    val dataDir = sdkDir.dir("data")
+    delete(dataDir.dir("accountBalances"))
+    delete(dataDir.dir("apps"))
+    delete(dataDir.dir("lib"))
+    delete(dataDir.dir("recordstreams"))
+    delete(dataDir.dir("saved"))
 }
 
 tasks.clean {

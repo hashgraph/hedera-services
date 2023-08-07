@@ -22,14 +22,23 @@ plugins {
 javaModuleDependencies {
     warnForMissingVersions.set(false) // do not expect versions in catalog
 
-    moduleNameToGA.put("com.hedera.hashgraph.protobuf.java.api", "com.hedera.hashgraph:hedera-protobuf-java-api")
-    moduleNameToGA.put("com.hedera.pbj.runtime", "com.hedera.pbj:pbj-runtime")
+    // The following is not working because it looks for 'swirlds.test.framework' instead of 'swirlds-test-framework'
+    // moduleNamePrefixToGroup.put("com.", "com.swirlds")
+    // Hence, we (for now) need to list all 'swirlds' modules that are used outside the 'swirlds' build
     moduleNameToGA.put("com.swirlds.base", "com.swirlds:swirlds-base")
     moduleNameToGA.put("com.swirlds.cli", "com.swirlds:swirlds-cli")
-    moduleNameToGA.put("com.swirlds.common.test", "com.swirlds:swirlds-common-test")
+    moduleNameToGA.put("com.swirlds.common", "com.swirlds:swirlds-common")
+    moduleNameToGA.put("com.swirlds.common.test.fixtures", "com.swirlds:swirlds-common|com.swirlds:swirlds-common-test-fixtures")
+    moduleNameToGA.put("com.swirlds.common.testing", "com.swirlds:swirlds-common-testing")
     moduleNameToGA.put("com.swirlds.config", "com.swirlds:swirlds-config-api")
+    moduleNameToGA.put("com.swirlds.config.api", "com.swirlds:swirlds-config-api")
     moduleNameToGA.put("com.swirlds.config.impl", "com.swirlds:swirlds-config-impl")
+    moduleNameToGA.put("com.swirlds.merkle.test", "com.swirlds:swirlds-merkle-test")
+    moduleNameToGA.put("com.swirlds.platform.core", "com.swirlds:swirlds-platform-core")
     moduleNameToGA.put("com.swirlds.test.framework", "com.swirlds:swirlds-test-framework")
+
+    moduleNameToGA.put("com.hedera.hashgraph.protobuf.java.api", "com.hedera.hashgraph:hedera-protobuf-java-api")
+    moduleNameToGA.put("com.hedera.pbj.runtime", "com.hedera.pbj:pbj-runtime")
     moduleNameToGA.put("hamcrest.core", "org.hamcrest:hamcrest-core")
     moduleNameToGA.put("io.grpc", "io.helidon.grpc:io.grpc")
     moduleNameToGA.put("io.helidon.webserver.http2", "io.helidon.webserver:helidon-webserver-http2")

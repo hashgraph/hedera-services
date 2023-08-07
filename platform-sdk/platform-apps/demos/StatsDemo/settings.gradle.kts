@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-  id("com.swirlds.platform.application")
-}
+pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../../../../build-logic") }
+
+includeBuild("../../../../hedera-platform")
+includeBuild("../../../../platform-sdk")

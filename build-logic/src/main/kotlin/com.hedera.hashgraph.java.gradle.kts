@@ -18,9 +18,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 plugins {
-    `java-library`
-    jacoco
+    id("java")
+    id("jacoco")
     id("com.hedera.hashgraph.jpms-modules")
+    id("com.hedera.hashgraph.jpms-module-dependencies")
     id("com.hedera.hashgraph.repositories")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")

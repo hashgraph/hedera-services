@@ -15,8 +15,8 @@
  */
 
 plugins {
+    id("java-library")
     id("com.hedera.hashgraph.java")
-    id("com.hedera.hashgraph.jpms-module-dependencies")
 }
 
 group = "com.hedera.hashgraph"

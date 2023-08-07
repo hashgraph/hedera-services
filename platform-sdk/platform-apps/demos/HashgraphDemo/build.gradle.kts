@@ -15,11 +15,5 @@
  */
 
 plugins {
-  id("com.hedera.hashgraph.sdk.conventions")
-  id("com.swirlds.platform.application")
-}
-
-dependencies {
-  // Individual Dependencies
-  implementation(project(":swirlds-platform-core"))
+    id("com.swirlds.platform.application")
 }

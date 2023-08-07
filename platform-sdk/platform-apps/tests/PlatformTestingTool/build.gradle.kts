@@ -14,40 +14,36 @@
  * limitations under the License.
  */
 
+import com.google.protobuf.gradle.ProtobufExtract
+
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
     id("com.swirlds.platform.application")
-    id("com.google.protobuf")
+    id("com.google.protobuf") version "0.9.4"
 }
 
 dependencies {
-    // Individual Dependencies
-    compileOnly(libs.spotbugs.annotations)
-    implementation(project(":swirlds-merkle"))
-    implementation(libs.protobuf)
-
-    // Bundle Dependencies
-    implementation(libs.bundles.logging.impl)
-
-    // Test Dependencies
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-test-framework"))
-    implementation(project(":swirlds-common-testing"))
-    implementation(project(":swirlds-merkle-test"))
-    implementation(testFixtures(project(":swirlds-common")))
-
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testFixtures(project(":swirlds-common")))
+    // testImplementation(testLibs.bundles.junit)
+    // testImplementation(testLibs.bundles.mocking)
+    // testImplementation(testFixtures(project(":swirlds-common")))
 }
 
 protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
 
-tasks.whenTaskAdded {
+
+// Make all dependency versions accessible to proto compile
+configurations {
+    compileProtoPath {
+        extendsFrom(configurations.internal.get())
+    }
+    testCompileProtoPath {
+        extendsFrom(configurations.internal.get())
+    }
+}
+
+tasks.withType<ProtobufExtract>().configureEach {
     if (name == "extractIncludeProto") {
         enabled = false
     }
 }
 
-tasks.withType<Javadoc> { enabled = false }
+tasks.javadoc { enabled = false }
