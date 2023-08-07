@@ -44,11 +44,14 @@ import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
+
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -58,6 +61,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmTransactionResultTest {
     @Mock
     private MessageFrame frame;
+    @Mock
+    private Deque<MessageFrame> stack;
 
     @Mock
     private ProxyWorldUpdater proxyWorldUpdater;
@@ -67,6 +72,12 @@ class HederaEvmTransactionResultTest {
 
     @Mock
     private StorageAccessTracker accessTracker;
+
+    @BeforeEach
+    void setUp() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
+    }
 
     @Test
     void finalStatusFromHaltNotImplemented() {

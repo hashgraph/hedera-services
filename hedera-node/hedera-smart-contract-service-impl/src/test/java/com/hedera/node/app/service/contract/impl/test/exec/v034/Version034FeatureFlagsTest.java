@@ -29,15 +29,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Deque;
+
 @ExtendWith(MockitoExtension.class)
 class Version034FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
 
+    @Mock
+    private Deque<MessageFrame> stack;
+
     private Version034FeatureFlags subject = new Version034FeatureFlags();
 
     @Test
     void implicitCreationEnabledIfLazyAndAutoCreationBothEnabled() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertTrue(subject.isImplicitCreationEnabled(frame));
@@ -45,6 +52,8 @@ class Version034FeatureFlagsTest {
 
     @Test
     void implicitCreationNotEnabledIfLazyCreationNotEnabled() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("lazyCreation.enabled", false)
                 .getOrCreateConfig();
@@ -54,6 +63,8 @@ class Version034FeatureFlagsTest {
 
     @Test
     void implicitCreationNotEnabledIfAutoCreationNotEnabled() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("autoCreation.enabled", false)
                 .getOrCreateConfig();

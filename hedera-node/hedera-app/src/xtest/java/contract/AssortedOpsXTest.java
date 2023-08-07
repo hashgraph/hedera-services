@@ -81,12 +81,12 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     protected void handleAndCommitScenarioTransactions() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         handleAndCommit(CONTRACT_SERVICE.handlers().ethereumTransactionHandler(), synthLazyCreateTxn());
-        // TODO - uncomment and fix remaining transactions
-        //        handleAndCommit(CONTRACT_SERVICE.handlers().contractCallHandler(),
-        //                synthDeterministicDeploy(),
-        //                synthVacateAddress(),
-        //                synthGoldbergesqueDeploy(),
-        //                synthTakeFive());
+        handleAndCommit(
+                CONTRACT_SERVICE.handlers().contractCallHandler(),
+                synthDeterministicDeploy(),
+                synthVacateAddress(),
+                synthGoldbergesqueDeploy(),
+                synthTakeFive());
     }
 
     private TransactionBody synthCreateTxn() {

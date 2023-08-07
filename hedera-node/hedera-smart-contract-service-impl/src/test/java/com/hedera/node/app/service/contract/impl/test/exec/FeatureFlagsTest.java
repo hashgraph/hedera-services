@@ -33,13 +33,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Deque;
+
 @ExtendWith(MockitoExtension.class)
 class FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
+    @Mock
+    private Deque<MessageFrame> stack;
 
     @Test
     void sidecarsEnabledBasedOnConfig() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var subject = mock(FeatureFlags.class);
         doCallRealMethod().when(subject).isSidecarEnabled(any(), any());
 

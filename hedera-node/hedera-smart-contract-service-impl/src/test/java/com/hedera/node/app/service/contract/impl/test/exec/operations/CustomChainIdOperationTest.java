@@ -36,6 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Deque;
+
 @ExtendWith(MockitoExtension.class)
 class CustomChainIdOperationTest {
     @Mock
@@ -44,6 +46,8 @@ class CustomChainIdOperationTest {
     @Mock
     private EVM evm;
 
+    @Mock
+    private Deque<MessageFrame> stack;
     @Mock
     private MessageFrame messageFrame;
 
@@ -60,6 +64,8 @@ class CustomChainIdOperationTest {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxAccountLimit", 2)
                 .getOrCreateConfig();
+        given(messageFrame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         given(messageFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         given(messageFrame.getRemainingGas()).willReturn(Long.MAX_VALUE);
         final var contractsConfig = config.getConfigData(ContractsConfig.class);

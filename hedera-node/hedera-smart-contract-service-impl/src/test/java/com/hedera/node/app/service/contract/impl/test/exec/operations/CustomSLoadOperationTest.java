@@ -43,6 +43,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Deque;
+
 @ExtendWith(MockitoExtension.class)
 class CustomSLoadOperationTest {
     private static final Bytes A_STORAGE_KEY = Bytes32.fromHexString("0x1234");
@@ -59,6 +61,8 @@ class CustomSLoadOperationTest {
 
     @Mock
     private MessageFrame frame;
+    @Mock
+    private Deque<MessageFrame> stack;
 
     @Mock
     private GasCalculator gasCalculator;
@@ -115,6 +119,8 @@ class CustomSLoadOperationTest {
         given(proxyWorldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
         given(delegate.execute(frame, evm)).willReturn(successResult);
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
 
         final var result = subject.execute(frame, evm);
 
@@ -133,6 +139,8 @@ class CustomSLoadOperationTest {
         given(featureFlags.isSidecarEnabled(frame, CONTRACT_STATE_CHANGE)).willReturn(true);
         given(frame.getStackItem(0)).willReturn(A_STORAGE_KEY).willReturn(A_STORAGE_VALUE);
         given(delegate.execute(frame, evm)).willReturn(successResult);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
 
         final var result = subject.execute(frame, evm);
 

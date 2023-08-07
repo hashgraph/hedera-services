@@ -47,6 +47,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Deque;
+
 @ExtendWith(MockitoExtension.class)
 class CustomSStoreOperationTest {
     private static final Bytes A_STORAGE_KEY = Bytes32.fromHexString("0x1234");
@@ -75,6 +77,8 @@ class CustomSStoreOperationTest {
 
     @Mock
     private Account account;
+    @Mock
+    private Deque<MessageFrame> stack;
 
     private SStoreOperation realSStoreOperation;
 
@@ -125,6 +129,8 @@ class CustomSStoreOperationTest {
                 .willReturn(UInt256.fromBytes(A_STORAGE_VALUE));
         given(delegate.execute(frame, evm)).willReturn(successResult);
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ADDRESS);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
 
         final var result = subject.execute(frame, evm);
 

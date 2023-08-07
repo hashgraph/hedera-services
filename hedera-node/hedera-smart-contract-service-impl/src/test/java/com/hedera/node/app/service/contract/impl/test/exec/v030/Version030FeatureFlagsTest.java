@@ -28,15 +28,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Deque;
+
 @ExtendWith(MockitoExtension.class)
 class Version030FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
+    @Mock
+    private Deque<MessageFrame> stack;
 
     private Version030FeatureFlags subject = new Version030FeatureFlags();
 
     @Test
     void everythingIsDisabled() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         assertFalse(subject.isImplicitCreationEnabled(frame));
@@ -44,6 +50,8 @@ class Version030FeatureFlagsTest {
 
     @Test
     void create2FeatureFlagWorks() {
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         final var config = HederaTestConfigBuilder.create()
                 .withValue("contracts.allowCreate2", false)
                 .getOrCreateConfig();
