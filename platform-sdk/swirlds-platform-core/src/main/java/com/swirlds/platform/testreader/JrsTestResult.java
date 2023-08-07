@@ -7,18 +7,18 @@ import java.time.Instant;
  * The result of a JRS test run.
  *
  * @param id            the test ID
- * @param passed        true if the test passed, false if the test failed
+ * @param status        true if the test passed, false if the test failed
  * @param timestamp     the timestamp of the test run
  * @param testDirectory the directory where the test was run
  */
 public record JrsTestResult(
         @NonNull JrsTestIdentifier id,
-        @NonNull boolean passed,
+        @NonNull TestStatus status,
         @NonNull Instant timestamp,
         @NonNull String testDirectory) implements Comparable<JrsTestResult> {
     @Override
     public int compareTo(@NonNull final JrsTestResult that) {
-        return this.timestamp.compareTo(that.timestamp);
+        return that.timestamp.compareTo(this.timestamp);
     }
 
 //    /**

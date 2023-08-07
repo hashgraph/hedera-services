@@ -18,17 +18,22 @@ package com.swirlds.platform.testreader;
 
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.platform.testreader.TestStatus.FAIL;
+import static com.swirlds.platform.testreader.TestStatus.PASS;
+import static com.swirlds.platform.testreader.TestStatus.UNKNOWN;
 
+import com.swirlds.common.formatting.UnitFormatter;
+import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.util.CommandResult;
-import com.swirlds.platform.util.ProgressIndicator;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -41,7 +46,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
 
 /**
  * Utilities for reading JRS test results and creating a report.
@@ -89,6 +93,24 @@ public final class JrsTestReader {
     }
 
     /**
+     * Test paths contain a timestamp in the format ".../20230630-053633-ignoredArbitraryString/...". Attempt to parse
+     * the timestamp from this string, and return it if found.
+     *
+     * @return the parsed timestamp, or null if no timestamp could be parsed.
+     */
+    @Nullable
+    public static Instant parseTimestampFromPath(@NonNull final String pathString) {
+        final String[] directories = pathString.split("/");
+        for (final String directory : directories) {
+            final Instant instant = parseTimestampFromDirectory(directory);
+            if (instant != null) {
+                return instant;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get the contents of a remote directory.
      *
      * @param terminal  the virtual terminal
@@ -113,10 +135,11 @@ public final class JrsTestReader {
      * timestamp (as parsed by {@link #parseTimestampFromDirectory(String)}). The subtrees beneath timestamp directories
      * are not explored by this method.
      *
-     * @param terminal         the virtual terminal
-     * @param executorService  the executor service to use
-     * @param rootDirectory    the root of the directory tree to explore
-     * @param minimumTimestamp any timestamp directory with a timestamp less than this will be ignored
+     * @param terminal        the virtual terminal
+     * @param executorService the executor service to use
+     * @param rootDirectory   the root of the directory tree to explore
+     * @param now             the current time
+     * @param maximumAge      the maximum age of tests to consider
      * @return a list of directories that contain a timestamp, excluding directories with timestamps less than
      * {@code minimumTimestamp}
      */
@@ -124,7 +147,8 @@ public final class JrsTestReader {
             @NonNull final VirtualTerminal terminal,
             @NonNull final ExecutorService executorService,
             @NonNull final String rootDirectory,
-            @NonNull final Instant minimumTimestamp) {
+            @NonNull final Instant now,
+            @NonNull final Duration maximumAge) {
 
         terminal.getProgressIndicator().writeMessage("Searching for panel directories.");
 
@@ -141,11 +165,20 @@ public final class JrsTestReader {
             while (!directoriesToExplore.isEmpty()) {
                 final String next = directoriesToExplore.remove();
                 executorService.submit(() -> {
-                    final Instant timestamp = parseTimestampFromDirectory(next);
+                    final Instant timestamp = parseTimestampFromPath(next);
+
+
                     if (timestamp == null) {
                         final List<String> subDirectories = lsRemoteDir(terminal, next);
                         directoriesToExplore.addAll(subDirectories);
-                    } else if (!timestamp.isBefore(minimumTimestamp)) {
+                    } else {
+                        final Duration age = Duration.between(timestamp, now);
+                        if (CompareTo.isGreaterThan(age, maximumAge)) {
+                            // Test is too old, ignore it
+                            latch.countDown();
+                            return;
+                        }
+
                         directoriesWithTimestamps.add(next);
                     }
                     latch.countDown();
@@ -166,10 +199,11 @@ public final class JrsTestReader {
     /**
      * Descend into a directory tree and return all nested test directories.
      *
-     * @param terminal         the virtual terminal
-     * @param executorService  the executor service to use
-     * @param rootDirectory    the root of the directory tree to explore
-     * @param minimumTimestamp any test with a timestamp less than this will be ignored
+     * @param terminal        the virtual terminal
+     * @param executorService the executor service to use
+     * @param rootDirectory   the root of the directory tree to explore
+     * @param now             the current time
+     * @param maximumAge      the maximum age of tests to consider
      * @return a list of directories that contain a timestamp, excluding directories with timestamps less than
      * {@code minimumTimestamp}
      */
@@ -177,10 +211,11 @@ public final class JrsTestReader {
             @NonNull final VirtualTerminal terminal,
             @NonNull final ExecutorService executorService,
             @NonNull final String rootDirectory,
-            @NonNull final Instant minimumTimestamp) {
+            @NonNull final Instant now,
+            @NonNull final Duration maximumAge) {
 
         final List<String> panelDirectories =
-                findTestPanelDirectories(terminal, executorService, rootDirectory, minimumTimestamp);
+                findTestPanelDirectories(terminal, executorService, rootDirectory, now, maximumAge);
 
         terminal.getProgressIndicator().writeMessage("Searching for test directories.");
 
@@ -211,60 +246,86 @@ public final class JrsTestReader {
         return dirList;
     }
 
-//    /**
-//     * Get a list of test results.
-//     *
-//     * @param terminal         the virtual terminal
-//     * @param executorService  the executor service to use
-//     * @param rootDirectory    the root of the directory tree to explore
-//     * @param minimumTimestamp any test with a timestamp less than this will be ignored
-//     * @return a list of test results
-//     */
-//    @NonNull
-//    public static List<JrsTestResult> findTestResults(
-//            @NonNull final VirtualTerminal terminal,
-//            @NonNull final ExecutorService executorService,
-//            @NonNull final String rootDirectory,
-//            @NonNull final Instant minimumTimestamp) {
-//
-//        terminal.getProgressIndicator().writeMessage("Scanning tests for data.");
-//
-//        final List<String> testDirectories =
-//                findTestDirectories(terminal, executorService, rootDirectory, minimumTimestamp);
-//
-//        final List<JrsTestResult> testResults = new ArrayList<>(testDirectories.size());
-//
-//        for (final String testDirectory : testDirectories) {
-//
-//            final List<String> testFiles = lsRemoteDir(terminal, testDirectory);
-//
-//            TestStatus status = UNKNOWN;
-//
-//            for (final String testFile : testFiles) {
-//                if (testFile.endsWith("test-passed")) {
-//                    status = PASS;
-//                    break;
-//                } else if (testFile.endsWith("test-failed")) {
-//                    status = FAIL;
-//                    break;
-//                }
-//            }
-//
-//            final String[] parts = testDirectory.split("/");
-//            final String testName = parts[parts.length - 1];
-//
-//            final JrsTestResult result = new JrsTestResult(
-//                    testName,
-//                    status,
-//                    testDirectory);
-//
-//            testResults.add(result);
-//        }
-//
-//        terminal.getProgressIndicator().writeMessage("Found results for " + testResults.size() + " tests.");
-//
-//        return testResults;
-//    }
+    /**
+     * Get a list of test results.
+     *
+     * @param terminal        the virtual terminal
+     * @param executorService the executor service to use
+     * @param rootDirectory   the root of the directory tree to explore
+     * @param now             the current time
+     * @param maximumAge      the maximum age of tests to consider
+     * @return a list of test results
+     */
+    @NonNull
+    public static List<JrsTestResult> findTestResults(
+            @NonNull final VirtualTerminal terminal,
+            @NonNull final ExecutorService executorService,
+            @NonNull final String rootDirectory,
+            @NonNull final Instant now,
+            @NonNull final Duration maximumAge) {
+
+        final List<String> testDirectories =
+                findTestDirectories(terminal, executorService, rootDirectory, now, maximumAge);
+
+        terminal.getProgressIndicator().writeMessage("Scanning tests for data.");
+
+        final Queue<JrsTestResult> testResults = new LinkedBlockingQueue<>();
+
+        final CountDownLatch latch = new CountDownLatch(testDirectories.size());
+
+        for (final String testDirectory : testDirectories) {
+            final Runnable task = () -> {
+                final List<String> testFiles = lsRemoteDir(terminal, testDirectory);
+
+                TestStatus status = UNKNOWN;
+
+                for (final String testFile : testFiles) {
+                    if (testFile.endsWith("test-passed")) {
+                        status = PASS;
+                        break;
+                    } else if (testFile.endsWith("test-failed")) {
+                        status = FAIL;
+                        break;
+                    }
+                }
+
+                final String[] parts = testDirectory.split("/");
+
+                if (parts.length < 3) {
+                    System.out.println("Invalid test directory structure");
+                    latch.countDown();
+                    return;
+                }
+
+                final String timestampString = parts[parts.length - 2];
+                final Instant timestamp = parseTimestampFromDirectory(timestampString);
+                if (timestamp == null) {
+                    System.out.println("Unable to parse timestamp from string: " + testDirectory);
+                    latch.countDown();
+                    return;
+                }
+
+                final String testName = parts[parts.length - 1];
+                final String panelName = parts[parts.length - 3];
+
+                final JrsTestResult result = new JrsTestResult(
+                        new JrsTestIdentifier(panelName, testName),
+                        status,
+                        timestamp,
+                        testDirectory);
+
+                testResults.add(result);
+                latch.countDown();
+            };
+
+            executorService.submit(task);
+        }
+        abortAndThrowIfInterrupted(latch::await, "interrupted while waiting for test search to complete");
+
+        terminal.getProgressIndicator().writeMessage("Found results for " + testResults.size() + " tests.");
+
+        return new ArrayList<>(testResults);
+    }
 
 //    /**
 //     * Generate a test report.
@@ -311,106 +372,168 @@ public final class JrsTestReader {
 //        }
 //    }
 
+//    /**
+//     * Process a test string. A test string is a file path from a google bucket. Some file paths describe a test, others
+//     * do not. This method will return a {@link JrsTestResult} if the test string describes a test, or null otherwise.
+//     *
+//     * <p>
+//     * A valid test path has the following format (but without the newlines and comments):
+//     * <pre>
+//     * gs://swirlds-circleci-jrs-results/
+//     * swirlds-automation/
+//     * develop/
+//     * 6N_1C/
+//     * NDReconnectCorrectness/                              // this is the panel
+//     * 20230802-064208-GCP-ND-Reconnect-Correctness-6N-1C/  // timestamp
+//     * AllProtectedFilesUpdate-NDReconnect-1-16m/           // this is the name
+//     * "test-failed" or "test-passed"                       // pass/fail info
+//     * </pre>
+//     *
+//     * @param testString the test string to process
+//     * @return
+//     */
+//    @Nullable
+//    private static JrsTestResult processTestString(@NonNull final String testString) {
+//        final String[] parts = testString.split("/");
+//        if (parts.length < 4) {
+//            // This is not a test result file
+//            return null;
+//        }
+//
+//        final boolean passed;
+//        if (parts[parts.length - 1].equals("test-passed")) {
+//            passed = true;
+//        } else if (parts[parts.length - 1].equals("test-failed")) {
+//            passed = false;
+//        } else {
+//            // This is not a test result file
+//            return null;
+//        }
+//
+//        final String timestampString = parts[parts.length - 3];
+//        final Instant timestamp = parseTimestampFromDirectory(timestampString);
+//        if (timestamp == null) {
+//            System.out.println("Unable to parse timestamp from string: " + testString);
+//            return null;
+//        }
+//
+//        final String testName = parts[parts.length - 2];
+//        final String panelName = parts[parts.length - 4];
+//
+//        // The test directory is the immediate parent of the test result
+//        final String[] directoryParts = new String[parts.length - 1];
+//        System.arraycopy(parts, 0, directoryParts, 0, directoryParts.length);
+//        final String testDirectory = String.join("/", directoryParts);
+//
+//        return new JrsTestResult(
+//                new JrsTestIdentifier(panelName, testName),
+//                passed ? PASS : FAIL,
+//                timestamp,
+//                testDirectory);
+//    }
+
+//    /**
+//     * Generate a test report.
+//     *
+//     * @param terminal      the virtual terminal
+//     * @param rootDirectory the root of the gs directory tree to explore
+//     */
+//    @NonNull
+//    public static List<JrsTestResult> getTestResults(
+//            @NonNull final VirtualTerminal terminal,
+//            @NonNull final String rootDirectory) {
+//
+//        final List<JrsTestResult> results = new ArrayList<>();
+//
+//        final ProgressIndicator progressIndicator = new ProgressIndicator(1);
+//        progressIndicator.setColorEnabled(true);
+//
+//        final Consumer<String> processTestString = s -> {
+//            final JrsTestResult result = processTestString(s);
+//            if (result != null) {
+//                results.add(result);
+//                final int count = results.size();
+//                progressIndicator.setEndOfLineMessage("Test" + (count == 1 ? "" : "s") + " found: " + count);
+//            }
+//            progressIndicator.increment();
+//        };
+//
+//        terminal.run(
+//                processTestString,
+//                System.err::println,
+//                "gsutil", "ls", rootDirectory + "/*/*/*/*"); // TODO set depth
+//
+//        return results;
+//    }
+
+    //    // TODO make these configurable
+    private static final String GS_URL_PREFIX = "gs://swirlds-circleci-jrs-results/";
+    private static final String GS_URL_REPLACEMENT = "http://35.247.76.217:8095/";
+
     /**
-     * Process a test string. A test string is a file path from a google bucket. Some file paths describe a test, others
-     * do not. This method will return a {@link JrsTestResult} if the test string describes a test, or null otherwise.
+     * The test url stored in this test result is a gs:// url. This method generates a url that can be visited in a web
+     * browser.
      *
-     * <p>
-     * A valid test path has the following format (but without the newlines and comments):
-     * <pre>
-     * gs://swirlds-circleci-jrs-results/
-     * swirlds-automation/
-     * develop/
-     * 6N_1C/
-     * NDReconnectCorrectness/                              // this is the panel
-     * 20230802-064208-GCP-ND-Reconnect-Correctness-6N-1C/  // timestamp
-     * AllProtectedFilesUpdate-NDReconnect-1-16m/           // this is the name
-     * "test-failed" or "test-passed"                       // pass/fail info
-     * </pre>
-     *
-     * @param testString the test string to process
-     * @return
+     * @return a url that can be visited in a web browser
      */
-    @Nullable
-    private static JrsTestResult processTestString(@NonNull final String testString) {
-        final String[] parts = testString.split("/");
-        if (parts.length < 4) {
-            // This is not a test result file
-            return null;
-        }
-
-        final boolean passed;
-        if (parts[parts.length - 1].equals("test-passed")) {
-            passed = true;
-        } else if (parts[parts.length - 1].equals("test-failed")) {
-            passed = false;
-        } else {
-            // This is not a test result file
-            return null;
-        }
-
-        final String timestampString = parts[parts.length - 3];
-        final Instant timestamp = parseTimestampFromDirectory(timestampString);
-        if (timestamp == null) {
-            System.out.println("Unable to parse timestamp from string: " + testString);
-            return null;
-        }
-
-        final String testName = parts[parts.length - 2];
-        final String panelName = parts[parts.length - 4];
-
-        // The test directory is the immediate parent of the test result
-        final String[] directoryParts = new String[parts.length - 1];
-        System.arraycopy(parts, 0, directoryParts, 0, directoryParts.length);
-        final String testDirectory = String.join("/", directoryParts);
-
-        return new JrsTestResult(
-                new JrsTestIdentifier(panelName, testName),
-                passed,
-                timestamp,
-                testDirectory);
+    public static String generateWebBrowserUrl(@NonNull final String testDirectory) {
+        return testDirectory.replace(GS_URL_PREFIX, GS_URL_REPLACEMENT);
     }
 
-    /**
-     * Generate a test report.
-     *
-     * @param terminal      the virtual terminal
-     * @param rootDirectory the root of the gs directory tree to explore
-     */
-    @NonNull
-    public static List<JrsTestResult> getTestResults(
-            @NonNull final VirtualTerminal terminal,
-            @NonNull final String rootDirectory) {
+    public static void generateHyperlink(
+            @NonNull final StringBuilder sb,
+            @NonNull final String text,
+            @NonNull final String url) {
 
-        final List<JrsTestResult> results = new ArrayList<>();
+        sb.append("<a href=\"").append(url).append("\">").append(text).append("</a>");
+    }
 
-        final ProgressIndicator progressIndicator = new ProgressIndicator(1);
-        progressIndicator.setColorEnabled(true);
+    public static void generateColoredHyperlink(
+            @NonNull final StringBuilder sb,
+            @NonNull final String text,
+            @NonNull final String url,
+            @NonNull final String color) {
 
-        final Consumer<String> processTestString = s -> {
-            final JrsTestResult result = processTestString(s);
-            if (result != null) {
-                results.add(result);
-                final int count = results.size();
-                progressIndicator.setEndOfLineMessage("Test" + (count == 1 ? "" : "s") + " found: " + count);
+        sb.append("<a style=\"color: ").append(color).append("\", href=\"")
+                .append(url).append("\">").append(text).append("</a>");
+    }
+
+    private static void generateHistory(
+            @NonNull final StringBuilder sb,
+            @NonNull final List<JrsTestResult> historicalResults) {
+
+        // Always ignore the first result since it is already reported
+        for (int index = 1; index < historicalResults.size(); index++) {
+
+            final JrsTestResult result = historicalResults.get(index);
+
+            final String testUrl = generateWebBrowserUrl(result.testDirectory());
+            final String resultString;
+            final String color;
+            if (result.status() == PASS) {
+                resultString = "P";
+                color = "mediumSeaGreen";
+            } else if (result.status() == FAIL) {
+                resultString = "F";
+                color = "tomato";
+            } else {
+                resultString = "?";
+                color = "slateBlue";
             }
-            progressIndicator.increment();
-        };
-
-        terminal.run(
-                processTestString,
-                System.err::println,
-                "gsutil", "ls", rootDirectory + "/*/*/*/*"); // TODO set depth
-
-        return results;
+            generateColoredHyperlink(sb, resultString, testUrl, color);
+        }
     }
 
     public static void generateTestReport(
             @NonNull final VirtualTerminal terminal,
+            @NonNull final ExecutorService executor,
             @NonNull final String rootDirectory,
+            @NonNull final Duration maximumAge,
             @NonNull final Path outputFile) {
 
-        final List<JrsTestResult> results = getTestResults(terminal, rootDirectory);
+        final Instant now = Instant.now();
+
+        final List<JrsTestResult> results = findTestResults(terminal, executor, rootDirectory, now, maximumAge);
 
         // Sort tests by unique type.
         final Map<JrsTestIdentifier, List<JrsTestResult>> resultsByTestType = new HashMap<>();
@@ -434,17 +557,27 @@ public final class JrsTestReader {
         sb.append("<!DOCTYPE html>\n");
         sb.append("<html>\n");
         sb.append("<head>\n");
-        sb.append("<title>").append("JRS Test Report").append("</title>\n"); // TODO current date
+        sb.append("<title>").append("JRS Test Report: ").append(now).append("</title>\n"); // TODO date formatting
+
+        sb.append("<style>\n");
+        sb.append("table { border: 5px solid black; }\n");
+        sb.append("th { border: 1px solid black; background-color: #96D4D4; position: sticky; top: 0; }\n");
+        sb.append("td { border: 1px solid black; padding: 10px; }\n");
+        sb.append("tr:nth-child(even) { background-color: lightgray; }\n");
+
+        sb.append("</style>\n");
+
         sb.append("</head>\n");
         sb.append("<body>\n");
 
+        sb.append("<center>\n");
         sb.append("<table>\n");
 
         // Headers
         sb.append("<tr>\n");
         sb.append("<th>Panel</th>\n");
-        sb.append("<th>Name</th>\n");
-        sb.append("<th>Timestamp</th>\n");
+        sb.append("<th>Test Name</th>\n");
+        sb.append("<th>Age</th>\n");
         sb.append("<th>Status</th>\n");
         sb.append("<th>Summary</th>\n");
         sb.append("<th>Metrics</th>\n");
@@ -457,20 +590,46 @@ public final class JrsTestReader {
             final List<JrsTestResult> tests = resultsByTestType.get(testType);
             final JrsTestResult mostRecentTest = tests.get(0);
 
+            final String testUrl = generateWebBrowserUrl(mostRecentTest.testDirectory());
+
             sb.append("<tr>\n");
             sb.append("<td>").append(testType.panel()).append("</td>\n");
-            sb.append("<td>").append(testType.name()).append("</td>\n");
-            sb.append("<td>").append(mostRecentTest.timestamp()).append("</td>\n");
-            sb.append("<td>").append(mostRecentTest.passed() ? "PASS" : "FAIL").append("</td>\n");
-            sb.append("<td>").append("TODO summary link").append("</td>\n");
-            sb.append("<td>").append("TODO metrics link").append("</td>\n");
-            sb.append("<td>").append("TODO data link").append("</td>\n");
-            sb.append("<td>").append("TODO history").append("</td>\n");
+            sb.append("<td><b>").append(testType.name()).append("</b></td>\n");
+
+            final Duration testAge = Duration.between(mostRecentTest.timestamp(), now);
+            final String ageString = new UnitFormatter(testAge.toMillis(), UNIT_MILLISECONDS)
+                    .setAbbreviate(false)
+                    .render() + " ago";
+
+            sb.append("<td>").append(ageString).append("</td>\n");
+
+            sb.append("<td ");
+            if (mostRecentTest.status() == PASS) {
+                sb.append("bgcolor=\"mediumSeaGreen\"");
+            } else if (mostRecentTest.status() == FAIL) {
+                sb.append("bgcolor=\"tomato\"");
+            } else {
+                sb.append("bgcolor=\"slateBlue\"");
+            }
+            sb.append("><center>").append(mostRecentTest.status().name()).append("</center></td>\n");
+
+            sb.append("<td>");
+            generateHyperlink(sb, "summary", testUrl + "summary.txt");
+            sb.append("</td>\n");
+            sb.append("<td>");
+            generateHyperlink(sb, "metrics", testUrl + "multipage_pdf.pdf");
+            sb.append("</td>\n");
+            sb.append("<td>");
+            generateHyperlink(sb, "data", testUrl);
+            sb.append("</td>\n");
+            sb.append("<td>");
+            generateHistory(sb, tests);
+            sb.append("</td>\n");
             sb.append("</tr>\n");
         }
 
         sb.append("</table>\n");
-
+        sb.append("</center>\n");
         sb.append("</body>\n");
         sb.append("</html>\n");
 

@@ -65,7 +65,7 @@ public class ProgressIndicator {
     }
 
     @NonNull
-    final String generateCurrentLine(final int lineNumber, final int charactersInLine) {
+    private String generateCurrentLine(final int lineNumber, final int charactersInLine) {
         final StringBuilder sb = new StringBuilder();
         for (int index = 0; index < charactersInLine; index++) {
             final int characterIndex = index % LOADING_CHARACTERS.length;
@@ -85,7 +85,7 @@ public class ProgressIndicator {
     /**
      * Increment the progress indicator.
      */
-    public void increment() {
+    public synchronized void increment() {
 
         final int previousProgress = count / threshold;
         count++;
@@ -132,7 +132,7 @@ public class ProgressIndicator {
      *
      * @param endOfLineMessage the message to display
      */
-    public void setEndOfLineMessage(@NonNull final String endOfLineMessage) {
+    public synchronized void setEndOfLineMessage(@NonNull final String endOfLineMessage) {
         this.endOfLineMessage = endOfLineMessage;
     }
 
@@ -141,8 +141,9 @@ public class ProgressIndicator {
      *
      * @param message the message to write
      */
-    public void writeMessage(@NonNull final String message) {
+    public synchronized void writeMessage(@NonNull final String message) {
         System.out.println("\n" + message);
         count = 0;
+        lineNumber = 0;
     }
 }

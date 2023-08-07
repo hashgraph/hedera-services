@@ -24,6 +24,8 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.platform.testreader.JrsTestReader;
 import com.swirlds.platform.util.VirtualTerminal;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.concurrent.Executors;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -39,8 +41,7 @@ public class JrsTestReaderCommand extends AbstractCommand {
     public Integer call() {
 
         final VirtualTerminal terminal = new VirtualTerminal()
-                .setPrintCommand(true)
-                .setPrintExitCode(true)
+                .setProgressIndicatorEnabled(true)
                 .setThrowOnError(true);
 
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
@@ -50,7 +51,9 @@ public class JrsTestReaderCommand extends AbstractCommand {
 
         JrsTestReader.generateTestReport(
                 terminal,
+                Executors.newFixedThreadPool(48),
                 root,
+                Duration.ofDays(7),
                 getAbsolutePath(Path.of("~/Desktop/report.html")));
 
         return 0;
