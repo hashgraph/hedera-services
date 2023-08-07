@@ -69,19 +69,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState().put(account.accountId(), account);
-    }
-
-    /**
-     * Returns true if the given id was created in the current savepoint. (That is, it exists
-     * but its original value is null.)
-     *
-     * @param id - the id of the account to be checked
-     * @return true if the given id was created in the current savepoint
-     */
-    public boolean isNewlyCreated(@NonNull final AccountID id) {
-        final var modifiedState = accountState();
-        return modifiedState.getOriginalValue(id) == null && modifiedState.get(id) != null;
+        accountState().put(account.accountIdOrThrow(), account);
     }
 
     /**

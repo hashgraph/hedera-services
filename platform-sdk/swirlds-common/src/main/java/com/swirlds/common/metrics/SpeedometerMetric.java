@@ -22,7 +22,6 @@ import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import java.util.EnumSet;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -109,11 +108,15 @@ public interface SpeedometerMetric extends Metric {
     final class Config extends MetricConfig<SpeedometerMetric, SpeedometerMetric.Config> {
 
         private final double halfLife;
+        private final boolean useDefaultHalfLife;
 
         /**
          * Constructor of {@code SpeedometerMetric.Config}
          *
-         * The {@code halfLife} is by default set to {@code SettingsCommon.halfLife}.
+         * The {@code useDefaultHalfLife} determines whether the default {@code halfLife} value
+         * (see {@link MetricsConfig#halfLife()}) should be used during the creation of a metric based on
+         * this configuration. If set to {@code false}, the specific {@code halfLife} defined in this configuration will
+         * be used instead.
          *
          * @param category
          * 		the kind of metric (metrics are grouped or filtered by this)
@@ -124,8 +127,8 @@ public interface SpeedometerMetric extends Metric {
          */
         public Config(final String category, final String name) {
             super(category, name, FloatFormats.FORMAT_11_3);
-            final MetricsConfig metricsConfig = ConfigurationHolder.getConfigData(MetricsConfig.class);
-            this.halfLife = metricsConfig.halfLife();
+            this.halfLife = -1;
+            this.useDefaultHalfLife = true;
         }
 
         private Config(
@@ -134,10 +137,11 @@ public interface SpeedometerMetric extends Metric {
                 final String description,
                 final String unit,
                 final String format,
-                final double halfLife) {
-
+                final double halfLife,
+                final boolean useDefaultHalfLife) {
             super(category, name, description, unit, format);
             this.halfLife = halfLife;
+            this.useDefaultHalfLife = useDefaultHalfLife;
         }
 
         /**
@@ -146,7 +150,13 @@ public interface SpeedometerMetric extends Metric {
         @Override
         public SpeedometerMetric.Config withDescription(final String description) {
             return new SpeedometerMetric.Config(
-                    getCategory(), getName(), description, getUnit(), getFormat(), getHalfLife());
+                    getCategory(),
+                    getName(),
+                    description,
+                    getUnit(),
+                    getFormat(),
+                    getHalfLife(),
+                    isUseDefaultHalfLife());
         }
 
         /**
@@ -155,7 +165,13 @@ public interface SpeedometerMetric extends Metric {
         @Override
         public SpeedometerMetric.Config withUnit(final String unit) {
             return new SpeedometerMetric.Config(
-                    getCategory(), getName(), getDescription(), unit, getFormat(), getHalfLife());
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    unit,
+                    getFormat(),
+                    getHalfLife(),
+                    isUseDefaultHalfLife());
         }
 
         /**
@@ -169,7 +185,13 @@ public interface SpeedometerMetric extends Metric {
          */
         public SpeedometerMetric.Config withFormat(final String format) {
             return new SpeedometerMetric.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), format, getHalfLife());
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    format,
+                    getHalfLife(),
+                    isUseDefaultHalfLife());
         }
 
         /**
@@ -182,6 +204,15 @@ public interface SpeedometerMetric extends Metric {
         }
 
         /**
+         * Getter of the {@code useDefaultHalfLife}.
+         *
+         * @return the {@code useDefaultHalfLife}
+         */
+        public boolean isUseDefaultHalfLife() {
+            return useDefaultHalfLife;
+        }
+
+        /**
          * Fluent-style setter of the {@code halfLife}.
          *
          * @param halfLife
@@ -190,7 +221,7 @@ public interface SpeedometerMetric extends Metric {
          */
         public SpeedometerMetric.Config withHalfLife(final double halfLife) {
             return new SpeedometerMetric.Config(
-                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), halfLife);
+                    getCategory(), getName(), getDescription(), getUnit(), getFormat(), halfLife, false);
         }
 
         /**

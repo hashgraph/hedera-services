@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -49,7 +48,7 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     }
 
     @Override
-    public @Nullable EntityNumber resolveAlias(@NonNull final Bytes evmAddress) {
+    public long resolveAlias(@NonNull final Bytes evmAddress) {
         throw new AssertionError("Not implemented");
     }
 

@@ -569,14 +569,14 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Sets the receipt contractID.
+     * Sets the receipt contractID; if the contractID is null, this is a no-op. (We allow a null id here
+     * for convenience when chaining builder calls.)
      *
      * @param contractID the {@link ContractID} for the receipt
      * @return the builder
      */
     @Override
     public @NonNull SingleTransactionRecordBuilderImpl contractID(@Nullable ContractID contractID) {
-        requireNonNull(contractID, "contractID must not be null");
         this.transactionReceiptBuilder.contractID(contractID);
         return this;
     }

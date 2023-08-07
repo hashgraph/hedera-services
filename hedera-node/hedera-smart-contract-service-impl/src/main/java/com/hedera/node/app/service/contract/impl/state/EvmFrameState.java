@@ -58,7 +58,7 @@ public interface EvmFrameState {
      * @param delegateCall    whether this transfer is done via code executed by a delegate call
      * @return a optional with the reason to halt if the transfer failed, or empty if it succeeded
      */
-    Optional<ExceptionalHaltReason> tryTransferFromContract(
+    Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
 
     /**
