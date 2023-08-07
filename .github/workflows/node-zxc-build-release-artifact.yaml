@@ -424,3 +424,28 @@ jobs:
            IMAGE_PREFIX=${{ steps.set-registry.outputs.docker-tag-base }}/
           context: hedera-node/infrastructure/docker/containers/local-node/main-network-node
           tags: ${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node:${{ needs.Artifact.outputs.version }}
+
+      - name: Render Job Summary
+        run: |
+          printf "### Published Docker Images\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| Image Name | Version | URL | Supported Architectures |\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| ---------- | ------- | --- | ----------------------- |\n" >> "${GITHUB_STEP_SUMMARY}"
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base" \
+            "${{ needs.Artifact.outputs.version }}" \
+            "[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.Artifact.outputs.version }})" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+          
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged" \
+            "${{ needs.Artifact.outputs.version }}" \
+            "[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.Artifact.outputs.version }})" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+          
+          printf "| %s | %s | %s | %s |\n" \
+            "${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node" \
+            "${{ needs.Artifact.outputs.version }}" \
+            "[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node:${{ needs.Artifact.outputs.version }})" \
+            "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
+
+          printf "\n\n" >> "${GITHUB_STEP_SUMMARY}"
