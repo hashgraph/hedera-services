@@ -7,7 +7,7 @@ module com.swirlds.test.framework {
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
     requires com.swirlds.common;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires io.github.classgraph;
     requires static com.github.spotbugs.annotations;
 }

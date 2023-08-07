@@ -28,8 +28,8 @@ dependencies {
     compileOnly(libs.spotbugs.annotations)
 
     // Test Dependencies
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    testImplementation(project(":swirlds-test-framework"))
+    testImplementation(project(":swirlds-common-testing"))
     testImplementation(project(":swirlds-config-impl"))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testLibs.bundles.junit)

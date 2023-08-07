@@ -32,8 +32,8 @@ dependencies {
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(testLibs.bundles.mocking)
-    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(project(":swirlds-common-testing"))
+    implementation(project(":swirlds-test-framework"))
     implementation(testFixtures(project(":swirlds-config-api")))
     implementation(testFixtures(project(":swirlds-common")))
     implementation(testFixtures(project(":swirlds-platform-core")))

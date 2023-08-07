@@ -14,6 +14,6 @@ open module com.swirlds.virtualmap {
     requires org.apache.logging.log4j;
     requires java.sql;
     requires java.management; // Test dependency
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 }

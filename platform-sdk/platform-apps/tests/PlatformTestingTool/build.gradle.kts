@@ -32,9 +32,9 @@ dependencies {
     // Test Dependencies
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    implementation(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
+    implementation(project(":swirlds-test-framework"))
+    implementation(project(":swirlds-common-testing"))
+    implementation(project(":swirlds-merkle-test"))
     implementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(testLibs.bundles.junit)

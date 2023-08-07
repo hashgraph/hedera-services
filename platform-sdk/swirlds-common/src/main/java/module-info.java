@@ -80,19 +80,19 @@ module com.swirlds.common {
 
     /* Targeted exports */
     exports com.swirlds.common.internal to
-            com.swirlds.platform,
+            com.swirlds.platform.core,
             com.swirlds.platform.test,
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.jrs,
             com.swirlds.demo.platform,
             com.swirlds.signingtool;
     exports com.swirlds.common.crypto.internal to
-            com.swirlds.platform,
-            com.swirlds.common.test;
+            com.swirlds.platform.core,
+            com.swirlds.common.testing;
     exports com.swirlds.common.notification.internal to
-            com.swirlds.common.test;
+            com.swirlds.common.testing;
     exports com.swirlds.common.crypto.engine to
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.crypto to
@@ -111,12 +111,12 @@ module com.swirlds.common {
     exports com.swirlds.common.io.streams.internal to
             com.swirlds.platform.test;
     exports com.swirlds.common.io.extendable.extensions.internal to
-            com.swirlds.common.test;
+            com.swirlds.common.testing;
     exports com.swirlds.common.system.transaction.internal to
-            com.swirlds.platform,
+            com.swirlds.platform.core,
             com.swirlds.platform.test,
             com.swirlds.platform.test.fixtures,
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.common.test.fixtures;
 
     opens com.swirlds.common.merkle.impl to
@@ -131,7 +131,7 @@ module com.swirlds.common {
             com.fasterxml.jackson.databind;
 
     exports com.swirlds.common.merkle.crypto.internal to
-            com.swirlds.common.test;
+            com.swirlds.common.testing;
 
     opens com.swirlds.common.merkle.crypto to
             com.fasterxml.jackson.databind;
@@ -150,16 +150,16 @@ module com.swirlds.common {
     exports com.swirlds.common.system.status.actions;
     exports com.swirlds.common.metrics.statistics;
     exports com.swirlds.common.metrics.statistics.internal to
-            com.swirlds.common.test,
+            com.swirlds.common.testing,
             com.swirlds.demo.platform,
             com.swirlds.jrs,
-            com.swirlds.platform,
+            com.swirlds.platform.core,
             com.swirlds.platform.test,
             com.swirlds.gui;
     exports com.swirlds.common.startup;
 
     requires transitive com.swirlds.base;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires com.swirlds.logging;
     requires java.desktop;
     requires jdk.management;

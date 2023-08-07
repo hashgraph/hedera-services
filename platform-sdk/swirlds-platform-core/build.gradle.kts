@@ -43,14 +43,14 @@ dependencies {
     testCompileOnly(libs.spotbugs.annotations)
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(project(":swirlds-common-testing"))
+    implementation(project(":swirlds-test-framework"))
 
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)
     testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-unit-tests:core:swirlds-platform-test"))
+    testImplementation(project(":swirlds-platform-test"))
     testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testFixtures(project(":swirlds-config-api")))

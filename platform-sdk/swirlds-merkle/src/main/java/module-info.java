@@ -10,7 +10,7 @@ open module com.swirlds.merkle {
 
     requires com.swirlds.common;
     requires com.swirlds.logging;
-    requires com.swirlds.platform;
+    requires com.swirlds.platform.core;
     requires com.swirlds.fcqueue;
     requires com.swirlds.fchashmap;
     requires org.apache.logging.log4j;

@@ -38,6 +38,6 @@ open module com.swirlds.merkledb {
     requires java.management;
     requires jdk.management;
     requires jdk.unsupported;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 }

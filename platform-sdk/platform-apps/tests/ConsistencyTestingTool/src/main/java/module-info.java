@@ -1,6 +1,6 @@
 module com.swirlds.demo.consistency {
     requires com.swirlds.base;
-    requires com.swirlds.platform;
+    requires com.swirlds.platform.core;
     requires com.swirlds.common;
     requires com.swirlds.logging;
     requires lazysodium.java;
@@ -8,5 +8,5 @@ module com.swirlds.demo.consistency {
     requires org.bouncycastle.pkix;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-    requires com.swirlds.config;
+    requires com.swirlds.config.api;
 }

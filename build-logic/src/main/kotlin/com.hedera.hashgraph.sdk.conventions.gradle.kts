@@ -18,19 +18,19 @@ import com.adarshr.gradle.testlogger.theme.ThemeType
 
 plugins {
     id("com.hedera.hashgraph.java")
-    // id("com.hedera.hashgraph.jpms-module-dependencies")
+    id("com.hedera.hashgraph.jpms-module-dependencies")
     id("com.adarshr.test-logger")
     id("com.gorylenko.gradle-git-properties")
 }
 
 group = "com.swirlds"
 
-// javaModuleDependencies {
-//     versionsFromConsistentResolution(":swirlds-platform-core")
-// }
-// configurations.getByName("mainRuntimeClasspath") {
-//     extendsFrom(internal)
-// }
+javaModuleDependencies {
+    versionsFromConsistentResolution(":swirlds-platform-core")
+}
+configurations.getByName("mainRuntimeClasspath") {
+    extendsFrom(configurations.getByName("internal"))
+}
 
 gitProperties {
     keys = listOf("git.build.version", "git.commit.id", "git.commit.id.abbrev")

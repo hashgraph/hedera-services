@@ -28,8 +28,8 @@ dependencies {
 
     // Test Dependencies
     testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-common-test"))
+    testImplementation(project(":swirlds-test-framework"))
+    testImplementation(project(":swirlds-common-testing"))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testLibs.junit.jupiter.api)
     testImplementation(testLibs.bundles.junit)

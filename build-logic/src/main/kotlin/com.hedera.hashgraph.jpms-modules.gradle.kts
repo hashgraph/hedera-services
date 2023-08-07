@@ -18,6 +18,7 @@
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcDependencyMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.IoGrpcMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.IoNettyNativeEpollMetadataRule
+import com.hedera.hashgraph.gradlebuild.rules.IoPrometheusSimpleclientMetadataRule
 import com.hedera.hashgraph.gradlebuild.rules.RemoveFindbugsAnnotationsMetadataRule
 
 plugins {
@@ -36,6 +37,8 @@ dependencies.components {
     withModule<IoGrpcDependencyMetadataRule>("io.grpc:grpc-testing")
 
     withModule<IoNettyNativeEpollMetadataRule>("io.netty:netty-transport-native-epoll")
+
+    withModule<IoPrometheusSimpleclientMetadataRule>("io.prometheus:simpleclient")
 
     withModule<RemoveFindbugsAnnotationsMetadataRule>("com.github.spotbugs:spotbugs-annotations")
     withModule<RemoveFindbugsAnnotationsMetadataRule>("com.google.dagger:dagger-compiler")
@@ -187,7 +190,7 @@ extraJavaModuleInfo {
     knownModule("com.swirlds:swirlds-fcqueue", "com.swirlds.fcqueue")
     knownModule("com.swirlds:swirlds-jasperdb", "com.swirlds.jasperdb")
     knownModule("com.swirlds:swirlds-merkle", "com.swirlds.merkle")
-    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform")
+    knownModule("com.swirlds:swirlds-platform-core", "com.swirlds.platform") // TODO -> com.swirlds.platform.core
     knownModule("com.swirlds:swirlds-virtualmap", "com.swirlds.virtualmap")
     knownModule("io.github.classgraph:classgraph", "io.github.classgraph")
     knownModule("io.helidon.grpc:io.grpc", "io.grpc")

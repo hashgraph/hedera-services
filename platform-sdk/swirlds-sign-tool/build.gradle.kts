@@ -30,5 +30,5 @@ dependencies {
     implementation(libs.jackson.datatype.jsr310)
     compileOnly(libs.spotbugs.annotations)
 
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testImplementation(project(":swirlds-test-framework"))
 }

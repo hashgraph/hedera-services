@@ -29,7 +29,7 @@ dependencies {
     api(libs.bundles.jackson)
 
     // Test Dependencies
-    testImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testImplementation(project(":swirlds-test-framework"))
     testImplementation(libs.bundles.logging.impl)
     testImplementation(testLibs.bundles.junit)
 }

@@ -36,7 +36,7 @@ plugins {
 includeBuild("hedera-platform")
 
 // If you turn this is on, 'platform-sdk' modules are built from source
-// includeBuild("platform-sdk")
+includeBuild("platform-sdk")
 
 include(":hedera-node")
 

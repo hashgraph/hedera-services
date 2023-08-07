@@ -1,4 +1,4 @@
-open module com.swirlds.common.test {
+open module com.swirlds.common.testing {
     exports com.swirlds.common.test.merkle.util;
     exports com.swirlds.common.test.merkle.dummy;
     exports com.swirlds.common.test.dummy;

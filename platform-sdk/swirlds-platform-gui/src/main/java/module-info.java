@@ -1,4 +1,4 @@
-module com.swirlds.gui {
+module com.swirlds.platform.gui {
     exports com.swirlds.gui;
     exports com.swirlds.gui.hashgraph;
     exports com.swirlds.gui.components;

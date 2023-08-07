@@ -35,7 +35,7 @@ extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
 
 dependencies {
     runtimeOnly(project(":swirlds-merkle"))
-    runtimeOnly(project(":swirlds-unit-tests:structures:swirlds-merkle-test"))
+    runtimeOnly(project(":swirlds-merkle-test"))
     runtimeOnly(libs.protobuf)
 }
 

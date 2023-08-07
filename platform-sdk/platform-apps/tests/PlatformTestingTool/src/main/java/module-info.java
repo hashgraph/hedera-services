@@ -15,7 +15,7 @@ module com.swirlds.demo.platform {
 
     requires com.swirlds.logging;
     requires com.swirlds.test.framework;
-    requires com.swirlds.common.test;
+    requires com.swirlds.common.testing;
     requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;
     requires com.swirlds.merkledb;
@@ -32,7 +32,7 @@ module com.swirlds.demo.platform {
 
     requires static com.github.spotbugs.annotations;
     requires java.logging;
-    requires com.swirlds.platform;
+    requires com.swirlds.platform.core;
     requires com.swirlds.fcqueue;
     requires org.bouncycastle.provider;
     requires com.google.protobuf;

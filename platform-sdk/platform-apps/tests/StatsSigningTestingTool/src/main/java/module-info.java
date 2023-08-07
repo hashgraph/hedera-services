@@ -1,5 +1,5 @@
 module com.swirlds.demo.stats.signing {
-    requires com.swirlds.platform;
+    requires com.swirlds.platform.core;
     requires com.swirlds.common;
     requires com.swirlds.logging;
     requires lazysodium.java;

@@ -34,7 +34,7 @@ dependencies {
     testCompileOnly(libs.spotbugs.annotations)
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(project(":swirlds-test-framework"))
     implementation(testFixtures(project(":swirlds-common")))
     implementation(libs.log4j.core)
 

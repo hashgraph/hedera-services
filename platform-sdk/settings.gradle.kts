@@ -80,15 +80,18 @@ include(":swirlds-platform-apps:tests:StatsSigningTestingTool")
 
 include(":swirlds-benchmarks")
 
-include(":swirlds-unit-tests")
+include(":swirlds-test-framework", "swirlds-unit-tests/common/swirlds-test-framework")
 
-include(":swirlds-unit-tests:common:swirlds-test-framework")
+include(":swirlds-common-testing", "swirlds-unit-tests/common/swirlds-common-test")
 
-include(":swirlds-unit-tests:common:swirlds-common-test")
+include(":swirlds-platform-test", "swirlds-unit-tests/core/swirlds-platform-test")
 
-include(":swirlds-unit-tests:core:swirlds-platform-test")
+include(":swirlds-merkle-test", "swirlds-unit-tests/structures/swirlds-merkle-test")
 
-include(":swirlds-unit-tests:structures:swirlds-merkle-test")
+fun include(name: String, path: String) {
+    include(name)
+    project(name).projectDir = File(rootDir, path)
+}
 
 @Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
