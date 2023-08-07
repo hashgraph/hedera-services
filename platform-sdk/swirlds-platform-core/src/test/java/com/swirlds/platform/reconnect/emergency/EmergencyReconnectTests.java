@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -226,6 +227,7 @@ class EmergencyReconnectTests {
             final Supplier<State> learnerState,
             final Consumer<SignedState> receivedStateConsumer) {
 
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final ReconnectHelper helper = new ReconnectHelper(
                 () -> {},
                 mock(Clearable.class),
@@ -238,7 +240,8 @@ class EmergencyReconnectTests {
                         getStaticThreadManager(),
                         addressBook,
                         Duration.of(100_000, ChronoUnit.MILLIS),
-                        mock(ReconnectMetrics.class)));
+                        mock(ReconnectMetrics.class)),
+                stateConfig);
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
     }
