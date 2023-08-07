@@ -191,7 +191,7 @@ final class NettyManagerTest extends GrpcTestBase {
     @Test
     @Timeout(value = 15)
     @DisplayName("Starting a server with a port already in use but is then released")
-    @SuppressWarnings("java:S2925")
+    @SuppressWarnings("java:S2925") // suppressing the warning about TimeUnit.MILLISECONDS.sleep usage in tests
     void portBecomesFreeEventually() throws Exception {
         // Given a server with a configuration that will start
         final var testConfig = new TestSource()

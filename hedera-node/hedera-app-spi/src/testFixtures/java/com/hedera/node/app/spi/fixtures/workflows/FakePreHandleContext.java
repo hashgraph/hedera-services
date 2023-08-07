@@ -220,7 +220,9 @@ public class FakePreHandleContext implements PreHandleContext {
 
     @Override
     @NonNull
-    @SuppressWarnings("java:S2637")
+    @SuppressWarnings(
+            "java:S2637") // requireKey accepts "@NonNull" but warning states that null could be passed, seems like
+    // false positive because of the !isValid(key) check
     public PreHandleContext requireKeyOrThrow(@Nullable final Key key, @NonNull final ResponseCodeEnum responseCode)
             throws PreCheckException {
         requireNonNull(responseCode);

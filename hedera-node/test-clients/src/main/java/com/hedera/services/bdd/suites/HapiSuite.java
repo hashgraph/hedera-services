@@ -53,7 +53,7 @@ public abstract class HapiSuite {
         SUITE_FAILED
     }
 
-    @SuppressWarnings("java:S2245")
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private static final Random RANDOM = new Random();
 
     protected abstract Logger getResultsLogger();

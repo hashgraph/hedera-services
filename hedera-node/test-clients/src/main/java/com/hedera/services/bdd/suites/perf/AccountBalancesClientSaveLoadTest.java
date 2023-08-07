@@ -85,7 +85,7 @@ public class AccountBalancesClientSaveLoadTest extends LoadTest {
     static final int MAX_TOKEN_TRANSFER = 100;
     static final int SECOND = 1000;
 
-    @SuppressWarnings("java:S2245")
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private static final Random RANDOM = new Random();
 
     private static final int TOTAL_TEST_TOKENS = 500;

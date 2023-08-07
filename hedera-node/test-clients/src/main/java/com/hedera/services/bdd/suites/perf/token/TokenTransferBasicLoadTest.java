@@ -64,7 +64,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
     private static final int MAX_PENDING_OPS_FOR_SETUP = 10_000;
     private static final int ESTIMATED_TOKEN_CREATION_RATE = 50;
 
-    @SuppressWarnings("java:S2245")
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private static final Random r = new Random();
 
     public static final String ACCOUNT_FORMAT = "0.0.%d";
