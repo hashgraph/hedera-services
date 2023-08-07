@@ -17,7 +17,8 @@
 plugins {
     id("com.swirlds.platform.conventions")
     `java-library`
-    id("com.swirlds.platform.maven-publish")id("org.gradle.java-test-fixtures")
+    id("com.swirlds.platform.maven-publish")
+    id("org.gradle.java-test-fixtures")
 }
 
 dependencies {
