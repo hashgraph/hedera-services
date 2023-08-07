@@ -33,6 +33,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.state.token.Account;
@@ -303,8 +304,9 @@ public class BaseTokenHandler {
      * @param accountStore the account store
      * @param tokenRelStore the token relation store
      * @param context the handle context
+     * @return the new token relation added
      */
-    protected void autoAssociate(
+    protected TokenRelation autoAssociate(
             @NonNull final Account account,
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
@@ -350,6 +352,7 @@ public class BaseTokenHandler {
 
         accountStore.put(copyAccount);
         tokenRelStore.put(newTokenRel);
+        return newTokenRel;
     }
 
     /**
@@ -429,5 +432,18 @@ public class BaseTokenHandler {
     public static boolean isValidTokenId(final TokenID tokenId) {
         if (tokenId == null) return false;
         return tokenId.tokenNum() > 0;
+    }
+
+    /**
+     * Creates a new {@link TokenAssociation} with the given tokenId and accountId.
+     * @param tokenId the token id
+     * @param accountId the account id
+     * @return the new token association
+     */
+    public static TokenAssociation asTokenAssociation(final TokenID tokenId, final AccountID accountId) {
+        return TokenAssociation.newBuilder()
+                .tokenId(tokenId)
+                .accountId(accountId)
+                .build();
     }
 }

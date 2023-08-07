@@ -78,8 +78,6 @@ public class EndOfStakingPeriodUpdater {
      * Updates all (relevant) staking-related values for all nodes, as well as any network reward information,
      * at the end of a staking period. This method must be invoked during handling of a transaction
      *
-     * TODO: this method is still not called by the handle workflow (will be done in issue #7721)
-     *
      * @param consensusTime the consensus time of the transaction used to end the staking period
      * @param context the context of the transaction used to end the staking period
      */

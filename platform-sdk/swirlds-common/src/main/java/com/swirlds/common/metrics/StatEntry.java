@@ -118,6 +118,7 @@ public interface StatEntry extends Metric {
         private final Consumer<Double> reset;
         private final Supplier<T> statsStringSupplier;
         private final Supplier<T> resetStatsStringSupplier;
+        private final double halfLife;
 
         /**
          * stores all the parameters, which can be accessed directly
@@ -143,6 +144,7 @@ public interface StatEntry extends Metric {
             this.reset = null;
             this.statsStringSupplier = Objects.requireNonNull(statsStringSupplier, "statsStringSupplier");
             this.resetStatsStringSupplier = statsStringSupplier;
+            this.halfLife = -1;
         }
 
         @SuppressWarnings("java:S107")
@@ -157,7 +159,8 @@ public interface StatEntry extends Metric {
                 final Function<Double, StatsBuffered> init,
                 final Consumer<Double> reset,
                 final Supplier<T> statsStringSupplier,
-                final Supplier<T> resetStatsStringSupplier) {
+                final Supplier<T> resetStatsStringSupplier,
+                final double halfLife) {
             super(category, name, description, unit, format);
             this.type = Objects.requireNonNull(type, "type");
             this.buffered = buffered;
@@ -166,6 +169,7 @@ public interface StatEntry extends Metric {
             this.statsStringSupplier = Objects.requireNonNull(statsStringSupplier, "statsStringSupplier");
             this.resetStatsStringSupplier =
                     Objects.requireNonNull(resetStatsStringSupplier, "resetStatsStringSupplier");
+            this.halfLife = halfLife;
         }
 
         /**
@@ -184,7 +188,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -203,7 +208,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -227,7 +233,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -267,7 +274,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -298,7 +306,8 @@ public interface StatEntry extends Metric {
                     init,
                     getReset(),
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -329,7 +338,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     reset,
                     getStatsStringSupplier(),
-                    getResetStatsStringSupplier());
+                    getResetStatsStringSupplier(),
+                    getHalfLife());
         }
 
         /**
@@ -369,7 +379,8 @@ public interface StatEntry extends Metric {
                     getInit(),
                     getReset(),
                     getStatsStringSupplier(),
-                    resetStatsStringSupplier);
+                    resetStatsStringSupplier,
+                    getHalfLife());
         }
 
         /**
@@ -378,6 +389,38 @@ public interface StatEntry extends Metric {
         @Override
         public Class<StatEntry> getResultClass() {
             return StatEntry.class;
+        }
+
+        /**
+         * Fluent-style setter of {@code halfLife}.
+         *
+         * @param halfLife
+         * 		value of the half-life
+         * @return a reference to {@code this}
+         */
+        public StatEntry.Config<T> withHalfLife(final double halfLife) {
+            return new StatEntry.Config<>(
+                    getCategory(),
+                    getName(),
+                    getDescription(),
+                    getUnit(),
+                    getFormat(),
+                    getType(),
+                    getBuffered(),
+                    getInit(),
+                    getReset(),
+                    getStatsStringSupplier(),
+                    getResetStatsStringSupplier(),
+                    halfLife);
+        }
+
+        /**
+         * Getter of the {@code halfLife}.
+         *
+         * @return the {@code halfLife}
+         */
+        public double getHalfLife() {
+            return halfLife;
         }
 
         /**

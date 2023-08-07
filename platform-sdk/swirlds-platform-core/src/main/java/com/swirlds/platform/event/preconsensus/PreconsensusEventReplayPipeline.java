@@ -24,7 +24,6 @@ import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -56,13 +55,13 @@ public class PreconsensusEventReplayPipeline {
      * @param event      the event
      * @param hashFuture becomes complete when the event has been hashed
      */
-    private record EventBeingHashed(@NonNull EventImpl event, @NonNull Future<Void> hashFuture) {}
+    private record EventBeingHashed(@NonNull GossipEvent event, @NonNull Future<Void> hashFuture) {}
 
     private final QueueThread<EventBeingHashed> intakeQueue;
     private final ExecutorService hashPool;
 
     private final PlatformContext platformContext;
-    private final IOIterator<EventImpl> unhashedEventIterator;
+    private final IOIterator<GossipEvent> unhashedEventIterator;
     private final Consumer<GossipEvent> hashedEventConsumer;
 
     /**
@@ -76,7 +75,7 @@ public class PreconsensusEventReplayPipeline {
     public PreconsensusEventReplayPipeline(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final IOIterator<EventImpl> unhashedEventIterator,
+            @NonNull final IOIterator<GossipEvent> unhashedEventIterator,
             @NonNull final Consumer<GossipEvent> hashedEventConsumer) {
 
         this.platformContext = Objects.requireNonNull(platformContext);
@@ -113,8 +112,7 @@ public class PreconsensusEventReplayPipeline {
         }
         try {
             eventBeingHashed.hashFuture().get();
-            final EventImpl event = eventBeingHashed.event();
-            final GossipEvent gossipEvent = new GossipEvent(event.getHashedData(), event.getUnhashedData());
+            final GossipEvent gossipEvent = eventBeingHashed.event();
             gossipEvent.buildDescriptor();
             hashedEventConsumer.accept(gossipEvent);
         } catch (final InterruptedException e) {
@@ -137,13 +135,13 @@ public class PreconsensusEventReplayPipeline {
 
         try {
             while (unhashedEventIterator.hasNext() && !error.get()) {
-                final EventImpl event = unhashedEventIterator.next();
+                final GossipEvent event = unhashedEventIterator.next();
 
                 eventCount++;
-                transactionCount += event.getTransactions().length;
+                transactionCount += event.getHashedData().getTransactions().length;
 
                 final Future<Void> hashFuture = hashPool.submit(() -> {
-                    cryptography.digestSync(event.getBaseEventHashedData());
+                    cryptography.digestSync(event.getHashedData());
                     return null;
                 });
 

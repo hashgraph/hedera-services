@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -65,6 +66,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Test
     void associatesTokenRecepients() {
+        given(handleContext.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
