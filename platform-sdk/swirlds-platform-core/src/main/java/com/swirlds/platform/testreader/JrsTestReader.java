@@ -29,6 +29,7 @@ import com.swirlds.platform.util.CommandResult;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -39,9 +40,11 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -166,7 +169,6 @@ public final class JrsTestReader {
                 final String next = directoriesToExplore.remove();
                 executorService.submit(() -> {
                     final Instant timestamp = parseTimestampFromPath(next);
-
 
                     if (timestamp == null) {
                         final List<String> subDirectories = lsRemoteDir(terminal, next);
@@ -308,11 +310,8 @@ public final class JrsTestReader {
                 final String testName = parts[parts.length - 1];
                 final String panelName = parts[parts.length - 3];
 
-                final JrsTestResult result = new JrsTestResult(
-                        new JrsTestIdentifier(panelName, testName),
-                        status,
-                        timestamp,
-                        testDirectory);
+                final JrsTestIdentifier id = new JrsTestIdentifier(panelName, testName);
+                final JrsTestResult result = new JrsTestResult(id, status, timestamp, testDirectory);
 
                 testResults.add(result);
                 latch.countDown();
@@ -327,146 +326,7 @@ public final class JrsTestReader {
         return new ArrayList<>(testResults);
     }
 
-//    /**
-//     * Generate a test report.
-//     *
-//     * @param terminal         the virtual terminal
-//     * @param executorService  the executor service to use
-//     * @param rootDirectory    the root of the directory tree to explore
-//     * @param minimumTimestamp any test with a timestamp less than this will be ignored
-//     * @param reportPath       the path to write the report to
-//     */
-//    public static void generateTestReport(
-//            @NonNull final VirtualTerminal terminal,
-//            @NonNull final ExecutorService executorService,
-//            @NonNull final String rootDirectory,
-//            @NonNull final Instant minimumTimestamp,
-//            @NonNull final Path reportPath) {
-//        final List<JrsTestResult> results =
-//                findTestResults(terminal, executorService, rootDirectory, minimumTimestamp);
-//        Collections.sort(results);
-//
-//        final StringBuilder sb = new StringBuilder();
-//        JrsTestResult.renderCsvHeader(sb);
-//        for (final JrsTestResult result : results) {
-//            result.renderCsvLine(sb);
-//        }
-//
-//        final String report = sb.toString();
-//        terminal.getProgressIndicator().writeMessage(
-//                "\n\n===================================================================================\n\n");
-//        System.out.println(report);
-//
-//        if (Files.exists(reportPath)) {
-//            try {
-//                Files.delete(reportPath);
-//            } catch (final IOException e) {
-//                throw new UncheckedIOException("unable to delete existing test report", e);
-//            }
-//        }
-//
-//        try {
-//            Files.write(reportPath, report.getBytes());
-//        } catch (final IOException e) {
-//            throw new UncheckedIOException("unable to generate test report", e);
-//        }
-//    }
-
-//    /**
-//     * Process a test string. A test string is a file path from a google bucket. Some file paths describe a test, others
-//     * do not. This method will return a {@link JrsTestResult} if the test string describes a test, or null otherwise.
-//     *
-//     * <p>
-//     * A valid test path has the following format (but without the newlines and comments):
-//     * <pre>
-//     * gs://swirlds-circleci-jrs-results/
-//     * swirlds-automation/
-//     * develop/
-//     * 6N_1C/
-//     * NDReconnectCorrectness/                              // this is the panel
-//     * 20230802-064208-GCP-ND-Reconnect-Correctness-6N-1C/  // timestamp
-//     * AllProtectedFilesUpdate-NDReconnect-1-16m/           // this is the name
-//     * "test-failed" or "test-passed"                       // pass/fail info
-//     * </pre>
-//     *
-//     * @param testString the test string to process
-//     * @return
-//     */
-//    @Nullable
-//    private static JrsTestResult processTestString(@NonNull final String testString) {
-//        final String[] parts = testString.split("/");
-//        if (parts.length < 4) {
-//            // This is not a test result file
-//            return null;
-//        }
-//
-//        final boolean passed;
-//        if (parts[parts.length - 1].equals("test-passed")) {
-//            passed = true;
-//        } else if (parts[parts.length - 1].equals("test-failed")) {
-//            passed = false;
-//        } else {
-//            // This is not a test result file
-//            return null;
-//        }
-//
-//        final String timestampString = parts[parts.length - 3];
-//        final Instant timestamp = parseTimestampFromDirectory(timestampString);
-//        if (timestamp == null) {
-//            System.out.println("Unable to parse timestamp from string: " + testString);
-//            return null;
-//        }
-//
-//        final String testName = parts[parts.length - 2];
-//        final String panelName = parts[parts.length - 4];
-//
-//        // The test directory is the immediate parent of the test result
-//        final String[] directoryParts = new String[parts.length - 1];
-//        System.arraycopy(parts, 0, directoryParts, 0, directoryParts.length);
-//        final String testDirectory = String.join("/", directoryParts);
-//
-//        return new JrsTestResult(
-//                new JrsTestIdentifier(panelName, testName),
-//                passed ? PASS : FAIL,
-//                timestamp,
-//                testDirectory);
-//    }
-
-//    /**
-//     * Generate a test report.
-//     *
-//     * @param terminal      the virtual terminal
-//     * @param rootDirectory the root of the gs directory tree to explore
-//     */
-//    @NonNull
-//    public static List<JrsTestResult> getTestResults(
-//            @NonNull final VirtualTerminal terminal,
-//            @NonNull final String rootDirectory) {
-//
-//        final List<JrsTestResult> results = new ArrayList<>();
-//
-//        final ProgressIndicator progressIndicator = new ProgressIndicator(1);
-//        progressIndicator.setColorEnabled(true);
-//
-//        final Consumer<String> processTestString = s -> {
-//            final JrsTestResult result = processTestString(s);
-//            if (result != null) {
-//                results.add(result);
-//                final int count = results.size();
-//                progressIndicator.setEndOfLineMessage("Test" + (count == 1 ? "" : "s") + " found: " + count);
-//            }
-//            progressIndicator.increment();
-//        };
-//
-//        terminal.run(
-//                processTestString,
-//                System.err::println,
-//                "gsutil", "ls", rootDirectory + "/*/*/*/*"); // TODO set depth
-//
-//        return results;
-//    }
-
-    //    // TODO make these configurable
+    // TODO make these configurable
     private static final String GS_URL_PREFIX = "gs://swirlds-circleci-jrs-results/";
     private static final String GS_URL_REPLACEMENT = "http://35.247.76.217:8095/";
 
@@ -481,11 +341,13 @@ public final class JrsTestReader {
     }
 
     public static void generateHyperlink(
-            @NonNull final StringBuilder sb,
-            @NonNull final String text,
-            @NonNull final String url) {
+            @NonNull final StringBuilder sb, @NonNull final String text, @NonNull final String url) {
 
-        sb.append("<a href=\"").append(url).append("\">").append(text).append("</a>");
+        sb.append("<a target=\"_blank\" href=\"")
+                .append(url)
+                .append("\">")
+                .append(text)
+                .append("</a>");
     }
 
     public static void generateColoredHyperlink(
@@ -494,13 +356,17 @@ public final class JrsTestReader {
             @NonNull final String url,
             @NonNull final String color) {
 
-        sb.append("<a style=\"color: ").append(color).append("\", href=\"")
-                .append(url).append("\">").append(text).append("</a>");
+        sb.append("<a target=\"_blank\" style=\"color: ")
+                .append(color)
+                .append("\", href=\"")
+                .append(url)
+                .append("\">")
+                .append(text)
+                .append("</a>");
     }
 
     private static void generateHistory(
-            @NonNull final StringBuilder sb,
-            @NonNull final List<JrsTestResult> historicalResults) {
+            @NonNull final StringBuilder sb, @NonNull final List<JrsTestResult> historicalResults) {
 
         // Always ignore the first result since it is already reported
         for (int index = 1; index < historicalResults.size(); index++) {
@@ -524,15 +390,109 @@ public final class JrsTestReader {
         }
     }
 
+    /**
+     * Parse note URLs from the notes file. A notes file is a CSV (commas) with three columns: panel, test name, and a
+     * URL.
+     *
+     * @param notesFile the path to the notes file
+     * @return a map of test identifiers to note URLs
+     */
+    @NonNull
+    public static Map<JrsTestIdentifier, String> parseNoteFile(@Nullable final Path notesFile) {
+        final Map<JrsTestIdentifier, String> notes = new HashMap<>();
+        if (notesFile == null) {
+            return notes;
+        }
+
+        try (final BufferedReader reader = Files.newBufferedReader(notesFile)) {
+            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                final String[] parts = line.split(",");
+                if (parts.length != 3) {
+                    System.out.println("Invalid line in notes file: " + line);
+                    continue;
+                }
+
+                final String panel = parts[0].strip();
+                final String testName = parts[1].strip();
+                final String url = parts[2];
+
+                final JrsTestIdentifier id = new JrsTestIdentifier(panel, testName);
+                final String previous = notes.put(id, url);
+
+                if (previous != null) {
+                    System.out.println("Duplicate note URL found for " + id);
+                }
+            }
+        } catch (final IOException e) {
+            System.out.println("Unable to parse notes file " + notesFile);
+            e.printStackTrace();
+        }
+
+        return notes;
+    }
+
+    /**
+     * Print some warnings if we are missing notes or if we have notes for tests that were not discovered.
+     *
+     * @param tests all tests discovered by this utility
+     * @param notes note URLs for this test
+     */
+    public static void validateNotes(
+            @NonNull final List<JrsTestIdentifier> tests, @NonNull final Map<JrsTestIdentifier, String> notes) {
+
+        final Set<JrsTestIdentifier> unassignedNotes = new HashSet<>(notes.keySet());
+        final List<JrsTestIdentifier> testsWithoutNotes = new ArrayList<>();
+
+        for (final JrsTestIdentifier test : tests) {
+            final boolean noteFound = unassignedNotes.remove(test);
+
+            if (!noteFound) {
+                testsWithoutNotes.add(test);
+            }
+        }
+
+        if (!testsWithoutNotes.isEmpty()) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("The following test(s) do not have a notes URL:\n");
+            for (final JrsTestIdentifier test : testsWithoutNotes) {
+                sb.append("  - ")
+                        .append(test.panel())
+                        .append(": ")
+                        .append(test.name())
+                        .append("\n");
+            }
+            System.out.println(sb);
+        }
+        if (!unassignedNotes.isEmpty()) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("There are note URLs defined for the following test(s), "
+                    + "but these test(s) were not discovered during scan:\n");
+            for (final JrsTestIdentifier test : unassignedNotes) {
+                sb.append("  - ")
+                        .append(test.panel())
+                        .append(": ")
+                        .append(test.name())
+                        .append("\n");
+            }
+            System.out.println(sb);
+        }
+    }
+
     public static void generateTestReport(
             @NonNull final VirtualTerminal terminal,
             @NonNull final ExecutorService executor,
             @NonNull final String rootDirectory,
             @NonNull final Duration maximumAge,
+            @Nullable final Path notesFile,
             @NonNull final Path outputFile) {
 
         final Instant now = Instant.now();
 
+        final Map<JrsTestIdentifier, String> notes = parseNoteFile(notesFile);
         final List<JrsTestResult> results = findTestResults(terminal, executor, rootDirectory, now, maximumAge);
 
         // Sort tests by unique type.
@@ -579,10 +539,11 @@ public final class JrsTestReader {
         sb.append("<th>Test Name</th>\n");
         sb.append("<th>Age</th>\n");
         sb.append("<th>Status</th>\n");
+        sb.append("<th>History</th>\n");
         sb.append("<th>Summary</th>\n");
         sb.append("<th>Metrics</th>\n");
         sb.append("<th>Data</th>\n");
-        sb.append("<th>History</th>\n");
+        sb.append("<th>Notes</th>\n");
         sb.append("</tr>\n");
 
         for (final JrsTestIdentifier testType : testTypes) {
@@ -597,9 +558,10 @@ public final class JrsTestReader {
             sb.append("<td><b>").append(testType.name()).append("</b></td>\n");
 
             final Duration testAge = Duration.between(mostRecentTest.timestamp(), now);
-            final String ageString = new UnitFormatter(testAge.toMillis(), UNIT_MILLISECONDS)
-                    .setAbbreviate(false)
-                    .render() + " ago";
+            final String ageString =
+                    new UnitFormatter(testAge.toMillis(), UNIT_MILLISECONDS)
+                                    .setAbbreviate(false)
+                                    .render() + " ago";
 
             sb.append("<td>").append(ageString).append("</td>\n");
 
@@ -614,6 +576,10 @@ public final class JrsTestReader {
             sb.append("><center>").append(mostRecentTest.status().name()).append("</center></td>\n");
 
             sb.append("<td>");
+            generateHistory(sb, tests);
+            sb.append("</td>\n");
+
+            sb.append("<td>");
             generateHyperlink(sb, "summary", testUrl + "summary.txt");
             sb.append("</td>\n");
             sb.append("<td>");
@@ -622,9 +588,14 @@ public final class JrsTestReader {
             sb.append("<td>");
             generateHyperlink(sb, "data", testUrl);
             sb.append("</td>\n");
-            sb.append("<td>");
-            generateHistory(sb, tests);
-            sb.append("</td>\n");
+
+            final String notesUrl = notes.get(testType); // TODO write warning for unused notes and vice versa
+            sb.append("<td>\n");
+            if (notesUrl != null) {
+                generateHyperlink(sb, "notes", notesUrl);
+            }
+            sb.append("</td>");
+
             sb.append("</tr>\n");
         }
 
@@ -639,5 +610,7 @@ public final class JrsTestReader {
         } catch (final IOException e) {
             throw new UncheckedIOException("unable to generate test report", e);
         }
+
+        validateNotes(testTypes, notes);
     }
 }

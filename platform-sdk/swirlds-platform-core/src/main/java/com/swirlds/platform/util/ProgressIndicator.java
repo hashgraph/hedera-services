@@ -35,15 +35,7 @@ public class ProgressIndicator {
 
     private static final String[] LOADING_CHARACTERS = {"↑", "↗", "→", "↘", "↓", "↙", "←", "↖"};
     private static final int CHARACTERS_PER_LINE = LOADING_CHARACTERS.length * 10;
-    private static TextEffect[] COLORS = {
-            WHITE,
-            YELLOW,
-            RED,
-            PURPLE,
-            GREEN,
-            CYAN,
-            BLUE,
-            GRAY};
+    private static TextEffect[] COLORS = {WHITE, YELLOW, RED, PURPLE, GREEN, CYAN, BLUE, GRAY};
 
     private int count = 0;
     private int lineNumber = 0;
@@ -99,8 +91,9 @@ public class ProgressIndicator {
         final int charactersOnCurrentLine = currentProgress % CHARACTERS_PER_LINE;
         final boolean endOfLine = charactersOnCurrentLine % CHARACTERS_PER_LINE == 0;
 
-        final String line = (charactersOnCurrentLine > 0 ? "\r" : "") +
-                generateCurrentLine(lineNumber, charactersOnCurrentLine) + endOfLineMessage;
+        final String line = (charactersOnCurrentLine > 0 ? "\r" : "")
+                + generateCurrentLine(lineNumber, charactersOnCurrentLine)
+                + endOfLineMessage;
 
         System.out.print(line);
         System.out.flush();
@@ -109,22 +102,22 @@ public class ProgressIndicator {
             lineNumber++;
         }
 
-//        final int characterIndex = currentProgress % LOADING_CHARACTERS.length;
-//        final int colorIndex = currentProgress % COLORS.length;
-//
-//        final String string;
-//        if (colorEnabled) {
-//            string = COLORS[colorIndex].apply(LOADING_CHARACTERS[characterIndex]);
-//        } else {
-//            string = LOADING_CHARACTERS[characterIndex];
-//        }
-//        System.out.print(string);
-//
-//        if (currentProgress % CHARACTERS_PER_LINE == 0) {
-//            System.out.println("  " + endOfLineMessage);
-//        } else {
-//            System.out.flush();
-//        }
+        //        final int characterIndex = currentProgress % LOADING_CHARACTERS.length;
+        //        final int colorIndex = currentProgress % COLORS.length;
+        //
+        //        final String string;
+        //        if (colorEnabled) {
+        //            string = COLORS[colorIndex].apply(LOADING_CHARACTERS[characterIndex]);
+        //        } else {
+        //            string = LOADING_CHARACTERS[characterIndex];
+        //        }
+        //        System.out.print(string);
+        //
+        //        if (currentProgress % CHARACTERS_PER_LINE == 0) {
+        //            System.out.println("  " + endOfLineMessage);
+        //        } else {
+        //            System.out.flush();
+        //        }
     }
 
     /**

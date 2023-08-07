@@ -40,12 +40,11 @@ public class JrsTestReaderCommand extends AbstractCommand {
     @Override
     public Integer call() {
 
-        final VirtualTerminal terminal = new VirtualTerminal()
-                .setProgressIndicatorEnabled(true)
-                .setThrowOnError(true);
+        final VirtualTerminal terminal =
+                new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
 
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
-        //"gs://swirlds-circleci-jrs-results/cody-littley"
+        // "gs://swirlds-circleci-jrs-results/cody-littley"
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
         final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
 
@@ -54,9 +53,10 @@ public class JrsTestReaderCommand extends AbstractCommand {
                 Executors.newFixedThreadPool(48),
                 root,
                 Duration.ofDays(7),
+                Path.of("/Users/codylittley/ws/hedera-services/platform-sdk/swirlds-platform-core/"
+                        + "src/main/java/com/swirlds/platform/testreader/testNotes.csv"),
                 getAbsolutePath(Path.of("~/Desktop/report.html")));
 
         return 0;
     }
-
 }

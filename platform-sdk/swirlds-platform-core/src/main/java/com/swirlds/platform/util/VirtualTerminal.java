@@ -99,10 +99,8 @@ public final class VirtualTerminal {
             final StringBuilder in = new StringBuilder();
             final StringBuilder err = new StringBuilder();
 
-            final int exitCode = run(
-                    s -> in.append(s).append("\n"),
-                    s -> err.append(s).append("\n"),
-                    command);
+            final int exitCode =
+                    run(s -> in.append(s).append("\n"), s -> err.append(s).append("\n"), command);
 
             final String outString = in.toString();
             final String errString = err.toString();

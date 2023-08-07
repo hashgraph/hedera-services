@@ -16,75 +16,62 @@
 
 package com.swirlds.platform.testreader;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.platform.testreader.JrsTestReader.parseTimestampFromDirectory;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
-import com.swirlds.platform.util.VirtualTerminal;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 @DisplayName("JrsTestReader Tests")
 public class JrsTestReaderTests {
 
-//    @Test
-//    @DisplayName("Parse Remote Directory For Timestamp Test")
-//    void parseRemoteDirectoryForTimestampTest() {
-//        final Instant expectedTimestamp = Instant.parse("2023-06-30T05:36:33Z");
-//
-//        final String dir1 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
-//                + "4N/Basic/20230630-053633-GCP-Daily-Basic-4N/Crypto-LargeTx-50k-20m/regression.log";
-//        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir1));
-//
-//        final String dir2 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
-//                + "4N/Basic/20230630-053633-GCP-Daily-Basic-4N/Crypto-LargeTx-50k-20m";
-//        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir2));
-//
-//        final String dir3 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
-//                + "4N/Basic/20230630-053633-GCP-Daily-Basic-4N";
-//        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir3));
-//
-//        final String dir4 =
-//                "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/" + "4N/Basic/20230630-053633";
-//        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir4));
-//
-//        final String dir5 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
-//        assertNull(parseTimestampFromDirectory(dir5));
-//    }
-//
-//    @Test
-//    void test() {
-//        final VirtualTerminal terminal = new VirtualTerminal()
-//                .setPrintCommand(true)
-//                .setPrintExitCode(true)
-//                .setThrowOnError(true);
-//
-//        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
-//        //"gs://swirlds-circleci-jrs-results/cody-littley"
-//        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
-//
-////        JrsTestReader.generateTestReport(
-////                terminal,
-////                executor,
-////                root,
-////                Instant.now().minus(1, ChronoUnit.DAYS),
-////                getAbsolutePath(Path.of("~/Desktop/out.csv")));
-//
-//        final List<JrsTestResult> results = JrsTestReader.getTestResults(
-//                terminal,
-//                root);
-//
-//
-//        for (final JrsTestResult result : results) {
-//            System.out.println(result);
-//        }
-//
-//    }
+    //    @Test
+    //    @DisplayName("Parse Remote Directory For Timestamp Test")
+    //    void parseRemoteDirectoryForTimestampTest() {
+    //        final Instant expectedTimestamp = Instant.parse("2023-06-30T05:36:33Z");
+    //
+    //        final String dir1 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
+    //                + "4N/Basic/20230630-053633-GCP-Daily-Basic-4N/Crypto-LargeTx-50k-20m/regression.log";
+    //        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir1));
+    //
+    //        final String dir2 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
+    //                + "4N/Basic/20230630-053633-GCP-Daily-Basic-4N/Crypto-LargeTx-50k-20m";
+    //        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir2));
+    //
+    //        final String dir3 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/"
+    //                + "4N/Basic/20230630-053633-GCP-Daily-Basic-4N";
+    //        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir3));
+    //
+    //        final String dir4 =
+    //                "gs://swirlds-circleci-jrs-results/swirlds-automation/develop/" + "4N/Basic/20230630-053633";
+    //        assertEquals(expectedTimestamp, parseTimestampFromDirectory(dir4));
+    //
+    //        final String dir5 = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
+    //        assertNull(parseTimestampFromDirectory(dir5));
+    //    }
+    //
+    //    @Test
+    //    void test() {
+    //        final VirtualTerminal terminal = new VirtualTerminal()
+    //                .setPrintCommand(true)
+    //                .setPrintExitCode(true)
+    //                .setThrowOnError(true);
+    //
+    //        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
+    //        //"gs://swirlds-circleci-jrs-results/cody-littley"
+    //        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
+    //
+    ////        JrsTestReader.generateTestReport(
+    ////                terminal,
+    ////                executor,
+    ////                root,
+    ////                Instant.now().minus(1, ChronoUnit.DAYS),
+    ////                getAbsolutePath(Path.of("~/Desktop/out.csv")));
+    //
+    //        final List<JrsTestResult> results = JrsTestReader.getTestResults(
+    //                terminal,
+    //                root);
+    //
+    //
+    //        for (final JrsTestResult result : results) {
+    //            System.out.println(result);
+    //        }
+    //
+    //    }
 }
