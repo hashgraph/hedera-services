@@ -22,7 +22,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHie
 
 import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.InfoEntity;
-import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.components.PrePaintableJPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;

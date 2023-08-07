@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.gui;
+package com.swirlds.gui.components;
 
 import javax.swing.JScrollPane;
 
