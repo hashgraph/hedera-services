@@ -65,6 +65,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,7 +81,7 @@ public class AssortedOpsXTest extends AbstractContractXTest {
     protected void handleAndCommitScenarioTransactions() {
         handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
         // TODO - uncomment and fix remaining transactions
-        //        handleAndCommit(CONTRACT_SERVICE.handlers().etherumTransactionHandler(), synthLazyCreateTxn());
+        handleAndCommit(CONTRACT_SERVICE.handlers().ethereumTransactionHandler(), synthLazyCreateTxn());
         //        handleAndCommit(CONTRACT_SERVICE.handlers().contractCallHandler(),
         //                synthDeterministicDeploy(),
         //                synthVacateAddress(),

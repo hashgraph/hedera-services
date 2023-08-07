@@ -17,16 +17,23 @@
 package com.hedera.node.app.service.contract.impl.test.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.provideActionSidecarContentTracer;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.contract.ContractCallTransactionBody;
+import com.hedera.hapi.node.contract.EthereumTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.EvmActionTracer;
 import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -34,7 +41,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +91,26 @@ class TransactionModuleTest {
     }
 
     @Test
+    void providesEthTxDataWhenApplicable() {
+        final var ethTxn = EthereumTransactionBody.newBuilder()
+                .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
+                .build();
+        final var body = TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
+        given(context.body()).willReturn(body);
+        assertEquals(ETH_DATA_WITH_TO_ADDRESS, TransactionModule.maybeProvideEthTxData(context));
+    }
+
+    @Test
+    void providesNullEthTxDataIfNotEthereumTransaction() {
+        final var callTxn = ContractCallTransactionBody.newBuilder()
+                .contractID(TestHelpers.CALLED_CONTRACT_ID)
+                .build();
+        final var body = TransactionBody.newBuilder().contractCall(callTxn).build();
+        given(context.body()).willReturn(body);
+        assertNull(TransactionModule.maybeProvideEthTxData(context));
+    }
+
+    @Test
     void providesValidators() {
         given(context.attributeValidator()).willReturn(attributeValidator);
         given(context.expiryValidator()).willReturn(expiryValidator);
@@ -103,16 +130,6 @@ class TransactionModuleTest {
     void providesNetworkInfo() {
         given(context.networkInfo()).willReturn(networkInfo);
         assertSame(networkInfo, TransactionModule.provideNetworkInfo(context));
-    }
-
-    @Test
-    void providesExpectedConfig() {
-        final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(context.configuration()).willReturn(config);
-        assertSame(config, TransactionModule.provideConfiguration(context));
-        assertNotNull(TransactionModule.provideContractsConfig(config));
-        assertNotNull(TransactionModule.provideLedgerConfig(config));
-        assertNotNull(TransactionModule.provideStakingConfig(config));
     }
 
     @Test

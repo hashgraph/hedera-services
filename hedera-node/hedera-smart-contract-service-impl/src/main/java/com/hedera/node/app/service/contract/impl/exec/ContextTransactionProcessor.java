@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
@@ -30,6 +31,8 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
@@ -43,6 +46,8 @@ import javax.inject.Inject;
  */
 @TransactionScope
 public class ContextTransactionProcessor implements Callable<CallOutcome> {
+    @Nullable
+    private final EthTxData ethTxData;
     private final HandleContext context;
     private final ContractsConfig contractsConfig;
     private final Configuration configuration;
@@ -55,6 +60,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     @Inject
     public ContextTransactionProcessor(
+            @Nullable final EthTxData ethTxData,
             @NonNull final HandleContext context,
             @NonNull final ContractsConfig contractsConfig,
             @NonNull final Configuration configuration,
@@ -65,6 +71,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors) {
         this.context = Objects.requireNonNull(context);
+        this.ethTxData = ethTxData;
         this.tracer = Objects.requireNonNull(tracer);
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
         this.processors = Objects.requireNonNull(processors);
@@ -77,8 +84,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
 
     @Override
     public CallOutcome call() {
-        // Translate the HAPI operation to a Hedera EVM transaction; throws HandleException
-        // if this translation fails for any reason
+        // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
         final var hevmTransaction = hevmTransactionFactory.fromHapiTransaction(context.body());
 
         // Get the appropriate processor for the EVM version
@@ -88,7 +94,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         final var result = processor.processTransaction(
                 hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, configuration);
 
-        // Return the EVM result, maybe enriched with details of the base commit
-        return new CallOutcome(result.asProtoResultOf(worldUpdater), result.finalStatus());
+        // Return the outcome, maybe enriched with details of the base commit and Ethereum transaction
+        return new CallOutcome(result.asProtoResultOf(ethTxData, worldUpdater), result.finalStatus());
     }
 }

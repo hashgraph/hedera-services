@@ -39,6 +39,5 @@ class QueryModuleTest {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(context.configuration()).willReturn(config);
         assertSame(config, QueryModule.provideConfiguration(context));
-        assertNotNull(TransactionModule.provideContractsConfig(config));
     }
 }

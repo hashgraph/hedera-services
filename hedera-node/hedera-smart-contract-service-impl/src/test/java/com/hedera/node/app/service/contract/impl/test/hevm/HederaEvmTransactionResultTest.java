@@ -22,14 +22,17 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHILD_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_STORAGE_ACCESSES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.TWO_STORAGE_ACCESSES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.WEI_NETWORK_GAS_PRICE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -69,7 +72,7 @@ class HederaEvmTransactionResultTest {
     void finalStatusFromHaltNotImplemented() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, frame);
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertThrows(AssertionError.class, subject::finalStatus);
     }
 
@@ -77,7 +80,7 @@ class HederaEvmTransactionResultTest {
     void finalStatusFromRevertNotImplemented() {
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
         given(frame.getRevertReason()).willReturn(Optional.of(Bytes.of("MAX_CHILD_RECORDS_EXCEEDED".getBytes())));
-        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, frame);
+        final var subject = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
         assertThrows(AssertionError.class, subject::finalStatus);
     }
 
@@ -96,8 +99,45 @@ class HederaEvmTransactionResultTest {
         given(rootProxyWorldUpdater.getUpdatedContractNonces()).willReturn(NONCES);
 
         final var result = HederaEvmTransactionResult.successFrom(
-                GAS_LIMIT / 2, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
+                GAS_LIMIT / 2, SENDER_ID, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
         final var protoResult = result.asProtoResultOf(rootProxyWorldUpdater);
+        assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
+        assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());
+        assertEquals(OUTPUT_DATA, protoResult.contractCallResult());
+        assertNull(protoResult.errorMessage());
+        assertNull(protoResult.senderId());
+        assertEquals(CALLED_CONTRACT_ID, protoResult.contractID());
+        assertEquals(pbjLogsFrom(BESU_LOGS), protoResult.logInfo());
+        assertEquals(createdIds, protoResult.createdContractIDs());
+        assertEquals(CALLED_CONTRACT_EVM_ADDRESS.evmAddressOrThrow(), protoResult.evmAddress());
+        assertEquals(NONCES, protoResult.contractNonces());
+
+        final var expectedChanges = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
+        assertEquals(expectedChanges, result.stateChanges());
+        assertEquals(SUCCESS, result.finalStatus());
+    }
+
+    @Test
+    void givenEthTxDataIncludesSpecialFields() {
+        given(frame.getContextVariable(FrameUtils.TRACKER_CONTEXT_VARIABLE)).willReturn(accessTracker);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        final var pendingWrites = List.of(TWO_STORAGE_ACCESSES);
+        given(proxyWorldUpdater.pendingStorageUpdates()).willReturn(pendingWrites);
+        given(accessTracker.getReadsMergedWith(pendingWrites)).willReturn(SOME_STORAGE_ACCESSES);
+        given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
+        given(frame.getLogs()).willReturn(BESU_LOGS);
+        given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
+        final var createdIds = List.of(CALLED_CONTRACT_ID, CHILD_CONTRACT_ID);
+        given(rootProxyWorldUpdater.getCreatedContractIds()).willReturn(createdIds);
+        given(rootProxyWorldUpdater.getUpdatedContractNonces()).willReturn(NONCES);
+
+        final var result = HederaEvmTransactionResult.successFrom(
+                GAS_LIMIT / 2, SENDER_ID, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
+        final var protoResult = result.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
+        assertEquals(ETH_DATA_WITH_TO_ADDRESS.gasLimit(), protoResult.gas());
+        assertEquals(ETH_DATA_WITH_TO_ADDRESS.getAmount(), protoResult.amount());
+        assertArrayEquals(ETH_DATA_WITH_TO_ADDRESS.callData(), protoResult.functionParameters().toByteArray());
+        assertEquals(SENDER_ID, protoResult.senderId());
         assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());
         assertEquals(OUTPUT_DATA, protoResult.contractCallResult());
@@ -119,7 +159,7 @@ class HederaEvmTransactionResultTest {
         given(accessTracker.getJustReads()).willReturn(SOME_STORAGE_ACCESSES);
         given(frame.getGasPrice()).willReturn(WEI_NETWORK_GAS_PRICE);
 
-        final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, frame);
+        final var result = HederaEvmTransactionResult.failureFrom(GAS_LIMIT / 2, SENDER_ID, frame);
 
         final var expectedChanges = ConversionUtils.asPbjStateChanges(SOME_STORAGE_ACCESSES);
         assertEquals(expectedChanges, result.stateChanges());
@@ -131,7 +171,7 @@ class HederaEvmTransactionResultTest {
         given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
 
         final var result = HederaEvmTransactionResult.successFrom(
-                GAS_LIMIT / 2, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
+                GAS_LIMIT / 2, SENDER_ID, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
 
         assertNull(result.stateChanges());
     }

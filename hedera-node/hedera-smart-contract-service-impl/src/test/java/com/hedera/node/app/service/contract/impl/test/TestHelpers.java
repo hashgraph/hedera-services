@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -41,6 +42,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.streams.CallOperationType;
 import com.hedera.hapi.streams.ContractAction;
 import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
@@ -75,6 +77,9 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.Operation;
 
 public class TestHelpers {
+    public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex("02f8ad82012a80a000000000000000000000000000000000000000000000000000000000000003e8a0000000000000000000000000000000000000000000000000000000746a528800831e848094fee687d5088faff48013a6767505c027e2742536880de0b6b3a764000080c080a0f5ddf2394311e634e2147bf38583a017af45f4326bdf5746cac3a1110f973e4fa025bad52d9a9f8b32eb983c9fb8959655258bd75e2826b2c6a48d4c26ec30d112");
+    public static final EthTxData ETH_DATA_WITH_TO_ADDRESS = requireNonNull(EthTxData.populateEthTxData(ETH_WITH_TO_ADDRESS.toByteArray()));
+    public static final EthTxData ETH_DATA_WITHOUT_TO_ADDRESS = ETH_DATA_WITH_TO_ADDRESS.replaceTo(new byte[0]);
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);
     public static final StakingConfig DEFAULT_STAKING_CONFIG = DEFAULT_CONFIG.getConfigData(StakingConfig.class);
@@ -189,6 +194,7 @@ public class TestHelpers {
     public static final HederaEvmTransactionResult SUCCESS_RESULT = HederaEvmTransactionResult.successFrom(
             GAS_LIMIT / 2,
             Wei.of(NETWORK_GAS_PRICE),
+            SENDER_ID,
             CALLED_CONTRACT_ID,
             CALLED_CONTRACT_EVM_ADDRESS,
             pbjToTuweniBytes(CALL_DATA),
@@ -198,6 +204,7 @@ public class TestHelpers {
     public static final HederaEvmTransactionResult HALT_RESULT = new HederaEvmTransactionResult(
             GAS_LIMIT / 2,
             NETWORK_GAS_PRICE,
+            SENDER_ID,
             null,
             null,
             Bytes.EMPTY,

@@ -205,8 +205,9 @@ class TransactionProcessorTest {
                         expectedToAddress,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
-                        transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor))
+                        transaction.gasLimit(), SENDER_ID, initialFrame, tracer, messageCallProcessor, contractCreationProcessor))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
@@ -228,7 +229,7 @@ class TransactionProcessorTest {
                         CHARGING_RESULT.intrinsicGas());
         inOrder.verify(frameRunner)
                 .runToCompletion(
-                        transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
+                        transaction.gasLimit(), SENDER_ID, initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(
                         GAS_LIMIT - SUCCESS_RESULT.gasUsed(),
@@ -266,8 +267,9 @@ class TransactionProcessorTest {
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
-                        transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor))
+                        transaction.gasLimit(), SENDER_ID, initialFrame, tracer, messageCallProcessor, contractCreationProcessor))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
@@ -287,7 +289,7 @@ class TransactionProcessorTest {
                         CHARGING_RESULT.intrinsicGas());
         inOrder.verify(frameRunner)
                 .runToCompletion(
-                        transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
+                        transaction.gasLimit(), SENDER_ID, initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(GAS_LIMIT - SUCCESS_RESULT.gasUsed(), 0, senderAccount, null, context, worldUpdater);
         inOrder.verify(worldUpdater).deleteAccount(NON_SYSTEM_LONG_ZERO_ADDRESS);
@@ -322,8 +324,9 @@ class TransactionProcessorTest {
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(frameRunner.runToCompletion(
-                        eq(transaction.gasLimit()), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor)))
+                        eq(transaction.gasLimit()), eq(SENDER_ID), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
 
@@ -343,7 +346,7 @@ class TransactionProcessorTest {
                         CHARGING_RESULT.intrinsicGas());
         inOrder.verify(frameRunner)
                 .runToCompletion(
-                        transaction.gasLimit(), initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
+                        transaction.gasLimit(), SENDER_ID, initialFrame, tracer, messageCallProcessor, contractCreationProcessor);
         inOrder.verify(gasCharging)
                 .maybeRefundGiven(
                         GAS_LIMIT - SUCCESS_RESULT.gasUsed(),
@@ -371,6 +374,7 @@ class TransactionProcessorTest {
         given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
                 .willReturn(CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         given(receiverAccount.getAddress()).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frameBuilder.buildInitialFrameWith(
                         transaction,
@@ -382,7 +386,7 @@ class TransactionProcessorTest {
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
         given(frameRunner.runToCompletion(
-                        eq(transaction.gasLimit()), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor)))
+                        eq(transaction.gasLimit()), eq(SENDER_ID), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor)))
                 .willReturn(SUCCESS_RESULT);
         given(initialFrame.getSelfDestructs()).willReturn(Set.of(NON_SYSTEM_LONG_ZERO_ADDRESS));
         willThrow(new ResourceExhaustedException(INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES))
@@ -421,10 +425,11 @@ class TransactionProcessorTest {
                         NON_SYSTEM_LONG_ZERO_ADDRESS,
                         CHARGING_RESULT.intrinsicGas()))
                 .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
         willThrow(new ResourceExhaustedException(MAX_CHILD_RECORDS_EXCEEDED))
                 .given(frameRunner)
                 .runToCompletion(
-                        eq(transaction.gasLimit()), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor));
+                        eq(transaction.gasLimit()), eq(SENDER_ID), eq(initialFrame), eq(tracer), any(), eq(contractCreationProcessor));
 
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);

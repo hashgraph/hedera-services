@@ -243,7 +243,7 @@ public record EthTxData(
     }
 
     @VisibleForTesting
-    EthTxData replaceTo(byte[] to) {
+    public EthTxData replaceTo(byte[] to) {
         return new EthTxData(
                 null,
                 type,

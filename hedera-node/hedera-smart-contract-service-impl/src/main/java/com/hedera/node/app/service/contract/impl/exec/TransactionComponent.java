@@ -16,10 +16,12 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import dagger.BindsInstance;
 import dagger.Subcomponent;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 @Subcomponent(modules = {TransactionModule.class})
 @TransactionScope
@@ -30,4 +32,8 @@ public interface TransactionComponent {
     }
 
     ContextTransactionProcessor contextTransactionProcessor();
+
+    @Nullable
+    @javax.annotation.Nullable
+    EthTxData ethTxData();
 }

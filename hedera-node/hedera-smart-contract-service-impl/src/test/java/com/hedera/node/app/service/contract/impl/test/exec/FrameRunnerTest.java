@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NETWORK
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_REVERT_REASON;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
@@ -105,7 +106,7 @@ class FrameRunnerTest {
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
 
         final var result =
-                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -128,7 +129,7 @@ class FrameRunnerTest {
         givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
         final var result =
-                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -147,7 +148,7 @@ class FrameRunnerTest {
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
         final var result =
-                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -167,7 +168,7 @@ class FrameRunnerTest {
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(TOO_MANY_CHILD_RECORDS));
 
         final var result =
-                subject.runToCompletion(GAS_LIMIT, frame, tracer, messageCallProcessor, contractCreationProcessor);
+                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
