@@ -56,7 +56,6 @@ jobs:
     with:
       version-policy: branch-commit
       trigger-env-deploy: none
-      trigger-docker-images: true
       dry-run-enabled: ${{ github.event.inputs.dry-run-enabled == 'true' }}
       java-version: ${{ github.event.inputs.java-version || '17.0.7' }}
       java-distribution: ${{ github.event.inputs.java-distribution || 'temurin' }}
@@ -111,7 +110,6 @@ jobs:
       version-policy: specified
       new-version: ${{ needs.prepare-tag-release.outputs.version }}
       trigger-env-deploy: preview
-      trigger-docker-images: true
     secrets:
       access-token: ${{ secrets.GITHUB_TOKEN }}
       bucket-name: ${{ secrets.RELEASE_ARTIFACT_BUCKET_NAME }}
