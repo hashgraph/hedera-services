@@ -24,6 +24,8 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Message;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.test.fixtures.crypto.EcdsaSignedTxnPool;
+import com.swirlds.common.test.fixtures.crypto.MessageDigestPool;
 import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.test.framework.TestTypeTags;
 import java.nio.ByteBuffer;

@@ -248,8 +248,15 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         EventDescriptor bestOtherParent = null;
         TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
         for (final EventDescriptor otherParent : possibleOtherParents) {
+
+            final List<EventDescriptor> parents = new ArrayList<>(2);
+            parents.add(otherParent);
+            if (lastSelfEvent != null) {
+                parents.add(lastSelfEvent);
+            }
+
             final TipsetAdvancementWeight advancementWeight =
-                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(List.of(otherParent));
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
             if (advancementWeight.isGreaterThan(bestAdvancementWeight)) {
                 bestOtherParent = otherParent;
                 bestAdvancementWeight = advancementWeight;
@@ -463,8 +470,21 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         sb.append("Minimum generation non-ancient: ")
                 .append(tipsetTracker.getMinimumGenerationNonAncient())
                 .append("\n");
-        sb.append(childlessOtherEventTracker);
+        sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
         sb.append(tipsetWeightCalculator);
+
+        sb.append("Childless events:");
+        final List<EventDescriptor> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
+        if (childlessEvents.isEmpty()) {
+            sb.append(" none\n");
+        } else {
+            sb.append("\n");
+            for (final EventDescriptor event : childlessEvents) {
+                final Tipset tipset = tipsetTracker.getTipset(event);
+                sb.append("  - ").append(event).append(" ").append(tipset).append("\n");
+            }
+        }
+
         return sb.toString();
     }
 }

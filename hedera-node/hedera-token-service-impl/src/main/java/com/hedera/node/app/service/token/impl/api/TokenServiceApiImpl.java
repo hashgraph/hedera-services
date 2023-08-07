@@ -21,11 +21,16 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
 
@@ -34,23 +39,44 @@ import java.util.Set;
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
     private final WritableStates writableStates;
+    private final StakingValidator stakingValidator;
 
-    public TokenServiceApiImpl(@NonNull final Configuration config, @NonNull final WritableStates writableStates) {
+    public TokenServiceApiImpl(
+            @NonNull final Configuration config,
+            @NonNull final StakingValidator stakingValidator,
+            @NonNull final WritableStates writableStates) {
         requireNonNull(config);
         this.writableStates = requireNonNull(writableStates);
+        this.stakingValidator = requireNonNull(stakingValidator);
+    }
+
+    @Override
+    public void assertValidStakingElection(
+            final boolean isStakingEnabled,
+            final boolean hasDeclineRewardChange,
+            @NonNull final String stakedIdKind,
+            @Nullable final AccountID stakedAccountIdInOp,
+            @Nullable final Long stakedNodeIdInOp,
+            @NonNull final ReadableAccountStore accountStore,
+            @NonNull final NetworkInfo networkInfo) {
+        stakingValidator.validateStakedId(
+                isStakingEnabled,
+                hasDeclineRewardChange,
+                stakedIdKind,
+                stakedAccountIdInOp,
+                stakedNodeIdInOp,
+                accountStore,
+                networkInfo);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void markNewlyCreatedAsContract(@NonNull final AccountID justCreated) {
-        requireNonNull(justCreated);
+    public void markAsContract(@NonNull final AccountID accountId) {
+        requireNonNull(accountId);
         final var store = new WritableAccountStore(writableStates);
-        if (!store.isNewlyCreated(justCreated)) {
-            throw new IllegalArgumentException("Account " + justCreated + " is not newly created");
-        }
-        final var accountAsContract = requireNonNull(store.get(justCreated))
+        final var accountAsContract = requireNonNull(store.get(accountId))
                 .copyBuilder()
                 .smartContract(true)
                 .build();
@@ -80,7 +106,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void incrementParentNonce(@NonNull ContractID parentId) {
+    public void incrementParentNonce(@NonNull final ContractID parentId) {
+        requireNonNull(parentId);
         final var store = new WritableAccountStore(writableStates);
         final var contract = requireNonNull(store.getContractById(parentId));
         store.put(contract.copyBuilder()
@@ -92,10 +119,22 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * {@inheritDoc}
      */
     @Override
-    public void incrementSenderNonce(@NonNull AccountID senderId) {
+    public void incrementSenderNonce(@NonNull final AccountID senderId) {
+        requireNonNull(senderId);
         final var store = new WritableAccountStore(writableStates);
         final var sender = requireNonNull(store.get(senderId));
         store.put(sender.copyBuilder().ethereumNonce(sender.ethereumNonce() + 1).build());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setNonce(@NonNull final AccountID accountId, final long nonce) {
+        requireNonNull(accountId);
+        final var store = new WritableAccountStore(writableStates);
+        final var target = requireNonNull(store.get(accountId));
+        store.put(target.copyBuilder().ethereumNonce(nonce).build());
     }
 
     /**
@@ -140,5 +179,33 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     public List<ContractNonceInfo> updatedContractNonces() {
         final var store = new WritableAccountStore(writableStates);
         return store.updatedContractNonces();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void updateStorageMetadata(
+            @NonNull final AccountID accountId, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
+        requireNonNull(firstKey);
+        requireNonNull(accountId);
+        final var store = new WritableAccountStore(writableStates);
+        final var target = requireNonNull(store.get(accountId));
+        if (!target.smartContract()) {
+            throw new IllegalArgumentException("Cannot update storage metadata for non-contract " + accountId);
+        }
+        final var newNumKvPairs = target.contractKvPairsNumber() + netChangeInSlotsUsed;
+        if (newNumKvPairs < 0) {
+            throw new IllegalArgumentException("Cannot change # of storage slots (currently "
+                    + target.contractKvPairsNumber()
+                    + ") by "
+                    + netChangeInSlotsUsed
+                    + " for contract "
+                    + accountId);
+        }
+        store.put(target.copyBuilder()
+                .firstContractStorageKey(firstKey)
+                .contractKvPairsNumber(newNumKvPairs)
+                .build());
     }
 }

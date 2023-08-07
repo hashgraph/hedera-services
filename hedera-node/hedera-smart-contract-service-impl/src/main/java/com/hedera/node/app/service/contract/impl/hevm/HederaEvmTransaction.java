@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pb
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -36,7 +37,22 @@ public record HederaEvmTransaction(
         long value,
         long gasLimit,
         long offeredGasPrice,
-        long maxGasAllowance) {
+        long maxGasAllowance,
+        @Nullable ContractCreateTransactionBody hapiCreation) {
+    public static final long NOT_APPLICABLE = -1L;
+
+    public boolean hasExpectedNonce() {
+        return nonce != NOT_APPLICABLE;
+    }
+
+    public boolean hasOfferedGasPrice() {
+        return offeredGasPrice != NOT_APPLICABLE;
+    }
+
+    public boolean hasMaxGasAllowance() {
+        return maxGasAllowance != NOT_APPLICABLE;
+    }
+
     public boolean isCreate() {
         return contractId == null;
     }

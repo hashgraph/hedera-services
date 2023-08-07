@@ -17,6 +17,7 @@
 package com.hedera.node.app.spi.validation;
 
 import com.hedera.hapi.node.base.AccountID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Encapsulates expiry/auto-renewal metadata for an entity.
@@ -28,7 +29,7 @@ import com.hedera.hapi.node.base.AccountID;
  * @param autoRenewPeriod the number of seconds between auto-renewals
  * @param autoRenewAccountId the id of the account to be charged for auto-renewals
  */
-public record ExpiryMeta(long expiry, long autoRenewPeriod, AccountID autoRenewAccountId) {
+public record ExpiryMeta(long expiry, long autoRenewPeriod, @Nullable AccountID autoRenewAccountId) {
 
     /**
      * A sentinel value indicating some part of the metadata is not available..

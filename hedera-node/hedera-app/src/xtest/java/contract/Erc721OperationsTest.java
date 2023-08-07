@@ -16,20 +16,33 @@
 
 package contract;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
+import static contract.Erc721OperationsConstants.COINBASE_ID;
+import static contract.Erc721OperationsConstants.COUNTERPARTY_ADDRESS;
+import static contract.Erc721OperationsConstants.COUNTERPARTY_ID;
+import static contract.Erc721OperationsConstants.EXPECTED_STORAGE;
+import static contract.Erc721OperationsConstants.INITIAL_BALANCE;
+import static contract.Erc721OperationsConstants.NEXT_ENTITY_NUM;
+import static contract.Erc721OperationsConstants.OPERATOR_ADDRESS;
+import static contract.Erc721OperationsConstants.OPERATOR_ID;
+import static contract.Erc721OperationsConstants.PARTY_ADDRESS;
+import static contract.Erc721OperationsConstants.PARTY_ID;
+import static contract.Erc721OperationsConstants.STANDARD_AUTO_RENEW_PERIOD;
+import static contract.Erc721OperationsConstants.TOKEN_TREASURY_ADDRESS;
+import static contract.Erc721OperationsConstants.TOKEN_TREASURY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
@@ -38,6 +51,8 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -47,9 +62,11 @@ import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -57,6 +74,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,80 +113,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @ExtendWith(MockitoExtension.class)
 class Erc721OperationsTest {
-    private static final long GAS_TO_OFFER = 2_000_000L;
-    private static final Bytes[] ACCOUNT_KEYS = {
-        Bytes.fromHex("0323350d977f06926ea7522c05392d73bd994eda850225088c1e0f46cc2eec6ab8"),
-        Bytes.fromHex("022b80534c9e022c1b8f1b5f053411577242beb595b91039fad4e233df5814e01f"),
-        Bytes.fromHex("038b87d8bd6206cdf1d84b054224209a00ae504b81d40218e1929f8ec2fd67ad4e"),
-        Bytes.fromHex("dc1e04e0efc0a23cc68f105a2a7bd5b7e72b08d20e8df0bf02f3dfe5e322538b"),
-    };
-    private static final Bytes[] ACCOUNT_ALIASES = {
-        Bytes.fromHex("096959f155eE025b17E5C537b6dCB4a29BBAd8c2"),
-        Bytes.fromHex("D893F18B69A06F7ffFfaD77202c2f627CB2C9605"),
-        Bytes.fromHex("8CEB1aE3aB4ABfcA08c0BC5CD59DE0Bce7b5554f"),
-        Bytes.EMPTY,
-    };
-    private static final Map<Bytes, Bytes> EXPECTED_STORAGE = Map.ofEntries(
-            Map.entry(
-                    Bytes.fromHex("4ED80C6A5F6FC6B817594793D5BC01D5AFC46D4DEB2D84AA5499B6BA2A91788B"),
-                    Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000002")),
-            Map.entry(
-                    Bytes.fromHex("0F24D19A172FA39F354DF146E316F49BA39EED2FB244C2D71184E128EE8EA57E"),
-                    Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000001")),
-            Map.entry(
-                    Bytes.fromHex("1D9A121EAE26CB344361C7A5EC17B9B0DC501335BE929850EA33D9A7A2EA135B"),
-                    Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000001")),
-            Map.entry(
-                    Bytes.fromHex("679795A0195A1B76CDEBB7C51D74E058AEE92919B8C3389AF86EF24535E8A28C"),
-                    Bytes.fromHex("00000000000000000000000000000000000000000000000000000000000003ec")),
-            Map.entry(
-                    Bytes.fromHex("7DFE757ECD65CBD7922A9C0161E935DD7FDBCC0E999689C7D31633896B1FC60B"),
-                    Bytes.fromHex("00000000000000000000000000000000000000000000000000000000000003ec")),
-            Map.entry(
-                    Bytes.fromHex("67BE87C3FF9960CA1E9CFAC5CAB2FF4747269CF9ED20C9B7306235AC35A491C5"),
-                    Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000001")),
-            Map.entry(
-                    Bytes.fromHex("4DB623E5C4870B62D3FC9B4E8F893A1A77627D75AB45D9FF7E56BA19564AF99B"),
-                    Bytes.fromHex("00000000000000000000000000000000000000000000000000000000000003ec")),
-            Map.entry(
-                    Bytes.fromHex("F7815FCCBF112960A73756E185887FEDCB9FC64CA0A16CC5923B7960ED780800"),
-                    Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000001")),
-            Map.entry(
-                    Bytes.fromHex("E2689CD4A84E23AD2F564004F1C9013E9589D260BDE6380ABA3CA7E09E4DF40C"),
-                    Bytes.fromHex("000000000000000000000000096959f155ee025b17e5c537b6dcb4a29bbad8c2")),
-            Map.entry(
-                    Bytes.fromHex("DD170DB99724E3ABCC0E44A83A3B5D5F8332989846A2C7346446F717FDA4F32B"),
-                    Bytes.fromHex("0000000000000000000000000000000000000000000000000000000000000002")),
-            Map.entry(
-                    Bytes.fromHex("D9D16D34FFB15BA3A3D852F0D403E2CE1D691FB54DE27AC87CD2F993F3EC330F"),
-                    Bytes.fromHex("000000000000000000000000096959f155ee025b17e5c537b6dcb4a29bbad8c2")),
-            Map.entry(
-                    Bytes.fromHex("86B3FA87EE245373978E0D2D334DBDE866C9B8B039036B87C5EB2FD89BCB6BAB"),
-                    Bytes.fromHex("000000000000000000000000d893f18b69a06f7ffffad77202c2f627cb2c9605")));
-    private static final AccountID TREASURY =
-            AccountID.newBuilder().accountNum(1001L).build();
-    private static final Bytes TREASURY_ADDRESS = ACCOUNT_ALIASES[0];
-    private static final AccountID COUNTERPARTY =
-            AccountID.newBuilder().accountNum(1002L).build();
-    private static final Bytes COUNTERPARTY_ADDRESS = ACCOUNT_ALIASES[1];
-    private static final AccountID OPERATOR =
-            AccountID.newBuilder().accountNum(1003L).build();
-    private static final Bytes OPERATOR_ADDRESS = ACCOUNT_ALIASES[2];
-    private static final AccountID PARTY =
-            AccountID.newBuilder().accountNum(1004L).build();
-    private static final Bytes PARTY_ADDRESS = Bytes.fromHex("00000000000000000000000000000000000003ec");
-    private static final AccountID[] ACCOUNTS = {
-        TREASURY, COUNTERPARTY, OPERATOR, PARTY,
-    };
-    private static final FileID ERC721_FULL_INITCODE_FILE_ID = new FileID(0, 0, 1005);
-    private static final AccountID ERC721_FULL =
-            AccountID.newBuilder().accountNum(1006).build();
-    private static final ContractID ERC721_FULL_CONTRACT =
-            ContractID.newBuilder().contractNum(ERC721_FULL.accountNum()).build();
-    private static final Function APPROVE = new Function("approve(address,uint256)");
-    private static final Function SET_APPROVAL_FOR_ALL = new Function("setApprovalForAll(address,bool)");
-    private static final Function SAFE_TRANSFER_FROM = new Function("safeTransferFrom(address,address,uint256)");
-
     @Mock
     private Metrics metrics;
 
@@ -180,51 +124,54 @@ class Erc721OperationsTest {
     }
 
     @Test
-    void erc721OperationsResultInExpectedState() throws IOException {
-        // GIVEN:
+    void recordedErc721OperationsResultInExpectedState() throws IOException {
+        // given:
         setupFakeStates();
-        assertDoesNotThrow(this::setupErc721InitcodeAndWellKnownAccounts);
-        // TODO - set up the next entity id to be 0.0.1006 as expected
+        setupErc721InitcodeAndWellKnownAccounts();
+        scaffoldingComponent.workingStateAccessor().setHederaState(scaffoldingComponent.hederaState());
 
-        // TODO - uncomment "WHEN:" and "THEN" below
-        // WHEN:
-        //                handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
-        //        handleAndCommit(
-        //                        CONTRACT_SERVICE.handlers().contractCallHandler(),
-        //                synthApproveTxn(TREASURY, PARTY_ADDRESS, 2),
-        //                synthApproveTxn(TREASURY, PARTY_ADDRESS, 3),
-        //                synthSetApprovalForAll(TREASURY, OPERATOR_ADDRESS, true),
-        //                synthSafeTransferFrom(OPERATOR, TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 13),
-        //                synthSafeTransferFrom(PARTY, TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 3),
-        //                synthSafeTransferFrom(TREASURY, TREASURY_ADDRESS, PARTY_ADDRESS, 8),
-        //                synthSafeTransferFrom(COUNTERPARTY, COUNTERPARTY_ADDRESS, PARTY_ADDRESS, 3));
+        // when:
+        handleAndCommit(CONTRACT_SERVICE.handlers().contractCreateHandler(), synthCreateTxn());
+        handleAndCommit(
+                CONTRACT_SERVICE.handlers().contractCallHandler(),
+                synthApproveTxn(TOKEN_TREASURY_ID, PARTY_ADDRESS, 2),
+                synthApproveTxn(TOKEN_TREASURY_ID, PARTY_ADDRESS, 3),
+                synthSetApprovalForAll(TOKEN_TREASURY_ID, OPERATOR_ADDRESS, true),
+                synthSafeTransferFrom(OPERATOR_ID, TOKEN_TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 13),
+                synthSafeTransferFrom(PARTY_ID, TOKEN_TREASURY_ADDRESS, COUNTERPARTY_ADDRESS, 3),
+                synthSafeTransferFrom(TOKEN_TREASURY_ID, TOKEN_TREASURY_ADDRESS, PARTY_ADDRESS, 8),
+                synthSafeTransferFrom(COUNTERPARTY_ID, COUNTERPARTY_ADDRESS, PARTY_ADDRESS, 3));
 
-        // THEN:
-        //        assertContractDeployedWithExpectedStorage();
+        // then:
+        assertExpectedContract();
+        assertExpectedBytecode();
+        assertExpectedStorage();
     }
 
     private void handleAndCommit(@NonNull final TransactionHandler handler, @NonNull final TransactionBody... txns) {
         for (final var txn : txns) {
             final var context = scaffoldingComponent.contextFactory().apply(txn);
             handler.handle(context);
-            scaffoldingComponent.stack().commit();
+            ((SavepointStackImpl) context.savepointStack()).commit();
         }
     }
 
     private TransactionBody synthCreateTxn() {
         return TransactionBody.newBuilder()
-                .transactionID(TransactionID.newBuilder().accountID(TREASURY))
+                .transactionID(TransactionID.newBuilder().accountID(TOKEN_TREASURY_ID))
                 .contractCreateInstance(ContractCreateTransactionBody.newBuilder()
-                        .fileID(ERC721_FULL_INITCODE_FILE_ID)
-                        .gas(GAS_TO_OFFER)
+                        .autoRenewPeriod(STANDARD_AUTO_RENEW_PERIOD)
+                        .fileID(Erc721OperationsConstants.ERC721_FULL_INITCODE_FILE_ID)
+                        .gas(Erc721OperationsConstants.GAS_TO_OFFER)
                         .build())
                 .build();
     }
 
     private TransactionBody synthApproveTxn(
             @NonNull final AccountID payer, @NonNull final Bytes spender, long serialNum) {
-        final var encoded = APPROVE.encodeCallWithArgs(addressOf(spender), BigInteger.valueOf(serialNum));
-        System.out.println(APPROVE.decodeCall(encoded));
+        final var encoded =
+                Erc721OperationsConstants.APPROVE.encodeCallWithArgs(addressOf(spender), BigInteger.valueOf(serialNum));
+        System.out.println(Erc721OperationsConstants.APPROVE.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -233,9 +180,9 @@ class Erc721OperationsTest {
 
     private TransactionBody synthSafeTransferFrom(
             @NonNull final AccountID payer, @NonNull final Bytes from, @NonNull final Bytes to, final long serialNo) {
-        final var encoded =
-                SAFE_TRANSFER_FROM.encodeCallWithArgs(addressOf(from), addressOf(to), BigInteger.valueOf(serialNo));
-        System.out.println(SAFE_TRANSFER_FROM.decodeCall(encoded));
+        final var encoded = Erc721OperationsConstants.SAFE_TRANSFER_FROM.encodeCallWithArgs(
+                addressOf(from), addressOf(to), BigInteger.valueOf(serialNo));
+        System.out.println(Erc721OperationsConstants.SAFE_TRANSFER_FROM.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -244,8 +191,9 @@ class Erc721OperationsTest {
 
     private TransactionBody synthSetApprovalForAll(
             @NonNull final AccountID payer, @NonNull final Bytes operator, final boolean approved) {
-        final var encoded = SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
-        System.out.println(SET_APPROVAL_FOR_ALL.decodeCall(encoded));
+        final var encoded =
+                Erc721OperationsConstants.SET_APPROVAL_FOR_ALL.encodeCallWithArgs(addressOf(operator), approved);
+        System.out.println(Erc721OperationsConstants.SET_APPROVAL_FOR_ALL.decodeCall(encoded));
         return TransactionBody.newBuilder()
                 .transactionID(TransactionID.newBuilder().accountID(payer))
                 .contractCall(callWithParams(encoded))
@@ -255,51 +203,73 @@ class Erc721OperationsTest {
     private ContractCallTransactionBody callWithParams(@NonNull final ByteBuffer encoded) {
         return ContractCallTransactionBody.newBuilder()
                 .functionParameters(Bytes.wrap(encoded.array()))
-                .contractID(ERC721_FULL_CONTRACT)
-                .gas(GAS_TO_OFFER)
+                .contractID(Erc721OperationsConstants.ERC721_FULL_CONTRACT)
+                .gas(Erc721OperationsConstants.GAS_TO_OFFER)
                 .build();
     }
 
-    private void assertContractDeployedWithExpectedStorage() throws IOException {
+    private void assertExpectedContract() {
         // Assert the contract exists in state at the expected id number
-        final ReadableKVState<AccountID, Account> accounts = scaffoldingComponent
-                .hederaState()
-                .createReadableStates(TokenServiceImpl.NAME)
-                .get(TokenServiceImpl.ACCOUNTS_KEY);
-        final var contract = accounts.get(ERC721_FULL);
+        final var contract = expectedDeployedContract();
         assertNotNull(contract);
         assertTrue(contract.smartContract());
-        assertEquals(contract.contractKvPairsNumber(), EXPECTED_STORAGE.size());
+    }
 
-        // Assert its deployed bytecode matches expectations
+    private void assertExpectedBytecode() throws IOException {
         final ReadableKVState<EntityNumber, Bytecode> bytecode = scaffoldingComponent
                 .hederaState()
                 .createReadableStates(ContractServiceImpl.NAME)
                 .get(ContractSchema.BYTECODE_KEY);
-        final var actualBytecode = bytecode.get(new EntityNumber(ERC721_FULL.accountNumOrThrow()));
+        final var actualBytecode =
+                bytecode.get(new EntityNumber(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow()));
         assertNotNull(actualBytecode);
         assertEquals(expectedBytecode(), actualBytecode.code());
+    }
 
-        // Assert its storage matches expectations
+    private void assertExpectedStorage() {
         final ReadableKVState<SlotKey, SlotValue> storage = scaffoldingComponent
                 .hederaState()
                 .createReadableStates(ContractServiceImpl.NAME)
                 .get(ContractSchema.STORAGE_KEY);
+        assertEquals(EXPECTED_STORAGE.size(), storage.size());
         EXPECTED_STORAGE.forEach((key, value) -> {
-            final var slot = storage.get(new SlotKey(ERC721_FULL.accountNumOrThrow(), key));
+            final var slot = storage.get(new SlotKey(Erc721OperationsConstants.ERC721_FULL.accountNumOrThrow(), key));
             assertNotNull(slot);
             assertEquals(value, slot.value());
         });
+        final var contract = Objects.requireNonNull(expectedDeployedContract());
+        assertEquals(EXPECTED_STORAGE.size(), contract.contractKvPairsNumber());
+    }
+
+    private @Nullable Account expectedDeployedContract() {
+        final ReadableKVState<AccountID, Account> accounts = scaffoldingComponent
+                .hederaState()
+                .createReadableStates(TokenServiceImpl.NAME)
+                .get(TokenServiceImpl.ACCOUNTS_KEY);
+        return accounts.get(Erc721OperationsConstants.ERC721_FULL);
     }
 
     private void setupFakeStates() {
         final var fakeHederaState = (FakeHederaState) scaffoldingComponent.hederaState();
+
+        fakeHederaState.addService(
+                EntityIdService.NAME,
+                Map.of("ENTITY_ID", new AtomicReference<>(new EntityNumber(NEXT_ENTITY_NUM - 1L))));
+
         fakeHederaState.addService("RecordCache", Map.of("TransactionRecordQueue", new ArrayDeque<>()));
+
+        fakeHederaState.addService(
+                BlockRecordService.NAME,
+                Map.of(
+                        BlockRecordService.BLOCK_INFO_STATE_KEY, new AtomicReference<>(BlockInfo.DEFAULT),
+                        BlockRecordService.RUNNING_HASHES_STATE_KEY, new AtomicReference<>(RunningHashes.DEFAULT)));
+
         fakeHederaState.addService(
                 TokenService.NAME,
                 Map.of(
-                        TokenServiceImpl.ACCOUNTS_KEY, new HashMap<AccountID, Account>(),
-                        TokenServiceImpl.ALIASES_KEY, new HashMap<String, Bytes>()));
+                        TokenServiceImpl.ACCOUNTS_KEY, initialAccounts(),
+                        TokenServiceImpl.ALIASES_KEY, initialAliases(),
+                        TokenServiceImpl.TOKENS_KEY, new HashMap<>()));
         fakeHederaState.addService(
                 FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, new HashMap<FileID, File>()));
         fakeHederaState.addService(
@@ -309,13 +279,54 @@ class Erc721OperationsTest {
                         ContractSchema.STORAGE_KEY, new HashMap<SlotKey, SlotValue>()));
     }
 
+    private Map<Bytes, AccountID> initialAliases() {
+        final var aliases = new HashMap<Bytes, AccountID>();
+        aliases.put(TOKEN_TREASURY_ADDRESS, TOKEN_TREASURY_ID);
+        aliases.put(COUNTERPARTY_ADDRESS, COUNTERPARTY_ID);
+        aliases.put(OPERATOR_ADDRESS, OPERATOR_ID);
+        return aliases;
+    }
+
+    private Map<AccountID, Account> initialAccounts() {
+        final var accounts = new HashMap<AccountID, Account>();
+        accounts.put(
+                TOKEN_TREASURY_ID,
+                Account.newBuilder()
+                        .accountId(TOKEN_TREASURY_ID)
+                        .alias(TOKEN_TREASURY_ADDRESS)
+                        .tinybarBalance(INITIAL_BALANCE)
+                        .build());
+        accounts.put(
+                COUNTERPARTY_ID,
+                Account.newBuilder()
+                        .accountId(COUNTERPARTY_ID)
+                        .alias(COUNTERPARTY_ADDRESS)
+                        .tinybarBalance(INITIAL_BALANCE)
+                        .build());
+        accounts.put(
+                OPERATOR_ID,
+                Account.newBuilder()
+                        .accountId(OPERATOR_ID)
+                        .alias(OPERATOR_ADDRESS)
+                        .tinybarBalance(INITIAL_BALANCE)
+                        .build());
+        accounts.put(
+                PARTY_ID,
+                Account.newBuilder()
+                        .accountId(PARTY_ID)
+                        .tinybarBalance(INITIAL_BALANCE)
+                        .build());
+        accounts.put(COINBASE_ID, Account.newBuilder().accountId(COINBASE_ID).build());
+        return accounts;
+    }
+
     private void setupErc721InitcodeAndWellKnownAccounts() throws IOException {
         final WritableKVState<FileID, File> files = scaffoldingComponent
                 .hederaState()
                 .createWritableStates(FileServiceImpl.NAME)
                 .get(FileServiceImpl.BLOBS_KEY);
         files.put(
-                ERC721_FULL_INITCODE_FILE_ID,
+                Erc721OperationsConstants.ERC721_FULL_INITCODE_FILE_ID,
                 File.newBuilder().contents(erc721FullInitcode()).build());
         commitKvStateChanges(files);
 
@@ -323,14 +334,16 @@ class Erc721OperationsTest {
                 .hederaState()
                 .createWritableStates(TokenService.NAME)
                 .get(TokenServiceImpl.ACCOUNTS_KEY);
-        for (int i = 0; i < ACCOUNTS.length; i++) {
-            final var cryptoKey = ACCOUNT_KEYS[i];
+        for (int i = 0; i < Erc721OperationsConstants.ACCOUNTS.length; i++) {
+            final var cryptoKey = Erc721OperationsConstants.ACCOUNT_KEYS[i];
             final var pbjKey = cryptoKey.length() == 33
                     ? Key.newBuilder().ecdsaSecp256k1(cryptoKey).build()
                     : Key.newBuilder().ed25519(cryptoKey).build();
-            final var account =
-                    Account.newBuilder().key(pbjKey).alias(ACCOUNT_ALIASES[i]).build();
-            accounts.put(ACCOUNTS[i], account);
+            final var account = Account.newBuilder()
+                    .key(pbjKey)
+                    .alias(Erc721OperationsConstants.ACCOUNT_ALIASES[i])
+                    .build();
+            accounts.put(Erc721OperationsConstants.ACCOUNTS[i], account);
         }
     }
 
