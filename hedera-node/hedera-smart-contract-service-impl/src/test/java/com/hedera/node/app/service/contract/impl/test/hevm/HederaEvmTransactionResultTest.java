@@ -21,8 +21,8 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LO
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CHILD_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.GAS_LIMIT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NONCES;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
@@ -136,7 +136,9 @@ class HederaEvmTransactionResultTest {
         final var protoResult = result.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, rootProxyWorldUpdater);
         assertEquals(ETH_DATA_WITH_TO_ADDRESS.gasLimit(), protoResult.gas());
         assertEquals(ETH_DATA_WITH_TO_ADDRESS.getAmount(), protoResult.amount());
-        assertArrayEquals(ETH_DATA_WITH_TO_ADDRESS.callData(), protoResult.functionParameters().toByteArray());
+        assertArrayEquals(
+                ETH_DATA_WITH_TO_ADDRESS.callData(),
+                protoResult.functionParameters().toByteArray());
         assertEquals(SENDER_ID, protoResult.senderId());
         assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());

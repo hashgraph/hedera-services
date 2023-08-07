@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.contract.impl.exec.TransactionModule.p
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
@@ -41,7 +40,6 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,7 +93,8 @@ class TransactionModuleTest {
         final var ethTxn = EthereumTransactionBody.newBuilder()
                 .ethereumData(TestHelpers.ETH_WITH_TO_ADDRESS)
                 .build();
-        final var body = TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
+        final var body =
+                TransactionBody.newBuilder().ethereumTransaction(ethTxn).build();
         given(context.body()).willReturn(body);
         assertEquals(ETH_DATA_WITH_TO_ADDRESS, TransactionModule.maybeProvideEthTxData(context));
     }

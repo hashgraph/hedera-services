@@ -32,7 +32,6 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
@@ -48,6 +47,7 @@ import javax.inject.Inject;
 public class ContextTransactionProcessor implements Callable<CallOutcome> {
     @Nullable
     private final EthTxData ethTxData;
+
     private final HandleContext context;
     private final ContractsConfig contractsConfig;
     private final Configuration configuration;

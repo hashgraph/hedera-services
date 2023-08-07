@@ -77,8 +77,10 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.Operation;
 
 public class TestHelpers {
-    public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex("02f8ad82012a80a000000000000000000000000000000000000000000000000000000000000003e8a0000000000000000000000000000000000000000000000000000000746a528800831e848094fee687d5088faff48013a6767505c027e2742536880de0b6b3a764000080c080a0f5ddf2394311e634e2147bf38583a017af45f4326bdf5746cac3a1110f973e4fa025bad52d9a9f8b32eb983c9fb8959655258bd75e2826b2c6a48d4c26ec30d112");
-    public static final EthTxData ETH_DATA_WITH_TO_ADDRESS = requireNonNull(EthTxData.populateEthTxData(ETH_WITH_TO_ADDRESS.toByteArray()));
+    public static final Bytes ETH_WITH_TO_ADDRESS = Bytes.fromHex(
+            "02f8ad82012a80a000000000000000000000000000000000000000000000000000000000000003e8a0000000000000000000000000000000000000000000000000000000746a528800831e848094fee687d5088faff48013a6767505c027e2742536880de0b6b3a764000080c080a0f5ddf2394311e634e2147bf38583a017af45f4326bdf5746cac3a1110f973e4fa025bad52d9a9f8b32eb983c9fb8959655258bd75e2826b2c6a48d4c26ec30d112");
+    public static final EthTxData ETH_DATA_WITH_TO_ADDRESS =
+            requireNonNull(EthTxData.populateEthTxData(ETH_WITH_TO_ADDRESS.toByteArray()));
     public static final EthTxData ETH_DATA_WITHOUT_TO_ADDRESS = ETH_DATA_WITH_TO_ADDRESS.replaceTo(new byte[0]);
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final LedgerConfig DEFAULT_LEDGER_CONFIG = DEFAULT_CONFIG.getConfigData(LedgerConfig.class);

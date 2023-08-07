@@ -47,7 +47,6 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.function.Supplier;
 
@@ -66,7 +65,8 @@ public interface TransactionModule {
     static EthTxData maybeProvideEthTxData(@NonNull final HandleContext context) {
         final var body = context.body();
         return body.hasEthereumTransaction()
-                ? populateEthTxData(body.ethereumTransactionOrThrow().ethereumData().toByteArray())
+                ? populateEthTxData(
+                        body.ethereumTransactionOrThrow().ethereumData().toByteArray())
                 : null;
     }
 

@@ -105,8 +105,8 @@ class FrameRunnerTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getHederaContractId(EIP_1014_ADDRESS)).willReturn(CALLED_CONTRACT_ID);
 
-        final var result =
-                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -128,8 +128,8 @@ class FrameRunnerTest {
 
         givenBaseSuccessWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
 
-        final var result =
-                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -147,8 +147,8 @@ class FrameRunnerTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getRevertReason()).willReturn(Optional.of(SOME_REVERT_REASON));
 
-        final var result =
-                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);
@@ -167,8 +167,8 @@ class FrameRunnerTest {
         givenBaseFailureWith(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frame.getExceptionalHaltReason()).willReturn(Optional.of(TOO_MANY_CHILD_RECORDS));
 
-        final var result =
-                subject.runToCompletion(GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
+        final var result = subject.runToCompletion(
+                GAS_LIMIT, SENDER_ID, frame, tracer, messageCallProcessor, contractCreationProcessor);
 
         inOrder.verify(tracer).traceOriginAction(frame);
         inOrder.verify(contractCreationProcessor).process(frame, tracer);

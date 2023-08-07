@@ -65,7 +65,6 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;

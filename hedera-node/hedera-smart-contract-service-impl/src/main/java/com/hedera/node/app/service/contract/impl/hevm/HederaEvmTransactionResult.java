@@ -37,10 +37,8 @@ import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Collections;
 import java.util.List;
-
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
@@ -82,8 +80,7 @@ public record HederaEvmTransactionResult(
      * @return the result
      */
     public ContractFunctionResult asProtoResultOf(
-            @Nullable final EthTxData ethTxData,
-            @NonNull final RootProxyWorldUpdater updater) {
+            @Nullable final EthTxData ethTxData, @NonNull final RootProxyWorldUpdater updater) {
         if (haltReason != null) {
             throw new AssertionError("Not implemented");
         } else if (revertReason != null) {
@@ -161,9 +158,7 @@ public record HederaEvmTransactionResult(
      * @return the result
      */
     public static HederaEvmTransactionResult failureFrom(
-            final long gasUsed,
-            @NonNull final AccountID senderId,
-            @NonNull final MessageFrame frame) {
+            final long gasUsed, @NonNull final AccountID senderId, @NonNull final MessageFrame frame) {
         requireNonNull(frame);
         return new HederaEvmTransactionResult(
                 gasUsed,
@@ -206,11 +201,9 @@ public record HederaEvmTransactionResult(
     }
 
     private ContractFunctionResult withMaybeEthFields(
-            @NonNull final ContractFunctionResult.Builder builder,
-            @Nullable final EthTxData ethTxData) {
+            @NonNull final ContractFunctionResult.Builder builder, @Nullable final EthTxData ethTxData) {
         if (ethTxData != null) {
-            builder
-                    .gas(ethTxData.gasLimit())
+            builder.gas(ethTxData.gasLimit())
                     .amount(ethTxData.getAmount())
                     .senderId(senderId)
                     .functionParameters(Bytes.wrap(ethTxData.callData()));

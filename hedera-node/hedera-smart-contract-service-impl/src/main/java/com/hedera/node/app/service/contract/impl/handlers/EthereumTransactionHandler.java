@@ -53,7 +53,8 @@ public class EthereumTransactionHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
         requireNonNull(context);
-        final var rawEthTx = context.body().ethereumTransactionOrThrow().ethereumData().toByteArray();
+        final var rawEthTx =
+                context.body().ethereumTransactionOrThrow().ethereumData().toByteArray();
         final var maybeParsedEthTx = populateEthTxData(rawEthTx);
         if (maybeParsedEthTx != null) {
             ethereumSignatures.impliedBy(maybeParsedEthTx);
@@ -75,12 +76,10 @@ public class EthereumTransactionHandler implements TransactionHandler {
                 .status(outcome.status());
         if (ethTxData.hasToAddress()) {
             // The Ethereum transaction was a top-level MESSAGE_CALL
-            recordBuilder.contractID(outcome.recipientIdIfCalled())
-                    .contractCallResult(outcome.result());
+            recordBuilder.contractID(outcome.recipientIdIfCalled()).contractCallResult(outcome.result());
         } else {
             // The Ethereum transaction was a top-level CONTRACT_CREATION
-            recordBuilder.contractID(outcome.recipientIdIfCreated())
-                    .contractCreateResult(outcome.result());
+            recordBuilder.contractID(outcome.recipientIdIfCreated()).contractCreateResult(outcome.result());
         }
     }
 }
