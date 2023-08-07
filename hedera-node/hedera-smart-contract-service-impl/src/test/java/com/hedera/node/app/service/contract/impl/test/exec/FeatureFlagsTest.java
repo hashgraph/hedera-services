@@ -27,18 +27,18 @@ import com.hedera.hapi.streams.SidecarType;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.Deque;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Deque;
-
 @ExtendWith(MockitoExtension.class)
 class FeatureFlagsTest {
     @Mock
     private MessageFrame frame;
+
     @Mock
     private Deque<MessageFrame> stack;
 

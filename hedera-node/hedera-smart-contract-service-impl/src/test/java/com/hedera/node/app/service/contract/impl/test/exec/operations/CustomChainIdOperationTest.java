@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOp
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -36,8 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Deque;
-
 @ExtendWith(MockitoExtension.class)
 class CustomChainIdOperationTest {
     @Mock
@@ -48,6 +47,7 @@ class CustomChainIdOperationTest {
 
     @Mock
     private Deque<MessageFrame> stack;
+
     @Mock
     private MessageFrame messageFrame;
 

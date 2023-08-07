@@ -44,7 +44,6 @@ import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmTransactionResultTest {
     @Mock
     private MessageFrame frame;
+
     @Mock
     private Deque<MessageFrame> stack;
 

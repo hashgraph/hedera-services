@@ -28,6 +28,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomSLoadOper
 import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -42,8 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Deque;
 
 @ExtendWith(MockitoExtension.class)
 class CustomSLoadOperationTest {
@@ -61,6 +60,7 @@ class CustomSLoadOperationTest {
 
     @Mock
     private MessageFrame frame;
+
     @Mock
     private Deque<MessageFrame> stack;
 
