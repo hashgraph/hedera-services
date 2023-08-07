@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.event.generator;
+package com.swirlds.platform.test.fixtures.event.generator;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.EventConstants;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;

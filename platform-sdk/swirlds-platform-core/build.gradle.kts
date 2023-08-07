@@ -56,4 +56,9 @@ dependencies {
     testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testFixtures(project(":swirlds-config-api")))
+
+    testFixturesImplementation(testLibs.bundles.junit)
+    testFixturesImplementation(testFixtures(project(":swirlds-common")))
+    testFixturesImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }
