@@ -146,7 +146,7 @@ public class AllBaseOpFeesSuite extends HapiSuite {
 
     private HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
         final var numOfSigs = 10;
-        final var extraSigPrice = 0.028828086;
+        final var extraSigPrice = 0.0006016996;
         final var expectedFee = EXPECTED_NFT_MINT_PRICE_USD + ((numOfSigs - 1) * extraSigPrice);
         final var standard100ByteMetadata = ByteString.copyFromUtf8(
                 "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
