@@ -435,13 +435,13 @@ jobs:
             "${{ needs.Artifact.outputs.version }}" \
             "[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.Artifact.outputs.version }})" \
             "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
-          
+
           printf "| %s | %s | %s | %s |\n" \
             "${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged" \
             "${{ needs.Artifact.outputs.version }}" \
             "[GCP Console](https://${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.Artifact.outputs.version }})" \
             "linux/amd64, linux/arm64" >> "${GITHUB_STEP_SUMMARY}"
-          
+
           printf "| %s | %s | %s | %s |\n" \
             "${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node" \
             "${{ needs.Artifact.outputs.version }}" \
