@@ -363,7 +363,6 @@ public class VirtualMerkleTransactionHandler {
                     expectedValue.getLatestHandledStatus().getTransactionType();
 
             if (expectedValue.getLatestHandledStatus() == null) {
-                notMismatching.set(false);
                 logger.error(ERROR, "getLatestHandledStatus return null when expectedValue {}", expectedValue);
             }
 
