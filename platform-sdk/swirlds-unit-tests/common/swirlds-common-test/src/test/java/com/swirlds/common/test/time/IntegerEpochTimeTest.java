@@ -20,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.common.time.IntegerEpochTime;
-import com.swirlds.common.units.UnitConstants;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

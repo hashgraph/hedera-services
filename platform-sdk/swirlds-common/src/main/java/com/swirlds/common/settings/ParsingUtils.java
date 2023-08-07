@@ -16,14 +16,14 @@
 
 package com.swirlds.common.settings;
 
-import static com.swirlds.common.units.UnitConstants.DAYS_TO_HOURS;
-import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.WEEKS_TO_DAYS;
+import static com.swirlds.base.unit.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.base.unit.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.base.unit.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.unit.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.unit.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.base.unit.UnitConstants.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.base.unit.UnitConstants.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.unit.UnitConstants.WEEKS_TO_DAYS;
 
 import java.time.Duration;
 import java.time.format.DateTimeParseException;

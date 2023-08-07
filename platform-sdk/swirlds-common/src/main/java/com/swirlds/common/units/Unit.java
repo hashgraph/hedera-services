@@ -27,6 +27,11 @@ import com.swirlds.common.formatting.UnitFormatter;
 public interface Unit<T extends Unit<T>> {
 
     /**
+     * The initial conversion factor for each unit type.
+     */
+    static final int INITIAL_CONVERSION_FACTOR = 1;
+
+    /**
      * Represents a quantity in a simplified form.
      *
      * @param quantity

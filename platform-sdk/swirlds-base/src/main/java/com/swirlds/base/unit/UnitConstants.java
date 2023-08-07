@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.common.units;
+package com.swirlds.base.unit;
 
 /**
  * Contains a variety constants useful when converting between units.
@@ -31,20 +31,40 @@ public final class UnitConstants {
      */
     public static final String NANOSECOND_UNIT = "ns";
 
+    public static final String NANOSECOND_NAME = "nanosecond";
+
     /**
      * Unit of microseconds
      */
     public static final String MICROSECOND_UNIT = "µs";
+
+    public static final String MICROSECOND_UNIT_SIMPLE = "us";
+
+    public static final String MICROSECOND_NAME = "microsecond";
 
     /**
      * Unit of milliseconds
      */
     public static final String MILLISECOND_UNIT = "ms";
 
+    public static final String MILLISECOND_NAME = "millisecond";
+
     /**
      * Unit of seconds
      */
     public static final String SECOND_UNIT = "s";
+
+    public static final String SECOND_NAME = "second";
+
+    public static final String MINUTES_UNIT = "m";
+    public static final String MINUTES_NAME = "minute";
+
+    public static final String HOURS_UNIT = "h";
+
+    public static final String HOURS_NAME = "hour";
+
+    public static final String DAYS_UNIT = "d";
+    public static final String DAYS_NAME = "day";
 
     /**
      * Multiply by this value for converting seconds to nanoseconds.

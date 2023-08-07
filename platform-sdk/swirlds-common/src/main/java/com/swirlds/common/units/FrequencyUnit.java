@@ -22,7 +22,7 @@ import com.swirlds.common.units.internal.UnitConverter;
  * Units for describing frequency.
  */
 public enum FrequencyUnit implements Unit<FrequencyUnit> {
-    UNIT_HERTZ(1, "hertz", "Hz"),
+    UNIT_HERTZ(INITIAL_CONVERSION_FACTOR, "hertz", "Hz"),
     UNIT_KILOHERTZ(1000, "kilohertz", "kHz"),
     UNIT_MEGAHERTZ(1000, "megahertz", "MHz"),
     UNIT_GIGAHERTZ(1000, "gigahertz", "GHz"),

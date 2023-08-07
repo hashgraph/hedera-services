@@ -16,9 +16,9 @@
 
 package com.swirlds.merkledb;
 
+import static com.swirlds.base.unit.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.base.unit.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
-import static com.swirlds.common.units.UnitConstants.BYTES_TO_MEBIBYTES;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
@@ -26,13 +26,14 @@ import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.time.NanoClock;
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.collections.HashList;
 import com.swirlds.merkledb.collections.HashListByteBuffer;
 import com.swirlds.merkledb.collections.LongList;

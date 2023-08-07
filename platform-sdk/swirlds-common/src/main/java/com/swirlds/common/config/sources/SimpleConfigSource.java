@@ -16,12 +16,13 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.Configuration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -198,8 +199,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     private <T> void setValue(final String propertyName, final T value, Function<T, String> converter) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(converter, "converter");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        Objects.requireNonNull(converter, "converter must not be null");
         internalProperties.put(
                 propertyName, Optional.ofNullable(value).map(converter::apply).orElse(null));
     }
@@ -270,8 +271,8 @@ public final class SimpleConfigSource extends AbstractConfigSource {
     }
 
     private <T> void setValues(final String propertyName, final List<T> values, Function<T, String> converter) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
-        CommonUtils.throwArgNull(converter, "converter");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
+        Objects.requireNonNull(converter, "converter must not be null");
         if (values == null) {
             internalProperties.put(propertyName, null);
         } else if (values.isEmpty()) {

@@ -250,23 +250,6 @@ public class CommonUtils {
     }
 
     /**
-     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
-     *
-     * @param arg     the argument checked
-     * @param argName the name of the argument
-     * @see StringUtils#isBlank(CharSequence)
-     * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static String throwArgBlank(final String arg, final String argName) {
-        throwArgNull(arg, argName);
-        if (StringUtils.isBlank(arg)) {
-            throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be blank!", argName));
-        }
-        return arg;
-    }
-
-    /**
      * Throws an exception if the value is outside of the specified range
      *
      * @param name     the name of the variable

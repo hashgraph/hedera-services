@@ -22,8 +22,8 @@ import static com.swirlds.jasperdb.files.hashmap.HalfDiskHashMap.VALUE_SIZE;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.files.DataFileOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;

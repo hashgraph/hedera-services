@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.metrics;
 
+import static com.swirlds.base.unit.UnitConstants.NANOSECONDS_TO_SECONDS;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_1;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_10_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_14_2;
@@ -23,7 +24,6 @@ import static com.swirlds.common.metrics.FloatFormats.FORMAT_16_2;
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 import static com.swirlds.common.metrics.Metrics.INTERNAL_CATEGORY;
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.Counter;

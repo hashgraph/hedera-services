@@ -19,10 +19,10 @@ package com.swirlds.platform.health.filesystem;
 import static com.swirlds.common.formatting.StringFormattingUtils.addLine;
 import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.units.UnitConstants;
 import java.util.concurrent.TimeUnit;
 
 /**

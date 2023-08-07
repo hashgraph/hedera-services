@@ -25,9 +25,9 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.collections.LongListDisk;

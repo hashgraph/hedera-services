@@ -16,7 +16,7 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.config.api.source.ConfigSource;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -47,7 +47,7 @@ public abstract class AbstractConfigSource implements ConfigSource {
      */
     @Override
     public final String getValue(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+        ArgumentUtils.throwArgBlank(propertyName, "propertyName");
         if (!getInternalProperties().containsKey(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }

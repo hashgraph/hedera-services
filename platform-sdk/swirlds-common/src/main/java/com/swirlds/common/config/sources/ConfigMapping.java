@@ -16,7 +16,8 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import static com.swirlds.base.ArgumentUtils.throwArgBlank;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -41,8 +42,8 @@ public record ConfigMapping(@NonNull String mappedName, @NonNull String original
      * @throws IllegalArgumentException If {@code mappedName} and {@code originalName} are equal
      */
     public ConfigMapping {
-        CommonUtils.throwArgBlank(mappedName, "mappedName");
-        CommonUtils.throwArgBlank(originalName, "originalName");
+        throwArgBlank(mappedName, "mappedName");
+        throwArgBlank(originalName, "originalName");
         if (Objects.equals(originalName, mappedName)) {
             throw new IllegalArgumentException(
                     "originalName and mappedName are the same (%s)! Will not create an mappedName"

@@ -16,15 +16,26 @@
 
 package com.swirlds.common.units;
 
-import static com.swirlds.common.units.UnitConstants.DAYS_TO_HOURS;
-import static com.swirlds.common.units.UnitConstants.HOURS_TO_MINUTES;
-import static com.swirlds.common.units.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
-import static com.swirlds.common.units.UnitConstants.MILLISECOND_UNIT;
-import static com.swirlds.common.units.UnitConstants.MINUTES_TO_SECONDS;
-import static com.swirlds.common.units.UnitConstants.NANOSECOND_UNIT;
-import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
-import static com.swirlds.common.units.UnitConstants.SECOND_UNIT;
+import static com.swirlds.base.unit.UnitConstants.DAYS_NAME;
+import static com.swirlds.base.unit.UnitConstants.DAYS_TO_HOURS;
+import static com.swirlds.base.unit.UnitConstants.DAYS_UNIT;
+import static com.swirlds.base.unit.UnitConstants.HOURS_NAME;
+import static com.swirlds.base.unit.UnitConstants.HOURS_TO_MINUTES;
+import static com.swirlds.base.unit.UnitConstants.HOURS_UNIT;
+import static com.swirlds.base.unit.UnitConstants.MICROSECONDS_TO_NANOSECONDS;
+import static com.swirlds.base.unit.UnitConstants.MICROSECOND_NAME;
+import static com.swirlds.base.unit.UnitConstants.MICROSECOND_UNIT_SIMPLE;
+import static com.swirlds.base.unit.UnitConstants.MILLISECONDS_TO_MICROSECONDS;
+import static com.swirlds.base.unit.UnitConstants.MILLISECOND_NAME;
+import static com.swirlds.base.unit.UnitConstants.MILLISECOND_UNIT;
+import static com.swirlds.base.unit.UnitConstants.MINUTES_NAME;
+import static com.swirlds.base.unit.UnitConstants.MINUTES_TO_SECONDS;
+import static com.swirlds.base.unit.UnitConstants.MINUTES_UNIT;
+import static com.swirlds.base.unit.UnitConstants.NANOSECOND_NAME;
+import static com.swirlds.base.unit.UnitConstants.NANOSECOND_UNIT;
+import static com.swirlds.base.unit.UnitConstants.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.base.unit.UnitConstants.SECOND_NAME;
+import static com.swirlds.base.unit.UnitConstants.SECOND_UNIT;
 
 import com.swirlds.common.units.internal.UnitConverter;
 
@@ -32,13 +43,13 @@ import com.swirlds.common.units.internal.UnitConverter;
  * Units for measurements of time.
  */
 public enum TimeUnit implements Unit<TimeUnit> {
-    UNIT_NANOSECONDS(1, "nanosecond", NANOSECOND_UNIT),
-    UNIT_MICROSECONDS(MICROSECONDS_TO_NANOSECONDS, "microsecond", "us"),
-    UNIT_MILLISECONDS(MILLISECONDS_TO_MICROSECONDS, "millisecond", MILLISECOND_UNIT),
-    UNIT_SECONDS(SECONDS_TO_MILLISECONDS, "second", SECOND_UNIT),
-    UNIT_MINUTES(MINUTES_TO_SECONDS, "minute", "m"),
-    UNIT_HOURS(HOURS_TO_MINUTES, "hour", "h"),
-    UNIT_DAYS(DAYS_TO_HOURS, "day", "d");
+    UNIT_NANOSECONDS(INITIAL_CONVERSION_FACTOR, NANOSECOND_NAME, NANOSECOND_UNIT),
+    UNIT_MICROSECONDS(MICROSECONDS_TO_NANOSECONDS, MICROSECOND_NAME, MICROSECOND_UNIT_SIMPLE),
+    UNIT_MILLISECONDS(MILLISECONDS_TO_MICROSECONDS, MILLISECOND_NAME, MILLISECOND_UNIT),
+    UNIT_SECONDS(SECONDS_TO_MILLISECONDS, SECOND_NAME, SECOND_UNIT),
+    UNIT_MINUTES(MINUTES_TO_SECONDS, MINUTES_NAME, MINUTES_UNIT),
+    UNIT_HOURS(HOURS_TO_MINUTES, HOURS_NAME, HOURS_UNIT),
+    UNIT_DAYS(DAYS_TO_HOURS, DAYS_NAME, DAYS_UNIT);
 
     private static final UnitConverter<TimeUnit> converter = new UnitConverter<>(TimeUnit.values());
 

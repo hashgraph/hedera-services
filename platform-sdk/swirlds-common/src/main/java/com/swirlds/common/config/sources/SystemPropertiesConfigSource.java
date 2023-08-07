@@ -16,7 +16,8 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import static com.swirlds.base.ArgumentUtils.throwArgBlank;
+
 import com.swirlds.config.api.source.ConfigSource;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -61,7 +62,7 @@ public final class SystemPropertiesConfigSource implements ConfigSource {
      */
     @Override
     public String getValue(final String propertyName) {
-        CommonUtils.throwArgBlank(propertyName, "propertyName");
+        throwArgBlank(propertyName, "propertyName");
         if (!getPropertyNames().contains(propertyName)) {
             throw new NoSuchElementException("Property " + propertyName + " is not defined");
         }

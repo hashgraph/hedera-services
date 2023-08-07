@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -53,8 +54,8 @@ public final class ConfigExport {
      * 		the line consumer
      */
     public static void printConfig(final Configuration configuration, final Consumer<String> lineConsumer) {
-        CommonUtils.throwArgNull(configuration, "configuration");
-        CommonUtils.throwArgNull(lineConsumer, "lineConsumer");
+        Objects.requireNonNull(configuration, "configuration must not be null");
+        Objects.requireNonNull(lineConsumer, "lineConsumer must not be null");
 
         // Properties defined in record configs, including values overridden by configured sources
         final Map<String, Object> recordProperties = getPropertiesForConfigDataRecords(configuration);

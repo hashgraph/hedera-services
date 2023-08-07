@@ -26,7 +26,7 @@ import static com.swirlds.jasperdb.files.DataFileCommon.printDataLinkValidation;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.Snapshotable;
 import com.swirlds.jasperdb.collections.CASable;

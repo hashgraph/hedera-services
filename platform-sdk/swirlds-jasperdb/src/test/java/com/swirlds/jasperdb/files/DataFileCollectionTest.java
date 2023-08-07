@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.jasperdb.KeyRange;
 import com.swirlds.jasperdb.collections.CASable;
 import com.swirlds.jasperdb.collections.ImmutableIndexedObjectListUsingArray;

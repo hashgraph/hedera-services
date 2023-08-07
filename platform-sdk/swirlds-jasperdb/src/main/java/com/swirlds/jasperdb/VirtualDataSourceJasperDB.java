@@ -23,13 +23,13 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
-import com.swirlds.common.units.UnitConstants;
 import com.swirlds.jasperdb.collections.HashList;
 import com.swirlds.jasperdb.collections.HashListByteBuffer;
 import com.swirlds.jasperdb.collections.LongList;

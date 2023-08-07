@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
 import com.swirlds.merkledb.collections.ImmutableIndexedObjectListUsingArray;

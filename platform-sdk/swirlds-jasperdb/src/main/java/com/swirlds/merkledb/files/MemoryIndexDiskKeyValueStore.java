@@ -26,7 +26,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
 import static com.swirlds.merkledb.files.DataFileCommon.printDataLinkValidation;
 
-import com.swirlds.common.units.UnitConstants;
+import com.swirlds.base.unit.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.CASableLongIndex;

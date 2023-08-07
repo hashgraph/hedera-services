@@ -16,10 +16,10 @@
 
 package com.swirlds.config.impl.validators;
 
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.validation.ConfigPropertyConstraint;
 import com.swirlds.config.api.validation.ConfigViolation;
 import com.swirlds.config.api.validation.PropertyMetadata;
+import java.util.Objects;
 
 /**
  * Implementation of {@link ConfigPropertyConstraint} that results in a violation if the property value has less
@@ -44,7 +44,7 @@ public class MinLengthConstraint implements ConfigPropertyConstraint<String> {
      */
     @Override
     public ConfigViolation check(final PropertyMetadata<String> metadata) {
-        CommonUtils.throwArgNull(metadata, "metadata");
+        Objects.requireNonNull(metadata, "metadata must not be null");
         if (!metadata.exists()) {
             final String message = "Property '" + metadata.getName() + "' must be defined";
             return DefaultConfigViolation.of(metadata, message);

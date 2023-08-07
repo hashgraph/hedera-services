@@ -16,7 +16,8 @@
 
 package com.swirlds.common.config.sources;
 
-import com.swirlds.common.utility.CommonUtils;
+import static com.swirlds.base.ArgumentUtils.throwArgBlank;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -89,7 +90,7 @@ public class LegacyFileConfigSource extends AbstractConfigSource {
      * @throws IOException if the file can not be loaded or parsed
      */
     public LegacyFileConfigSource(final String filePath) throws IOException {
-        this(Paths.get(CommonUtils.throwArgBlank(filePath, "filePath")));
+        this(Paths.get(throwArgBlank(filePath, "filePath")));
     }
 
     private static Map<String, String> loadSettings(final File settingsFile) throws IOException {
