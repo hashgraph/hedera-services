@@ -21,11 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import java.io.IOException;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +36,8 @@ public class RunningHashesTranslatorTest {
 
     @BeforeEach
     void setUp() {
-        RunningHash runningHash = new RunningHash(new Hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()));
+        RunningHash runningHash =
+                new RunningHash(new Hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()));
         subject = new com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf(runningHash);
     }
 
@@ -48,7 +47,8 @@ public class RunningHashesTranslatorTest {
         final RunningHashes runningHashes = RunningHashesTranslator.runningHashesFromRecordsRunningHashLeaf(subject);
 
         assertTrue(runningHashes.runningHash().length() > 0);
-        assertEquals(runningHashes.runningHash(), Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()));
+        assertEquals(
+                runningHashes.runningHash(), Bytes.wrap("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()));
         assertTrue(runningHashes.nMinus1RunningHash().length() > 0);
         assertEquals(runningHashes.nMinus1RunningHash(), Bytes.wrap(new byte[48]));
         assertTrue(runningHashes.nMinus2RunningHash().length() > 0);
