@@ -107,7 +107,8 @@ class DefaultStatEntryTest {
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
                 .withBuffered(buffered)
-                .withReset(reset);
+                .withReset(reset)
+                .withHalfLife(metricsConfig.halfLife());
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -124,8 +125,9 @@ class DefaultStatEntryTest {
         // given
         final StatsBuffered buffered = mock(StatsBuffered.class);
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config =
-                new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
+        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
+                .withBuffered(buffered)
+                .withHalfLife(metricsConfig.halfLife());
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // when
