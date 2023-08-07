@@ -15,8 +15,7 @@
  */
 
 plugins {
-    id("com.swirlds.platform.conventions")
-    `java-library`
+    id("com.hedera.hashgraph.sdk.conventions")
 }
 
 dependencies {

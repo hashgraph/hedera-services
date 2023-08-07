@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.swirlds.platform.conventions") }
+plugins { id("com.hedera.hashgraph.sdk.conventions") }
 
 dependencies {
     // Individual Dependencies

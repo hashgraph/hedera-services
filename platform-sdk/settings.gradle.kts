@@ -20,6 +20,8 @@ plugins { id("com.gradle.enterprise").version("3.11.4") }
 
 rootProject.name = "swirlds-platform"
 
+includeBuild("../hedera-platform")
+
 include(":swirlds")
 
 include(":swirlds-base")
@@ -88,8 +90,8 @@ include(":swirlds-unit-tests:core:swirlds-platform-test")
 
 include(":swirlds-unit-tests:structures:swirlds-merkle-test")
 
+@Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage")
     versionCatalogs {
         // The libs of this catalog are the **ONLY** ones that are authorized to be part of the
         // runtime

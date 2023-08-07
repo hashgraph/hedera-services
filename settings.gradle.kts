@@ -124,7 +124,6 @@ gitRepositories {
 // Define the library catalogs available for projects to make use of
 @Suppress("UnstableApiUsage")
 dependencyResolutionManagement {
-    @Suppress("UnstableApiUsage")
     versionCatalogs {
         // The libs of this catalog are the **ONLY** ones that are authorized to be part of the
         // runtime distribution. These libs can be depended on during compilation, or bundled as

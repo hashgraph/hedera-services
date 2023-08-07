@@ -15,7 +15,7 @@
  */
 
 plugins {
-  id("com.swirlds.platform.conventions")
+  id("com.hedera.hashgraph.sdk.conventions")
   id("com.swirlds.platform.application")
 }
 
