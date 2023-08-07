@@ -47,7 +47,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleInjectionModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.SpecialFileUpdateHandler;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
@@ -145,7 +145,7 @@ public interface HederaInjectionComponent {
         Builder configuration(ConfigProvider configProvider);
 
         @BindsInstance
-        Builder specialFileUpdateHandler(SpecialFileUpdateHandler specialFileUpdateHandler);
+        Builder systemFileUpdateFacility(SystemFileUpdateFacility systemFileUpdateFacility);
 
         @BindsInstance
         Builder maxSignedTxnSize(@MaxSignedTxnSize final int maxSignedTxnSize);

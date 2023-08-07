@@ -48,7 +48,7 @@ import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SpecialFileUpdateHandlerTest implements TransactionFactory {
+class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private static final Bytes FILE_BYTES = Bytes.wrap("Hello World");
 
@@ -59,7 +59,7 @@ class SpecialFileUpdateHandlerTest implements TransactionFactory {
 
     private Map<FileID, File> files;
 
-    private SpecialFileUpdateHandler subject;
+    private SystemFileUpdateFacility subject;
 
     @BeforeEach
     void setUp() {
@@ -73,7 +73,7 @@ class SpecialFileUpdateHandlerTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new SpecialFileUpdateHandler(configProvider);
+        subject = new SystemFileUpdateFacility(configProvider);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -83,7 +83,7 @@ class SpecialFileUpdateHandlerTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() -> new SpecialFileUpdateHandler(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new SystemFileUpdateFacility(null)).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.handleTxBody(state, null)).isInstanceOf(NullPointerException.class);

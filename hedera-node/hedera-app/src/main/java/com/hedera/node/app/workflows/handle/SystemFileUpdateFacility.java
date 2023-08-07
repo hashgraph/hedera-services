@@ -38,9 +38,9 @@ import org.apache.logging.log4j.Logger;
  * <p>This is a temporary solution. In the future we want to have specific transactions
  * to update the data that is currently transmitted in these files.
  */
-public class SpecialFileUpdateHandler {
+public class SystemFileUpdateFacility {
 
-    private static final Logger logger = LogManager.getLogger(SpecialFileUpdateHandler.class);
+    private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
 
     private final ConfigProviderImpl configProvider;
 
@@ -49,7 +49,7 @@ public class SpecialFileUpdateHandler {
      *
      * @param configProvider the configuration provider
      */
-    public SpecialFileUpdateHandler(@NonNull final ConfigProviderImpl configProvider) {
+    public SystemFileUpdateFacility(@NonNull final ConfigProviderImpl configProvider) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
     }
 
@@ -105,8 +105,7 @@ public class SpecialFileUpdateHandler {
             }
         } catch (final RuntimeException e) {
             logger.warn(
-                    "Exception while calling updater for file {}. "
-                            + "If the file is incomplete, this is expected.",
+                    "Exception while calling updater for file {}. " + "If the file is incomplete, this is expected.",
                     fileID,
                     e);
         }

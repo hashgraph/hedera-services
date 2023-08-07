@@ -93,7 +93,7 @@ public class HandleWorkflow {
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
-    private final SpecialFileUpdateHandler specialFileUpdateService;
+    private final SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Inject
     public HandleWorkflow(
@@ -112,7 +112,7 @@ public class HandleWorkflow {
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ParentRecordFinalizer transactionFinalizer,
-            @NonNull final SpecialFileUpdateHandler specialFileUpdateService) {
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -128,8 +128,8 @@ public class HandleWorkflow {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
-        this.specialFileUpdateService =
-                requireNonNull(specialFileUpdateService, "specialFileUpdateService must not be null");
+        this.systemFileUpdateFacility =
+                requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
     }
 
     /**
@@ -274,7 +274,7 @@ public class HandleWorkflow {
             stack.commitFullStack();
 
             // Notify responsible facility if system-file was uploaded
-            specialFileUpdateService.handleTxBody(state, txBody);
+            systemFileUpdateFacility.handleTxBody(state, txBody);
 
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);

@@ -31,7 +31,7 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.handle.SpecialFileUpdateHandler;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
@@ -92,7 +92,7 @@ class IngestComponentTest {
                 .crypto(CryptographyHolder.get())
                 .bootstrapProps(new BootstrapProperties())
                 .configuration(configProvider)
-                .specialFileUpdateHandler(new SpecialFileUpdateHandler(configProvider))
+                .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
                 .self(selfNodeInfo)
                 .initialHash(new Hash())
                 .maxSignedTxnSize(1024)
