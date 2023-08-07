@@ -361,6 +361,12 @@ public class VirtualMerkleTransactionHandler {
                     new AccountVirtualMapKey(mapKey.getRealmId(), mapKey.getShardId(), mapKey.getAccountId());
             final TransactionType lastTransactionType =
                     expectedValue.getLatestHandledStatus().getTransactionType();
+
+            if (expectedValue.getLatestHandledStatus() == null) {
+                notMismatching.set(false);
+                logger.error(ERROR, "getLatestHandledStatus return null when expectedValue {}", expectedValue);
+            }
+
             if (lastTransactionType == Create || lastTransactionType == Update) {
                 final AccountVirtualMapValue virtualMapValue = virtualMap.get(accountVirtualMapKey);
                 if (virtualMapValue == null) {
