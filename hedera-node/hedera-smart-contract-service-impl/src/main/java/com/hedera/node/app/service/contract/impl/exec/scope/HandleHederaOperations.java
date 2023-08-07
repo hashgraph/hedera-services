@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationForContract;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -125,7 +125,8 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public long lazyCreationCostInGas() {
-        throw new AssertionError("Not implemented");
+        // TODO - implement correctly
+        return 1L;
     }
 
     /**
@@ -209,7 +210,7 @@ public class HandleHederaOperations implements HederaOperations {
             @Nullable final Bytes evmAddress) {
         // Create the contract account by dispatching a synthetic HAPI transaction
         final var contractId = ContractID.newBuilder().contractNum(number).build();
-        final var synthAccountCreation = accountCreationFor(contractId, evmAddress, requireNonNull(body));
+        final var synthAccountCreation = synthAccountCreationForContract(contractId, evmAddress, requireNonNull(body));
         final var synthTxn = TransactionBody.newBuilder()
                 .cryptoCreateAccount(synthAccountCreation)
                 .build();

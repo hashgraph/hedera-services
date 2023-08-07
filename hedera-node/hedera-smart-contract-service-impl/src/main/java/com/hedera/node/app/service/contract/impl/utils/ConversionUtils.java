@@ -17,14 +17,10 @@
 package com.hedera.node.app.service.contract.impl.utils;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
-import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractLoginfo;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.StorageChange;
@@ -57,43 +53,6 @@ public class ConversionUtils {
     }
 
     /**
-     * Given a validated {@link ContractCreateTransactionBody} and its pending id, returns the
-     * corresponding {@link CryptoCreateTransactionBody} to dispatch.
-     *
-     * @param pendingId the pending id
-     * @param body the {@link ContractCreateTransactionBody}
-     * @return the corresponding {@link CryptoCreateTransactionBody}
-     */
-    public static CryptoCreateTransactionBody accountCreationFor(
-            @NonNull final ContractID pendingId,
-            @Nullable final com.hedera.pbj.runtime.io.buffer.Bytes evmAddress,
-            @NonNull final ContractCreateTransactionBody body) {
-        requireNonNull(body);
-        requireNonNull(pendingId);
-        final var builder = CryptoCreateTransactionBody.newBuilder()
-                .maxAutomaticTokenAssociations(body.maxAutomaticTokenAssociations())
-                .declineReward(body.declineReward())
-                .memo(body.memo());
-        if (body.hasAutoRenewPeriod()) {
-            builder.autoRenewPeriod(body.autoRenewPeriodOrThrow());
-        }
-        if (body.hasStakedNodeId()) {
-            builder.stakedNodeId(body.stakedNodeIdOrThrow());
-        } else if (body.hasStakedAccountId()) {
-            builder.stakedAccountId(body.stakedAccountIdOrThrow());
-        }
-        if (body.hasAdminKey() && !isEmpty(body.adminKeyOrThrow())) {
-            builder.key(body.adminKeyOrThrow());
-        } else {
-            builder.key(Key.newBuilder().contractID(pendingId));
-        }
-        if (evmAddress != null) {
-            builder.alias(evmAddress);
-        }
-        return builder.build();
-    }
-
-    /**
      * Given a list of Besu {@link Log}s, converts them to a list of PBJ {@link ContractLoginfo}.
      *
      * @param logs the Besu {@link Log}s
@@ -107,6 +66,12 @@ public class ConversionUtils {
         return pbjLogs;
     }
 
+    /**
+     * Returns the 2-byte chain id as a byte array.
+     *
+     * @param chainId the chain id
+     * @return the chain id as a byte array
+     */
     public static byte[] asChainIdBytes(final int chainId) {
         final var bytes = new byte[2];
         bytes[0] = (byte) (chainId >> 8);

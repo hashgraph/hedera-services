@@ -185,12 +185,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
-            @NonNull final Address sendingContract,
-            @NonNull final Address recipient,
-            final long amount,
-            final boolean delegateCall) {
-        return evmFrameState.tryTransfer(sendingContract, recipient, amount, delegateCall);
+    public Optional<ExceptionalHaltReason> tryTransfer(
+            @NonNull final Address from, @NonNull final Address to, final long amount, final boolean delegateCall) {
+        return evmFrameState.tryTransfer(from, to, amount, delegateCall);
     }
 
     /**
@@ -226,6 +223,14 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     public Address setupTopLevelCreate(@NonNull ContractCreateTransactionBody body) {
         setupPendingCreation(null, requireNonNull(body), null);
         return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setupTopLevelLazyCreate(@NonNull final Address alias) {
+        setupPendingCreation(null, null, requireNonNull(alias));
     }
 
     /**
@@ -300,8 +305,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
-        if (pendingCreation.isTopLevel()) {
-            hederaOperations.createContract(number, pendingCreation.body(), nonce, pendingCreation.aliasIfApplicable());
+        if (pendingCreation.isHapiCreation()) {
+            hederaOperations.createContract(
+                    number, requireNonNull(pendingCreation.body()), nonce, pendingCreation.aliasIfApplicable());
         } else {
             hederaOperations.createContract(
                     number, pendingCreation.parentNumber(), nonce, pendingCreation.aliasIfApplicable());

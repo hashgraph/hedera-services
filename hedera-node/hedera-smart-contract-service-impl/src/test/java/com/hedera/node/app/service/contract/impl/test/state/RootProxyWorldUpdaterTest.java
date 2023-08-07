@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT
 import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.NEXT_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.SOME_EVM_ADDRESS;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -108,7 +107,6 @@ class RootProxyWorldUpdaterTest {
         final var updater = subject.updater();
 
         assertSame(pendingCreation, updater.getPendingCreation());
-        assertNull(subject.getPendingCreation());
     }
 
     @Test

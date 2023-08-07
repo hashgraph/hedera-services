@@ -147,6 +147,9 @@ public class TestHelpers {
             AccountID.newBuilder().accountNum(666).build();
     public static final ContractID INVALID_CONTRACT_ADDRESS =
             ContractID.newBuilder().evmAddress(Bytes.wrap("abcdefg")).build();
+    public static final ContractID VALID_CONTRACT_ADDRESS = ContractID.newBuilder()
+            .evmAddress(Bytes.fromHex("1234123412341234123412341234123412341234"))
+            .build();
     public static final Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static final Address HTS_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x167");

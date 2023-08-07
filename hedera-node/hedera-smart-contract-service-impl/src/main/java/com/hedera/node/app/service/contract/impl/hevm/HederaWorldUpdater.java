@@ -125,7 +125,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param delegateCall    whether this transfer is done via code executed by a delegate call
      * @return an optional with the reason to halt if the transfer failed, empty otherwise
      */
-    Optional<ExceptionalHaltReason> tryTransferFromContract(
+    Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
 
     /**
@@ -150,7 +150,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
 
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of the new
+     * {@link PendingCreation} a {@link ProxyWorldUpdater} can use to complete the creation of the new
      * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}; returns the "long-zero" address
      * to be assigned to the new account.
      *
@@ -161,13 +161,22 @@ public interface HederaWorldUpdater extends WorldUpdater {
 
     /**
      * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
-     * {@link PendingCreation} this {@link ProxyWorldUpdater} will use to complete the creation of the new
+     * {@link PendingCreation} a {@link ProxyWorldUpdater} can use to complete the creation of the new
      * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
      *
      * @param body the HAPI operation initiating the creation
      * @param alias the canonical address for the top-level creation
      */
     void setupAliasedTopLevelCreate(@NonNull ContractCreateTransactionBody body, @NonNull Address alias);
+
+    /**
+     * Given the HAPI operation initiating a top-level {@code MESSAGE_CALL} that will lazy-create a new
+     * account if successful, sets up the {@link PendingCreation} a {@link ProxyWorldUpdater} can use
+     * to complete the lazy creation {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * @param alias the canonical address for the top-level lazy creation
+     */
+    void setupTopLevelLazyCreate(@NonNull Address alias);
 
     /**
      * Given the origin address of a {@code CONTRACT_CREATION} message, sets up the {@link PendingCreation}

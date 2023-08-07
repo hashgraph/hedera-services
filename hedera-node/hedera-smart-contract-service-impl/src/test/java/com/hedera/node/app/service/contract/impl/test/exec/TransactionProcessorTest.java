@@ -36,6 +36,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.RELAYER
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.USER_OFFERED_GAS_PRICE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALID_CONTRACT_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALUE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownContextWith;
@@ -69,6 +70,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
+import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -165,6 +167,54 @@ class TransactionProcessorTest {
                 null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
+    }
+
+    @Test
+    void lazyCreationAttemptWithValidAddress() {
+        givenSenderAccount();
+        givenRelayerAccount();
+        final var transaction = new HederaEvmTransaction(
+                SENDER_ID,
+                RELAYER_ID,
+                VALID_CONTRACT_ADDRESS,
+                NONCE,
+                CALL_DATA,
+                MAINNET_CHAIN_ID,
+                VALUE,
+                GAS_LIMIT,
+                USER_OFFERED_GAS_PRICE,
+                MAX_GAS_ALLOWANCE,
+                null);
+        given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
+        final var context = wellKnownContextWith(blocks);
+        given(gasCharging.chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction))
+                .willReturn(CHARGING_RESULT);
+        given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
+        final var expectedToAddress = ConversionUtils.pbjToBesuAddress(VALID_CONTRACT_ADDRESS.evmAddressOrThrow());
+        given(frameBuilder.buildInitialFrameWith(
+                        transaction,
+                        worldUpdater,
+                        context,
+                        config,
+                        EIP_1014_ADDRESS,
+                        expectedToAddress,
+                        CHARGING_RESULT.intrinsicGas()))
+                .willReturn(initialFrame);
+        given(senderAccount.hederaId()).willReturn(SENDER_ID);
+        given(frameRunner.runToCompletion(
+                        transaction.gasLimit(),
+                        SENDER_ID,
+                        initialFrame,
+                        tracer,
+                        messageCallProcessor,
+                        contractCreationProcessor))
+                .willReturn(SUCCESS_RESULT);
+
+        final var result =
+                subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
+
+        assertSame(SUCCESS_RESULT, result);
+        verify(worldUpdater).setupTopLevelLazyCreate(expectedToAddress);
     }
 
     @Test

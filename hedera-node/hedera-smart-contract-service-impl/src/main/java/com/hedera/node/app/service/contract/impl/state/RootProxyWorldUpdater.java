@@ -76,7 +76,6 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         final var child = super.updater();
         if (this.pendingCreation != null) {
             child.pendingCreation = this.pendingCreation;
-            this.pendingCreation = null;
         }
         return child;
     }

@@ -27,6 +27,7 @@ import com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils;
 import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.node.app.service.contract.impl.utils.OpcodeUtils;
+import com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,8 +37,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class FrameUtilsTest {
-    private static final Set<Class<?>> toBeTested =
-            new HashSet<>(Arrays.asList(FrameUtils.class, ConversionUtils.class, OpUtils.class, OpcodeUtils.class));
+    private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+            FrameUtils.class, ConversionUtils.class, OpUtils.class, OpcodeUtils.class, SynthTxnUtils.class));
 
     @Test
     void throwsInConstructor() {

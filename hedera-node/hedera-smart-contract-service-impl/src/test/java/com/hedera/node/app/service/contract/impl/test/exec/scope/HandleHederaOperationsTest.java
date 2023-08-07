@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONIC
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
+import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthAccountCreationForContract;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -139,8 +139,8 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void lazyCreationCostInGasNotImplemented() {
-        assertThrows(AssertionError.class, subject::lazyCreationCostInGas);
+    void lazyCreationCostInGasHardcoded() {
+        assertEquals(1L, subject.lazyCreationCostInGas());
     }
 
     @Test
@@ -211,7 +211,7 @@ class HandleHederaOperationsTest {
                 .build();
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthTxn = TransactionBody.newBuilder()
-                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .cryptoCreateAccount(synthAccountCreationForContract(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
@@ -234,7 +234,7 @@ class HandleHederaOperationsTest {
                 .build();
         final var pendingId = ContractID.newBuilder().contractNum(666L).build();
         final var synthTxn = TransactionBody.newBuilder()
-                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .cryptoCreateAccount(synthAccountCreationForContract(pendingId, CANONICAL_ALIAS, someBody))
                 .build();
         given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
                 .willReturn(cryptoCreateRecordBuilder);

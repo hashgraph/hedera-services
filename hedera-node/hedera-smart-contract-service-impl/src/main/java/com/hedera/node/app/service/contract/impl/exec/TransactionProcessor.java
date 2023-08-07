@@ -215,6 +215,7 @@ public class TransactionProcessor {
                 final var alias = transaction.contractIdOrThrow().evmAddressOrThrow();
                 validateTrue(isEvmAddress(alias), INVALID_CONTRACT_ID);
                 parties = new InvolvedParties(sender, relayer, pbjToBesuAddress(alias));
+                updater.setupTopLevelLazyCreate(parties.receiverAddress);
             } else {
                 validateTrue(to != null, INVALID_CONTRACT_ID);
                 parties =
