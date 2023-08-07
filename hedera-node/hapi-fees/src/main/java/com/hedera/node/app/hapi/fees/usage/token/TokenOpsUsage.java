@@ -168,7 +168,7 @@ public final class TokenOpsUsage {
             // The price of nft mint should be increased based on number of signatures.
             // The first signature is free and is accounted in the base price, so we only need to add
             // the price of the rest of the signatures.
-            accumulator.addVpt(sigUsage.numSigs() - 1L);
+            accumulator.addVpt(Math.max(0, sigUsage.numSigs() - 1L));
         } else {
             accumulator.resetForTransaction(baseMeta, sigUsage);
         }
