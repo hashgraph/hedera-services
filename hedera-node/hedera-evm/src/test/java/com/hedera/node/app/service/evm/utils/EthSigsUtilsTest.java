@@ -16,12 +16,9 @@
 
 package com.hedera.node.app.service.evm.utils;
 
-import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hederahashgraph.api.proto.java.Key;
 import org.junit.jupiter.api.Test;
 
 class EthSigsUtilsTest {
@@ -38,14 +35,5 @@ class EthSigsUtilsTest {
 
         // failed recovery
         assertArrayEquals(new byte[0], EthSigsUtils.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
-    }
-
-    @Test
-    void hmm() throws InvalidProtocolBufferException {
-        final var alias = unhex("3a21030edcc130e13fb5102e7c883535af8c2b0a5a617231f77fd127ce5f3b9a620591");
-        final var key = Key.parseFrom(alias);
-        System.out.println(key);
-        System.out.println(hex(
-                EthSigsUtils.recoverAddressFromPubKey(key.getECDSASecp256K1().toByteArray())));
     }
 }
