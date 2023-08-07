@@ -4,13 +4,11 @@
 module com.swirlds.fchashmap {
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.config.api;
     requires com.swirlds.logging;
     requires org.apache.logging.log4j;
-    requires com.swirlds.config.api;
     requires static com.github.spotbugs.annotations;
 
     exports com.swirlds.fchashmap;
     exports com.swirlds.fchashmap.config;
-    exports com.swirlds.fchashmap.internal to
-            com.swirlds.fchashmap.test;
 }

@@ -11,11 +11,9 @@ module com.swirlds.cli {
             info.picocli;
 
     requires com.swirlds.common;
-
-    /* Utilities */
     requires info.picocli;
     requires io.github.classgraph;
-    requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
+    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

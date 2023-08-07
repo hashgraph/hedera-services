@@ -6,16 +6,16 @@ open module com.swirlds.common.testing {
     exports com.swirlds.common.test.set;
     exports com.swirlds.common.test.map;
 
+    requires com.fasterxml.jackson.databind;
     requires com.swirlds.base;
-    requires com.swirlds.test.framework;
+    requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common;
+    requires com.swirlds.test.framework;
+    requires java.scripting;
+    requires lazysodium.java;
+    requires org.apache.commons.lang3;
+    requires org.apache.logging.log4j;
     requires org.bouncycastle.provider;
     requires org.junit.jupiter.api;
-    requires java.scripting;
-    requires org.apache.logging.log4j;
-    requires com.fasterxml.jackson.databind;
-    requires lazysodium.java;
     requires static com.github.spotbugs.annotations;
-    requires com.swirlds.common.test.fixtures;
-    requires org.apache.logging.log4j.core;
 }

@@ -6,8 +6,8 @@ module com.swirlds.config.impl {
     exports com.swirlds.config.impl.validators;
 
     requires com.swirlds.base;
-    requires com.swirlds.config.api;
     requires com.swirlds.common;
+    requires com.swirlds.config.api;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 

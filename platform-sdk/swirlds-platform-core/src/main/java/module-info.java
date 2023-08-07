@@ -127,43 +127,31 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
 
-    /* Swirlds Libraries */
-    requires com.swirlds.base;
     requires transitive com.swirlds.common;
-    requires com.swirlds.common.testing;
-    requires com.swirlds.test.framework;
-    requires com.swirlds.logging;
-    requires com.swirlds.cli;
     requires transitive com.swirlds.platform.gui;
-
-    /* JDK Libraries */
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.dataformat.yaml;
+    requires com.swirlds.base;
+    requires com.swirlds.cli;
+    requires com.swirlds.common.testing;
+    requires com.swirlds.config.api;
+    requires com.swirlds.fchashmap;
+    requires com.swirlds.fcqueue;
+    requires com.swirlds.jasperdb;
+    requires com.swirlds.logging;
+    requires com.swirlds.test.framework;
+    requires com.swirlds.virtualmap;
+    requires info.picocli;
     requires java.management;
     requires java.scripting;
     requires java.sql;
+    requires javafx.base;
     requires jdk.management;
     requires jdk.net;
-
-    /* JavaFX Libraries */
-    requires javafx.base;
-
-    /* Logging Libraries */
-    requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
-
-    /* Cryptographic Libraries */
+    requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-
-    /* Database Libraries */
-    requires com.swirlds.fchashmap;
-    requires com.swirlds.merkledb;
-    requires com.swirlds.virtualmap;
-    requires com.swirlds.fcqueue;
-    requires com.swirlds.config.api;
-
-    /* Command Line Utilities */
-    requires info.picocli;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.dataformat.yaml;
+    requires portmapper;
     requires static com.github.spotbugs.annotations;
 }

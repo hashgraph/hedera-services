@@ -10,10 +10,10 @@ open module com.swirlds.virtualmap {
 
     requires com.swirlds.base;
     requires com.swirlds.common;
-    requires com.swirlds.logging;
-    requires org.apache.logging.log4j;
-    requires java.sql;
-    requires java.management; // Test dependency
     requires com.swirlds.config.api;
+    requires com.swirlds.logging;
+    requires java.management; // Test dependency
+    requires java.sql;
+    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 }

@@ -30,6 +30,7 @@ open module com.swirlds.merkledb {
 
     requires com.swirlds.base;
     requires com.swirlds.common;
+    requires com.swirlds.config.api;
     requires com.swirlds.logging;
     requires com.swirlds.virtualmap;
     requires org.eclipse.collections.impl;
@@ -38,6 +39,9 @@ open module com.swirlds.merkledb {
     requires java.management;
     requires jdk.management;
     requires jdk.unsupported;
-    requires com.swirlds.config.api;
+    requires org.apache.commons.lang3;
+    requires org.apache.logging.log4j;
+    requires org.eclipse.collections.api;
+    requires org.eclipse.collections.impl;
     requires static com.github.spotbugs.annotations;
 }
