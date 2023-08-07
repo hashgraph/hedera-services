@@ -113,8 +113,10 @@ public interface SpeedometerMetric extends Metric {
         /**
          * Constructor of {@code SpeedometerMetric.Config}
          *
-         * The {@code useDefaultHalfLife} is set to {@code true} and have to check
-         * before creating the {@link RunningAverageMetric} and set from the {@link MetricsConfig#halfLife()} value
+         * The {@code useDefaultHalfLife} determines whether the default {@code halfLife} value
+         * (see {@link MetricsConfig#halfLife()}) should be used during the creation of a metric based on
+         * this configuration. If set to {@code false}, the specific {@code halfLife} defined in this configuration will
+         * be used instead.
          *
          * @param category
          * 		the kind of metric (metrics are grouped or filtered by this)
