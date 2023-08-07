@@ -165,6 +165,10 @@ public final class TokenOpsUsage {
             final SubType subType) {
         if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
             accumulator.reset();
+            // The price of nft mint should be increased based on number of signatures.
+            // The first signature is free and is accounted in the base price, so we only need to add
+            // the price of the rest of the signatures.
+            accumulator.addVpt(sigUsage.numSigs() - 1L);
         } else {
             accumulator.resetForTransaction(baseMeta, sigUsage);
         }
