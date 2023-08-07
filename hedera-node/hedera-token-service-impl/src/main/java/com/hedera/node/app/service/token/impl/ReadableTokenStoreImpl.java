@@ -65,6 +65,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
         return getTokenLeaf(id).orElse(null);
     }
 
+    // Suppressing the warning that we are passing null values when building TokenMetadata(*OrElse methods)
     @SuppressWarnings("java:S2637")
     private TokenMetadata tokenMetaFrom(final Token token) {
         boolean hasRoyaltyWithFallback = false;
@@ -77,7 +78,6 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
                 }
             }
         }
-        // TODO: remove SuppressWarnings when this is implemented
         return new TokenMetadata(
                 token.adminKeyOrElse(null),
                 token.kycKeyOrElse(null),
