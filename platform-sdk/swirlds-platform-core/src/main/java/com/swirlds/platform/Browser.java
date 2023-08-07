@@ -690,7 +690,7 @@ public class Browser {
 
                     if (!initialState.get().isGenesisState()) {
                         updateLoadedStateAddressBook(
-                                initialState.get(), addressBookInitializer.getInitialAddressBook());
+                                initialState.get(), addressBookInitializer.getCurrentAddressBook());
                     }
 
                     GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
@@ -706,6 +706,7 @@ public class Browser {
                             swirldName,
                             appVersion,
                             initialState.get(),
+                            addressBookInitializer.getPreviousAddressBook(),
                             emergencyRecoveryManager);
                 }
 

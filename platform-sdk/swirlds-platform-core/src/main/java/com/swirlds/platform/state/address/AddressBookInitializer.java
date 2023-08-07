@@ -82,7 +82,10 @@ public class AddressBookInitializer {
     private final AddressBook configAddressBook;
     /** The address book determined for use after {@link AddressBookInitializer#initialize()} is called. */
     @NonNull
-    private final AddressBook initialAddressBook;
+    private final AddressBook currentAddressBook;
+    /** The address book used before the restart */
+    @Nullable
+    private final AddressBook previousAddressBook;
     /** The path to the directory for writing address books. */
     @NonNull
     private final Path pathToAddressBookDirectory;
@@ -125,10 +128,12 @@ public class AddressBookInitializer {
         this.useConfigAddressBook = addressBookConfig.forceUseOfConfigAddressBook();
         this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
-        initialAddressBook = initialize();
+        final InitializedAddressBooks addressBooks = initialize();
+        currentAddressBook = addressBooks.currentAddressBook();
         if (!useConfigAddressBook) {
-            AddressBookValidator.validateNewAddressBook(stateAddressBook, initialAddressBook);
+            AddressBookValidator.validateNewAddressBook(stateAddressBook, currentAddressBook);
         }
+        previousAddressBook = addressBooks.previousAddressBook();
     }
 
     /**
@@ -137,8 +142,18 @@ public class AddressBookInitializer {
      * @return the address book to use in the platform.
      */
     @NonNull
-    public AddressBook getInitialAddressBook() {
-        return initialAddressBook;
+    public AddressBook getCurrentAddressBook() {
+        return currentAddressBook;
+    }
+
+    /**
+     * Returns the address book used before the restart.
+     *
+     * @return the address book used before the restart.
+     */
+    @Nullable
+    public AddressBook getPreviousAddressBook() {
+        return previousAddressBook;
     }
 
     /**
@@ -148,17 +163,19 @@ public class AddressBookInitializer {
      * address book is the one to use.  All three address books, the configuration address book, the save state address
      * book, and the new address book to use are recorded in the address book directory.
      *
-     * @return the address book to use in the platform.
+     * @return the address books to use in the platform.
      */
     @NonNull
-    private AddressBook initialize() {
+    private InitializedAddressBooks initialize() {
         AddressBook candidateAddressBook;
+        final AddressBook previousAddressBook;
         if (useConfigAddressBook) {
             // settings.txt override to use config.txt address book
             logger.info(
                     STARTUP.getMarker(),
                     "Overriding the address book in the state with the address book from config.txt");
             candidateAddressBook = configAddressBook;
+            previousAddressBook = stateAddressBook;
         } else if (initialState.isGenesisState()) {
             // Starting from Genesis, config and state address book should be the same.
             if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
@@ -167,16 +184,19 @@ public class AddressBookInitializer {
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
+            previousAddressBook = null;
         } else if (!softwareUpgrade) {
             // Loaded State From Disk, Non-Genesis, No Software Upgrade
             logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");
             candidateAddressBook = stateAddressBook;
             // since state address book was checked for validity prior to adoption, no check needed here.
+            previousAddressBook = candidateAddressBook;
         } else {
             // Loaded State from Disk, Non-Genesis, There is a software version upgrade
             logger.info(
                     STARTUP.getMarker(),
                     "The address book weight may be updated by the application using data from the state snapshot.");
+            previousAddressBook = stateAddressBook;
             candidateAddressBook = initialState
                     .getSwirldState()
                     .updateWeight(configAddressBook.copy(), platformContext)
@@ -184,7 +204,7 @@ public class AddressBookInitializer {
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
         }
         recordAddressBooks(candidateAddressBook);
-        return candidateAddressBook;
+        return new InitializedAddressBooks(candidateAddressBook, previousAddressBook);
     }
 
     /**
@@ -279,5 +299,14 @@ public class AddressBookInitializer {
     @NonNull
     public Path getPathToAddressBookDirectory() {
         return pathToAddressBookDirectory;
+    }
+
+    /**
+     *  A record of the address books produced by initialization
+     *
+     *  @param currentAddressBook the address book that should be used by the platform
+     *  @param previousAddressBook the address book that was used before the current address book
+     */
+    private record InitializedAddressBooks(@NonNull AddressBook currentAddressBook, @Nullable AddressBook previousAddressBook) {
     }
 }

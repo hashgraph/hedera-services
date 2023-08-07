@@ -161,6 +161,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -193,8 +195,8 @@ public class SwirldsPlatform implements Platform, Startable {
      * from disk or getting it through reconnect
      */
     private final AtomicReference<Consensus> consensusRef = new AtomicReference<>();
-    /** set in the constructor and given to the SwirldState object in run() */
-    private final AddressBook initialAddressBook;
+    /** the current nodes in the network and their information */
+    private final AddressBook currentAddressBook;
 
     private final Metrics metrics;
 
@@ -303,6 +305,7 @@ public class SwirldsPlatform implements Platform, Startable {
      * @param swirldName               the name of the swirld being run
      * @param appVersion               the current version of the running application
      * @param initialState             the initial state of the platform
+     * @param previousAddressBook      the address book used before the restart, or null if this is the first one ever
      * @param emergencyRecoveryManager used in emergency recovery.
      */
     SwirldsPlatform(
@@ -314,6 +317,7 @@ public class SwirldsPlatform implements Platform, Startable {
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion appVersion,
             @NonNull final SignedState initialState,
+            @Nullable final AddressBook previousAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
         this.platformContext = Objects.requireNonNull(platformContext, "platformContext");
@@ -341,7 +345,7 @@ public class SwirldsPlatform implements Platform, Startable {
         this.appVersion = appVersion;
 
         this.selfId = id;
-        this.initialAddressBook = initialState.getAddressBook();
+        this.currentAddressBook = initialState.getAddressBook();
 
         this.eventMapper = new EventMapper(platformContext.getMetrics(), selfId);
 
@@ -356,7 +360,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 PlatformStatus.values(),
                 platformStatusManager::getCurrentStatus));
 
-        registerAddressBookMetrics(metrics, initialAddressBook, selfId);
+        registerAddressBookMetrics(metrics, currentAddressBook, selfId);
 
         this.recycleBin = Objects.requireNonNull(recycleBin);
 
@@ -366,7 +370,7 @@ public class SwirldsPlatform implements Platform, Startable {
         final SyncMetrics syncMetrics = new SyncMetrics(metrics);
         RuntimeMetrics.setup(metrics);
 
-        this.shadowGraph = new ShadowGraph(syncMetrics, initialAddressBook.getSize());
+        this.shadowGraph = new ShadowGraph(syncMetrics, currentAddressBook.getSize());
 
         this.crypto = crypto;
 
@@ -447,7 +451,7 @@ public class SwirldsPlatform implements Platform, Startable {
         // This object makes a copy of the state. After this point, initialState becomes immutable.
         swirldStateManager = PlatformConstructor.swirldStateManager(
                 platformContext,
-                initialAddressBook,
+                currentAddressBook,
                 selfId,
                 preconsensusSystemTransactionManager,
                 consensusSystemTransactionManager,
@@ -517,7 +521,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 selfId,
                 eventLinker,
                 consensusRef::get,
-                initialAddressBook,
+                currentAddressBook,
                 eventObserverDispatcher,
                 intakeCycleStats,
                 shadowGraph,
@@ -531,10 +535,17 @@ public class SwirldsPlatform implements Platform, Startable {
         // doesn't track ancient events
         validators.add(new AncientValidator(consensusRef::get));
         validators.add(new EventDeduplication(isDuplicateChecks, eventIntakeMetrics));
-        validators.add(StaticValidators.buildParentValidator(initialAddressBook.getSize()));
+        validators.add(StaticValidators.buildParentValidator(currentAddressBook.getSize()));
         validators.add(new TransactionSizeValidator(transactionConfig.maxTransactionBytesPerEvent()));
+        // some events in the PCES might have been created by nodes that are no longer in the current
+        // address book but are in the previous one, so we need both for signature validation
+        final List<AddressBook> validationAddressBooks = Stream.of(currentAddressBook, previousAddressBook)
+                .filter(Objects::nonNull)
+                .toList();
         if (basicConfig.verifyEventSigs()) {
-            validators.add(new SignatureValidator(List.of(initialAddressBook), CryptoStatic::verifySignature));
+            validators.add(new SignatureValidator(
+                    validationAddressBooks,
+                    CryptoStatic::verifySignature));
         }
         final GossipEventValidators eventValidators = new GossipEventValidators(validators);
 
@@ -569,7 +580,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 threadManager,
                 time,
                 this,
-                initialAddressBook,
+                currentAddressBook,
                 selfId,
                 appVersion,
                 swirldStateManager.getTransactionPool(),
@@ -594,7 +605,7 @@ public class SwirldsPlatform implements Platform, Startable {
                 time,
                 crypto,
                 notificationEngine,
-                initialAddressBook,
+                currentAddressBook,
                 selfId,
                 appVersion,
                 shadowGraph,
@@ -1130,7 +1141,7 @@ public class SwirldsPlatform implements Platform, Startable {
      */
     @Override
     public AddressBook getAddressBook() {
-        return initialAddressBook;
+        return currentAddressBook;
     }
 
     /**
