@@ -226,7 +226,7 @@ jobs:
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          path: ${{ env.HOME }}/artifact-build
+          path: ~/artifact-build
           key: node-build-artifacts-${{ steps.effective-version.outputs.number }}-${{ github.sha }}
 
       - name: Stage Artifact Build Folder
@@ -356,6 +356,17 @@ jobs:
           workload_identity_provider: "projects/235822363393/locations/global/workloadIdentityPools/hedera-builds-pool/providers/hedera-builds-gh-actions"
           service_account: "swirlds-automation@hedera-registry.iam.gserviceaccount.com"
 
+      - name: Set Image Registry
+        id: set-registry
+        run: |
+         DOCKER_REGISTRY="gcr.io"
+         [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && DOCKER_REGISTRY="us-docker.pkg.dev"
+         echo "docker-registry=${DOCKER_REGISTRY}" >>"${GITHUB_OUTPUT}"
+
+         DOCKER_TAG_BASE="gcr.io/hedera-registry"
+         [[ "${{ inputs.version-policy }}" == "branch-commit" ]] && DOCKER_TAG_BASE="us-docker.pkg.dev/swirlds-registry/local-node"
+         echo "docker-tag-base=${DOCKER_TAG_BASE}" >>"${GITHUB_OUTPUT}"
+
       - name: Setup QEmu Support
         uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # pin@v2
 
@@ -365,7 +376,7 @@ jobs:
       - name: Docker Login
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # pin@v2
         with:
-          registry: gcr.io
+          registry: ${{ steps.set-registry.outputs.docker-registry }}
           username: oauth2accesstoken
           password: ${{ steps.google-auth.outputs.access_token }}
 
@@ -373,7 +384,7 @@ jobs:
         uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8 # pin@v3
         with:
           fail-on-cache-miss: true
-          path: ${{ env.HOME }}/artifact-build
+          path: ~/artifact-build
           key: node-build-artifacts-${{ needs.Artifact.outputs.version }}-${{ github.sha }}
 
       - name: Stage SDK Artifacts
@@ -389,7 +400,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           context: hedera-node/infrastructure/docker/containers/local-node/network-node-haveged
-          tags: gcr.io/hedera-registry/network-node-haveged:${{ needs.Artifact.outputs.version }}
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-haveged:${{ needs.Artifact.outputs.version }}
 
       - name: Build Base Image
         uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
@@ -399,7 +410,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           context: hedera-node/infrastructure/docker/containers/local-node/network-node-base
-          tags: gcr.io/hedera-registry/network-node-base:${{ needs.Artifact.outputs.version }}
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/network-node-base:${{ needs.Artifact.outputs.version }}
 
       - name: Build Network Node Image
         uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825 # pin@v4
@@ -410,4 +421,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: IMAGE_TAG=${{ needs.Artifact.outputs.version }}
           context: hedera-node/infrastructure/docker/containers/local-node/main-network-node
-          tags: gcr.io/hedera-registry/main-network-node:${{ needs.Artifact.outputs.version }}
+          tags: ${{ steps.set-registry.outputs.docker-tag-base }}/main-network-node:${{ needs.Artifact.outputs.version }}
