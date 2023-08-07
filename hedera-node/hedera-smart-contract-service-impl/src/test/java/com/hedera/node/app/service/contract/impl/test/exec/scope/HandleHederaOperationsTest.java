@@ -16,17 +16,38 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.B_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CANONICAL_ALIAS;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.NON_SYSTEM_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SOME_DURATION;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountCreationFor;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +60,9 @@ class HandleHederaOperationsTest {
     private HandleContext.SavepointStack savepointStack;
 
     @Mock
+    private TokenServiceApi tokenServiceApi;
+
+    @Mock
     private BlockRecordInfo blockRecordInfo;
 
     @Mock
@@ -47,11 +71,14 @@ class HandleHederaOperationsTest {
     @Mock
     private WritableContractStateStore stateStore;
 
+    @Mock
+    private CryptoCreateRecordBuilder cryptoCreateRecordBuilder;
+
     private HandleHederaOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HandleHederaOperations(context);
+        subject = new HandleHederaOperations(DEFAULT_LEDGER_CONFIG, context);
     }
 
     @Test
@@ -95,18 +122,20 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void peekNumberIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::peekNextEntityNumber);
+    void peekNumberUsesContext() {
+        given(context.peekAtNewEntityNum()).willReturn(123L);
+        assertEquals(123L, subject.peekNextEntityNumber());
     }
 
     @Test
-    void useNumberIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::useNextEntityNumber);
+    void useNumberUsesContext() {
+        given(context.newEntityNum()).willReturn(123L);
+        assertEquals(123L, subject.useNextEntityNumber());
     }
 
     @Test
-    void commitIsNotImplemented() {
-        assertThrows(AssertionError.class, subject::commit);
+    void commitIsNoopUntilSavepointExposesIt() {
+        assertDoesNotThrow(subject::commit);
     }
 
     @Test
@@ -115,28 +144,48 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void gasPriceInTinybarsNotImplemented() {
-        assertThrows(AssertionError.class, subject::gasPriceInTinybars);
+    void gasPriceInTinybarsHardcoded() {
+        assertEquals(1L, subject.gasPriceInTinybars());
     }
 
     @Test
-    void valueInTinybarsNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.valueInTinybars(1L));
+    void valueInTinybarsUsesOneToOneExchange() {
+        assertEquals(1L, subject.valueInTinybars(1L));
     }
 
     @Test
-    void collectFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.collectFee(AccountID.DEFAULT, 1L));
+    void collectFeeStillTransfersAllToNetworkFunding() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.collectFee(TestHelpers.NON_SYSTEM_ACCOUNT_ID, 123L);
+
+        verify(tokenServiceApi)
+                .transferFromTo(
+                        TestHelpers.NON_SYSTEM_ACCOUNT_ID,
+                        AccountID.newBuilder()
+                                .accountNum(DEFAULT_LEDGER_CONFIG.fundingAccount())
+                                .build(),
+                        123L);
     }
 
     @Test
-    void refundFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.refundFee(AccountID.DEFAULT, 1L));
+    void refundFeeStillTransfersAllFromNetworkFunding() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+
+        subject.refundFee(TestHelpers.NON_SYSTEM_ACCOUNT_ID, 123L);
+
+        verify(tokenServiceApi)
+                .transferFromTo(
+                        AccountID.newBuilder()
+                                .accountNum(DEFAULT_LEDGER_CONFIG.fundingAccount())
+                                .build(),
+                        TestHelpers.NON_SYSTEM_ACCOUNT_ID,
+                        123L);
     }
 
     @Test
-    void chargeStorageRentNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.chargeStorageRent(1L, 2L, true));
+    void chargeStorageRentIsNoop() {
+        assertDoesNotThrow(() -> subject.chargeStorageRent(1L, 2L, true));
     }
 
     @Test
@@ -147,6 +196,47 @@ class HandleHederaOperationsTest {
     @Test
     void createContractNotImplemented() {
         assertThrows(AssertionError.class, () -> subject.createContract(1L, 2L, 3L, Bytes.EMPTY));
+    }
+
+    @Test
+    void createContractWithBodyDispatchesThenMarksAsContract() {
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(OK);
+
+        subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS);
+
+        verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
+        verify(tokenServiceApi)
+                .markAsContract(AccountID.newBuilder().accountNum(666L).build());
+    }
+
+    @Test
+    void createContractWithFailedDispatchNotImplemented() {
+        final var someBody = ContractCreateTransactionBody.newBuilder()
+                .adminKey(AN_ED25519_KEY)
+                .autoRenewAccountId(NON_SYSTEM_ACCOUNT_ID)
+                .autoRenewPeriod(SOME_DURATION)
+                .build();
+        final var pendingId = ContractID.newBuilder().contractNum(666L).build();
+        final var synthTxn = TransactionBody.newBuilder()
+                .cryptoCreateAccount(accountCreationFor(pendingId, CANONICAL_ALIAS, someBody))
+                .build();
+        given(context.dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class))
+                .willReturn(cryptoCreateRecordBuilder);
+        given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
+
+        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS));
     }
 
     @Test
@@ -165,17 +255,47 @@ class HandleHederaOperationsTest {
     }
 
     @Test
-    void createdContractIdsNotImplemented() {
-        assertThrows(AssertionError.class, subject::createdContractIds);
+    void createdContractIdsUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(tokenServiceApi.modifiedAccountIds())
+                .willReturn(Set.of(B_NEW_ACCOUNT_ID, A_NEW_ACCOUNT_ID, NON_SYSTEM_ACCOUNT_ID));
+        final var expectedContractIds = List.of(
+                ContractID.newBuilder()
+                        .contractNum(A_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                ContractID.newBuilder()
+                        .contractNum(B_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                ContractID.newBuilder()
+                        .contractNum(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow())
+                        .build());
+        assertEquals(expectedContractIds, subject.createdContractIds());
     }
 
     @Test
-    void updatedContractNoncesNotImplemented() {
-        assertThrows(AssertionError.class, subject::updatedContractNonces);
+    void updatedContractNoncesUsesApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        final var aNonceInfo = new ContractNonceInfo(
+                ContractID.newBuilder()
+                        .contractNum(A_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                1L);
+        final var bNonceInfo = new ContractNonceInfo(
+                ContractID.newBuilder()
+                        .contractNum(B_NEW_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                2L);
+        final var nNonceInfo = new ContractNonceInfo(
+                ContractID.newBuilder()
+                        .contractNum(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow())
+                        .build(),
+                3L);
+        given(tokenServiceApi.updatedContractNonces()).willReturn(List.of(bNonceInfo, nNonceInfo, aNonceInfo));
+        assertEquals(List.of(aNonceInfo, bNonceInfo, nNonceInfo), subject.updatedContractNonces());
     }
 
     @Test
-    void getOriginalSlotsUsedNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.getOriginalSlotsUsed(1L));
+    void getOriginalSlotsUsedAlwaysReturnsZero() {
+        assertEquals(0, subject.getOriginalSlotsUsed(1L));
     }
 }

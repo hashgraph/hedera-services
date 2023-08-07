@@ -25,6 +25,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCharging;
 import com.hedera.node.app.service.contract.impl.exec.gas.GasCharges;
@@ -150,12 +151,7 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
-            final var fallbackUpdater = feesOnlyUpdater.get();
-            // Note these calls cannot fail, or processTransaction() would have aborted immediately
-            final var parties = computeInvolvedParties(transaction, fallbackUpdater, config);
-            gasCharging.chargeForGas(parties.sender(), parties.relayer(), context, fallbackUpdater, transaction);
-            fallbackUpdater.commit();
-            return resourceExhaustionFrom(transaction.gasLimit(), context.gasPrice(), e.getStatus());
+            return commitResourceExhaustion(transaction, feesOnlyUpdater.get(), context, e.getStatus(), config);
         }
         return result;
     }
@@ -183,8 +179,8 @@ public class TransactionProcessor {
      * </ol>
      *
      * <p>Note that if the transaction is a {@code CONTRACT_CREATION}, setup includes calling either
-     * {@link HederaWorldUpdater#setupCreate(Address)} or
-     * {@link HederaWorldUpdater#setupAliasedCreate(Address, Address)}.
+     * {@link HederaWorldUpdater#setupTopLevelCreate(ContractCreateTransactionBody)} or
+     * {@link HederaWorldUpdater#setupAliasedTopLevelCreate(ContractCreateTransactionBody, Address)}
      *
      * @param transaction the transaction to set up
      * @param updater     the updater for the transaction
@@ -207,9 +203,9 @@ public class TransactionProcessor {
             final Address to;
             if (transaction.isEthereumTransaction()) {
                 to = Address.contractAddress(sender.getAddress(), sender.getNonce());
-                updater.setupAliasedCreate(sender.getAddress(), to);
+                updater.setupAliasedTopLevelCreate(requireNonNull(transaction.hapiCreation()), to);
             } else {
-                to = updater.setupCreate(sender.getAddress());
+                to = updater.setupTopLevelCreate(requireNonNull(transaction.hapiCreation()));
             }
             parties = new InvolvedParties(sender, relayer, to);
         } else {

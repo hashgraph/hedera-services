@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -30,8 +31,10 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -44,6 +47,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,11 +79,24 @@ class TokenServiceApiImplTest {
             TokenServiceImpl.ALIASES_KEY, aliasesState));
     private final WritableAccountStore accountStore = new WritableAccountStore(writableStates);
 
+    @Mock
+    private StakingValidator stakingValidator;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
     private TokenServiceApiImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, writableStates);
+        subject = new TokenServiceApiImpl(DEFAULT_CONFIG, stakingValidator, writableStates);
+    }
+
+    @Test
+    void delegatesStakingValidationAsExpected() {
+        subject.assertValidStakingElection(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+
+        verify(stakingValidator).validateStakedId(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
     }
 
     @Test
@@ -87,15 +104,10 @@ class TokenServiceApiImplTest {
         accountStore.put(Account.newBuilder().accountId(CONTRACT_ACCOUNT_ID).build());
 
         assertNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
-        subject.markNewlyCreatedAsContract(CONTRACT_ACCOUNT_ID);
+        subject.markAsContract(CONTRACT_ACCOUNT_ID);
 
         assertEquals(1, accountStore.sizeOfAccountState());
         assertNotNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
-    }
-
-    @Test
-    void throwsIseIfAccountNotNewlyCreated() {
-        assertThrows(IllegalArgumentException.class, () -> subject.markNewlyCreatedAsContract(CONTRACT_ACCOUNT_ID));
     }
 
     @Test
@@ -239,6 +251,17 @@ class TokenServiceApiImplTest {
         subject.incrementSenderNonce(EOA_ACCOUNT_ID);
         final var postIncrementAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
         assertEquals(124L, postIncrementAccount.ethereumNonce());
+    }
+
+    @Test
+    void setsAccountNonce() {
+        accountStore.put(Account.newBuilder()
+                .accountId(EOA_ACCOUNT_ID)
+                .ethereumNonce(123L)
+                .build());
+        subject.setNonce(EOA_ACCOUNT_ID, 321L);
+        final var postIncrementAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
+        assertEquals(321L, postIncrementAccount.ethereumNonce());
     }
 
     @Test
