@@ -527,8 +527,10 @@ public class SignedState implements SignedStateInfo {
     /**
      * Checks whether this state has been saved to disk.
      * <p>
-     * Note: The return value of this method applies only to states saved in the normal course of operation, NOT
+     * The return value of this method applies only to states saved in the normal course of operation, NOT
      * states that have been dumped to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
      *
      * @return true if this state has been saved to disk, false otherwise
      */
@@ -539,7 +541,9 @@ public class SignedState implements SignedStateInfo {
     /**
      * Indicate that this state has been saved to disk.
      * <p>
-     * Note: this method shouldn't be called when dumping state to disk out of band.
+     * This method shouldn't be called when dumping state to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
      */
     public void stateSavedToDisk() {
         hasBeenSavedToDisk = true;

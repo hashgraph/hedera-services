@@ -231,6 +231,7 @@ public class SignedStateFileManager implements Startable {
      * @param reason           the reason this state is being written to disk
      * @param finishedCallback a function that is called after state writing is complete. Is passed true if writing
      *                         succeeded, else is passed false.
+     * @param outOfBand        true if this state is being written out of band, false otherwise
      * @param configuration    the configuration of the platform
      * @return true if it will be written to disk, false otherwise
      */
@@ -239,6 +240,7 @@ public class SignedStateFileManager implements Startable {
             @NonNull final Path directory,
             @Nullable final StateToDiskReason reason,
             @Nullable final Consumer<Boolean> finishedCallback,
+            final boolean outOfBand,
             @NonNull final Configuration configuration) {
 
         Objects.requireNonNull(directory);
@@ -253,17 +255,35 @@ public class SignedStateFileManager implements Startable {
             final long round = reservedSignedState.get().getRound();
             try (reservedSignedState) {
                 try {
-                    writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), reason, configuration);
-                    if (round > latestSavedStateRound.get()) {
-                        latestSavedStateRound.set(round);
+                    boolean stateAlreadySaved = false;
+
+                    // states being saved out-of-band are exempt from the hasStateBeenSavedToDisk() check
+                    if (!outOfBand) {
+                        if (signedState.hasStateBeenSavedToDisk()) {
+                            logger.info(
+                                    STATE_TO_DISK.getMarker(),
+                                    "Not saving signed state for round {} to disk because it has already been saved.",
+                                    signedState.getRound());
+
+                            stateAlreadySaved = true;
+                        } else {
+                            signedState.stateSavedToDisk();
+                        }
                     }
-                    metrics.getWriteStateToDiskTimeMetric()
-                            .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
-                    statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
-                    stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
+                    if (!stateAlreadySaved) {
+                        writeSignedStateToDisk(selfId, directory, reservedSignedState.get(), reason, configuration);
+                        if (round > latestSavedStateRound.get()) {
+                            latestSavedStateRound.set(round);
+                        }
+                        metrics.getWriteStateToDiskTimeMetric()
+                                .update(TimeUnit.NANOSECONDS.toMillis(time.nanoTime() - start));
 
-                    success = true;
+                        statusActionSubmitter.submitStatusAction(new StateWrittenToDiskAction(round));
+                        stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, true);
+
+                        success = true;
+                    }
                 } catch (final Throwable e) {
                     stateToDiskAttemptConsumer.stateToDiskAttempt(reservedSignedState.get(), directory, false);
                     logger.error(
@@ -303,17 +323,6 @@ public class SignedStateFileManager implements Startable {
      * @return true if the state will be written to disk, false otherwise
      */
     public boolean saveSignedStateToDisk(final SignedState signedState) {
-        if (signedState.hasStateBeenSavedToDisk()) {
-            logger.info(
-                    STATE_TO_DISK.getMarker(),
-                    "Not saving signed state for round {} to disk because it has already been saved.",
-                    signedState.getRound());
-
-            return false;
-        }
-
-        signedState.stateSavedToDisk();
-
         return saveSignedStateToDisk(
                 signedState,
                 getSignedStateDir(signedState.getRound()),
@@ -323,6 +332,7 @@ public class SignedStateFileManager implements Startable {
                         deleteOldStates();
                     }
                 },
+                false,
                 configuration);
     }
 
@@ -351,6 +361,7 @@ public class SignedStateFileManager implements Startable {
                         .resolve(String.format("node%d_round%d", selfId.id(), signedState.getRound())),
                 reason,
                 success -> latch.countDown(),
+                true,
                 configuration);
 
         if (blocking) {
