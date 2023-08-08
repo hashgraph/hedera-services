@@ -24,21 +24,22 @@ plugins {
 application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
 
 dependencies {
-    testImplementation(gav("com.swirlds.platform.core"))
-    testImplementation(gav("org.junit.jupiter.api"))
-    testImplementation(gav("org.mockito"))
+    javaModuleDependencies {
+        testImplementation(gav("com.swirlds.test.framework"))
+        testImplementation(gav("org.apache.logging.log4j.core"))
+        testImplementation(gav("org.bouncycastle.provider"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+    }
 }
 
 protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
 
-// Make all dependency versions accessible to proto compile
 configurations {
-    compileProtoPath {
-        extendsFrom(configurations.internal.get())
-    }
-    testCompileProtoPath {
-        extendsFrom(configurations.internal.get())
-    }
+    // Give proto compile access to the dependency versions
+    compileProtoPath { extendsFrom(configurations.internal.get()) }
+    testCompileProtoPath { extendsFrom(configurations.internal.get()) }
 }
 
 tasks.withType<ProtobufExtract>().configureEach {
@@ -47,4 +48,9 @@ tasks.withType<ProtobufExtract>().configureEach {
     }
 }
 
-tasks.javadoc { enabled = false }
+tasks.withType<Javadoc>().configureEach { enabled = false }
+
+// TODO possibly hitting bug with included build
+// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/pull/916
+// Remove after next dependency analysis plugin update
+dependencyAnalysis.issues { all { onUnusedDependencies { exclude("com.swirlds:swirlds-common") } } }

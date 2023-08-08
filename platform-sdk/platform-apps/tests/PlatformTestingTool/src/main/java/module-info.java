@@ -29,6 +29,7 @@ module com.swirlds.demo.platform {
     requires com.google.protobuf;
     requires com.swirlds.common.test.fixtures;
     requires com.swirlds.common.testing;
+    requires com.swirlds.common;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.jasperdb;
@@ -36,16 +37,11 @@ module com.swirlds.demo.platform {
     requires com.swirlds.merkle.test;
     requires com.swirlds.merkle;
     requires com.swirlds.platform.core;
-    requires com.swirlds.test.framework;
     requires com.swirlds.virtualmap;
     requires java.logging;
     requires java.management;
     requires java.sql;
-    requires lazysodium.java;
-    requires org.apache.commons.io;
     requires org.apache.commons.math3;
-    requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;
-    requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
 }

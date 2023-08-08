@@ -17,4 +17,5 @@
 pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../../../../build-logic") }
 
 includeBuild("../../../../hedera-platform")
+
 includeBuild("../../../../platform-sdk")
