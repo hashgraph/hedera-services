@@ -20,9 +20,11 @@ import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.trigge
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
@@ -30,7 +32,6 @@ import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
-import com.swirlds.common.test.fixtures.FakeTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -90,6 +91,10 @@ class FreezingStatusLogicTests {
                 logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
         triggerActionAndAssertException(
                 logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
+        triggerActionAndAssertException(
+                logic::processEmergencyReconnectStartedAction,
+                new EmergencyReconnectStartedAction(),
+                logic.getStatus());
         triggerActionAndAssertException(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertException(

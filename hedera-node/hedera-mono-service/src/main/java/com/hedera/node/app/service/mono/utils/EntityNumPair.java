@@ -52,7 +52,7 @@ public record EntityNumPair(long value) implements Comparable<EntityNumPair> {
     }
 
     public static EntityNumPair fromGrpcNftId(NftID grpcId) {
-        final var tokenId = grpcId.getTokenID();
+        final var tokenId = grpcId.getTokenId();
         if (!areValidNums(tokenId.getShardNum(), tokenId.getRealmNum())) {
             return MISSING_NUM_PAIR;
         }

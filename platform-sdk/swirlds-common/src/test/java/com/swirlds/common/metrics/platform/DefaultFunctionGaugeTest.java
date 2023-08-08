@@ -29,7 +29,7 @@ import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -114,8 +114,7 @@ class DefaultFunctionGaugeTest {
         final FunctionGauge<String> gauge = new DefaultFunctionGauge<>(config);
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> gauge.get(Metric.ValueType.MIN),
@@ -148,7 +147,7 @@ class DefaultFunctionGaugeTest {
         // given
         final Supplier<String> supplier = mock(Supplier.class);
         final FunctionGauge.Config<String> config = new FunctionGauge.Config<>(CATEGORY, NAME, String.class, supplier);
-        final FunctionGauge<String> gauge = new DefaultFunctionGauge<>(config);
+        final DefaultFunctionGauge<String> gauge = new DefaultFunctionGauge<>(config);
 
         // when
         final StatsBuffered actual = gauge.getStatsBuffered();

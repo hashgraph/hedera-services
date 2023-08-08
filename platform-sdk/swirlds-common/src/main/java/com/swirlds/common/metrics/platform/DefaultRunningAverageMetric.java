@@ -18,8 +18,8 @@ package com.swirlds.common.metrics.platform;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.RunningAverageMetric;
-import com.swirlds.common.statistics.StatsBuffered;
-import com.swirlds.common.statistics.StatsRunningAverage;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsRunningAverage;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**

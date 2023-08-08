@@ -953,7 +953,11 @@ class VirtualMapTests extends VirtualTestBase {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
 
         VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.registerMetrics(metrics);
@@ -985,10 +989,10 @@ class VirtualMapTests extends VirtualTestBase {
         map1.release();
 
         // createMap() creates a map labelled "Test"
-        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vMapFlushes_Test");
+        Metric metric = metrics.getMetric(VirtualMapStatistics.STAT_CATEGORY, "vmap_lifecycle_flushCount_Test");
         assertNotNull(metric);
         if (!(metric instanceof Counter counterMetric)) {
-            throw new AssertionError("vMapFlushes metric is not a counter");
+            throw new AssertionError("flushCount metric is not a counter");
         }
         assertEquals(flushCount, counterMetric.get());
     }

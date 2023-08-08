@@ -17,13 +17,13 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
-import com.swirlds.common.utility.Units;
+import com.swirlds.base.ArgumentUtils;
+import com.swirlds.common.units.UnitConstants;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
+import java.util.Objects;
 
 /**
  * Stores a single duration. The output unit is determined by configuration
@@ -59,7 +59,7 @@ public interface DurationGauge extends Metric {
      */
     @Override
     default Double get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -74,8 +74,7 @@ public interface DurationGauge extends Metric {
     /**
      * Set the gauge to the value supplied
      *
-     * @param duration
-     * 		the value to set the gauge to
+     * @param duration the value to set the gauge to
      */
     void set(Duration duration);
 
@@ -99,14 +98,10 @@ public interface DurationGauge extends Metric {
         /**
          * Constructor of {@code DoubleGauge.Config}
          *
-         * @param category
-         * 		the kind of metric (metrics are grouped or filtered by this)
-         * @param name
-         * 		a short name for the metric
-         * @param timeUnit
-         * 		the time unit in which to display this duration
-         * @throws IllegalArgumentException
-         * 		if one of the parameters is {@code null} or consists only of whitespaces
+         * @param category the kind of metric (metrics are grouped or filtered by this)
+         * @param name     a short name for the metric
+         * @param timeUnit the time unit in which to display this duration
+         * @throws IllegalArgumentException if one of the parameters is {@code null} or consists only of whitespaces
          */
         public Config(final String category, final String name, final ChronoUnit timeUnit) {
             super(category, fixName(name, timeUnit), getFormat(timeUnit));
@@ -114,7 +109,7 @@ public interface DurationGauge extends Metric {
         }
 
         private static String fixName(final String name, final ChronoUnit timeUnit) {
-            return throwArgBlank(name, "name") + " " + getAppendix(timeUnit);
+            return ArgumentUtils.throwArgBlank(name, "name") + " " + getAppendix(timeUnit);
         }
 
         private Config(final String category, final String name, final String description, final ChronoUnit timeUnit) {
@@ -132,9 +127,8 @@ public interface DurationGauge extends Metric {
         }
 
         /**
-         * The unit of a {@link DurationGauge} depends on the configured {@link ChronoUnit}.
-         * Therefore, it is not possible to specify the unit and this method throws
-         * an {@link UnsupportedOperationException}
+         * The unit of a {@link DurationGauge} depends on the configured {@link ChronoUnit}. Therefore, it is not
+         * possible to specify the unit and this method throws an {@link UnsupportedOperationException}
          */
         @Override
         public DurationGauge.Config withUnit(final String unit) {
@@ -167,7 +161,7 @@ public interface DurationGauge extends Metric {
         }
 
         private static String getFormat(final ChronoUnit timeUnit) {
-            throwArgNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
                 case NANOS, MICROS -> FloatFormats.FORMAT_DECIMAL_0;
                 case MILLIS, SECONDS -> FloatFormats.FORMAT_DECIMAL_3;
@@ -176,18 +170,18 @@ public interface DurationGauge extends Metric {
         }
 
         private static String getUnit(final ChronoUnit timeUnit) {
-            throwArgNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
-                case NANOS -> Units.NANOSECOND_UNIT;
-                case MICROS -> Units.MICROSECOND_UNIT;
-                case MILLIS -> Units.MILLISECOND_UNIT;
-                case SECONDS -> Units.SECOND_UNIT;
+                case NANOS -> UnitConstants.NANOSECOND_UNIT;
+                case MICROS -> UnitConstants.MICROSECOND_UNIT;
+                case MILLIS -> UnitConstants.MILLISECOND_UNIT;
+                case SECONDS -> UnitConstants.SECOND_UNIT;
                 default -> throw new IllegalArgumentException(UNSUPPORTED_TIME_UNIT + timeUnit);
             };
         }
 
         private static String getAppendix(final ChronoUnit timeUnit) {
-            throwArgNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
                 case NANOS -> "(nanos)";
                 case MICROS -> "(micros)";

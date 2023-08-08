@@ -1,10 +1,10 @@
 reconnect.active, true
 reconnect.reconnectWindowSeconds, 1
 reconnect.fallenBehindThreshold, 0.75
-reconnect.asyncStreamTimeoutMilliseconds, 200000
-reconnect.asyncOutputStreamFlushMilliseconds, 150
+reconnect.asyncStreamTimeout, 200000ms
+reconnect.asyncOutputStreamFlush, 150ms
 reconnect.asyncStreamBufferSize, 15000
 reconnect.asyncStreams, false
-reconnect.maxAckDelayMilliseconds, 20
+reconnect.maxAckDelayMilliseconds, 20ms
 reconnect.maximumReconnectFailuresBeforeShutdown, 15
 reconnect.minimumTimeBetweenReconnects, 11min

@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyDoesNotThrow;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyDoesNotThrow;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 import static com.swirlds.virtualmap.VirtualMapTestUtils.getRoot;
 import static com.swirlds.virtualmap.internal.cache.VirtualNodeCache.DELETED_HASH;
@@ -37,7 +37,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.exceptions.ReferenceCountException;
-import com.swirlds.common.test.io.InputOutputStream;
+import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;

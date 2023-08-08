@@ -16,23 +16,45 @@
 
 package com.swirlds.platform.test.event.tipset;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.tipset.ChildlessEventTracker;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @DisplayName("ChildlessEventTracker Tests")
 class ChildlessEventTrackerTests {
+
+    /**
+     * The childless event tracker doesn't track branches in the hashgraph, it only stores whatever branch has produced
+     * the event with the highest generation. Return a set that contains only the event from the latest branch from each
+     * creator.
+     */
+    @NonNull
+    private Set<EventDescriptor> removeBranches(@NonNull List<EventDescriptor> events) {
+        final Map<NodeId, EventDescriptor> uniqueEvents = new HashMap<>();
+
+        for (final EventDescriptor event : events) {
+            final EventDescriptor existingEvent = uniqueEvents.get(event.getCreator());
+            if (existingEvent == null || existingEvent.getGeneration() < event.getGeneration()) {
+                uniqueEvents.put(event.getCreator(), event);
+            }
+        }
+
+        return new HashSet<>(uniqueEvents.values());
+    }
 
     @Test
     @DisplayName("Basic Behavior Test")
@@ -67,18 +89,64 @@ class ChildlessEventTrackerTests {
             batch2.add(descriptor);
         }
 
-        final Set<EventDescriptor> expectedEvents = new HashSet<>(batch2);
+        final List<EventDescriptor> expectedEvents = new ArrayList<>(batch2);
         for (final EventDescriptor descriptor : batch1) {
             if (descriptor.getCreator().id() % 2 == 0) {
                 expectedEvents.add(descriptor);
             }
         }
 
-        assertEquals(expectedEvents, new HashSet<>(tracker.getChildlessEvents()));
+        assertEquals(removeBranches(expectedEvents), new HashSet<>(tracker.getChildlessEvents()));
 
         // Increase the minimum generation non-ancient to 1, all events from batch1 should be removed
         tracker.pruneOldEvents(1);
 
-        assertEquals(new HashSet<>(batch2), new HashSet<>(tracker.getChildlessEvents()));
+        assertEquals(removeBranches(batch2), new HashSet<>(tracker.getChildlessEvents()));
+    }
+
+    @Test
+    @DisplayName("Branching Test")
+    void branchingTest() {
+        final Random random = getRandomPrintSeed();
+
+        final ChildlessEventTracker tracker = new ChildlessEventTracker();
+
+        final EventDescriptor e0 = new EventDescriptor(randomHash(random), new NodeId(0), 0);
+        final EventDescriptor e1 = new EventDescriptor(randomHash(random), new NodeId(0), 1);
+        final EventDescriptor e2 = new EventDescriptor(randomHash(random), new NodeId(0), 2);
+
+        tracker.addEvent(e0, List.of());
+        tracker.addEvent(e1, List.of(e0));
+        tracker.addEvent(e2, List.of(e1));
+
+        final List<EventDescriptor> batch1 = tracker.getChildlessEvents();
+        assertEquals(1, batch1.size());
+        assertEquals(e2, batch1.get(0));
+
+        final EventDescriptor e3 = new EventDescriptor(randomHash(random), new NodeId(0), 3);
+        final EventDescriptor e3Branch = new EventDescriptor(randomHash(random), new NodeId(0), 3);
+
+        // Branch with the same generation, existing event should not be discarded.
+        tracker.addEvent(e3, List.of(e2));
+        tracker.addEvent(e3Branch, List.of(e2));
+
+        final List<EventDescriptor> batch2 = tracker.getChildlessEvents();
+        assertEquals(1, batch2.size());
+        assertEquals(e3, batch2.get(0));
+
+        // Branch with a lower generation, existing event should not be discarded.
+        final EventDescriptor e2Branch = new EventDescriptor(randomHash(random), new NodeId(0), 2);
+        tracker.addEvent(e2Branch, List.of(e1));
+
+        assertEquals(1, batch2.size());
+        assertEquals(e3, batch2.get(0));
+
+        // Branch with a higher generation, existing event should be discarded.
+        final EventDescriptor e99Branch = new EventDescriptor(randomHash(random), new NodeId(0), 99);
+        tracker.addEvent(e99Branch, List.of());
+
+        final List<EventDescriptor> batch3 = tracker.getChildlessEvents();
+        assertEquals(1, batch3.size());
+        assertEquals(e99Branch, batch3.get(0));
     }
 }

@@ -28,8 +28,8 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
@@ -46,14 +46,17 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.spi.meta.bni.ActiveContractVerificationStrategy;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.Scope;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.spi.state.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -66,8 +69,8 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /**
  * An implementation of {@link EvmFrameState} that uses {@link WritableKVState}s to manage
- * contract storage and bytecode, and a {@link Dispatch} for additional influence over the
- * non-contract Hedera state in the current {@link Scope}.
+ * contract storage and bytecode, and a {@link HandleHederaNativeOperations} for additional influence over
+ * the non-contract Hedera state in the current scope.
  *
  * <p>Almost every access requires a conversion from a PBJ type to a Besu type. At some
  * point it might be necessary to cache the converted values and invalidate them when
@@ -84,64 +87,90 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
             "6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
-    private final Dispatch dispatch;
-    private final WritableKVState<SlotKey, SlotValue> storage;
-    private final WritableKVState<EntityNumber, Bytecode> bytecode;
+    private final HederaNativeOperations nativeOperations;
+    private final ContractStateStore contractStateStore;
 
     public DispatchingEvmFrameState(
-            @NonNull final Dispatch dispatch,
-            @NonNull final WritableKVState<SlotKey, SlotValue> storage,
-            @NonNull final WritableKVState<EntityNumber, Bytecode> bytecode) {
-        this.storage = requireNonNull(storage);
-        this.bytecode = requireNonNull(bytecode);
-        this.dispatch = requireNonNull(dispatch);
+            @NonNull final HederaNativeOperations nativeOperations,
+            @NonNull final ContractStateStore contractStateStore) {
+        this.nativeOperations = requireNonNull(nativeOperations);
+        this.contractStateStore = requireNonNull(contractStateStore);
     }
 
     @Override
     public void setStorageValue(final long number, @NonNull final UInt256 key, @NonNull final UInt256 value) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        final var oldSlotValue = storage.get(slotKey);
-        // Ensure we don't change any prev/next keys until committing the final WorldUpdater
+        final var oldSlotValue = contractStateStore.getSlotValue(slotKey);
+        // Ensure we don't change any prev/next keys until the base commit
         final var slotValue = new SlotValue(
                 tuweniToPbjBytes(requireNonNull(value)),
                 oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.previousKey(),
                 oldSlotValue == null ? com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY : oldSlotValue.nextKey());
-        storage.put(slotKey, slotValue);
+        // We don't call remove() here when the new value is zero, again because we
+        // want to preserve the prev/next key information until the base commit; only
+        // then will we remove the zeroed out slot from the K/V state
+        contractStateStore.putSlot(slotKey, slotValue);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull UInt256 getStorageValue(final long number, @NonNull final UInt256 key) {
         final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
-        final var slotValue = storage.get(slotKey);
-        return (slotValue == null) ? UInt256.ZERO : pbjToTuweniUInt256(slotValue.value());
+        return valueOrZero(contractStateStore.getSlotValue(slotKey));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public @NonNull UInt256 getOriginalStorageValue(long number, @NonNull UInt256 key) {
-        // TODO - when WritableKVState supports getting the original value, use that here
-        throw new AssertionError("Not implemented");
+    public @NonNull UInt256 getOriginalStorageValue(final long number, @NonNull final UInt256 key) {
+        final var slotKey = new SlotKey(number, tuweniToPbjBytes(requireNonNull(key)));
+        return valueOrZero(contractStateStore.getOriginalSlotValue(slotKey));
     }
 
-    @NonNull
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public List<StorageChanges> getPendingStorageChanges() {
-        // TODO - when WritableKVState supports getting the original value, use that here
-        throw new AssertionError("Not implemented");
+    public @NonNull List<StorageAccesses> getStorageChanges() {
+        final Map<Long, List<StorageAccess>> modifications = new TreeMap<>();
+        contractStateStore.getModifiedSlotKeys().forEach(slotKey -> modifications
+                .computeIfAbsent(slotKey.contractNumber(), k -> new ArrayList<>())
+                .add(StorageAccess.newWrite(
+                        pbjToTuweniUInt256(slotKey.key()),
+                        valueOrZero(contractStateStore.getOriginalSlotValue(slotKey)),
+                        valueOrZero(contractStateStore.getSlotValue(slotKey)))));
+        final List<StorageAccesses> allChanges = new ArrayList<>();
+        modifications.forEach(
+                (number, storageAccesses) -> allChanges.add(new StorageAccesses(number, storageAccesses)));
+        return allChanges;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getKvStateSize() {
-        return storage.size();
+        return contractStateStore.getNumSlots();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public RentFactors getRentFactorsFor(final long number) {
-        throw new AssertionError("Not implemented");
+    public @NonNull RentFactors getRentFactorsFor(final long number) {
+        final var account = validatedAccount(number);
+        return new RentFactors(account.contractKvPairsNumber(), account.expiry());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Bytes getCode(final long number) {
-        final var numberedBytecode = bytecode.get(new EntityNumber(number));
+        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
         if (numberedBytecode == null) {
             return Bytes.EMPTY;
         } else {
@@ -150,9 +179,12 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Hash getCodeHash(final long number) {
-        final var numberedBytecode = bytecode.get(new EntityNumber(number));
+        final var numberedBytecode = contractStateStore.getBytecode(new EntityNumber(number));
         if (numberedBytecode == null) {
             return Hash.EMPTY;
         } else {
@@ -161,49 +193,88 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Bytes getTokenRedirectCode(@NonNull final Address address) {
         return proxyBytecodeFor(address);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public @NonNull Hash getTokenRedirectCodeHash(@NonNull final Address address) {
         return CodeFactory.createCode(proxyBytecodeFor(address), 0, false).getCodeHash();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public long getNonce(final long number) {
         return validatedAccount(number).ethereumNonce();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getNumTreasuryTitles(final long number) {
         return validatedAccount(number).numberTreasuryTitles();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isContract(final long number) {
         return validatedAccount(number).smartContract();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getNumPositiveTokenBalances(final long number) {
         return validatedAccount(number).numberPositiveBalances();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setCode(final long number, @NonNull final Bytes code) {
-        bytecode.put(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
+        contractStateStore.putBytecode(new EntityNumber(number), new Bytecode(tuweniToPbjBytes(requireNonNull(code))));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void setNonce(final long number, final long nonce) {
-        dispatch.setNonce(number, nonce);
+        nativeOperations.setNonce(number, nonce);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Wei getBalance(long number) {
         return Wei.of(validatedAccount(number).tinybarBalance());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getIdNumber(@NonNull Address address) {
+        final var number = maybeMissingNumberOf(address, nativeOperations);
+        if (number == MISSING_ENTITY_NUMBER) {
+            throw new IllegalArgumentException("Address " + address + " has no associated Hedera id");
+        }
+        return number;
     }
 
     /**
@@ -225,11 +296,11 @@ public class DispatchingEvmFrameState implements EvmFrameState {
 
     @Override
     public boolean isHollowAccount(@NonNull final Address address) {
-        final var number = maybeMissingNumberOf(address, dispatch);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             return false;
         }
-        final var account = dispatch.getAccount(number);
+        final var account = nativeOperations.getAccount(number);
         if (account == null) {
             return false;
         }
@@ -241,38 +312,14 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public void finalizeHollowAccount(@NonNull final Address address) {
-        dispatch.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
+        nativeOperations.finalizeHollowAccountAsContract(tuweniToPbjBytes(address));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void collectFee(@NonNull final Address payer, final long amount) {
-        final var number = maybeMissingNumberOf(payer, dispatch);
-        if (number == MISSING_ENTITY_NUMBER) {
-            throw new IllegalArgumentException("Cannot collect fee from missing account " + payer);
-        }
-        dispatch.collectFee(number, amount);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void refundFee(@NonNull final Address payer, final long amount) {
-        final var number = maybeMissingNumberOf(payer, dispatch);
-        if (number == MISSING_ENTITY_NUMBER) {
-            throw new IllegalArgumentException("Cannot refund fee to missing account " + payer);
-        }
-        dispatch.refundFee(number, amount);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
+    public Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull final Address sendingContract,
             @NonNull final Address recipient,
             final long amount,
@@ -281,16 +328,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (from == null) {
             return Optional.of(MISSING_ADDRESS);
         }
-        if (!from.isContract()) {
-            throw new IllegalArgumentException("EVM should not initiate transfer from EOA 0.0." + from.number);
-        }
         final var to = getAccount(recipient);
         if (to == null) {
             return Optional.of(MISSING_ADDRESS);
         } else if (to instanceof TokenEvmAccount) {
             return Optional.of(ILLEGAL_STATE_CHANGE);
         }
-        final var status = dispatch.transferWithReceiverSigCheck(
+        final var status = nativeOperations.transferWithReceiverSigCheck(
                 amount,
                 from.number,
                 ((ProxyEvmAccount) to).number,
@@ -316,9 +360,9 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (isLongZero(address)) {
             throw new IllegalArgumentException("Cannot perform lazy creation at long-zero address " + address);
         }
-        final var number = maybeMissingNumberOf(address, dispatch);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number != MISSING_ENTITY_NUMBER) {
-            final var account = dispatch.getAccount(number);
+            final var account = nativeOperations.getAccount(number);
             if (account != null) {
                 if (account.expiredAndPendingRemoval()) {
                     return Optional.of(INVALID_VALUE_TRANSFER);
@@ -328,7 +372,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
                 }
             }
         }
-        final var status = dispatch.createHollowAccount(tuweniToPbjBytes(address));
+        final var status = nativeOperations.createHollowAccount(tuweniToPbjBytes(address));
         if (status != OK) {
             if (status == MAX_CHILD_RECORDS_EXCEEDED) {
                 return Optional.of(TOO_MANY_CHILD_RECORDS);
@@ -363,7 +407,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         if (deletedAccount.numPositiveTokenBalances() > 0) {
             return Optional.of(TOKEN_HOLDER_SELFDESTRUCT);
         }
-        dispatch.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
+        nativeOperations.trackDeletion(deletedAccount.number, ((ProxyEvmAccount) beneficiaryAccount).number);
         return Optional.empty();
     }
 
@@ -380,13 +424,13 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      */
     @Override
     public @Nullable EvmAccount getMutableAccount(@NonNull final Address address) {
-        final var number = maybeMissingNumberOf(address, dispatch);
+        final var number = maybeMissingNumberOf(address, nativeOperations);
         if (number == MISSING_ENTITY_NUMBER) {
             return null;
         }
-        final var account = dispatch.getAccount(number);
+        final var account = nativeOperations.getAccount(number);
         if (account == null) {
-            final var token = dispatch.getToken(number);
+            final var token = nativeOperations.getToken(number);
             if (token != null) {
                 // If the token is deleted or expired, the system contract executed by the redirect
                 // bytecode will fail with a more meaningful error message, so don't check that here
@@ -414,10 +458,14 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     }
 
     private com.hedera.hapi.node.state.token.Account validatedAccount(final long number) {
-        final var account = dispatch.getAccount(number);
+        final var account = nativeOperations.getAccount(number);
         if (account == null) {
             throw new IllegalArgumentException("No account has number " + number);
         }
         return account;
+    }
+
+    private UInt256 valueOrZero(@Nullable final SlotValue slotValue) {
+        return (slotValue == null) ? UInt256.ZERO : pbjToTuweniUInt256(slotValue.value());
     }
 }

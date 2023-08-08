@@ -19,7 +19,6 @@ package com.hedera.test.utils;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.primitives.Ints;
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -41,14 +40,9 @@ public class AddresBookUtils {
                 "",
                 "",
                 10L,
-                false,
                 null,
                 -1,
-                Ints.toByteArray(123456789),
-                -1,
-                null,
-                -1,
-                null,
+                "123456789",
                 -1,
                 new SerializablePublicKey(pubKey),
                 null,
@@ -59,14 +53,9 @@ public class AddresBookUtils {
                 "",
                 "",
                 10L,
-                false,
                 null,
                 -1,
-                Ints.toByteArray(123456789),
-                -1,
-                null,
-                -1,
-                null,
+                "123456789",
                 -1,
                 new SerializablePublicKey(pubKey),
                 null,

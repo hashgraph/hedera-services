@@ -20,13 +20,14 @@ import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.payloads.ReconnectFinishPayload;
 import com.swirlds.logging.payloads.ReconnectStartPayload;
 import com.swirlds.platform.metrics.ReconnectMetrics;
@@ -36,6 +37,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import org.apache.logging.log4j.LogManager;
@@ -51,11 +53,12 @@ public class ReconnectTeacher {
     private static final Logger logger = LogManager.getLogger(ReconnectTeacher.class);
 
     private final Connection connection;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
 
     private final NodeId selfId;
     private final NodeId otherId;
     private final long lastRoundReceived;
+    private final Configuration configuration;
 
     private final ReconnectMetrics statistics;
 
@@ -81,16 +84,18 @@ public class ReconnectTeacher {
      * @param otherId                the learner's ID
      * @param lastRoundReceived      the round of the state
      * @param statistics             reconnect metrics
+     * @param configuration          the configuration
      */
     public ReconnectTeacher(
             @NonNull final ThreadManager threadManager,
             @NonNull final Connection connection,
-            final int reconnectSocketTimeout,
+            @NonNull final Duration reconnectSocketTimeout,
             @NonNull final NodeId selfId,
             @NonNull final NodeId otherId,
             final long lastRoundReceived,
             @Nullable final BooleanSupplier requestToStopTeaching,
-            @NonNull final ReconnectMetrics statistics) {
+            @NonNull final ReconnectMetrics statistics,
+            @NonNull final Configuration configuration) {
 
         this.threadManager = Objects.requireNonNull(threadManager);
         this.connection = Objects.requireNonNull(connection);
@@ -101,6 +106,7 @@ public class ReconnectTeacher {
         this.lastRoundReceived = lastRoundReceived;
         this.requestToStopTeaching = requestToStopTeaching;
         this.statistics = Objects.requireNonNull(statistics);
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     /**
@@ -111,7 +117,7 @@ public class ReconnectTeacher {
     private void increaseSocketTimeout() throws ReconnectException {
         try {
             originalSocketTimeout = connection.getTimeout();
-            connection.setTimeout(reconnectSocketTimeout);
+            connection.setTimeout(reconnectSocketTimeout.toMillis());
         } catch (final SocketException e) {
             throw new ReconnectException(e);
         }
@@ -183,7 +189,7 @@ public class ReconnectTeacher {
                         selfId.id(),
                         otherId.id(),
                         lastRoundReceived));
-        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         logger.info(
                 RECONNECT.getMarker(),
                 "The following state will be sent to the learner:\n{}\n{}",
@@ -216,13 +222,15 @@ public class ReconnectTeacher {
         connection.getDis().getSyncByteCounter().resetCount();
         connection.getDos().getSyncByteCounter().resetCount();
 
+        final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
         final TeachingSynchronizer synchronizer = new TeachingSynchronizer(
                 threadManager,
                 new MerkleDataInputStream(connection.getDis()),
                 new MerkleDataOutputStream(connection.getDos()),
                 signedState.getState(),
                 connection::disconnect,
-                requestToStopTeaching);
+                requestToStopTeaching,
+                reconnectConfig);
 
         synchronizer.synchronize();
         connection.getDos().flush();

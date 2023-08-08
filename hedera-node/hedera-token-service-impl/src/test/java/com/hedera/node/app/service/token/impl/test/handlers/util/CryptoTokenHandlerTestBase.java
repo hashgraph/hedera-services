@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
 import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -28,16 +32,20 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.KeyList;
+import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoAllowance;
@@ -48,23 +56,31 @@ import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
 import com.hedera.hapi.node.transaction.RoyaltyFee;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
+import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableSingletonState;
+import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -74,10 +90,12 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Collections;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -85,6 +103,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
+    protected static final Instant originalInstant = Instant.ofEpochSecond(12345678910L);
+    protected static final long stakePeriodStart =
+            LocalDate.ofInstant(originalInstant, ZONE_UTC).toEpochDay() - 1;
+    protected static final Instant stakePeriodStartInstant =
+            LocalDate.ofEpochDay(stakePeriodStart).atStartOfDay(ZoneOffset.UTC).toInstant();
     /* ---------- Keys */
     protected final Key key = A_COMPLEX_KEY;
     protected static final Key payerKey = A_COMPLEX_KEY;
@@ -98,6 +121,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key supplyKey = A_COMPLEX_KEY;
     protected final Key freezeKey = A_COMPLEX_KEY;
     protected final Key treasuryKey = C_COMPLEX_KEY;
+    protected final Key EMPTY_KEYLIST =
+            Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     /* ---------- Account IDs */
     protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
@@ -114,6 +139,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final AccountID autoRenewId = AccountID.newBuilder().accountNum(4).build();
     protected final AccountID spenderId =
             AccountID.newBuilder().accountNum(12345).build();
+    protected final AccountID feeCollectorId = transferAccountId;
+    protected final AccountID stakingRewardId =
+            AccountID.newBuilder().accountNum(800).build();
 
     /* ---------- Account Numbers ---------- */
     protected final Long accountNum = payerId.accountNum();
@@ -131,33 +159,66 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final ContractID contract =
             ContractID.newBuilder().contractNum(1234).build();
     /* ---------- Tokens ---------- */
-    protected final EntityNum fungibleTokenNum = EntityNum.fromLong(1L);
-    protected final TokenID fungibleTokenId =
-            TokenID.newBuilder().tokenNum(fungibleTokenNum.longValue()).build();
-    protected final EntityNum nonFungibleTokenNum = EntityNum.fromLong(2L);
-    protected final TokenID nonFungibleTokenId =
-            TokenID.newBuilder().tokenNum(nonFungibleTokenNum.longValue()).build();
-    protected final EntityNumPair fungiblePair =
-            EntityNumPair.fromLongs(accountNum.longValue(), fungibleTokenNum.longValue());
-    protected final EntityNumPair nonFungiblePair =
-            EntityNumPair.fromLongs(accountNum.longValue(), nonFungibleTokenNum.longValue());
-    protected final EntityNumPair ownerFTPair =
-            EntityNumPair.fromLongs(ownerId.accountNum(), fungibleTokenNum.longValue());
-    protected final EntityNumPair ownerNFTPair =
-            EntityNumPair.fromLongs(ownerId.accountNum(), nonFungibleTokenNum.longValue());
+    protected final TokenID fungibleTokenId = asToken(1L);
 
-    protected final EntityNumPair treasuryFTPair =
-            EntityNumPair.fromLongs(treasuryId.accountNum(), fungibleTokenNum.longValue());
-    protected final EntityNumPair treasuryNFTPair =
-            EntityNumPair.fromLongs(treasuryId.accountNum(), nonFungibleTokenNum.longValue());
-    protected final UniqueTokenId uniqueTokenIdSl1 = UniqueTokenId.newBuilder()
-            .tokenTypeNumber(nonFungibleTokenId.tokenNum())
-            .serialNumber(1L)
+    protected final TokenID nonFungibleTokenId = asToken(2L);
+    protected final TokenID fungibleTokenIDB = asToken(6L);
+    protected final TokenID fungibleTokenIDC = asToken(7L);
+
+    protected final EntityIDPair fungiblePair = EntityIDPair.newBuilder()
+            .accountId(payerId)
+            .tokenId(fungibleTokenId)
             .build();
-    protected final UniqueTokenId uniqueTokenIdSl2 = UniqueTokenId.newBuilder()
-            .tokenTypeNumber(nonFungibleTokenId.tokenNum())
-            .serialNumber(2L)
+    protected final EntityIDPair nonFungiblePair = EntityIDPair.newBuilder()
+            .accountId(payerId)
+            .tokenId(nonFungibleTokenId)
             .build();
+    protected final EntityIDPair ownerFTPair = EntityIDPair.newBuilder()
+            .accountId(ownerId)
+            .tokenId(fungibleTokenId)
+            .build();
+    protected final EntityIDPair ownerNFTPair = EntityIDPair.newBuilder()
+            .accountId(ownerId)
+            .tokenId(nonFungibleTokenId)
+            .build();
+
+    protected final EntityIDPair feeCollectorFTPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenId)
+            .build();
+    protected final EntityIDPair feeCollectorNFTPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(nonFungibleTokenId)
+            .build();
+
+    protected final EntityIDPair treasuryFTPair = EntityIDPair.newBuilder()
+            .accountId(treasuryId)
+            .tokenId(fungibleTokenId)
+            .build();
+    protected final EntityIDPair treasuryNFTPair = EntityIDPair.newBuilder()
+            .accountId(treasuryId)
+            .tokenId(nonFungibleTokenId)
+            .build();
+    protected final EntityIDPair ownerFTBPair = EntityIDPair.newBuilder()
+            .accountId(ownerId)
+            .tokenId(fungibleTokenIDB)
+            .build();
+    protected final EntityIDPair ownerFTCPair = EntityIDPair.newBuilder()
+            .accountId(ownerId)
+            .tokenId(fungibleTokenIDC)
+            .build();
+    protected final EntityIDPair feeCollectorFTBPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenIDB)
+            .build();
+    protected final EntityIDPair feeCollectorFTCPair = EntityIDPair.newBuilder()
+            .accountId(feeCollectorId)
+            .tokenId(fungibleTokenIDC)
+            .build();
+    protected final NftID nftIdSl1 =
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(1L).build();
+    protected final NftID nftIdSl2 =
+            NftID.newBuilder().tokenId(nonFungibleTokenId).serialNumber(2L).build();
 
     /* ---------- Allowances --------------- */
     protected final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
@@ -188,21 +249,24 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             .delegatingSpender(delegatingSpenderId)
             .build();
     /* ---------- Fees ------------------ */
-    protected FixedFee fixedFee = FixedFee.newBuilder()
-            .amount(1_000L)
-            .denominatingTokenId(TokenID.newBuilder().tokenNum(1L).build())
+    protected FixedFee hbarFixedFee = FixedFee.newBuilder().amount(1_000L).build();
+    protected FixedFee htsFixedFee = FixedFee.newBuilder()
+            .amount(10L)
+            .denominatingTokenId(fungibleTokenId)
             .build();
     protected FractionalFee fractionalFee = FractionalFee.newBuilder()
-            .maximumAmount(1_000L)
+            .maximumAmount(100L)
             .minimumAmount(1L)
-            .fractionalAmount(Fraction.newBuilder().numerator(1).denominator(2).build())
+            .fractionalAmount(
+                    Fraction.newBuilder().numerator(1).denominator(100).build())
+            .netOfTransfers(false)
             .build();
     protected RoyaltyFee royaltyFee = RoyaltyFee.newBuilder()
             .exchangeValueFraction(
                     Fraction.newBuilder().numerator(1).denominator(2).build())
-            .fallbackFee(fixedFee)
+            .fallbackFee(hbarFixedFee)
             .build();
-    protected List<CustomFee> customFees = List.of(withFixedFee(fixedFee), withFractionalFee(fractionalFee));
+    protected List<CustomFee> customFees = List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee));
 
     /* ---------- Misc ---------- */
     protected final Timestamp consensusTimestamp =
@@ -219,12 +283,16 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapReadableKVState<AccountID, Account> readableAccounts;
     protected MapWritableKVState<Bytes, AccountID> writableAliases;
     protected MapWritableKVState<AccountID, Account> writableAccounts;
-    protected MapReadableKVState<EntityNum, Token> readableTokenState;
-    protected MapWritableKVState<EntityNum, Token> writableTokenState;
-    protected MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState;
-    protected MapWritableKVState<EntityNumPair, TokenRelation> writableTokenRelState;
-    protected MapReadableKVState<UniqueTokenId, Nft> readableNftState;
-    protected MapWritableKVState<UniqueTokenId, Nft> writableNftState;
+    protected MapReadableKVState<TokenID, Token> readableTokenState;
+    protected MapWritableKVState<TokenID, Token> writableTokenState;
+    protected MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
+    protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
+    protected MapReadableKVState<NftID, Nft> readableNftState;
+    protected MapWritableKVState<NftID, Nft> writableNftState;
+    protected MapReadableKVState<Long, StakingNodeInfo> readableStakingInfoState;
+    protected MapWritableKVState<Long, StakingNodeInfo> writableStakingInfoState;
+    protected ReadableSingletonState<NetworkStakingRewards> readableRewardsState;
+    protected WritableSingletonState<NetworkStakingRewards> writableRewardsState;
 
     /* ---------- Stores */
 
@@ -237,8 +305,20 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected WritableTokenRelationStore writableTokenRelStore;
     protected ReadableNftStore readableNftStore;
     protected WritableNftStore writableNftStore;
+
+    protected ReadableNetworkStakingRewardsStore readableRewardsStore;
+    protected WritableNetworkStakingRewardsStore writableRewardsStore;
+
+    protected ReadableStakingInfoStore readableStakingInfoStore;
+    protected WritableStakingInfoStore writableStakingInfoStore;
+
+    /* ---------- StakingInfos ---------- */
+    protected StakingNodeInfo node0Info;
+    protected StakingNodeInfo node1Info;
     /* ---------- Tokens ---------- */
     protected Token fungibleToken;
+    protected Token fungibleTokenB;
+    protected Token fungibleTokenC;
     protected Token nonFungibleToken;
     protected Nft nftSl1;
     protected Nft nftSl2;
@@ -249,6 +329,12 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected TokenRelation ownerNFTRelation;
     protected TokenRelation treasuryFTRelation;
     protected TokenRelation treasuryNFTRelation;
+    protected TokenRelation feeCollectorFTRelation;
+    protected TokenRelation feeCollectorNFTRelation;
+    protected TokenRelation ownerFTBRelation;
+    protected TokenRelation ownerFTCRelation;
+    protected TokenRelation feeCollectorFTBRelation;
+    protected TokenRelation feeCollectorFTCRelation;
 
     /* ---------- Accounts ---------- */
     protected Account account;
@@ -258,11 +344,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected Account spenderAccount;
     protected Account delegatingSpenderAccount;
     protected Account treasuryAccount;
+    protected Account stakingRewardAccount;
 
+    /* ---------- Maps for updating both readable and writable stores ---------- */
     private Map<AccountID, Account> accountsMap;
     private Map<Bytes, AccountID> aliasesMap;
-    private Map<EntityNum, Token> tokensMap;
-    private Map<EntityNumPair, TokenRelation> tokenRelsMap;
+    private Map<TokenID, Token> tokensMap;
+    private Map<EntityIDPair, TokenRelation> tokenRelsMap;
+    private Map<Long, StakingNodeInfo> stakingNodeInfoMap;
 
     @Mock
     protected ReadableStates readableStates;
@@ -275,13 +364,15 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @BeforeEach
     public void setUp() {
-        configuration = HederaTestConfigBuilder.createConfig();
+        configuration = HederaTestConfigBuilder.create().getOrCreateConfig();
         versionedConfig = new VersionedConfigImpl(configuration, 1);
         givenValidAccounts();
         givenValidTokens();
         givenValidTokenRelations();
+        givenStakingInfos();
         setUpAllEntities();
         refreshReadableStores();
+        refreshWritableStores();
     }
 
     private void setUpAllEntities() {
@@ -293,10 +384,13 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         accountsMap.put(delegatingSpenderId, delegatingSpenderAccount);
         accountsMap.put(spenderId, spenderAccount);
         accountsMap.put(treasuryId, treasuryAccount);
+        accountsMap.put(stakingRewardId, stakingRewardAccount);
 
         tokensMap = new HashMap<>();
-        tokensMap.put(fungibleTokenNum, fungibleToken);
-        tokensMap.put(nonFungibleTokenNum, nonFungibleToken);
+        tokensMap.put(fungibleTokenId, fungibleToken);
+        tokensMap.put(nonFungibleTokenId, nonFungibleToken);
+        tokensMap.put(fungibleTokenIDB, fungibleTokenB);
+        tokensMap.put(fungibleTokenIDC, fungibleTokenC);
 
         aliasesMap = new HashMap<>();
         aliasesMap.put(alias.alias(), payerId);
@@ -309,6 +403,16 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         tokenRelsMap.put(ownerNFTPair, ownerNFTRelation);
         tokenRelsMap.put(treasuryFTPair, treasuryFTRelation);
         tokenRelsMap.put(treasuryNFTPair, treasuryNFTRelation);
+        tokenRelsMap.put(feeCollectorFTPair, feeCollectorFTRelation);
+        tokenRelsMap.put(feeCollectorNFTPair, feeCollectorNFTRelation);
+        tokenRelsMap.put(ownerFTBPair, ownerFTBRelation);
+        tokenRelsMap.put(ownerFTCPair, ownerFTCRelation);
+        tokenRelsMap.put(feeCollectorFTBPair, feeCollectorFTBRelation);
+        tokenRelsMap.put(feeCollectorFTCPair, feeCollectorFTCRelation);
+
+        stakingNodeInfoMap = new HashMap<>();
+        stakingNodeInfoMap.put(0L, node0Info);
+        stakingNodeInfoMap.put(1L, node1Info);
     }
 
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
@@ -320,6 +424,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenTokensInReadableStore();
         givenReadableTokenRelsStore();
         givenReadableNftStore();
+        givenReadableStakingRewardsStore();
+        givenReadableStakingInfoStore();
     }
 
     protected void refreshWritableStores() {
@@ -327,6 +433,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         givenTokensInWritableStore();
         givenWritableTokenRelsStore();
         givenWritableNftStore();
+        givenWritableStakingRewardsStore();
+        givenWritableStakingInfoStore();
     }
 
     private void givenAccountsInReadableStore() {
@@ -356,8 +464,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenTokensInReadableStore() {
         readableTokenState = readableTokenState();
         writableTokenState = emptyWritableTokenState();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         writableTokenStore = new WritableTokenStore(writableStates);
     }
@@ -365,39 +473,74 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenTokensInWritableStore() {
         readableTokenState = readableTokenState();
         writableTokenState = writableTokenState();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         writableTokenStore = new WritableTokenStore(writableStates);
     }
 
+    private void givenReadableStakingInfoStore() {
+        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(0L, node0Info)
+                .value(1L, node1Info)
+                .build();
+        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
+        readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
+    }
+
+    private void givenWritableStakingInfoStore() {
+        writableStakingInfoState = MapWritableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(0L, node0Info)
+                .value(1L, node1Info)
+                .build();
+        given(writableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(writableStakingInfoState);
+        writableStakingInfoStore = new WritableStakingInfoStore(writableStates);
+    }
+
+    private void givenReadableStakingRewardsStore() {
+        final AtomicReference<NetworkStakingRewards> backingValue =
+                new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
+        final var stakingRewardsState = new ReadableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get);
+        given(readableStates.getSingleton(NETWORK_REWARDS)).willReturn((ReadableSingletonState) stakingRewardsState);
+        readableRewardsStore = new ReadableNetworkStakingRewardsStoreImpl(readableStates);
+    }
+
+    private void givenWritableStakingRewardsStore() {
+        final AtomicReference<NetworkStakingRewards> backingValue =
+                new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
+        final var stakingRewardsState =
+                new WritableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get, backingValue::set);
+        given(writableStates.getSingleton(NETWORK_REWARDS)).willReturn((WritableSingletonState) stakingRewardsState);
+        writableRewardsStore = new WritableNetworkStakingRewardsStore(writableStates);
+    }
+
     private void givenReadableTokenRelsStore() {
         readableTokenRelState = readableTokenRelState();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
     }
 
     private void givenWritableTokenRelsStore() {
         writableTokenRelState = writableTokenRelState();
-        given(writableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(writableTokenRelState);
+        given(writableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(writableTokenRelState);
         writableTokenRelStore = new WritableTokenRelationStore(writableStates);
     }
 
     private void givenReadableNftStore() {
         readableNftState = emptyReadableNftStateBuilder()
-                .value(uniqueTokenIdSl1, nftSl1)
-                .value(uniqueTokenIdSl2, nftSl2)
+                .value(nftIdSl1, nftSl1)
+                .value(nftIdSl2, nftSl2)
                 .build();
-        given(readableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(readableNftState);
+        given(readableStates.<NftID, Nft>get(NFTS)).willReturn(readableNftState);
         readableNftStore = new ReadableNftStoreImpl(readableStates);
     }
 
     private void givenWritableNftStore() {
         writableNftState = emptyWritableNftStateBuilder()
-                .value(uniqueTokenIdSl1, nftSl1)
-                .value(uniqueTokenIdSl2, nftSl2)
+                .value(nftIdSl1, nftSl1)
+                .value(nftIdSl2, nftSl2)
                 .build();
-        given(writableStates.<UniqueTokenId, Nft>get(NFTS)).willReturn(writableNftState);
+        given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
         writableNftStore = new WritableNftStore(writableStates);
     }
 
@@ -419,7 +562,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         return builder.build();
     }
 
-    private MapWritableKVState<EntityNumPair, TokenRelation> writableTokenRelState() {
+    private MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState() {
         final var builder = emptyWritableTokenRelsStateBuilder();
         for (final var entry : tokenRelsMap.entrySet()) {
             builder.value(entry.getKey(), entry.getValue());
@@ -427,7 +570,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         return builder.build();
     }
 
-    private MapReadableKVState<EntityNumPair, TokenRelation> readableTokenRelState() {
+    private MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState() {
         final var builder = emptyReadableTokenRelsStateBuilder();
         for (final var entry : tokenRelsMap.entrySet()) {
             builder.value(entry.getKey(), entry.getValue());
@@ -454,7 +597,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Token> writableTokenState() {
+    protected MapWritableKVState<TokenID, Token> writableTokenState() {
         final var builder = emptyWritableTokenStateBuilder();
         for (final var entry : tokensMap.entrySet()) {
             builder.value(entry.getKey(), entry.getValue());
@@ -463,7 +606,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNum, Token> readableTokenState() {
+    protected MapReadableKVState<TokenID, Token> readableTokenState() {
         final var builder = emptyReadableTokenStateBuilder();
         for (final var entry : tokensMap.entrySet()) {
             builder.value(entry.getKey(), entry.getValue());
@@ -474,88 +617,152 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private void givenValidTokenRelations() {
         fungibleTokenRelation = givenFungibleTokenRelation();
         nonFungibleTokenRelation = givenNonFungibleTokenRelation();
-        ownerFTRelation = givenFungibleTokenRelation()
+        ownerFTRelation =
+                givenFungibleTokenRelation().copyBuilder().accountId(ownerId).build();
+        ownerFTBRelation = givenFungibleTokenRelation()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .accountId(ownerId)
+                .tokenId(fungibleTokenIDB)
                 .build();
-        ownerNFTRelation = givenNonFungibleTokenRelation()
+        ownerFTCRelation = givenFungibleTokenRelation()
                 .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+                .tokenId(fungibleTokenIDC)
+                .accountId(ownerId)
                 .build();
-        treasuryFTRelation = givenFungibleTokenRelation()
-                .copyBuilder()
-                .accountNumber(treasuryId.accountNum())
-                .build();
+        ownerNFTRelation =
+                givenNonFungibleTokenRelation().copyBuilder().accountId(ownerId).build();
+        treasuryFTRelation =
+                givenFungibleTokenRelation().copyBuilder().accountId(treasuryId).build();
         treasuryNFTRelation = givenNonFungibleTokenRelation()
                 .copyBuilder()
-                .accountNumber(treasuryId.accountNum())
+                .accountId(treasuryId)
+                .build();
+        feeCollectorFTRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .build();
+        feeCollectorNFTRelation = givenNonFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .build();
+        feeCollectorFTBRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .accountId(feeCollectorId)
+                .tokenId(fungibleTokenIDB)
+                .build();
+        feeCollectorFTCRelation = givenFungibleTokenRelation()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDC)
+                .accountId(feeCollectorId)
+                .build();
+    }
+
+    private void givenStakingInfos() {
+        node0Info = StakingNodeInfo.newBuilder()
+                .nodeNumber(0)
+                .stake(1000L)
+                .stakeToNotReward(400L)
+                .stakeToReward(666L * HBARS_TO_TINYBARS)
+                .stakeRewardStart(2 * 555L * HBARS_TO_TINYBARS)
+                .maxStake(1000000000L)
+                .minStake(500000000)
+                .weight(200)
+                .rewardSumHistory(List.of(300L, 200L, 100L))
+                .unclaimedStakeRewardStart(0L)
+                .build();
+        node1Info = StakingNodeInfo.newBuilder()
+                .nodeNumber(1)
+                .stake(1000L)
+                .stakeToNotReward(400L)
+                .stakeToReward(666L * HBARS_TO_TINYBARS)
+                .stakeRewardStart(2 * 555L * HBARS_TO_TINYBARS)
+                .maxStake(1000000000L)
+                .minStake(500000000)
+                .weight(300)
+                .rewardSumHistory(List.of(300L, 200L, 100L))
+                .unclaimedStakeRewardStart(0L)
                 .build();
     }
 
     private void givenValidTokens() {
         fungibleToken = givenValidFungibleToken();
+        fungibleTokenB = givenValidFungibleToken()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDB)
+                .customFees(withFixedFee(FixedFee.newBuilder()
+                        .denominatingTokenId(fungibleTokenIDC)
+                        .amount(1000)
+                        .build()))
+                .build();
+        fungibleTokenC = givenValidFungibleToken()
+                .copyBuilder()
+                .tokenId(fungibleTokenIDC)
+                .customFees(withFixedFee(FixedFee.newBuilder()
+                        .denominatingTokenId(fungibleTokenId)
+                        .amount(40)
+                        .build()))
+                .build();
         nonFungibleToken = givenValidNonFungibleToken();
-        nftSl1 = givenNft(uniqueTokenIdSl1);
-        nftSl2 = givenNft(uniqueTokenIdSl2);
+        nftSl1 = givenNft(nftIdSl1);
+        nftSl2 = givenNft(nftIdSl2);
     }
 
     private void givenValidAccounts() {
-        account = givenValidAccount();
-        spenderAccount = givenValidAccount()
-                .copyBuilder()
-                .key(spenderKey)
-                .accountNumber(spenderId.accountNum())
-                .build();
-        ownerAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(ownerId.accountNum())
+        account = givenValidAccountBuilder().stakedNodeId(1L).build();
+        spenderAccount =
+                givenValidAccountBuilder().key(spenderKey).accountId(spenderId).build();
+        ownerAccount = givenValidAccountBuilder()
+                .accountId(ownerId)
                 .cryptoAllowances(AccountCryptoAllowance.newBuilder()
-                        .spenderNum(spenderId.accountNum())
-                        .amount(100)
+                        .spenderId(spenderId)
+                        .amount(1000)
                         .build())
                 .tokenAllowances(AccountFungibleTokenAllowance.newBuilder()
-                        .tokenNum(fungibleTokenId.tokenNum())
-                        .spenderNum(spenderId.accountNum())
-                        .amount(100)
+                        .tokenId(fungibleTokenId)
+                        .spenderId(spenderId)
+                        .amount(1000)
                         .build())
                 .approveForAllNftAllowances(AccountApprovalForAllAllowance.newBuilder()
-                        .tokenNum(nonFungibleTokenNum.longValue())
-                        .spenderNum(spenderId.accountNum())
+                        .tokenId(nonFungibleTokenId)
+                        .spenderId(spenderId)
                         .build())
                 .key(ownerKey)
                 .build();
-        delegatingSpenderAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(delegatingSpenderId.accountNum())
-                .build();
-        treasuryAccount = givenValidAccount()
-                .copyBuilder()
-                .accountNumber(treasuryId.accountNum())
+        delegatingSpenderAccount =
+                givenValidAccountBuilder().accountId(delegatingSpenderId).build();
+        transferAccount =
+                givenValidAccountBuilder().accountId(transferAccountId).build();
+        treasuryAccount = givenValidAccountBuilder()
+                .accountId(treasuryId)
                 .key(treasuryKey)
+                .build();
+        stakingRewardAccount = givenValidAccountBuilder()
+                .accountId(stakingRewardId)
+                .key(EMPTY_KEYLIST)
                 .build();
     }
 
     protected Token givenValidFungibleToken() {
-        return givenValidFungibleToken(spenderId.accountNum());
+        return givenValidFungibleToken(spenderId);
     }
 
-    protected Token givenValidFungibleToken(long autoRenewAccountNumber) {
-        return givenValidFungibleToken(autoRenewAccountNumber, false, false, false, false);
+    protected Token givenValidFungibleToken(AccountID autoRenewAccountId) {
+        return givenValidFungibleToken(autoRenewAccountId, false, false, false, false);
     }
 
     protected Token givenValidFungibleToken(
-            long autoRenewAccountNumber,
+            AccountID autoRenewAccountId,
             boolean deleted,
             boolean paused,
             boolean accountsFrozenByDefault,
             boolean accountsKycGrantedByDefault) {
         return new Token(
-                fungibleTokenId.tokenNum(),
+                fungibleTokenId,
                 tokenName,
                 tokenSymbol,
                 1000,
                 1000,
-                treasuryId.accountNum(),
+                treasuryId,
                 adminKey,
                 kycKey,
                 freezeKey,
@@ -567,7 +774,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 deleted,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                autoRenewAccountNumber,
+                autoRenewAccountId,
                 autoRenewSecs,
                 expirationTime,
                 memo,
@@ -575,92 +782,91 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 paused,
                 accountsFrozenByDefault,
                 accountsKycGrantedByDefault,
-                Collections.emptyList());
+                customFees);
     }
 
     protected Token givenValidNonFungibleToken() {
-        givenValidFungibleToken();
         return fungibleToken
                 .copyBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
-                .treasuryAccountNumber(treasuryId.accountNum())
-                .customFees(List.of())
+                .tokenId(nonFungibleTokenId)
+                .treasuryAccountId(treasuryId)
+                .customFees(List.of(withRoyaltyFee(royaltyFee)))
                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }
 
-    protected Account givenValidAccount() {
-        return new Account(
-                accountNum,
-                alias.alias(),
-                key,
-                1_234_567L,
-                payerBalance,
-                "testAccount",
-                false,
-                1_234L,
-                1_234_568L,
-                0,
-                true,
-                true,
-                3,
-                2,
-                1,
-                2,
-                10,
-                1,
-                3,
-                false,
-                2,
-                0,
-                1000L,
-                0,
-                72000,
-                0,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                2,
-                false,
-                null);
+    protected Account.Builder givenValidAccountBuilder() {
+        return Account.newBuilder()
+                .accountId(payerId)
+                .tinybarBalance(payerBalance)
+                .alias(alias.alias())
+                .key(key)
+                .expiry(1_234_567L)
+                .memo("testAccount")
+                .deleted(false)
+                .stakedToMe(1_234L * HBARS_TO_TINYBARS)
+                .stakePeriodStart(stakePeriodStart)
+                .declineReward(false)
+                .receiverSigRequired(true)
+                .headTokenId(TokenID.newBuilder().tokenNum(3L).build())
+                .headNftId(NftID.newBuilder()
+                        .tokenId(TokenID.newBuilder().tokenNum(2L))
+                        .build())
+                .headNftSerialNumber(1L)
+                .numberOwnedNfts(2L)
+                .maxAutoAssociations(10)
+                .usedAutoAssociations(1)
+                .numberAssociations(3)
+                .smartContract(false)
+                .numberPositiveBalances(2)
+                .ethereumNonce(0L)
+                .stakeAtStartOfLastRewardedPeriod(1000L)
+                .autoRenewAccountId(AccountID.DEFAULT)
+                .autoRenewSecs(72000L)
+                .contractKvPairsNumber(0)
+                .cryptoAllowances(emptyList())
+                .tokenAllowances(emptyList())
+                .approveForAllNftAllowances(emptyList())
+                .numberTreasuryTitles(2)
+                .expiredAndPendingRemoval(false)
+                .firstContractStorageKey(null);
     }
 
     protected TokenRelation givenFungibleTokenRelation() {
         return TokenRelation.newBuilder()
-                .tokenNumber(fungibleTokenId.tokenNum())
-                .accountNumber(accountNum)
+                .tokenId(fungibleTokenId)
+                .accountId(payerId)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(true)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(2L)
-                .previousToken(3L)
+                .nextToken(asToken(2L))
+                .previousToken(asToken(3L))
                 .build();
     }
 
     protected TokenRelation givenNonFungibleTokenRelation() {
         return TokenRelation.newBuilder()
-                .tokenNumber(nonFungibleTokenNum.longValue())
-                .accountNumber(accountNum)
+                .tokenId(nonFungibleTokenId)
+                .accountId(payerId)
                 .balance(1)
                 .frozen(false)
                 .kycGranted(true)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(2L)
-                .previousToken(3L)
+                .nextToken(asToken(2L))
+                .previousToken(asToken(3L))
                 .build();
     }
 
-    protected Nft givenNft(UniqueTokenId uniqueTokenId) {
-        return Nft.newBuilder().ownerId(ownerId).id(uniqueTokenId).build();
+    protected Nft givenNft(NftID tokenID) {
+        return Nft.newBuilder().ownerId(ownerId).id(tokenID).build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {
         return CustomFee.newBuilder()
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .fixedFee(fixedFee)
                 .build();
     }
@@ -668,16 +874,14 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected CustomFee withFractionalFee(final FractionalFee fractionalFee) {
         return CustomFee.newBuilder()
                 .fractionalFee(fractionalFee)
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 
     protected CustomFee withRoyaltyFee(final RoyaltyFee royaltyFee) {
         return CustomFee.newBuilder()
                 .royaltyFee(royaltyFee)
-                .feeCollectorAccountId(
-                        AccountID.newBuilder().accountNum(accountNum).build())
+                .feeCollectorAccountId(feeCollectorId)
                 .build();
     }
 
@@ -695,5 +899,18 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
         given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
         given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+
+        given(handleContext.readableStore(ReadableNetworkStakingRewardsStore.class))
+                .willReturn(readableRewardsStore);
+        given(handleContext.writableStore(WritableNetworkStakingRewardsStore.class))
+                .willReturn(writableRewardsStore);
+
+        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
+        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        given(handleContext.readableStore(ReadableNetworkStakingRewardsStore.class))
+                .willReturn(readableRewardsStore);
+        given(handleContext.writableStore(WritableNetworkStakingRewardsStore.class))
+                .willReturn(writableRewardsStore);
     }
 }

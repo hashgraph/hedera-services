@@ -16,9 +16,9 @@
 
 package com.swirlds.common.test.threading;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyFalse;
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyTrue;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyFalse;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyTrue;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

@@ -16,9 +16,9 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 
-import com.swirlds.common.test.fcqueue.FCInt;
+import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import java.util.Random;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

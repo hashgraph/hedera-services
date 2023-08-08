@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,54 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionProcessor;
 import com.hedera.node.app.service.contract.impl.state.ContractSchema;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class ContractServiceImplTest {
-    @Mock
-    private SchemaRegistry registry;
-
-    private final ContractService subject = ContractService.getInstance();
-
     @Test
-    void testSpi() {
-        assertInstanceOf(ContractServiceImpl.class, subject);
+    void handlersAreAvailable() {
+        assertNotNull(CONTRACT_SERVICE.handlers());
     }
 
     @Test
-    void registersExpectedSchema() {
-        ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
-
-        subject.registerSchemas(registry);
-        verify(registry).register(schemaCaptor.capture());
-
-        final var schema = schemaCaptor.getValue();
-
-        final var statesToCreate = schema.statesToCreate();
-        assertEquals(2, statesToCreate.size());
-        final var iter =
-                statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertEquals(ContractSchema.BYTECODE_KEY, iter.next());
-        assertEquals(ContractSchema.STORAGE_KEY, iter.next());
-    }
-
-    @Test
-    void providesTransactionProcessor() {
-        assertInstanceOf(HederaEvmTransactionProcessor.class, ((ContractServiceImpl) subject).transactionProcessor());
+    void registersContractSchema() {
+        final var captor = ArgumentCaptor.forClass(Schema.class);
+        final var mockRegistry = mock(SchemaRegistry.class);
+        CONTRACT_SERVICE.registerSchemas(mockRegistry);
+        verify(mockRegistry).register(captor.capture());
+        assertInstanceOf(ContractSchema.class, captor.getValue());
     }
 }

@@ -16,9 +16,7 @@
 
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.*;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.denotesImmutableEntity;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
@@ -87,7 +85,9 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
 
         // if a hollow account exists at the alias address, finalize it to a contract
         if (hollowAccountID != null) {
-            finalizeHollowAccountIntoContract(hollowAccountID, updater);
+            final var contractNonce =
+                    updater.get(childFrame.getContractAddress()).getNonce();
+            finalizeHollowAccountIntoContract(hollowAccountID, updater, contractNonce);
             createdContractId = EntityIdUtils.asContract(hollowAccountID);
         } else {
             createdContractId = updater.idOfLastNewAddress();
@@ -140,7 +140,8 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         }
     }
 
-    private void finalizeHollowAccountIntoContract(AccountID hollowAccountID, HederaStackedWorldStateUpdater updater) {
+    private void finalizeHollowAccountIntoContract(
+            AccountID hollowAccountID, HederaStackedWorldStateUpdater updater, long contractNonce) {
         // We cannot reclaim the id reserved for a new contract here, even though it will not be used
         // (since in fact this creation is just finalizing a hollow account). The reason is that it is
         // possible there were child contracts created by the CONTRACT_CREATION message; and their ids
@@ -153,7 +154,7 @@ public class HederaCreateOperationExternalizer implements CreateOperationExterna
         // update the hollow account key to be the default contract key
         updater.trackingAccounts().set(hollowAccountID, KEY, STANDIN_CONTRACT_ID_KEY);
 
-        // set initial contract nonce to 1
-        updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, 1L);
+        // set initial contract nonce to be the same as the nonce of the created account
+        updater.trackingAccounts().set(hollowAccountID, ETHEREUM_NONCE, contractNonce);
     }
 }

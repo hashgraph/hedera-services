@@ -33,7 +33,6 @@ import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.merkledb.MerkleDbStatistics;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.ScheduledExecutorService;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +54,11 @@ class JasperDbStatisticsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         statistics = new JasperDbStatistics(LABEL, false);
         statistics.registerMetrics(metrics);
     }
@@ -97,13 +100,13 @@ class JasperDbStatisticsTest {
 
     @Test
     void testConstructorWithNullParameter() {
-        assertThrows(IllegalArgumentException.class, () -> new MerkleDbStatistics(null, true));
+        assertThrows(IllegalArgumentException.class, () -> new JasperDbStatistics(null, false));
     }
 
     @Test
     void testRegisterWithNullParameter() {
         // given
-        final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL, false);
+        final JasperDbStatistics statistics = new JasperDbStatistics(LABEL, false);
 
         // then
         assertThrows(IllegalArgumentException.class, () -> statistics.registerMetrics(null));
@@ -291,7 +294,11 @@ class JasperDbStatisticsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final JasperDbStatistics statistics = new JasperDbStatistics(LABEL, true);
         statistics.registerMetrics(metrics);
 

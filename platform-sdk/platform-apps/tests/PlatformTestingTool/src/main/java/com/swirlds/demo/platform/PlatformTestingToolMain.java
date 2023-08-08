@@ -55,11 +55,13 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.SystemExitCode;
+import com.swirlds.common.system.SystemExitUtils;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
+import com.swirlds.common.units.UnitConstants;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.common.utility.Units;
 import com.swirlds.demo.merkle.map.FCMConfig;
 import com.swirlds.demo.merkle.map.MapValueData;
 import com.swirlds.demo.merkle.map.MapValueFCQ;
@@ -84,8 +86,6 @@ import com.swirlds.merkle.map.test.pta.TransactionRecord;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.system.SystemExitCode;
-import com.swirlds.platform.system.SystemExitUtils;
 import com.swirlds.virtualmap.internal.merkle.VirtualLeafNode;
 import java.io.File;
 import java.io.FileInputStream;
@@ -434,8 +434,10 @@ public class PlatformTestingToolMain implements SwirldMain {
 
     private long summation(List<TransactionCounter> counters, ValueExtractor valueExtractor) {
         long total = 0;
-        for (TransactionCounter counter : counters) {
-            total += valueExtractor.getValue(counter);
+        if (counters != null) {
+            for (TransactionCounter counter : counters) {
+                total += valueExtractor.getValue(counter);
+            }
         }
         return total;
     }
@@ -1218,7 +1220,7 @@ public class PlatformTestingToolMain implements SwirldMain {
      */
     private void queryInState() {
         // time in nanoseconds between successive queries
-        final long periodInNanos = Units.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
+        final long periodInNanos = UnitConstants.SECONDS_TO_NANOSECONDS / queriesSentPerSec;
 
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(3);
         ScheduledFuture<?> future = scheduledThreadPoolExecutor.scheduleAtFixedRate(

@@ -51,6 +51,7 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import java.security.InvalidKeyException;
@@ -109,7 +110,7 @@ class BackedSystemAccountsCreatorTest {
         given(address.getMemo()).willReturn("0.0.3");
         book = mock(AddressBook.class);
         given(book.getSize()).willReturn(1);
-        given(book.getAddress(0L)).willReturn(address);
+        given(book.getAddress(new NodeId(0L))).willReturn(address);
 
         backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
         given(backingAccounts.idSet())

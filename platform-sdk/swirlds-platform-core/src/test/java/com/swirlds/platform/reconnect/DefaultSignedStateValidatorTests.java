@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,9 +28,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
-import com.swirlds.common.test.RandomUtils;
-import com.swirlds.platform.Utilities;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -50,7 +50,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests that the {@link DefaultSignedStateValidator} uses weight correctly to determine the validity of the signed state.
+ * Tests that the {@link DefaultSignedStateValidator} uses weight correctly to determine the validity of the signed
+ * state.
  */
 class DefaultSignedStateValidatorTests {
 
@@ -175,7 +176,7 @@ class DefaultSignedStateValidatorTests {
 
     /**
      * @return Arguments to test when all nodes sign a state, some with invalid signatures, but the valid signatures
-     * 		constitute a majority.
+     * constitute a majority.
      */
     private static Arguments someNodeValidSigsMajority() {
         // >1/2 weight of valid signatures, <1/2 of weight invalid signatures
@@ -185,8 +186,8 @@ class DefaultSignedStateValidatorTests {
     }
 
     /**
-     * @return Arguments to test when all nodes sign a state, some with invalid signatures, and the valid signatures
-     * 		do not constitute a majority.
+     * @return Arguments to test when all nodes sign a state, some with invalid signatures, and the valid signatures do
+     * not constitute a majority.
      */
     private static Arguments someNodeValidSigsNoMajority() {
         final List<Node> notMajorityValidSigs = initNodes(List.of(true, true, true, true, false, false, false));
@@ -197,8 +198,8 @@ class DefaultSignedStateValidatorTests {
     /**
      * Creates a list of nodes, some of which may sign a state with an invalid signature
      *
-     * @param isValidSigList
-     * 		a list of booleans indicating if the node at that position will sign the state with a valid signature
+     * @param isValidSigList a list of booleans indicating if the node at that position will sign the state with a valid
+     *                       signature
      * @return a list of nodes
      */
     private static List<Node> initNodes(final List<Boolean> isValidSigList) {
@@ -263,17 +264,15 @@ class DefaultSignedStateValidatorTests {
      * Determines if the nodes in {@code signingNodes} with valid signatures have enough weight to make up a strong
      * minority of the total weight.
      *
-     * @param nodes
-     * 		all the nodes in the network, used to calculate the total weight
-     * @param signingNodes
-     * 		all the nodes that signed the state
+     * @param nodes        all the nodes in the network, used to calculate the total weight
+     * @param signingNodes all the nodes that signed the state
      * @return true if the state has a majority of weight from valid signatures
      */
     private boolean stateHasEnoughWeight(final List<Node> nodes, final List<Node> signingNodes) {
         final long totalWeight = getTotalWeight(nodes);
         final long signingWeight = getValidSignatureWeight(signingNodes);
 
-        return Utilities.isMajority(signingWeight, totalWeight);
+        return MAJORITY.isSatisfiedBy(signingWeight, totalWeight);
     }
 
     private static long getTotalWeight(final List<Node> nodes) {
@@ -295,8 +294,7 @@ class DefaultSignedStateValidatorTests {
     /**
      * Create a {@link SignedState} signed by the nodes whose ids are supplied by {@code signingNodeIds}.
      *
-     * @param signingNodes
-     * 		the node ids signing the state
+     * @param signingNodes the node ids signing the state
      * @return the signed state
      */
     private SignedState stateSignedByNodes(final List<Node> signingNodes) {

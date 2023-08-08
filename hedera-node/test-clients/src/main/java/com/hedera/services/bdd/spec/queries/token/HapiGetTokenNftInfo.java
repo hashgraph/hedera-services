@@ -136,7 +136,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
         var registry = spec.registry();
 
         assertFor(
-                actualInfo.getNftID().getTokenID(),
+                actualInfo.getNftID().getTokenId(),
                 expectedTokenID,
                 (n, r) -> r.getTokenID(n),
                 "Wrong token id!",
@@ -181,7 +181,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
         TokenGetNftInfoQuery getTokenNftQuery = TokenGetNftInfoQuery.newBuilder()
                 .setHeader(costOnly ? answerCostHeader(payment) : answerHeader(payment))
                 .setNftID(NftID.newBuilder()
-                        .setTokenID(id)
+                        .setTokenId(id)
                         .setSerialNumber(serialNum)
                         .build())
                 .build();

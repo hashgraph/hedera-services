@@ -720,7 +720,7 @@ class StateViewTest {
     @Test
     void getInfoForNftMissing() {
         final var nftID =
-                NftID.newBuilder().setTokenID(tokenId).setSerialNumber(123L).build();
+                NftID.newBuilder().setTokenId(tokenId).setSerialNumber(123L).build();
 
         final var actualTokenNftInfo = subject.infoForNft(nftID);
 
@@ -1376,11 +1376,11 @@ class StateViewTest {
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
     private final byte[] nftMeta = "abcdefgh".getBytes();
     private final NftID targetNftId = NftID.newBuilder()
-            .setTokenID(IdUtils.asToken("0.0.3"))
+            .setTokenId(IdUtils.asToken("0.0.3"))
             .setSerialNumber(4L)
             .build();
     private final NftID missingNftId = NftID.newBuilder()
-            .setTokenID(IdUtils.asToken("0.0.9"))
+            .setTokenId(IdUtils.asToken("0.0.9"))
             .setSerialNumber(5L)
             .build();
     private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);

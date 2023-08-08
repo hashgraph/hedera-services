@@ -32,8 +32,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -58,10 +61,10 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -136,7 +139,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
-        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator, networkInfo);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
+        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator);
     }
 
     @Test
@@ -275,7 +279,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         // validate fields on created account
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(1000L, createdAccount.accountNumber());
+        assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
         assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
@@ -285,11 +289,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.stakedToMe());
         assertEquals(0L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
-        assertEquals(3, createdAccount.stakedNumber());
+        assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(0L, createdAccount.headTokenNumber());
-        assertEquals(0L, createdAccount.headNftId());
+        assertNull(createdAccount.headTokenId());
+        assertNull(createdAccount.headNftId());
         assertEquals(0L, createdAccount.headNftSerialNumber());
         assertEquals(0L, createdAccount.numberOwnedNfts());
         assertEquals(0, createdAccount.maxAutoAssociations());
@@ -299,7 +303,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(0L, createdAccount.autoRenewAccountNumber());
+        assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
@@ -343,7 +347,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         // validate fields on created account
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(1000L, createdAccount.accountNumber());
+        assertEquals(1000L, createdAccount.accountId().accountNum());
         assertEquals(Bytes.EMPTY, createdAccount.alias());
         assertEquals(otherKey, createdAccount.key());
         assertEquals(consensusTimestamp.seconds() + defaultAutoRenewPeriod, createdAccount.expiry());
@@ -353,11 +357,11 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0L, createdAccount.stakedToMe());
         assertEquals(0L, createdAccount.stakePeriodStart());
         // staked node id is stored in state as negative long
-        assertEquals(3, createdAccount.stakedNumber());
+        assertEquals(3, createdAccount.stakedAccountId().accountNum());
         assertFalse(createdAccount.declineReward());
         assertTrue(createdAccount.receiverSigRequired());
-        assertEquals(0L, createdAccount.headTokenNumber());
-        assertEquals(0L, createdAccount.headNftId());
+        assertNull(createdAccount.headTokenId());
+        assertNull(createdAccount.headNftId());
         assertEquals(0L, createdAccount.headNftSerialNumber());
         assertEquals(0L, createdAccount.numberOwnedNfts());
         assertEquals(0, createdAccount.maxAutoAssociations());
@@ -367,7 +371,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         assertEquals(0, createdAccount.numberPositiveBalances());
         assertEquals(0L, createdAccount.ethereumNonce());
         assertEquals(0L, createdAccount.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(0L, createdAccount.autoRenewAccountNumber());
+        assertNull(createdAccount.autoRenewAccountId());
         assertEquals(defaultAutoRenewPeriod, createdAccount.autoRenewSecs());
         assertEquals(0, createdAccount.contractKvPairsNumber());
         assertTrue(createdAccount.cryptoAllowances().isEmpty());
@@ -559,6 +563,22 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
+    }
+
+    @Test
+    void validateContractKey() {
+        final var newContractId = ContractID.newBuilder().contractNum(1000L).build();
+        txn = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withKey(Key.newBuilder().contractID(newContractId).build())
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
+        given(handleContext.newEntityNum()).willReturn(1000L);
+        setupConfig();
+        setupExpiryValidator();
+
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test

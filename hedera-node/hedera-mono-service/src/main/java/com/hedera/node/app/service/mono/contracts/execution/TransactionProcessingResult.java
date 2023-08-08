@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,6 +42,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     private List<SolidityAction> actions;
 
     private List<ContractID> createdContracts = Collections.emptyList();
+    private Map<ContractID, Long> contractNonces = new TreeMap<>();
 
     public static TransactionProcessingResult failed(
             final long gasUsed,
@@ -113,8 +115,16 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
         this.createdContracts = createdContracts;
     }
 
+    public void setContractNonces(Map<ContractID, Long> contractNonces) {
+        this.contractNonces = contractNonces;
+    }
+
     public List<ContractID> getCreatedContracts() {
         return createdContracts;
+    }
+
+    public Map<ContractID, Long> getContractNonces() {
+        return contractNonces;
     }
 
     public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {

@@ -459,6 +459,9 @@ public final class MiscUtils {
     }
 
     public static Optional<JKey> asUsableFcKey(final Key key) {
+        if (key.getKeyCase() == Key.KeyCase.KEY_NOT_SET) {
+            return Optional.empty();
+        }
         try {
             final var fcKey = JKey.mapKey(key);
             if (!fcKey.isValid()) {
@@ -607,7 +610,8 @@ public final class MiscUtils {
 
     public static Set<AccountID> getNodeAccounts(final AddressBook addressBook) {
         return IntStream.range(0, addressBook.getSize())
-                .mapToObj(addressBook::getAddress)
+                .mapToObj(addressBook::getNodeId)
+                .map(addressBook::getAddress)
                 .map(address -> parseAccount(address.getMemo()))
                 .collect(toSet());
     }

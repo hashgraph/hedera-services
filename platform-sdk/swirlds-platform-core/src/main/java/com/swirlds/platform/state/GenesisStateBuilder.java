@@ -22,6 +22,8 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.state.signed.ReservedSignedState;
+import com.swirlds.platform.state.signed.SignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -83,9 +85,9 @@ public final class GenesisStateBuilder {
      * @param addressBook     the current address book
      * @param appVersion      the software version of the app
      * @param swirldState     the application's genesis state
-     * @return a genesis state
+     * @return a reserved genesis signed state
      */
-    public static State buildGenesisState(
+    public static ReservedSignedState buildGenesisState(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
@@ -97,6 +99,7 @@ public final class GenesisStateBuilder {
         state.setSwirldState(swirldState);
         state.setDualState(buildGenesisDualState(basicConfig));
 
-        return state;
+        final SignedState signedState = new SignedState(platformContext, state, "genesis state");
+        return signedState.reserve("initial reservation on genesis state");
     }
 }

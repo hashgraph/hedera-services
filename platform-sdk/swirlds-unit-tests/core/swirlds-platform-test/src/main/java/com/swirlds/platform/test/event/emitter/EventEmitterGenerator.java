@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.event.emitter;
 
-import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 
 /**
  * Generates an {@link EventEmitter} that emits events using the {@link GraphGenerator} instance provided.

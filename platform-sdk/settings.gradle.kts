@@ -46,6 +46,8 @@ include(":swirlds-jasperdb")
 
 include(":swirlds-virtualmap")
 
+include(":swirlds-platform-gui")
+
 include(":swirlds-platform-core")
 
 include(":swirlds-cli")

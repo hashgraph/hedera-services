@@ -119,7 +119,7 @@ public class AllowanceValidator {
         if (nft.hasOwnerId()) {
             return nft.ownerId().equals(ownerID);
         } else {
-            return ownerID.accountNum() == token.treasuryAccountNumber();
+            return ownerID.equals(token.treasuryAccountId());
         }
     }
 
@@ -138,8 +138,7 @@ public class AllowanceValidator {
             @Nullable final AccountID owner,
             @NonNull final Account payer,
             @NonNull final ReadableAccountStore accountStore) {
-        final var ownerNum = owner != null ? owner.accountNumOrElse(0L) : 0L;
-        if (ownerNum == 0 || ownerNum == payer.accountNumber()) {
+        if (owner == null || owner.accountNumOrElse(0L) == 0L || owner.equals(payer.accountId())) {
             return payer;
         } else {
             // If owner is in modifications get the modified account from state

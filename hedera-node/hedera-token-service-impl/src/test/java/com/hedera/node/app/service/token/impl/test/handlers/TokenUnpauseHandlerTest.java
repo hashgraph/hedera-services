@@ -32,7 +32,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenUnpauseTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
@@ -141,10 +140,10 @@ class TokenUnpauseHandlerTest extends TokenHandlerTestBase {
     @Test
     void doesntAddAnyKeyIfPauseKeyMissing() throws PreCheckException {
         final var copy = token.copyBuilder().pauseKey(Key.DEFAULT).build();
-        readableTokenState = MapReadableKVState.<EntityNum, Token>builder(TOKENS)
-                .value(tokenEntityNum, copy)
+        readableTokenState = MapReadableKVState.<TokenID, Token>builder(TOKENS)
+                .value(tokenId, copy)
                 .build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(readableTokenState);
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(readableTokenState);
         readableTokenStore = new ReadableTokenStoreImpl(readableStates);
         preHandleContext.registerStore(ReadableTokenStore.class, readableTokenStore);
 

@@ -131,29 +131,26 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
             @NonNull final ReadableTokenStore readableTokenStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore) {
         final var ret = new ArrayList<TokenBalance>();
-        var tokenNum = account.headTokenNumber();
+        var tokenId = account.headTokenId();
         int count = 0;
         TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
-        TokenID tokenID; // build from tokenNum
         AccountID accountID; // build from accountNumber
         TokenBalance tokenBalance; // created TokenBalance object
-        while (tokenNum != 0 && count < tokenConfig.maxRelsPerInfoQuery()) {
-            accountID =
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build();
-            tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
-            tokenRelation = tokenRelationStore.get(accountID, tokenID);
+        while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < tokenConfig.maxRelsPerInfoQuery()) {
+            accountID = account.accountId();
+            tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
-                token = readableTokenStore.get(tokenID);
+                token = readableTokenStore.get(tokenId);
                 if (token != null) {
                     tokenBalance = TokenBalance.newBuilder()
-                            .tokenId(TokenID.newBuilder().tokenNum(tokenNum).build())
+                            .tokenId(tokenId)
                             .balance(tokenRelation.balance())
                             .decimals(token.decimals())
                             .build();
                     ret.add(tokenBalance);
                 }
-                tokenNum = tokenRelation.nextToken();
+                tokenId = tokenRelation.nextToken();
             } else {
                 break;
             }

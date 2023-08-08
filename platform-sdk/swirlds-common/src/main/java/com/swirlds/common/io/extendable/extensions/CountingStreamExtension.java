@@ -19,7 +19,7 @@ package com.swirlds.common.io.extendable.extensions;
 import com.swirlds.common.io.extendable.extensions.internal.Counter;
 import com.swirlds.common.io.extendable.extensions.internal.StandardCounter;
 import com.swirlds.common.io.extendable.extensions.internal.ThreadSafeCounter;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
 
 /**
  * A stream extension that counts the number of bytes that pass through it
@@ -38,9 +38,8 @@ public class CountingStreamExtension extends AbstractStreamExtension {
     /**
      * Create a counting stream extension.
      *
-     * @param threadSafe
-     * 		if true then the extension will be thread safe, if false then it will not be thread safe
-     * 		(and perhaps it will be slightly more performant)
+     * @param threadSafe if true then the extension will be thread safe, if false then it will not be thread safe (and
+     *                   perhaps it will be slightly more performant)
      */
     public CountingStreamExtension(final boolean threadSafe) {
         if (threadSafe) {
@@ -86,7 +85,7 @@ public class CountingStreamExtension extends AbstractStreamExtension {
      * @return the number of bytes that have passed by this stream since the last reset
      */
     public double getKibiBytes() {
-        return counter.getCount() * Units.BYTES_TO_KIBIBYTES;
+        return counter.getCount() * UnitConstants.BYTES_TO_KIBIBYTES;
     }
 
     /**
@@ -95,7 +94,7 @@ public class CountingStreamExtension extends AbstractStreamExtension {
      * @return the number of bytes that have passed by this stream since the last reset
      */
     public double getMebiBytes() {
-        return counter.getCount() * Units.BYTES_TO_MEBIBYTES;
+        return counter.getCount() * UnitConstants.BYTES_TO_MEBIBYTES;
     }
 
     /**
@@ -104,7 +103,7 @@ public class CountingStreamExtension extends AbstractStreamExtension {
      * @return the number of bytes that have passed by this stream since the last reset
      */
     public double getGibiBytes() {
-        return counter.getCount() * Units.BYTES_TO_GIBIBYTES;
+        return counter.getCount() * UnitConstants.BYTES_TO_GIBIBYTES;
     }
 
     /**

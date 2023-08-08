@@ -32,7 +32,6 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_HEADER;
 import static com.swirlds.platform.state.address.AddressBookInitializer.CONFIG_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_HEADER;
-import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_NULL;
 import static com.swirlds.platform.state.address.AddressBookInitializer.STATE_ADDRESS_BOOK_USED;
 import static com.swirlds.platform.state.address.AddressBookInitializer.USED_ADDRESS_BOOK_HEADER;
 
@@ -63,6 +62,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,9 +81,9 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private static final String DEBUG = "debug";
 
     /** the suffix for the test address book */
-    private static AddressBookTestingToolConfig testingToolConfig;
+    private AddressBookTestingToolConfig testingToolConfig;
     /** the address book configuration */
-    private static AddressBookConfig addressBookConfig;
+    private AddressBookConfig addressBookConfig;
     /** flag indicating if weighting behavior has been logged. */
     private static final AtomicBoolean logWeightingBehavior = new AtomicBoolean(true);
 
@@ -107,6 +107,24 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
      */
     private long runningSum = 0;
 
+    /**
+     * The number of rounds handled by this app. Is incremented each time
+     * {@link #handleConsensusRound(Round, SwirldDualState)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, SwirldDualState)} for rounds with no events.
+     *
+     * <p>
+     * Affects the hash of this node.
+     */
+    private long roundsHandled = 0;
+
+    /**
+     * If not zero and we are handling the first round after genesis, configure a freeze this duration later.
+     * <p>
+     * Does not affect the hash of this node (although actions may be taken based on this info that DO affect the
+     * hash).
+     */
+    private Duration freezeAfterGenesis = null;
+
     public AddressBookTestingToolState() {
         logger.info(STARTUP.getMarker(), "New State Constructed.");
     }
@@ -117,11 +135,15 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     private AddressBookTestingToolState(@NonNull final AddressBookTestingToolState that) {
         super(that);
         Objects.requireNonNull(that, "the address book testing tool state to copy cannot be null");
+        this.testingToolConfig = that.testingToolConfig;
+        this.addressBookConfig = that.addressBookConfig;
         this.runningSum = that.runningSum;
         this.selfId = that.selfId;
         this.platform = that.platform;
         this.context = that.context;
         this.validationPerformed.set(that.validationPerformed.get());
+        this.roundsHandled = that.roundsHandled;
+        this.freezeAfterGenesis = that.freezeAfterGenesis;
     }
 
     /**
@@ -147,6 +169,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(trigger, "the init trigger cannot be null");
         addressBookConfig = platform.getContext().getConfiguration().getConfigData(AddressBookConfig.class);
         testingToolConfig = platform.getContext().getConfiguration().getConfigData(AddressBookTestingToolConfig.class);
+        this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
 
         this.platform = platform;
         this.context = platform.getContext();
@@ -165,6 +188,17 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
         Objects.requireNonNull(round, "the round cannot be null");
         Objects.requireNonNull(swirldDualState, "the swirld dual state cannot be null");
         throwIfImmutable();
+
+        if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
+            // This is the first round after genesis.
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Setting freeze time to {} seconds after genesis.",
+                    freezeAfterGenesis.getSeconds());
+            swirldDualState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
+        }
+
+        roundsHandled++;
 
         final Iterator<ConsensusEvent> eventIterator = round.iterator();
 
@@ -200,6 +234,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out, "the serializable data output stream cannot be null");
         out.writeLong(runningSum);
+        out.writeLong(roundsHandled);
     }
 
     /**
@@ -209,6 +244,7 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
         Objects.requireNonNull(in, "the serializable data input stream cannot be null");
         runningSum = in.readLong();
+        roundsHandled = in.readLong();
     }
 
     /**
@@ -404,13 +440,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
-                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
-                && theStateAddressBookWasNull(true);
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, updatedAddressBook, false);
     }
 
     private boolean genesisForceUseOfConfigAddressBookTrue(@NonNull final AddressBookTestScenario testScenario)
@@ -421,13 +458,14 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
 
         final AddressBook platformAddressBook = platform.getAddressBook();
         final AddressBook configAddressBook = getConfigAddressBook();
+        final AddressBook stateAddressBook = getStateAddressBook();
         final AddressBook usedAddressBook = getUsedAddressBook();
         final AddressBook updatedAddressBook = updateWeight(configAddressBook.copy(), context);
 
         return equalsAsConfigText(platformAddressBook, configAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, usedAddressBook, true)
+                && equalsAsConfigText(platformAddressBook, stateAddressBook, true)
                 && equalsAsConfigText(platformAddressBook, updatedAddressBook, false)
-                && theStateAddressBookWasNull(true)
                 && theConfigurationAddressBookWasUsed();
     }
 
@@ -505,28 +543,6 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
                         EXCEPTION.getMarker(),
                         "The address books are equal as config text. {}",
                         StackTrace.getStackTrace());
-            }
-        }
-        return pass;
-    }
-
-    /**
-     * This test passes if expectedResult is true and the state address book was null, or if expectedResult is false and
-     * the state address book was not null.
-     *
-     * @param expectedResult the expected result of the test.
-     * @return true if the test passes, false otherwise.
-     */
-    private boolean theStateAddressBookWasNull(final boolean expectedResult) throws IOException {
-        final String fileContents = getLastAddressBookFileEndsWith(DEBUG);
-        final String textAfterStateHeader = getTextAfterHeader(fileContents, STATE_ADDRESS_BOOK_HEADER);
-        final boolean pass = textAfterStateHeader.contains(STATE_ADDRESS_BOOK_NULL) == expectedResult;
-        if (!pass) {
-            if (expectedResult) {
-                logger.error(
-                        EXCEPTION.getMarker(), "The state address book was not null. {}", StackTrace.getStackTrace());
-            } else {
-                logger.error(EXCEPTION.getMarker(), "The state address book was null. {}", StackTrace.getStackTrace());
             }
         }
         return pass;
@@ -620,9 +636,22 @@ public class AddressBookTestingToolState extends PartialMerkleLeaf implements Sw
     String getTextAfterHeader(@NonNull final String fileContents, @NonNull final String header) {
         Objects.requireNonNull(fileContents, "fileContents must not be null");
         Objects.requireNonNull(header, "header must not be null");
+        final int configABHeaderStart = fileContents.indexOf(CONFIG_ADDRESS_BOOK_HEADER);
+        final int stateABHeaderStart = fileContents.indexOf(STATE_ADDRESS_BOOK_HEADER);
+        final int usedABHeaderStart = fileContents.indexOf(USED_ADDRESS_BOOK_HEADER);
+
         final int headerStartIndex = fileContents.indexOf(header);
         final int addressBookStartIndex = headerStartIndex + header.length();
-        final int addressBookEndIndex = fileContents.indexOf("\n\n", addressBookStartIndex);
+
+        final int addressBookEndIndex;
+        if (headerStartIndex == configABHeaderStart) {
+            addressBookEndIndex = stateABHeaderStart;
+        } else if (headerStartIndex == stateABHeaderStart) {
+            addressBookEndIndex = usedABHeaderStart;
+        } else {
+            addressBookEndIndex = fileContents.length();
+        }
+
         return fileContents
                 .substring(addressBookStartIndex, addressBookEndIndex)
                 .trim();

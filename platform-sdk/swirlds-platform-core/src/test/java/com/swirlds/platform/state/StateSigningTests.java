@@ -16,10 +16,10 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
-import static com.swirlds.platform.Utilities.isMajority;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.platform.state.manager.SignedStateManagerTestUtils.buildFakeSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,7 +36,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.platform.state.signed.SigSet;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
@@ -127,7 +127,8 @@ class StateSigningTests {
                 assertFalse(signedState.addSignature(address.getNodeId(), signature));
             }
 
-            assertEquals(isMajority(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+            assertEquals(
+                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 
@@ -226,7 +227,8 @@ class StateSigningTests {
                 assertFalse(signedState.addSignature(address.getNodeId(), signature));
             }
 
-            assertEquals(isMajority(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
+            assertEquals(
+                    MAJORITY.isSatisfiedBy(expectedWeight, addressBook.getTotalWeight()), signedState.isComplete());
             assertEquals(expectedWeight, signedState.getSigningWeight());
             assertEquals(count, sigSet.size());
 

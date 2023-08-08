@@ -25,6 +25,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.DoubleGauge;
@@ -39,6 +40,7 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultCounter;
 import com.swirlds.common.metrics.platform.DefaultDoubleAccumulator;
 import com.swirlds.common.metrics.platform.DefaultDoubleGauge;
@@ -56,8 +58,8 @@ import com.swirlds.common.metrics.platform.MetricsEvent;
 import com.swirlds.common.metrics.platform.Snapshot;
 import com.swirlds.common.metrics.platform.SnapshotEvent;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.fixtures.FakeTime;
-import com.swirlds.common.utility.Units;
+import com.swirlds.common.units.UnitConstants;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Gauge;
@@ -92,6 +94,9 @@ class PrometheusEndpointTest {
     private CollectorRegistry registry;
 
     private HttpServer httpServer;
+
+    private static final MetricsConfig metricsConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @BeforeEach
     void setup() throws IOException {
@@ -398,7 +403,7 @@ class PrometheusEndpointTest {
             endpoint.handleSnapshots(snapshotEvent);
 
             // then
-            assertThat(collector.get()).isEqualTo(Units.SECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.get()).isEqualTo(UnitConstants.SECONDS_TO_MILLISECONDS, within(EPSILON));
         }
     }
 
@@ -433,8 +438,10 @@ class PrometheusEndpointTest {
             endpoint.handleSnapshots(snapshotEvent2);
 
             // then
-            assertThat(collector.labels(LABEL_1).get()).isEqualTo(Units.MICROSECONDS_TO_MILLISECONDS, within(EPSILON));
-            assertThat(collector.labels(LABEL_2).get()).isEqualTo(Units.NANOSECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.labels(LABEL_1).get())
+                    .isEqualTo(UnitConstants.MICROSECONDS_TO_MILLISECONDS, within(EPSILON));
+            assertThat(collector.labels(LABEL_2).get())
+                    .isEqualTo(UnitConstants.NANOSECONDS_TO_MILLISECONDS, within(EPSILON));
         }
     }
 
@@ -1178,7 +1185,8 @@ class PrometheusEndpointTest {
     @Test
     void testGlobalSpeedometerMetric() throws IOException {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final FakeTime time = new FakeTime();
         final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
@@ -1217,7 +1225,8 @@ class PrometheusEndpointTest {
     @Test
     void testPlatformSpeedometerMetric() throws IOException {
         // given
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final FakeTime time = new FakeTime();
         final DefaultSpeedometerMetric metric1 = new DefaultSpeedometerMetric(config, time);
         final DefaultSpeedometerMetric metric2 = new DefaultSpeedometerMetric(config, time);

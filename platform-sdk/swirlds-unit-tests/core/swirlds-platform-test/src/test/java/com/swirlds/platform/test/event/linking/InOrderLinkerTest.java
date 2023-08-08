@@ -18,6 +18,7 @@ package com.swirlds.platform.test.event.linking;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.system.events.BaseEventHashedData;
@@ -47,7 +48,10 @@ class InOrderLinkerTest {
     void testMissingParents(final int selfParentGen, final int otherParentGen, final boolean expectedValidity) {
         final GossipEvent event = mockEvent(selfParentGen, otherParentGen);
         final EventLinker linker = new InOrderLinker(
-                ConfigurationHolder.getConfigData(ConsensusConfig.class), new ParentFinder(h -> null), l -> null);
+                Time.getCurrent(),
+                ConfigurationHolder.getConfigData(ConsensusConfig.class),
+                new ParentFinder(h -> null),
+                l -> null);
         linker.updateGenerations(new Generations(100, 700, 800));
         linker.linkEvent(event);
 

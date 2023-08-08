@@ -35,6 +35,7 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     private static final class ClassVersion {
         /**
          * The original version of the class.
+         *
          * @since 0.39.0
          */
         public static final int ORIGINAL = 1;
@@ -104,6 +105,21 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     }
 
     /**
+     * Get a NodeId that is offset from this NodeId by the given amount.
+     *
+     * @param offset the amount to offset by
+     * @return the NodeId offset by the given amount
+     */
+    public NodeId getOffset(final long offset) {
+        final long newValue = id + offset;
+        if (newValue < LOWEST_NODE_NUMBER) {
+            throw new IllegalArgumentException("the new NodeId, %d, must not be below the minimum value of %d."
+                    .formatted(newValue, LOWEST_NODE_NUMBER));
+        }
+        return new NodeId(newValue);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -140,11 +156,9 @@ public class NodeId implements Comparable<NodeId>, SelfSerializable {
     /**
      * Deserialize a NodeId from a {@link SerializableDataInputStream}.
      *
-     * @param in
-     * 		the {@link SerializableDataInputStream} to read from
+     * @param in the {@link SerializableDataInputStream} to read from
      * @return the deserialized NodeId
-     * @throws IOException
-     * 		thrown if an exception occurs while reading from the stream or the long value is negative,
+     * @throws IOException thrown if an exception occurs while reading from the stream or the long value is negative,
      */
     public static NodeId deserializeLong(SerializableDataInputStream in, boolean allowNull) throws IOException {
         final long longValue = in.readLong();

@@ -18,6 +18,8 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -25,15 +27,12 @@ import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getLocalAddressCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
-import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.StartupTime;
@@ -60,9 +59,6 @@ import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.io.config.RecycleBinConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
 import com.swirlds.common.io.utility.RecycleBin;
-import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
-import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
@@ -73,14 +69,17 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
+import com.swirlds.gui.WindowConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
@@ -123,7 +122,6 @@ import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -255,6 +253,7 @@ public class Browser {
                 .withConfigDataType(EventCreationConfig.class)
                 .withConfigDataType(PathsConfig.class)
                 .withConfigDataType(SocketConfig.class)
+                .withConfigDataType(PlatformStatusConfig.class)
                 .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
@@ -285,7 +284,7 @@ public class Browser {
                 final JFrame jframe = new JFrame();
                 jframe.setPreferredSize(new Dimension(200, 200));
                 jframe.pack();
-                setInsets(jframe.getInsets());
+                WindowConfig.setInsets(jframe.getInsets());
                 jframe.dispose();
             }
 
@@ -343,8 +342,8 @@ public class Browser {
                                     // interfaces)
                                     // (should probably use ports >50000, this is considered the dynamic
                                     // range)
-                                    address.getPortInternalIpv4(),
-                                    address.getPortExternalIpv4(), // internal port
+                                    address.getPortInternal(),
+                                    address.getPortExternal(), // internal port
                                     PortForwarder.Protocol.TCP // transport protocol
                                     );
                             portsToBeMapped.add(pm);
@@ -633,8 +632,8 @@ public class Browser {
                 // this is a node to start locally.
                 final String platformName = address.getNickname()
                         + " - " + address.getSelfName()
-                        + " - " + infoSwirld.name
-                        + " - " + infoSwirld.app.name;
+                        + " - " + infoSwirld.getName()
+                        + " - " + infoSwirld.getApp().getName();
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
@@ -712,7 +711,7 @@ public class Browser {
 
                 platforms.add(platform);
 
-                new InfoMember(infoSwirld, instanceNumber, platform);
+                new InfoMember(infoSwirld, platform);
 
                 appMain.init(platform, nodeId);
 
@@ -722,7 +721,7 @@ public class Browser {
                         .setThreadName("appMain")
                         .setRunnable(appMain)
                         .build();
-                // IMPORTATNT: this swirlds app thread must be non-daemon,
+                // IMPORTANT: this swirlds app thread must be non-daemon,
                 // so that the JVM will not exit when the main thread exits
                 appThread.setDaemon(false);
                 appRunThreads[ownHostIndex] = appThread;
@@ -735,6 +734,25 @@ public class Browser {
         }
 
         return Collections.unmodifiableList(platforms);
+    }
+
+    /**
+     * Create a copy of the initial signed state. There are currently data structures that become immutable after
+     * being hashed, and we need to make a copy to force it to become mutable again.
+     *
+     * @param platformContext    the platform's context
+     * @param initialSignedState the initial signed state
+     * @return a copy of the initial signed state
+     */
+    private static ReservedSignedState copyInitialSignedState(
+            @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
+
+        final State stateCopy = initialSignedState.getState().copy();
+        final SignedState signedStateCopy =
+                new SignedState(platformContext, stateCopy, "Browser create new copy of initial state");
+        signedStateCopy.setSigSet(initialSignedState.getSigSet());
+
+        return signedStateCopy.reserve("Browser copied initial state");
     }
 
     /**
@@ -753,16 +771,6 @@ public class Browser {
         // Eventually we will not do this, and only transactions will be capable of
         // modifying the address book.
         state.getPlatformState().setAddressBook(addressBook.copy());
-
-        // Invalidate a path down to the new address book
-        new MerkleRouteIterator(state, state.getPlatformState().getAddressBook().getRoute())
-                .forEachRemaining(MerkleNode::invalidateHash);
-
-        // We should only have to rehash a few nodes, so simpler to use the synchronous algorithm.
-        MerkleCryptoFactory.getInstance().digestTreeSync(state);
-
-        // If our hash changes as a result of the new address book then our old signatures may become invalid.
-        signedState.pruneInvalidSignatures();
     }
 
     /**
@@ -804,22 +812,23 @@ public class Browser {
                 configAddressBook,
                 emergencyRecoveryManager);
 
-        if (loadedState.isNotNull()) {
-            logger.info(
-                    STARTUP.getMarker(),
-                    new SavedStateLoadedPayload(
-                            loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
-            return loadedState;
+        try (loadedState) {
+            if (loadedState.isNotNull()) {
+                logger.info(
+                        STARTUP.getMarker(),
+                        new SavedStateLoadedPayload(
+                                loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
+
+                return copyInitialSignedState(platformContext, loadedState.get());
+            }
         }
 
-        // Not strictly necessary to close a null reservation, but it's nice to be consistent.
-        loadedState.close();
-
-        final State genesisState =
+        final ReservedSignedState genesisState =
                 buildGenesisState(platformContext, configAddressBook, appMain.getSoftwareVersion(), appMain.newState());
 
-        final SignedState signedState = new SignedState(platformContext, genesisState, "genesis state");
-        return signedState.reserve("genesis state");
+        try (genesisState) {
+            return copyInitialSignedState(platformContext, genesisState.get());
+        }
     }
 
     /**

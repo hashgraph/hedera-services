@@ -152,6 +152,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final long maxGasAllowance,
             final BigInteger userOfferedGasPrice) {
         worldState.clearProvisionalContractCreations();
+        worldState.clearContractNonces();
 
         // --- Translate from gRPC types ---
         final var op = contractCreateTxn.getContractCreateInstance();
@@ -227,6 +228,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         // --- Persist changes into state ---
         final var createdContracts = worldState.getCreatedContractIds();
         result.setCreatedContracts(createdContracts);
+
+        if (properties.isContractsNoncesExternalizationEnabled()) {
+            final var createdNonces = worldState.getContractNonces();
+            result.setContractNonces(createdNonces);
+        }
 
         if (!result.isSuccessful()) {
             worldState.reclaimContractId();

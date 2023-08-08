@@ -40,7 +40,6 @@ import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkTransactionGetRecordHandler;
-import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
@@ -105,7 +104,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionID, false, false);
         given(context.query()).willReturn(query);
-        given(context.createStore(RecordCache.class)).willReturn(cache);
+        given(context.recordCache()).willReturn(cache);
 
         assertThatCode(() -> networkTransactionGetRecordHandler.validate(context))
                 .doesNotThrowAnyException();
@@ -152,7 +151,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionIDNotInCache, false, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetRecordHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetRecordOrThrow();
@@ -169,7 +168,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionID, false, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetRecordHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetRecordOrThrow();
@@ -187,7 +186,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionID, true, false);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetRecordHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetRecordOrThrow();
@@ -209,7 +208,7 @@ class NetworkTransactionGetRecordHandlerTest extends NetworkAdminHandlerTestBase
 
         final var query = createGetTransactionRecordQuery(transactionID, false, true);
         when(context.query()).thenReturn(query);
-        when(context.createStore(RecordCache.class)).thenReturn(cache);
+        when(context.recordCache()).thenReturn(cache);
 
         final var response = networkTransactionGetRecordHandler.findResponse(context, responseHeader);
         final var op = response.transactionGetRecordOrThrow();

@@ -34,6 +34,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.BaseEventHashedData;
 import com.swirlds.common.system.events.BaseEventUnhashedData;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.event.EventDescriptor;
 import com.swirlds.platform.event.EventUtils;
@@ -41,6 +42,7 @@ import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,6 +69,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     private final ChildlessEventTracker childlessOtherEventTracker;
     private final TransactionSupplier transactionSupplier;
     private final SoftwareVersion softwareVersion;
+    private final int networkSize;
 
     /**
      * The bully score is divided by this number to get the probability of creating an event that reduces the bully
@@ -91,6 +94,9 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
      * The number of transactions in the last event created by this node.
      */
     private int lastSelfEventTransactionCount;
+
+    private final RateLimitedLogger zeroAdvancementWeightLogger;
+    private final RateLimitedLogger noParentFoundLogger;
 
     /**
      * Create a new tipset event creator.
@@ -129,10 +135,14 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         cryptography = platformContext.getCryptography();
         antiBullyingFactor = Math.max(1.0, eventCreationConfig.antiBullyingFactor());
         tipsetMetrics = new TipsetMetrics(platformContext, addressBook);
-        tipsetTracker = new TipsetTracker(addressBook);
+        tipsetTracker = new TipsetTracker(time, addressBook);
         childlessOtherEventTracker = new ChildlessEventTracker();
         tipsetWeightCalculator = new TipsetWeightCalculator(
-                platformContext, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+                platformContext, time, addressBook, selfId, tipsetTracker, childlessOtherEventTracker);
+        networkSize = addressBook.getSize();
+
+        zeroAdvancementWeightLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
+        noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
     }
 
     /**
@@ -191,6 +201,12 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     @Override
     @Nullable
     public GossipEvent maybeCreateEvent() {
+        if (networkSize == 1) {
+            // Special case: network of size 1.
+            // We can always create a new event, no need to run the tipset algorithm.
+            return createEventForSizeOneNetwork();
+        }
+
         final long bullyScore = tipsetWeightCalculator.getMaxBullyScore();
         tipsetMetrics.getBullyScoreMetric().update(bullyScore);
 
@@ -206,6 +222,20 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
     }
 
     /**
+     * Create the next event for a network of size 1 (i.e. where we are the only member). We don't use the tipset
+     * algorithm like normal, since we will never have a real other parent.
+     *
+     * @return the new event
+     */
+    private GossipEvent createEventForSizeOneNetwork() {
+        // There is a quirk in size 1 networks where we can only
+        // reach consensus if the self parent is also the other parent.
+        // Unexpected, but harmless. So just use the same event
+        // as both parents until that issue is resolved.
+        return buildAndProcessEvent(lastSelfEvent);
+    }
+
+    /**
      * Create an event using the other parent with the best tipset advancement weight.
      *
      * @return the new event, or null if it is not legal to create a new event
@@ -218,8 +248,15 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         EventDescriptor bestOtherParent = null;
         TipsetAdvancementWeight bestAdvancementWeight = ZERO_ADVANCEMENT_WEIGHT;
         for (final EventDescriptor otherParent : possibleOtherParents) {
+
+            final List<EventDescriptor> parents = new ArrayList<>(2);
+            parents.add(otherParent);
+            if (lastSelfEvent != null) {
+                parents.add(lastSelfEvent);
+            }
+
             final TipsetAdvancementWeight advancementWeight =
-                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(List.of(otherParent));
+                    tipsetWeightCalculator.getTheoreticalAdvancementWeight(parents);
             if (advancementWeight.isGreaterThan(bestAdvancementWeight)) {
                 bestOtherParent = otherParent;
                 bestAdvancementWeight = advancementWeight;
@@ -277,11 +314,12 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
                     // for the advancement score to be zero. But in the interest in extreme caution,
                     // we check anyway, since it is very important never to create events with
                     // an advancement score of zero.
-                    logger.error(
+                    zeroAdvancementWeightLogger.error(
                             EXCEPTION.getMarker(),
-                            "bully score is {} but advancement score is zero for {}",
+                            "bully score is {} but advancement score is zero for {}.\n{}",
                             bullyScore,
-                            possibleNerd);
+                            possibleNerd,
+                            this);
                 }
             }
         }
@@ -290,7 +328,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
             // Note: this should be impossible, since we will not enter this method in the first
             // place if there are no nerds. But better to be safe than sorry, and returning null
             // is an acceptable way of saying "I can't create an event right now".
-            logger.error(EXCEPTION.getMarker(), "failed to locate eligible nerd to use as a parent");
+            noParentFoundLogger.error(EXCEPTION.getMarker(), "failed to locate eligible nerd to use as a parent");
             return null;
         }
 
@@ -424,5 +462,29 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         } else {
             return descriptor.getCreator();
         }
+    }
+
+    @NonNull
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Minimum generation non-ancient: ")
+                .append(tipsetTracker.getMinimumGenerationNonAncient())
+                .append("\n");
+        sb.append("Latest self event: ").append(lastSelfEvent).append("\n");
+        sb.append(tipsetWeightCalculator);
+
+        sb.append("Childless events:");
+        final List<EventDescriptor> childlessEvents = childlessOtherEventTracker.getChildlessEvents();
+        if (childlessEvents.isEmpty()) {
+            sb.append(" none\n");
+        } else {
+            sb.append("\n");
+            for (final EventDescriptor event : childlessEvents) {
+                final Tipset tipset = tipsetTracker.getTipset(event);
+                sb.append("  - ").append(event).append(" ").append(tipset).append("\n");
+            }
+        }
+
+        return sb.toString();
     }
 }

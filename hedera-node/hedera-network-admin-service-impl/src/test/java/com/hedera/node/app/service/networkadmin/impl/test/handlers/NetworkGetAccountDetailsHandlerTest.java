@@ -49,7 +49,6 @@ import com.hedera.hapi.node.token.GrantedNftAllowance;
 import com.hedera.hapi.node.token.GrantedTokenAllowance;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetAccountDetailsHandler;
 import com.hedera.node.app.service.networkadmin.impl.utils.NetworkAdminServiceUtil;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -234,11 +233,7 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
                 .build();
         List<TokenRelationship> tokenRelationships = new ArrayList<>();
         var tokenRelation = TokenRelationship.newBuilder()
-                .tokenId(TokenID.newBuilder()
-                        .shardNum(StaticProperties.getShard())
-                        .realmNum(StaticProperties.getRealm())
-                        .tokenNum(nonFungibleTokenNum.longValue())
-                        .build())
+                .tokenId(nonFungibleTokenId)
                 .balance(1000L)
                 .decimals(1000)
                 .symbol(tokenSymbol)
@@ -264,14 +259,19 @@ class NetworkGetAccountDetailsHandlerTest extends NetworkAdminHandlerTestBase {
     @Test
     void getsResponseIfOkResponseWhenAllowancesListAsExpected() {
         List<AccountCryptoAllowance> cryptoAllowancesList = new ArrayList<>();
-        AccountCryptoAllowance cryptoAllowance = new AccountCryptoAllowance(123L, 456L);
+        AccountCryptoAllowance cryptoAllowance = new AccountCryptoAllowance(
+                AccountID.newBuilder().accountNum(123L).build(), 456L);
         cryptoAllowancesList.add(cryptoAllowance);
         List<AccountApprovalForAllAllowance> accountApprovalForAllAllowanceList = new ArrayList<>();
-        AccountApprovalForAllAllowance accountApprovalForAllAllowance = new AccountApprovalForAllAllowance(456L, 567L);
+        AccountApprovalForAllAllowance accountApprovalForAllAllowance = new AccountApprovalForAllAllowance(
+                TokenID.newBuilder().tokenNum(456L).build(),
+                AccountID.newBuilder().accountNum(567L).build());
         accountApprovalForAllAllowanceList.add(accountApprovalForAllAllowance);
         List<AccountFungibleTokenAllowance> accountFungibleTokenAllowanceList = new ArrayList<>();
-        AccountFungibleTokenAllowance accountFungibleTokenAllowance =
-                new AccountFungibleTokenAllowance(789L, 890L, 901L);
+        AccountFungibleTokenAllowance accountFungibleTokenAllowance = new AccountFungibleTokenAllowance(
+                TokenID.newBuilder().tokenNum(789L).build(),
+                AccountID.newBuilder().accountNum(890L).build(),
+                901L);
         accountFungibleTokenAllowanceList.add(accountFungibleTokenAllowance);
         givenValidAccount(
                 false, cryptoAllowancesList, accountApprovalForAllAllowanceList, accountFungibleTokenAllowanceList);

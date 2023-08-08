@@ -151,7 +151,7 @@ class HalfDiskHashMapTest {
         createSomeData(testType, map, 1111, 10_000, 1);
         checkData(testType, map, 1, 10_000, 1);
         // do a merge
-        map.merge(dataFileReaders -> dataFileReaders, 2);
+        map.merge(dataFileReaders -> dataFileReaders, 2, null, null);
         // check all data after
         checkData(testType, map, 1, 10_000, 1);
     }

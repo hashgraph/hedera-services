@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TopicID;
@@ -165,7 +166,7 @@ class ConsensusDeleteTopicTest extends ConsensusTestBase {
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
-                10L,
+                AccountID.newBuilder().accountNum(10L).build(),
                 false,
                 Bytes.wrap(runningHash),
                 memo,

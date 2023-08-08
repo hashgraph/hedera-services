@@ -31,7 +31,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.IntegerPairAccumulator;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.DisplayName;
@@ -182,9 +182,7 @@ class DefaultIntegerPairAccumulatorTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> accumulator.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),
@@ -216,7 +214,7 @@ class DefaultIntegerPairAccumulatorTest {
         // given
         final IntegerPairAccumulator.Config<Double> config =
                 new IntegerPairAccumulator.Config<>(CATEGORY, NAME, Double.class, AVERAGE);
-        final IntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
+        final DefaultIntegerPairAccumulator<Double> accumulator = new DefaultIntegerPairAccumulator<>(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.chatter.simulator;
 
-import static com.swirlds.common.utility.Units.NANOSECONDS_TO_SECONDS;
+import static com.swirlds.common.units.UnitConstants.NANOSECONDS_TO_SECONDS;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.gossip.chatter.protocol.messages.ChatterEvent;

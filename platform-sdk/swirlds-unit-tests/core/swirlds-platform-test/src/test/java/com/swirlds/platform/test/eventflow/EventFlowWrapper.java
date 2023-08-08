@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.eventflow;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -25,7 +25,7 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.SwirldTransactionSubmitter;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -34,8 +34,8 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.test.consensus.ConsensusUtils;
-import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -116,7 +116,7 @@ public class EventFlowWrapper {
     }
 
     /**
-     * Generates and applies pre-consensus events to {@link PreConsensusEventHandler#preConsensusEvent(EventImpl)} such
+     * Generates and applies pre-consensus events to {@link PreConsensusEventHandler#preconsensusEvent(EventImpl)} such
      * that a minimum number of transactions is achieved, then waits for the events to be processed. Events are only
      * applied if they pass the {@code shouldApplyEvent} check.
      *
@@ -146,7 +146,7 @@ public class EventFlowWrapper {
 
         try {
             completeBeforeTimeout(
-                    () -> eventsToApply.forEach(preConsensusEventHandler::preConsensusEvent),
+                    () -> eventsToApply.forEach(preConsensusEventHandler::preconsensusEvent),
                     Duration.ofSeconds(1),
                     "Thread is blocked trying to add events to the pre-consensus event queue. Unable to complete test.");
         } catch (final InterruptedException e) {

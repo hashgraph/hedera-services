@@ -39,7 +39,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.google.common.primitives.Longs;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -49,13 +49,12 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class CreateOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
@@ -340,12 +339,8 @@ public class CreateOperationSuite extends HapiSuite {
                     final var retResults = function.decodeReturn(resultBytes);
                     String contractIDString = null;
                     if (retResults != null && retResults.size() > 0) {
-                        final var retValHex = ((Address) retResults.get(0)).toString();
-                        final var retVal = Bytes.fromHexString(retValHex).toArray();
-
-                        final var realm = Longs.fromByteArray(Arrays.copyOfRange(retVal, 4, 12));
-                        final var accountNum = Longs.fromByteArray(Arrays.copyOfRange(retVal, 12, 20));
-                        contractIDString = String.format("%d.%d.%d", realm, 0, accountNum);
+                        contractIDString =
+                                ((Address) retResults.get(0)).toString().substring(2);
                     }
                     ctxLog.info("The created contract ID {}", contractIDString);
                     Assertions.assertNotEquals(

@@ -36,7 +36,7 @@ import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.StatEntry;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.function.Consumer;
@@ -76,7 +76,7 @@ class DefaultStatEntryTest {
                 .withInit(init)
                 .withReset(reset)
                 .withResetStatsStringSupplier(getAndReset);
-        final StatEntry statEntry = new DefaultStatEntry(config);
+        final DefaultStatEntry statEntry = new DefaultStatEntry(config);
 
         // then
         assertEquals(CATEGORY, statEntry.getCategory(), "The category was not set correctly in the constructor");
@@ -107,7 +107,8 @@ class DefaultStatEntryTest {
         final Supplier<Object> getter = mock(Supplier.class);
         final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
                 .withBuffered(buffered)
-                .withReset(reset);
+                .withReset(reset)
+                .withHalfLife(metricsConfig.halfLife());
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -124,8 +125,9 @@ class DefaultStatEntryTest {
         // given
         final StatsBuffered buffered = mock(StatsBuffered.class);
         final Supplier<Object> getter = mock(Supplier.class);
-        final StatEntry.Config config =
-                new StatEntry.Config(CATEGORY, NAME, Object.class, getter).withBuffered(buffered);
+        final StatEntry.Config config = new StatEntry.Config(CATEGORY, NAME, Object.class, getter)
+                .withBuffered(buffered)
+                .withHalfLife(metricsConfig.halfLife());
         final StatEntry statEntry = new DefaultStatEntry(config);
 
         // when
@@ -209,9 +211,7 @@ class DefaultStatEntryTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> statEntry.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> statEntry.get(null), "Calling get() with null should throw an IAE");
     }
 
     @SuppressWarnings({"unchecked", "removal"})
@@ -224,9 +224,7 @@ class DefaultStatEntryTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> statEntry.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> statEntry.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> statEntry.get(Metric.ValueType.MIN),

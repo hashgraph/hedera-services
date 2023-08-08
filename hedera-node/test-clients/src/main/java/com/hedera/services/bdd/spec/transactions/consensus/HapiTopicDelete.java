@@ -82,8 +82,7 @@ public class HapiTopicDelete extends HapiTxnOp<HapiTopicDelete> {
 
     @Override
     protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients()
-                .getConsSvcStub(targetNodeFor(spec), useTls, spec.setup().workflowOperations())::deleteTopic;
+        return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::deleteTopic;
     }
 
     @Override

@@ -19,6 +19,8 @@ package com.hedera.node.app.service.contract.impl.state;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 public interface HederaEvmAccount extends MutableAccount {
@@ -45,4 +47,14 @@ public interface HederaEvmAccount extends MutableAccount {
      */
     @NonNull
     ContractID hederaContractId();
+
+    /**
+     * Returns the EVM code for this account. Added here to avoid client code needing to manage a
+     * cache of {@link org.hyperledger.besu.evm.Code} wrappers around raw bytecode returned by
+     * {@link Account#getCode()}.
+     *
+     * @return the EVM code for this account
+     */
+    @NonNull
+    Code getEvmCode();
 }

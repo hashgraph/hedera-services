@@ -243,6 +243,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         return unclaimedStakeRewardStart;
     }
 
+    public void setUnclaimedStakeRewardStart(long unclaimedStakeRewardStart) {
+        this.unclaimedStakeRewardStart = unclaimedStakeRewardStart;
+    }
+
     public void resetUnclaimedStakeRewardStart() {
         unclaimedStakeRewardStart = 0;
     }

@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -28,6 +30,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -37,10 +40,26 @@ import javax.inject.Singleton;
 public class ContractCreateHandler implements TransactionHandler {
     private static final AccountID REMOVE_AUTO_RENEW_ACCOUNT_SENTINEL =
             AccountID.newBuilder().shardNum(0).realmNum(0).accountNum(0).build();
+    private final Provider<TransactionComponent.Factory> provider;
 
     @Inject
-    public ContractCreateHandler() {
-        // Exists for injection
+    public ContractCreateHandler(@NonNull final Provider<TransactionComponent.Factory> provider) {
+        this.provider = requireNonNull(provider);
+    }
+
+    @Override
+    public void handle(@NonNull final HandleContext context) throws HandleException {
+        // Create the transaction-scoped component
+        final var component = provider.get().create(context);
+
+        // Run its in-scope transaction and get the outcome
+        final var outcome = component.contextTransactionProcessor().call();
+
+        // Assemble the appropriate top-level record for the result
+        context.recordBuilder(ContractCreateRecordBuilder.class)
+                .contractCreateResult(outcome.result())
+                .contractID(outcome.recipientIdIfCreated())
+                .status(outcome.status());
     }
 
     @Override
@@ -66,10 +85,5 @@ public class ContractCreateHandler implements TransactionHandler {
                 context.requireKeyOrThrow(autoRenewAccountID, INVALID_AUTORENEW_ACCOUNT);
             }
         }
-    }
-
-    @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        throw new UnsupportedOperationException("Not implemented");
     }
 }

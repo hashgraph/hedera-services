@@ -50,7 +50,7 @@ public class SwirldStateFlowTests extends EventFlowTests {
     @AfterEach
     void cleanup() {
         origSwirldState.getPreHandleTransactions().clear();
-        preConsensusEventHandler.stop();
+        preconsensusEventHandler.stop();
         consensusEventHandler.stop();
     }
 

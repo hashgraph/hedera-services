@@ -110,11 +110,13 @@ class UptimeMetrics {
                         "The number of rounds since the last consensus event created by this node was observed");
         roundsSinceLastConsensusEvent.put(nodeId, metrics.getOrCreate(roundsSinceLastConensusEventConfig));
 
-        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
-                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
-                .withUnit("rounds")
-                .withDescription("The number of rounds since the last judge created by this node was observed");
-        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
+        // Temporarily disabled until we properly detect judges in a round
+        //        final RunningAverageMetric.Config roundsSinceLastJudgeConfig = new RunningAverageMetric.Config(
+        //                        CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId)
+        //                .withUnit("rounds")
+        //                .withDescription("The number of rounds since the last judge created by this node was
+        // observed");
+        //        roundsSinceLastJudge.put(nodeId, metrics.getOrCreate(roundsSinceLastJudgeConfig));
     }
 
     /**
@@ -128,8 +130,9 @@ class UptimeMetrics {
         roundsSinceLastConsensusEvent.remove(nodeId);
         metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_CONSENSUS_EVENT + nodeId));
 
-        roundsSinceLastJudge.remove(nodeId);
-        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
+        // Temporarily disabled until we properly detect judges in a round
+        //        roundsSinceLastJudge.remove(nodeId);
+        //        metrics.remove(new RunningAverageMetric.Config(CATEGORY, ROUNDS_SINCE_LAST_JUDGE + nodeId));
     }
 
     /**

@@ -17,13 +17,13 @@
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.common.UniqueTokenId;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -36,6 +36,8 @@ public class StateBuilderUtil {
     public static final String TOKENS = "TOKENS";
     public static final String TOKEN_RELS = "TOKEN_RELS";
     public static final String NFTS = "NFTS";
+    public static final String STAKING_INFO = "STAKING_INFOS";
+    public static final String NETWORK_REWARDS = "STAKING_NETWORK_REWARDS";
 
     @NonNull
     protected MapReadableKVState.Builder<AccountID, Account> emptyReadableAccountStateBuilder() {
@@ -48,32 +50,32 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNumPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
+    protected MapReadableKVState.Builder<EntityIDPair, TokenRelation> emptyReadableTokenRelsStateBuilder() {
         return MapReadableKVState.builder(TOKEN_RELS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<EntityNumPair, TokenRelation> emptyWritableTokenRelsStateBuilder() {
+    protected MapWritableKVState.Builder<EntityIDPair, TokenRelation> emptyWritableTokenRelsStateBuilder() {
         return MapWritableKVState.builder(TOKEN_RELS);
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<UniqueTokenId, Nft> emptyReadableNftStateBuilder() {
+    protected MapReadableKVState.Builder<NftID, Nft> emptyReadableNftStateBuilder() {
         return MapReadableKVState.builder(NFTS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<UniqueTokenId, Nft> emptyWritableNftStateBuilder() {
+    protected MapWritableKVState.Builder<NftID, Nft> emptyWritableNftStateBuilder() {
         return MapWritableKVState.builder(NFTS);
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<EntityNum, Token> emptyReadableTokenStateBuilder() {
+    protected MapReadableKVState.Builder<TokenID, Token> emptyReadableTokenStateBuilder() {
         return MapReadableKVState.builder(TOKENS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<EntityNum, Token> emptyWritableTokenStateBuilder() {
+    protected MapWritableKVState.Builder<TokenID, Token> emptyWritableTokenStateBuilder() {
         return MapWritableKVState.builder(TOKENS);
     }
 
@@ -88,7 +90,7 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapWritableKVState<EntityNum, Token> emptyWritableTokenState() {
-        return MapWritableKVState.<EntityNum, Token>builder(TOKENS).build();
+    protected MapWritableKVState<TokenID, Token> emptyWritableTokenState() {
+        return MapWritableKVState.<TokenID, Token>builder(TOKENS).build();
     }
 }

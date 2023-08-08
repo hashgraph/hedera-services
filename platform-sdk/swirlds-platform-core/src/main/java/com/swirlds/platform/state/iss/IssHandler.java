@@ -16,10 +16,13 @@
 
 package com.swirlds.platform.state.iss;
 
+import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
+
 import com.swirlds.base.time.Time;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.platform.components.common.output.FatalErrorConsumer;
@@ -31,7 +34,6 @@ import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.dispatch.triggers.error.CatastrophicIssTrigger;
 import com.swirlds.platform.dispatch.triggers.error.SelfIssTrigger;
 import com.swirlds.platform.dispatch.triggers.flow.StateHashValidityTrigger;
-import com.swirlds.platform.system.SystemExitCode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.Objects;
@@ -40,9 +42,6 @@ import java.util.Objects;
  * This class is responsible for handling the response to an ISS event.
  */
 public class IssHandler {
-
-    private static final String ISS_DUMP_CATEGORY = "iss";
-
     private final RateLimiter issDumpRateLimiter;
     private final StateConfig stateConfig;
     private final StateDumpRequestedTrigger stateDumpRequestedDispatcher;
@@ -120,12 +119,12 @@ public class IssHandler {
 
         if (stateConfig.haltOnAnyIss()) {
             // If we are halting then we always should dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
+            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
 
             haltRequestedConsumer.haltRequested("other node observed with ISS");
             halted = true;
         } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
+            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
         }
     }
 
@@ -149,16 +148,16 @@ public class IssHandler {
 
         if (stateConfig.haltOnAnyIss()) {
             // If configured to halt then always do a dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
+            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
             haltRequestedConsumer.haltRequested("self ISS observed");
             halted = true;
         } else if (stateConfig.automatedSelfIssRecovery()) {
             // Automated recovery is a fancy way of saying "turn it off and on again".
             // If we are powering down, always do a state dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, true);
+            stateDumpRequestedDispatcher.dispatch(round, ISS, true);
             fatalErrorConsumer.fatalError("Self ISS", null, SystemExitCode.ISS);
         } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
+            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
         }
     }
 
@@ -232,11 +231,11 @@ public class IssHandler {
 
         if (stateConfig.haltOnAnyIss() || stateConfig.haltOnCatastrophicIss()) {
             // If configured to halt then always do a dump.
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, false);
+            stateDumpRequestedDispatcher.dispatch(round, ISS, false);
             haltRequestedConsumer.haltRequested("catastrophic ISS observed");
             halted = true;
         } else if (stateConfig.dumpStateOnAnyISS() && issDumpRateLimiter.requestAndTrigger()) {
-            stateDumpRequestedDispatcher.dispatch(round, ISS_DUMP_CATEGORY, stateConfig.automatedSelfIssRecovery());
+            stateDumpRequestedDispatcher.dispatch(round, ISS, stateConfig.automatedSelfIssRecovery());
         }
     }
 }

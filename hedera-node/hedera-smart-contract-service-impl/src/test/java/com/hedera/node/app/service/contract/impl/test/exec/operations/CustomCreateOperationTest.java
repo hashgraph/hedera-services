@@ -112,7 +112,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
-        given(worldUpdater.setupCreate(RECIEVER_ADDRESS)).willReturn(NEW_CONTRACT_ADDRESS);
+        given(worldUpdater.setupInternalCreate(RECIEVER_ADDRESS)).willReturn(NEW_CONTRACT_ADDRESS);
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -130,7 +130,7 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
-        given(worldUpdater.setupCreate(RECIEVER_ADDRESS)).willReturn(NEW_CONTRACT_ADDRESS);
+        given(worldUpdater.setupInternalCreate(RECIEVER_ADDRESS)).willReturn(NEW_CONTRACT_ADDRESS);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);

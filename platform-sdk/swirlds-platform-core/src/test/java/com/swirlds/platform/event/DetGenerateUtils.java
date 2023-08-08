@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.event;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
-import static com.swirlds.common.test.RandomUtils.randomSignature;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

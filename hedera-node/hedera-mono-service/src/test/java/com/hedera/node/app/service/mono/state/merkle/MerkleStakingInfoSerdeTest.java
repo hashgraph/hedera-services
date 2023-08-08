@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.service.mono.state.merkle;
 
+import com.hedera.node.app.service.mono.state.migration.StakingNodeInfoStateTranslator;
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class MerkleStakingInfoSerdeTest extends SelfSerializableDataTest<MerkleStakingInfo> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -38,10 +41,14 @@ public class MerkleStakingInfoSerdeTest extends SelfSerializableDataTest<MerkleS
     }
 
     @Override
-    protected MerkleStakingInfo getExpectedObject(final int version, final int testCaseNo) {
+    protected MerkleStakingInfo getExpectedObject(
+            final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
-        return version < MerkleStakingInfo.RELEASE_0371_VERSION
+        final var seededObject = (version < MerkleStakingInfo.RELEASE_0371_VERSION
                 ? propertySource.next0370StakingInfo()
-                : propertySource.next0371StakingInfo();
+                : propertySource.next0371StakingInfo());
+        final var pbjStaking = StakingNodeInfoStateTranslator.stakingInfoFromMerkleStakingInfo(seededObject);
+        final var merkleStakingInfo = StakingNodeInfoStateTranslator.merkleStakingInfoFromStakingNodeInfo(pbjStaking);
+        return merkleStakingInfo;
     }
 }

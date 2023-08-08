@@ -17,11 +17,11 @@
 package com.swirlds.platform.test.eventflow;
 
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.test.TransactionUtils;
+import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.event.source.EventSource;
-import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;

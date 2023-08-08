@@ -17,6 +17,7 @@
 package com.swirlds.common.merkle.iterators.internal;
 
 import com.swirlds.common.merkle.MerkleInternal;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.ObjIntConsumer;
 
 /**
@@ -29,7 +30,8 @@ public class PreOrderedDepthFirstAlgorithm extends PostOrderedDepthFirstAlgorith
      * {@inheritDoc}
      */
     @Override
-    public void pushChildren(final MerkleInternal parent, final ObjIntConsumer<MerkleInternal> pushNode) {
+    public void pushChildren(
+            @NonNull final MerkleInternal parent, @NonNull final ObjIntConsumer<MerkleInternal> pushNode) {
         // Swap the order of the parent and child to switch to pre-ordered
         pop();
         super.pushChildren(parent, pushNode);

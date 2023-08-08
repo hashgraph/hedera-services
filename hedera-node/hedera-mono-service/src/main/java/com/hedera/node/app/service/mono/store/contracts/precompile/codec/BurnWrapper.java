@@ -25,21 +25,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.List;
 
-public record BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos) {
-    private static final long NONFUNGIBLE_BURN_AMOUNT = -1;
+public record BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos, boolean fungibleToken) {
+    private static long NONFUNGIBLE_BURN_AMOUNT = 0L;
     private static final List<Long> FUNGIBLE_BURN_SERIAL_NOS = Collections.emptyList();
 
     @NonNull
     public static BurnWrapper forNonFungible(final TokenID tokenType, final List<Long> serialNos) {
-        return new BurnWrapper(NONFUNGIBLE_BURN_AMOUNT, tokenType, serialNos);
+        return new BurnWrapper(NONFUNGIBLE_BURN_AMOUNT, tokenType, serialNos, false);
     }
 
     @NonNull
     public static BurnWrapper forFungible(final TokenID tokenType, final long amount) {
-        return new BurnWrapper(amount, tokenType, FUNGIBLE_BURN_SERIAL_NOS);
+        return new BurnWrapper(amount, tokenType, FUNGIBLE_BURN_SERIAL_NOS, true);
     }
 
     public TokenType type() {
-        return (amount == NONFUNGIBLE_BURN_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+        return fungibleToken ? FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE;
     }
 }

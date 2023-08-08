@@ -36,16 +36,19 @@ dependencies {
 
     // These should not be implementation() based deps, but this requires refactoring to eliminate.
     implementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    implementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(libs.bundles.logging.impl)
     testImplementation(testLibs.bundles.junit)
     testImplementation(testLibs.bundles.mocking)
     testImplementation(testLibs.bundles.utils)
     testImplementation(project(":swirlds-config-impl"))
+    testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
 
     testImplementation(libs.prometheus.httpserver) {
         exclude("io.prometheus", "simpleclient_tracer_otel")
         exclude("io.prometheus", "simpleclient_tracer_otel_agent")
     }
+    testImplementation(testFixtures(project(":swirlds-config-api")))
 }

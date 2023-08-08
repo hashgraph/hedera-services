@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal.reconnect;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -251,7 +251,7 @@ class RandomVirtualMapReconnectTests extends VirtualMapReconnectTestBase {
 
         // reconnect happening
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);

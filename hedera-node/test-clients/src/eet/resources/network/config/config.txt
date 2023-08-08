@@ -3,12 +3,13 @@
 ###############################################################################################
 swirld, hedera
 app, HederaNode.jar
-address, A, Alice, 1, node_0, 50204, node_0, 50204, 0.0.3
-address, B, Bob, 1, node_1, 50204, node_1, 50204, 0.0.4
-address, C, Carol, 1, node_2, 50204, node_2, 50204, 0.0.5
+address, 0, A, Alice, 1, node_0, 50204, node_0, 50204, 0.0.3
+address, 1, B, Bob, 1, node_1, 50204, node_1, 50204, 0.0.4
+address, 2, C, Carol, 1, node_2, 50204, node_2, 50204, 0.0.5
 #address, D, Dave, 1, 172.20.0.0, 50207, 70.240.247.13, 50207, 0.0.6
 #TLS, on
 
+nextNodeId, 3
 ###############################################################################################
 # The first line can be “swirld, “ and then a name for this swirld (shared world / ledger),
 # where the name is any string without commas, line breaks, or leading/trailing whitespace.

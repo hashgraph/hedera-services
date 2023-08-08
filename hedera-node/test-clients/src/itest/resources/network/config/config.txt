@@ -3,4 +3,6 @@
 ###############################################################################################
 swirld, hedera
 app, HederaNode.jar
-address, A, Alice, 1, node_0, 50204, node_0, 50204, 0.0.3
+address, 0, A, Alice, 1, node_0, 50204, node_0, 50204, 0.0.3
+
+nextNodeId, 1

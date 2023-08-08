@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -73,7 +73,7 @@ public class FileServiceUtils {
             @Nullable final FileID fileId,
             @NonNull final ReadableFileStore fileStore,
             @NonNull final PreHandleContext context,
-            boolean isSpecialFile)
+            boolean isDelete)
             throws PreCheckException {
         requireNonNull(context);
 
@@ -85,7 +85,8 @@ public class FileServiceUtils {
         mustExist(fileMeta, INVALID_FILE_ID);
 
         final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities() && isSpecialFile) {
+        // we cannot delete system files
+        if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities() && isDelete) {
             throw new PreCheckException(INVALID_FILE_ID);
         }
 
@@ -95,24 +96,26 @@ public class FileServiceUtils {
     /**
      * The function validates the keys and adds them to the context.
      *
-     * @param listKeys the list of keys to validate and add to required keys in context
+     * @param file file that will be checked for required keys
+     * @param transactionKeys transaction keys that add to context for required keys.
      * @param context the prehandle context for the transaction.
-     * @param areKeysRequired create allows files to be created without additional keys. Therefore,
-     *     this flag is needed.
-     * @throws PreCheckException
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
-            throws PreCheckException {
-        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-            // @todo('protobuf change needed') change to immutable file response code
-            if (areKeysRequired) {
-                throw new PreCheckException(UNAUTHORIZED);
+            @Nullable final File file,
+            @Nullable final KeyList transactionKeys,
+            @NonNull final PreHandleContext context) {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
+
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                for (final Key key : fileKeyList.keys()) {
+                    context.requireKey(key);
+                }
             }
         }
 
-        if (listKeys != null && listKeys.hasKeys()) {
-            for (final Key key : listKeys.keys()) {
+        if (transactionKeys != null && transactionKeys.hasKeys()) {
+            for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
             }
         }
@@ -133,13 +136,13 @@ public class FileServiceUtils {
      *     fail if it is.
      * @return the file metadata of specific system file id
      */
-    public static @NonNull File verifySystemFile(
+    public static @NonNull File verifyNotSystemFile(
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final WritableFileStoreImpl fileStore,
+            @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId,
             final boolean canBeDeleted) {
 
-        if (fileId.fileNum() > ledgerConfig.numReservedSystemEntities()) {
+        if (fileId.fileNum() <= ledgerConfig.numReservedSystemEntities()) {
             throw new HandleException(INVALID_FILE_ID);
         }
 
@@ -177,10 +180,10 @@ public class FileServiceUtils {
      * @param fileId the file id to validate and to fetch the metadata
      * @return the file metadata of specific system file id
      */
-    public static @NonNull File verifySystemFile(
+    public static @NonNull File verifyNotSystemFile(
             @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final WritableFileStoreImpl fileStore,
+            @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId) {
-        return verifySystemFile(ledgerConfig, fileStore, fileId, false);
+        return verifyNotSystemFile(ledgerConfig, fileStore, fileId, false);
     }
 }

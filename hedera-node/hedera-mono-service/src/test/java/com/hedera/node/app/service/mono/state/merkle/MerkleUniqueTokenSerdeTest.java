@@ -19,10 +19,13 @@ package com.hedera.node.app.service.mono.state.merkle;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0180_VERSION;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0250_VERSION;
 
+import com.hedera.node.app.service.mono.state.migration.NftStateTranslator;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
+import com.hedera.test.serde.EqualityType;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleUniqueToken> {
     public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -38,7 +41,8 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
     }
 
     @Override
-    protected MerkleUniqueToken getExpectedObject(final int version, final int testCaseNo) {
+    protected MerkleUniqueToken getExpectedObject(
+            final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
         final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
         final var seededObject = getExpectedObject(propertySource);
         if (version <= RELEASE_0180_VERSION) {
@@ -49,7 +53,9 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
             seededObject.setNext(NftNumPair.MISSING_NFT_NUM_PAIR);
             return seededObject;
         } else {
-            return seededObject;
+            final var pbjNft = NftStateTranslator.nftFromMerkleUniqueToken(seededObject);
+            final var merkleUniqueToken = NftStateTranslator.merkleUniqueTokenFromNft(pbjNft);
+            return merkleUniqueToken;
         }
     }
 }

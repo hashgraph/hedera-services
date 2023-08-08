@@ -16,9 +16,10 @@
 
 package grpc;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +51,7 @@ class GrpcTransactionTest extends GrpcTestBase {
     private static final QueryWorkflow UNIMPLEMENTED_QUERY = (r, r2) -> fail("The Query should not be called");
 
     private void setUp(@NonNull final IngestWorkflow ingest) {
-        registerService(new GrpcServiceBuilder(SERVICE, ingest, UNIMPLEMENTED_QUERY).transaction(METHOD));
+        registerIngest(METHOD, ingest, UNIMPLEMENTED_QUERY);
         startServer();
     }
 
@@ -121,8 +122,6 @@ class GrpcTransactionTest extends GrpcTestBase {
     @DisplayName("Send a valid transaction to an unknown endpoint and get back UNIMPLEMENTED")
     void sendTransactionToUnknownEndpoint() {
         // Given a client that knows about a method that DOES NOT EXIST on the server
-        registerServiceOnClientOnly(
-                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW).transaction("unknown"));
         setUp(GOOD_INGEST);
 
         // When I call the service but with an unknown method
@@ -136,8 +135,6 @@ class GrpcTransactionTest extends GrpcTestBase {
     @DisplayName("Send a valid transaction to an unknown service")
     void sendTransactionToUnknownService() {
         // Given a client that knows about a service that DOES NOT exist on the server
-        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                .transaction(METHOD));
         setUp(GOOD_INGEST);
 
         // When I call the unknown service
@@ -148,12 +145,10 @@ class GrpcTransactionTest extends GrpcTestBase {
     }
 
     // Interestingly, I thought it should return INVALID_ARGUMENT, and I attempted to update the
-    // NoopMarshaller
-    // to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC library we are
-    // using
-    // DOES NOT special case for StatusRuntimeException thrown in the marshaller, and always returns
-    // UNKNOWN
-    // to the client. So there is really no other response code possible for this case.
+    // NoopMarshaller to return INVALID_ARGUMENT by throwing a StatusRuntimeException. But the gRPC
+    // library we are using DOES NOT special case for StatusRuntimeException thrown in the marshaller,
+    // and always returns UNKNOWN to the client. So there is really no other response code possible
+    // for this case. (FUTURE: This is no longer true, I CAN return INVALID_ARGUMENT if I wanted to)
     @Test
     @DisplayName("Sending way too many bytes leads to UNKNOWN")
     void sendTooMuchData() {

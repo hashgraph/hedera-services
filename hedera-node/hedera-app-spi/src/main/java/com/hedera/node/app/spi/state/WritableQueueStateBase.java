@@ -45,7 +45,7 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
      * {@link #addedElements} list. This index keeps track of where we have read from it.
      */
     private int currentAddedElementIndex = 0;
-    /** An interator from the backing datasource for reading data */
+    /** An iterator from the backing datasource for reading data */
     private Iterator<E> dsIterator = null;
     /** The cached most recent peeked element */
     private E peekedElement = null;
@@ -53,6 +53,16 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String stateKey) {
         this.stateKey = requireNonNull(stateKey);
+    }
+
+    /**
+     * Gets whether this queue has been modified, either by reading elements off the queue, or by adding elements to
+     * the queue.
+     *
+     * @return If the queue has been modified.
+     */
+    public boolean isModified() {
+        return !readElements.isEmpty() || !addedElements.isEmpty();
     }
 
     /**

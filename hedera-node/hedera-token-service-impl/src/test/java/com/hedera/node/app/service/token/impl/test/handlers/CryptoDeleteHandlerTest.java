@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
@@ -47,6 +48,7 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -70,6 +72,9 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
 
     @Mock
     private ExpiryValidator expiryValidator;
+
+    @Mock
+    private CryptoDeleteRecordBuilder recordBuilder;
 
     private Configuration configuration;
 
@@ -261,11 +266,13 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         givenTxnWith(deleteAccountId, transferAccountId);
         given(expiryValidator.isDetached(eq(EntityType.ACCOUNT), anyBoolean(), anyLong()))
                 .willReturn(false);
+        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
         // When an account is deleted, marks the value of the account deleted flag to true
         assertThat(writableStore.get(deleteAccountId).deleted()).isTrue();
+        verify(recordBuilder).addBeneficiaryForDeletedAccount(deleteAccountId, transferAccountId);
     }
 
     @Test

@@ -66,6 +66,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractStackedLedgerUpdaterTest {
+    private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
+    private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
+    private static final Address bAddress = EntityNum.fromLong(54321).toEvmAddress();
+    private static final long aBalance = 1_000L;
+    private static final long aNonce = 1L;
+    private static final long aExpiry = 1_234_567L;
+    private static final long aAutoRenew = 7776000L;
+    private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+    private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
+    private static final byte[] otherRawNonMirrorAddress = unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");
+    private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
+
     @Mock
     private CodeCache codeCache;
 
@@ -86,7 +98,6 @@ class AbstractStackedLedgerUpdaterTest {
 
     private WorldLedgers ledgers;
     private MockLedgerWorldUpdater wrapped;
-
     private AbstractStackedLedgerUpdater<HederaWorldState, Account> subject;
 
     @BeforeEach
@@ -165,6 +176,7 @@ class AbstractStackedLedgerUpdaterTest {
     @SuppressWarnings("unchecked")
     void doesntAdjustBalanceOfProxyTokenAccountWrapper() {
         final var proxyAccountWrapper = mock(UpdateTrackingAccount.class);
+        ledgers.accounts().create(aAccount);
         given(proxyAccountWrapper.wrappedAccountIsTokenProxy()).willReturn(true);
         given(proxyAccountWrapper.getAddress()).willReturn(aAddress);
         subject.getUpdatedAccounts().put(aAddress, proxyAccountWrapper);
@@ -271,16 +283,4 @@ class AbstractStackedLedgerUpdaterTest {
 
         ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
     }
-
-    private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-    private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
-    private static final Address bAddress = EntityNum.fromLong(54321).toEvmAddress();
-    private static final long aBalance = 1_000L;
-    private static final long aNonce = 1L;
-    private static final long aExpiry = 1_234_567L;
-    private static final long aAutoRenew = 7776000L;
-    private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
-    private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
-    private static final byte[] otherRawNonMirrorAddress = unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");
-    private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
 }

@@ -16,9 +16,9 @@
 
 package com.swirlds.common.bloom;
 
-import static com.swirlds.common.utility.Units.BITS_TO_BYTES;
-import static com.swirlds.common.utility.Units.BYTES_PER_INT;
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
+import static com.swirlds.common.units.UnitConstants.BITS_TO_BYTES;
+import static com.swirlds.common.units.UnitConstants.BYTES_PER_INT;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -28,20 +28,18 @@ import java.util.Objects;
 
 /**
  * <p>
- * An implementation of a bloom filter. A bloom filter is a data structure that has similarities to a set. Elements
- * can be added to the bloom filter, but not removed. When checked to see if the bloom filter contains an element,
- * it can respond "no, this element is not present" or "this element may be present". The probability of false
- * positives can be tuned depending on input configuration. A bloom filter can be advantageous when there is a
- * need for a set too large to fit into memory, as its memory footprint is SIGNIFICANTLY smaller than a standard
- * set of the same size.
+ * An implementation of a bloom filter. A bloom filter is a data structure that has similarities to a set. Elements can
+ * be added to the bloom filter, but not removed. When checked to see if the bloom filter contains an element, it can
+ * respond "no, this element is not present" or "this element may be present". The probability of false positives can be
+ * tuned depending on input configuration. A bloom filter can be advantageous when there is a need for a set too large
+ * to fit into memory, as its memory footprint is SIGNIFICANTLY smaller than a standard set of the same size.
  * </p>
  *
  * <p>
  * This data structure is not thread safe. External synchronization required if used in a multi-threaded environment.
  * </p>
  *
- * @param <T>
- * 		the type of the element contained by the bloom filter
+ * @param <T> the type of the element contained by the bloom filter
  */
 public class BloomFilter<T> implements SelfSerializable {
 
@@ -52,8 +50,8 @@ public class BloomFilter<T> implements SelfSerializable {
     }
 
     /**
-     * The maximum array size is JVM dependant, and there is no good way to find out what
-     * that limit is programmatically. This constant is chosen because it seems to work in tested environments.
+     * The maximum array size is JVM dependant, and there is no good way to find out what that limit is
+     * programmatically. This constant is chosen because it seems to work in tested environments.
      */
     public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE / 2;
 
@@ -88,8 +86,8 @@ public class BloomFilter<T> implements SelfSerializable {
     private long filterSizeInBits;
 
     /**
-     * Contains the bloom filter's data. Split into an array of arrays to accommodate very large bloom filters
-     * that do not fit into a single array.
+     * Contains the bloom filter's data. Split into an array of arrays to accommodate very large bloom filters that do
+     * not fit into a single array.
      */
     private int[][] filter;
 
@@ -106,12 +104,9 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Create a new bloom filter.
      *
-     * @param hashCount
-     * 		the number of hashes to use
-     * @param hashProvider
-     * 		an object that performs hashing
-     * @param filterSizeInBits
-     * 		the total size of the bloom filter, in bits
+     * @param hashCount        the number of hashes to use
+     * @param hashProvider     an object that performs hashing
+     * @param filterSizeInBits the total size of the bloom filter, in bits
      */
     public BloomFilter(final int hashCount, final BloomHasher<T> hashProvider, final long filterSizeInBits) {
 
@@ -166,10 +161,8 @@ public class BloomFilter<T> implements SelfSerializable {
      * Add an element to the bloom filter.
      * </p>
      *
-     * @param element
-     * 		the element to add
-     * @throws NullPointerException
-     * 		if the hasher does not support null values but a null element is provided
+     * @param element the element to add
+     * @throws NullPointerException if the hasher does not support null values but a null element is provided
      */
     public void add(final T element) {
         hash(element, hashBuffer);
@@ -180,10 +173,8 @@ public class BloomFilter<T> implements SelfSerializable {
      * Add an element using precomputed hashes. This method is useful for when an element's hashes are already known
      * (for example, if a contains operation was already performed).
      *
-     * @param hashes
-     * 		hashes corresponding ot an element
-     * @throws NullPointerException
-     * 		if a null array of hashes is provided
+     * @param hashes hashes corresponding ot an element
+     * @throws NullPointerException if a null array of hashes is provided
      */
     public void add(final long[] hashes) {
         Objects.requireNonNull(hashes, "null hash array not supported");
@@ -201,8 +192,7 @@ public class BloomFilter<T> implements SelfSerializable {
      * This method uses the internal buffer, and so it is not thread safe.
      * </p>
      *
-     * @param element
-     * 		the element to check and then add
+     * @param element the element to check and then add
      * @return true if the element may have been in the filter before it was added
      */
     public boolean checkAndAdd(final T element) {
@@ -212,8 +202,7 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Check if an element is in the filter, and then add it to the filter.
      *
-     * @param element
-     * 		the element to check and then add
+     * @param element the element to check and then add
      * @return true if the element may have been in the filter before it was added
      */
     public boolean checkAndAdd(final T element, final long[] hashes) {
@@ -229,17 +218,15 @@ public class BloomFilter<T> implements SelfSerializable {
      * </p>
      *
      * <p>
-     * Even though this is a read only operation (from the perspective of the caller), internally this method
-     * uses a shared buffer to store hash data. If multi-threaded read access is needed, each thread must provide
-     * it's own buffer and use ({@link #hash(Object)} or {@link #hash(Object, long[])}) and {@link #contains(long[])}.
+     * Even though this is a read only operation (from the perspective of the caller), internally this method uses a
+     * shared buffer to store hash data. If multi-threaded read access is needed, each thread must provide it's own
+     * buffer and use ({@link #hash(Object)} or {@link #hash(Object, long[])}) and {@link #contains(long[])}.
      * </p>
      *
-     * @param element
-     * 		the element in question
-     * @return if false, then the element is guaranteed not to be contained within the bloom filter. If true, then
-     * 		the element may or may not be contained by the bloom filter.
-     * @throws NullPointerException
-     * 		if the hasher does not support null values but a null element is provided
+     * @param element the element in question
+     * @return if false, then the element is guaranteed not to be contained within the bloom filter. If true, then the
+     * element may or may not be contained by the bloom filter.
+     * @throws NullPointerException if the hasher does not support null values but a null element is provided
      */
     public boolean contains(final T element) {
         return contains(hash(element));
@@ -255,12 +242,10 @@ public class BloomFilter<T> implements SelfSerializable {
      * This method is thread safe as long as not called concurrently with additions to the bloom filter.
      * </p>
      *
-     * @param hashes
-     * 		an array of hashes
-     * @return if false, then the element is guaranteed not to be contained within the bloom filter. If true, then
-     * 		the element may or may not be contained by the bloom filter.
-     * @throws NullPointerException
-     * 		if a null array of hashes is provided
+     * @param hashes an array of hashes
+     * @return if false, then the element is guaranteed not to be contained within the bloom filter. If true, then the
+     * element may or may not be contained by the bloom filter.
+     * @throws NullPointerException if a null array of hashes is provided
      */
     public boolean contains(final long[] hashes) {
         Objects.requireNonNull(hashes, "null hash array not supported");
@@ -282,11 +267,9 @@ public class BloomFilter<T> implements SelfSerializable {
      * This method is thread safe.
      * </p>
      *
-     * @param element
-     * 		the element to be hashed
+     * @param element the element to be hashed
      * @return an array of hashes
-     * @throws NullPointerException
-     * 		if the hasher does not support null values but a null element is provided
+     * @throws NullPointerException if the hasher does not support null values but a null element is provided
      */
     public long[] hash(final T element) {
         final long[] hashes = new long[hashCount];
@@ -303,13 +286,10 @@ public class BloomFilter<T> implements SelfSerializable {
      * This method is thread safe.
      * </p>
      *
-     * @param element
-     * 		the element to be hashed
-     * @param hashes
-     * 		the array where the hashes will be stored
-     * @throws NullPointerException
-     * 		if a null array of hashes is provided,
-     * 		or if the hasher does not support null values but a null element is provided
+     * @param element the element to be hashed
+     * @param hashes  the array where the hashes will be stored
+     * @throws NullPointerException if a null array of hashes is provided, or if the hasher does not support null values
+     *                              but a null element is provided
      */
     public void hash(final T element, final long[] hashes) {
         Objects.requireNonNull(hashes, "null hash array not supported");
@@ -319,8 +299,7 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Given a bit index with respect to the entire bloom filter, return the index of the array that contains the bit
      *
-     * @param index
-     * 		the bit index with respect to the entire bloom filter
+     * @param index the bit index with respect to the entire bloom filter
      * @return the index of the array that contains the bit
      */
     private static int getArrayIndex(final long index) {
@@ -330,8 +309,7 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Given a bit index with respect to the entire bloom filter, return the index of the integer that contains the bit
      *
-     * @param index
-     * 		the bit index with respect to the entire bloom filter
+     * @param index the bit index with respect to the entire bloom filter
      * @return the index of the int that contains the bit
      */
     private static int getIntIndex(final long index) {
@@ -341,8 +319,7 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Given a bit index with respect to the entire bloom filter, return the index of the bit within the integer
      *
-     * @param index
-     * 		the bit index with respect to the entire bloom filter
+     * @param index the bit index with respect to the entire bloom filter
      * @return the index of the bit within the integer
      */
     private static int getBitIndex(final long index) {
@@ -352,8 +329,7 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Check if a bit is set.
      *
-     * @param index
-     * 		the index of the bit
+     * @param index the index of the bit
      * @return true if the bit is set, false if it is unset
      */
     private boolean isBitSet(final long index) {
@@ -365,8 +341,7 @@ public class BloomFilter<T> implements SelfSerializable {
     /**
      * Set a bit in the set.
      *
-     * @param index
-     * 		the index of the bit to set
+     * @param index the index of the bit to set
      */
     private void setBit(final long index) {
         final int[] array = filter[getArrayIndex(index)];

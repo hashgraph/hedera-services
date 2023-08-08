@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -135,9 +135,7 @@ class DefaultDoubleAccumulatorTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> accumulator.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),
@@ -167,7 +165,7 @@ class DefaultDoubleAccumulatorTest {
     void testGetStatBuffered() {
         // given
         final DoubleAccumulator.Config config = new DoubleAccumulator.Config(CATEGORY, NAME);
-        final DoubleAccumulator accumulator = new DefaultDoubleAccumulator(config);
+        final DefaultDoubleAccumulator accumulator = new DefaultDoubleAccumulator(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

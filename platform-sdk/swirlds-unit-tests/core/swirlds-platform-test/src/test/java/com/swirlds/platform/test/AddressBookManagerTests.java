@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.test;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
-import static com.swirlds.common.test.AssertionUtils.completeBeforeTimeout;
-import static com.swirlds.common.test.AssertionUtils.throwBeforeTimeout;
-import static com.swirlds.common.test.RandomAddressBookGenerator.HashStrategy.REAL_HASH;
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.completeBeforeTimeout;
+import static com.swirlds.common.test.fixtures.AssertionUtils.throwBeforeTimeout;
+import static com.swirlds.common.test.fixtures.RandomAddressBookGenerator.HashStrategy.REAL_HASH;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.test.AddressBookStoreTests.setUpdateBehavior;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.address.AddressBookManager;
-import com.swirlds.common.test.RandomAddressBookGenerator;
+import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.platform.state.address.AddressBookManagerImpl;
 import com.swirlds.platform.state.address.AddressBookStore;

@@ -22,7 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.store.UpdateAccountTracker;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
@@ -42,11 +44,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UpdateTrackingAccountTest {
     private static final long newBalance = 200_000L;
+    private static final long newNonce = 2L;
     private static final long initialBalance = 100_000L;
     private static final Address targetAddress = Address.fromHexString("0x000000000000000000000000000000000000066e");
 
     @Mock
     private HederaEvmEntityAccess entityAccess;
+
+    @Mock
+    private UpdateAccountTracker updateAccountTracker;
 
     private AbstractCodeCache codeCache;
 
@@ -83,6 +89,18 @@ class UpdateTrackingAccountTest {
 
         assertEquals(newBalance, subject.getBalance().toLong());
         assertFalse(subject.wrappedAccountIsTokenProxy());
+    }
+
+    @Test
+    void justPropagatesNonceChangeWithTrackingAccounts() {
+        final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
+
+        final var subject = new UpdateTrackingAccount<>(account, updateAccountTracker);
+
+        subject.setNonce(newNonce);
+
+        assertEquals(newNonce, subject.getNonce());
+        verify(updateAccountTracker).setNonce(targetAddress, newNonce);
     }
 
     @Test

@@ -48,6 +48,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -177,8 +178,14 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         if (op.hasDeclineReward()) {
             builder.declineReward(op.declineReward().booleanValue());
         }
-        if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            builder.stakedNumber(getStakedId(op.stakedId().kind().toString(), op.stakedNodeId(), op.stakedAccountId()));
+        if (op.hasStakedAccountId()) {
+            if (AccountID.newBuilder().accountNum(0).build().equals(op.stakedAccountId())) {
+                builder.stakedAccountId((AccountID) null);
+            } else {
+                builder.stakedAccountId(op.stakedAccountId());
+            }
+        } else if (op.hasStakedNodeId()) {
+            builder.stakedNodeId(op.stakedNodeId());
         }
         return builder;
     }
@@ -211,11 +218,11 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate expiry metadata
         final var currentMetadata = new ExpiryMeta(
-                updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountNumber());
+                updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountId());
         final var updateMeta = new ExpiryMeta(
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
-                NA);
+                null);
         context.expiryValidator().resolveUpdateAttempt(currentMetadata, updateMeta);
 
         // If an account is detached and pending removal, it cannot be updated
@@ -266,12 +273,12 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         }
 
         stakingValidator.validateStakedId(
+                context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.hasDeclineReward(),
                 op.stakedId().kind().name(),
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                context,
                 networkInfo);
     }
 }

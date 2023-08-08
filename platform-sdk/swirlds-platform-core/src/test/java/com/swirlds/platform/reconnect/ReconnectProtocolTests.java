@@ -40,6 +40,8 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
 import com.swirlds.test.framework.config.TestConfigBuilder;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -54,7 +56,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Tests for the {@link ReconnectProtocol}
  */
 public class ReconnectProtocolTests {
-
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
     private static final NodeId PEER_ID = new NodeId(1L);
 
     private static Stream<Arguments> initiateParams() {
@@ -130,11 +132,12 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertEquals(params.shouldInitiate, protocol.shouldInitiate(), "unexpected initiation result");
     }
@@ -165,11 +168,12 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 teacherThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertEquals(params.shouldAccept(), protocol.shouldAccept(), "unexpected protocol acceptance");
     }
@@ -188,11 +192,12 @@ public class ReconnectProtocolTests {
                 PEER_ID,
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         // the ReconnectController must be running in order to provide permits
         getStaticThreadManager()
@@ -233,11 +238,12 @@ public class ReconnectProtocolTests {
                 node1,
                 reconnectThrottle,
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
         final SignedState signedState = spy(new RandomSignedStateGenerator().build());
         when(signedState.isComplete()).thenReturn(true);
         final State state = mock(State.class);
@@ -250,11 +256,12 @@ public class ReconnectProtocolTests {
                 node2,
                 reconnectThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         // pretend we have fallen behind
         when(fallenBehindManager.hasFallenBehind()).thenReturn(true);
@@ -289,11 +296,12 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 mock(ReconnectThrottle.class),
                 () -> null,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertTrue(protocol.shouldInitiate());
         protocol.initiateFailed();
@@ -328,11 +336,12 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 reconnectThrottle,
                 () -> reservedSignedState,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertTrue(protocol.shouldAccept());
         protocol.acceptFailed();
@@ -360,11 +369,12 @@ public class ReconnectProtocolTests {
                 new NodeId(0),
                 reconnectThrottle,
                 ReservedSignedState::createNullReservation,
-                100,
+                Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 mock(ReconnectController.class),
                 mock(SignedStateValidator.class),
-                fallenBehindManager);
+                fallenBehindManager,
+                configuration);
 
         assertFalse(protocol.shouldAccept());
     }

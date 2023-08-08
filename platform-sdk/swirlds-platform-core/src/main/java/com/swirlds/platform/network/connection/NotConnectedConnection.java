@@ -106,7 +106,7 @@ public class NotConnectedConnection implements Connection {
      * Throws an {@link UnsupportedOperationException} since this is not a real connection
      */
     @Override
-    public void setTimeout(int timeoutMillis) throws SocketException {
+    public void setTimeout(long timeoutMillis) throws SocketException {
         throw NOT_IMPLEMENTED;
     }
 

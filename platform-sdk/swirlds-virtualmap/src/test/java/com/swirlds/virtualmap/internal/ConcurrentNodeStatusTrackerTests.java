@@ -16,7 +16,7 @@
 
 package com.swirlds.virtualmap.internal;
 
-import static com.swirlds.common.test.AssertionUtils.assertEventuallyEquals;
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.KNOWN;
 import static com.swirlds.virtualmap.internal.ConcurrentNodeStatusTracker.Status.NOT_KNOWN;

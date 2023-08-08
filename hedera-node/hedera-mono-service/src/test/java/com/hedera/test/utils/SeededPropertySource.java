@@ -49,6 +49,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
+import com.hedera.node.app.service.mono.state.submerkle.ContractNonceInfo;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
@@ -114,7 +115,7 @@ public class SeededPropertySource {
         // call nextStateChanges(), even though state changes are not part of EvmFnResult anymore,
         // in order to advance SEEDED_RANDOM and get correct values for subsequent fields
         nextStateChanges(2, 5);
-        return new EvmFnResult(
+        final var evmResult = new EvmFnResult(
                 contractId,
                 result,
                 error,
@@ -122,11 +123,14 @@ public class SeededPropertySource {
                 gasUsed,
                 logs,
                 createdContractIds,
+                List.of(),
                 evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
                 nextBytes(128),
                 nextEntityId());
+        evmResult.setContractNonces(nextContractNonces(2));
+        return evmResult;
     }
 
     public MerkleTopic nextTopic() {
@@ -160,7 +164,7 @@ public class SeededPropertySource {
                 nextString(48),
                 nextBoolean(),
                 nextBoolean(),
-                nextEntityId(),
+                nextZeroShardZeroRealmEntityId(),
                 nextInt());
         seeded.setMemo(nextString(36));
         seeded.setDeleted(nextBoolean());
@@ -179,6 +183,7 @@ public class SeededPropertySource {
         seeded.setFeeScheduleKey(nextNullableKey());
         seeded.setPauseKey(nextNullableKey());
         seeded.setKey(nextNum());
+        seeded.setAutoRenewAccount(nextZeroShardZeroRealmEntityId());
         return seeded;
     }
 
@@ -790,6 +795,7 @@ public class SeededPropertySource {
                 gasUsed,
                 List.of(),
                 List.of(),
+                List.of(),
                 evmAddress,
                 nextUnsignedLong(),
                 nextUnsignedLong(),
@@ -987,6 +993,10 @@ public class SeededPropertySource {
         return IntStream.range(0, n).mapToObj(i -> nextEntityId()).toList();
     }
 
+    public List<ContractNonceInfo> nextContractNonces(final int n) {
+        return IntStream.range(0, n).mapToObj(i -> nextContractNonce()).toList();
+    }
+
     public long[] nextUnsignedLongs(final int n) {
         return IntStream.range(0, n).mapToLong(i -> nextUnsignedLong()).toArray();
     }
@@ -1099,6 +1109,21 @@ public class SeededPropertySource {
 
     public EntityId nextEntityId() {
         return new EntityId(nextUnsignedLong(), nextUnsignedLong(), nextUnsignedLong());
+    }
+
+    public ContractNonceInfo nextContractNonce() {
+        return new ContractNonceInfo(nextEntityId(), nextUnsignedLong());
+    }
+
+    /**
+     * Return an entity id with the default shard and realm of {@code 0} so that when using
+     * PBJ converters inside {@link com.hedera.test.serde.SelfSerializableDataTest} object
+     * providers, we don't lose information.
+     *
+     * @return an entity id in the default shard and realm
+     */
+    public EntityId nextZeroShardZeroRealmEntityId() {
+        return new EntityId(0, 0, nextUnsignedLong());
     }
 
     public RichInstant nextRichInstant() {

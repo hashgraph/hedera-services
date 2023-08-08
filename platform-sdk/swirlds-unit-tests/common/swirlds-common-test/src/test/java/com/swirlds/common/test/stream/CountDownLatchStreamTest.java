@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.swirlds.common.test.fixtures.stream.CountDownLatchStream;
 import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.Test;
 

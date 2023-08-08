@@ -31,6 +31,7 @@ import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermission
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -87,6 +88,9 @@ class ConfigCallbacksTest {
     private PropertySource properties;
 
     @Mock
+    private MultiplierSources multiplierSources;
+
+    @Mock
     private SigImpactHistorian sigImpactHistorian;
 
     @Mock
@@ -110,22 +114,24 @@ class ConfigCallbacksTest {
                 () -> networkCtx,
                 () -> MerkleMapLike.from(stakingInfos),
                 sigImpactHistorian,
-                fileNumbers);
+                fileNumbers,
+                multiplierSources);
     }
 
     @Test
     void propertiesCbAsExpected() {
         final var numNodes = 10;
-        final var hbarFloat = 50_000_000_000L * 100_000_000L;
+        final var totalHbarSupply = 50_000_000_000L * 100_000_000L;
         final var expiryResourceLoc = "something.json";
         givenWellKnownStakingInfos();
-        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(hbarFloat);
+        given(properties.getLongProperty(LEDGER_TOTAL_TINY_BAR_FLOAT)).willReturn(totalHbarSupply);
         given(properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE)).willReturn(expiryResourceLoc);
         given(properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY)).willReturn(minReqUnitOfWork);
         given(addressBook.getSize()).willReturn(numNodes);
         given(dynamicProps.knownBlockValues()).willReturn(blockValues);
         given(dynamicProps.nodeMaxMinStakeRatios()).willReturn(Map.of(0L, 2L, 1L, 8L));
-        final var overrideMaxStake = hbarFloat / numNodes;
+        final var historicalMaxStake = totalHbarSupply / numNodes;
+        final var overrideMaxStake = totalHbarSupply / numNodes * 11 / 10;
         final var config = ServicesConfigurationList.getDefaultInstance();
 
         // when:
@@ -137,13 +143,14 @@ class ConfigCallbacksTest {
         verify(dynamicProps).reload();
         verify(functionalityThrottling, times(3)).applyGasConfig();
         verify(networkCtx).renumberBlocksToMatch(blockValues);
+        verify(multiplierSources).resetExpectations();
         // and:
         final var updatedNode0Info = stakingInfos.get(EntityNum.fromLong(0L));
-        assertStakes(updatedNode0Info, overrideMaxStake / 2, overrideMaxStake);
+        assertStakes(updatedNode0Info, historicalMaxStake / 2, overrideMaxStake);
         final var updatedNode1Info = stakingInfos.get(EntityNum.fromLong(1L));
-        assertStakes(updatedNode1Info, overrideMaxStake / 8, overrideMaxStake);
+        assertStakes(updatedNode1Info, historicalMaxStake / 8, overrideMaxStake);
         final var updatedNode2Info = stakingInfos.get(EntityNum.fromLong(2L));
-        assertStakes(updatedNode2Info, overrideMaxStake / 4, overrideMaxStake);
+        assertStakes(updatedNode2Info, historicalMaxStake / 4, overrideMaxStake);
     }
 
     @Test

@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -30,6 +31,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,12 +48,13 @@ public class EnsureAliasesStep implements TransferStep {
     // token transfer list
     private final Map<Bytes, AccountID> tokenTransferResolutions = new HashMap<>();
 
-    public EnsureAliasesStep(final CryptoTransferTransactionBody op) {
-        this.op = op;
+    public EnsureAliasesStep(@NonNull final CryptoTransferTransactionBody op) {
+        this.op = requireNonNull(op);
     }
 
     @Override
-    public void doIn(final TransferContext transferContext) {
+    public void doIn(@NonNull final TransferContext transferContext) {
+        requireNonNull(transferContext);
         final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
         final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
         // resolve hbar adjusts and add all alias resolutions to resolutions map in TransferContext
@@ -69,7 +72,7 @@ public class EnsureAliasesStep implements TransferStep {
      * @param transferContext the transfer context
      */
     private void resolveTokenAdjusts(
-            final List<TokenTransferList> tokenTransfers, final TransferContext transferContext) {
+            @NonNull final List<TokenTransferList> tokenTransfers, @NonNull final TransferContext transferContext) {
         for (final var tt : tokenTransfers) {
             tokenTransferResolutions.clear();
             for (final var adjust : tt.transfersOrElse(emptyList())) {
@@ -87,7 +90,8 @@ public class EnsureAliasesStep implements TransferStep {
         }
     }
 
-    private AccountID resolveForFungibleToken(final AccountAmount adjust, final TransferContext transferContext) {
+    private AccountID resolveForFungibleToken(
+            @NonNull final AccountAmount adjust, @NonNull final TransferContext transferContext) {
         final var accountId = adjust.accountIDOrThrow();
         validateFalse(tokenTransferResolutions.containsKey(accountId.alias()), INVALID_ALIAS_KEY);
         final var account = transferContext.getFromAlias(accountId);
@@ -116,7 +120,8 @@ public class EnsureAliasesStep implements TransferStep {
      * @param hbarTransfers the hbar transfers to resolve
      * @param transferContext the transfer context
      */
-    private void resolveHbarAdjusts(final List<AccountAmount> hbarTransfers, final TransferContext transferContext) {
+    private void resolveHbarAdjusts(
+            @NonNull final List<AccountAmount> hbarTransfers, @NonNull final TransferContext transferContext) {
         for (final var aa : hbarTransfers) {
             final var accountId = aa.accountIDOrThrow();
             if (isAlias(accountId)) {
@@ -143,7 +148,7 @@ public class EnsureAliasesStep implements TransferStep {
      * @param nftAdjust the NFT transfer to resolve
      * @param transferContext the transfer context
      */
-    private void resolveForNft(final NftTransfer nftAdjust, TransferContext transferContext) {
+    private void resolveForNft(@NonNull final NftTransfer nftAdjust, @NonNull final TransferContext transferContext) {
         final var receiverId = nftAdjust.receiverAccountIDOrThrow();
         final var senderId = nftAdjust.senderAccountIDOrThrow();
         // sender can't be a missing accountId. It will fail if the alias doesn't exist
@@ -170,7 +175,8 @@ public class EnsureAliasesStep implements TransferStep {
      * @param accountID the accountID to check
      * @return true if the accountID is an alias, false otherwise
      */
-    public static boolean isAlias(AccountID accountID) {
+    public static boolean isAlias(@NonNull AccountID accountID) {
+        requireNonNull(accountID);
         return accountID.hasAlias() && (!accountID.hasAccountNum() || accountID.accountNum() == 0L);
     }
 }

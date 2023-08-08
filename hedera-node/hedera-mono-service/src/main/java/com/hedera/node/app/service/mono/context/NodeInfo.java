@@ -173,7 +173,8 @@ public class NodeInfo {
         isZeroStake = new boolean[numberOfNodes];
 
         for (int i = 0; i < numberOfNodes; i++) {
-            final var address = staticBook.getAddress(i);
+            final var nodeId = staticBook.getNodeId(i);
+            final var address = staticBook.getAddress(nodeId);
             isZeroStake[i] = address.getWeight() <= 0;
             try {
                 accounts[i] = parseAccount(address.getMemo());

@@ -48,6 +48,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -78,6 +79,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.jetbrains.annotations.NotNull;
 
+@HapiTestSuite
 public class TokenInfoHTSSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenInfoHTSSuite.class);
@@ -764,7 +766,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
         return TokenNftInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
                 .setNftID(NftID.newBuilder()
-                        .setTokenID(tokenId)
+                        .setTokenId(tokenId)
                         .setSerialNumber(1L)
                         .build())
                 .setAccountID(ownerId)

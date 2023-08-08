@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REMAINING_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.isSameResult;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,7 +102,11 @@ class CustomMessageCallProcessorTest {
     @BeforeEach
     void setUp() {
         subject = new CustomMessageCallProcessor(
-                evm, featureFlags, registry, addressChecks, Map.of(TestHelpers.HTS_PRECOMPILE_ADDRESS, htsPrecompile));
+                evm,
+                featureFlags,
+                registry,
+                addressChecks,
+                Map.of(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS, htsPrecompile));
     }
 
     @Test
@@ -111,7 +117,7 @@ class CustomMessageCallProcessorTest {
 
     @Test
     void hederaPrecompilesNotYetSupported() {
-        givenCallWithCode(TestHelpers.HTS_PRECOMPILE_ADDRESS);
+        givenCallWithCode(TestHelpers.HTS_SYSTEM_CONTRACT_ADDRESS);
         assertThrows(UnsupportedOperationException.class, () -> subject.start(frame, operationTracer));
     }
 
@@ -167,7 +173,7 @@ class CustomMessageCallProcessorTest {
 
         subject.start(frame, operationTracer);
 
-        verifyHalt(ExceptionalHaltReason.INSUFFICIENT_GAS, false);
+        verifyHalt(INSUFFICIENT_GAS, false);
     }
 
     @Test
@@ -222,6 +228,21 @@ class CustomMessageCallProcessorTest {
         subject.start(frame, operationTracer);
 
         verify(frame).setState(MessageFrame.State.CODE_EXECUTING);
+    }
+
+    @Test
+    void tracesFailedCreateResultAfterHaltedLazyCreation() {
+        givenWellKnownUserSpaceCall();
+        given(frame.getRemainingGas()).willReturn(REMAINING_GAS);
+        given(frame.getValue()).willReturn(Wei.ONE);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(proxyWorldUpdater.tryLazyCreation(RECEIVER_ADDRESS, frame)).willReturn(Optional.of(INSUFFICIENT_GAS));
+
+        subject.start(frame, operationTracer);
+
+        verify(frame).decrementRemainingGas(REMAINING_GAS);
+        verify(frame).setState(MessageFrame.State.EXCEPTIONAL_HALT);
+        verify(operationTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
     }
 
     private void givenHaltableFrame(@NonNull final AtomicBoolean isHalted) {

@@ -21,12 +21,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetrics;
 import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.stats.cycle.AccumulatedCycleMetrics;
 import com.swirlds.platform.stats.cycle.CycleDefinition;
@@ -65,7 +65,11 @@ class CycleMetricsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
         assertEquals(0.0, accumulatedCycleMetrics.getAvgCycleTime(), EPSILON, "avgTime should be 0");
@@ -118,7 +122,11 @@ class CycleMetricsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
         assertEquals(0.0, accumulatedCycleMetrics.getAvgCycleTime(), EPSILON, "avgTime should be 0");
@@ -156,7 +164,11 @@ class CycleMetricsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final AccumulatedCycleMetrics accumulatedCycleMetrics = new AccumulatedCycleMetrics(metrics, definition);
         final CycleTracker tracker = new CycleTracker(time, accumulatedCycleMetrics);
         assertEquals(0.0, accumulatedCycleMetrics.getAvgCycleTime(), EPSILON, "avgTime should be 0");
@@ -196,7 +208,11 @@ class CycleMetricsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final CycleTracker tracker = new CycleTracker(time, new AccumulatedCycleMetrics(metrics, definition));
         tracker.startCycle();
         Assertions.assertThrows(

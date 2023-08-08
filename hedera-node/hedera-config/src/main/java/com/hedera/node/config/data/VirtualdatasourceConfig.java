@@ -16,8 +16,10 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("virtualdatasource")
-public record VirtualdatasourceConfig(@ConfigProperty(defaultValue = "false") boolean jasperdbToMerkledb) {}
+public record VirtualdatasourceConfig(
+        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean jasperdbToMerkledb) {}

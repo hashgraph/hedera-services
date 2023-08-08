@@ -17,12 +17,16 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.HapiSpec.*;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -42,6 +46,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -56,6 +61,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -64,6 +70,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddressArray;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
@@ -76,6 +83,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmountAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
@@ -147,6 +155,7 @@ import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSu
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIG_NAME;
 import static com.hedera.services.bdd.suites.contract.precompile.LazyCreateThroughPrecompileSuite.FIRST_META;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
@@ -178,6 +187,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.hyperledger.besu.datatypes.Address.contractAddress;
+import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -187,6 +198,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -212,6 +224,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
@@ -225,23 +238,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class LeakyContractTestsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
     public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
+    public static final String FALSE = "false";
+    public static final int GAS_TO_OFFER = 1_000_000;
+    private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
+    private static final String PAYER = "payer";
+    private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
-    public static final String FALSE = "false";
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
     private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     private static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
     private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
-    public static final int GAS_TO_OFFER = 1_000_000;
+    private static final String HEDERA_TXN_EIP2930_ENABLED = "hedera.transaction.eip2930.enabled";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -283,7 +300,60 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 transferFailsWithIncorrectAmounts(),
                 transferDontWorkWithoutTopLevelSignatures(),
                 transferErc20TokenFromContractWithApproval(),
-                transferErc20TokenFromErc721TokenFails());
+                transferErc20TokenFromErc721TokenFails(),
+                contractCreateNoncesExternalizationHappyPath(),
+                contractCreateFollowedByContractCallNoncesExternalization(),
+                shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled(),
+                transferHbarsViaEip2390TxSuccessfully());
+    }
+
+    private HapiSpec transferHbarsViaEip2390TxSuccessfully() {
+        final String RECEIVER = "RECEIVER";
+        final String aliasBalanceSnapshot = "aliasBalance";
+        return propertyPreservingHapiSpec("transferHbarsViaEip2390TxSuccessfully")
+                .preserving(HEDERA_TXN_EIP2930_ENABLED)
+                .given(
+                        overriding(HEDERA_TXN_EIP2930_ENABLED, "true"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RECEIVER).balance(0L),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                        getTxnRecord("autoAccount").andAllChildRecords())
+                .when(
+                        balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
+                                .accountIsAlias(),
+                        ethereumCryptoTransfer(RECEIVER, FIVE_HBARS)
+                                .type(EthTxData.EthTransactionType.EIP2930)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .gasPrice(0L)
+                                .gasLimit(2_000_000L)
+                                .via("payTxn")
+                                .hasKnownStatus(SUCCESS))
+                .then(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord("payTxn")
+                                        .logged()
+                                        .hasPriority(recordWith()
+                                                .status(SUCCESS)
+                                                .contractCallResult(resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry()
+                                                                .getAccountID(spec.registry()
+                                                                        .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias()
+                                                                        .toStringUtf8())))
+                                                .ethereumHash(ByteString.copyFrom(
+                                                        spec.registry().getBytes(ETH_HASH_KEY)))))),
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                .has(accountWith().nonce(1L)),
+                        getAccountBalance(RECEIVER).hasTinyBars(FIVE_HBARS),
+                        getAutoCreatedAccountBalance(SECP_256K1_SOURCE_KEY)
+                                .hasTinyBars(changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
     private HapiSpec transferErc20TokenFromErc721TokenFails() {
@@ -1287,7 +1357,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         sourcing(() -> contractCall(
                                         createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
                                 .payingWith(longLivedPayer)))
-                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + DEFAULT_MAX_AUTO_RENEW_PERIOD));
+                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
@@ -1299,7 +1369,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when()
                 .then(
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(101L)
+                                .gas(21_000L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
@@ -1490,10 +1560,10 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var adminKey = "adminKey";
         final var entityMemo = "JUST DO IT";
         final var customAutoRenew = 7776001L;
-        final AtomicReference<String> firstLiteralId = new AtomicReference<>();
-        final AtomicReference<String> secondLiteralId = new AtomicReference<>();
-        final AtomicReference<ByteString> expectedFirstAddress = new AtomicReference<>();
-        final AtomicReference<ByteString> expectedSecondAddress = new AtomicReference<>();
+        final AtomicReference<String> childLiteralId = new AtomicReference<>();
+        final AtomicReference<String> grandChildLiteralId = new AtomicReference<>();
+        final AtomicReference<ByteString> expectedChildAddress = new AtomicReference<>();
+        final AtomicReference<ByteString> expectedParentAddress = new AtomicReference<>();
 
         return defaultHapiSpec("PropagatesNestedCreations")
                 .given(
@@ -1509,27 +1579,54 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .then(
                         withOpContext((spec, opLog) -> {
                             final var parentNum = spec.registry().getContractId(contract);
-                            final var firstId = ContractID.newBuilder()
+
+                            final var expectedParentContractAddress = asHeadlongAddress(
+                                            asEvmAddress(parentNum.getContractNum()))
+                                    .toString()
+                                    .toLowerCase()
+                                    .substring(2);
+                            expectedParentAddress.set(
+                                    ByteString.copyFrom(CommonUtils.unhex(expectedParentContractAddress)));
+
+                            final var expectedChildContractAddress =
+                                    contractAddress(fromHexString(expectedParentContractAddress), 1L);
+                            final var expectedGrandChildContractAddress =
+                                    contractAddress(expectedChildContractAddress, 1L);
+
+                            final var childId = ContractID.newBuilder()
                                     .setContractNum(parentNum.getContractNum() + 1L)
                                     .build();
-                            firstLiteralId.set(HapiPropertySource.asContractString(firstId));
-                            expectedFirstAddress.set(ByteString.copyFrom(asSolidityAddress(firstId)));
-                            final var secondId = ContractID.newBuilder()
+                            childLiteralId.set(HapiPropertySource.asContractString(childId));
+                            expectedChildAddress.set(ByteString.copyFrom(expectedChildContractAddress.toArray()));
+                            final var grandChildId = ContractID.newBuilder()
                                     .setContractNum(parentNum.getContractNum() + 2L)
                                     .build();
-                            secondLiteralId.set(HapiPropertySource.asContractString(secondId));
-                            expectedSecondAddress.set(ByteString.copyFrom(asSolidityAddress(secondId)));
+                            grandChildLiteralId.set(HapiPropertySource.asContractString(grandChildId));
+
+                            final var parentContractInfo = getContractInfo(contract)
+                                    .has(contractWith().addressOrAlias(expectedParentContractAddress));
+                            final var childContractInfo = getContractInfo(childLiteralId.get())
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedChildContractAddress.toUnprefixedHexString()));
+                            final var grandChildContractInfo = getContractInfo(grandChildLiteralId.get())
+                                    .has(contractWith()
+                                            .addressOrAlias(expectedGrandChildContractAddress.toUnprefixedHexString()))
+                                    .logged();
+
+                            allRunFor(spec, parentContractInfo, childContractInfo, grandChildContractInfo);
                         }),
                         sourcing(() -> childRecordsCheck(
                                 call,
                                 SUCCESS,
                                 recordWith()
-                                        .contractCreateResult(resultWith().evmAddress(expectedFirstAddress.get()))
+                                        .contractCreateResult(
+                                                resultWith().create1EvmAddress(expectedParentAddress.get(), 1L))
                                         .status(SUCCESS),
                                 recordWith()
-                                        .contractCreateResult(resultWith().evmAddress(expectedSecondAddress.get()))
+                                        .contractCreateResult(
+                                                resultWith().create1EvmAddress(expectedChildAddress.get(), 1L))
                                         .status(SUCCESS))),
-                        sourcing(() -> getContractInfo(firstLiteralId.get())
+                        sourcing(() -> getContractInfo(childLiteralId.get())
                                 .has(contractWith().propertiesInheritedFrom(contract))));
     }
 
@@ -2009,7 +2106,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
                         sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                String.valueOf(whitelistedCalleeMirrorNum.get()))),
                         sourcing(() -> contractCall(
                                         PRETEND_PAIR,
                                         CALL_TO,
@@ -2068,7 +2166,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
                 .when(
                         sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS, "" + whitelistedCalleeMirrorNum.get())),
+                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
+                                String.valueOf(whitelistedCalleeMirrorNum.get()))),
                         sourcing(() -> contractCall(
                                         PRETEND_PAIR,
                                         CALL_TO,
@@ -2099,6 +2198,177 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         // Instead of the callee
                         getAccountDetails(DELEGATE_ERC_CALLEE)
                                 .has(accountDetailsWith().tokenAllowancesCount(0)));
+    }
+
+    private HapiSpec contractCreateNoncesExternalizationHappyPath() {
+        final var contract = "NoncesExternalization";
+        final var contractCreateTxn = "contractCreateTxn";
+
+        return propertyPreservingHapiSpec("ContractCreateNoncesExternalizationHappyPath")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(PAYER).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(contractCreateTxn))
+                .when()
+                .then(withOpContext((spec, opLog) -> {
+                    final var opContractTxnRecord = getTxnRecord(contractCreateTxn);
+
+                    allRunFor(spec, opContractTxnRecord);
+
+                    final var parentContractId = spec.registry().getContractId(contract);
+                    final var childContracts = opContractTxnRecord
+                            .getResponse()
+                            .getTransactionGetRecord()
+                            .getTransactionRecord()
+                            .getContractCreateResult()
+                            .getContractNoncesList()
+                            .stream()
+                            .filter(contractNonceInfo ->
+                                    !contractNonceInfo.getContractId().equals(parentContractId))
+                            .toList();
+
+                    // Asserts nonce of parent contract
+                    HapiGetTxnRecord opAssertParent = getTxnRecord(contractCreateTxn)
+                            .hasPriority(recordWith()
+                                    .contractCreateResult(resultWith().contractWithNonce(parentContractId, 4L)));
+                    allRunFor(spec, opAssertParent);
+
+                    // Asserts nonces of all newly deployed contracts through the constructor
+                    for (final var contractNonceInfo : childContracts) {
+                        HapiGetTxnRecord op = getTxnRecord(contractCreateTxn)
+                                .hasPriority(recordWith()
+                                        .contractCreateResult(
+                                                resultWith().contractWithNonce(contractNonceInfo.getContractId(), 1L)));
+                        allRunFor(spec, op);
+                    }
+                }));
+    }
+
+    private HapiSpec contractCreateFollowedByContractCallNoncesExternalization() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+
+        /* SMART CONTRACT FUNCTION NAMES */
+        final var deployParentContractFn = "deployParentContract";
+        final var deployChildFromParentContractFn = "deployChildFromParentContract";
+        final var deployChildAndRevertFromParentContractFn = "deployChildAndRevertFromParentContract";
+
+        /* VIA TRANSACTION NAMES */
+        final var contractCreateTx = "contractCreateTx";
+        final var deployContractTx = "deployContractTx";
+        final var committedInnerCreationTx = "committedInnerCreationTx";
+        final var revertedInnerCreationTx = "revertedInnerCreationTx";
+
+        return propertyPreservingHapiSpec("contractCreateFollowedByContractCallNoncesExternalization")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "true"),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).via(contractCreateTx))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(contract, deployParentContractFn)
+                                .payingWith(payer)
+                                .via(deployContractTx)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(withOpContext((spec, opLog) -> {
+                    /** 1. Retrieves sorted list of all contracts deployed in the constructor (parent contracts) */
+                    final var opCreateTxRecord = getTxnRecord(contractCreateTx);
+                    allRunFor(spec, opCreateTxRecord);
+
+                    final var parentContractsList = opCreateTxRecord
+                            .getResponse()
+                            .getTransactionGetRecord()
+                            .getTransactionRecord()
+                            .getContractCreateResult()
+                            .getContractNoncesList()
+                            .stream()
+                            .filter(contractNonceInfo -> !contractNonceInfo
+                                    .getContractId()
+                                    .equals(spec.registry().getContractId(contract)))
+                            .toList();
+
+                    /** 2. Asserts main contract (NoncesExternalization) nonce is 5 */
+                    final var opAssertMain = getTxnRecord(deployContractTx)
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(spec.registry().getContractId(contract), 5L)));
+                    allRunFor(spec, opAssertMain);
+
+                    /**
+                     * 3. Deploys child from the first parent contract deployed in the constructor (index 0).
+                     * Asserts parent's nonce is 2.
+                     */
+                    final var deployChild = contractCall(contract, deployChildFromParentContractFn, BigInteger.ZERO)
+                            .gas(GAS_TO_OFFER)
+                            .via(committedInnerCreationTx);
+                    HapiGetTxnRecord deployChildTxnRecord = getTxnRecord(committedInnerCreationTx);
+                    allRunFor(spec, deployChild, deployChildTxnRecord);
+
+                    /* Retrieves contractId of the first deployed contract in the constructor - index 0 */
+                    final var firstParentContractId = parentContractsList.get(0).getContractId();
+                    spec.registry().saveContractId("firstParentContractId", firstParentContractId);
+
+                    HapiGetTxnRecord opFirstParentNonce = getTxnRecord(committedInnerCreationTx)
+                            .andAllChildRecords()
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(
+                                                    spec.registry().getContractId("firstParentContractId"), 2L)));
+                    allRunFor(spec, opFirstParentNonce);
+
+                    /** 4. Tries to deploy child from parent and reverts. Asserts contract_nonces entries are null. */
+                    final var deployChildAndRevert = contractCall(
+                                    contract, deployChildAndRevertFromParentContractFn, BigInteger.ONE)
+                            .gas(GAS_TO_OFFER)
+                            .via(revertedInnerCreationTx);
+                    final var deployChildAndRevertTxnRecord = getTxnRecord(revertedInnerCreationTx);
+                    allRunFor(spec, deployChildAndRevert, deployChildAndRevertTxnRecord);
+
+                    /* Retrieves contractId of the second deployed contract in the constructor - index 1 */
+                    final var secondParentContractId =
+                            parentContractsList.get(1).getContractId();
+                    spec.registry().saveContractId("secondParentContractId", secondParentContractId);
+
+                    HapiGetTxnRecord opSecondParentNonce = getTxnRecord(revertedInnerCreationTx)
+                            .andAllChildRecords()
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCallResult(resultWith()
+                                            .contractWithNonce(
+                                                    spec.registry().getContractId("secondParentContractId"), null)));
+                    allRunFor(spec, opSecondParentNonce);
+                }));
+    }
+
+    private HapiSpec shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
+        final var contract = "NoncesExternalization";
+        final var payer = "payer";
+
+        return propertyPreservingHapiSpec("shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled")
+                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
+                .given(
+                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),
+                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract).logged().via("txn"),
+                        withOpContext((spec, opLog) -> {
+                            HapiGetTxnRecord op = getTxnRecord("txn")
+                                    .logged()
+                                    .hasPriority(recordWith()
+                                            .contractCreateResult(resultWith()
+                                                    .contractWithNonce(
+                                                            spec.registry().getContractId(contract), null)));
+                            allRunFor(spec, op);
+                        }))
+                .when()
+                .then();
     }
 
     @Override

@@ -68,4 +68,7 @@ if [[ "${CI_WAIT_FOR_PEERS}" = true && -n "${NODE_ID}" ]]; then
 fi
 
 java -cp 'data/lib/*' -Dflag=1 -Dfile.encoding='utf-8' \
+  --add-opens java.base/jdk.internal.misc=ALL-UNNAMED \
+  --add-opens java.base/java.nio=ALL-UNNAMED \
+  -Dio.netty.tryReflectionSetAccessible=true \
   com.swirlds.platform.Browser

@@ -21,7 +21,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 
-public class AccountAmountUtils {
+public final class AccountAmountUtils {
+    private AccountAmountUtils() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     public static AccountAmount aaWith(AccountID account, long amount) {
         return AccountAmount.newBuilder().accountID(account).amount(amount).build();
     }
@@ -43,6 +47,15 @@ public class AccountAmountUtils {
                 .senderAccountID(from)
                 .receiverAccountID(to)
                 .serialNumber(serialNo)
+                .build();
+    }
+
+    public static NftTransfer nftTransferWithAllowance(AccountID from, AccountID to, long serialNo) {
+        return NftTransfer.newBuilder()
+                .senderAccountID(from)
+                .receiverAccountID(to)
+                .serialNumber(serialNo)
+                .isApproval(true)
                 .build();
     }
 

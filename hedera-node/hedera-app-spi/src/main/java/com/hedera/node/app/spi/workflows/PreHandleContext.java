@@ -229,10 +229,8 @@ public interface PreHandleContext extends TransactionKeys {
      * @throws PreCheckException If there is a problem with the nested transaction
      */
     @NonNull
-    default TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
-            throws PreCheckException {
-        throw new UnsupportedOperationException("Not implemented");
-    }
+    TransactionKeys allKeysForTransaction(@NonNull TransactionBody nestedTxn, @NonNull AccountID payerForNested)
+            throws PreCheckException;
 
     /**
      * Creates a new {@link PreHandleContext} for a nested transaction. The nested transaction will be set on
@@ -243,7 +241,9 @@ public interface PreHandleContext extends TransactionKeys {
      * @param payerForNested the payer for the nested transaction
      * @return the inner context
      * @throws PreCheckException If the payer is not valid
+     * @deprecated Use {@link #allKeysForTransaction(TransactionBody, AccountID)} instead.
      */
+    @Deprecated(forRemoval = true)
     @NonNull
     PreHandleContext createNestedContext(
             @NonNull final TransactionBody nestedTxn, @NonNull final AccountID payerForNested) throws PreCheckException;
@@ -252,7 +252,9 @@ public interface PreHandleContext extends TransactionKeys {
      * Gets the inner context, if any.
      *
      * @return The inner context.
+     * @deprecated Use {@link #allKeysForTransaction(TransactionBody, AccountID)} instead.
      */
+    @Deprecated(forRemoval = true)
     @Nullable
     PreHandleContext innerContext();
 }

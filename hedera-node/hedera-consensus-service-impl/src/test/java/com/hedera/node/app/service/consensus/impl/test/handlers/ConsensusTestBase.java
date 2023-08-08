@@ -145,29 +145,29 @@ public class ConsensusTestBase {
     }
 
     protected void givenValidTopic() {
-        givenValidTopic(autoRenewId.accountNum());
+        givenValidTopic(autoRenewId);
     }
 
-    protected void givenValidTopic(long autoRenewAccountNumber) {
-        givenValidTopic(autoRenewAccountNumber, false);
+    protected void givenValidTopic(AccountID autoRenewAccountId) {
+        givenValidTopic(autoRenewAccountId, false);
     }
 
-    protected void givenValidTopic(long autoRenewAccountNumber, boolean deleted) {
-        givenValidTopic(autoRenewAccountNumber, deleted, true, true);
+    protected void givenValidTopic(AccountID autoRenewAccountId, boolean deleted) {
+        givenValidTopic(autoRenewAccountId, deleted, true, true);
     }
 
-    protected void givenValidTopic(long autoRenewAccountNumber, boolean deleted, boolean withAdminKey) {
-        givenValidTopic(autoRenewAccountNumber, deleted, withAdminKey, true);
+    protected void givenValidTopic(AccountID autoRenewAccountId, boolean deleted, boolean withAdminKey) {
+        givenValidTopic(autoRenewAccountId, deleted, withAdminKey, true);
     }
 
     protected void givenValidTopic(
-            long autoRenewAccountNumber, boolean deleted, boolean withAdminKey, boolean withSubmitKey) {
+            AccountID autoRenewAccountId, boolean deleted, boolean withAdminKey, boolean withSubmitKey) {
         topic = new Topic(
                 topicId,
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
-                autoRenewAccountNumber,
+                autoRenewAccountId,
                 deleted,
                 Bytes.wrap(runningHash),
                 memo,
@@ -178,7 +178,7 @@ public class ConsensusTestBase {
                 sequenceNumber,
                 expirationTime,
                 autoRenewSecs,
-                autoRenewAccountNumber,
+                autoRenewAccountId,
                 deleted,
                 Bytes.wrap(runningHash),
                 memo,
@@ -192,7 +192,7 @@ public class ConsensusTestBase {
                 .adminKey(key)
                 .submitKey(key)
                 .autoRenewPeriod(autoRenewSecs)
-                .autoRenewAccountNumber(autoRenewId.accountNum())
+                .autoRenewAccountId(autoRenewId)
                 .expiry(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)
@@ -205,7 +205,7 @@ public class ConsensusTestBase {
         return new Topic.Builder()
                 .id(topicId)
                 .autoRenewPeriod(autoRenewSecs)
-                .autoRenewAccountNumber(autoRenewId.accountNum())
+                .autoRenewAccountId(autoRenewId)
                 .expiry(expirationTime)
                 .sequenceNumber(sequenceNumber)
                 .memo(memo)

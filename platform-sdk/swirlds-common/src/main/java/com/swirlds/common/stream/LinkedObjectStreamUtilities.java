@@ -17,8 +17,8 @@
 package com.swirlds.common.stream;
 
 import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.OBJECT_STREAM_VERSION;
-import static com.swirlds.common.utility.Units.MILLISECONDS_TO_NANOSECONDS;
-import static com.swirlds.common.utility.Units.SECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.MILLISECONDS_TO_NANOSECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_NANOSECONDS;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -43,12 +43,8 @@ import java.util.Iterator;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Utilities methods for:
- * parsing stream files and stream signature files;
- * generating fileName from Instant;
- * calculating period;
- * reading start and end runningHash from a stream file;
- * calculating metaHash and entireHash for a stream file;
+ * Utilities methods for: parsing stream files and stream signature files; generating fileName from Instant; calculating
+ * period; reading start and end runningHash from a stream file; calculating metaHash and entireHash for a stream file;
  */
 public final class LinkedObjectStreamUtilities {
 
@@ -62,10 +58,8 @@ public final class LinkedObjectStreamUtilities {
     /**
      * generate fileName from given Instant
      *
-     * @param timestamp
-     * 		a timestamp of the first object to be written in the file
-     * @param streamType
-     * 		type of this stream file
+     * @param timestamp  a timestamp of the first object to be written in the file
+     * @param streamType type of this stream file
      * @return the name of the file to be written
      */
     public static String generateStreamFileNameFromInstant(final Instant timestamp, final StreamType streamType) {
@@ -73,19 +67,14 @@ public final class LinkedObjectStreamUtilities {
     }
 
     /**
-     * A string representation of the Instant using ISO-8601 representation,
-     * with colons converted to underscores for Windows compatibility.
-     * The nano-of-second always outputs nine digits with padding when necessary,
-     * to ensure same length filenames and proper sorting.
-     * examples:
-     * input: 2020-10-19T21:35:39Z
-     * output: "2020-10-19T21_35_39.000000000Z"
+     * A string representation of the Instant using ISO-8601 representation, with colons converted to underscores for
+     * Windows compatibility. The nano-of-second always outputs nine digits with padding when necessary, to ensure same
+     * length filenames and proper sorting. examples: input: 2020-10-19T21:35:39Z output:
+     * "2020-10-19T21_35_39.000000000Z"
+     * <p>
+     * input: 2020-10-19T21:35:39.454265Z output: "2020-10-19T21:35:39.454265000Z"
      *
-     * input: 2020-10-19T21:35:39.454265Z
-     * output: "2020-10-19T21:35:39.454265000Z"
-     *
-     * @param timestamp
-     * 		an Instant object
+     * @param timestamp an Instant object
      * @return a string representation of the Instant, to be used as stream file name
      */
     public static String convertInstantToStringWithPadding(final Instant timestamp) {
@@ -116,8 +105,7 @@ public final class LinkedObjectStreamUtilities {
     /**
      * generate signature file name for current stream file
      *
-     * @param file
-     * 		a stream file
+     * @param file a stream file
      * @return path of the signature file
      */
     public static String generateSigFilePath(File file) {
@@ -125,13 +113,11 @@ public final class LinkedObjectStreamUtilities {
     }
 
     /**
-     * get period number with given consensusTimestamp and logPeriodMs
-     * Object with different period number should not be written in the same stream file
+     * get period number with given consensusTimestamp and logPeriodMs Object with different period number should not be
+     * written in the same stream file
      *
-     * @param consensusTimestamp
-     * 		consensusTimestamp of the object
-     * @param logPeriodMs
-     * 		period of generating object stream files in ms
+     * @param consensusTimestamp consensusTimestamp of the object
+     * @param logPeriodMs        period of generating object stream files in ms
      * @return period number
      */
     public static long getPeriod(final Instant consensusTimestamp, final long logPeriodMs) {
@@ -142,8 +128,7 @@ public final class LinkedObjectStreamUtilities {
     /**
      * Extracts the timestamp from event file name and converts it to {@code Instant} representation.
      *
-     * @param filename
-     * 		filename such as: 2020-09-21T15_16_56.978420Z.evts
+     * @param filename filename such as: 2020-09-21T15_16_56.978420Z.evts
      * @return timestamp extracted from this filename
      */
     public static Instant getTimeStampFromFileName(final String filename) {
@@ -159,8 +144,7 @@ public final class LinkedObjectStreamUtilities {
     /**
      * get file extension name
      *
-     * @param file
-     * 		a file
+     * @param file a file
      * @return extension name of the given file
      */
     public static String getFileExtension(File file) {
@@ -173,17 +157,12 @@ public final class LinkedObjectStreamUtilities {
     }
 
     /**
-     * Parse a single stream file, return an Iterator from which we can get all SelfSerializable objects in the file
-     * the first object is startRunningHash;
-     * the last object is endRunningHash;
-     * the other objects are stream objects;
+     * Parse a single stream file, return an Iterator from which we can get all SelfSerializable objects in the file the
+     * first object is startRunningHash; the last object is endRunningHash; the other objects are stream objects;
      *
-     * @param file
-     * 		a .soc stream file
-     * @param streamType
-     * 		type of the stream file
-     * @param <T>
-     * 		type of the SelfSerializable objects written in the stream file
+     * @param file       a .soc stream file
+     * @param streamType type of the stream file
+     * @param <T>        type of the SelfSerializable objects written in the stream file
      * @return an Iterator from which we can get all SelfSerializable objects in the file
      */
     public static <T extends SelfSerializable> SingleStreamIterator<T> parseStreamFile(
@@ -199,22 +178,18 @@ public final class LinkedObjectStreamUtilities {
     }
 
     /**
-     * if it is a single stream file of the given type, parse this file, and return an Iterator which contains
-     * all SelfSerializables contained in the file.
-     *
+     * if it is a single stream file of the given type, parse this file, and return an Iterator which contains all
+     * SelfSerializables contained in the file.
+     * <p>
      * if it is a directory, parse stream files of the given type in this directory in increasing order by fileName,
-     * also validate if each file's startRunningHash matches its previous file's endRunningHash.
-     * return an Iterator which contains the startRunningHash in the first stream file,
-     * all stream objects contained in the directory, and the endRunningHash in the last stream file
+     * also validate if each file's startRunningHash matches its previous file's endRunningHash. return an Iterator
+     * which contains the startRunningHash in the first stream file, all stream objects contained in the directory, and
+     * the endRunningHash in the last stream file
      *
-     * @param objectStreamDirOrFile
-     * 		a single stream file or a directory which contains stream files
-     * @param streamType
-     * 		type of stream files to be parsed
-     * @param <T>
-     * 		type of the SelfSerializable objects written in the stream file
-     * @throws InvalidStreamFileException
-     * 		when the file doesn't match given streamType
+     * @param objectStreamDirOrFile a single stream file or a directory which contains stream files
+     * @param streamType            type of stream files to be parsed
+     * @param <T>                   type of the SelfSerializable objects written in the stream file
+     * @throws InvalidStreamFileException when the file doesn't match given streamType
      */
     public static <T extends SelfSerializable> Iterator<T> parseStreamDirOrFile(
             final File objectStreamDirOrFile, final StreamType streamType) throws InvalidStreamFileException {
@@ -232,14 +207,11 @@ public final class LinkedObjectStreamUtilities {
     /**
      * Parses a collection of single stream files of given type
      *
-     * @param files
-     * 		a collection of stream files to be parsed
-     * @param streamType
-     * 		type of stream files to be parsed
-     * @param <T>
-     * 		type of the SelfSerializable objects written in the stream file
-     * @return an Iterator which contains the startRunningHash in the first stream file,
-     * 		all stream objects contained in the directory, and the endRunningHash in the last stream file
+     * @param files      a collection of stream files to be parsed
+     * @param streamType type of stream files to be parsed
+     * @param <T>        type of the SelfSerializable objects written in the stream file
+     * @return an Iterator which contains the startRunningHash in the first stream file, all stream objects contained in
+     * the directory, and the endRunningHash in the last stream file
      */
     public static <T extends SelfSerializable> Iterator<T> parseStreamFileList(
             final Collection<File> files, final StreamType streamType) {
@@ -249,10 +221,8 @@ public final class LinkedObjectStreamUtilities {
     /**
      * Reads startRunningHash from a stream file
      *
-     * @param file
-     * 		a stream file
-     * @param streamType
-     * 		streamType of this file
+     * @param file       a stream file
+     * @param streamType streamType of this file
      * @return startRunningHash saved in this stream file
      */
     public static Hash readStartRunningHashFromStreamFile(final File file, final StreamType streamType) {
@@ -265,15 +235,11 @@ public final class LinkedObjectStreamUtilities {
     /**
      * Reads the starting and ending running hashes from the given stream file.
      *
-     * @param file
-     * 		a stream file
-     * @param streamType
-     * 		type of this stream file
-     * @param <T>
-     * 		type of the SelfSerializable objects written in the stream file
+     * @param file       a stream file
+     * @param streamType type of this stream file
+     * @param <T>        type of the SelfSerializable objects written in the stream file
      * @return the starting and ending running hashes
-     * @throws InvalidStreamFileException
-     * 		when the stream file is not valid
+     * @throws InvalidStreamFileException when the stream file is not valid
      */
     public static <T extends SelfSerializable> Pair<Hash, Hash> readHashesFromStreamFile(
             final File file, final StreamType streamType) throws InvalidStreamFileException {
@@ -304,17 +270,12 @@ public final class LinkedObjectStreamUtilities {
     /**
      * read signature byte from a stream signature file
      *
-     * @param file
-     * 		a signature file
-     * @param streamType
-     * 		type of this stream file
-     * @return a pair of two pairs:
-     * 		the first pair contains entireHash and entireSignature;
-     * 		the second pair contains metaHash and metaSignature
-     * @throws IOException
-     * 		thrown if any I/O related errors occur
-     * @throws InvalidStreamFileException
-     * 		thrown if the signature file doesn't match the streamType
+     * @param file       a signature file
+     * @param streamType type of this stream file
+     * @return a pair of two pairs: the first pair contains entireHash and entireSignature; the second pair contains
+     * metaHash and metaSignature
+     * @throws IOException                thrown if any I/O related errors occur
+     * @throws InvalidStreamFileException thrown if the signature file doesn't match the streamType
      */
     public static Pair<Pair<Hash, Signature>, Pair<Hash, Signature>> parseSigFile(
             final File file, final StreamType streamType) throws IOException, InvalidStreamFileException {
@@ -348,13 +309,10 @@ public final class LinkedObjectStreamUtilities {
     /**
      * Computes the SHA384 {@code Hash} representation of the entire file
      *
-     * @param file
-     * 		a file to be hashed
+     * @param file a file to be hashed
      * @return an entireHash which denotes a SHA384 Hash calculated with all bytes in the given file
-     * @throws IOException
-     * 		if fail to read the file
-     * @throws NoSuchAlgorithmException
-     * 		if an implementation of the required algorithm cannot be located or loaded
+     * @throws IOException              if fail to read the file
+     * @throws NoSuchAlgorithmException if an implementation of the required algorithm cannot be located or loaded
      */
     public static Hash computeEntireHash(final File file) throws IOException, NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
@@ -370,21 +328,16 @@ public final class LinkedObjectStreamUtilities {
     }
 
     /**
-     * Computes the {@code Hash} representation of metadata of the stream file
-     * using the file headers, file version, starting running hash, and ending running hash.
+     * Computes the {@code Hash} representation of metadata of the stream file using the file headers, file version,
+     * starting running hash, and ending running hash.
      *
-     * @param file
-     * 		a file to be hashed
-     * @param streamType
-     * 		type of this stream file
-     * @return a {@code Hash} calculated from the file headers, file version, starting running hash, and ending
-     * 		running hash
-     * @throws IOException
-     * 		if fail to read the given file
-     * @throws NoSuchAlgorithmException
-     * 		if an implementation of the required algorithm cannot be located or loaded
-     * @throws InvalidStreamFileException
-     * 		if the stream file has invalid format
+     * @param file       a file to be hashed
+     * @param streamType type of this stream file
+     * @return a {@code Hash} calculated from the file headers, file version, starting running hash, and ending running
+     * hash
+     * @throws IOException                if fail to read the given file
+     * @throws NoSuchAlgorithmException   if an implementation of the required algorithm cannot be located or loaded
+     * @throws InvalidStreamFileException if the stream file has invalid format
      */
     public static Hash computeMetaHash(final File file, final StreamType streamType)
             throws IOException, NoSuchAlgorithmException, InvalidStreamFileException {
@@ -411,11 +364,9 @@ public final class LinkedObjectStreamUtilities {
     /**
      * read the first int from file content
      *
-     * @param file
-     * 		a file to be read
+     * @param file a file to be read
      * @return the first int in the file
-     * @throws IOException
-     * 		thrown if any I/O related errors occur
+     * @throws IOException thrown if any I/O related errors occur
      */
     public static int readFirstIntFromFile(final File file) throws IOException {
         try (FileInputStream fis = new FileInputStream(file);

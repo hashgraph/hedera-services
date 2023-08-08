@@ -20,16 +20,21 @@ import static com.hedera.node.app.service.mono.txns.submission.StructuralPrechec
 
 import com.hedera.node.app.service.mono.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.node.app.service.mono.txns.submission.annotations.MaxSignedTxnSize;
+import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.system.Platform;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Module
 public final class SubmissionModule {
     @Provides
     @MaxSignedTxnSize
-    static int provideMaxSignedTxnSize() {
-        return Platform.getTransactionMaxBytes();
+    static int provideMaxSignedTxnSize(@NonNull final Platform platform) {
+        return platform.getContext()
+                .getConfiguration()
+                .getConfigData(TransactionConfig.class)
+                .transactionMaxBytes();
     }
 
     @Provides

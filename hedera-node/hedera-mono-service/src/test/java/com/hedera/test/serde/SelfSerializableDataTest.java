@@ -16,6 +16,8 @@
 
 package com.hedera.test.serde;
 
+import static com.hedera.test.serde.EqualityType.OBJECT_EQUALITY;
+import static com.hedera.test.serde.EqualityType.SERIALIZED_EQUALITY;
 import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +35,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -132,10 +135,33 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
      *
      * @param version the parent version that created the expected object
      * @param testCaseNo the zero-indexed number of test case for this version
+     * @param equalityType the type of equality test the expected object will be subject to
+     * @return the expected object
+     */
+    protected T getExpectedObject(final int version, final int testCaseNo, @NonNull final EqualityType equalityType) {
+        return getExpectedObject(SeededPropertySource.forSerdeTest(version, testCaseNo));
+    }
+
+    /**
+     * Returns the expected object created with a given version for a given test case.
+     *
+     * @param version the parent version that created the expected object
+     * @param testCaseNo the zero-indexed number of test case for this version
      * @return the expected object
      */
     protected T getExpectedObject(final int version, final int testCaseNo) {
         return getExpectedObject(SeededPropertySource.forSerdeTest(version, testCaseNo));
+    }
+
+    /**
+     * Returns the expected object created with a given seeded property source.
+     *
+     * @param propertySource the property source to use
+     * @param equalityType the type of equality test the expected object will be subject to
+     * @return the expected object
+     */
+    protected T getExpectedObject(final SeededPropertySource propertySource, @NonNull final EqualityType equalityType) {
+        return getExpectedObject(propertySource);
     }
 
     /**
@@ -160,7 +186,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     @ArgumentsSource(SupportedVersionsArgumentsProvider.class)
     void deserializationWorksForAllSupportedVersions(final int version, final int testCaseNo) {
         final var serializedForm = getSerializedForm(version, testCaseNo);
-        final var expectedObject = getExpectedObject(version, testCaseNo);
+        final var expectedObject = getExpectedObject(version, testCaseNo, OBJECT_EQUALITY);
 
         final T actualObject = deserializeFromBytes(() -> instantiate(getType()), version, serializedForm);
 
@@ -173,7 +199,11 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
     @ParameterizedTest
     @ArgumentsSource(CurrentVersionArgumentsProvider.class)
     void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
-        assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo);
+        assertSameSerialization(
+                getType(),
+                propertySource -> getExpectedObject(propertySource, SERIALIZED_EQUALITY),
+                version,
+                testCaseNo);
     }
 
     @ParameterizedTest

@@ -18,10 +18,10 @@ package com.swirlds.merkledb;
 
 import static com.swirlds.common.metrics.FloatFormats.FORMAT_9_6;
 
-import com.swirlds.common.metrics.DoubleGauge;
+import com.swirlds.common.metrics.DoubleAccumulator;
 import com.swirlds.common.metrics.IntegerGauge;
+import com.swirlds.common.metrics.LongAccumulator;
 import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.utility.CommonUtils;
 
 /**
@@ -30,86 +30,130 @@ import com.swirlds.common.utility.CommonUtils;
 public class MerkleDbStatistics {
 
     public static final String STAT_CATEGORY = "merkle-db";
-    private static final String NUMBER_OF_FILES_PREFIX = "The number of files ";
-    private static final String TOTAL_FILES_SIZE_PREFIX = "The total files size (in megabytes) of files ";
-    private static final String SMALL_MERGE_PREFIX = "The time (in seconds) of the last Small Merge call ";
-    private static final String MEDIUM_MERGE_PREFIX = "The time (in seconds) of the last Medium Merge call ";
-    private static final String LARGE_MERGE_PREFIX = "The time (in seconds) of the last Large Merge call ";
-    private static final String INTERNAL_HASHES_STORE_MIDDLE = "in the internal Hashes Store for ";
-    private static final String LEAF_KEY_TO_PATH_STORE_MIDDLE = "in the Leaf Key To Path Store for ";
-    private static final String LEAF_PATH_TO_HKV_STORE_MIDDLE = "in the Leaf Path to Hash/Key/Value Store for ";
-    private static final String SUFFIX = " for the last call to doMerge() or saveRecords().";
-    private static final String MERGE_SUFFIX = " for the last call to doMerge().";
-    private static final int SPEEDOMETER_HALF_LIFE_IN_SECONDS = 60; // look at last minute
 
-    private static final String OFF_HEAP_SIZE_PREFIX = "The total size of off-heap memory for ";
-    private static final String LEAF_NODE_LIST = "Leaf Node list ";
-    private static final String INTERNAL_NODE_LIST = "Internal Node list ";
-    private static final String KEY_TO_PATH_LIST = "Internal Node list ";
-
-    private static final String DATA_SOURCE = "the data source ";
-
-    private static final String OFF_HEAP_SIZE_SUFFIX = " (in megabytes)";
+    /** Prefix for all data source related metrics */
+    private static final String DS_PREFIX = "ds_";
+    /** Prefix for all files related metrics */
+    private static final String FILES_PREFIX = "files_";
+    /** Prefix for all metrics related to store read queries */
+    private static final String READS_PREFIX = "reads_";
+    /** Prefix for all metrics related to data flushing */
+    private static final String FLUSHES_PREFIX = "flushes_";
+    /** Prefix for compaction related metrics */
+    private static final String COMPACTIONS_PREFIX = "compactions_";
+    /** Prefix for all off-heap related metrics */
+    private static final String OFFHEAP_PREFIX = "offheap_";
 
     private final String label;
-    private final boolean isLongKeyMode;
 
-    private SpeedometerMetric internalNodeWritesPerSecond;
-    private SpeedometerMetric internalNodeReadsPerSecond;
-    private SpeedometerMetric leafWritesPerSecond;
-    private SpeedometerMetric leafByKeyReadsPerSecond;
-    private SpeedometerMetric leafByPathReadsPerSecond;
+    /** Hashes - reads / s */
+    private LongAccumulator hashReads;
+    /** Leaves - reads / s */
+    private LongAccumulator leafReads;
+    /** Leaf keys - reads / s */
+    private LongAccumulator leafKeyReads;
 
-    private IntegerGauge internalHashesStoreFileCount;
-    private DoubleGauge internalHashesStoreTotalFileSizeInMB;
+    /** Hashes store - file count */
+    private IntegerGauge hashesStoreFileCount;
+    /** Hashes store - total file size in Mb */
+    private IntegerGauge hashesStoreFileSizeMb;
+    /** Leaves store - file count */
+    private IntegerGauge leavesStoreFileCount;
+    /** Leaves store - total file size in Mb */
+    private IntegerGauge leavesStoreFileSizeMb;
+    /** Leaf keys store - file count */
+    private IntegerGauge leafKeysStoreFileCount;
+    /** Leaf keys store - total file size in Mb */
+    private IntegerGauge leafKeysStoreFileSizeMb;
+    /** Total file size in Mb */
+    // Should all file sizes be doubles?
+    private IntegerGauge totalFileSizeMb;
 
-    private IntegerGauge leafKeyToPathStoreFileCount;
+    private LongAccumulator flushHashesWritten;
+    private DoubleAccumulator flushHashesStoreFileSizeMb;
+    private LongAccumulator flushLeavesWritten;
+    private LongAccumulator flushLeavesDeleted;
+    private DoubleAccumulator flushLeavesStoreFileSizeMb;
+    private LongAccumulator flushLeafKeysWritten;
+    private DoubleAccumulator flushLeafKeysStoreFileSizeMb;
 
-    private DoubleGauge leafKeyToPathStoreTotalFileSizeInMB;
+    /** Hashes store small compactions - time in ms */
+    private LongAccumulator hashesStoreSmallCompactionTimeMs;
+    /** Hashes store small compactions - saved space in Mb */
+    private DoubleAccumulator hashesStoreSmallCompactionSavedSpaceMb;
+    /** Hashes store medium compactions - time in ms */
+    private LongAccumulator hashesStoreMediumCompactionTimeMs;
+    /** Hashes store medium compactions - saved space in Mb */
+    private DoubleAccumulator hashesStoreMediumCompactionSavedSpaceMb;
+    /** Hashes store full compactions - time in ms */
+    private LongAccumulator hashesStoreFullCompactionTimeMs;
+    /** Hashes store full compactions - saved space in Mb */
+    private DoubleAccumulator hashesStoreFullCompactionSavedSpaceMb;
+    /** Leaves store small compactions - time in ms */
+    private LongAccumulator leavesStoreSmallCompactionTimeMs;
+    /** Leaves store small compactions - saved space in Mb */
+    private DoubleAccumulator leavesStoreSmallCompactionSavedSpaceMb;
+    /** Leaves store medium compactions - time in ms */
+    private LongAccumulator leavesStoreMediumCompactionTimeMs;
+    /** Leaves store medium compactions - saved space in Mb */
+    private DoubleAccumulator leavesStoreMediumCompactionSavedSpaceMb;
+    /** Leaves store full compactions - time in ms */
+    private LongAccumulator leavesStoreFullCompactionTimeMs;
+    /** Leaves store full compactions - saved space in Mb */
+    private DoubleAccumulator leavesStoreFullCompactionSavedSpaceMb;
+    /** Leaf keys store small compactions - time in ms */
+    private LongAccumulator leafKeysStoreSmallCompactionTimeMs;
+    /** Leaf keys store small compactions - saved space in Mb */
+    private DoubleAccumulator leafKeysStoreSmallCompactionSavedSpaceMb;
+    /** Leaf keys store medium compactions - time in ms */
+    private LongAccumulator leafKeysStoreMediumCompactionTimeMs;
+    /** Leaf keys store medium compactions - saved space in Mb */
+    private DoubleAccumulator leafKeysStoreMediumCompactionSavedSpaceMb;
+    /** Leaf keys store full compactions - time in ms */
+    private LongAccumulator leafKeysStoreFullCompactionTimeMs;
+    /** Leaf keys store full compactions - saved space in Mb */
+    private DoubleAccumulator leafKeysStoreFullCompactionSavedSpaceMb;
 
-    private IntegerGauge leafPathToHashKeyValueStoreFileCount;
-
-    private DoubleGauge leafPathToHashKeyValueStoreTotalFileSizeInMB;
-
-    private DoubleGauge internalHashesStoreSmallMergeTime;
-
-    private DoubleGauge internalHashesStoreMediumMergeTime;
-    private DoubleGauge internalHashesStoreLargeMergeTime;
-    private DoubleGauge leafKeyToPathStoreSmallMergeTime;
-    private DoubleGauge leafKeyToPathStoreMediumMergeTime;
-    private DoubleGauge leafKeyToPathStoreLargeMergeTime;
-    private DoubleGauge leafPathToHashKeyValueStoreSmallMergeTime;
-    private DoubleGauge leafPathToHashKeyValueStoreMediumMergeTime;
-    private DoubleGauge leafPathToHashKeyValueStoreLargeMergeTime;
-
-    private IntegerGauge offHeapMemoryLeafNodesListInMB;
-    private IntegerGauge offHeapMemoryInternalNodesListInMB;
-    private IntegerGauge offHeapMemoryKeyToPathListInMB;
-    private IntegerGauge offHeapMemoryDataSourceInMB;
+    /** Off-heap usage in MB of hashes store index */
+    private IntegerGauge offHeapHashesIndexMb;
+    /** Off-heap usage in MB of leaves store index */
+    private IntegerGauge offHeapLeavesIndexMb;
+    /** Off-heap usage in MB of leaf keys store index */
+    private IntegerGauge offHeapLongKeysIndexMb;
+    /** Off-heap usage in MB of object keys store bucket index */
+    private IntegerGauge offHeapObjectKeyBucketsIndexMb;
+    /** Off-heap usage in MB of hashes list in RAM */
+    private IntegerGauge offHeapHashesListMb;
+    /** Total data source off-heap usage in MB */
+    private IntegerGauge offHeapDataSourceMb;
 
     /**
      * Create a new statistics object for a MerkleDb instances.
      *
      * @param label         the label for the virtual map
-     * @param isLongKeyMode true if the long key optimization is enabled
      * @throws IllegalArgumentException if {@code label} is {@code null}
      */
-    public MerkleDbStatistics(final String label, final boolean isLongKeyMode) {
+    public MerkleDbStatistics(final String label) {
         this.label = CommonUtils.throwArgNull(label, "label");
-        this.isLongKeyMode = isLongKeyMode;
     }
 
-    private static SpeedometerMetric buildSpeedometerMetric(
+    private static IntegerGauge buildIntegerGauge(final Metrics metrics, final String name, final String description) {
+        return metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, name).withDescription(description));
+    }
+
+    private static LongAccumulator buildLongAccumulator(
             final Metrics metrics, final String name, final String description) {
-
-        return metrics.getOrCreate(new SpeedometerMetric.Config(STAT_CATEGORY, name)
-                .withDescription(description)
-                .withFormat(FORMAT_9_6)
-                .withHalfLife(SPEEDOMETER_HALF_LIFE_IN_SECONDS));
+        return metrics.getOrCreate(new LongAccumulator.Config(STAT_CATEGORY, name)
+                .withInitialValue(0)
+                .withAccumulator(Long::sum)
+                .withDescription(description));
     }
 
-    private static DoubleGauge buildDoubleGauge(final Metrics metrics, final String name, final String description) {
-        return metrics.getOrCreate(new DoubleGauge.Config(STAT_CATEGORY, name)
+    private static DoubleAccumulator buildDoubleAccumulator(
+            final Metrics metrics, final String name, final String description) {
+        return metrics.getOrCreate(new DoubleAccumulator.Config(STAT_CATEGORY, name)
+                .withInitialValue(0.0)
+                .withAccumulator(Double::sum)
                 .withDescription(description)
                 .withFormat(FORMAT_9_6));
     }
@@ -123,357 +167,500 @@ public class MerkleDbStatistics {
      */
     public void registerMetrics(final Metrics metrics) {
         CommonUtils.throwArgNull(metrics, "metrics");
-        internalNodeWritesPerSecond = buildSpeedometerMetric(
-                metrics, "internalNodeWrites/s_" + label, "number of internal node writes per second for " + label);
-        internalNodeReadsPerSecond = buildSpeedometerMetric(
-                metrics, "internalNodeReads/s_" + label, "number of internal node reads per second for " + label);
-        leafWritesPerSecond = buildSpeedometerMetric(
-                metrics, "leafWrites/s_" + label, "number of leaf writes per second for " + label);
-        leafByKeyReadsPerSecond = buildSpeedometerMetric(
-                metrics, "leafByKeyReads/s_" + label, "number of leaf by key reads per second for " + label);
-        leafByPathReadsPerSecond = buildSpeedometerMetric(
-                metrics, "leafByPathReads/s_" + label, "number of leaf by path reads per second for " + label);
-        internalHashesStoreFileCount =
-                metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "internalHashFileCount_" + label)
-                        .withDescription(NUMBER_OF_FILES_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX));
-        internalHashesStoreTotalFileSizeInMB = buildDoubleGauge(
+
+        // Queries per second
+        hashReads = buildLongAccumulator(
+                metrics, DS_PREFIX + READS_PREFIX + "hashes_" + label, "Number of hash reads, " + label);
+        leafReads = buildLongAccumulator(
+                metrics, DS_PREFIX + READS_PREFIX + "leaves_" + label, "Number of leaf reads, " + label);
+        leafKeyReads = buildLongAccumulator(
+                metrics, DS_PREFIX + READS_PREFIX + "leafKeys_" + label, "Number of leaf key reads, " + label);
+
+        // File counts and sizes
+        hashesStoreFileCount = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + FILES_PREFIX + "hashesStoreFileCount_" + label)
+                        .withDescription("File count, hashes store, " + label));
+        hashesStoreFileSizeMb = buildIntegerGauge(
                 metrics,
-                "internalHashFileSizeMb_" + label,
-                TOTAL_FILES_SIZE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + SUFFIX);
-        if (isLongKeyMode) {
-            leafKeyToPathStoreFileCount =
-                    metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "leafKeyToPathFileCount_" + label)
-                            .withDescription(NUMBER_OF_FILES_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + SUFFIX));
-            leafKeyToPathStoreTotalFileSizeInMB = buildDoubleGauge(
-                    metrics,
-                    "leafKeyToPathFileSizeMb_" + label,
-                    TOTAL_FILES_SIZE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + SUFFIX);
-        }
-        leafPathToHashKeyValueStoreFileCount =
-                metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "leafHKVFileCount_" + label)
-                        .withDescription(NUMBER_OF_FILES_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + SUFFIX));
-        leafPathToHashKeyValueStoreTotalFileSizeInMB = buildDoubleGauge(
+                DS_PREFIX + FILES_PREFIX + "hashesStoreFileSizeMb_" + label,
+                "File size, hashes store, " + label + ", Mb");
+        leavesStoreFileCount = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + FILES_PREFIX + "leavesStoreFileCount_" + label)
+                        .withDescription("File count, leaf keys store, " + label));
+        leavesStoreFileSizeMb = buildIntegerGauge(
                 metrics,
-                "leafHKVFileSizeMb_" + label,
-                TOTAL_FILES_SIZE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + SUFFIX);
-        internalHashesStoreSmallMergeTime = buildDoubleGauge(
+                DS_PREFIX + FILES_PREFIX + "leavesStoreFileSizeMb_" + label,
+                "File size, leaf keys store, " + label + ", Mb");
+        leafKeysStoreFileCount = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + FILES_PREFIX + "leafKeysStoreFileCount_" + label)
+                        .withDescription("File count, leaves store, " + label));
+        leafKeysStoreFileSizeMb = buildIntegerGauge(
                 metrics,
-                "internalHashSmallMergeTime_" + label,
-                SMALL_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        internalHashesStoreMediumMergeTime = buildDoubleGauge(
+                DS_PREFIX + FILES_PREFIX + "leafKeysStoreFileSizeMb_" + label,
+                "File size, leaves store, " + label + ", Mb");
+        totalFileSizeMb = buildIntegerGauge(
                 metrics,
-                "internalHashMediumMergeTime_" + label,
-                MEDIUM_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        internalHashesStoreLargeMergeTime = buildDoubleGauge(
+                DS_PREFIX + FILES_PREFIX + "totalSizeMb_" + label,
+                "Total file size, data source, " + label + ", Mb");
+
+        // Flushes
+        flushHashesWritten = buildLongAccumulator(
                 metrics,
-                "internalHashLargeMergeTime_" + label,
-                LARGE_MERGE_PREFIX + INTERNAL_HASHES_STORE_MIDDLE + label + MERGE_SUFFIX);
-        if (isLongKeyMode) {
-            leafKeyToPathStoreSmallMergeTime = buildDoubleGauge(
-                    metrics,
-                    "leafKeyToPathSmallMergeTime_" + label,
-                    SMALL_MERGE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + MERGE_SUFFIX);
-            leafKeyToPathStoreMediumMergeTime = buildDoubleGauge(
-                    metrics,
-                    "leafKeyToPathMediumMergeTime_" + label,
-                    MEDIUM_MERGE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + MERGE_SUFFIX);
-            leafKeyToPathStoreLargeMergeTime = buildDoubleGauge(
-                    metrics,
-                    "leafKeyToPathLargeMergeTime_" + label,
-                    LARGE_MERGE_PREFIX + LEAF_KEY_TO_PATH_STORE_MIDDLE + label + MERGE_SUFFIX);
-        }
-        leafPathToHashKeyValueStoreSmallMergeTime = buildDoubleGauge(
+                DS_PREFIX + FLUSHES_PREFIX + "hashesWritten_" + label,
+                "Number of hashes written during flush, " + label);
+        flushHashesStoreFileSizeMb = buildDoubleAccumulator(
                 metrics,
-                "leafHKVSmallMergeTime_" + label,
-                SMALL_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
-        leafPathToHashKeyValueStoreMediumMergeTime = buildDoubleGauge(
+                DS_PREFIX + FLUSHES_PREFIX + "hashesStoreFileSizeMb_" + label,
+                "Size of the new hashes store file created during flush, " + label + ", Mb");
+        flushLeavesWritten = buildLongAccumulator(
                 metrics,
-                "leafHKVMediumMergeTime_" + label,
-                MEDIUM_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
-        leafPathToHashKeyValueStoreLargeMergeTime = buildDoubleGauge(
+                DS_PREFIX + FLUSHES_PREFIX + "leavesWritten_" + label,
+                "Number of leaves written during flush, " + label);
+        flushLeavesDeleted = buildLongAccumulator(
                 metrics,
-                "leafHKVLargeMergeTime_" + label,
-                LARGE_MERGE_PREFIX + LEAF_PATH_TO_HKV_STORE_MIDDLE + label + MERGE_SUFFIX);
+                DS_PREFIX + FLUSHES_PREFIX + "leavesDeleted_" + label,
+                "Number of leaves deleted during flush, " + label);
+        flushLeavesStoreFileSizeMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + FLUSHES_PREFIX + "leavesStoreFileSizeMb_" + label,
+                "Size of the new leaves store file created during flush, " + label + ", Mb");
+        flushLeafKeysWritten = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + FLUSHES_PREFIX + "leafKeysWritten_" + label,
+                "Number of leaf keys written during flush, " + label);
+        flushLeafKeysStoreFileSizeMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + FLUSHES_PREFIX + "leafKeysStoreFileSizeMb_" + label,
+                "Size of the new leaf keys store file created during flush, " + label + ", Mb");
 
-        offHeapMemoryInternalNodesListInMB =
-                metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "offHeapInternalMb_" + label)
-                        .withDescription(OFF_HEAP_SIZE_PREFIX + INTERNAL_NODE_LIST + label + OFF_HEAP_SIZE_SUFFIX));
-        offHeapMemoryLeafNodesListInMB =
-                metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "offHeapLeafMb_" + label)
-                        .withDescription(OFF_HEAP_SIZE_PREFIX + LEAF_NODE_LIST + label + OFF_HEAP_SIZE_SUFFIX));
-        offHeapMemoryKeyToPathListInMB =
-                metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "offHeapKeyToPathMb_" + label)
-                        .withDescription(OFF_HEAP_SIZE_PREFIX + KEY_TO_PATH_LIST + label + OFF_HEAP_SIZE_SUFFIX));
-        offHeapMemoryDataSourceInMB =
-                metrics.getOrCreate(new IntegerGauge.Config(STAT_CATEGORY, "offHeapDataSourceMb_" + label)
-                        .withDescription(OFF_HEAP_SIZE_PREFIX + DATA_SOURCE + label + OFF_HEAP_SIZE_SUFFIX));
+        // Compaction
+        // Hashes store
+        hashesStoreSmallCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "hashesSmallTimeMs_" + label,
+                "Small compactions time, hashes store, " + label + ", ms");
+        hashesStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "hashesSmallSavedSpaceMb_" + label,
+                "Saved space during small compactions, hashes store, " + label + ", Mb");
+        hashesStoreMediumCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "hashesMediumTimeMs_" + label,
+                "Medium compactions time, hashes store, " + label + ", ms");
+        hashesStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "hashesMediumSavedSpaceMb_" + label,
+                "Saved space during medium compactions, hashes store, " + label + ", Mb");
+        hashesStoreFullCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "hashesFullTimeMs_" + label,
+                "Full compactions time, hashes store, " + label + ", ms");
+        hashesStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "hashesFullSavedSpaceMb_" + label,
+                "Saved space during full compactions, hashes store, " + label + ", Mb");
+        // Leaves store
+        leavesStoreSmallCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leavesSmallTimeMs_" + label,
+                "Small compactions time, leaves store, " + label + ", ms");
+        leavesStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leavesSmallSavedSpaceMb_" + label,
+                "Saved space during small compactions, leaves store, " + label + ", Mb");
+        leavesStoreMediumCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leavesMediumTimeMs_" + label,
+                "Medium compactions time, leaves store, " + label + ", ms");
+        leavesStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leavesMediumSavedSpaceMb_" + label,
+                "Saved space during medium compactions, leaves store, " + label + ", Mb");
+        leavesStoreFullCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leavesFullTimeMs_" + label,
+                "Full compactions time, leaves store, " + label + ", ms");
+        leavesStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leavesFullSavedSpaceMb_" + label,
+                "Saved space during full compactions, leaves store, " + label + ", Mb");
+        // Leaf keys store
+        leafKeysStoreSmallCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysSmallTimeMs_" + label,
+                "Small compactions time, leaf keys store, " + label + ", ms");
+        leafKeysStoreSmallCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysSmallSavedSpaceMb_" + label,
+                "Saved space during small compactions, leaf keys store, " + label + ", Mb");
+        leafKeysStoreMediumCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysMediumTimeMs_" + label,
+                "Medium compactions time, leaf keys store, " + label + ", ms");
+        leafKeysStoreMediumCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysMediumSavedSpaceMb_" + label,
+                "Saved space during medium compactions, leaf keys store, " + label + ", Mb");
+        leafKeysStoreFullCompactionTimeMs = buildLongAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysFullTimeMs_" + label,
+                "Full compactions time, leaf keys store, " + label + ", ms");
+        leafKeysStoreFullCompactionSavedSpaceMb = buildDoubleAccumulator(
+                metrics,
+                DS_PREFIX + COMPACTIONS_PREFIX + "leafKeysFullSavedSpaceMb_" + label,
+                "Saved space during full compactions, leaf keys store, " + label + ", Mb");
+
+        // Off-heap usage
+        offHeapHashesIndexMb = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "hashesIndexMb_" + label)
+                        .withDescription("Off-heap usage, hashes store index, " + label + ", Mb"));
+        offHeapLeavesIndexMb = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "leavesIndexMb_" + label)
+                        .withDescription("Off-heap usage, leaves store index, " + label + ", Mb"));
+        offHeapLongKeysIndexMb = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "longKeysIndexMb_" + label)
+                        .withDescription("Off-heap usage, long leaf keys store index, " + label + ", Mb"));
+        offHeapObjectKeyBucketsIndexMb = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "objectKeyBucketsIndexMb_" + label)
+                        .withDescription("Off-heap usage, object leaf key buckets store index, " + label + ", Mb"));
+        offHeapHashesListMb = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "hashesListMb_" + label)
+                        .withDescription("Off-heap usage, hashes list, " + label + ", Mb"));
+        offHeapDataSourceMb = metrics.getOrCreate(
+                new IntegerGauge.Config(STAT_CATEGORY, DS_PREFIX + OFFHEAP_PREFIX + "dataSourceMb_" + label)
+                        .withDescription("Off-heap usage, data source, " + label + ", Mb"));
     }
 
     /**
-     * Cycle the InternalNodeWritesPerSecond stat
+     * Increments {@link #hashReads} stat by 1
      */
-    public void cycleInternalNodeWritesPerSecond() {
-        if (internalNodeWritesPerSecond != null) {
-            internalNodeWritesPerSecond.cycle();
+    public void countHashReads() {
+        if (hashReads != null) {
+            hashReads.update(1);
         }
     }
 
     /**
-     * Cycle the InternalNodeReadsPerSecond stat
+     * Increments {@link #leafReads} stat by 1
      */
-    public void cycleInternalNodeReadsPerSecond() {
-        if (internalNodeReadsPerSecond != null) {
-            internalNodeReadsPerSecond.cycle();
+    public void countLeafReads() {
+        if (leafReads != null) {
+            leafReads.update(1);
         }
     }
 
     /**
-     * Cycle the LeafWritesPerSecond stat
+     * Increment {@link #leafKeyReads} stat by 1
      */
-    public void cycleLeafWritesPerSecond() {
-        if (leafWritesPerSecond != null) {
-            leafWritesPerSecond.cycle();
+    public void countLeafKeyReads() {
+        if (leafKeyReads != null) {
+            leafKeyReads.update(1);
         }
     }
 
     /**
-     * Cycle the LeafByKeyReadsPerSecond stat
-     */
-    public void cycleLeafByKeyReadsPerSecond() {
-        if (leafByKeyReadsPerSecond != null) {
-            leafByKeyReadsPerSecond.cycle();
-        }
-    }
-
-    /**
-     * Cycle the LeafByPathReadsPerSecond stat
-     */
-    public void cycleLeafByPathReadsPerSecond() {
-        if (leafByPathReadsPerSecond != null) {
-            leafByPathReadsPerSecond.cycle();
-        }
-    }
-
-    /**
-     * Set the current value for the InternalHashesStoreFileCount stat
+     * Set the current value for the {@link #hashesStoreFileCount} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreFileCount(final int value) {
-        if (internalHashesStoreFileCount != null) {
-            internalHashesStoreFileCount.set(value);
+    public void setHashesStoreFileCount(final int value) {
+        if (hashesStoreFileCount != null) {
+            hashesStoreFileCount.set(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreTotalFileSizeInMB stat
+     * Set the current value for the {@link #hashesStoreFileSizeMb} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreTotalFileSizeInMB(final double value) {
-        if (internalHashesStoreTotalFileSizeInMB != null) {
-            internalHashesStoreTotalFileSizeInMB.set(value);
+    public void setHashesStoreFileSizeMb(final int value) {
+        if (hashesStoreFileSizeMb != null) {
+            hashesStoreFileSizeMb.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafKeyToPathStoreFileCount stat
+     * Set the current value for the {@link #leafKeysStoreFileCount} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafKeyToPathStoreFileCount(final int value) {
-        if (leafKeyToPathStoreFileCount != null) {
-            leafKeyToPathStoreFileCount.set(value);
+    public void setLeafKeysStoreFileCount(final int value) {
+        if (leafKeysStoreFileCount != null) {
+            leafKeysStoreFileCount.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafKeyToPathStoreTotalFileSizeInMB stat
+     * Set the current value for the {@link #leafKeysStoreFileSizeMb} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafKeyToPathStoreTotalFileSizeInMB(final double value) {
-        if (leafKeyToPathStoreTotalFileSizeInMB != null) {
-            leafKeyToPathStoreTotalFileSizeInMB.set(value);
+    public void setLeafKeysStoreFileSizeMb(final int value) {
+        if (leafKeysStoreFileSizeMb != null) {
+            leafKeysStoreFileSizeMb.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafPathToHashKeyValueStoreFileCount stat
+     * Set the current value for the {@link #leavesStoreFileCount} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreFileCount(final int value) {
-        if (leafPathToHashKeyValueStoreFileCount != null) {
-            leafPathToHashKeyValueStoreFileCount.set(value);
+    public void setLeavesStoreFileCount(final int value) {
+        if (leavesStoreFileCount != null) {
+            leavesStoreFileCount.set(value);
         }
     }
 
     /**
-     * Set the current value for the LeafPathToHashKeyValueStoreTotalFileSizeInMB stat
+     * Set the current value for the {@link #leavesStoreFileSizeMb} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setLeafPathToHashKeyValueStoreTotalFileSizeInMB(final double value) {
-        if (leafPathToHashKeyValueStoreTotalFileSizeInMB != null) {
-            leafPathToHashKeyValueStoreTotalFileSizeInMB.set(value);
+    public void setLeavesStoreFileSizeMb(final int value) {
+        if (leavesStoreFileSizeMb != null) {
+            leavesStoreFileSizeMb.set(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreSmallMergeTime stat
+     * Set the current value for the {@link #totalFileSizeMb} stat
      *
      * @param value
      * 		the value to set
      */
-    public void setInternalHashesStoreSmallMergeTime(final double value) {
-        if (internalHashesStoreSmallMergeTime != null) {
-            internalHashesStoreSmallMergeTime.set(value);
+    public void setTotalFileSizeMb(final int value) {
+        if (totalFileSizeMb != null) {
+            totalFileSizeMb.set(value);
+        }
+    }
+
+    public void countFlushHashesWritten(final long value) {
+        if (flushHashesWritten != null) {
+            flushHashesWritten.update(value);
+        }
+    }
+
+    public void setFlushHashesStoreFileSizeMb(final double value) {
+        if (flushHashesStoreFileSizeMb != null) {
+            flushHashesStoreFileSizeMb.update(value);
+        }
+    }
+
+    public void countFlushLeavesWritten(final long value) {
+        if (flushLeavesWritten != null) {
+            flushLeavesWritten.update(value);
+        }
+    }
+
+    public void countFlushLeavesDeleted(final long value) {
+        if (flushLeavesDeleted != null) {
+            flushLeavesDeleted.update(value);
+        }
+    }
+
+    public void setFlushLeavesStoreFileSizeMb(final double value) {
+        if (flushLeavesStoreFileSizeMb != null) {
+            flushLeavesStoreFileSizeMb.update(value);
+        }
+    }
+
+    public void countFlushLeafKeysWritten(final long value) {
+        if (flushLeafKeysWritten != null) {
+            flushLeafKeysWritten.update(value);
+        }
+    }
+
+    public void setFlushLeafKeysStoreFileSizeMb(final double value) {
+        if (flushLeafKeysStoreFileSizeMb != null) {
+            flushLeafKeysStoreFileSizeMb.update(value);
         }
     }
 
     /**
-     * Set the current value for the InternalHashesStoreMediumMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setInternalHashesStoreMediumMergeTime(final double value) {
-        if (internalHashesStoreMediumMergeTime != null) {
-            internalHashesStoreMediumMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the InternalHashesStoreLargeMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setInternalHashesStoreLargeMergeTime(final double value) {
-        if (internalHashesStoreLargeMergeTime != null) {
-            internalHashesStoreLargeMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the LeafKeyToPathStoreSmallMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setLeafKeyToPathStoreSmallMergeTime(final double value) {
-        if (leafKeyToPathStoreSmallMergeTime != null) {
-            leafKeyToPathStoreSmallMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the LeafKeyToPathStoreMediumMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setLeafKeyToPathStoreMediumMergeTime(final double value) {
-        if (leafKeyToPathStoreMediumMergeTime != null) {
-            leafKeyToPathStoreMediumMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the LeafKeyToPathStoreLargeMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setLeafKeyToPathStoreLargeMergeTime(final double value) {
-        if (leafKeyToPathStoreLargeMergeTime != null) {
-            leafKeyToPathStoreLargeMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the LeafPathToHashKeyValueStoreSmallMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setLeafPathToHashKeyValueStoreSmallMergeTime(final double value) {
-        if (leafPathToHashKeyValueStoreSmallMergeTime != null) {
-            leafPathToHashKeyValueStoreSmallMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the LeafPathToHashKeyValueStoreMediumMergeTime stat
-     *
-     * @param value
-     * 		the value to set
-     */
-    public void setLeafPathToHashKeyValueStoreMediumMergeTime(final double value) {
-        if (leafPathToHashKeyValueStoreMediumMergeTime != null) {
-            leafPathToHashKeyValueStoreMediumMergeTime.set(value);
-        }
-    }
-
-    /**
-     * Set the current value for the LeafPathToHashKeyValueStoreLargeMergeTime stat
+     * Set the current value for the {@link #hashesStoreSmallCompactionTimeMs},
+     * {@link #hashesStoreMediumCompactionTimeMs}, or {@link #hashesStoreFullCompactionTimeMs}
+     * metric based on the given compaction type.
      *
      * @param value the value to set
      */
-    public void setLeafPathToHashKeyValueStoreLargeMergeTime(final double value) {
-        if (leafPathToHashKeyValueStoreLargeMergeTime != null) {
-            leafPathToHashKeyValueStoreLargeMergeTime.set(value);
+    public void setHashesStoreCompactionTimeMs(final CompactionType type, final long value) {
+        final LongAccumulator metric =
+                switch (type) {
+                    case SMALL -> hashesStoreSmallCompactionTimeMs;
+                    case MEDIUM -> hashesStoreMediumCompactionTimeMs;
+                    case FULL -> hashesStoreFullCompactionTimeMs;
+                };
+        if (metric != null) {
+            metric.update(value);
         }
     }
 
     /**
-     * Set the current value for the OffHeapMemoryLeafNodesListInMB stat
+     * Set the current value for the {@link #hashesStoreSmallCompactionSavedSpaceMb},
+     * {@link #hashesStoreMediumCompactionSavedSpaceMb}, or {@link #hashesStoreFullCompactionSavedSpaceMb}
+     * metric based on the given compaction type.
      *
      * @param value the value to set
      */
-    public void setOffHeapMemoryLeafNodesListInMB(final int value) {
-        if (offHeapMemoryLeafNodesListInMB != null) {
-            offHeapMemoryLeafNodesListInMB.set(value);
+    public void setHashesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
+        final DoubleAccumulator metric =
+                switch (type) {
+                    case SMALL -> hashesStoreSmallCompactionSavedSpaceMb;
+                    case MEDIUM -> hashesStoreMediumCompactionSavedSpaceMb;
+                    case FULL -> hashesStoreFullCompactionSavedSpaceMb;
+                };
+        if (metric != null) {
+            metric.update(value);
         }
     }
 
     /**
-     * Set the current value for the OffHeapMemoryInternalNodesListInMB stat
+     * Set the current value for the {@link #leavesStoreSmallCompactionTimeMs},
+     * {@link #leavesStoreMediumCompactionTimeMs}, or {@link #leavesStoreFullCompactionTimeMs}
+     * metric based on the given compaction type.
      *
      * @param value the value to set
      */
-    public void setOffHeapMemoryInternalNodesListInMB(final int value) {
-        if (offHeapMemoryInternalNodesListInMB != null) {
-            offHeapMemoryInternalNodesListInMB.set(value);
+    public void setLeavesStoreCompactionTimeMs(final CompactionType type, final long value) {
+        final LongAccumulator metric =
+                switch (type) {
+                    case SMALL -> leavesStoreSmallCompactionTimeMs;
+                    case MEDIUM -> leavesStoreMediumCompactionTimeMs;
+                    case FULL -> leavesStoreFullCompactionTimeMs;
+                };
+        if (metric != null) {
+            metric.update(value);
         }
     }
 
     /**
-     * Set the current value for the OffHeapMemoryKeyToPathListInMB stat
+     * Set the current value for the {@link #leavesStoreSmallCompactionSavedSpaceMb},
+     * {@link #leavesStoreMediumCompactionSavedSpaceMb}, or {@link #leavesStoreFullCompactionSavedSpaceMb}
+     * metric based on the given compaction type.
      *
      * @param value the value to set
      */
-    public void setOffHeapMemoryKeyToPathListInMB(final int value) {
-        if (offHeapMemoryKeyToPathListInMB != null) {
-            offHeapMemoryKeyToPathListInMB.set(value);
+    public void setLeavesStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
+        final DoubleAccumulator metric =
+                switch (type) {
+                    case SMALL -> leavesStoreSmallCompactionSavedSpaceMb;
+                    case MEDIUM -> leavesStoreMediumCompactionSavedSpaceMb;
+                    case FULL -> leavesStoreFullCompactionSavedSpaceMb;
+                };
+        if (metric != null) {
+            metric.update(value);
         }
     }
 
     /**
-     * Set the current value for the OffHeapMemoryKeyToPathListInMB stat
+     * Set the current value for the {@link #leafKeysStoreSmallCompactionTimeMs},
+     * {@link #leafKeysStoreMediumCompactionTimeMs}, or {@link #leafKeysStoreFullCompactionTimeMs}
+     * metric based on the given compaction type.
      *
      * @param value the value to set
      */
-    public void setOffHeapMemoryDataSourceInMB(final int value) {
-        if (offHeapMemoryDataSourceInMB != null) {
-            offHeapMemoryDataSourceInMB.set(value);
+    public void setLeafKeysStoreCompactionTimeMs(final CompactionType type, final long value) {
+        final LongAccumulator metric =
+                switch (type) {
+                    case SMALL -> leafKeysStoreSmallCompactionTimeMs;
+                    case MEDIUM -> leafKeysStoreMediumCompactionTimeMs;
+                    case FULL -> leafKeysStoreFullCompactionTimeMs;
+                };
+        if (metric != null) {
+            metric.update(value);
+        }
+    }
+
+    /**
+     * Set the current value for the {@link #leafKeysStoreSmallCompactionSavedSpaceMb},
+     * {@link #leafKeysStoreMediumCompactionSavedSpaceMb}, or {@link #leafKeysStoreFullCompactionSavedSpaceMb}
+     * metric based on the given compaction type.
+     *
+     * @param value the value to set
+     */
+    public void setLeafKeysStoreCompactionSavedSpaceMb(final CompactionType type, final double value) {
+        final DoubleAccumulator metric =
+                switch (type) {
+                    case SMALL -> leafKeysStoreSmallCompactionSavedSpaceMb;
+                    case MEDIUM -> leafKeysStoreMediumCompactionSavedSpaceMb;
+                    case FULL -> leafKeysStoreFullCompactionSavedSpaceMb;
+                };
+        if (metric != null) {
+            metric.update(value);
+        }
+    }
+
+    /**
+     * Set the current value for the {@link #offHeapLeavesIndexMb} stat
+     *
+     * @param value the value to set
+     */
+    public void setOffHeapLeavesIndexMb(final int value) {
+        if (offHeapLeavesIndexMb != null) {
+            offHeapLeavesIndexMb.set(value);
+        }
+    }
+
+    /**
+     * Set the current value for the {@link #offHeapHashesIndexMb} stat
+     *
+     * @param value the value to set
+     */
+    public void setOffHeapHashesIndexMb(final int value) {
+        if (offHeapHashesIndexMb != null) {
+            offHeapHashesIndexMb.set(value);
+        }
+    }
+
+    /**
+     * Set the current value for the {@link #offHeapLongKeysIndexMb} stat
+     *
+     * @param value the value to set
+     */
+    public void setOffHeapLongKeysIndexMb(final int value) {
+        if (offHeapLongKeysIndexMb != null) {
+            offHeapLongKeysIndexMb.set(value);
+        }
+    }
+
+    /**
+     * Set the current value for the {@link #offHeapObjectKeyBucketsIndexMb} stat
+     *
+     * @param value the value to set
+     */
+    public void setOffHeapObjectKeyBucketsIndexMb(final int value) {
+        if (offHeapObjectKeyBucketsIndexMb != null) {
+            offHeapObjectKeyBucketsIndexMb.set(value);
+        }
+    }
+
+    /**
+     * Set the current value for {@link #offHeapHashesListMb} stat
+     *
+     * @param value the value to set
+     */
+    public void setOffHeapHashesListMb(final int value) {
+        if (offHeapHashesListMb != null) {
+            offHeapHashesListMb.set(value);
+        }
+    }
+
+    /**
+     * Set the current value for the {@link #offHeapDataSourceMb} stat
+     *
+     * @param value the value to set
+     */
+    public void setOffHeapDataSourceMb(final int value) {
+        if (offHeapDataSourceMb != null) {
+            offHeapDataSourceMb.set(value);
         }
     }
 }

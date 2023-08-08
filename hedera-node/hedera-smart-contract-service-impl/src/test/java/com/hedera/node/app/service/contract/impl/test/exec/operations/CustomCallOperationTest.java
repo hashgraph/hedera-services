@@ -149,7 +149,7 @@ class CustomCallOperationTest {
     }
 
     /**
-     * Return a frame with the given gas, value, and address as the top three stack items.
+     * Return a frame with the given gas, to address, and value as the top three stack items.
      */
     private void givenWellKnownFrameWith(final long value, final Address to, final long gas) {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);

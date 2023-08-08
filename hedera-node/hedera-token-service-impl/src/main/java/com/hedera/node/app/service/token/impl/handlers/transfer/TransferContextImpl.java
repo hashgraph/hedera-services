@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.AliasUtils.isSerializedProtoKey;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
@@ -60,7 +59,7 @@ public class TransferContextImpl implements TransferContext {
         final var account = accountStore.get(aliasedId);
 
         if (account != null) {
-            final var id = asAccount(account.accountNumber());
+            final var id = account.accountId();
             resolutions.put(aliasedId.alias(), id);
             return id;
         }

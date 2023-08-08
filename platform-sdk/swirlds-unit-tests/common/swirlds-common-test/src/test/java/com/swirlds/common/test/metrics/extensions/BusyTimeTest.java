@@ -18,8 +18,8 @@ package com.swirlds.common.test.metrics.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.metrics.extensions.BusyTime;
-import com.swirlds.common.test.fixtures.FakeTime;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,5 +137,23 @@ class BusyTimeTest {
         clock.tick(Duration.ofSeconds(1));
         assertEquals(
                 0.33, metric.getAndReset(), 0.01, "the second finishedWork() should be ignored, so 0.33 is expected");
+    }
+
+    @Test
+    void metricNotReset() {
+        metric.startingWork();
+        clock.tick(Duration.ofMinutes(30));
+        metric.finishedWork();
+        clock.tick(Duration.ofMinutes(10));
+        metric.startingWork();
+        metric.finishedWork();
+        assertEquals(-1.0, metric.getAndReset(), 0.01, "this in an overflow, so -1 is expected");
+        clock.tick(Duration.ofMinutes(1));
+        metric.startingWork();
+        clock.tick(Duration.ofMinutes(1));
+        assertEquals(
+                0.5,
+                metric.getAndReset(),
+                "after the reset the metric should start tracking again, so 0.5 is expected");
     }
 }

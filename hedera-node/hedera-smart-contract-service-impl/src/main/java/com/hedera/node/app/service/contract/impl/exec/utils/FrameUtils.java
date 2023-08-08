@@ -16,15 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
+import static com.hedera.hapi.streams.SidecarType.CONTRACT_ACTION;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.infra.StorageAccessTracker;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class FrameUtils {
     public static final String CONFIG_CONTEXT_VARIABLE = "contractsConfig";
+    public static final String TRACKER_CONTEXT_VARIABLE = "storageAccessTracker";
 
     private FrameUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -36,6 +41,27 @@ public class FrameUtils {
 
     public static @NonNull ContractsConfig contractsConfigOf(@NonNull final MessageFrame frame) {
         return configOf(frame).getConfigData(ContractsConfig.class);
+    }
+
+    public static boolean hasActionSidecarsEnabled(@NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).sidecars().contains(CONTRACT_ACTION);
+    }
+
+    public static boolean hasActionValidationEnabled(@NonNull final MessageFrame frame) {
+        return contractsConfigOf(frame).sidecarValidationEnabled();
+    }
+
+    public static boolean hasValidatedActionSidecarsEnabled(@NonNull final MessageFrame frame) {
+        final var contractsConfig = contractsConfigOf(frame);
+        return contractsConfig.sidecars().contains(CONTRACT_ACTION) && contractsConfig.sidecarValidationEnabled();
+    }
+
+    public static @Nullable StorageAccessTracker accessTrackerFor(@NonNull final MessageFrame frame) {
+        return frame.getContextVariable(TRACKER_CONTEXT_VARIABLE);
+    }
+
+    public static @NonNull ProxyWorldUpdater proxyUpdaterFor(@NonNull final MessageFrame frame) {
+        return (ProxyWorldUpdater) frame.getWorldUpdater();
     }
 
     public static boolean isDelegateCall(@NonNull final MessageFrame frame) {

@@ -16,9 +16,9 @@
 
 package com.swirlds.platform.reconnect;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.utility.Units.BYTES_TO_BITS;
-import static com.swirlds.common.utility.Units.MEBIBYTES_TO_BYTES;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.units.UnitConstants.BYTES_TO_BITS;
+import static com.swirlds.common.units.UnitConstants.MEBIBYTES_TO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -264,7 +264,7 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
 
         // reconnect happening
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
@@ -303,7 +303,7 @@ class RandomVirtualMapMerkleDbReconnectTests extends VirtualMapReconnectTestBase
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);

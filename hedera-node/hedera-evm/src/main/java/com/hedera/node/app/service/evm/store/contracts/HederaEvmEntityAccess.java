@@ -26,6 +26,10 @@ public interface HederaEvmEntityAccess {
 
     long getBalance(Address address);
 
+    default long getNonce(Address address) {
+        return 0;
+    }
+
     boolean isTokenAccount(Address address);
 
     ByteString alias(Address address);
@@ -35,8 +39,8 @@ public interface HederaEvmEntityAccess {
     Bytes getStorage(Address address, Bytes key);
 
     /**
-     * Returns the bytecode for the contract with the given account id; or null if there is no byte
-     * present for this contract.
+     * Returns the bytecode for the contract with the given account id; or null if there is no byte present for this
+     * contract.
      *
      * @param address the account's address of the target contract
      * @return the target contract's bytecode, or null if it is not present

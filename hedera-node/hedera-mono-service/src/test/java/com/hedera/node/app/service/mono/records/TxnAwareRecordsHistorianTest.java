@@ -44,21 +44,25 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -72,8 +76,14 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.RunningHash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -596,5 +606,71 @@ class TxnAwareRecordsHistorianTest {
             final ExpirableTxnRecord.Builder builder, final TxnId expectedId, final byte[] expectedHash) {
         verify(builder).setTxnId(expectedId);
         verify(builder).setTxnHash(expectedHash);
+    }
+
+    private ExpirableTxnRecord.Builder contractCreateAndCallResult() {
+        final long gasUsed = 1_234;
+        final byte[] result = "abcdefgh".getBytes();
+
+        final byte[] evmAddress = Address.BLAKE2B_F_COMPRESSION.toArray();
+        final List<EntityId> createdContractIds =
+                List.of(new EntityId(1L, 2L, 3L), new EntityId(4L, 5L, 6L), new EntityId(7L, 8L, 9L));
+        final List<ContractID> grpcCreatedContractIds =
+                createdContractIds.stream().map(EntityId::toGrpcContractId).toList();
+
+        final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
+
+        final var input = TransactionProcessingResult.successful(
+                besuLogs,
+                gasUsed,
+                0,
+                0,
+                Bytes.wrap(result),
+                recipient,
+                Collections.emptyMap(),
+                Collections.emptyList());
+        input.setCreatedContracts(grpcCreatedContractIds);
+
+        return ExpirableTxnRecord.newBuilder()
+                .setTxnId(TxnId.fromGrpc(txnIdA))
+                .setHbarAdjustments(initialTransfers)
+                .setMemo("This is different!")
+                .setContractCreateResult(EvmFnResult.fromCreate(input, evmAddress))
+                .setContractCallResult(EvmFnResult.fromCall(input))
+                .setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
+    }
+
+    private static final byte[][] topics = new byte[][] {
+        "alpha000000000000000000000000000".getBytes(),
+        "bravo000000000000000000000000000".getBytes(),
+        "charlie0000000000000000000000000".getBytes(),
+    };
+
+    private static final byte[][] otherTopics = new byte[][] {
+        "alpha999999999999999999999999999".getBytes(),
+        "bravo999999999999999999999999999".getBytes(),
+        "charlie9999999999999999999999999".getBytes(),
+    };
+
+    private static final byte[][] blooms = new byte[][] {
+        "tulip".getBytes(), "lily".getBytes(), "cynthia".getBytes(),
+    };
+
+    private static final byte[][] data = new byte[][] {
+        "one".getBytes(), "two".getBytes(), "three".getBytes(),
+    };
+    private static final Log aLog = besuLog(123L, data[0], topics);
+    private static final Log bLog = besuLog(456L, data[1], otherTopics);
+    private static final List<Log> besuLogs = List.of(aLog, bLog);
+
+    private static Log besuLog(final long num, byte[] data, byte[][] topics) {
+        final var logger = EntityNum.fromLong(num);
+        final var l = new Log(
+                logger.toEvmAddress(),
+                Bytes.wrap(data),
+                Arrays.stream(topics)
+                        .map(bytes -> LogTopic.of(Bytes.wrap(bytes)))
+                        .toList());
+        return l;
     }
 }

@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,7 +138,7 @@ class DefaultCounterTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class, () -> counter.get(null), "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> counter.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> counter.get(Metric.ValueType.MIN),
@@ -167,7 +167,7 @@ class DefaultCounterTest {
     void testGetStatBuffered() {
         // given
         final Counter.Config config = new Counter.Config(CATEGORY, NAME);
-        final Counter counter = new DefaultCounter(config);
+        final DefaultCounter counter = new DefaultCounter(config);
 
         // when
         final StatsBuffered actual = counter.getStatsBuffered();

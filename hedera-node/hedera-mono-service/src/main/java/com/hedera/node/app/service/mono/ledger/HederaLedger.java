@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.ledger;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
@@ -73,21 +74,19 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Provides a ledger for Hedera Services crypto and smart contract accounts with transactional
- * semantics. Changes to the ledger are <b>only</b> allowed in the scope of a transaction.
+ * Provides a ledger for Hedera Services crypto and smart contract accounts with transactional semantics. Changes to the
+ * ledger are <b>only</b> allowed in the scope of a transaction.
  *
  * <p>All changes that are made during a transaction are summarized as per-account changesets. These
- * changesets are committed to a wrapped {@link TransactionalLedger}; or dropped entirely in case of
- * a rollback.
+ * changesets are committed to a wrapped {@link TransactionalLedger}; or dropped entirely in case of a rollback.
  *
  * <p>The ledger delegates history of each transaction to an injected {@link RecordsHistorian} by
- * invoking its {@code addNewRecords} immediately before the final {@link
- * TransactionalLedger#commit()}.
+ * invoking its {@code addNewRecords} immediately before the final {@link TransactionalLedger#commit()}.
  *
  * <p>We should think of the ledger as using double-booked accounting, (e.g., via the {@link
- * HederaLedger#doTransfer(AccountID, AccountID, long)} method); but it is necessary to provide
- * "unsafe" single-booked methods like {@link HederaLedger#adjustBalance(AccountID, long)} in order
- * to match transfer semantics the EVM expects.
+ * HederaLedger#doTransfer(AccountID, AccountID, long)} method); but it is necessary to provide "unsafe" single-booked
+ * methods like {@link HederaLedger#adjustBalance(AccountID, long)} in order to match transfer semantics the EVM
+ * expects.
  */
 public class HederaLedger {
     public static final String NO_ACTIVE_TXN_CHANGE_SET = "{*NO ACTIVE TXN*}";
@@ -111,12 +110,10 @@ public class HederaLedger {
     private final RecordsHistorian historian;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
-
+    private final AutoCreationLogic autoCreationLogic;
     private MutableEntityAccess mutableEntityAccess;
     private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger = null;
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger = null;
-
-    private final AutoCreationLogic autoCreationLogic;
 
     public HederaLedger(
             final TokenStore tokenStore,
@@ -149,15 +146,6 @@ public class HederaLedger {
         this.mutableEntityAccess = mutableEntityAccess;
     }
 
-    public void setNftsLedger(final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger) {
-        this.nftsLedger = nftsLedger;
-    }
-
-    public void setTokenRelsLedger(
-            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger) {
-        this.tokenRelsLedger = tokenRelsLedger;
-    }
-
     public TransactionalLedger<AccountID, AccountProperty, HederaAccount> getAccountsLedger() {
         return accountsLedger;
     }
@@ -166,8 +154,17 @@ public class HederaLedger {
         return nftsLedger;
     }
 
+    public void setNftsLedger(final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger) {
+        this.nftsLedger = nftsLedger;
+    }
+
     public TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> getTokenRelsLedger() {
         return tokenRelsLedger;
+    }
+
+    public void setTokenRelsLedger(
+            final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel> tokenRelsLedger) {
+        this.tokenRelsLedger = tokenRelsLedger;
     }
 
     /* -- TRANSACTIONAL SEMANTICS -- */
@@ -228,6 +225,10 @@ public class HederaLedger {
         } else {
             return NO_ACTIVE_TXN_CHANGE_SET;
         }
+    }
+
+    public long getNonce(final AccountID id) {
+        return (long) accountsLedger.get(id, ETHEREUM_NONCE);
     }
 
     /* -- CURRENCY MANIPULATION -- */
@@ -349,10 +350,10 @@ public class HederaLedger {
     }
 
     /**
-     * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All
-     * properties from the customizer are applied to the {@link MerkleAccount} provisionally
+     * Updates the provided {@link AccountID} with the {@link HederaAccountCustomizer}. All properties from the
+     * customizer are applied to the {@link MerkleAccount} provisionally
      *
-     * @param id target account
+     * @param id         target account
      * @param customizer properties to update
      */
     public void customizePotentiallyDeleted(final AccountID id, final HederaAccountCustomizer customizer) {

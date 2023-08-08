@@ -48,7 +48,7 @@ import org.mockito.MockedStatic;
 
 class GetTokenNftInfoResourceUsageTest {
     private static final NftID target = NftID.newBuilder()
-            .setTokenID(IdUtils.asToken("0.0.123"))
+            .setTokenId(IdUtils.asToken("0.0.123"))
             .setSerialNumber(1)
             .build();
     private static final ByteString metadata = ByteString.copyFromUtf8("LMAO");

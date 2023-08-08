@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -30,7 +29,6 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -44,10 +42,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
-    private final EntityNum tokenEntityNum = EntityNum.fromLong(2000);
-
     @Mock
-    private ReadableKVState<EntityNum, Token> tokens;
+    private ReadableKVState<TokenID, Token> tokens;
 
     private static final String TOKENS = "TOKENS";
     private final TokenID tokenId = TokenID.newBuilder().tokenNum(2000).build();
@@ -66,13 +62,13 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
     }
 
     private void initializeToken() {
-        given(states.<EntityNum, Token>get(TOKENS)).willReturn(tokens);
+        given(states.<TokenID, Token>get(TOKENS)).willReturn(tokens);
         token = createToken();
     }
 
     @Test
     void getsMerkleTokenIfTokenIdPresent() {
-        given(tokens.get(tokenEntityNum)).willReturn(token);
+        given(tokens.get(tokenId)).willReturn(token);
 
         final var meta = subject.getTokenMeta(tokenId);
         assertEquals(adminKey, meta.adminKey());
@@ -83,12 +79,12 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         assertEquals(feeScheduleKey, meta.feeScheduleKey());
         assertEquals(pauseKey, meta.pauseKey());
         assertTrue(meta.hasRoyaltyWithFallback());
-        assertEquals(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury, meta.treasuryAccountId());
     }
 
     @Test
     void getsNullKeyIfMissingAccount() throws PreCheckException {
-        given(tokens.get(tokenEntityNum)).willReturn(null);
+        given(tokens.get(tokenId)).willReturn(null);
         assertNull(subject.getTokenMeta(tokenId));
     }
 
@@ -99,12 +95,12 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         copy.customFees(PbjConverter.fromFcCustomFee(
                 FcCustomFee.royaltyFee(1, 2, new FixedFeeSpec(1, null), new EntityId(1, 2, 5), false)));
 
-        given(tokens.get(tokenEntityNum)).willReturn(copy.build());
+        given(tokens.get(tokenId)).willReturn(copy.build());
 
         final var meta = subject.getTokenMeta(tokenId);
 
         assertTrue(meta.hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury, meta.treasuryAccountId());
     }
 
     @Test
@@ -113,11 +109,11 @@ class ReadableTokenStoreImplTest extends TokenHandlerTestBase {
         copy.tokenType(NON_FUNGIBLE_UNIQUE);
         copy.customFees(PbjConverter.fromFcCustomFee(FcCustomFee.royaltyFee(1, 2, null, new EntityId(1, 2, 5), false)));
 
-        given(tokens.get(tokenEntityNum)).willReturn(copy.build());
+        given(tokens.get(tokenId)).willReturn(copy.build());
 
         final var meta = subject.getTokenMeta(tokenId);
 
         assertFalse(meta.hasRoyaltyWithFallback());
-        assertSame(treasury.accountNum(), meta.treasuryNum());
+        assertEquals(treasury, meta.treasuryAccountId());
     }
 }

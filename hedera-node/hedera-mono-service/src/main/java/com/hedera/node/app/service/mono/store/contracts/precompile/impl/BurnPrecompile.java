@@ -24,13 +24,16 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
@@ -87,7 +90,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
                     case AbiConstants.ABI_ID_BURN_TOKEN_V2 -> SystemContractAbis.BURN_TOKEN_V2;
                     default -> throw new IllegalArgumentException("invalid selector to burn precompile");
                 };
-        burnOp = getBurnWrapper(input, burnAbi);
+        burnOp = getBurnWrapper(input, burnAbi, ledgers);
         transactionBody = syntheticTxnFactory.createBurn(burnOp);
         return transactionBody;
     }
@@ -95,6 +98,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     @Override
     public void run(final MessageFrame frame) {
         Objects.requireNonNull(burnOp, "`body` method should be called before `run`");
+        validateTrue(burnOp.amount() >= 0, INVALID_TOKEN_BURN_AMOUNT);
 
         /* --- Check required signatures --- */
         final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
@@ -138,22 +142,27 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         return encoder.encodeBurnFailure(status);
     }
 
-    public static BurnWrapper getBurnWrapper(final Bytes input, @NonNull final SystemContractAbis abi) {
+    public static BurnWrapper getBurnWrapper(
+            final Bytes input, @NonNull final SystemContractAbis abi, @NonNull final WorldLedgers ledgers) {
         final Tuple decodedArguments = decodeFunctionCall(input, abi.selector, abi.decoder);
 
         final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = SystemContractAbis.toLongSafely(decodedArguments.get(1));
         final var serialNumbers = (long[]) decodedArguments.get(2);
 
-        if (fungibleAmount < 0 || (fungibleAmount == 0 && serialNumbers.length == 0)) {
-            throw new IllegalArgumentException("Illegal amount of tokens to burn");
+        var isNonFungible = false;
+        try {
+            isNonFungible = ledgers.tokens().get(tokenID, TokenProperty.TOKEN_TYPE)
+                    == com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
+        } catch (final MissingEntityException e) {
+            // Do nothing as the transaction will fail downstream
         }
 
-        if (fungibleAmount > 0) {
-            return BurnWrapper.forFungible(tokenID, fungibleAmount);
-        } else {
+        if (isNonFungible) {
             return BurnWrapper.forNonFungible(
                     tokenID, Arrays.stream(serialNumbers).boxed().toList());
+        } else {
+            return BurnWrapper.forFungible(tokenID, fungibleAmount);
         }
     }
 }

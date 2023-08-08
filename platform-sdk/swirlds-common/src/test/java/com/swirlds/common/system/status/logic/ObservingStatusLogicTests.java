@@ -20,10 +20,12 @@ import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.trigge
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertNoTransition;
 import static com.swirlds.common.system.status.logic.StatusLogicTestUtils.triggerActionAndAssertTransition;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
@@ -31,7 +33,6 @@ import com.swirlds.common.system.status.actions.SelfEventReachedConsensusAction;
 import com.swirlds.common.system.status.actions.StartedReplayingEventsAction;
 import com.swirlds.common.system.status.actions.StateWrittenToDiskAction;
 import com.swirlds.common.system.status.actions.TimeElapsedAction;
-import com.swirlds.common.test.fixtures.FakeTime;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.time.Duration;
@@ -90,6 +91,15 @@ class ObservingStatusLogicTests {
     void toBehind() {
         triggerActionAndAssertTransition(
                 logic::processFallenBehindAction, new FallenBehindAction(), PlatformStatus.BEHIND);
+    }
+
+    @Test
+    @DisplayName("Go to BEHIND (due to emergency reconnect)")
+    void toBehindEmergency() {
+        triggerActionAndAssertTransition(
+                logic::processEmergencyReconnectStartedAction,
+                new EmergencyReconnectStartedAction(),
+                PlatformStatus.BEHIND);
     }
 
     @Test

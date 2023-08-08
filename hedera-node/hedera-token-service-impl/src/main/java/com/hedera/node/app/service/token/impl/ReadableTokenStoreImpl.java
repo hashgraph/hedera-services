@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -35,7 +34,7 @@ import java.util.Optional;
  */
 public class ReadableTokenStoreImpl implements ReadableTokenStore {
     /** The underlying data storage class that holds the token data. */
-    private final ReadableKVState<EntityNum, Token> tokenState;
+    private final ReadableKVState<TokenID, Token> tokenState;
 
     /**
      * Create a new {@link ReadableTokenStoreImpl} instance.
@@ -52,7 +51,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
     @Nullable
     public TokenMetadata getTokenMeta(@NonNull final TokenID id) {
         requireNonNull(id);
-        final var token = getTokenLeaf(id.tokenNum());
+        final var token = getTokenLeaf(id);
         if (token.isEmpty()) {
             return null;
         }
@@ -63,7 +62,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
     @Nullable
     public Token get(@NonNull final TokenID id) {
         requireNonNull(id);
-        return getTokenLeaf(id.tokenNum()).orElse(null);
+        return getTokenLeaf(id).orElse(null);
     }
 
     private TokenMetadata tokenMetaFrom(final Token token) {
@@ -87,7 +86,7 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
                 token.pauseKeyOrElse(null),
                 token.symbol(),
                 hasRoyaltyWithFallback,
-                token.treasuryAccountNumber(), // remove this and make it a long
+                token.treasuryAccountId(),
                 token.decimals());
     }
 
@@ -99,11 +98,11 @@ public class ReadableTokenStoreImpl implements ReadableTokenStore {
      * Returns the merkleToken leaf for the given tokenId. If the token doesn't exist returns {@code
      * Optional.empty()}
      *
-     * @param tokenNum given tokenId's number
+     * @param tokenId given tokenId
      * @return merkleToken leaf for the given tokenId
      */
-    private Optional<Token> getTokenLeaf(final long tokenNum) {
-        final var token = tokenState.get(EntityNum.fromLong(tokenNum));
+    private Optional<Token> getTokenLeaf(final TokenID tokenId) {
+        final var token = tokenState.get(tokenId);
         return Optional.ofNullable(token);
     }
 }

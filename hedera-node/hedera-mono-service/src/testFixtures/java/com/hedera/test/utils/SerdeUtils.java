@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.node.app.service.mono.state.submerkle.ContractNonceInfo;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.EvmLog;
@@ -86,6 +87,9 @@ public class SerdeUtils {
                 that.getCreatedContractIDsList().stream()
                         .map(EntityId::fromGrpcContractId)
                         .toList(),
+                that.getContractNoncesList().stream()
+                        .map(SerdeUtils::contractInfoNonceFromGrpc)
+                        .toList(),
                 that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : EvmFnResult.EMPTY,
                 that.getGas(),
                 that.getAmount(),
@@ -103,6 +107,12 @@ public class SerdeUtils {
                         : grpc.getBloom().toByteArray(),
                 grpc.getTopicList().stream().map(ByteString::toByteArray).toList(),
                 grpc.getData().isEmpty() ? EvmLog.MISSING_BYTES : grpc.getData().toByteArray());
+    }
+
+    public static ContractNonceInfo contractInfoNonceFromGrpc(
+            com.hederahashgraph.api.proto.java.ContractNonceInfo grpc) {
+        return new ContractNonceInfo(
+                grpc.hasContractId() ? EntityId.fromGrpcContractId(grpc.getContractId()) : null, grpc.getNonce());
     }
 
     public static <T extends SelfSerializable> T deserializeFromBytes(

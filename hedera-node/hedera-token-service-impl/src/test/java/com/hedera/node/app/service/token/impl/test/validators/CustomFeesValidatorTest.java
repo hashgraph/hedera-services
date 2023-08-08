@@ -30,11 +30,10 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.CustomFee;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
@@ -140,11 +139,12 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("royalty fee for NFTs will fail if the denominating token is missing on fee schedule update")
     void royaltyFeeFailsWithMissingTokenOnFeeScheduleUpdate() {
         writableTokenState = emptyWritableTokenState();
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
-        feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
+        feeWithRoyalty.add(
+                withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build()));
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         nonFungibleToken,
                         readableAccountStore,
@@ -162,9 +162,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         final var nftDenom = royaltyFee
                 .copyBuilder()
-                .fallbackFee(fixedFee.copyBuilder()
+                .fallbackFee(hbarFixedFee
+                        .copyBuilder()
                         .denominatingTokenId(TokenID.newBuilder()
-                                .tokenNum(nonFungibleTokenNum.longValue())
+                                .tokenNum(nonFungibleTokenId.tokenNum())
                                 .build()))
                 .build();
         feeWithRoyalty.add(withRoyaltyFee(nftDenom));
@@ -182,7 +183,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void missingTokenAssociationForRoyaltyFeeFailsOnFeeScheduleUpdate() {
         refreshWritableStores();
         readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
 
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
@@ -190,7 +191,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withRoyaltyFee(royaltyFee))))
+                        List.of(withRoyaltyFee(royaltyFee
+                                .copyBuilder()
+                                .fallbackFee(htsFixedFee)
+                                .build()))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -215,7 +219,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void fixedFeeIsAllowedForNonFungibleTokenOnFeeScheduleUpdate() {
         refreshWritableStores();
         final List<CustomFee> feeWithFixed = new ArrayList<>();
-        feeWithFixed.add(withFixedFee(fixedFee));
+        feeWithFixed.add(withFixedFee(hbarFixedFee));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateForFeeScheduleUpdate(
                         nonFungibleToken,
@@ -230,7 +234,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
             "fails if there is no token relation between token and fee collector in fixed fee on fee schedule update")
     void failsIfTokenRelationIsMissingInFixedFeeOnFeeScheduleUpdate() {
         readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
 
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
@@ -238,7 +242,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withFixedFee(fixedFee))))
+                        List.of(withFixedFee(hbarFixedFee), withFractionalFee(fractionalFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -248,7 +252,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
             "fails if there is no token relation between token and fee collector in fractional fee on fee schedule update")
     void failsIfTokenRelationIsMissingForFractionalFeeOnFeeScheduleUpdate() {
         readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
 
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
@@ -265,9 +269,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("token denomination should be fungible common for fixed fee on fee schedule update")
     void validateTokenDenominationForFixedFeeOnFeeScheduleUpdate() {
         refreshWritableStores();
-        final var newFee = fixedFee.copyBuilder()
+        final var newFee = hbarFixedFee
+                .copyBuilder()
                 .denominatingTokenId(TokenID.newBuilder()
-                        .tokenNum(nonFungibleTokenNum.longValue())
+                        .tokenNum(nonFungibleTokenId.tokenNum())
                         .build())
                 .build();
         assertThatThrownBy(() -> subject.validateForFeeScheduleUpdate(
@@ -324,11 +329,12 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @Test
     @DisplayName("Custom fee validation for TokenCreate with self denominating tokenId")
     void validateCustomFeeForCreationWithSelfDenomination() {
-        final var fixesFeeWithSelfDenomination = fixedFee.copyBuilder()
+        final var fixesFeeWithSelfDenomination = hbarFixedFee
+                .copyBuilder()
                 .denominatingTokenId(TokenID.newBuilder().tokenNum(0).build())
                 .build();
         final var expectedFeeWithNewToken =
-                fixedFee.copyBuilder().denominatingTokenId(fungibleTokenId).build();
+                hbarFixedFee.copyBuilder().denominatingTokenId(fungibleTokenId).build();
         final var fees = List.of(withFixedFee(fixesFeeWithSelfDenomination), withFractionalFee(fractionalFee));
         final var requireAutoAssociation = subject.validateForCreation(
                 fungibleToken, readableAccountStore, readableTokenRelStore, writableTokenStore, fees);
@@ -418,11 +424,12 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("royalty fee for NFTs will fail if the denominating token is missing")
     void royaltyFeeFailsWithMissingTokenOnTokenCreate() {
         writableTokenState = emptyWritableTokenState();
-        given(writableStates.<EntityNum, Token>get(TOKENS)).willReturn(writableTokenState);
+        given(writableStates.<TokenID, Token>get(TOKENS)).willReturn(writableTokenState);
         writableTokenStore = new WritableTokenStore(writableStates);
 
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
-        feeWithRoyalty.add(withRoyaltyFee(royaltyFee));
+        feeWithRoyalty.add(
+                withRoyaltyFee(royaltyFee.copyBuilder().fallbackFee(htsFixedFee).build()));
         assertThatThrownBy(() -> subject.validateForCreation(
                         nonFungibleToken,
                         readableAccountStore,
@@ -440,10 +447,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
         final List<CustomFee> feeWithRoyalty = new ArrayList<>();
         final var nftDenom = royaltyFee
                 .copyBuilder()
-                .fallbackFee(fixedFee.copyBuilder()
-                        .denominatingTokenId(TokenID.newBuilder()
-                                .tokenNum(nonFungibleTokenNum.longValue())
-                                .build()))
+                .fallbackFee(hbarFixedFee
+                        .copyBuilder()
+                        .denominatingTokenId(nonFungibleTokenId)
+                        .build())
                 .build();
         feeWithRoyalty.add(withRoyaltyFee(nftDenom));
         assertThatThrownBy(() -> subject.validateForCreation(
@@ -460,7 +467,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void missingTokenAssociationForRoyaltyFeeFailsOnTokenCreate() {
         refreshWritableStores();
         readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
 
         assertThatThrownBy(() -> subject.validateForCreation(
@@ -468,7 +475,10 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withRoyaltyFee(royaltyFee))))
+                        List.of(withRoyaltyFee(royaltyFee
+                                .copyBuilder()
+                                .fallbackFee(htsFixedFee)
+                                .build()))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -493,7 +503,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     void fixedFeeIsAllowedForNonFungibleTokenOnTokenCreate() {
         refreshWritableStores();
         final List<CustomFee> feeWithFixed = new ArrayList<>();
-        feeWithFixed.add(withFixedFee(fixedFee));
+        feeWithFixed.add(withFixedFee(hbarFixedFee));
         assertThatNoException()
                 .isThrownBy(() -> subject.validateForCreation(
                         nonFungibleToken,
@@ -507,7 +517,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("fails if there is no token relation between token and fee collector in fixed fee")
     void failsIfTokenRelationIsMissingInFixedFeeOnTokenCreate() {
         readableTokenRelState = emptyReadableTokenRelsStateBuilder().build();
-        given(readableStates.<EntityNumPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
+        given(readableStates.<EntityIDPair, TokenRelation>get(TOKEN_RELS)).willReturn(readableTokenRelState);
         readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates);
 
         assertThatThrownBy(() -> subject.validateForCreation(
@@ -515,7 +525,7 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
                         readableAccountStore,
                         readableTokenRelStore,
                         writableTokenStore,
-                        List.of(withFixedFee(fixedFee))))
+                        List.of(withFixedFee(htsFixedFee))))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR));
     }
@@ -524,10 +534,9 @@ class CustomFeesValidatorTest extends CryptoTokenHandlerTestBase {
     @DisplayName("token denomination should be fungible common for fixed fee")
     void validateTokenDenominationForFixedFeeOnTokenCreate() {
         refreshWritableStores();
-        final var newFee = fixedFee.copyBuilder()
-                .denominatingTokenId(TokenID.newBuilder()
-                        .tokenNum(nonFungibleTokenNum.longValue())
-                        .build())
+        final var newFee = hbarFixedFee
+                .copyBuilder()
+                .denominatingTokenId(nonFungibleTokenId)
                 .build();
         assertThatThrownBy(() -> subject.validateForCreation(
                         fungibleToken,

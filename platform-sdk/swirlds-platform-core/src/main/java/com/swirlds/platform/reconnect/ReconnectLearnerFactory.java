@@ -23,6 +23,7 @@ import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -30,7 +31,7 @@ import java.util.Objects;
  */
 public class ReconnectLearnerFactory {
     private final AddressBook addressBook;
-    private final int reconnectSocketTimeout;
+    private final Duration reconnectSocketTimeout;
     private final ReconnectMetrics statistics;
     private final ThreadManager threadManager;
     private final PlatformContext platformContext;
@@ -39,19 +40,19 @@ public class ReconnectLearnerFactory {
      * @param platformContext the platform context
      * @param threadManager          responsible for managing thread lifecycles
      * @param addressBook            the current address book
-     * @param reconnectSocketTimeout the socket timeout to use during the reconnect in milliseconds
+     * @param reconnectSocketTimeout the socket timeout to use during the reconnect
      * @param statistics             reconnect metrics
      */
     public ReconnectLearnerFactory(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final AddressBook addressBook,
-            final int reconnectSocketTimeout,
+            @NonNull final Duration reconnectSocketTimeout,
             @NonNull final ReconnectMetrics statistics) {
         this.platformContext = Objects.requireNonNull(platformContext);
         this.threadManager = Objects.requireNonNull(threadManager);
         this.addressBook = Objects.requireNonNull(addressBook);
-        this.reconnectSocketTimeout = reconnectSocketTimeout;
+        this.reconnectSocketTimeout = Objects.requireNonNull(reconnectSocketTimeout);
         this.statistics = Objects.requireNonNull(statistics);
     }
 

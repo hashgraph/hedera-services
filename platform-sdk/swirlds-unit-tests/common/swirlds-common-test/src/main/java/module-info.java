@@ -1,16 +1,10 @@
 open module com.swirlds.common.test {
-    exports com.swirlds.common.test;
-    exports com.swirlds.common.test.io;
-    exports com.swirlds.common.test.state;
     exports com.swirlds.common.test.merkle.util;
     exports com.swirlds.common.test.merkle.dummy;
     exports com.swirlds.common.test.dummy;
     exports com.swirlds.common.test.benchmark;
     exports com.swirlds.common.test.set;
     exports com.swirlds.common.test.map;
-    exports com.swirlds.common.test.threading;
-    exports com.swirlds.common.test.crypto;
-    exports com.swirlds.common.test.fcqueue;
 
     requires com.swirlds.base;
     requires com.swirlds.test.framework;
@@ -23,4 +17,5 @@ open module com.swirlds.common.test {
     requires com.fasterxml.jackson.databind;
     requires lazysodium.java;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.common.test.fixtures;
 }

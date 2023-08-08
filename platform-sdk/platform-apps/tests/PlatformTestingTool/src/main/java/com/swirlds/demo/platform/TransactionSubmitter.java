@@ -17,7 +17,7 @@
 package com.swirlds.demo.platform;
 
 import static com.swirlds.common.metrics.Metrics.PLATFORM_CATEGORY;
-import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.units.UnitConstants.SECONDS_TO_MILLISECONDS;
 
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;

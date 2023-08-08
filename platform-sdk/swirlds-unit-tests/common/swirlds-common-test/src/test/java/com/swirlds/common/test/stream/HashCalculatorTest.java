@@ -30,7 +30,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.HashCalculatorForStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import com.swirlds.common.stream.internal.LinkedObjectStream;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import org.junit.jupiter.api.Test;
 
 class HashCalculatorTest {

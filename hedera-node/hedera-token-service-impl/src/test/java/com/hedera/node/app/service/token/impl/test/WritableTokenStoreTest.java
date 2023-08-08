@@ -64,7 +64,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
 
         writableTokenStore.put(token);
 
-        final var maybeReadToken = writableTokenStore.getForModify(tokenEntityNum.longValue());
+        final var maybeReadToken = writableTokenStore.getForModify(tokenId);
 
         assertTrue(maybeReadToken.isPresent());
         final var readToken = maybeReadToken.get();
@@ -74,13 +74,13 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     @Test
     void putsTokenChangesToStateInModifications() {
         token = createToken();
-        assertFalse(writableTokenState.contains(tokenEntityNum));
+        assertFalse(writableTokenState.contains(tokenId));
 
         // put, keeps the token in the modifications
         writableTokenStore.put(token);
 
-        assertTrue(writableTokenState.contains(tokenEntityNum));
-        final var writtenToken = writableTokenState.get(tokenEntityNum);
+        assertTrue(writableTokenState.contains(tokenId));
+        final var writtenToken = writableTokenState.get(tokenId);
         assertEquals(token, writtenToken);
     }
 
@@ -92,6 +92,6 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
         writableTokenStore.put(token);
 
         assertEquals(1, writableTokenStore.sizeOfState());
-        assertEquals(Set.of(tokenEntityNum), writableTokenStore.modifiedTokens());
+        assertEquals(Set.of(tokenId), writableTokenStore.modifiedTokens());
     }
 }

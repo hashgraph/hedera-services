@@ -22,6 +22,7 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -37,15 +38,17 @@ public class HederaEvmTransactionProcessor {
 
     public HederaEvmTransactionResult process(
             @NonNull final HederaEvmTransaction transaction,
-            @NonNull final HederaWorldUpdater worldUpdater,
+            @NonNull final HederaWorldUpdater updater,
+            @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
             @NonNull final HederaEvmContext context,
             @NonNull final HederaEvmVersion version,
-            @NonNull final HederaTracer tracer,
+            @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
         return requireNonNull(transactionProcessors.get(version))
                 .processTransaction(
                         requireNonNull(transaction),
-                        requireNonNull(worldUpdater),
+                        requireNonNull(updater),
+                        requireNonNull(feesOnlyUpdater),
                         requireNonNull(context),
                         requireNonNull(tracer),
                         requireNonNull(config));

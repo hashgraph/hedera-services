@@ -18,7 +18,7 @@ package com.swirlds.virtualmap;
 
 import static com.swirlds.virtualmap.VirtualMapTestUtils.createMap;
 
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;

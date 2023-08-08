@@ -27,10 +27,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.file.FileUpdateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -47,6 +49,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FileUpdateHandler implements TransactionHandler {
+    private static final Timestamp EXPIRE_NEVER =
+            Timestamp.newBuilder().seconds(Long.MAX_VALUE - 1).build();
+
     @Inject
     public FileUpdateHandler() {
         // Exists for injection
@@ -66,21 +71,33 @@ public class FileUpdateHandler implements TransactionHandler {
         requireNonNull(context);
         final var transactionBody = context.body().fileUpdateOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-
         preValidate(transactionBody.fileID(), fileStore, context, false);
-        validateAndAddRequiredKeys(transactionBody.keys(), context, true);
+
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), transactionBody.keys(), context);
     }
 
     @Override
     public void handle(@NonNull final HandleContext handleContext) throws HandleException {
         requireNonNull(handleContext);
 
-        final var fileStore = handleContext.writableStore(WritableFileStoreImpl.class);
+        final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final var fileUpdate = handleContext.body().fileUpdateOrThrow();
-        final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT));
 
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
 
+        if (fileUpdate.fileID() == null) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+
+        // the update file always will be for the node, not a particular ledger that's why we just compare the fileNum
+        // and ignore shard and realm
+        if (fileUpdate.fileIDOrThrow().fileNum() == fileServiceConfig.upgradeFileNumber()) {
+            handleUpdateUpgradeFile(fileUpdate, handleContext);
+            return;
+        }
+
+        final var maybeFile = fileStore.get(fileUpdate.fileIDOrElse(FileID.DEFAULT));
         if (maybeFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
         }
@@ -89,7 +106,8 @@ public class FileUpdateHandler implements TransactionHandler {
         validateFalse(file.deleted(), FILE_DELETED);
 
         // First validate this file is mutable; and the pending mutations are allowed
-        validateFalse(file.keys() == null && wantsToMutateNonExpiryField(fileUpdate), UNAUTHORIZED);
+        // TODO: add or condition for privilege accounts from context
+        validateFalse(file.keys() == null, UNAUTHORIZED);
 
         validateMaybeNewMemo(handleContext.attributeValidator(), fileUpdate);
 
@@ -102,6 +120,22 @@ public class FileUpdateHandler implements TransactionHandler {
         // And then resolve mutable attributes, and put the new topic back
         resolveMutableBuilderAttributes(fileUpdate, builder, fileServiceConfig, file);
         fileStore.put(builder.build());
+    }
+
+    private void handleUpdateUpgradeFile(FileUpdateTransactionBody fileUpdate, HandleContext handleContext) {
+        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
+        // empty old upgrade file
+        fileStore.resetFileContents();
+        final var file = new File.Builder()
+                .fileId(FileID.newBuilder()
+                        .fileNum(fileUpdate.fileIDOrThrow().fileNum())
+                        .build())
+                .contents(fileUpdate.contents())
+                .deleted(false)
+                .expirationTime(fileUpdate.expirationTimeOrElse(EXPIRE_NEVER).seconds())
+                .memo(fileUpdate.memo())
+                .build();
+        fileStore.add(file);
     }
 
     private void resolveMutableBuilderAttributes(

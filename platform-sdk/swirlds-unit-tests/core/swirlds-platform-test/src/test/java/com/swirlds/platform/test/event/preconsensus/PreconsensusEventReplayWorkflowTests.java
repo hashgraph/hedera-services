@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.event.preconsensus;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.RandomUtils.randomInstant;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomInstant;
 import static com.swirlds.platform.event.preconsensus.PreconsensusEventReplayWorkflow.replayPreconsensusEvents;
 import static com.swirlds.platform.test.event.preconsensus.AsyncPreconsensusEventWriterTests.buildGraphGenerator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
@@ -46,7 +46,7 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -54,8 +54,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -63,13 +61,11 @@ import org.junit.jupiter.api.Test;
 class PreconsensusEventReplayWorkflowTests {
 
     private enum TestPhase {
-        SET_STARTUP_STATUS,
         REPLAY_EVENTS,
         FLUSH_INTAKE_QUEUE,
         FLUSH_CONSENSUS_ROUND_HANDLER,
         FLUSH_STATE_HASH_SIGN_QUEUE,
         BEGIN_STREAMING_NEW_EVENTS,
-        SET_FINISH_STATUS,
         TEST_FINISHED
     }
 
@@ -78,19 +74,17 @@ class PreconsensusEventReplayWorkflowTests {
     void testBasicReplayWorkflow() throws InterruptedException {
         final Random random = getRandomPrintSeed();
 
-        final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.SET_STARTUP_STATUS);
+        final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.REPLAY_EVENTS);
         final long minimumGenerationNonAncient = random.nextLong(1, 1000);
 
-        final AtomicReference<PlatformStatus> currentStatus = new AtomicReference<>(PlatformStatus.STARTING_UP);
-
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
         final int eventCount = 1000;
         for (int i = 0; i < eventCount; i++) {
             final EventImpl event = graphGenerator.generateEvent();
-            events.add(event);
+            events.add(event.getBaseEvent());
         }
-        final Iterator<EventImpl> eventIterator = events.iterator();
+        final Iterator<GossipEvent> eventIterator = events.iterator();
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong(), anyBoolean()))
@@ -112,7 +106,7 @@ class PreconsensusEventReplayWorkflowTests {
                     assertNotNull(event.getHashedData().getHash());
 
                     final int index = nextIndex.getAndIncrement();
-                    final EventImpl expectedEvent = events.get(index);
+                    final GossipEvent expectedEvent = events.get(index);
 
                     assertSame(event.getHashedData(), expectedEvent.getHashedData());
 
@@ -155,7 +149,7 @@ class PreconsensusEventReplayWorkflowTests {
         final PreconsensusEventWriter preconsensusEventWriter = mock(PreconsensusEventWriter.class);
         doAnswer(invocation -> {
                     assertEquals(TestPhase.BEGIN_STREAMING_NEW_EVENTS, phase.get());
-                    phase.set(TestPhase.SET_FINISH_STATUS);
+                    phase.set(TestPhase.TEST_FINISHED);
                     return null;
                 })
                 .when(preconsensusEventWriter)
@@ -170,26 +164,11 @@ class PreconsensusEventReplayWorkflowTests {
         when(latestImmutableState.get()).thenReturn(signedState);
         when(stateManagementComponent.getLatestImmutableState(any())).thenReturn(latestImmutableState);
 
-        final Supplier<PlatformStatus> getPlatformStats = currentStatus::get;
-
-        final Consumer<PlatformStatus> setPlatformStats = status -> {
-            if (phase.get() == TestPhase.SET_STARTUP_STATUS) {
-                assertEquals(PlatformStatus.STARTING_UP, currentStatus.get());
-                assertEquals(PlatformStatus.REPLAYING_EVENTS, status);
-                currentStatus.set(status);
-                phase.set(TestPhase.REPLAY_EVENTS);
-            } else if (phase.get() == TestPhase.SET_FINISH_STATUS) {
-                assertEquals(PlatformStatus.REPLAYING_EVENTS, currentStatus.get());
-                assertEquals(PlatformStatus.OBSERVING, status);
-                currentStatus.set(status);
-                phase.set(TestPhase.TEST_FINISHED);
-            } else {
-                fail("platform status set in wrong phase");
-            }
-        };
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
 
         replayPreconsensusEvents(
-                TestPlatformContextBuilder.create().build(),
+                platformContext,
                 AdHocThreadManager.getStaticThreadManager(),
                 Time.getCurrent(),
                 preconsensusEventFileManager,
@@ -199,8 +178,6 @@ class PreconsensusEventReplayWorkflowTests {
                 consensusRoundHandler,
                 stateHashSignQueue,
                 stateManagementComponent,
-                getPlatformStats,
-                setPlatformStats,
                 minimumGenerationNonAncient);
 
         assertEquals(TestPhase.TEST_FINISHED, phase.get());

@@ -60,6 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -73,14 +74,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+@HapiTestSuite
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ContractBurnHTSV1SecurityModelSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     public static final String THE_BURN_CONTRACT = "BurnToken";
-    public static final String MULTIVERSION_BURN_CONTRACT = "MultiversionBurn";
-
     public static final String ALICE = "Alice";
     private static final String TOKEN = "Token";
     private static final String TOKEN_TREASURY = "TokenTreasury";
@@ -234,13 +235,11 @@ public class ContractBurnHTSV1SecurityModelSuite extends HapiSuite {
                                         .gas(GAS_TO_OFFER))),
                         getTxnRecord(CREATION_TX).logged())
                 .when(
-                        // Burning 0 amount for Fungible tokens should fail
                         contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ZERO, new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
-                                .via("burnZero")
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                .via("burnZero"),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50),
                         contractCall(THE_BURN_CONTRACT, BURN_TOKEN_WITH_EVENT, BigInteger.ONE, new long[0])
                                 .payingWith(ALICE)

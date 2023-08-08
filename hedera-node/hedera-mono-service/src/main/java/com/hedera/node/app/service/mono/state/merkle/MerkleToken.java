@@ -176,8 +176,14 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 && Objects.equals(this.symbol, that.symbol)
                 && Objects.equals(this.name, that.name)
                 && Objects.equals(this.memo, that.memo)
-                && Objects.equals(this.treasury, that.treasury)
-                && Objects.equals(this.autoRenewAccount, that.autoRenewAccount)
+                && ((this.treasury == null && that.treasury == null)
+                        || (this.treasury != null
+                                && that.treasury != null
+                                && (this.treasury.num() == that.treasury.num())))
+                && ((this.autoRenewAccount == null && that.autoRenewAccount == null)
+                        || (this.autoRenewAccount != null
+                                && that.autoRenewAccount != null
+                                && (this.autoRenewAccount.num() == that.autoRenewAccount.num())))
                 && equalUpToDecodability(this.wipeKey, that.wipeKey)
                 && equalUpToDecodability(this.supplyKey, that.supplyKey)
                 && equalUpToDecodability(this.adminKey, that.adminKey)

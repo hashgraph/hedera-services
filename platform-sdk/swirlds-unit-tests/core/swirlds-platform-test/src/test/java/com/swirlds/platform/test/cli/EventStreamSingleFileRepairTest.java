@@ -26,14 +26,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.test.RandomUtils;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
+import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.platform.test.simulated.RandomSigner;
-import com.swirlds.platform.test.stream.StreamUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

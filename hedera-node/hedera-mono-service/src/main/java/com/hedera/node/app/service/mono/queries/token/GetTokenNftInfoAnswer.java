@@ -78,7 +78,7 @@ public class GetTokenNftInfoAnswer implements AnswerService {
     @Override
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         final var nftID = query.getTokenGetNftInfo().getNftID();
-        if (!nftID.hasTokenID()) {
+        if (!nftID.hasTokenId()) {
             return INVALID_TOKEN_ID;
         }
 

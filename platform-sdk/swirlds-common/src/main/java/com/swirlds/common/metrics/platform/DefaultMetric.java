@@ -18,10 +18,11 @@ package com.swirlds.common.metrics.platform;
 
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +31,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 /**
  * Basic implementation of all platform-implementations of {@link Metric}
  */
-public abstract class DefaultMetric implements Metric {
+public abstract class DefaultMetric implements Metric, LegacyMetric {
 
     private final String category;
     private final String name;

@@ -24,6 +24,8 @@ import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_K
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.NETWORK_REWARDS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,7 +43,9 @@ import com.hedera.hapi.node.base.StakingInfo;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenRelationship;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -50,28 +54,36 @@ import com.hedera.hapi.node.token.CryptoGetInfoQuery;
 import com.hedera.hapi.node.token.CryptoGetInfoResponse;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.config.VersionedConfigImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableStakingInfoStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
+import com.hedera.node.app.spi.state.ReadableSingletonState;
+import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -86,11 +98,15 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private QueryContext context;
 
     @Mock
-    private Token token1, token2, token3;
+    private Token token1, token2;
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
 
+    @Mock
+    private ConfigProvider configProvider;
+
     private CryptoGetAccountInfoHandler subject;
+    private Configuration config;
 
     @Mock
     private StakingNodeInfo stakingNodeInfo;
@@ -98,7 +114,10 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        subject = new CryptoGetAccountInfoHandler();
+        config = HederaTestConfigBuilder.create().getOrCreateConfig();
+        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(config, 1));
+        subject =
+                new CryptoGetAccountInfoHandler(new StakeRewardCalculatorImpl(new StakePeriodManager(configProvider)));
     }
 
     @Test
@@ -139,7 +158,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("Empty account failed during validate")
-    void validatesQueryIfEmptyAccount() throws Throwable {
+    void validatesQueryIfEmptyAccount() {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
@@ -157,7 +176,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("Account Id is needed during validate")
-    void validatesQueryIfInvalidAccount() throws Throwable {
+    void validatesQueryIfInvalidAccount() {
         final var state =
                 MapReadableKVState.<AccountID, Account>builder(ACCOUNTS_KEY).build();
         given(readableStates.<AccountID, Account>get(ACCOUNTS_KEY)).willReturn(state);
@@ -174,7 +193,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("deleted account is not valid")
-    void validatesQueryIfDeletedAccount() throws Throwable {
+    void validatesQueryIfDeletedAccount() {
         deleteAccount = deleteAccount.copyBuilder().deleted(true).build();
         readableAccounts = emptyReadableAccountStateBuilder()
                 .value(deleteAccountId, deleteAccount)
@@ -234,27 +253,28 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo();
 
-        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
+        account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
         given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenNumber()).willReturn(3L);
+        given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
+        setupStakingRewardsStore();
         setupConfig();
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -271,52 +291,53 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfos();
 
-        account = account.copyBuilder().stakedNumber(-1).declineReward(false).build();
+        account = account.copyBuilder().stakedNodeId(0).declineReward(false).build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
         given(token2.decimals()).willReturn(50);
         given(token1.symbol()).willReturn("FOO");
         given(token2.symbol()).willReturn("BAR");
-        given(token1.tokenNumber()).willReturn(3L);
-        given(token2.tokenNumber()).willReturn(4L);
+        given(token1.tokenId()).willReturn(asToken(3L));
+        given(token2.tokenId()).willReturn(asToken(4L));
         setupTokenStore(token1, token2);
 
         final var tokenRelation1 = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         final var tokenRelation2 = TokenRelation.newBuilder()
-                .tokenNumber(4L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(4L))
+                .accountId(id)
                 .balance(100L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(5L)
-                .previousToken(3L)
+                .nextToken(asToken(5L))
+                .previousToken(asToken(3L))
                 .build();
         final var tokenRelation3 = TokenRelation.newBuilder()
-                .tokenNumber(5L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(5L))
+                .accountId(id)
                 .balance(10L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(6L)
-                .previousToken(4L)
+                .nextToken(asToken(6L))
+                .previousToken(asToken(4L))
                 .build();
         setupTokenRelationStore(tokenRelation1, tokenRelation2, tokenRelation3);
         setupStakingInfoStore();
+        setupStakingRewardsStore();
         setupConfig();
 
         final var query = createCryptoGetInfoQuery(accountNum);
@@ -335,24 +356,27 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var responseHeader = getOkResponse();
         final var expectedInfo = getExpectedAccountInfo2();
 
-        account = account.copyBuilder().stakedNumber(1).declineReward(false).build();
+        account = account.copyBuilder()
+                .stakedAccountId(AccountID.newBuilder().accountNum(1).build())
+                .declineReward(false)
+                .build();
         setupAccountStore();
 
         given(token1.decimals()).willReturn(100);
         given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenNumber()).willReturn(3L);
+        given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
@@ -373,7 +397,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         final var expectedInfo = getExpectedAccountInfoEvm(evmAddress);
 
         account = account.copyBuilder()
-                .stakedNumber(-1)
+                .stakedNodeId(0)
                 .declineReward(false)
                 .alias(evmAddress)
                 .build();
@@ -381,22 +405,23 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
 
         given(token1.decimals()).willReturn(100);
         given(token1.symbol()).willReturn("FOO");
-        given(token1.tokenNumber()).willReturn(3L);
+        given(token1.tokenId()).willReturn(asToken(3L));
         setupTokenStore(token1);
 
         final var tokenRelation = TokenRelation.newBuilder()
-                .tokenNumber(3L)
-                .accountNumber(accountNum)
+                .tokenId(asToken(3L))
+                .accountId(id)
                 .balance(1000L)
                 .frozen(false)
                 .kycGranted(false)
                 .deleted(false)
                 .automaticAssociation(true)
-                .nextToken(4L)
-                .previousToken(2L)
+                .nextToken(asToken(4L))
+                .previousToken(asToken(2L))
                 .build();
         setupTokenRelationStore(tokenRelation);
         setupStakingInfoStore();
+        setupStakingRewardsStore();
         setupConfig();
         final var query = createCryptoGetInfoQuery(accountNum);
         when(context.query()).thenReturn(query);
@@ -417,21 +442,26 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     }
 
     private void setupTokenStore(Token... tokens) {
-        final var readableToken = MapReadableKVState.<EntityNum, Token>builder(TOKENS_KEY);
+        final var readableToken = MapReadableKVState.<TokenID, Token>builder(TOKENS_KEY);
         for (Token token : tokens) {
-            readableToken.value(EntityNum.fromLong(token.tokenNumber()), token);
+            readableToken.value(token.tokenId(), token);
         }
-        given(readableStates2.<EntityNum, Token>get(TOKENS_KEY)).willReturn(readableToken.build());
+        given(readableStates2.<TokenID, Token>get(TOKENS_KEY)).willReturn(readableToken.build());
         final var readableTokenStore = new ReadableTokenStoreImpl(readableStates2);
         when(context.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
     }
 
     private void setupTokenRelationStore(TokenRelation... tokenRelations) {
-        final var readableTokenRel = MapReadableKVState.<EntityNumPair, TokenRelation>builder(TOKEN_RELS_KEY);
+        final var readableTokenRel = MapReadableKVState.<EntityIDPair, TokenRelation>builder(TOKEN_RELS_KEY);
         for (TokenRelation tokenRelation : tokenRelations) {
-            readableTokenRel.value(EntityNumPair.fromLongs(accountNum, tokenRelation.tokenNumber()), tokenRelation);
+            readableTokenRel.value(
+                    EntityIDPair.newBuilder()
+                            .accountId(id)
+                            .tokenId(tokenRelation.tokenId())
+                            .build(),
+                    tokenRelation);
         }
-        given(readableStates3.<EntityNumPair, TokenRelation>get(TOKEN_RELS_KEY)).willReturn(readableTokenRel.build());
+        given(readableStates3.<EntityIDPair, TokenRelation>get(TOKEN_RELS_KEY)).willReturn(readableTokenRel.build());
         final var readableTokenRelStore = new ReadableTokenRelationStoreImpl(readableStates3);
         when(context.createStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelStore);
     }
@@ -443,6 +473,15 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
         given(readableStates4.<AccountID, StakingNodeInfo>get(STAKING_INFO_KEY)).willReturn(readableStakingNodes);
         final var readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates4);
         when(context.createStore(ReadableStakingInfoStore.class)).thenReturn(readableStakingInfoStore);
+    }
+
+    private void setupStakingRewardsStore() {
+        final AtomicReference<NetworkStakingRewards> backingValue =
+                new AtomicReference<>(new NetworkStakingRewards(true, 100000L, 50000L, 1000L));
+        final var stakingRewardsState = new ReadableSingletonStateBase<>(NETWORK_REWARDS, backingValue::get);
+        given(readableStates.getSingleton(NETWORK_REWARDS)).willReturn((ReadableSingletonState) stakingRewardsState);
+        final var readableRewardsStore = new ReadableNetworkStakingRewardsStoreImpl(readableStates);
+        when(context.createStore(ReadableNetworkStakingRewardsStore.class)).thenReturn(readableRewardsStore);
     }
 
     private void setupConfig() {
@@ -583,7 +622,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
                 .declineReward(false)
                 .stakedToMe(1_234L)
                 .stakedNodeId(0)
-                .stakePeriodStart(Timestamp.newBuilder().seconds(0))
+                .stakePeriodStart(Timestamp.newBuilder().seconds(106666675200L).build())
                 .build();
     }
 

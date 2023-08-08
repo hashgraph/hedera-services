@@ -246,7 +246,7 @@ class GetTokenInfoPrecompilesTest {
 
     // Info objects
     private final NftID nftID = NftID.newBuilder()
-            .setTokenID(tokenMerkleId)
+            .setTokenId(tokenMerkleId)
             .setSerialNumber(serialNumber)
             .build();
     private TokenInfo.Builder tokenInfo;
@@ -300,7 +300,7 @@ class GetTokenInfoPrecompilesTest {
         nonFungibleTokenInfo = TokenNftInfo.newBuilder()
                 .setLedgerId(fromString("0x03"))
                 .setNftID(NftID.newBuilder()
-                        .setTokenID(tokenMerkleId)
+                        .setTokenId(tokenMerkleId)
                         .setSerialNumber(serialNumber)
                         .build())
                 .setAccountID(payer)
@@ -510,7 +510,7 @@ class GetTokenInfoPrecompilesTest {
         given(wrappedLedgers.evmNftInfo(
                         NftID.newBuilder()
                                 .setSerialNumber(serialNumber)
-                                .setTokenID(tokenMerkleId)
+                                .setTokenId(tokenMerkleId)
                                 .build(),
                         networkInfo.ledgerId()))
                 .willReturn(Optional.of(evmNftInfo));
@@ -664,7 +664,7 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(Optional.of(evmTokenInfo));
         given(wrappedLedgers.evmNftInfo(
                         NftID.newBuilder()
-                                .setTokenID(tokenMerkleId)
+                                .setTokenId(tokenMerkleId)
                                 .setSerialNumber(serialNumber)
                                 .build(),
                         networkInfo.ledgerId()))
@@ -712,7 +712,7 @@ class GetTokenInfoPrecompilesTest {
                 .willReturn(Optional.of(evmTokenInfo));
         given(wrappedLedgers.evmNftInfo(
                         NftID.newBuilder()
-                                .setTokenID(tokenMerkleId)
+                                .setTokenId(tokenMerkleId)
                                 .setSerialNumber(serialNumber)
                                 .build(),
                         networkInfo.ledgerId()))

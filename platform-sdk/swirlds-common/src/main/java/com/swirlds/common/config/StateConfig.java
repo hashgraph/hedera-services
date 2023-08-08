@@ -39,7 +39,6 @@ import java.time.Duration;
  *                                              may not be written to disk.
  * @param saveStatePeriod                       The frequency of writes of a state to disk every this many seconds (0 to
  *                                              never write).
- * @param saveReconnectStateToDisk              If true, save the state received from a successful reconnect to disk.
  * @param signedStateDisk                       Keep at least this many of the old complete signed states on disk. This
  *                                              should be at least 2 so that  we don't delete an old state while a new
  *                                              one is in the process of writing to disk. set to 0 to not keep any
@@ -68,8 +67,6 @@ import java.time.Duration;
  *                                              Ignored if dumpStateOnISS is false.
  * @param secondsBetweenIssLogs                 The minimum time that must pass between log messages about ISS events.
  *                                              If ISS events happen with a higher frequency then they are squelched.
- * @param stateDeletionErrorLogFrequencySeconds If there are problems with state lifecycle then write errors to the log
- *                                              at most once per this period of time.
  * @param enableHashStreamLogging               When enabled, hashes for the nodes are logged per round.
  * @param debugHashDepth                        When logging debug information about the hashes in a merkle tree, do not
  *                                              display hash information for nodes deeper than this.
@@ -107,9 +104,8 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "") String mainClassNameOverride,
         @ConfigProperty(defaultValue = "false") boolean cleanSavedStateDirectory,
         @ConfigProperty(defaultValue = "20") int stateSavingQueueSize,
-        @ConfigProperty(defaultValue = "0") int saveStatePeriod,
-        @ConfigProperty(defaultValue = "false") boolean saveReconnectStateToDisk,
-        @ConfigProperty(defaultValue = "3") int signedStateDisk,
+        @ConfigProperty(defaultValue = "900") int saveStatePeriod,
+        @ConfigProperty(defaultValue = "5") int signedStateDisk,
         @ConfigProperty(defaultValue = "false") boolean dumpStateOnAnyISS,
         @ConfigProperty(defaultValue = "true") boolean dumpStateOnFatal,
         @ConfigProperty(defaultValue = "false") boolean haltOnAnyIss,
@@ -117,7 +113,6 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean haltOnCatastrophicIss,
         @ConfigProperty(defaultValue = "21600") long secondsBetweenISSDumps,
         @ConfigProperty(defaultValue = "300") long secondsBetweenIssLogs,
-        @ConfigProperty(defaultValue = "60") int stateDeletionErrorLogFrequencySeconds,
         @ConfigProperty(defaultValue = "true") boolean enableHashStreamLogging,
         @ConfigProperty(defaultValue = "5") int debugHashDepth,
         @ConfigProperty(defaultValue = "1000") int maxAgeOfFutureStateSignatures,
@@ -128,7 +123,7 @@ public record StateConfig(
         @ConfigProperty(defaultValue = "false") boolean debugStackTracesEnabled,
         @ConfigProperty(defaultValue = "false") boolean requireStateLoad,
         @ConfigProperty(defaultValue = "emergencyRecovery.yaml") String emergencyStateFileName,
-        @ConfigProperty(defaultValue = "false") boolean checkSignedStateFromDisk,
+        @ConfigProperty(defaultValue = "true") boolean checkSignedStateFromDisk,
         @ConfigProperty(defaultValue = "1") int signedStateFreq) {
 
     /**

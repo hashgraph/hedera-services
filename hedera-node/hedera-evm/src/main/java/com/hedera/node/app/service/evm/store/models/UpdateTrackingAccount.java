@@ -38,27 +38,28 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 /**
- * A mutable and updatable implementation of the {@link MutableAccount} interface, that tracks account updates
- * since the creation of the updated it's linked to.
- *
- * Contains {@code updateAccountTracker} for immediate set of balance in the world state.
- * Note that in practice this only track the modified account values, but doesn't remind if they were modified or not.
+ * A mutable and updatable implementation of the {@link MutableAccount} interface, that tracks account updates since the
+ * creation of the updated it's linked to.
+ * <p>
+ * Contains {@code updateAccountTracker} for immediate set of balance in the world state. Note that in practice this
+ * only track the modified account values, but doesn't remind if they were modified or not.
  */
 public class UpdateTrackingAccount<A extends Account> implements MutableAccount, EvmAccount {
+    @Nullable
+    protected final A account;
+
     private final Address address;
     private final Hash addressHash;
-    private long nonce;
-    private Wei balance;
-    private HederaEvmEntityAccess hederaEvmEntityAccess;
-    private boolean storageWasCleared = false;
     private final UpdateAccountTracker updateAccountTracker;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
     @Nullable
-    protected final A account;
-
-    @Nullable
     protected Bytes updatedCode;
+
+    private long nonce;
+    private Wei balance;
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
+    private boolean storageWasCleared = false;
 
     @Nullable
     private Hash updatedCodeHash;
@@ -92,8 +93,7 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     /**
      * The original account over which this tracks updates.
      *
-     * @return The original account over which this tracks updates, or {@code null} if this is a
-     *     newly created account.
+     * @return The original account over which this tracks updates, or {@code null} if this is a newly created account.
      */
     public A getWrappedAccount() {
         return account;
@@ -115,8 +115,8 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     /**
      * A map of the storage entries that were modified.
      *
-     * @return a map containing all entries that have been modified. This <b>may</b> contain entries
-     *     with a value of 0 to signify deletion.
+     * @return a map containing all entries that have been modified. This <b>may</b> contain entries with a value of 0
+     * to signify deletion.
      */
     @Override
     public Map<UInt256, UInt256> getUpdatedStorage() {
@@ -141,6 +141,9 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     @Override
     public void setNonce(final long nonce) {
         this.nonce = nonce;
+        if (updateAccountTracker != null) {
+            updateAccountTracker.setNonce(address, nonce);
+        }
     }
 
     @Override
@@ -167,6 +170,12 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     }
 
     @Override
+    public void setCode(Bytes code) {
+        this.updatedCode = code;
+        this.updatedCodeHash = null;
+    }
+
+    @Override
     public Hash getCodeHash() {
         if (updatedCode == null) {
             /* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
@@ -185,12 +194,6 @@ public class UpdateTrackingAccount<A extends Account> implements MutableAccount,
     public boolean hasCode() {
         /* Since the constructor that omits account sets updatedCode to Bytes.ZERO, no risk of NPE here. */
         return updatedCode == null ? account.hasCode() : !updatedCode.isEmpty();
-    }
-
-    @Override
-    public void setCode(Bytes code) {
-        this.updatedCode = code;
-        this.updatedCodeHash = null;
     }
 
     @Override

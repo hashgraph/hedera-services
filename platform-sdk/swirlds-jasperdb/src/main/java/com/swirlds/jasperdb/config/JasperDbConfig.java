@@ -130,7 +130,7 @@ public record JasperDbConfig(
         @Min(0) @ConfigProperty(defaultValue = "68719476736") long maxDataFileBytes,
         @Positive @ConfigProperty(defaultValue = "500000") int moveListChunkSize,
         @Min(0) @ConfigProperty(defaultValue = "10") int maxRamUsedForMergingGb,
-        @Positive @ConfigProperty(defaultValue = "1048576") int iteratorInputBufferBytes,
+        @Positive @ConfigProperty(defaultValue = "16777216") int iteratorInputBufferBytes,
         @Positive @ConfigProperty(defaultValue = "4194304") int writerOutputBufferBytes,
         @ConfigProperty(defaultValue = "false") boolean reconnectKeyLeakMitigationEnabled,
         @ConfigProperty(defaultValue = "10") int keySetBloomFilterHashCount,

@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.test.state;
 
-import static com.swirlds.common.test.RandomUtils.randomHash;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
+import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static com.swirlds.platform.test.DispatchBuilderUtils.getDefaultDispatchConfiguration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,6 +35,7 @@ import com.swirlds.platform.dispatch.DispatchBuilder;
 import com.swirlds.platform.dispatch.triggers.control.HaltRequestedConsumer;
 import com.swirlds.platform.dispatch.triggers.control.StateDumpRequestedTrigger;
 import com.swirlds.platform.state.iss.IssHandler;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -61,7 +63,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
+                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -104,8 +107,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
                 });
@@ -157,8 +160,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block");
                     dumpCount.getAndIncrement();
                 });
@@ -210,7 +213,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
+                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -252,8 +256,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
                 });
@@ -306,8 +310,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertTrue(blocking, "should block before shutdown");
                     dumpCount.getAndIncrement();
                 });
@@ -353,7 +357,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
+                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -396,8 +401,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
                 });
@@ -450,8 +455,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block");
                     dumpCount.getAndIncrement();
                 });
@@ -504,7 +509,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> dumpCount.getAndIncrement());
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) ->
+                        dumpCount.getAndIncrement());
 
         final HaltRequestedConsumer haltRequestedConsumer = (final String reason) -> freezeCount.getAndIncrement();
 
@@ -547,8 +553,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
                 });
@@ -601,8 +607,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block if we are going to freeze");
                     dumpCount.getAndIncrement();
                 });
@@ -655,8 +661,8 @@ class IssHandlerTests {
         dispatchBuilder.registerObserver(
                 this,
                 StateDumpRequestedTrigger.class,
-                (final Long round, final String reason, final Boolean blocking) -> {
-                    assertEquals("iss", reason, "state dump reason is important, effects file path");
+                (final Long round, final StateToDiskReason reason, final Boolean blocking) -> {
+                    assertEquals(ISS, reason, "state dump reason is important, effects file path");
                     assertFalse(blocking, "no need to block");
                     dumpCount.getAndIncrement();
                 });

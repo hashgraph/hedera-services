@@ -43,17 +43,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class SavepointStackImplTest extends StateTestBase {
 
-    private static final Configuration BASE_CONFIGURATION = HederaTestConfigBuilder.createConfig(false);
+    private static final Configuration BASE_CONFIGURATION = HederaTestConfigBuilder.createConfig();
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
-    private static final Map<String, String> BASE_DATA = Map.of(
+    private final Map<String, String> BASE_DATA = new HashMap<>(Map.of(
             A_KEY, APPLE,
             B_KEY, BANANA,
             C_KEY, CHERRY,
             D_KEY, DATE,
             E_KEY, EGGPLANT,
             F_KEY, FIG,
-            G_KEY, GRAPE);
+            G_KEY, GRAPE));
 
     @Mock(strictness = LENIENT)
     private HederaState baseState;
@@ -76,6 +76,7 @@ class SavepointStackImplTest extends StateTestBase {
         assertThat(stack.depth()).isEqualTo(1);
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.peek().configuration()).isEqualTo(BASE_CONFIGURATION);
@@ -87,6 +88,40 @@ class SavepointStackImplTest extends StateTestBase {
         assertThatThrownBy(() -> new SavepointStackImpl(null, BASE_CONFIGURATION))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SavepointStackImpl(baseState, null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testModification() {
+        // given
+        final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
+        final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
+        final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
+        final var newConfig = HederaTestConfigBuilder.createConfig();
+
+        // when
+        writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
+        stack.peek()
+                .state()
+                .createWritableStates(FOOD_SERVICE)
+                .get(FRUIT_STATE_KEY)
+                .put(B_KEY, BLUEBERRY);
+        stack.configuration(newConfig);
+
+        // then
+        assertThat(stack.depth()).isEqualTo(1);
+        final var newData = new HashMap<>(BASE_DATA);
+        newData.put(A_KEY, ACAI);
+        newData.put(B_KEY, BLUEBERRY);
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
+        assertThat(readableStatesStack).has(content(newData));
+        assertThat(writableStatesStack).has(content(newData));
+        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(stack.peek().configuration()).isEqualTo(newConfig);
     }
 
     @Test
@@ -103,6 +138,7 @@ class SavepointStackImplTest extends StateTestBase {
         assertThat(stack.depth()).isEqualTo(2);
         assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(BASE_DATA));
@@ -118,45 +154,10 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig = HederaTestConfigBuilder.createConfig(false);
-
-        // when
-        stack.createSavepoint();
-        writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
-        stack.peek()
-                .state()
-                .createWritableStates(FOOD_SERVICE)
-                .get(FRUIT_STATE_KEY)
-                .put(B_KEY, BLUEBERRY);
-        stack.configuration(newConfig);
-
-        // then
-        assertThat(stack.depth()).isEqualTo(2);
-        final var newData = new HashMap<>(BASE_DATA);
-        newData.put(A_KEY, ACAI);
-        newData.put(B_KEY, BLUEBERRY);
-        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
-        assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
-        assertThat(readableStatesStack).has(content(newData));
-        assertThat(writableStatesStack).has(content(newData));
-        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(newData));
-        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(newData));
-        assertThat(stack.peek().configuration()).isEqualTo(newConfig);
-    }
-
-    @Test
-    void testMultipleSavepoints() {
-        // given
-        final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
-        final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
-        final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
         final var newConfig2 = HederaTestConfigBuilder.createConfig();
 
         // when
-        stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
                 .state()
@@ -174,7 +175,7 @@ class SavepointStackImplTest extends StateTestBase {
         stack.configuration(newConfig2);
 
         // then
-        assertThat(stack.depth()).isEqualTo(3);
+        assertThat(stack.depth()).isEqualTo(2);
         final var newData = new HashMap<>(BASE_DATA);
         newData.put(A_KEY, ACAI);
         newData.put(B_KEY, BLUEBERRY);
@@ -182,6 +183,7 @@ class SavepointStackImplTest extends StateTestBase {
         newData.put(D_KEY, DRAGONFRUIT);
         assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -192,12 +194,68 @@ class SavepointStackImplTest extends StateTestBase {
     }
 
     @Test
+    void testMultipleSavepoints() {
+        // given
+        final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
+        final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
+        final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
+        final var newConfig3 = HederaTestConfigBuilder.createConfig();
+
+        // when
+        writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
+        stack.peek()
+                .state()
+                .createWritableStates(FOOD_SERVICE)
+                .get(FRUIT_STATE_KEY)
+                .put(B_KEY, BLUEBERRY);
+        stack.configuration(newConfig1);
+        stack.createSavepoint();
+        writableStatesStack.get(FRUIT_STATE_KEY).put(C_KEY, CRANBERRY);
+        stack.peek()
+                .state()
+                .createWritableStates(FOOD_SERVICE)
+                .get(FRUIT_STATE_KEY)
+                .put(D_KEY, DRAGONFRUIT);
+        stack.configuration(newConfig2);
+        stack.createSavepoint();
+        writableStatesStack.get(FRUIT_STATE_KEY).put(E_KEY, ELDERBERRY);
+        stack.peek()
+                .state()
+                .createWritableStates(FOOD_SERVICE)
+                .get(FRUIT_STATE_KEY)
+                .put(F_KEY, FEIJOA);
+        stack.configuration(newConfig3);
+
+        // then
+        assertThat(stack.depth()).isEqualTo(3);
+        final var newData = new HashMap<>(BASE_DATA);
+        newData.put(A_KEY, ACAI);
+        newData.put(B_KEY, BLUEBERRY);
+        newData.put(C_KEY, CRANBERRY);
+        newData.put(D_KEY, DRAGONFRUIT);
+        newData.put(E_KEY, ELDERBERRY);
+        newData.put(F_KEY, FEIJOA);
+        assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
+        assertThat(readableStatesStack).has(content(newData));
+        assertThat(writableStatesStack).has(content(newData));
+        assertThat(stack.peek().state().createReadableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(stack.peek().state().createWritableStates(FOOD_SERVICE)).has(content(newData));
+        assertThat(stack.peek().configuration()).isEqualTo(newConfig3);
+    }
+
+    @Test
     void testRolledBackSavepoint() {
         // given
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -214,6 +272,7 @@ class SavepointStackImplTest extends StateTestBase {
         assertThat(stack.depth()).isEqualTo(1);
         assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(BASE_DATA));
@@ -229,8 +288,8 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig2 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -257,6 +316,7 @@ class SavepointStackImplTest extends StateTestBase {
         newData.put(D_KEY, DRAGONFRUIT);
         assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -272,8 +332,8 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig2 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -301,6 +361,7 @@ class SavepointStackImplTest extends StateTestBase {
         newData.put(D_KEY, DRAGONFRUIT);
         assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -316,9 +377,9 @@ class SavepointStackImplTest extends StateTestBase {
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
         final var readableStatesStack = stack.createReadableStates(FOOD_SERVICE);
         final var writableStatesStack = stack.createWritableStates(FOOD_SERVICE);
-        final var newConfig1 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig2 = HederaTestConfigBuilder.createConfig(false);
-        final var newConfig3 = HederaTestConfigBuilder.createConfig(false);
+        final var newConfig1 = HederaTestConfigBuilder.createConfig();
+        final var newConfig2 = HederaTestConfigBuilder.createConfig();
+        final var newConfig3 = HederaTestConfigBuilder.createConfig();
         stack.createSavepoint();
         writableStatesStack.get(FRUIT_STATE_KEY).put(A_KEY, ACAI);
         stack.peek()
@@ -354,6 +415,7 @@ class SavepointStackImplTest extends StateTestBase {
         newData.put(B_KEY, BLUEBERRY);
         assertThat(baseState.createReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.createWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
+        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.createReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.createWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -437,7 +499,7 @@ class SavepointStackImplTest extends StateTestBase {
     void testStackAfterCommit() {
         // given
         final var stack = new SavepointStackImpl(baseState, BASE_CONFIGURATION);
-        final var newConfig = HederaTestConfigBuilder.create(false).getOrCreateConfig();
+        final var newConfig = HederaTestConfigBuilder.createConfig();
 
         // when
         stack.commit();

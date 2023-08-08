@@ -90,6 +90,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -114,6 +115,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class ContractCallSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
@@ -1279,12 +1281,10 @@ public class ContractCallSuite extends HapiSuite {
                         contractCreate(SIMPLE_STORAGE_CONTRACT).adminKey(THRESHOLD),
                         getContractInfo(SIMPLE_STORAGE_CONTRACT).saveToRegistry("simpleStorageInfo"))
                 .when()
-                .then(
-                        contractCall(SIMPLE_STORAGE_CONTRACT, "get")
-                                .via("simpleStorageTxn")
-                                .gas(0L)
-                                .hasKnownStatus(INSUFFICIENT_GAS),
-                        getTxnRecord("simpleStorageTxn").logged());
+                .then(contractCall(SIMPLE_STORAGE_CONTRACT, "get")
+                        .via("simpleStorageTxn")
+                        .gas(0L)
+                        .hasPrecheck(INSUFFICIENT_GAS));
     }
 
     HapiSpec insufficientFee() {
@@ -1394,6 +1394,20 @@ public class ContractCallSuite extends HapiSuite {
                         }),
                         withOpContext((spec, ignore) -> {
                             final var subop1 = balanceSnapshot("balanceBefore4", civilian);
+                            final var subop2 = contractCall(
+                                            SIMPLE_STORAGE_CONTRACT, "set", BigInteger.valueOf(999_999L))
+                                    .payingWith(civilian)
+                                    .gas(0)
+                                    .refusingEthConversion()
+                                    .hasPrecheck(INSUFFICIENT_GAS)
+                                    .via("setValueNoGas");
+                            allRunFor(spec, subop1, subop2);
+                            final var subop4 =
+                                    getAccountBalance(civilian).hasTinyBars(changeFromSnapshot("balanceBefore4", 0));
+                            allRunFor(spec, subop4);
+                        }),
+                        withOpContext((spec, ignore) -> {
+                            final var subop1 = balanceSnapshot("balanceBefore5", civilian);
                             final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
                                     .payingWith(civilian)
                                     .gas(300_000L)
@@ -1407,7 +1421,7 @@ public class ContractCallSuite extends HapiSuite {
                             final var delta = subop3.getResponseRecord().getTransactionFee();
 
                             final var subop4 = getAccountBalance(civilian)
-                                    .hasTinyBars(changeFromSnapshot("balanceBefore4", -delta));
+                                    .hasTinyBars(changeFromSnapshot("balanceBefore5", -delta));
                             allRunFor(spec, subop4);
                         }))
                 .then(

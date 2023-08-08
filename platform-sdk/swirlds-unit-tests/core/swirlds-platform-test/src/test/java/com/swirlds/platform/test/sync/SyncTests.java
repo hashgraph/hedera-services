@@ -17,7 +17,7 @@
 package com.swirlds.platform.test.sync;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.platform.test.event.EventUtils.integerPowerDistribution;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.test.framework.ResourceLoader.loadLog4jContext;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,8 +29,8 @@ import static org.mockito.Mockito.when;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.threading.ReplaceSyncPhaseParallelExecutor;
-import com.swirlds.common.test.threading.SyncPhaseParallelExecutor;
+import com.swirlds.common.test.fixtures.threading.ReplaceSyncPhaseParallelExecutor;
+import com.swirlds.common.test.fixtures.threading.SyncPhaseParallelExecutor;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
@@ -40,9 +40,9 @@ import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.event.emitter.EventEmitterFactory;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
-import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.platform.test.graph.OtherParentMatrixFactory;
 import com.swirlds.platform.test.graph.PartitionedGraphCreator;
 import com.swirlds.platform.test.graph.SplitForkGraphCreator;
@@ -1003,6 +1003,13 @@ public class SyncTests {
         // the caller will have only signed state events
         executor.setCustomPreSyncConfiguration((caller, listener) -> {
             caller.getGeneratedEvents().forEach(EventImpl::markAsSignedStateEvent);
+
+            // a signed sent event needs to be identified as needed by the peer
+            // if it is ancient, it will not be marked as needed, so need to make sure no events are ancient
+            when(caller.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(caller.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinRoundGeneration()).thenReturn(GraphGenerations.FIRST_GENERATION);
+            when(listener.getConsensus().getMinGenerationNonAncient()).thenReturn(GraphGenerations.FIRST_GENERATION);
         });
 
         executor.execute();

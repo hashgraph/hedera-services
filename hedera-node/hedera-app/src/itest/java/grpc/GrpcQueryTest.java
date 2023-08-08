@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.hedera.node.app.grpc.GrpcServiceBuilder;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,7 +51,7 @@ class GrpcQueryTest extends GrpcTestBase {
     private static final IngestWorkflow UNIMPLEMENTED_INGEST = (r, r2) -> fail("The Ingest should not be called");
 
     private void setUp(@NonNull final QueryWorkflow query) {
-        registerService(new GrpcServiceBuilder(SERVICE, UNIMPLEMENTED_INGEST, query).query(METHOD));
+        registerQuery(METHOD, UNIMPLEMENTED_INGEST, query);
         startServer();
     }
 
@@ -123,8 +122,6 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("Send a valid query to an unknown endpoint and get back UNIMPLEMENTED")
     void sendQueryToUnknownEndpoint() {
         // Given a client that knows about a method that DOES NOT EXIST on the server
-        registerServiceOnClientOnly(
-                new GrpcServiceBuilder(SERVICE, NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW).transaction("unknown"));
         setUp(GOOD_QUERY);
 
         // When I call the service but with an unknown method
@@ -138,8 +135,6 @@ class GrpcQueryTest extends GrpcTestBase {
     @DisplayName("Send a valid query to an unknown service")
     void sendQueryToUnknownService() {
         // Given a client that knows about a service that DOES NOT exist on the server
-        registerServiceOnClientOnly(new GrpcServiceBuilder("UnknownService", NOOP_INGEST_WORKFLOW, NOOP_QUERY_WORKFLOW)
-                .transaction(METHOD));
         setUp(GOOD_QUERY);
 
         // When I call the unknown service

@@ -16,8 +16,8 @@
 
 package com.swirlds.common.metrics.noop.internal;
 
-import com.swirlds.common.statistics.StatsBuffered;
-import com.swirlds.common.statistics.internal.StatsBuffer;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.internal.StatsBuffer;
 
 /**
  * A no-op implementation of {@link StatsBuffered}.

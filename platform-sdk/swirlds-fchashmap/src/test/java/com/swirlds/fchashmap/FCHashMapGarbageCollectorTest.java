@@ -16,14 +16,14 @@
 
 package com.swirlds.fchashmap;
 
-import static com.swirlds.common.test.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.test.framework.TestQualifierTags.TIME_CONSUMING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.test.fcqueue.FCInt;
+import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fchashmap.internal.Mutation;
 import java.util.HashSet;
 import java.util.Map;

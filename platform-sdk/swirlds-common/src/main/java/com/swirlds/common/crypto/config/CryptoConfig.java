@@ -34,9 +34,6 @@ import com.swirlds.config.api.ConfigProperty;
  * @param cpuDigestQueueSize
  * 		the fixed size of the CPU hashing queue. A value greater than zero representing the upper bound of the CPU
  * 		hashing queue.
- * @param forceCpu
- * 		should only the CPU be used for cryptography. true if only the CPU should be used for cryptography and the GPU
- * 		should be bypassed.
  * @param keystorePassword
  * 		the password used to protect the PKCS12 key stores containing the nodes RSA keys. The password used to protect
  * 		the PKCS12 key stores containing the node RSA public/private key pairs.
@@ -47,7 +44,6 @@ public record CryptoConfig(
         @ConfigProperty(defaultValue = "0.5") double cpuDigestThreadRatio,
         @ConfigProperty(defaultValue = "100") int cpuVerifierQueueSize,
         @ConfigProperty(defaultValue = "100") int cpuDigestQueueSize,
-        @ConfigProperty(defaultValue = "true") boolean forceCpu,
         @ConfigProperty(defaultValue = "password") String keystorePassword) {
 
     /**

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.ledger;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
@@ -94,6 +95,7 @@ public class BaseHederaLedgerTestHelper {
     protected AccountID misc = AccountID.newBuilder().setAccountNum(1_234).build();
     protected long MISC_BALANCE = 1_234L;
     protected long RAND_BALANCE = 2_345L;
+    protected long RAND_NONCE = 2;
     protected long miscFrozenTokenBalance = 500L;
     protected MerkleAccount account;
     protected MerkleToken frozenToken;
@@ -221,6 +223,7 @@ public class BaseHederaLedgerTestHelper {
         addToLedger(deletable, MISC_BALANCE, Map.of(frozenId, new TokenInfo(0, frozenToken)));
         addToLedger(rand, RAND_BALANCE, noopCustomizer);
         given(accountsLedger.get(rand, ALIAS)).willReturn(ByteString.EMPTY);
+        given(accountsLedger.get(rand, ETHEREUM_NONCE)).willReturn(RAND_NONCE);
         addToLedger(aliasAccountId, RAND_BALANCE, noopCustomizer);
         given(accountsLedger.get(aliasAccountId, ALIAS)).willReturn(alias);
         addToLedger(genesis, GENESIS_BALANCE, noopCustomizer);

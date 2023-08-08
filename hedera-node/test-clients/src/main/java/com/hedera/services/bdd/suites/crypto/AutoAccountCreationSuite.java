@@ -84,6 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -107,7 +108,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class AutoAccountCreationSuite extends HapiSuite {
+
     private static final Logger LOG = LogManager.getLogger(AutoAccountCreationSuite.class);
     private static final long INITIAL_BALANCE = 1000L;
     private static final ByteString ALIAS_CONTENT = ByteString.copyFromUtf8(
@@ -359,7 +362,10 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
     private HapiSpec canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
-        final var transferFee = 0.44012644 * ONE_HBAR;
+        // The expected fee to transfer four serial numbers of two token types to a receiver with
+        // no auto-creation; note it is approximate because the fee will vary slightly with the
+        // size of the sig map, depending on the lengths of the public key prefixes required
+        final var approxTransferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
@@ -432,7 +438,11 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                         .maxAutoAssociations(2)
                                         .ownedNfts(4))
                                 .logged(),
-                        getAccountInfo(CIVILIAN).has(accountWith().balance((long) (civilianBal - transferFee))))
+                        // A single extra byte in the signature map will cost just ~130 tinybar more, so allowing
+                        // a delta of 2600 tinybar will stabilize this test indefinitely (the spec would have to
+                        // randomly choose two public keys with a shared prefix of length 10, which is...unlikely)
+                        getAccountInfo(CIVILIAN)
+                                .has(accountWith().approxBalance((long) (civilianBal - approxTransferFee), 2600)))
                 .then();
     }
 

@@ -20,8 +20,8 @@ import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.statistics.StatsBuffered;
-import com.swirlds.common.statistics.StatsSpeedometer;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsSpeedometer;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**

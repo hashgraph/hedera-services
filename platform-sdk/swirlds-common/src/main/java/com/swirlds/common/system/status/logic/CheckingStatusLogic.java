@@ -21,6 +21,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
@@ -78,6 +79,20 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     /**
      * {@inheritDoc}
      * <p>
+     * {@link PlatformStatus#CHECKING} status unconditionally transitions to {@link PlatformStatus#BEHIND} when an
+     * {@link EmergencyReconnectStartedAction} is processed.
+     */
+    @NonNull
+    @Override
+    public PlatformStatusLogic processEmergencyReconnectStartedAction(
+            @NonNull final EmergencyReconnectStartedAction action) {
+
+        return new BehindStatusLogic(config);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
      * {@link PlatformStatus#CHECKING} status unconditionally transitions to {@link PlatformStatus#BEHIND} when a
      * {@link FallenBehindAction} is processed.
      */
@@ -124,7 +139,7 @@ public class CheckingStatusLogic implements PlatformStatusLogic {
     public PlatformStatusLogic processSelfEventReachedConsensusAction(
             @NonNull final SelfEventReachedConsensusAction action) {
 
-        return new ActiveStatusLogic(action.instant(), config);
+        return new ActiveStatusLogic(action.wallClockTime(), config);
     }
 
     /**

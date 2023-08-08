@@ -40,8 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -51,8 +51,8 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.test.AssertionUtils;
-import com.swirlds.common.test.fixtures.FakeTime;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.State;
@@ -61,6 +61,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedReader;
@@ -160,7 +161,9 @@ class SignedStateFileReadWriteTest {
         final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test");
+        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        writeSignedStateToDisk(
+                new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT, configuration);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");
@@ -287,7 +290,8 @@ class SignedStateFileReadWriteTest {
                 SELF_ID,
                 SWIRLD_NAME,
                 (ss, path, success) -> {},
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         final int rounds = 3;
@@ -353,10 +357,8 @@ class SignedStateFileReadWriteTest {
     }
 
     private Configuration changeConfigAndConfigHolder(String directory) {
-        final Configuration config = new TestConfigBuilder()
+        return new TestConfigBuilder()
                 .withValue("state.savedStateDirectory", directory)
                 .getOrCreateConfig();
-        ConfigurationHolder.getInstance().setConfiguration(config);
-        return config;
     }
 }

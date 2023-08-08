@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.test.factories.scenarios.TokenDeleteScenarios.DELETE_WITH_KNOWN_TOKEN;
@@ -126,7 +127,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         void rejectsDeletedToken() {
             // Create the token store with a deleted token
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .tokenId(TOKEN_987_ID)
                     .deleted(true)
                     .adminKey(DEFAULT_PAYER_KT.asPbjKey())
                     .build());
@@ -145,7 +146,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         void rejectsPausedToken() {
             // Create the token store with a paused token
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .tokenId(TOKEN_987_ID)
                     .deleted(false)
                     .paused(true)
                     .adminKey(DEFAULT_PAYER_KT.asPbjKey())
@@ -165,7 +166,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
         void rejectsTokenWithoutAdminKey() {
             // Create the token store with a null admin key
             writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                    .tokenNumber(TOKEN_987_ID.tokenNum())
+                    .tokenId(TOKEN_987_ID)
                     .deleted(false)
                     .paused(false)
                     .adminKey((Key) null) // here's the null admin key

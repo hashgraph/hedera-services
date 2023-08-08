@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.configOf;
+import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 
+import com.hedera.hapi.streams.SidecarType;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -33,6 +35,16 @@ public interface FeatureFlags {
      * @return whether {@code CREATE2} should be enabled
      */
     boolean isCreate2Enabled(@NonNull MessageFrame frame);
+
+    /**
+     * Whether the sidecar of a given type is enabled.
+     *
+     * @param frame the {@link MessageFrame} to check
+     * @return whether the given sidecar type is enabled
+     */
+    default boolean isSidecarEnabled(@NonNull MessageFrame frame, @NonNull SidecarType sidecarType) {
+        return contractsConfigOf(frame).sidecars().contains(sidecarType);
+    }
 
     /**
      * Whether "implicit creation" of accounts via sending value or targeting a {@code CREATE2} to an EIP-1014 address

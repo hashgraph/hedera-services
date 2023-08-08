@@ -268,11 +268,15 @@
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="java.nio" level="TRACE" additivity="false">
+    <Logger name="java.nio" level="WARN" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>
-    <Logger name="io.netty" level="TRACE" additivity="false">
+    <Logger name="io.netty" level="WARN" additivity="false">
+      <!-- <AppenderRef ref="Console"/> -->
+      <AppenderRef ref="RollingFile"/>
+    </Logger>
+    <Logger name="io.grpc" level="WARN" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->
       <AppenderRef ref="RollingFile"/>
     </Logger>

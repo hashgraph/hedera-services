@@ -16,11 +16,15 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.spi.fixtures.Scenarios.ALICE;
-import static com.hedera.node.app.spi.fixtures.Scenarios.ERIN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -31,29 +35,39 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.RecordListBuilder;
-import com.hedera.node.app.records.SingleTransactionRecordBuilder;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.spi.state.WritableSingletonState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.verifier.HandleContextVerifier;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -76,12 +90,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings("JUnitMalformedDeclaration")
 @ExtendWith(MockitoExtension.class)
-class HandleContextImplTest extends StateTestBase {
+class HandleContextImplTest extends StateTestBase implements Scenarios {
 
     @Mock
-    private SingleTransactionRecordBuilder recordBuilder;
+    private SingleTransactionRecordBuilderImpl recordBuilder;
 
-    @Mock
+    @Mock(strictness = LENIENT)
     private SavepointStackImpl stack;
 
     @Mock
@@ -91,6 +105,9 @@ class HandleContextImplTest extends StateTestBase {
     private RecordListBuilder recordListBuilder;
 
     @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
     private TransactionChecker checker;
 
     @Mock(strictness = Strictness.LENIENT)
@@ -98,6 +115,12 @@ class HandleContextImplTest extends StateTestBase {
 
     @Mock(strictness = Strictness.LENIENT)
     private ServiceScopeLookup serviceScopeLookup;
+
+    @Mock
+    private BlockRecordInfo blockRecordInfo;
+
+    @Mock
+    private RecordCache recordCache;
 
     @BeforeEach
     void setup() {
@@ -109,6 +132,7 @@ class HandleContextImplTest extends StateTestBase {
                 txBody,
                 ALICE.accountID(),
                 ALICE.account().keyOrThrow(),
+                networkInfo,
                 TransactionCategory.USER,
                 recordBuilder,
                 stack,
@@ -116,7 +140,9 @@ class HandleContextImplTest extends StateTestBase {
                 recordListBuilder,
                 checker,
                 dispatcher,
-                serviceScopeLookup);
+                serviceScopeLookup,
+                blockRecordInfo,
+                recordCache);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -128,6 +154,7 @@ class HandleContextImplTest extends StateTestBase {
                         null,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -135,12 +162,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         null,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -148,12 +178,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         null,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -161,12 +194,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         null,
                         recordBuilder,
                         stack,
@@ -174,12 +210,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         null,
                         stack,
@@ -187,12 +226,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         null,
@@ -200,12 +242,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -213,12 +258,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -226,12 +274,15 @@ class HandleContextImplTest extends StateTestBase {
                         null,
                         checker,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -239,12 +290,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         null,
                         dispatcher,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -252,12 +306,15 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         null,
-                        serviceScopeLookup))
+                        serviceScopeLookup,
+                        blockRecordInfo,
+                        recordCache))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleContextImpl(
                         TransactionBody.DEFAULT,
                         payer,
                         payerKey,
+                        networkInfo,
                         TransactionCategory.USER,
                         recordBuilder,
                         stack,
@@ -265,8 +322,130 @@ class HandleContextImplTest extends StateTestBase {
                         recordListBuilder,
                         checker,
                         dispatcher,
+                        null,
+                        blockRecordInfo,
+                        recordCache))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
+                        networkInfo,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup,
+                        null,
+                        recordCache))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleContextImpl(
+                        TransactionBody.DEFAULT,
+                        payer,
+                        payerKey,
+                        networkInfo,
+                        TransactionCategory.USER,
+                        recordBuilder,
+                        stack,
+                        verifier,
+                        recordListBuilder,
+                        checker,
+                        dispatcher,
+                        serviceScopeLookup,
+                        blockRecordInfo,
                         null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Nested
+    @DisplayName("Handling new EntityNumber")
+    final class EntityIdNumTest {
+
+        @Mock
+        private WritableStates writableStates;
+
+        @Mock
+        private WritableSingletonState<EntityNumber> entityNumberState;
+
+        private HandleContext handleContext;
+
+        @BeforeEach
+        void setup() {
+            final var payer = ALICE.accountID();
+            final var payerKey = ALICE.account().keyOrThrow();
+            when(writableStates.<EntityNumber>getSingleton(anyString())).thenReturn(entityNumberState);
+            when(stack.createWritableStates(EntityIdService.NAME)).thenReturn(writableStates);
+            handleContext = new HandleContextImpl(
+                    TransactionBody.DEFAULT,
+                    payer,
+                    payerKey,
+                    networkInfo,
+                    TransactionCategory.USER,
+                    recordBuilder,
+                    stack,
+                    verifier,
+                    recordListBuilder,
+                    checker,
+                    dispatcher,
+                    serviceScopeLookup,
+                    blockRecordInfo,
+                    recordCache);
+        }
+
+        @Test
+        void testNewEntityNumWithInitialState() {
+            // when
+            final var actual = handleContext.newEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(1L);
+            verify(entityNumberState).get();
+            verify(entityNumberState).put(EntityNumber.newBuilder().number(1L).build());
+        }
+
+        @Test
+        void testPeekingAtNewEntityNumWithInitialState() {
+            // when
+            final var actual = handleContext.peekAtNewEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(1L);
+            verify(entityNumberState).get();
+            verify(entityNumberState, never()).put(any());
+        }
+
+        @Test
+        void testNewEntityNum() {
+            // given
+            when(entityNumberState.get())
+                    .thenReturn(EntityNumber.newBuilder().number(42L).build());
+
+            // when
+            final var actual = handleContext.newEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(43L);
+            verify(entityNumberState).get();
+            verify(entityNumberState).put(EntityNumber.newBuilder().number(43L).build());
+        }
+
+        @Test
+        void testPeekingAtNewEntityNum() {
+            // given
+            when(entityNumberState.get())
+                    .thenReturn(EntityNumber.newBuilder().number(42L).build());
+
+            // when
+            final var actual = handleContext.peekAtNewEntityNum();
+
+            // then
+            assertThat(actual).isEqualTo(43L);
+            verify(entityNumberState).get();
+            verify(entityNumberState, never()).put(any());
+        }
     }
 
     @Nested
@@ -326,24 +505,6 @@ class HandleContextImplTest extends StateTestBase {
             // then
             assertThat(actual1).isSameAs(configuration1);
             assertThat(actual2).isSameAs(configuration2);
-        }
-
-        @Test
-        void testNewEntityNum() {
-            // given
-            when(savepoint1.newEntityNum()).thenReturn(1L);
-            when(savepoint2.newEntityNum()).thenReturn(2L);
-            when(stack.peek()).thenReturn(savepoint1);
-            final var context = createContext(TransactionBody.DEFAULT);
-
-            // when
-            final var actual1 = context.newEntityNum();
-            when(stack.peek()).thenReturn(savepoint2);
-            final var actual2 = context.newEntityNum();
-
-            // then
-            assertThat(actual1).isSameAs(1L);
-            assertThat(actual2).isSameAs(2L);
         }
 
         @Test
@@ -428,6 +589,128 @@ class HandleContextImplTest extends StateTestBase {
     }
 
     @Nested
+    @DisplayName("Requesting keys of child transactions")
+    final class KeyRequestTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void testAllKeysForTransactionWithInvalidParameters() {
+            // given
+            final var bob = BOB.accountID();
+
+            // when
+            assertThatThrownBy(() -> context.allKeysForTransaction(null, bob)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, null))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void testAllKeysForTransactionSuccess() throws PreCheckException {
+            // given
+            doAnswer(invocation -> {
+                        final var innerContext = invocation.getArgument(0, PreHandleContext.class);
+                        innerContext.requireKey(BOB.account().key());
+                        innerContext.optionalKey(CAROL.account().key());
+                        return null;
+                    })
+                    .when(dispatcher)
+                    .dispatchPreHandle(any());
+
+            // when
+            final var keys = context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID());
+            assertThat(keys.payerKey()).isEqualTo(ERIN.account().key());
+            assertThat(keys.requiredNonPayerKeys())
+                    .containsExactly(BOB.account().key());
+            assertThat(keys.optionalNonPayerKeys())
+                    .containsExactly(CAROL.account().key());
+        }
+
+        @Test
+        void testAllKeysForTransactionWithFailingPureCheck() throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(INVALID_TRANSACTION_BODY))
+                    .when(dispatcher)
+                    .dispatchPureChecks(any());
+
+            // when
+            assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INVALID_TRANSACTION_BODY));
+        }
+
+        @Test
+        void testAllKeysForTransactionWithFailingPreHandle() throws PreCheckException {
+            // given
+            doThrow(new PreCheckException(INSUFFICIENT_ACCOUNT_BALANCE))
+                    .when(dispatcher)
+                    .dispatchPreHandle(any());
+
+            // when
+            assertThatThrownBy(() -> context.allKeysForTransaction(TransactionBody.DEFAULT, ERIN.accountID()))
+                    .isInstanceOf(PreCheckException.class)
+                    .has(responseCode(INSUFFICIENT_ACCOUNT_BALANCE));
+        }
+    }
+
+    @Nested
+    @DisplayName("Requesting network info")
+    final class NetworkInfoTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void exposesGivenNetworkInfo() {
+            assertSame(networkInfo, context.networkInfo());
+        }
+    }
+
+    @Nested
+    @DisplayName("Creating Service APIs")
+    final class ServiceApiTest {
+
+        private HandleContext context;
+
+        @BeforeEach
+        void setup(@Mock(strictness = LENIENT) Savepoint savepoint) {
+            final var configuration = HederaTestConfigBuilder.createConfig();
+            when(savepoint.configuration()).thenReturn(configuration);
+            when(stack.peek()).thenReturn(savepoint);
+            when(stack.createReadableStates(TokenService.NAME)).thenReturn(defaultTokenReadableStates());
+
+            context = createContext(TransactionBody.DEFAULT);
+        }
+
+        @SuppressWarnings("ConstantConditions")
+        @Test
+        void failsAsExpectedWithoutAvailableApi() {
+            assertThrows(IllegalArgumentException.class, () -> context.serviceApi(Object.class));
+        }
+    }
+
+    @Nested
     @DisplayName("Handling of record builder")
     final class RecordBuilderTest {
 
@@ -469,7 +752,7 @@ class HandleContextImplTest extends StateTestBase {
         }
 
         @Test
-        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilder childRecordBuilder) {
+        void testAddChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(TransactionBody.DEFAULT);
@@ -482,7 +765,7 @@ class HandleContextImplTest extends StateTestBase {
         }
 
         @Test
-        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilder childRecordBuilder) {
+        void testAddRemovableChildRecordBuilder(@Mock SingleTransactionRecordBuilderImpl childRecordBuilder) {
             // given
             when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
             final var context = createContext(TransactionBody.DEFAULT);
@@ -515,7 +798,7 @@ class HandleContextImplTest extends StateTestBase {
         private HederaState baseState;
 
         @Mock(strictness = LENIENT)
-        private SingleTransactionRecordBuilder childRecordBuilder;
+        private SingleTransactionRecordBuilderImpl childRecordBuilder;
 
         private SavepointStackImpl stack;
 
@@ -555,6 +838,7 @@ class HandleContextImplTest extends StateTestBase {
                     txBody,
                     ALICE.accountID(),
                     ALICE.account().keyOrThrow(),
+                    networkInfo,
                     category,
                     recordBuilder,
                     stack,
@@ -562,7 +846,9 @@ class HandleContextImplTest extends StateTestBase {
                     recordListBuilder,
                     checker,
                     dispatcher,
-                    serviceScopeLookup);
+                    serviceScopeLookup,
+                    blockRecordInfo,
+                    recordCache);
         }
 
         @SuppressWarnings("ConstantConditions")
@@ -608,7 +894,6 @@ class HandleContextImplTest extends StateTestBase {
             contextDispatcher.accept(context);
 
             // then
-            verify(checker).checkTransactionBody(txBody);
             verify(dispatcher).dispatchPureChecks(txBody);
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -616,30 +901,6 @@ class HandleContextImplTest extends StateTestBase {
                     .isEqualTo(ACAI);
             assertThat(context.configuration()).isEqualTo(CONFIG_2);
             verify(childRecordBuilder, never()).status(any());
-            // TODO: Check that record was added to recordListBuilder
-        }
-
-        @ParameterizedTest
-        @MethodSource("createContextDispatchers")
-        void testDispatchCheckerFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
-            // given
-            final var txBody = TransactionBody.newBuilder().build();
-            doThrow(new PreCheckException(ResponseCodeEnum.INSUFFICIENT_TX_FEE))
-                    .when(checker)
-                    .checkTransactionBody(txBody);
-            final var context = createContext(txBody, TransactionCategory.USER);
-
-            // when
-            contextDispatcher.accept(context);
-
-            // then
-            verify(childRecordBuilder).status(ResponseCodeEnum.INSUFFICIENT_TX_FEE);
-            verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
-                            .get(FRUIT_STATE_KEY)
-                            .get(A_KEY))
-                    .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
         }
 

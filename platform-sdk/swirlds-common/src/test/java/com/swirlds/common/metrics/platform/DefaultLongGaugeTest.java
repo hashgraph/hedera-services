@@ -26,7 +26,7 @@ import com.swirlds.common.metrics.IntegerGauge;
 import com.swirlds.common.metrics.LongGauge;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
-import com.swirlds.common.statistics.StatsBuffered;
+import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -103,8 +103,7 @@ class DefaultLongGaugeTest {
         final LongGauge gauge = new DefaultLongGauge(config);
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> gauge.get(Metric.ValueType.MIN),
@@ -134,7 +133,7 @@ class DefaultLongGaugeTest {
     void testGetStatBuffered() {
         // given
         final LongGauge.Config config = new LongGauge.Config(CATEGORY, NAME);
-        final LongGauge gauge = new DefaultLongGauge(config);
+        final DefaultLongGauge gauge = new DefaultLongGauge(config);
 
         // when
         final StatsBuffered actual = gauge.getStatsBuffered();
