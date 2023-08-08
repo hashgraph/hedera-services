@@ -8,4 +8,5 @@ module com.swirlds.config.processor {
     requires org.jboss.forge.roaster.api;
     requires static com.github.spotbugs.annotations;
     requires com.squareup.javapoet;
+    requires org.antlr.antlr4.runtime;
 }

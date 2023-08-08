@@ -150,6 +150,8 @@ dependencyResolutionManagement {
 
             version("javapoet-version", "1.13.0")
 
+            version("antlr4-version", "4.13.0")
+
             // List of bundles provided for us. When applicable, favor using these over individual
             // libraries.
             bundle("eclipse", listOf("eclipse-collections"))
@@ -262,6 +264,9 @@ dependencyResolutionManagement {
                 .versionRef("roaster-version")
 
             library("javapoet", "com.squareup", "javapoet").versionRef("javapoet-version")
+
+            library("antlr4-runtime", "org.antlr", "antlr4-runtime").versionRef("antlr4-version")
+            library("antlr4-tool", "org.antlr", "antlr4").versionRef("antlr4-version")
         }
 
         create("testLibs") {

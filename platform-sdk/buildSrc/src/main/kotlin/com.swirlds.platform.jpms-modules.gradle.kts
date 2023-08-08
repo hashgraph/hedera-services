@@ -56,5 +56,12 @@ extraJavaModuleInfo {
     automaticModule("org.jboss.forge.roaster:roaster-api", "org.jboss.forge.roaster.api")
     automaticModule("org.jboss.forge.roaster:roaster-jdt", "org.jboss.forge.roaster.jdt")
 
+    automaticModule("org.antlr:antlr4", "org.antlr.tool")
+    automaticModule("org.antlr:antlr-runtime", "org.antlr.runtime")
+    automaticModule("org.antlr:ST4", "org.antlr.st")
+
+    automaticModule("org.abego.treelayout:org.abego.treelayout.core", "org.abego.treelayout.core")
+
+
 }
 

@@ -91,7 +91,7 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         log("handling: " + fileName + " in " + packageName);
         try {
             final FileObject recordSource = getSource(fileName, packageName);
-            final ConfigDataRecordDefinition recordDefinition = ConfigRecordParser.parse(recordSource);
+            final ConfigDataRecordDefinition recordDefinition = AntlrParser.parse(recordSource);
             final JavaFileObject constantsSourceFile = getConstantSourceFile(packageName, simpleClassName, typeElement);
 
             ConstantClassFactory.doWork(recordDefinition, constantsSourceFile);

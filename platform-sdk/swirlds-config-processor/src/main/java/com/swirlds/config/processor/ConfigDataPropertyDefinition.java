@@ -19,6 +19,13 @@ package com.swirlds.config.processor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
+/**
+ * @param fieldName
+ * @param name         the full name like "com.swirlds.config.foo.bar"
+ * @param type
+ * @param defaultValue
+ * @param description
+ */
 public record ConfigDataPropertyDefinition(
         @NonNull String fieldName,
         @NonNull String name,
