@@ -16,8 +16,9 @@
 
 package com.hedera.node.config.data;
 
+import com.hedera.node.config.NetworkProperty;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
 @ConfigData("topics")
-public record TopicsConfig(@ConfigProperty(defaultValue = "1000000") long maxNumber) {}
+public record TopicsConfig(@ConfigProperty(defaultValue = "1000000") @NetworkProperty long maxNumber) {}

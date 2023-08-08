@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
@@ -47,7 +46,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -68,20 +66,11 @@ class RandomVirtualMapJPDBReconnectTests extends VirtualMapReconnectTestBase {
 
     @BeforeAll
     static void beforeAll() {
-        originalConfig = ConfigurationHolder.getInstance().get();
-
-        final Configuration config = new TestConfigBuilder()
+        new TestConfigBuilder()
                 .withValue("jasperDb.keySetHalfDiskHashMapSize", "10000")
                 .withValue("jasperDb.keySetHalfDiskHashMapBuffer", "1000")
                 .withValue("jasperDb.keySetBloomFilterSizeInBytes", "16777216")
                 .getOrCreateConfig();
-
-        ConfigurationHolder.getInstance().setConfiguration(config);
-    }
-
-    @AfterAll
-    static void afterAll() {
-        ConfigurationHolder.getInstance().setConfiguration(originalConfig);
     }
 
     @Override
@@ -274,7 +263,7 @@ class RandomVirtualMapJPDBReconnectTests extends VirtualMapReconnectTestBase {
 
         // reconnect happening
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);
@@ -313,7 +302,7 @@ class RandomVirtualMapJPDBReconnectTests extends VirtualMapReconnectTestBase {
         final MerkleInternal learnerTree = createTreeForMap(learnerMap);
 
         final DummyMerkleInternal afterSyncLearnerTree =
-                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
 
         final DummyMerkleInternal node = afterSyncLearnerTree.getChild(1);
         final VirtualMap<TestKey, TestValue> afterMap = node.getChild(3);

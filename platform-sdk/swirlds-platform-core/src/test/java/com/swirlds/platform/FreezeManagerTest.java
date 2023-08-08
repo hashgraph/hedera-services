@@ -23,18 +23,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class FreezeManagerTest {
 
     private FreezeManager freezeManager;
-    private final AtomicInteger checkStatusCounter = new AtomicInteger(0);
 
     @BeforeEach
     public void setup() {
-        freezeManager = new FreezeManager(checkStatusCounter::incrementAndGet);
+        freezeManager = new FreezeManager();
     }
 
     @Test
@@ -61,7 +59,6 @@ class FreezeManagerTest {
     void freezeStateTest() {
         assertFalse(freezeManager.isFreezeStarted(), "Freeze status should initialize to NOT_IN_FREEZE");
         assertFalse(freezeManager.isFreezeComplete(), "Freeze status should initialize to NOT_IN_FREEZE");
-        assertEquals(0, checkStatusCounter.get(), "Status should not have been updated yet.");
 
         assertThrows(
                 IllegalStateException.class,
@@ -71,12 +68,10 @@ class FreezeManagerTest {
 
         assertTrue(freezeManager.isFreezeStarted(), "inFreeze should be true after inFreeze() is called.");
         assertFalse(freezeManager.isFreezeComplete(), "Freeze status should not be FREEZE_COMPLETE");
-        assertEquals(1, checkStatusCounter.get(), "Status should have been updated once.");
 
         freezeManager.freezeComplete();
 
         assertFalse(freezeManager.isFreezeStarted(), "inFreeze should be true after inFreeze() is called.");
         assertTrue(freezeManager.isFreezeComplete(), "Freeze status should not be FREEZE_COMPLETE");
-        assertEquals(2, checkStatusCounter.get(), "Status should have been updated twice.");
     }
 }

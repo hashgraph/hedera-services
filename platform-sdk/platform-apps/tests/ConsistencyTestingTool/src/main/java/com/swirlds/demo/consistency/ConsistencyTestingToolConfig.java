@@ -25,7 +25,6 @@ import java.time.Duration;
  *
  * @param logfileDirectory   the directory where consistency information is stored, relative to
  * @param freezeAfterGenesis if not 0, describes a moment in time, relative to genesis, when a freeze is scheduled
- *                           {@link com.swirlds.common.config.StateConfig#savedStateDirectory()}.
  */
 @ConfigData("consistencyTestingTool")
 public record ConsistencyTestingToolConfig(

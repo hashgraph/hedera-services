@@ -16,16 +16,26 @@
 
 package com.hedera.node.app.info;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.node.app.annotations.NodeSelfId;
 import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.info.SelfNodeInfo;
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
 /** A Dagger module for facilities in the {@link com.hedera.node.app.info} package. */
 @Module
-public interface InfoInjectionModule {
+public abstract class InfoInjectionModule {
     @Binds
     @Singleton
-    NetworkInfo provideNetworkInfo(@NonNull final NetworkInfoImpl impl);
+    abstract NetworkInfo provideNetworkInfo(@NonNull final NetworkInfoImpl impl);
+
+    @Provides
+    @NodeSelfId
+    static AccountID selfAccountID(@NonNull final SelfNodeInfo info) {
+        return info.accountId();
+    }
 }

@@ -20,5 +20,7 @@
 			<AppenderRef ref="Console"/> 
 			<AppenderRef ref="RollingFile"/>
 		</Root>
+		<Logger name="com.swirlds" level="WARN" additivity="false">
+		</Logger>
 	</Loggers>
 </Configuration>

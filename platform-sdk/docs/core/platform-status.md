@@ -1,70 +1,91 @@
 # Platform Status
 
-The platform status is represented as an enum value from `PlatformStatus.java`. It is updated via
-`SwirldsPlatform::checkPlatformStatus`, which is passed around as a callback to any object that has the ability to
-effect a change in platform status.
+The platform status is represented as an enum value from `PlatformStatus`. Status transitions are handled by
+the `PlatformStatusManager`.
 
-A diagram of expected state transitions is available [here](./platform-status-transitions.svg). Note that there are
-currently no hard restrictions on state transitions: this diagram is merely a representation of the expected behavior.
+A diagram of the status state machine is available [here](./platform-status-transitions.svg).
 
-## Used Statuses
+## Statuses
 
-The following statuses, along with their respective triggers, are listed in order of precedence (from highest to lowest):
+### STARTING_UP
 
-- `DISCONNECTED`: There is more than one node in the network, and the number of active connections is zero
-- `BEHIND`: The sync manager has reported that the node has fallen behind
-- `FREEZING`: The freeze manager has reported that a freeze has started
-- `FREEZE_COMPLETE`: The freeze manager has reported that a freeze has completed
-- `ACTIVE`: None of the previously defined statuses apply
+This is the initial status of the platform. Under normal operation, the platform will always transition from
+`STARTING_UP` to `REPLAYING_EVENTS`.
 
-## Detailed Trigger Explanations
+### REPLAYING_EVENTS
 
-### `DISCONNECTED`
+Immediately after starting up, before beginning to gossip, the platform transitions to `REPLAYING_EVENTS`, at which time
+it will replay events from the preconsensus event stream. Once it is done replaying events, it will transition to
+`OBSERVING` under normal operation, or `FREEZE_COMPLETE` if a freeze timestamp was crossed during replay.
 
-- `SwirldsPlatform::checkPlatformStatus` is called in `SwirldsPlatform::newConnectionOpened` and
-`SwirldsPlatform::connectionClosed`, which are called each time a new connection is opened or closed, respectively
-- If the number of active connections becomes zero, or ceases to be zero, the status is updated to `DISCONNECTED`, or
-falls through to the status with next highest precedent
+Even if the platform is not configured to replay events from the preconsensus event stream, it will still
+pass through this status, for the sake of consistency.
 
-### `BEHIND`
+### OBSERVING
 
-- Each time the `ShadowGraphSynchronizer` syncs with another node, it checks whether it has fallen behind that other node
-- If it has fallen behind, then `FallenBehindManagerImpl::reportFallenBehind` is called
-- If this call causes the total number of fallen behind reports to exceed the threshold, then
-  `SwirldsPlatform::checkPlatformStatus` is called, which results in the status transitioning to `PlatformStatus::BEHIND`
-  - This only occurs when the threshold is first crossed, and not on subsequent reports
-- The only way to transition out of this status is to perform a reconnect
+Upon transitioning to `OBSERVING`, the platform will begin gossiping, but will not create events. It will remain in this
+status for a period of wall clock time, before transitioning to `CHECKING`.
 
-### `FREEZING`
-- Each time a round is handled with `ConsensusRoundHandler::consensusRound`,`SwirldStateManager::isInFreezePeriod`
-is queried to determine whether a freeze period has started
-- If `isInFreezePeriod` returns `true`, then `FreezeManager::freezeStarted` is called, which in turn calls
-`SwirldsPlatform::checkPlatformStatus`, which triggers a state change to `FREEZING`
-  - NOTE: this will only execute a single time, since the call to `FreezeManager::freezeStarted` is guarded by a boolean
-  that flips true after the first call, and is never set back to false
-- Once a round has been handled that causes the freeze (consensus) time to be reach or passed (causing the platform
-to change to `FREEZING` status), no more consensus transactions will be applied to the state
+The purpose of spending time in the `OBSERVING` status is to allow the platform to listen to gossip, and discover
+self events that may have been created prior to the platform starting up. It is possible that the node previously
+created and gossiped out self events, but that a crash prevented those events from being durably written to disk.
+In such a situation, it is important for the node to rediscover these old events prior to creating new events. If
+a node were to immediately begin creating new events before learning of previous self events, this would cause a
+branch. Branching is not catastrophic, but should be avoided if possible.
 
-### `FREEZE_COMPLETE`
+### CHECKING
 
-- When `FreezeManager::stateToDisk` is finished executing, `SwirldsPlatform::checkPlatformStatus` is called, which
-results in the status transitioning to `FREEZE_COMPLETE`
-- Once the status has changed to `FREEZE_COMPLETE`, no more events will be created
+After transitioning to `CHECKING`, the platform will begin to create events, but will not yet accept app transactions.
+It will remain in `CHECKING` until a self event is observed reaching consensus, at which time the platform will
+transition to `ACTIVE`.
 
-### `ACTIVE`
+The platform doesn't accept app transaction in this phase, since there should be a high degree of confidence that any
+accepted app transactions will successfully be able to reach consensus. The best way to gain this confidence is simply
+to wait until self events start reaching consensus.
 
-- `SwirldsPlatform::checkPlatformStatus` is called at the end of `SwirldsPlatform::start`, which should result in the
-status transitioning to `ACTIVE`
-- This is the **only** status in which transactions are accepted from the application
+### ACTIVE
 
-### Special Case: Single Node Network
+While in the `ACTIVE` status, the platform is creating events and accepting app transactions. The platform keeps track
+of the last time a self event reached consensus, and will transition back to `CHECKING` if too much time has passed.
 
-- `SwirldsPlatform::checkPlatformStatus` is called in a loop on the worker thread that is creating events
+### BEHIND
 
-## Unused Statuses
+The platform transitions to `BEHIND` when it has fallen behind the rest of the network. The platform isn't gossiping,
+and will remain in `BEHIND` while performing a reconnect. Once the reconnect is complete, the platform will transition
+to `RECONNECT_COMPLETE`.
 
-The following statuses exist in the `PlatformStatus` enum, but are not currently used:
+It is possible to transition to `BEHIND` from `OBSERVING`, `CHECKING`, `ACTIVE`, or `RECONNECT_COMPLETE`.
 
-- `STARTING_UP`
-- `REPLAYING_EVENTS`
-- `READY`
+### RECONNECT_COMPLETE
+
+After completing a reconnect, the platform will resume gossiping, but won't create any events. If the platform
+determines that it is still behind the rest of the network, it will transition back to `BEHIND`. Otherwise, it will
+remain in `RECONNECT_COMPLETE` until the state received during the reconnect has been saved to disk.
+
+The reconnect state must be saved to disk for the node to be able to replay events from the preconsensus event stream 
+with a valid starting point. Refraining from creating events prior to saving the reconnect state ensures that any node
+creating events has a valid state to replay from, and that the network can't get itself into a situation where no node
+has this ability.
+
+### FREEZING
+
+The platform transitions to `FREEZING` when it has crossed a freeze timestamp and is in the process of freezing. The
+platform is gossiping, and is permitted to create events, but will not produce any additional events after creating
+one with its self signature for the freeze state. It is possible to transition to `FREEZING` from `OBSERVING`,
+`CHECKING`, `ACTIVE`, or `RECONNECT_COMPLETE`.
+
+The platform remains in `FREEZING` until the freeze state has been written to disk, at which point it transitions to
+`FREEZE_COMPLETE`.
+
+### FREEZE_COMPLETE
+
+While in `FREEZE_COMPLETE`, the platform has completed the freeze. It is still gossiping, so that signatures on the
+freeze state can be distributed to nodes that don't yet have them. The platform cannot exit `FREEZE_COMPLETE`, and will
+eventually be shut down.
+
+It is possible to enter `FREEZE_COMPLETE` from either `REPLAYING_EVENTS` or `FREEZING`.
+
+### CATASTROPHIC_FAILURE
+
+The platform transitions to `CATASTROPHIC_FAILURE` when it has encountered a catastrophic failure. The platform
+cannot recover from this state.

@@ -31,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -52,6 +53,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
         final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        final var recordBuilder = handleContext.recordBuilder(CryptoTransferRecordBuilder.class);
 
         for (final var xfers : op.tokenTransfersOrElse(emptyList())) {
             final var tokenId = xfers.tokenOrThrow();
@@ -59,7 +61,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
 
             for (final var aa : xfers.transfersOrElse(emptyList())) {
                 final var accountId = aa.accountID();
-                validateAndAutoAssociate(accountId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                validateAndAutoAssociate(
+                        accountId, tokenId, token, accountStore, tokenRelStore, handleContext, recordBuilder);
             }
 
             for (final var aa : xfers.nftTransfersOrElse(emptyList())) {
@@ -67,7 +70,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 final var senderId = aa.senderAccountID();
                 // sender should be associated already. If not throw exception
                 validateTrue(tokenRelStore.get(senderId, tokenId) != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-                validateAndAutoAssociate(receiverId, tokenId, token, accountStore, tokenRelStore, handleContext);
+                validateAndAutoAssociate(
+                        receiverId, tokenId, token, accountStore, tokenRelStore, handleContext, recordBuilder);
             }
         }
     }
@@ -75,12 +79,14 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
     /**
      * Associates the token with the account if it is not already associated. It is auto-associated only if there are
      * open auto-associations available on the account.
-     * @param accountId The account to associate the token with
-     * @param tokenId The tokenID of the token to associate with the account
-     * @param token The token to associate with the account
-     * @param accountStore The account store
+     *
+     * @param accountId     The account to associate the token with
+     * @param tokenId       The tokenID of the token to associate with the account
+     * @param token         The token to associate with the account
+     * @param accountStore  The account store
      * @param tokenRelStore The token relation store
      * @param handleContext The context
+     * @param recordBuilder The record builder
      */
     private void validateAndAutoAssociate(
             @NonNull final AccountID accountId,
@@ -88,12 +94,15 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final HandleContext handleContext) {
+            @NonNull final HandleContext handleContext,
+            @NonNull final CryptoTransferRecordBuilder recordBuilder) {
         final var account = getIfUsable(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
 
         if (tokenRel == null && account.maxAutoAssociations() > 0) {
-            autoAssociate(account, token, accountStore, tokenRelStore, handleContext);
+            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, handleContext);
+            recordBuilder.addAutomaticTokenAssociation(
+                    asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
         }

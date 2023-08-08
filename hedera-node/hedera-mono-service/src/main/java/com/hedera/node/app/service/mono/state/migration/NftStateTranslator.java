@@ -78,8 +78,6 @@ public final class NftStateTranslator {
      * Converts a {@link com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken} to a {@link Nft}.
      *  @param tokenID the {@link NftID}
      *  @param tokenID the {@link ReadableNftStore}
-     *
-     *
      */
     public static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken merkleUniqueTokenFromNft(
             @NonNull NftID tokenID, @NonNull ReadableNftStore readableNftStore) {

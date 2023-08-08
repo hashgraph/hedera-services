@@ -20,14 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
-import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.test.framework.config.TestConfigBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class SpeedometerMetricConfigTest {
 
     private static final String DEFAULT_FORMAT = FloatFormats.FORMAT_11_3;
+    private static final float DEFAULT_HALF_LIFE = -1;
 
     private static final String CATEGORY = "CaTeGoRy";
     private static final String NAME = "NaMe";
@@ -36,9 +35,6 @@ class SpeedometerMetricConfigTest {
     private static final String UNIT = "UnIt";
 
     private static final double EPSILON = 1e-6;
-
-    private static final MetricsConfig metricsConfig =
-            new TestConfigBuilder().getOrCreateConfig().getConfigData(MetricsConfig.class);
 
     @Test
     void testConstructor() {
@@ -51,19 +47,19 @@ class SpeedometerMetricConfigTest {
         assertThat(config.getDescription()).isEqualTo(NAME);
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
-        assertThat(config.getHalfLife()).isEqualTo(metricsConfig.halfLife(), within(EPSILON));
+        assertThat(config.getHalfLife()).isEqualTo(DEFAULT_HALF_LIFE);
+        assertThat(config.isUseDefaultHalfLife()).isTrue();
     }
 
     @Test
     @DisplayName("Constructor should throw IAE when passing illegal parameters")
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(null, NAME)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(null, NAME)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config("", NAME)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(" \t\n", NAME))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, ""))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new SpeedometerMetric.Config(CATEGORY, " \t\n"))
@@ -87,7 +83,8 @@ class SpeedometerMetricConfigTest {
         assertThat(config.getDescription()).isEqualTo(NAME);
         assertThat(config.getUnit()).isEmpty();
         assertThat(config.getFormat()).isEqualTo(DEFAULT_FORMAT);
-        assertThat(config.getHalfLife()).isEqualTo(metricsConfig.halfLife(), within(EPSILON));
+        assertThat(config.getHalfLife()).isEqualTo(DEFAULT_HALF_LIFE);
+        assertThat(config.isUseDefaultHalfLife()).isTrue();
 
         assertThat(result.getCategory()).isEqualTo(CATEGORY);
         assertThat(result.getName()).isEqualTo(NAME);
@@ -95,6 +92,7 @@ class SpeedometerMetricConfigTest {
         assertThat(result.getUnit()).isEqualTo(UNIT);
         assertThat(result.getFormat()).isEqualTo(FORMAT);
         assertThat(result.getHalfLife()).isEqualTo(Math.PI, within(EPSILON));
+        assertThat(result.isUseDefaultHalfLife()).isFalse();
     }
 
     @Test
@@ -104,14 +102,14 @@ class SpeedometerMetricConfigTest {
         final String longDescription = DESCRIPTION.repeat(50);
 
         // then
-        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withDescription(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withDescription("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(" \t\n")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withDescription(longDescription)).isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withUnit(null)).isInstanceOf(NullPointerException.class);
 
-        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> config.withFormat(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> config.withFormat("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> config.withFormat(" \t\n")).isInstanceOf(IllegalArgumentException.class);
     }

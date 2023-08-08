@@ -20,7 +20,6 @@ import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
 import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.common.config.SocketConfig;
-import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.metrics.Metrics;
@@ -28,6 +27,7 @@ import com.swirlds.common.stream.EventStreamManager;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.config.QueueThreadConfiguration;
 import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
@@ -36,8 +36,8 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.platform.components.common.output.RoundAppliedToStateConsumer;
-import com.swirlds.platform.components.transaction.system.PostConsensusSystemTransactionManager;
-import com.swirlds.platform.components.transaction.system.PreConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.ConsensusSystemTransactionManager;
+import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
@@ -70,7 +70,9 @@ import java.util.function.BooleanSupplier;
  */
 public final class PlatformConstructor {
 
-    /** The maximum size of the queue holding signed states ready to be hashed and signed by others. */
+    /**
+     * The maximum size of the queue holding signed states ready to be hashed and signed by others.
+     */
     private static final int STATE_HASH_QUEUE_MAX = 1;
 
     /**
@@ -151,25 +153,23 @@ public final class PlatformConstructor {
     /**
      * Creates a new instance of {@link SwirldStateManager}.
      *
-     * @param platformContext                       the platform context
-     * @param addressBook                           the address book
-     * @param selfId                                this node's id
-     * @param preConsensusSystemTransactionManager  the manager which handles system transactions pre-consensus
-     * @param postConsensusSystemTransactionManager the manager which handles system transactions post-consensus
-     * @param metrics                               reference to the metrics-system
-     * @param transactionConfig                     the transaction configuration
-     * @param initialState                          the initial state
-     * @param softwareVersion                       the software version
+     * @param platformContext                      the platform context
+     * @param addressBook                          the address book
+     * @param selfId                               this node's id
+     * @param preconsensusSystemTransactionManager the manager which handles system transactions pre-consensus
+     * @param consensusSystemTransactionManager    the manager which handles system transactions post-consensus
+     * @param statusActionSubmitter                enables submitting platform status actions
+     * @param initialState                         the initial state
+     * @param softwareVersion                      the software version
      * @return the newly constructed instance of {@link SwirldStateManager}
      */
     static SwirldStateManager swirldStateManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final NodeId selfId,
-            @NonNull final PreConsensusSystemTransactionManager preConsensusSystemTransactionManager,
-            @NonNull final PostConsensusSystemTransactionManager postConsensusSystemTransactionManager,
-            @NonNull final Metrics metrics,
-            @NonNull final TransactionConfig transactionConfig,
+            @NonNull final PreconsensusSystemTransactionManager preconsensusSystemTransactionManager,
+            @NonNull final ConsensusSystemTransactionManager consensusSystemTransactionManager,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final BooleanSupplier inFreezeChecker,
             @NonNull final State initialState,
             @NonNull final SoftwareVersion softwareVersion) {
@@ -177,10 +177,9 @@ public final class PlatformConstructor {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(selfId);
-        Objects.requireNonNull(preConsensusSystemTransactionManager);
-        Objects.requireNonNull(postConsensusSystemTransactionManager);
-        Objects.requireNonNull(metrics);
-        Objects.requireNonNull(transactionConfig);
+        Objects.requireNonNull(preconsensusSystemTransactionManager);
+        Objects.requireNonNull(consensusSystemTransactionManager);
+        Objects.requireNonNull(statusActionSubmitter);
         Objects.requireNonNull(inFreezeChecker);
         Objects.requireNonNull(initialState);
         Objects.requireNonNull(softwareVersion);
@@ -189,10 +188,10 @@ public final class PlatformConstructor {
                 platformContext,
                 addressBook,
                 selfId,
-                preConsensusSystemTransactionManager,
-                postConsensusSystemTransactionManager,
-                new SwirldStateMetrics(metrics),
-                transactionConfig,
+                preconsensusSystemTransactionManager,
+                consensusSystemTransactionManager,
+                new SwirldStateMetrics(platformContext.getMetrics()),
+                statusActionSubmitter,
                 inFreezeChecker,
                 initialState,
                 softwareVersion);
@@ -209,6 +208,7 @@ public final class PlatformConstructor {
      * @param stateHashSignQueue          the queue for signed states that need signatures collected
      * @param waitForEventDurability      a method that blocks until an event becomes durable.
      * @param enterFreezePeriod           a runnable executed when a freeze is entered
+     * @param statusActionSubmitter       enables submitting platform status actions
      * @param roundAppliedToStateConsumer the consumer to invoke when a round has just been applied to the state
      * @param softwareVersion             the software version of the application
      * @return the newly constructed instance of {@link ConsensusRoundHandler}
@@ -223,6 +223,7 @@ public final class PlatformConstructor {
             @NonNull final BlockingQueue<ReservedSignedState> stateHashSignQueue,
             @NonNull final CheckedConsumer<EventImpl, InterruptedException> waitForEventDurability,
             @NonNull final Runnable enterFreezePeriod,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final RoundAppliedToStateConsumer roundAppliedToStateConsumer,
             @NonNull final SoftwareVersion softwareVersion) {
 
@@ -236,6 +237,7 @@ public final class PlatformConstructor {
                 stateHashSignQueue,
                 waitForEventDurability,
                 enterFreezePeriod,
+                statusActionSubmitter,
                 roundAppliedToStateConsumer,
                 softwareVersion);
     }

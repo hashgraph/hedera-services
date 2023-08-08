@@ -96,24 +96,26 @@ public class FileServiceUtils {
     /**
      * The function validates the keys and adds them to the context.
      *
-     * @param listKeys the list of keys to validate and add to required keys in context
+     * @param file file that will be checked for required keys
+     * @param transactionKeys transaction keys that add to context for required keys.
      * @param context the prehandle context for the transaction.
-     * @param areKeysRequired create allows files to be created without additional keys. Therefore,
-     *     this flag is needed.
-     * @throws PreCheckException
      */
     public static void validateAndAddRequiredKeys(
-            @Nullable final KeyList listKeys, @NonNull final PreHandleContext context, final boolean areKeysRequired)
-            throws PreCheckException {
-        if (listKeys == null || !listKeys.hasKeys() || listKeys.keys().isEmpty()) {
-            // @todo('protobuf change needed') change to immutable file response code
-            if (areKeysRequired) {
-                throw new PreCheckException(UNAUTHORIZED);
+            @Nullable final File file,
+            @Nullable final KeyList transactionKeys,
+            @NonNull final PreHandleContext context) {
+        if (file != null) {
+            KeyList fileKeyList = file.keys();
+
+            if (fileKeyList != null && fileKeyList.hasKeys()) {
+                for (final Key key : fileKeyList.keys()) {
+                    context.requireKey(key);
+                }
             }
         }
 
-        if (listKeys != null && listKeys.hasKeys()) {
-            for (final Key key : listKeys.keys()) {
+        if (transactionKeys != null && transactionKeys.hasKeys()) {
+            for (final Key key : transactionKeys.keys()) {
                 context.requireKey(key);
             }
         }

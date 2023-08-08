@@ -24,19 +24,18 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 /**
  * Provides static methods for translating between {@link StakingNodeInfo} and {@link  com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo} both ways.
  */
 public final class StakingNodeInfoStateTranslator {
 
-    @NonNull
     /**
      * Translates a {@link StakingNodeInfo} to a {@link  com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}.
-     * @param stakingNodeInfo the {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInf} to translate
+     * @param merkleStakingInfo the {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo} to translate
      * @return the translated {@link StakingNodeInfo}
      */
+    @NonNull
     public static StakingNodeInfo stakingInfoFromMerkleStakingInfo(
             @NonNull final com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfo) {
         requireNonNull(merkleStakingInfo);
@@ -51,37 +50,37 @@ public final class StakingNodeInfoStateTranslator {
                 .stake(merkleStakingInfo.getStake())
                 .rewardSumHistory(Arrays.stream(merkleStakingInfo.getRewardSumHistory())
                         .boxed()
-                        .collect(Collectors.toList()))
+                        .toList())
                 .weight(merkleStakingInfo.getWeight())
                 .build();
     }
 
-    @NonNull
     /**
      * Translates a {@link StakingNodeInfo} to a {@link  com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}.
-     * @param accountID the {@link AccountID} to get the staking info for
+     * @param nodeId the {@link AccountID} to get the staking info for
      * @param readableStakingInfoStore the {@link ReadableStakingInfoStore} to get the staking info from
      * @return the translated {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}
      */
+    @NonNull
     public static com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfoFromStakingNodeInfo(
-            @NonNull AccountID accountID, @NonNull ReadableStakingInfoStore readableStakingInfoStore) {
-        requireNonNull(accountID);
+            @NonNull final Long nodeId, @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
         requireNonNull(readableStakingInfoStore);
-        final var optionalStakingInfo = readableStakingInfoStore.get(accountID);
+        requireNonNull(nodeId);
+        final var optionalStakingInfo = readableStakingInfoStore.get(nodeId);
         if (optionalStakingInfo == null) {
             throw new IllegalArgumentException("Staking Info not found");
         }
         return merkleStakingInfoFromStakingNodeInfo(optionalStakingInfo);
     }
 
-    @NonNull
     /**
      * Translates a {@link StakingNodeInfo} to a {@link  com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}.
      * @param stakingNodeInfo the {@link StakingNodeInfo} to translate
      * @return the translated {@link com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo}
      */
+    @NonNull
     public static com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfoFromStakingNodeInfo(
-            @NonNull StakingNodeInfo stakingNodeInfo) {
+            @NonNull final StakingNodeInfo stakingNodeInfo) {
         requireNonNull(stakingNodeInfo);
         com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo merkleStakingInfo =
                 new com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo();

@@ -38,17 +38,10 @@ public class FreezeManager implements EventCreationRule {
     /** the current state of the system regarding freeze */
     private volatile FreezeStatus freezeStatus = FreezeStatus.NOT_IN_FREEZE;
 
-    /** A method to call when the freeze status changes */
-    private final Runnable freezeChangeMethod;
-
     private enum FreezeStatus {
         NOT_IN_FREEZE,
         IN_FREEZE,
         FREEZE_COMPLETE
-    }
-
-    public FreezeManager(final Runnable freezeChangeMethod) {
-        this.freezeChangeMethod = freezeChangeMethod;
     }
 
     /**
@@ -76,7 +69,6 @@ public class FreezeManager implements EventCreationRule {
             throw new IllegalStateException("Attempt to enter a freeze period from state {}" + freezeStatus);
         }
         freezeStatus = FreezeStatus.IN_FREEZE;
-        freezeChangeMethod.run();
     }
 
     /**
@@ -95,7 +87,6 @@ public class FreezeManager implements EventCreationRule {
             throw new IllegalStateException("Attempt to complete freeze before freeze started.");
         }
         freezeStatus = FreezeStatus.FREEZE_COMPLETE;
-        freezeChangeMethod.run();
     }
 
     /**

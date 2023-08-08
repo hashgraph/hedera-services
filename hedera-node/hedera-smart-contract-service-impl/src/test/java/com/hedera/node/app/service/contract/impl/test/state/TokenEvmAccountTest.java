@@ -30,6 +30,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,6 +82,13 @@ class TokenEvmAccountTest {
         given(state.getTokenRedirectCode(TOKEN_ADDRESS)).willReturn(code);
 
         assertSame(code, subject.getCode());
+    }
+
+    @Test
+    void returnsEvmCode() {
+        final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
+        given(state.getTokenRedirectCode(TOKEN_ADDRESS)).willReturn(code);
+        assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode());
     }
 
     @Test

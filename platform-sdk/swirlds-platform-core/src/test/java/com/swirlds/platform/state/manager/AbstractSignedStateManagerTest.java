@@ -26,6 +26,7 @@ import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
@@ -98,8 +99,11 @@ public class AbstractSignedStateManagerTest {
 
         // Although we normally want to avoid rebuilding the dispatcher over and over, the slight
         // performance overhead is worth the convenience during unit tests
-        manager.preConsensusSignatureObserver(
-                round, nodeId, buildFakeSignature(addressBook.getAddress(nodeId).getSigPublicKey(), hash));
+
+        final StateSignatureTransaction transaction = new StateSignatureTransaction(
+                round, buildFakeSignature(addressBook.getAddress(nodeId).getSigPublicKey(), hash), hash);
+
+        manager.handlePreconsensusSignatureTransaction(nodeId, transaction);
     }
 
     /**

@@ -18,6 +18,7 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableQueueState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
@@ -97,6 +98,11 @@ public class WrappedWritableStates implements WritableStates {
                 return true;
             }
         }
+        for (WrappedWritableQueueState<?> queueState : writableQueueStateMap.values()) {
+            if (queueState.isModified()) {
+                return true;
+            }
+        }
         for (WrappedWritableSingletonState<?> singletonState : writableSingletonStateMap.values()) {
             if (singletonState.isModified()) {
                 return true;
@@ -112,8 +118,15 @@ public class WrappedWritableStates implements WritableStates {
         for (WrappedWritableKVState<?, ?> kvState : writableKVStateMap.values()) {
             kvState.commit();
         }
+        for (WrappedWritableQueueState<?> queueState : writableQueueStateMap.values()) {
+            queueState.commit();
+        }
         for (WrappedWritableSingletonState<?> singletonState : writableSingletonStateMap.values()) {
             singletonState.commit();
+        }
+
+        if (delegate instanceof CommittableWritableStates terminalStates) {
+            terminalStates.commit();
         }
     }
 }

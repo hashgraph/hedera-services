@@ -19,7 +19,7 @@ package com.swirlds.platform.event.preconsensus;
 import com.swirlds.common.io.extendable.ExtendableOutputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -32,6 +32,8 @@ import java.nio.file.StandardCopyOption;
  * Represents a preconsensus event file that can be written to.
  */
 public class PreconsensusEventMutableFile {
+    /** the file version to write at the beginning of the file. atm, this is just a placeholder for future changes */
+    private static final int FILE_VERSION = 1;
 
     /**
      * Describes the file that is being written to.
@@ -71,6 +73,7 @@ public class PreconsensusEventMutableFile {
                 new BufferedOutputStream(
                         new FileOutputStream(descriptor.getPath().toFile())),
                 counter));
+        out.writeInt(FILE_VERSION);
         highestGenerationInFile = descriptor.getMinimumGeneration();
     }
 
@@ -89,10 +92,11 @@ public class PreconsensusEventMutableFile {
      *
      * @param event the event to write
      */
-    public void writeEvent(final EventImpl event) throws IOException {
+    public void writeEvent(final GossipEvent event) throws IOException {
         if (!descriptor.canContain(event.getGeneration())) {
-            throw new IllegalStateException("Cannot write event " + event.getBaseHash() + " with generation "
-                    + event.getGeneration() + " to file " + descriptor);
+            throw new IllegalStateException(
+                    "Cannot write event " + event.getHashedData().getHash() + " with generation "
+                            + event.getGeneration() + " to file " + descriptor);
         }
         out.writeSerializable(event, false);
         highestGenerationInFile = Math.max(highestGenerationInFile, event.getGeneration());

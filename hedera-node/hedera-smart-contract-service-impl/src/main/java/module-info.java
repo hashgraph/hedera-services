@@ -1,5 +1,3 @@
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-
 module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.app.service.contract;
     requires transitive com.hedera.node.app.spi;
@@ -16,14 +14,14 @@ module com.hedera.node.app.service.contract.impl {
     requires com.swirlds.config;
     requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token;
+    requires com.hedera.node.app.service.file;
     requires com.swirlds.jasperdb;
     requires static com.github.spotbugs.annotations;
     requires org.bouncycastle.provider;
 
-    provides com.hedera.node.app.service.contract.ContractService with
-            ContractServiceImpl;
-
     exports com.hedera.node.app.service.contract.impl;
+    exports com.hedera.node.app.service.contract.impl.exec.scope;
+    exports com.hedera.node.app.service.contract.impl.records;
     exports com.hedera.node.app.service.contract.impl.handlers;
     exports com.hedera.node.app.service.contract.impl.hevm;
     exports com.hedera.node.app.service.contract.impl.state to
@@ -56,4 +54,7 @@ module com.hedera.node.app.service.contract.impl {
             com.hedera.node.app.service.contract.impl.test;
     exports com.hedera.node.app.service.contract.impl.utils;
     exports com.hedera.node.app.service.contract.impl.exec.utils;
+
+    opens com.hedera.node.app.service.contract.impl.exec to
+            com.hedera.node.app.service.contract.impl.test;
 }

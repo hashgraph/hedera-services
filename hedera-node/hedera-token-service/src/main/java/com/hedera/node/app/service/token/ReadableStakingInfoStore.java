@@ -16,23 +16,38 @@
 
 package com.hedera.node.app.service.token;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Set;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
- * working with node stakimg infos.
+ * working with node staking infos.
  */
 public interface ReadableStakingInfoStore {
     /**
-     * Fetches a {@link StakingNodeInfo} object from state with the given {@link AccountID}. If the node could not be
+     * Fetches a {@link StakingNodeInfo} object from state with the given node ID. If the node could not be
      * fetched because the given node doesn't exist, returns {@code null}.
      *
-     * @param nodeId given node account id
+     * @param nodeId the given node ID
      * @return {@link StakingNodeInfo} object if successfully fetched or {@code null} if the node doesn't exist
      */
     @Nullable
-    StakingNodeInfo get(@NonNull final AccountID nodeId);
+    StakingNodeInfo get(final long nodeId);
+
+    /**
+     * Fetches all node IDs from state. If no nodes exist, returns an empty collection.
+     *
+     * <p>
+     * ⚠️⚠️
+     * WARNING:
+     * This method only exists because staking state is small. Don't follow this pattern in other stores
+     * without careful consideration!
+     * ⚠️⚠️
+     *
+     * @return a set of all registered node IDs
+     */
+    @NonNull
+    Set<Long> getAll();
 }

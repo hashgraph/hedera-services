@@ -229,8 +229,8 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
         assertThat(ownerAccount
                         .approveForAllNftAllowances()
                         .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderNum(spenderId.accountNum())
-                                .tokenNum(nonFungibleTokenId.tokenNum())
+                                .spenderId(spenderId)
+                                .tokenId(nonFungibleTokenId)
                                 .build()))
                 .isTrue();
 
@@ -264,8 +264,8 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .getAccountById(ownerId)
                         .approveForAllNftAllowances()
                         .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderNum(payerId.accountNum())
-                                .tokenNum(nonFungibleTokenId.tokenNum())
+                                .spenderId(payerId)
+                                .tokenId(nonFungibleTokenId)
                                 .build()))
                 .isFalse();
 

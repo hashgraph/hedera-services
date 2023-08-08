@@ -73,7 +73,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
 
     @Nullable
-    private long number;
+    private long number; // that one
 
     @Nullable
     private Key grpcAdminKey = null;

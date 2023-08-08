@@ -17,6 +17,7 @@
 package com.swirlds.platform.dispatch.triggers.control;
 
 import com.swirlds.platform.dispatch.types.TriggerThree;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -24,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * Sends dispatches when a dump of a signed state is requested.
  */
 @FunctionalInterface
-public interface StateDumpRequestedTrigger extends TriggerThree<Long, String, Boolean> {
+public interface StateDumpRequestedTrigger extends TriggerThree<Long, StateToDiskReason, Boolean> {
 
     /**
      * Request that a signed state be dumped to disk.
@@ -32,11 +33,12 @@ public interface StateDumpRequestedTrigger extends TriggerThree<Long, String, Bo
      * @param desiredRound the round that should be dumped if still in memory. If the desired round is not in memory
      *                     then the most recent immutable state will be dumped. If null, then the most recent state will
      *                     be dumped.
-     * @param reason       reason why the state is being dumped, e.g. "fatal" or "iss". Is used as a part of the file
-     *                     path for the dumped state files, so this string should not contain any special characters or
-     *                     whitespace.
+     * @param reason       reason why the state is being dumped
      * @param blocking     if this method should block until the operation has been completed
      */
     @Override
-    void dispatch(@Nullable final Long desiredRound, @NonNull final String reason, @NonNull final Boolean blocking);
+    void dispatch(
+            @Nullable final Long desiredRound,
+            @NonNull final StateToDiskReason reason,
+            @NonNull final Boolean blocking);
 }

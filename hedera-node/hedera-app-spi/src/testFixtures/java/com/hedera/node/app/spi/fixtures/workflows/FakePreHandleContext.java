@@ -188,9 +188,10 @@ public class FakePreHandleContext implements PreHandleContext {
     @Override
     public PreHandleContext optionalSignatureForHollowAccount(@NonNull final Account hollowAccount) {
         requireNonNull(hollowAccount);
+        final AccountID accountID = hollowAccount.accountId();
         if (!isHollow(hollowAccount)) {
-            throw new IllegalArgumentException(
-                    "Account %d is not a hollow account".formatted(hollowAccount.accountNumber()));
+            throw new IllegalArgumentException("Account %d.%d.%d is not a hollow account"
+                    .formatted(accountID.shardNum(), accountID.realmNum(), accountID.accountNum()));
         }
         optionalHollowAccounts.add(hollowAccount);
         return this;
@@ -350,8 +351,10 @@ public class FakePreHandleContext implements PreHandleContext {
     @NonNull
     public PreHandleContext requireSignatureForHollowAccount(@NonNull final Account hollowAccount) {
         requireNonNull(hollowAccount);
+        final AccountID id = hollowAccount.accountId();
         if (!isHollow(hollowAccount)) {
-            throw new IllegalArgumentException("Account " + hollowAccount.accountNumber() + " is not a hollow account");
+            throw new IllegalArgumentException("Account %d.%d.%d is not a hollow account"
+                    .formatted(id.shardNum(), id.realmNum(), id.accountNum()));
         }
 
         requiredHollowAccounts.add(hollowAccount);

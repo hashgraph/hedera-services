@@ -89,12 +89,6 @@ class FileCreateTest extends FileTestBase {
     @Mock
     private Configuration configuration;
 
-    //    @Mock
-    //    private LongSupplier consensusSecondNow;
-    //
-    //    @Mock
-    //    private GlobalDynamicProperties dynamicProperties;
-
     @Mock
     private CreateFileRecordBuilder recordBuilder;
 
@@ -128,7 +122,7 @@ class FileCreateTest extends FileTestBase {
     void setUp() {
         subject = new FileCreateHandler();
         fileStore = new WritableFileStore(writableStates);
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
         lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
@@ -307,7 +301,7 @@ class FileCreateTest extends FileTestBase {
 
         assertEquals(2, fileStore.sizeOfState());
 
-        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);
+        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1, 150L);
         given(configuration.getConfigData(any())).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));

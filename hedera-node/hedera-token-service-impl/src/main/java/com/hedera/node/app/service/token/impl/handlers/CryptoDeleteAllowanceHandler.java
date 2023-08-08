@@ -152,14 +152,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
                 final var nft = nftStore.get(tokenId, serial);
 
                 validateTrue(nft != null, INVALID_NFT_ID);
-                // Check if owner owns the nft
-                // FUTURE: owner will be updated to use an AccountID instead of a long account number
-                // Issue #7243
-                AccountID accountOwner = AccountID.newBuilder()
-                        .accountNum(owner.accountNumber())
-                        .realmNum(0)
-                        .shardNum(0)
-                        .build();
+                final AccountID accountOwner = owner.accountId();
                 validateTrue(isValidOwner(nft, accountOwner, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 
                 // Clear spender on the nft

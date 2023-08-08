@@ -168,15 +168,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedOwner.tokenAllowances()).hasSize(1);
         assertThat(modifiedOwner.approveForAllNftAllowances()).hasSize(1);
 
-        assertThat(modifiedOwner.cryptoAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(modifiedOwner.cryptoAllowances().get(0).spenderId()).isEqualTo(spenderId);
         assertThat(modifiedOwner.cryptoAllowances().get(0).amount()).isEqualTo(10);
-        assertThat(modifiedOwner.tokenAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(modifiedOwner.tokenAllowances().get(0).spenderId()).isEqualTo(spenderId);
         assertThat(modifiedOwner.tokenAllowances().get(0).amount()).isEqualTo(10);
-        assertThat(modifiedOwner.tokenAllowances().get(0).tokenNum()).isEqualTo(fungibleTokenId.tokenNum());
-        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).spenderNum())
-                .isEqualTo(spenderId.accountNum());
-        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).tokenNum())
-                .isEqualTo(nonFungibleTokenId.tokenNum());
+        assertThat(modifiedOwner.tokenAllowances().get(0).tokenId()).isEqualTo(fungibleTokenId);
+        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).spenderId())
+                .isEqualTo(spenderId);
+        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).tokenId()).isEqualTo(nonFungibleTokenId);
 
         assertThat(writableNftStore.get(nftIdSl1)).isNotNull();
         assertThat(writableNftStore.get(nftIdSl2)).isNotNull();
@@ -197,15 +196,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(existingOwner.tokenAllowances()).hasSize(1);
         assertThat(existingOwner.approveForAllNftAllowances()).hasSize(1);
 
-        assertThat(existingOwner.cryptoAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(existingOwner.cryptoAllowances().get(0).spenderId()).isEqualTo(spenderId);
         assertThat(existingOwner.cryptoAllowances().get(0).amount()).isEqualTo(1000);
-        assertThat(existingOwner.tokenAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(existingOwner.tokenAllowances().get(0).spenderId()).isEqualTo(spenderId);
         assertThat(existingOwner.tokenAllowances().get(0).amount()).isEqualTo(1000);
-        assertThat(existingOwner.tokenAllowances().get(0).tokenNum()).isEqualTo(fungibleTokenId.tokenNum());
-        assertThat(existingOwner.approveForAllNftAllowances().get(0).spenderNum())
-                .isEqualTo(spenderId.accountNum());
-        assertThat(existingOwner.approveForAllNftAllowances().get(0).tokenNum())
-                .isEqualTo(nonFungibleTokenId.tokenNum());
+        assertThat(existingOwner.tokenAllowances().get(0).tokenId()).isEqualTo(fungibleTokenId);
+        assertThat(existingOwner.approveForAllNftAllowances().get(0).spenderId())
+                .isEqualTo(spenderId);
+        assertThat(existingOwner.approveForAllNftAllowances().get(0).tokenId()).isEqualTo(nonFungibleTokenId);
 
         assertThat(writableNftStore.get(nftIdSl1)).isNotNull();
         assertThat(writableNftStore.get(nftIdSl2)).isNotNull();
@@ -221,15 +219,14 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedOwner.tokenAllowances()).hasSize(1);
         assertThat(modifiedOwner.approveForAllNftAllowances()).hasSize(1);
 
-        assertThat(modifiedOwner.cryptoAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(modifiedOwner.cryptoAllowances().get(0).spenderId()).isEqualTo(spenderId);
         assertThat(modifiedOwner.cryptoAllowances().get(0).amount()).isEqualTo(10);
-        assertThat(modifiedOwner.tokenAllowances().get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(modifiedOwner.tokenAllowances().get(0).spenderId()).isEqualTo(spenderId);
         assertThat(modifiedOwner.tokenAllowances().get(0).amount()).isEqualTo(10);
-        assertThat(modifiedOwner.tokenAllowances().get(0).tokenNum()).isEqualTo(fungibleTokenId.tokenNum());
-        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).spenderNum())
-                .isEqualTo(spenderId.accountNum());
-        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).tokenNum())
-                .isEqualTo(nonFungibleTokenId.tokenNum());
+        assertThat(modifiedOwner.tokenAllowances().get(0).tokenId()).isEqualTo(fungibleTokenId);
+        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).spenderId())
+                .isEqualTo(spenderId);
+        assertThat(modifiedOwner.approveForAllNftAllowances().get(0).tokenId()).isEqualTo(nonFungibleTokenId);
 
         assertThat(writableNftStore.get(nftIdSl1)).isNotNull();
         assertThat(writableNftStore.get(nftIdSl2)).isNotNull();
@@ -327,8 +324,8 @@ class CryptoApproveAllowanceHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(newTokenAllowances).hasSize(1);
         assertThat(newNftAllowances).isEmpty();
 
-        assertThat(newCryptoAllowances.get(0).spenderNum()).isEqualTo(spenderId.accountNum());
-        assertThat(newTokenAllowances.get(0).spenderNum()).isEqualTo(spenderId.accountNum());
+        assertThat(newCryptoAllowances.get(0).spenderId()).isEqualTo(spenderId);
+        assertThat(newTokenAllowances.get(0).spenderId()).isEqualTo(spenderId);
     }
 
     @Test

@@ -42,7 +42,6 @@ metrics.csvFileName,                      PlatformTesting
                                           #           State           #
                                           #############################
 
-state.saveReconnectStateToDisk,           false
 state.saveStatePeriod,                    60
 
                                           #############################

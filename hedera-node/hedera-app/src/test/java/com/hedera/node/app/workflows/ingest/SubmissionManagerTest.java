@@ -34,13 +34,10 @@ import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.HederaConfig;
-import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.Platform;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,13 +61,7 @@ final class SubmissionManagerTest extends AppTestBase {
 
     @BeforeEach
     void setUp() {
-        config = () -> new VersionedConfigImpl(
-                HederaTestConfigBuilder.create(false)
-                        .withConfigDataType(HederaConfig.class)
-                        .withConfigDataType(StatsConfig.class)
-                        .withConfigDataType(MetricsConfig.class)
-                        .getOrCreateConfig(),
-                1);
+        config = () -> new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), 1);
     }
 
     @Test
@@ -209,10 +200,7 @@ final class SubmissionManagerTest extends AppTestBase {
         @BeforeEach
         void setup() {
             config = () -> new VersionedConfigImpl(
-                    HederaTestConfigBuilder.create(false)
-                            .withConfigDataType(HederaConfig.class)
-                            .withConfigDataType(StatsConfig.class)
-                            .withConfigDataType(MetricsConfig.class)
+                    HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.TEST.toString())
                             .getOrCreateConfig(),
                     1);
@@ -255,10 +243,7 @@ final class SubmissionManagerTest extends AppTestBase {
         void testUncheckedSubmitInProdFails() {
             // Given we are in PROD mode
             config = () -> new VersionedConfigImpl(
-                    HederaTestConfigBuilder.create(false)
-                            .withConfigDataType(HederaConfig.class)
-                            .withConfigDataType(StatsConfig.class)
-                            .withConfigDataType(MetricsConfig.class)
+                    HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.PROD.toString())
                             .getOrCreateConfig(),
                     1);
@@ -285,10 +270,7 @@ final class SubmissionManagerTest extends AppTestBase {
         void testBogusBytes() {
             // Given we are in TEST mode and have a transaction with bogus bytes
             config = () -> new VersionedConfigImpl(
-                    HederaTestConfigBuilder.create(false)
-                            .withConfigDataType(HederaConfig.class)
-                            .withConfigDataType(StatsConfig.class)
-                            .withConfigDataType(MetricsConfig.class)
+                    HederaTestConfigBuilder.create()
                             .withValue("hedera.profiles.active", Profile.TEST.toString())
                             .getOrCreateConfig(),
                     1);

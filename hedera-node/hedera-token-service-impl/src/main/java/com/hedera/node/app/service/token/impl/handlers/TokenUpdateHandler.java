@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.isKeyRemoval;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -50,6 +49,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
+import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -111,6 +111,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
         final var txn = context.body();
         final var op = txn.tokenUpdateOrThrow();
         final var tokenId = op.tokenOrThrow();
+        final var recordBuilder = context.recordBuilder(TokenUpdateRecordBuilder.class);
 
         // validate fields that involve config or state
         final var validationResult = tokenUpdateValidator.validateSemantics(context, op);
@@ -137,7 +138,9 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             // If there is no treasury relationship, then we need to create one if auto associations are available.
             // If not fail
             if (newTreasuryRel == null) {
-                autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                final var newRelation = autoAssociate(newTreasuryAccount, token, accountStore, tokenRelStore, context);
+                recordBuilder.addAutomaticTokenAssociation(
+                        asTokenAssociation(newRelation.tokenId(), newRelation.accountId()));
             }
             // Treasury can be modified when it owns NFTs when the property "tokens.nfts.useTreasuryWildcards"
             // is enabled.
@@ -393,8 +396,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
             @NonNull final Token originalToken,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore) {
-        final var newTokenRelation =
-                tokenRelStore.get(asAccount(newTreasuryAccount.accountNumber()), originalToken.tokenId());
+        final var newTokenRelation = tokenRelStore.get(newTreasuryAccount.accountId(), originalToken.tokenId());
         final var newRelCopy = newTokenRelation.copyBuilder();
 
         if (originalToken.hasFreezeKey()) {

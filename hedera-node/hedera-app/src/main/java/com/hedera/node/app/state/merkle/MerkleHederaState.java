@@ -18,6 +18,7 @@ package com.hedera.node.app.state.merkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -594,7 +595,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
      * An implementation of {@link WritableStates} based on the merkle tree.
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public final class MerkleWritableStates extends MerkleStates implements WritableStates {
+    public final class MerkleWritableStates extends MerkleStates implements WritableStates, CommittableWritableStates {
         /**
          * Create a new instance
          *
@@ -650,6 +651,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             return new WritableQueueStateImpl<>(md, q);
         }
 
+        @Override
         public void commit() {
             for (final ReadableKVState kv : kvInstances.values()) {
                 ((WritableKVStateBase) kv).commit();
@@ -657,8 +659,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal implements Merk
             for (final ReadableSingletonState s : singletonInstances.values()) {
                 ((WritableSingletonStateBase) s).commit();
             }
-            for (final ReadableQueueState s : queueInstances.values()) {
-                ((WritableQueueStateBase) s).commit();
+            for (final ReadableQueueState q : queueInstances.values()) {
+                ((WritableQueueStateBase) q).commit();
             }
         }
     }

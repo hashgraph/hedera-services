@@ -23,6 +23,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.sequence.set.SequenceSet;
 import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.transaction.internal.StateSignatureTransaction;
 import com.swirlds.platform.components.state.output.NewLatestCompleteStateConsumer;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
@@ -272,16 +273,17 @@ public class SignedStateManager implements SignedStateFinder {
     /**
      * An observer of pre-consensus state signatures.
      *
-     * @param round     the round that was signed
-     * @param signerId  the ID of the signer
-     * @param signature the signature on the hash
+     * @param signerId             the node that created the signature
+     * @param signatureTransaction the signature transaction
      */
-    public synchronized void preConsensusSignatureObserver(
-            @NonNull final Long round, @NonNull final NodeId signerId, @NonNull final Signature signature) {
+    public synchronized void handlePreconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
 
-        Objects.requireNonNull(round, "round must not be null");
-        Objects.requireNonNull(signerId, "signerId must not be null");
-        Objects.requireNonNull(signature, "signature must not be null");
+        Objects.requireNonNull(signerId);
+        Objects.requireNonNull(signatureTransaction);
+
+        final long round = signatureTransaction.getRound();
+        final Signature signature = signatureTransaction.getStateSignature();
 
         signedStateMetrics.getStateSignaturesGatheredPerSecondMetric().cycle();
 
@@ -299,6 +301,31 @@ public class SignedStateManager implements SignedStateFinder {
             }
 
             addSignature(reservedState.get(), signerId, signature);
+        }
+    }
+
+    /**
+     * An observer of post-consensus state signatures.
+     *
+     * @param signerId    the node that created the signature
+     * @param transaction the signature transaction
+     */
+    public synchronized void handlePostconsensusSignatureTransaction(
+            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
+
+        Objects.requireNonNull(signerId);
+
+        final long round = transaction.getRound();
+
+        try (final ReservedSignedState reservedState = getIncompleteState(round)) {
+            // it isn't possible to receive a post-consensus signature transaction for a future round,
+            // and if we don't have the state for an old round, we never will.
+            // in both cases, the signature can be ignored
+            if (reservedState.isNull()) {
+                return;
+            }
+
+            addSignature(reservedState.get(), signerId, transaction.getStateSignature());
         }
     }
 

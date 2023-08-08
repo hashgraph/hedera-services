@@ -1,0 +1,127 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.exec.utils;
+
+import static com.hedera.hapi.streams.CallOperationType.OP_UNKNOWN;
+import static com.hedera.hapi.streams.ContractActionType.NO_ACTION;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.hederaIdNumOfContractIn;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static com.hedera.node.app.service.contract.impl.utils.OpcodeUtils.asCallOperationType;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.streams.ContractAction;
+import com.hedera.hapi.streams.ContractActionType;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+
+/**
+ * Helper class for pretty-printing, validating, and creating synthetic {@link ContractAction}s.
+ */
+public class ActionsHelper {
+    private static final Bytes MISSING_ADDRESS_ERROR = Bytes.wrap("INVALID_SOLIDITY_ADDRESS".getBytes(UTF_8));
+
+    /**
+     * Given a frame, returns a {@link ContractAction} that represents it as a call to a missing address.
+     *
+     * @param frame the frame to represent
+     * @return the {@link ContractAction} representing the frame as a call to a missing address
+     */
+    public ContractAction createSynthActionForMissingAddressIn(@NonNull final MessageFrame frame) {
+        return ContractAction.newBuilder()
+                .callType(ContractActionType.CALL)
+                .gas(frame.getRemainingGas())
+                .callDepth(frame.getMessageStackDepth() + 1)
+                .callingContract(contractIdWith(hederaIdNumOfContractIn(frame)))
+                .targetedAddress(tuweniToPbjBytes(frame.getStackItem(1)))
+                .error(MISSING_ADDRESS_ERROR)
+                .callOperationType(
+                        asCallOperationType(frame.getCurrentOperation().getOpcode()))
+                .build();
+    }
+
+    /**
+     * Given a {@link ContractAction}, returns whether it is valid.
+     *
+     * @param action the action to validate
+     * @return whether the given action is valid
+     */
+    public boolean isValid(@NonNull final ContractAction action) {
+        var ok = true;
+        ok &= null != action.callType() && NO_ACTION != action.callType();
+        ok &= 1 == countNonNulls(action.callingAccount(), action.callingContract());
+        ok &= null != action.input();
+        ok &= 1 >= countNonNulls(action.recipientAccount(), action.recipientContract(), action.targetedAddress());
+        ok &= 1 == countNonNulls(action.output(), action.revertReason(), action.error());
+        ok &= null != action.callOperationType() && OP_UNKNOWN != action.callOperationType();
+        return ok;
+    }
+
+    /**
+     * Returns a pretty-printed string representation of the given {@link ContractAction}.
+     *
+     * @param action the action to pretty-print
+     * @return the pretty-printed string representation of the given {@link ContractAction}
+     */
+    public String prettyPrint(@NonNull final ContractAction action) {
+        final var sb = new StringBuilder();
+
+        Function<Object, String> fobj = o -> null != o ? o.toString() : "<null>";
+        Function<byte[], String> fbytes = b -> null != b
+                ? (0 != b.length ? org.apache.tuweni.bytes.Bytes.wrap(b).toHexString() : "<empty>")
+                : "<null>";
+        BiConsumer<String, Object> ff =
+                (n, o) -> sb.append("%s: %s, ".formatted(n, o instanceof byte[] b ? fbytes.apply(b) : fobj.apply(o)));
+
+        sb.append("SolidityAction(");
+        ff.accept("callType", action.callType());
+        ff.accept("callOperationType", action.callOperationType());
+        ff.accept("value", action.value());
+        ff.accept("gas", action.gas());
+        ff.accept("gasUsed", action.gasUsed());
+        ff.accept("callDepth", action.callDepth());
+        ff.accept("callingAccount", action.callingAccount());
+        ff.accept("callingContract", action.callingContract());
+        ff.accept("recipientAccount", action.recipientAccount());
+        ff.accept("recipientContract", action.recipientContract());
+        ff.accept("invalidSolidityAddress (aka targetedAddress)", action.targetedAddress());
+        ff.accept("input", action.input());
+        ff.accept("output", action.output());
+        ff.accept("revertReason", action.revertReason());
+        ff.accept("error", action.error());
+        sb.setLength(sb.length() - 2);
+        sb.append(")");
+        return sb.toString();
+    }
+
+    private ContractID contractIdWith(final long num) {
+        return ContractID.newBuilder().contractNum(num).build();
+    }
+
+    private static int countNonNulls(@NonNull final Object... objs) {
+        var count = 0;
+        for (var obj : objs) {
+            if (null != obj) {
+                count++;
+            }
+        }
+        return count;
+    }
+}

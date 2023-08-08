@@ -28,11 +28,13 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.merkle.util.MerkleTestUtils;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.virtualmap.TestKey;
 import com.swirlds.virtualmap.TestValue;
@@ -85,6 +87,9 @@ public abstract class VirtualMapReconnectTestBase {
     protected VirtualMap<TestKey, TestValue> learnerMap;
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
+
+    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
 
     protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder();
 
@@ -139,7 +144,8 @@ public abstract class VirtualMapReconnectTestBase {
         try {
             for (int i = 0; i < attempts; i++) {
                 try {
-                    final var node = MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree);
+                    final var node =
+                            MerkleTestUtils.hashAndTestSynchronization(learnerTree, teacherTree, reconnectConfig);
                     node.release();
                     assertEquals(attempts - 1, i, "We should only succeed on the last try");
                     final VirtualRoot root = learnerMap.getRight();
