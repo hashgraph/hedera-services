@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.spi.HapiUtils.parseAccount;
 import static com.swirlds.common.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -24,10 +25,14 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
+import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -50,6 +55,7 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -113,7 +119,8 @@ public final class Hedera implements SwirldMain {
     private static final Logger logger = LogManager.getLogger(Hedera.class);
     private static final int STATE_VERSION_NEWER_THAN_SOFTWARE_VERSION_EXIT_CODE = 10;
     private static final int VERSION_NOT_IN_SAVED_STATE_EXIT_CODE = 11;
-    // This should come from configuration, NOT be hardcoded.
+    private static final int CRITICAL_FAILURE_EXIT_CODE = 12;
+    // FUTURE: This should come from configuration, NOT be hardcoded.
     public static final int MAX_SIGNED_TXN_SIZE = 6144;
 
     /**
@@ -181,14 +188,16 @@ public final class Hedera implements SwirldMain {
         // FUTURE: Use the service loader framework to load these services!
         this.servicesRegistry = new ServicesRegistryImpl(Set.of(
                 new ConsensusServiceImpl(),
-                new ContractServiceImpl(),
+                CONTRACT_SERVICE,
                 new FileServiceImpl(),
                 new FreezeServiceImpl(),
                 new NetworkServiceImpl(),
                 new ScheduleServiceImpl(),
                 new TokenServiceImpl(),
                 new UtilServiceImpl(),
-                new RecordCacheService()));
+                new RecordCacheService(),
+                new BlockRecordService(),
+                new EntityIdService()));
 
         // Register MerkleHederaState with the ConstructableRegistry, so we can use a constructor
         // OTHER THAN the default constructor to make sure it has the config and other info
@@ -291,12 +300,17 @@ public final class Hedera implements SwirldMain {
         // Different paths for different triggers. Every trigger should be handled here. If a new trigger is added,
         // since there is no 'default' case, it will cause a compile error, so you will know you have to deal with it
         // here. This is intentional so as to avoid forgetting to handle a new trigger.
-        switch (trigger) {
-            case GENESIS -> genesis(state, dualState);
-            case RESTART -> restart(state, dualState, deserializedVersion);
-            case RECONNECT -> reconnect();
-                // We exited from this method early if we were recovering from an event stream.
-            case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+        try {
+            switch (trigger) {
+                case GENESIS -> genesis(state, dualState);
+                case RESTART -> restart(state, dualState, deserializedVersion);
+                case RECONNECT -> reconnect();
+                    // We exited from this method early if we were recovering from an event stream.
+                case EVENT_STREAM_RECOVERY -> throw new RuntimeException("Should never be reached");
+            }
+        } catch (final Throwable th) {
+            logger.fatal("Critical failure during initialization", th);
+            System.exit(CRITICAL_FAILURE_EXIT_CODE);
         }
 
         // This field has to be set by the time we get here. It will be set by both the genesis and restart code
@@ -387,15 +401,10 @@ public final class Hedera implements SwirldMain {
             notifications.register(PlatformStatusChangeListener.class, notification -> {
                 switch (notification.getNewStatus()) {
                     case ACTIVE -> {
-                        run();
                         logger.info("Hederanode#{} is ACTIVE", nodeId);
                     }
                     case BEHIND -> {
                         logger.info("Hederanode#{} is BEHIND", nodeId);
-                        shutdownGrpcServer();
-                    }
-                    case DISCONNECTED -> {
-                        logger.info("Hederanode#{} is DISCONNECTED", nodeId);
                         shutdownGrpcServer();
                     }
                     case FREEZE_COMPLETE -> {
@@ -504,6 +513,17 @@ public final class Hedera implements SwirldMain {
     }
 
     /**
+     * Called for an orderly shutdown.
+     */
+    public void shutdown() {
+        shutdownGrpcServer();
+
+        if (daggerApp != null) {
+            daggerApp.blockRecordManager().close();
+        }
+    }
+
+    /**
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
     private void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
@@ -570,6 +590,8 @@ public final class Hedera implements SwirldMain {
 
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
+
+        initializeExchangeRateManager(state);
 
         // Store the version in state
         // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
@@ -769,6 +791,26 @@ public final class Hedera implements SwirldMain {
         }
     }
 
+    private void initializeExchangeRateManager(@NonNull final HederaState state) {
+        logger.info("Initializing exchange rates");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.exchangeRates();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build(); // default to shard=0, realm=0
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            daggerApp.exchangeRateManager().update(fileData);
+        });
+        logger.info("Exchange rates initialized");
+    }
+
     /*==================================================================================================================
     *
     * Restart Initialization
@@ -862,13 +904,12 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
-                    .staticAccountMemo(nodeAddress.getMemo())
+                    .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)
                     .maxSignedTxnSize(MAX_SIGNED_TXN_SIZE)
                     .crypto(CryptographyHolder.get())
                     .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
-                    .selfId(nodeSelfAccount)
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())

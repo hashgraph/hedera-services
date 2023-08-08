@@ -89,6 +89,7 @@ import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -129,7 +130,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
+@HapiTestSuite
 public class TraceabilitySuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(TraceabilitySuite.class);
     private static final String RECORD_STREAM_FOLDER_PATH_PROPERTY_KEY = "recordStream.path";
 

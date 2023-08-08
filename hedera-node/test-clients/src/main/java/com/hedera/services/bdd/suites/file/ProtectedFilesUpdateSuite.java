@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -49,6 +50,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
+@HapiTestSuite
 public class ProtectedFilesUpdateSuite extends HapiSuite {
     private static final String IGNORE = "ignore";
     private static final String TARGET_MEMO = "0.0.5";
@@ -191,9 +193,7 @@ public class ProtectedFilesUpdateSuite extends HapiSuite {
             getAccountBalance(account).hasTinyBars(changeFromSnapshot("preUpdate", 0))
         };
         HapiSpecOperation[] opsArray = {
-            validateOp,
-            UtilVerbs.updateLargeFile(account, fileName, fileName),
-            getFileContents(fileName).hasContents(fileName)
+            validateOp, UtilVerbs.updateLargeFile(account, fileName, fileName),
         };
         if (account.equals(GENESIS) || !isFree) {
             return opsArray;

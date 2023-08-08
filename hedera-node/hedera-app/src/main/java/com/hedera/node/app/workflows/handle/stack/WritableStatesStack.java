@@ -53,13 +53,24 @@ public class WritableStatesStack implements WritableStates {
 
     /**
      * Returns the current {@link WritableStates} in the stack. Package-private, because it should only be called by
-     * {@link WritableKVStateStack} and {@link WritableSingletonStateStack}.
+     * {@link WritableKVStateStack} {@link WritableSingletonStateStack}, and {@link WritableQueueStateStack}.
      *
      * @return the current {@link ReadableStates} in the stack
      */
     @NonNull
     WritableStates getCurrent() {
         return stack.peek().state().createWritableStates(statesName);
+    }
+
+    /**
+     * Returns the root {@link ReadableStates} of the stack. Package-private, because it should only be called by
+     * {@link WritableKVStateStack}.
+     *
+     * @return the root {@link ReadableStates} of the stack
+     */
+    @NonNull
+    ReadableStates getRoot() {
+        return stack.rootStates(statesName);
     }
 
     @Override

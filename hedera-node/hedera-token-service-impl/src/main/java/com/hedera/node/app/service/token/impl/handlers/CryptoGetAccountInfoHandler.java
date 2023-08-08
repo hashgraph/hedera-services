@@ -27,7 +27,6 @@ import static com.hedera.hapi.node.base.TokenKycStatus.GRANTED;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.key.KeyUtils.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -45,7 +44,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenRelationship;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.AccountInfo;
@@ -55,10 +53,11 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
-import com.hedera.node.app.service.token.impl.utils.RewardCalculator;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -84,10 +83,11 @@ import org.apache.logging.log4j.Logger;
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private static final int EVM_ADDRESS_SIZE = 20;
     private static final Logger log = LogManager.getLogger(CryptoGetAccountInfoHandler.class);
+    private final StakeRewardCalculator rewardCalculator;
 
     @Inject
-    public CryptoGetAccountInfoHandler() {
-        // Exists for injection
+    public CryptoGetAccountInfoHandler(@NonNull final StakeRewardCalculator rewardCalculator) {
+        this.rewardCalculator = rewardCalculator;
     }
 
     @Override
@@ -130,31 +130,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         response.header(header);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-            final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
-            final var accountStore = context.createStore(ReadableAccountStore.class);
-            final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
-            final var tokenStore = context.createStore(ReadableTokenStore.class);
-            final var stakingInfoStore = context.createStore(ReadableStakingInfoStore.class);
-            final var optionalInfo = infoForAccount(
-                    accountId,
-                    accountStore,
-                    tokenStore,
-                    tokenRelationStore,
-                    stakingInfoStore,
-                    tokensConfig,
-                    ledgerConfig,
-                    new RewardCalculator() {
-                        @Override
-                        public long epochSecondAtStartOfPeriod(long stakePeriod) {
-                            return 0;
-                        }
-
-                        @Override
-                        public long estimatePendingRewards(Account account, @Nullable StakingNodeInfo stakingNodeInfo) {
-                            return 0;
-                        }
-                    }); // remove this when we have a real reward calculator
+            final var optionalInfo = infoForAccount(accountId, context);
             if (optionalInfo.isPresent()) {
                 response.accountInfo(optionalInfo.get());
             } else {
@@ -170,32 +146,22 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     /**
      * Provides information about an account.
      * @param accountID account id
-     * @param accountStore the account store
-     * @param tokenStore the token store
-     * @param tokenRelationStore the token relation store
-     * @param readableStakingInfoStore the staking info store
-     * @param tokensConfig the TokensConfig
-     * @param ledgerConfig the LedgerConfig
-     * @param rewardCalculator the RewardCalculator
+     * @param context the query context
      * @return the information about the account
      */
     private Optional<AccountInfo> infoForAccount(
-            @NonNull final AccountID accountID,
-            @NonNull final ReadableAccountStore accountStore,
-            @NonNull final ReadableTokenStore tokenStore,
-            @NonNull final ReadableTokenRelationStore tokenRelationStore,
-            @NonNull final ReadableStakingInfoStore readableStakingInfoStore,
-            @NonNull final TokensConfig tokensConfig,
-            @NonNull final LedgerConfig ledgerConfig,
-            @NonNull final RewardCalculator rewardCalculator) {
+            @NonNull final AccountID accountID, @NonNull final QueryContext context) {
         requireNonNull(accountID);
-        requireNonNull(accountStore);
-        requireNonNull(tokenStore);
-        requireNonNull(tokenRelationStore);
-        requireNonNull(readableStakingInfoStore);
-        requireNonNull(tokensConfig);
-        requireNonNull(ledgerConfig);
-        requireNonNull(rewardCalculator);
+        requireNonNull(context);
+
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
+        final var accountStore = context.createStore(ReadableAccountStore.class);
+        final var tokenRelationStore = context.createStore(ReadableTokenRelationStore.class);
+        final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var stakingInfoStore = context.createStore(ReadableStakingInfoStore.class);
+        final var stakingRewardsStore = context.createStore(ReadableNetworkStakingRewardsStore.class);
+
         final var account = accountStore.getAccountById(accountID);
         if (account == null) {
             return Optional.empty();
@@ -217,7 +183,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             //  info.proxyAccountID(); Deprecated
             info.alias(account.alias());
             info.tokenRelationships(getTokenRelationship(tokensConfig, account, tokenStore, tokenRelationStore));
-            info.stakingInfo(getStakingInfo(account, rewardCalculator, readableStakingInfoStore));
+            info.stakingInfo(getStakingInfo(account, stakingInfoStore, stakingRewardsStore));
             return Optional.of(info.build());
         }
     }
@@ -240,14 +206,13 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         requireNonNull(readableTokenStore);
         requireNonNull(tokenRelationStore);
         final var ret = new ArrayList<TokenRelationship>();
-        var tokenId = asToken(account.headTokenNumber());
+        var tokenId = account.headTokenId();
         int count = 0;
         TokenRelation tokenRelation;
         Token token; // token from readableToken store by tokenID
         AccountID accountID; // build from accountNumber
         while (tokenId != null && !tokenId.equals(TokenID.DEFAULT) && count < tokenConfig.maxRelsPerInfoQuery()) {
-            accountID =
-                    AccountID.newBuilder().accountNum(account.accountNumber()).build();
+            accountID = account.accountId();
             tokenRelation = tokenRelationStore.get(accountID, tokenId);
             if (tokenRelation != null) {
                 token = readableTokenStore.get(tokenId);
@@ -299,7 +264,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
         if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LEN) {
             return Bytes.wrap(evmAddress).toHex();
         } else {
-            return hex(asEvmAddress(account.accountNumber()));
+            return hex(asEvmAddress(account.accountIdOrThrow().accountNumOrThrow()));
         }
     }
 
@@ -330,25 +295,23 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     /**
      * get StakingInfo of an Account
      * @param account   the account to be calculated from
-     * @param rewardCalculator  the reward calculator
-     * @param readableStakingInfoStore  readable staking info store
+     * @param stakingInfoStore  readable staking info store
      * @return StakingInfo object
      */
     private StakingInfo getStakingInfo(
             final Account account,
-            @NonNull final RewardCalculator rewardCalculator,
-            @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
+            @NonNull final ReadableStakingInfoStore stakingInfoStore,
+            @NonNull final ReadableNetworkStakingRewardsStore stakingRewardsStore) {
         final var stakingInfo =
                 StakingInfo.newBuilder().declineReward(account.declineReward()).stakedToMe(account.stakedToMe());
 
-        final var stakedNum = account.stakedNumber();
-        if (stakedNum < 0) {
-            // Staked num for a node is (-nodeId -1)
-            stakingInfo.stakedNodeId(-stakedNum - 1);
-            addNodeStakeMeta(stakingInfo, account, rewardCalculator, readableStakingInfoStore);
-        } else if (stakedNum > 0) {
-            stakingInfo.stakedAccountId(
-                    AccountID.newBuilder().realmNum(0).shardNum(0).accountNum(stakedNum));
+        final var stakedNode = account.stakedNodeId();
+        final var stakedAccount = account.stakedAccountId();
+        if (stakedNode != null) {
+            stakingInfo.stakedNodeId(stakedNode);
+            addNodeStakeMeta(stakingInfo, account, stakingInfoStore, stakingRewardsStore);
+        } else if (stakedAccount != null) {
+            stakingInfo.stakedAccountId(stakedAccount);
         }
 
         return stakingInfo.build();
@@ -358,34 +321,32 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
      * add staking meta to StakingInfo
      * @param stakingInfo   the staking info to be added to
      * @param account   the account to be calculated from
-     * @param rewardCalculator  the reward calculator
      * @param readableStakingInfoStore  readable staking info store
      * @return long of StakedNodeAddressBookId
      */
     private void addNodeStakeMeta(
             final StakingInfo.Builder stakingInfo,
             @NonNull final Account account,
-            @NonNull final RewardCalculator rewardCalculator,
-            @NonNull final ReadableStakingInfoStore readableStakingInfoStore) {
+            @NonNull final ReadableStakingInfoStore readableStakingInfoStore,
+            @NonNull final ReadableNetworkStakingRewardsStore stakingRewardsStore) {
         final var startSecond = rewardCalculator.epochSecondAtStartOfPeriod(account.stakePeriodStart());
         stakingInfo.stakePeriodStart(Timestamp.newBuilder().seconds(startSecond));
         if (mayHavePendingReward(account)) {
-            final var stakingNodeInfo = readableStakingInfoStore.get(AccountID.newBuilder()
-                    .accountNum(getStakedNodeAddressBookId(account))
-                    .build());
-            final var pendingReward = rewardCalculator.estimatePendingRewards(account, stakingNodeInfo);
+            final var stakingNodeInfo = readableStakingInfoStore.get(getStakedNodeAddressBookId(account));
+            final var pendingReward =
+                    rewardCalculator.estimatePendingRewards(account, stakingNodeInfo, stakingRewardsStore);
             stakingInfo.pendingReward(pendingReward);
         }
     }
 
     private boolean mayHavePendingReward(Account account) {
-        return account.stakedNumber() < 0 && !account.declineReward();
+        return account.hasStakedNodeId() && !account.declineReward();
     }
 
     private long getStakedNodeAddressBookId(Account account) {
-        if (account.stakedNumber() >= 0) {
+        if (!account.hasStakedNodeId()) {
             throw new IllegalStateException("Account is not staked to a node");
         }
-        return -account.stakedNumber() - 1;
+        return account.stakedNodeId();
     }
 }

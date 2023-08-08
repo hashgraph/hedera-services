@@ -81,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -99,7 +100,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
+@HapiTestSuite
 public class ERCPrecompileSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
     private static final long GAS_TO_OFFER = 1_000_000L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";

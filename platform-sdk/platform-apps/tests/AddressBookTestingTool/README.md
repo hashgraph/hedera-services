@@ -204,11 +204,12 @@ Errors are logged if any of the following conditions are violated.
 1. Delete `sdk/data/saved` directory if it exists
 2. Ensure settings.txt has the following values
 ```
-state.saveStatePeriod,                    10
-addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      SKIP_VALIDATION
-addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.weightingBehavior, 1
+state.saveStatePeriod,                     10
+addressBook.forceUseOfConfigAddressBook,   false
+addressBookTestingTool.testScenario,       SKIP_VALIDATION
+addressBookTestingTool.softwareVersion,    1
+addressBookTestingTool.weightingBehavior,  1
+addressBookTestingTool.freezeAfterGenesis, 1m
 ```
 3. Run the app for 60 seconds
 4. Stop the app
@@ -253,11 +254,12 @@ Errors are logged if any of the following conditions are violated.
 1. Delete `sdk/data/saved` directory if it exists
 2. Ensure settings.txt has the following values
 ```
-state.saveStatePeriod,                    10
-addressBook.forceUseOfConfigAddressBook,  false
-addressBookTestingTool.testScenario,      SKIP_VALIDATION
-addressBookTestingTool.softwareVersion,   1
-addressBookTestingTool.weightingBehavior, 1
+state.saveStatePeriod,                     10
+addressBook.forceUseOfConfigAddressBook,   false
+addressBookTestingTool.testScenario,       SKIP_VALIDATION
+addressBookTestingTool.softwareVersion,    1
+addressBookTestingTool.weightingBehavior,  1
+addressBookTestingTool.freezeAfterGenesis, 1m
 ```
 3. Run the app for 60 seconds
 4. Stop the app

@@ -19,6 +19,7 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.editor.StateEditor;
 import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
@@ -66,7 +67,7 @@ public class StateEditorCommand extends AbstractCommand {
      */
     @Override
     public Integer call() throws IOException {
-        BootstrapUtils.loadConfiguration(configurationPaths);
+        DefaultConfiguration.buildBasicConfiguration(configurationPaths);
         BootstrapUtils.setupConstructableRegistry();
 
         new StateEditor(statePath).start();

@@ -39,7 +39,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -65,17 +65,17 @@ class EnsureAliasesStepTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -126,30 +126,30 @@ class EnsureAliasesStepTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(hbarReceiver)
+                            .accountId(hbarReceiverId)
                             .alias(evmAddressAlias1)
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias1, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(tokenReceiver)
+                            .accountId(tokenReceiverId)
                             .alias(evmAddressAlias2)
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias2, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
-                            .accountNumber(hbarReceiver + 2)
+                            .accountId(AccountID.newBuilder().accountNum(hbarReceiver + 2))
                             .alias(evmAddressAlias3)
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias3, asAccount(hbarReceiver + 2));
-                    return recordBuilder.accountID(asAccount(hbarReceiver + 2));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver + 2));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -224,17 +224,17 @@ class EnsureAliasesStepTest extends StepsBase {
         given(handleContext.dispatchRemovableChildTransaction(any(), eq(CryptoCreateRecordBuilder.class)))
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(hbarReceiver).build();
+                            account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
-                            account.copyBuilder().accountNumber(tokenReceiver).build();
+                            account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -324,11 +324,11 @@ class EnsureAliasesStepTest extends StepsBase {
         writableAccountStore = new WritableAccountStore(writableStates);
 
         writableAccountStore.put(account.copyBuilder()
-                .accountNumber(hbarReceiver)
+                .accountId(hbarReceiverId)
                 .alias(ecKeyAlias)
                 .build());
         writableAccountStore.put(account.copyBuilder()
-                .accountNumber(tokenReceiver)
+                .accountId(tokenReceiverId)
                 .alias(edKeyAlias)
                 .build());
 

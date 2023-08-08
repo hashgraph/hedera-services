@@ -26,6 +26,8 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.platform.state.signed.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStateDirectory;
 import static com.swirlds.platform.state.signed.SignedStateFileUtils.getSignedStatesBaseDirectory;
+import static com.swirlds.platform.state.signed.StateToDiskReason.FATAL_ERROR;
+import static com.swirlds.platform.state.signed.StateToDiskReason.ISS;
 import static java.nio.file.Files.exists;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -37,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
@@ -45,8 +47,8 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.common.test.state.DummySwirldState;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.components.state.output.StateToDiskAttemptConsumer;
@@ -60,6 +62,7 @@ import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
 import com.swirlds.platform.state.signed.SourceOfSignedState;
+import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
@@ -200,7 +203,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         manager.saveSignedStateToDisk(signedState);
@@ -247,11 +251,12 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         final Thread thread = new ThreadConfiguration(getStaticThreadManager())
-                .setInterruptableRunnable(() -> manager.dumpState(signedState, "fatal", true))
+                .setInterruptableRunnable(() -> manager.dumpState(signedState, FATAL_ERROR, true))
                 .build(true);
 
         // State writing should be synchronized. So we shouldn't be able to finish until we unblock.
@@ -297,10 +302,11 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
-        manager.dumpState(signedState, "iss", false);
+        manager.dumpState(signedState, ISS, false);
 
         assertEventuallyTrue(finished::get, Duration.ofSeconds(1), "should eventually be written to disk");
 
@@ -393,7 +399,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 consumer,
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         final List<SignedState> states = new ArrayList<>();
@@ -454,7 +461,7 @@ class SignedStateFileManagerTests {
         final int averageTimeBetweenStates = 10;
         final double standardDeviationTimeBetweenStates = 0.5;
 
-        final AtomicLong minimumGenerationNonAncientSetByCallback = new AtomicLong();
+        final AtomicLong minimumGenerationNonAncientSetByCallback = new AtomicLong(-1);
 
         final SignedStateFileManager manager = new SignedStateFileManager(
                 context,
@@ -466,9 +473,13 @@ class SignedStateFileManagerTests {
                 SWIRLD_NAME,
                 (ssw, path, success) -> {},
                 x -> {
-                    assertTrue(x > minimumGenerationNonAncientSetByCallback.get());
+                    assertTrue(
+                            x > minimumGenerationNonAncientSetByCallback.get(),
+                            "current mingen is %d, new mingen is %d"
+                                    .formatted(minimumGenerationNonAncientSetByCallback.get(), x));
                     minimumGenerationNonAncientSetByCallback.set(x);
-                });
+                },
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         Instant timestamp;
@@ -602,7 +613,8 @@ class SignedStateFileManagerTests {
                 SELF_ID,
                 SWIRLD_NAME,
                 (ssw, path, success) -> {},
-                x -> {});
+                x -> {},
+                mock(StatusActionSubmitter.class));
         manager.start();
 
         final Path statesDirectory =
@@ -614,7 +626,7 @@ class SignedStateFileManagerTests {
                 getSignedStatesBaseDirectory().resolve("iss").resolve("node" + SELF_ID + "_round" + issRound);
         final SignedState issState =
                 new RandomSignedStateGenerator(random).setRound(issRound).build();
-        manager.dumpState(issState, "iss", false);
+        manager.dumpState(issState, ISS, false);
         assertEventuallyDoesNotThrow(
                 () -> {
                     try {
@@ -632,7 +644,7 @@ class SignedStateFileManagerTests {
                 getSignedStatesBaseDirectory().resolve("fatal").resolve("node" + SELF_ID + "_round" + fatalRound);
         final SignedState fatalState =
                 new RandomSignedStateGenerator(random).setRound(fatalRound).build();
-        manager.dumpState(fatalState, "fatal", true);
+        manager.dumpState(fatalState, FATAL_ERROR, true);
         validateSavingOfState(fatalState, fatalDirectory);
 
         // Save a bunch of states. After each time, check the states that are still on disk.

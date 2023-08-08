@@ -17,13 +17,13 @@
 package com.swirlds.common.metrics;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static com.swirlds.common.utility.CommonUtils.throwArgBlank;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
+import com.swirlds.base.ArgumentUtils;
 import com.swirlds.common.units.UnitConstants;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
+import java.util.Objects;
 
 /**
  * Stores a single duration. The output unit is determined by configuration
@@ -59,7 +59,7 @@ public interface DurationGauge extends Metric {
      */
     @Override
     default Double get(final ValueType valueType) {
-        throwArgNull(valueType, "valueType");
+        Objects.requireNonNull(valueType, "valueType");
         if (valueType == VALUE) {
             return get();
         }
@@ -109,7 +109,7 @@ public interface DurationGauge extends Metric {
         }
 
         private static String fixName(final String name, final ChronoUnit timeUnit) {
-            return throwArgBlank(name, "name") + " " + getAppendix(timeUnit);
+            return ArgumentUtils.throwArgBlank(name, "name") + " " + getAppendix(timeUnit);
         }
 
         private Config(final String category, final String name, final String description, final ChronoUnit timeUnit) {
@@ -161,7 +161,7 @@ public interface DurationGauge extends Metric {
         }
 
         private static String getFormat(final ChronoUnit timeUnit) {
-            throwArgNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
                 case NANOS, MICROS -> FloatFormats.FORMAT_DECIMAL_0;
                 case MILLIS, SECONDS -> FloatFormats.FORMAT_DECIMAL_3;
@@ -170,7 +170,7 @@ public interface DurationGauge extends Metric {
         }
 
         private static String getUnit(final ChronoUnit timeUnit) {
-            throwArgNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
                 case NANOS -> UnitConstants.NANOSECOND_UNIT;
                 case MICROS -> UnitConstants.MICROSECOND_UNIT;
@@ -181,7 +181,7 @@ public interface DurationGauge extends Metric {
         }
 
         private static String getAppendix(final ChronoUnit timeUnit) {
-            throwArgNull(timeUnit, TIME_UNIT);
+            Objects.requireNonNull(timeUnit, TIME_UNIT);
             return switch (timeUnit) {
                 case NANOS -> "(nanos)";
                 case MICROS -> "(micros)";

@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.TokenSupplyType.FINITE;
 import static com.hedera.hapi.node.base.TokenSupplyType.INFINITE;
 import static com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -190,7 +189,6 @@ public class TokenCreateValidator {
                         && account.numberAssociations() + 1 > tokensConfig.maxPerAccount(),
                 TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
         validateTrue(
-                tokenRelStore.get(asAccount(account.accountNumber()), token.tokenId()) == null,
-                TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+                tokenRelStore.get(account.accountId(), token.tokenId()) == null, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
     }
 }

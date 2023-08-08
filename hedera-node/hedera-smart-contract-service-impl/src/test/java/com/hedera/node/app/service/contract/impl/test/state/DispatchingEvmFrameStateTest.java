@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniUInt256;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
@@ -43,6 +44,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -53,14 +55,20 @@ import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
+import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
+import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.RentFactors;
+import com.hedera.node.app.service.contract.impl.state.StorageAccess;
+import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.TokenEvmAccount;
-import com.hedera.node.app.spi.meta.bni.ActiveContractVerificationStrategy;
-import com.hedera.node.app.spi.meta.bni.Dispatch;
-import com.hedera.node.app.spi.meta.bni.VerificationStrategy;
-import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.LinkedHashSet;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -78,6 +86,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class DispatchingEvmFrameStateTest {
     private static final int REDIRECT_CODE_FIXED_PREFIX_LEN =
             "6080604052348015600f57600080fd5b506000610167905077618dc65e".length();
+    private static final int NUM_KV_SLOTS = 42;
+    private static final long EXPIRY = 1_234_567L;
     private static final long ACCOUNT_NUM = 0x9abcdefabcdefbbbL;
     private static final long BENEFICIARY_NUM = 0xdefdefL;
     private static final long TOKEN_NUM = 0xffffffffffffL;
@@ -106,52 +116,101 @@ class DispatchingEvmFrameStateTest {
             .build();
 
     @Mock
-    private Dispatch dispatch;
+    private HederaNativeOperations nativeOperations;
 
     @Mock
-    private WritableKVState<SlotKey, SlotValue> storage;
-
-    @Mock
-    private WritableKVState<EntityNumber, Bytecode> bytecode;
+    private ContractStateStore contractStateStore;
 
     private DispatchingEvmFrameState subject;
 
     @BeforeEach
     void setUp() {
-        subject = new DispatchingEvmFrameState(dispatch, storage, bytecode);
+        subject = new DispatchingEvmFrameState(nativeOperations, contractStateStore);
     }
 
     @Test
     void dispatchesToSetNonce() {
         subject.setNonce(ACCOUNT_NUM, 1234);
 
-        verify(dispatch).setNonce(ACCOUNT_NUM, 1234);
+        verify(nativeOperations).setNonce(ACCOUNT_NUM, 1234);
     }
 
     @Test
-    void dispatchesToFinalizeHollowAccount() {
+    void extFrameScopeesToFinalizeHollowAccount() {
         subject.finalizeHollowAccount(EVM_ADDRESS);
 
-        verify(dispatch).finalizeHollowAccountAsContract(tuweniToPbjBytes(EVM_ADDRESS));
+        verify(nativeOperations).finalizeHollowAccountAsContract(tuweniToPbjBytes(EVM_ADDRESS));
     }
 
     @Test
-    void dispatchesToSetCode() {
+    void extFrameScopeesToSetCode() {
         final var expectedCode = Bytecode.newBuilder().code(SOME_PRETEND_CODE).build();
 
         subject.setCode(ACCOUNT_NUM, pbjToTuweniBytes(SOME_PRETEND_CODE));
 
-        verify(bytecode).put(new EntityNumber(ACCOUNT_NUM), expectedCode);
+        verify(contractStateStore).putBytecode(new EntityNumber(ACCOUNT_NUM), expectedCode);
     }
 
     @Test
     void getsExtantStorageValues() {
-        given(storage.get(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
+        given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
 
         final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
         final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
 
         assertEquals(expectedWord, actualWord);
+    }
+
+    @Test
+    void getsOriginalStorageValues() {
+        given(contractStateStore.getOriginalSlotValue(A_SLOT_KEY)).willReturn(A_SLOT_VALUE);
+
+        final var expectedWord = pbjToTuweniUInt256(A_STORAGE_VALUE);
+        final var actualWord = subject.getOriginalStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
+
+        assertEquals(expectedWord, actualWord);
+    }
+
+    @Test
+    void summarizesModificationsAsExpected() {
+        final List<StorageAccesses> expected = List.of(
+                new StorageAccesses(
+                        1L,
+                        List.of(
+                                StorageAccess.newWrite(UInt256.ONE, UInt256.ONE, UInt256.MAX_VALUE),
+                                StorageAccess.newWrite(UInt256.MAX_VALUE, UInt256.MIN_VALUE, UInt256.ONE))),
+                new StorageAccesses(
+                        2L,
+                        List.of(
+                                StorageAccess.newWrite(UInt256.MAX_VALUE, UInt256.MIN_VALUE, UInt256.ONE),
+                                StorageAccess.newWrite(UInt256.ONE, UInt256.ONE, UInt256.MAX_VALUE))));
+
+        final var modifiedKeys = List.of(
+                new SlotKey(1L, tuweniToPbjBytes(UInt256.ONE)),
+                new SlotKey(1L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
+                new SlotKey(2L, tuweniToPbjBytes(UInt256.MAX_VALUE)),
+                new SlotKey(2L, tuweniToPbjBytes(UInt256.ONE)));
+        given(contractStateStore.getModifiedSlotKeys()).willReturn(new LinkedHashSet<>(modifiedKeys));
+        final var iter = modifiedKeys.iterator();
+        givenOrigAndNewValues(iter.next(), UInt256.ONE, UInt256.MAX_VALUE);
+        givenOrigAndNewValues(iter.next(), UInt256.MIN_VALUE, UInt256.ONE);
+        givenOrigAndNewValues(iter.next(), UInt256.MIN_VALUE, UInt256.ONE);
+        givenOrigAndNewValues(iter.next(), UInt256.ONE, UInt256.MAX_VALUE);
+
+        final var actual = subject.getStorageChanges();
+
+        assertEquals(expected, actual);
+    }
+
+    private void givenOrigAndNewValues(
+            @NonNull final SlotKey key, @NonNull final UInt256 origValue, @NonNull final UInt256 newValue) {
+        given(contractStateStore.getOriginalSlotValue(key))
+                .willReturn(SlotValue.newBuilder()
+                        .value(tuweniToPbjBytes(origValue))
+                        .build());
+        given(contractStateStore.getSlotValue(key))
+                .willReturn(
+                        SlotValue.newBuilder().value(tuweniToPbjBytes(newValue)).build());
     }
 
     @Test
@@ -164,7 +223,7 @@ class DispatchingEvmFrameStateTest {
 
         subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
 
-        verify(storage).put(A_SLOT_KEY, newSlotValue);
+        verify(contractStateStore).putSlot(A_SLOT_KEY, newSlotValue);
     }
 
     @Test
@@ -180,10 +239,10 @@ class DispatchingEvmFrameStateTest {
                 .nextKey(Bytes.fromHex("5678"))
                 .build();
 
-        given(storage.get(A_SLOT_KEY)).willReturn(oldSlotValue);
+        given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(oldSlotValue);
         subject.setStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY), pbjToTuweniUInt256(A_STORAGE_VALUE));
 
-        verify(storage).put(A_SLOT_KEY, newSlotValue);
+        verify(contractStateStore).putSlot(A_SLOT_KEY, newSlotValue);
     }
 
     @Test
@@ -195,7 +254,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void getsZeroWordForEmptySlotValue() {
-        given(storage.get(A_SLOT_KEY)).willReturn(SlotValue.DEFAULT);
+        given(contractStateStore.getSlotValue(A_SLOT_KEY)).willReturn(SlotValue.DEFAULT);
 
         final var actualWord = subject.getStorageValue(ACCOUNT_NUM, pbjToTuweniUInt256(A_STORAGE_KEY));
 
@@ -240,7 +299,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void getsEmptyCodeForNull() {
-        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null));
+        given(contractStateStore.getBytecode(new EntityNumber(ACCOUNT_NUM))).willReturn(new Bytecode(null));
 
         final var actualCode = subject.getCode(ACCOUNT_NUM);
 
@@ -264,9 +323,28 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
+    void throwsOnMissingAddressWhenGettingHederaIdNumber() {
+        given(nativeOperations.resolveAlias(tuweniToPbjBytes(EVM_ADDRESS))).willReturn(MISSING_ENTITY_NUMBER);
+        assertThrows(IllegalArgumentException.class, () -> subject.getIdNumber(EVM_ADDRESS));
+    }
+
+    @Test
+    void returnsResolvedNumberForEvmAddress() {
+        given(nativeOperations.resolveAlias(tuweniToPbjBytes(EVM_ADDRESS))).willReturn(ACCOUNT_NUM);
+        assertEquals(ACCOUNT_NUM, subject.getIdNumber(EVM_ADDRESS));
+    }
+
+    @Test
     void returnsLongZeroAddressWithoutAnAlias() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         assertEquals(LONG_ZERO_ADDRESS, subject.getAddress(ACCOUNT_NUM));
+    }
+
+    @Test
+    void returnsExpectedRentFactors() {
+        givenWellKnownAccount(accountWith(ACCOUNT_NUM));
+        final var expected = new RentFactors(NUM_KV_SLOTS, EXPIRY);
+        assertEquals(expected, subject.getRentFactorsFor(ACCOUNT_NUM));
     }
 
     @Test
@@ -351,52 +429,16 @@ class DispatchingEvmFrameStateTest {
     }
 
     @Test
-    void missingAccountsCannotPayFees() {
-        assertThrows(IllegalArgumentException.class, () -> subject.collectFee(EVM_ADDRESS, 123L));
-    }
-
-    @Test
-    void delegatesFeeCollection() {
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
-
-        subject.collectFee(EVM_ADDRESS, 123L);
-
-        verify(dispatch).collectFee(ACCOUNT_NUM, 123L);
-    }
-
-    @Test
-    void missingAccountsCannotGetRefunds() {
-        assertThrows(IllegalArgumentException.class, () -> subject.refundFee(EVM_ADDRESS, 123L));
-    }
-
-    @Test
-    void delegatesFeeRefunding() {
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
-
-        subject.refundFee(EVM_ADDRESS, 123L);
-
-        verify(dispatch).refundFee(ACCOUNT_NUM, 123L);
-    }
-
-    @Test
     void missingAccountsCannotTransferFunds() {
-        final var reasonToHaltDeletion = subject.tryTransferFromContract(EVM_ADDRESS, LONG_ZERO_ADDRESS, 123L, true);
+        final var reasonToHaltDeletion = subject.tryTransfer(EVM_ADDRESS, LONG_ZERO_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
     }
 
     @Test
-    void nonContractAccountsShouldNeverBeTransferringFunds() {
-        givenWellKnownAccount(accountWith(ACCOUNT_NUM));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.tryTransferFromContract(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true));
-    }
-
-    @Test
     void cannotTransferToMissingAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
-        final var reasonToHaltDeletion = subject.tryTransferFromContract(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true);
+        final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, EVM_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(MISSING_ADDRESS, reasonToHaltDeletion.get());
     }
@@ -405,7 +447,7 @@ class DispatchingEvmFrameStateTest {
     void cannotTransferToTokenAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
         givenWellKnownToken();
-        final var reasonToHaltDeletion = subject.tryTransferFromContract(LONG_ZERO_ADDRESS, TOKEN_ADDRESS, 123L, true);
+        final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, TOKEN_ADDRESS, 123L, true);
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(ILLEGAL_STATE_CHANGE, reasonToHaltDeletion.get());
     }
@@ -413,7 +455,8 @@ class DispatchingEvmFrameStateTest {
     @Test
     void cannotLazyCreateOverExpiredAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).expiredAndPendingRemoval(true));
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
+                .willReturn(ACCOUNT_NUM);
 
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
@@ -423,7 +466,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void translatesMaxChildRecordsExceeded() {
-        given(dispatch.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
+        given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
                 .willReturn(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
@@ -433,7 +476,8 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void noHaltIfLazyCreationOk() {
-        given(dispatch.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS))).willReturn(ResponseCodeEnum.OK);
+        given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
+                .willReturn(ResponseCodeEnum.OK);
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
         assertTrue(reasonLazyCreationFailed.isEmpty());
@@ -441,7 +485,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void translatesMaxAccountsCreated() {
-        given(dispatch.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
+        given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
                 .willReturn(ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
         final var reasonLazyCreationFailed = subject.tryLazyCreation(EVM_ADDRESS);
 
@@ -451,7 +495,7 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void throwsOnUnexpectedFailureMode() {
-        given(dispatch.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
+        given(nativeOperations.createHollowAccount(tuweniToPbjBytes(EVM_ADDRESS)))
                 .willReturn(ResponseCodeEnum.INVALID_ALIAS_KEY);
         assertThrows(IllegalStateException.class, () -> subject.tryLazyCreation(EVM_ADDRESS));
     }
@@ -464,7 +508,8 @@ class DispatchingEvmFrameStateTest {
     @Test
     void throwsOnLazyCreateOfNonExpiredAccount() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
+                .willReturn(ACCOUNT_NUM);
 
         assertThrows(IllegalArgumentException.class, () -> subject.tryLazyCreation(EVM_ADDRESS));
     }
@@ -474,10 +519,10 @@ class DispatchingEvmFrameStateTest {
         final var captor = ArgumentCaptor.forClass(VerificationStrategy.class);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
         givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
-        given(dispatch.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), captor.capture()))
+        given(nativeOperations.transferWithReceiverSigCheck(
+                        eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), captor.capture()))
                 .willReturn(OK);
-        final var reasonToHaltDeletion =
-                subject.tryTransferFromContract(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
+        final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
         assertTrue(reasonToHaltDeletion.isEmpty());
         final var strategy = assertInstanceOf(ActiveContractVerificationStrategy.class, captor.getValue());
         assertEquals(ACCOUNT_NUM, strategy.getActiveNumber());
@@ -489,10 +534,9 @@ class DispatchingEvmFrameStateTest {
     void transferDelegationReportsInvalidSignature() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
         givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
-        given(dispatch.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
+        given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
                 .willReturn(INVALID_SIGNATURE);
-        final var reasonToHaltDeletion =
-                subject.tryTransferFromContract(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
+        final var reasonToHaltDeletion = subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false);
         assertTrue(reasonToHaltDeletion.isPresent());
         assertEquals(INVALID_RECEIVER_SIGNATURE, reasonToHaltDeletion.get());
     }
@@ -501,11 +545,11 @@ class DispatchingEvmFrameStateTest {
     void transferDelegationThrowsOnApparentlyImpossibleFailureMode() {
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).smartContract(true));
         givenWellKnownAccount(BENEFICIARY_NUM, accountWith(BENEFICIARY_NUM));
-        given(dispatch.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
+        given(nativeOperations.transferWithReceiverSigCheck(eq(123L), eq(ACCOUNT_NUM), eq(BENEFICIARY_NUM), any()))
                 .willReturn(INSUFFICIENT_ACCOUNT_BALANCE);
         assertThrows(
                 IllegalStateException.class,
-                () -> subject.tryTransferFromContract(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false));
+                () -> subject.tryTransfer(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS, 123L, false));
     }
 
     @Test
@@ -538,7 +582,7 @@ class DispatchingEvmFrameStateTest {
         final var reasonToHaltDeletion = subject.tryTrackingDeletion(LONG_ZERO_ADDRESS, BENEFICIARY_ADDRESS);
 
         assertTrue(reasonToHaltDeletion.isEmpty());
-        verify(dispatch).trackDeletion(ACCOUNT_NUM, BENEFICIARY_NUM);
+        verify(nativeOperations).trackDeletion(ACCOUNT_NUM, BENEFICIARY_NUM);
     }
 
     @Test
@@ -587,20 +631,23 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void missingAccountIsNotHollow() {
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
+                .willReturn(ACCOUNT_NUM);
         assertFalse(subject.isHollowAccount(EVM_ADDRESS));
     }
 
     @Test
     void extantAccountIsHollowOnlyIfHasAnEmptyKey() {
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
+                .willReturn(ACCOUNT_NUM);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM).key(Key.newBuilder().keyList(KeyList.DEFAULT)));
         assertTrue(subject.isHollowAccount(EVM_ADDRESS));
     }
 
     @Test
     void usesResolvedNumberFromDispatch() {
-        given(dispatch.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe()))).willReturn(new EntityNumber(ACCOUNT_NUM));
+        given(nativeOperations.resolveAlias(Bytes.wrap(EVM_ADDRESS.toArrayUnsafe())))
+                .willReturn(ACCOUNT_NUM);
         givenWellKnownAccount(accountWith(ACCOUNT_NUM));
         assertInstanceOf(ProxyEvmAccount.class, subject.getAccount(EVM_ADDRESS));
     }
@@ -634,12 +681,12 @@ class DispatchingEvmFrameStateTest {
 
     @Test
     void delegatesSizeOfKvState() {
-        given(storage.size()).willReturn(123L);
+        given(contractStateStore.getNumSlots()).willReturn(123L);
         assertEquals(123L, subject.getKvStateSize());
     }
 
     private void givenWellKnownBytecode() {
-        given(bytecode.get(new EntityNumber(ACCOUNT_NUM))).willReturn(SOME_PRETEND_BYTECODE);
+        given(contractStateStore.getBytecode(new EntityNumber(ACCOUNT_NUM))).willReturn(SOME_PRETEND_BYTECODE);
     }
 
     private void givenWellKnownAccount(final Account.Builder builder) {
@@ -647,11 +694,12 @@ class DispatchingEvmFrameStateTest {
     }
 
     private void givenWellKnownAccount(final long number, final Account.Builder builder) {
-        given(dispatch.getAccount(number)).willReturn(builder.build());
+        given(nativeOperations.getAccount(number)).willReturn(builder.build());
     }
 
     private void givenWellKnownToken() {
-        given(dispatch.getToken(TOKEN_NUM)).willReturn(Token.newBuilder().build());
+        given(nativeOperations.getToken(TOKEN_NUM))
+                .willReturn(Token.newBuilder().build());
     }
 
     private Account.Builder accountWith(final long num, final Bytes alias) {
@@ -659,6 +707,9 @@ class DispatchingEvmFrameStateTest {
     }
 
     private Account.Builder accountWith(final long num) {
-        return Account.newBuilder().accountNumber(num);
+        return Account.newBuilder()
+                .accountId(AccountID.newBuilder().accountNum(num))
+                .expiry(EXPIRY)
+                .contractKvPairsNumber(NUM_KV_SLOTS);
     }
 }

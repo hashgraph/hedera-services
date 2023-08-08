@@ -77,16 +77,4 @@ public class Savepoint {
     void configuration(@NonNull final Configuration configuration) {
         this.configuration = requireNonNull(configuration, "configuration must not be null");
     }
-
-    /**
-     * Returns the next entity number.
-     *
-     * <p><em>Please note:</em> If the savepoint is reverted, the provided entity number will be reused.
-     *
-     * @return the next entity number
-     */
-    public long newEntityNum() {
-        // TODO: Implement Savepoint.newEntityNum (https://github.com/hashgraph/hedera-services/issues/6701)
-        return 1000L;
-    }
 }

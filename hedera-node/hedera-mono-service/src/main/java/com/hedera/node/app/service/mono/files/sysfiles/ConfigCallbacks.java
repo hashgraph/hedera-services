@@ -19,6 +19,7 @@ package com.hedera.node.app.service.mono.files.sysfiles;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.EXPIRY_MIN_CYCLE_ENTRY_CAPACITY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.EXPIRY_THROTTLE_RESOURCE;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
@@ -26,6 +27,7 @@ import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermission
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
@@ -38,6 +40,7 @@ import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -60,6 +63,7 @@ public class ConfigCallbacks {
             BigDecimal.TEN.add(BigDecimal.ONE).divide(BigDecimal.TEN, MATH_CONTEXT);
     private final PropertySource properties;
     private final PropertySources propertySources;
+    private final MultiplierSources multiplierSources;
     private final HapiOpPermissions hapiOpPermissions;
     private final Supplier<AddressBook> addressBook;
     private final GlobalDynamicProperties dynamicProps;
@@ -86,7 +90,9 @@ public class ConfigCallbacks {
             final Supplier<MerkleNetworkContext> networkCtx,
             final Supplier<MerkleMapLike<EntityNum, MerkleStakingInfo>> stakingInfos,
             final SigImpactHistorian sigImpactHistorian,
-            final FileNumbers fileNumbers) {
+            final FileNumbers fileNumbers,
+            @NonNull final MultiplierSources multiplierSources) {
+        this.multiplierSources = requireNonNull(multiplierSources);
         this.dynamicProps = dynamicProps;
         this.propertySources = propertySources;
         this.hapiOpPermissions = hapiOpPermissions;
@@ -110,6 +116,7 @@ public class ConfigCallbacks {
             hapiThrottling.applyGasConfig();
             handleThrottling.applyGasConfig();
             scheduleThrottling.applyGasConfig();
+            multiplierSources.resetExpectations();
             expiryThrottle.rebuildGiven(
                     properties.getStringProperty(EXPIRY_THROTTLE_RESOURCE),
                     properties.getAccessListProperty(EXPIRY_MIN_CYCLE_ENTRY_CAPACITY));

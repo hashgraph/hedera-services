@@ -54,7 +54,11 @@ class JasperDbStatisticsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         statistics = new JasperDbStatistics(LABEL, false);
         statistics.registerMetrics(metrics);
     }
@@ -290,7 +294,11 @@ class JasperDbStatisticsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final JasperDbStatistics statistics = new JasperDbStatistics(LABEL, true);
         statistics.registerMetrics(metrics);
 

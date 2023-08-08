@@ -53,9 +53,9 @@ class MeasuredBlockingQueueTest {
     void setUp() {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        final MetricsFactory factory = new DefaultMetricsFactory();
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricsFactory factory = new DefaultMetricsFactory(metricsConfig);
         metrics = new DefaultMetrics(null, registry, executor, factory, metricsConfig);
     }
 

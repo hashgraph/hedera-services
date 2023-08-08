@@ -114,6 +114,7 @@ import static java.util.stream.Collectors.toMap;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -189,7 +190,9 @@ import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
+@HapiTestSuite
 public class ValidationScenarios extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
     public static final long FEE_TO_OFFER_IN_HBAR = 100;
     public static final long TINYBARS_PER_HBAR = 100_000_000L;
@@ -1711,6 +1714,7 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     private static class ScenarioParams {
+
         static long DEFAULT_NODE_PAYMENT_TINYBARS = 25;
         static final String PASSPHRASE_ENV_VAR = "BOOTSTRAP_PASSPHRASE";
         static final String DEFAULT_PASSPHRASE = "swirlds";
@@ -1921,6 +1925,7 @@ public class ValidationScenarios extends HapiSuite {
     }
 
     private static class SkipNullRepresenter extends Representer {
+
         @Override
         protected NodeTuple representJavaBeanProperty(
                 Object javaBean, Property property, Object propertyValue, Tag customTag) {
