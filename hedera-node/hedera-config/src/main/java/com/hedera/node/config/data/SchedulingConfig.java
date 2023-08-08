@@ -21,6 +21,8 @@ import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 
+// Spotless requires way too many newlines, and ends up breaking the string because it forces too many indents.
+// spotless:off
 @ConfigData("scheduling")
 public record SchedulingConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean longTermEnabled,
@@ -29,5 +31,5 @@ public record SchedulingConfig(
         @ConfigProperty(defaultValue = "5356800") @NetworkProperty long maxExpirationFutureSeconds,
         @ConfigProperty(defaultValue =
                 "ConsensusSubmitMessage,CryptoTransfer,TokenMint,TokenBurn,CryptoApproveAllowance")
-                @NetworkProperty HederaFunctionalitySet whitelist
-        ) {}
+                @NetworkProperty HederaFunctionalitySet whitelist) {}
+// spotless:on

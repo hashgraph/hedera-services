@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.schedule.impl.test.handlers;
+package com.hedera.node.app.service.schedule.impl.handlers;
+
+import static org.assertj.core.api.BDDAssertions.assertThat;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.schedule.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.spi.fixtures.Assertions;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
-import org.assertj.core.api.BDDAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,9 +50,9 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
 
         subject.preHandle(realPreContext);
-        BDDAssertions.assertThat(realPreContext.payer()).isEqualTo(scheduler);
-        BDDAssertions.assertThat(realPreContext.payerKey()).isEqualTo(schedulerKey);
-        BDDAssertions.assertThat(realPreContext.optionalNonPayerKeys()).isNotEqualTo(Collections.emptySet());
+        assertThat(realPreContext.payer()).isEqualTo(scheduler);
+        assertThat(realPreContext.payerKey()).isEqualTo(schedulerKey);
+        assertThat(realPreContext.optionalNonPayerKeys()).isNotEqualTo(Collections.emptySet());
     }
 
     @Test
@@ -68,9 +68,9 @@ class ScheduleSignHandlerTest extends ScheduleHandlerTestBase {
         final TransactionBody testTransaction = scheduleSignTransaction(null);
         realPreContext = new PreHandleContextImpl(mockStoreFactory, testTransaction, testConfig, mockDispatcher);
         subject.preHandle(realPreContext);
-        BDDAssertions.assertThat(realPreContext.payer()).isEqualTo(scheduler);
-        BDDAssertions.assertThat(realPreContext.payerKey()).isEqualTo(schedulerKey);
-        BDDAssertions.assertThat(realPreContext.optionalNonPayerKeys()).isNotEqualTo(Collections.emptySet());
+        assertThat(realPreContext.payer()).isEqualTo(scheduler);
+        assertThat(realPreContext.payerKey()).isEqualTo(schedulerKey);
+        assertThat(realPreContext.optionalNonPayerKeys()).isNotEqualTo(Collections.emptySet());
     }
 
     private TransactionBody scheduleSignTransaction(@Nullable final ScheduleID idToUse) {

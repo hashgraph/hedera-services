@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
@@ -26,27 +25,25 @@ import com.hedera.hapi.node.base.ScheduleID.Builder;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody.DataOneOfType;
 import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
- * Basic utility class for Schedule Handlers.
+ * A package-private utility class for Schedule Handlers.
  */
-public final class ScheduleUtility {
-    private ScheduleUtility() {}
+final class HandlerUtility {
+    private HandlerUtility() {}
 
     @NonNull
-    static TransactionBody asOrdinary(@NonNull final Schedule scheduleInState) {
+    static TransactionBody childAsOrdinary(@NonNull final Schedule scheduleInState) {
         final TransactionID scheduledTransactionId = transactionIdForScheduled(scheduleInState);
         final SchedulableTransactionBody scheduledTransaction = scheduleInState.scheduledTransaction();
         final TransactionBody.Builder ordinary = TransactionBody.newBuilder();
@@ -109,6 +106,50 @@ public final class ScheduleUtility {
             }
         }
         return ordinary.build();
+    }
+
+    static HederaFunctionality functionalityForType(final DataOneOfType transactionType) {
+        return switch (transactionType) {
+            case CONSENSUS_CREATE_TOPIC -> HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+            case CONSENSUS_UPDATE_TOPIC -> HederaFunctionality.CONSENSUS_UPDATE_TOPIC;
+            case CONSENSUS_DELETE_TOPIC -> HederaFunctionality.CONSENSUS_DELETE_TOPIC;
+            case CONSENSUS_SUBMIT_MESSAGE -> HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
+            case CRYPTO_CREATE_ACCOUNT -> HederaFunctionality.CRYPTO_CREATE;
+            case CRYPTO_UPDATE_ACCOUNT -> HederaFunctionality.CRYPTO_UPDATE;
+            case CRYPTO_TRANSFER -> HederaFunctionality.CRYPTO_TRANSFER;
+            case CRYPTO_DELETE -> HederaFunctionality.CRYPTO_DELETE;
+            case FILE_CREATE -> HederaFunctionality.FILE_CREATE;
+            case FILE_APPEND -> HederaFunctionality.FILE_APPEND;
+            case FILE_UPDATE -> HederaFunctionality.FILE_UPDATE;
+            case FILE_DELETE -> HederaFunctionality.FILE_DELETE;
+            case SYSTEM_DELETE -> HederaFunctionality.SYSTEM_DELETE;
+            case SYSTEM_UNDELETE -> HederaFunctionality.SYSTEM_UNDELETE;
+            case CONTRACT_CREATE_INSTANCE -> HederaFunctionality.CONTRACT_CREATE;
+            case CONTRACT_UPDATE_INSTANCE -> HederaFunctionality.CONTRACT_UPDATE;
+            case CONTRACT_CALL -> HederaFunctionality.CONTRACT_CALL;
+            case CONTRACT_DELETE_INSTANCE -> HederaFunctionality.CONTRACT_DELETE;
+            case FREEZE -> HederaFunctionality.FREEZE;
+            case TOKEN_CREATION -> HederaFunctionality.TOKEN_CREATE;
+            case TOKEN_FREEZE -> HederaFunctionality.TOKEN_FREEZE_ACCOUNT;
+            case TOKEN_UNFREEZE -> HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
+            case TOKEN_GRANT_KYC -> HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
+            case TOKEN_REVOKE_KYC -> HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
+            case TOKEN_DELETION -> HederaFunctionality.TOKEN_DELETE;
+            case TOKEN_UPDATE -> HederaFunctionality.TOKEN_UPDATE;
+            case TOKEN_MINT -> HederaFunctionality.TOKEN_MINT;
+            case TOKEN_BURN -> HederaFunctionality.TOKEN_BURN;
+            case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
+            case TOKEN_ASSOCIATE -> HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
+            case TOKEN_DISSOCIATE -> HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
+            case SCHEDULE_DELETE -> HederaFunctionality.SCHEDULE_DELETE;
+            case TOKEN_PAUSE -> HederaFunctionality.TOKEN_PAUSE;
+            case TOKEN_UNPAUSE -> HederaFunctionality.TOKEN_UNPAUSE;
+            case CRYPTO_APPROVE_ALLOWANCE -> HederaFunctionality.CRYPTO_APPROVE_ALLOWANCE;
+            case CRYPTO_DELETE_ALLOWANCE -> HederaFunctionality.CRYPTO_DELETE_ALLOWANCE;
+            case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
+            case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
+            case UNSET -> HederaFunctionality.NONE;
+        };
     }
 
     /**
@@ -183,12 +224,6 @@ public final class ScheduleUtility {
                 List.copyOf(newSignatories));
     }
 
-    @NonNull
-    public static ScheduleID toPbj(@NonNull com.hederahashgraph.api.proto.java.ScheduleID valueToConvert) {
-        return new ScheduleID(
-                valueToConvert.getShardNum(), valueToConvert.getRealmNum(), valueToConvert.getScheduleNum());
-    }
-
     /**
      * Create a new Schedule, but without an ID or signatories.
      * This method is used to create a schedule object for processing during a ScheduleCreate, but without the
@@ -199,8 +234,8 @@ public final class ScheduleUtility {
      *     the transaction ID via {@link TransactionBody#transactionID()} from the TransactionBody stored in
      *     the {@link Schedule#originalCreateTransaction()} attribute of the Schedule.
      * @param currentConsensusTime The current consensus time for the network.
-     * @param maxLifeMilliseconds The maximum number of seconds a schedule is permitted to exist on
-     *     the ledger before it expires.
+     * @param maxLifeSeconds The maximum number of seconds a schedule is permitted to exist on the ledger
+     *     before it expires.
      * @return a newly created Schedule with a null schedule ID.
      * @throws HandleException if the
      */
@@ -208,15 +243,15 @@ public final class ScheduleUtility {
     static Schedule createProvisionalSchedule(
             @NonNull final TransactionBody currentTransaction,
             @NonNull final Instant currentConsensusTime,
-            final long maxLifeMilliseconds)
+            final long maxLifeSeconds)
             throws HandleException {
         // The next three items will never be null, but Sonar is persnickety, so we force NPE if any are null.
         final TransactionID parentTransactionId = currentTransaction.transactionIDOrThrow();
         final ScheduleCreateTransactionBody createTransaction = currentTransaction.scheduleCreateOrThrow();
         final AccountID schedulerAccount = parentTransactionId.accountIDOrThrow();
         final Timestamp providedExpirationTime = createTransaction.expirationTime();
-        final Timestamp calculatedExpirationTime =
-                calculateExpiration(providedExpirationTime, currentConsensusTime, maxLifeMilliseconds);
+        final long calculatedExpirationTime =
+                calculateExpiration(providedExpirationTime, currentConsensusTime, maxLifeSeconds);
         final ScheduleID nullId = null;
 
         Schedule.Builder builder = Schedule.newBuilder();
@@ -226,7 +261,7 @@ public final class ScheduleUtility {
         builder.payerAccountId(createTransaction.payerAccountIDOrElse(schedulerAccount));
         builder.schedulerAccountId(schedulerAccount);
         builder.scheduleValidStart(parentTransactionId.transactionValidStart());
-        builder.calculatedExpirationSecond(calculatedExpirationTime.seconds());
+        builder.calculatedExpirationSecond(calculatedExpirationTime);
         builder.originalCreateTransaction(currentTransaction);
         builder.memo(createTransaction.memo());
         builder.scheduledTransaction(createTransaction.scheduledTransactionBody());
@@ -284,63 +319,15 @@ public final class ScheduleUtility {
         return builder.build();
     }
 
-    @NonNull
-    private static Timestamp calculateExpiration(
+    private static long calculateExpiration(
             @Nullable final Timestamp givenExpiration,
             @NonNull final Instant currentConsensusTime,
-            final long maxLifeMilliseconds) {
+            final long maxLifeSeconds) {
         if (givenExpiration != null) {
-            return givenExpiration;
+            return givenExpiration.seconds();
         } else {
-            final Instant currentPlusMaxLife = currentConsensusTime.plusMillis(maxLifeMilliseconds);
-            return new Timestamp(currentPlusMaxLife.getEpochSecond(), currentPlusMaxLife.getNano());
+            final Instant currentPlusMaxLife = currentConsensusTime.plusSeconds(maxLifeSeconds);
+            return currentPlusMaxLife.getEpochSecond();
         }
-    }
-    // Create issue and fill in below.
-    // @todo('7773') This requires rebuilding the equality virtual map on migration,
-    //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
-    @SuppressWarnings("UnstableApiUsage")
-    public static String calculateStringHash(final @NonNull Schedule scheduleToHash) {
-        Objects.requireNonNull(scheduleToHash);
-        final Hasher hasher = Hashing.sha256().newHasher();
-        if (scheduleToHash.memo() != null) {
-            hasher.putString(scheduleToHash.memo(), StandardCharsets.UTF_8);
-        }
-        if (scheduleToHash.adminKey() != null) {
-            addToHash(hasher, scheduleToHash.adminKey());
-        }
-        if (scheduleToHash.scheduledTransaction() != null) {
-            addToHash(hasher, scheduleToHash.scheduledTransaction());
-        }
-        if (scheduleToHash.providedExpirationSecond() != Schedule.DEFAULT.providedExpirationSecond()) {
-            // @todo('7905') fix to not use Proto serialization
-            //            hasher.putLong(scheduleToHash.providedExpirationSecond());
-            addToHash(hasher, scheduleToHash.providedExpirationSecond());
-        }
-        hasher.putBoolean(scheduleToHash.waitForExpiry());
-        return hasher.hash().toString();
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static void addToHash(final Hasher hasher, final Key keyToAdd) {
-        final byte[] keyBytes = Key.PROTOBUF.toBytes(keyToAdd).toByteArray();
-        hasher.putInt(keyBytes.length);
-        hasher.putBytes(keyBytes);
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static void addToHash(final Hasher hasher, final Long timeToAdd) {
-        final byte[] bytes =
-                ProtoLong.PROTOBUF.toBytes(new ProtoLong(timeToAdd)).toByteArray();
-        hasher.putInt(bytes.length);
-        hasher.putBytes(bytes);
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static void addToHash(final Hasher hasher, final SchedulableTransactionBody transactionToAdd) {
-        final byte[] bytes =
-                SchedulableTransactionBody.PROTOBUF.toBytes(transactionToAdd).toByteArray();
-        hasher.putInt(bytes.length);
-        hasher.putBytes(bytes);
     }
 }
