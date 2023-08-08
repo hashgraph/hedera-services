@@ -15,32 +15,33 @@
  */
 
 plugins {
-  id("com.swirlds.platform.aggregate-reports")
-  id("com.swirlds.platform.spotless-conventions")
-  id("com.swirlds.platform.spotless-kotlin-conventions")
+    id("com.swirlds.platform.aggregate-reports")
+    id("com.hedera.hashgraph.spotless-conventions")
+    id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
 repositories { mavenCentral() }
 
 tasks.register<JavaExec>("run") {
-  group = "application"
-  val sdkDir = File(rootProject.projectDir, "sdk")
-  workingDir = sdkDir
-  jvmArgs =
-      listOf(
-          "-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n",
-          "-cp",
-          "swirlds.jar:data/lib/*",
-          "com.swirlds.platform.Browser")
-  classpath = rootProject.files(File(sdkDir, "data/lib"))
-  maxHeapSize = "8g"
-  project(":swirlds-platform-apps:demos").subprojects.forEach {
-    dependsOn(it.tasks.named("copyApp"))
-    dependsOn(it.tasks.named("copyLib"))
-  }
-  project(":swirlds-platform-apps:tests").subprojects.forEach {
-    dependsOn(it.tasks.named("copyApp"))
-    dependsOn(it.tasks.named("copyLib"))
-  }
-  dependsOn(project(":swirlds").tasks.named("copyApp"))
+    group = "application"
+    val sdkDir = File(rootProject.projectDir, "sdk")
+    workingDir = sdkDir
+    jvmArgs =
+        listOf(
+            "-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n",
+            "-cp",
+            "swirlds.jar:data/lib/*",
+            "com.swirlds.platform.Browser"
+        )
+    classpath = rootProject.files(File(sdkDir, "data/lib"))
+    maxHeapSize = "8g"
+    project(":swirlds-platform-apps:demos").subprojects.forEach {
+        dependsOn(it.tasks.named("copyApp"))
+        dependsOn(it.tasks.named("copyLib"))
+    }
+    project(":swirlds-platform-apps:tests").subprojects.forEach {
+        dependsOn(it.tasks.named("copyApp"))
+        dependsOn(it.tasks.named("copyLib"))
+    }
+    dependsOn(project(":swirlds").tasks.named("copyApp"))
 }

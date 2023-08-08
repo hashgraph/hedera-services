@@ -38,6 +38,10 @@ protobuf {
     }
 }
 
+configurations.compileProtoPath {
+    // Make all dependency versions accessible to proto compile
+    extendsFrom(configurations["internal"])
+}
 configurations.testCompileProtoPath {
     extendsFrom(configurations["internal"])
 }
