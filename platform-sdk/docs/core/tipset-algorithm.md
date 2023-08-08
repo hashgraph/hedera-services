@@ -185,7 +185,7 @@ weighted advancement score of that new event.
 
 There is a special threshold, called the snapshot threshold, that is used when deciding when the snapshot gets updated.
 Whenever the total weighted advancement of a new event, relative to the snapshot, exceeds this threshold, the
-tipset is updated to equal the tipset of the new event.
+snapshot is updated to equal the tipset of the new event.
 
 The snapshot threshold for each node is slightly different, unless nodes have the same consensus weight.
 To calculate the threshold, find the minimum weight required to have >2/3 of the total weight,
