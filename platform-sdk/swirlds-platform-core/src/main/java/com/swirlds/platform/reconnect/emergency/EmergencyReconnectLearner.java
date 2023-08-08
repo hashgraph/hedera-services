@@ -50,11 +50,12 @@ public class EmergencyReconnectLearner {
      * @param statusActionSubmitter used to submit status actions
      */
     public EmergencyReconnectLearner(
-            final EmergencyRecoveryFile emergencyRecoveryFile,
-            final ReconnectController reconnectController,
+            @NonNull final EmergencyRecoveryFile emergencyRecoveryFile,
+            @NonNull final ReconnectController reconnectController,
             @NonNull final StatusActionSubmitter statusActionSubmitter) {
-        this.emergencyRecoveryFile = emergencyRecoveryFile;
-        this.reconnectController = reconnectController;
+
+        this.emergencyRecoveryFile = Objects.requireNonNull(emergencyRecoveryFile);
+        this.reconnectController = Objects.requireNonNull(reconnectController);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
 
         validator = new EmergencySignedStateValidator(emergencyRecoveryFile);
