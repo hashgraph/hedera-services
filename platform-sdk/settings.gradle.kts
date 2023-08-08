@@ -148,6 +148,8 @@ dependencyResolutionManagement {
 
             version("roaster-version", "2.27.1.Final")
 
+            version("javapoet-version", "1.13.0")
+
             // List of bundles provided for us. When applicable, favor using these over individual
             // libraries.
             bundle("eclipse", listOf("eclipse-collections"))
@@ -258,6 +260,8 @@ dependencyResolutionManagement {
                 .versionRef("roaster-version")
             library("roaster-jdt", "org.jboss.forge.roaster", "roaster-jdt")
                 .versionRef("roaster-version")
+
+            library("javapoet", "com.squareup", "javapoet").versionRef("javapoet-version")
         }
 
         create("testLibs") {

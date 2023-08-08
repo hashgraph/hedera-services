@@ -25,6 +25,7 @@ dependencies {
 
     implementation(project(":swirlds-config-api"))
     implementation(libs.roaster.api)
+    implementation(libs.javapoet)
     runtimeOnly(libs.roaster.jdt)
     compileOnly(libs.auto.service.annotations)
     compileOnly(libs.spotbugs.annotations)
