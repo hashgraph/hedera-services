@@ -60,7 +60,7 @@ module com.swirlds.platform.core {
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
             com.swirlds.platform.test,
-            com.swirlds.platform.test.fixtures,
+            com.swirlds.platform.core.test.fixtures,
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
     exports com.swirlds.platform.event.creation to
@@ -71,7 +71,7 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
             com.swirlds.platform.test,
-            com.swirlds.platform.test.fixtures;
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test;
     exports com.swirlds.platform.event.linking to

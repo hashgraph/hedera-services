@@ -5,7 +5,7 @@ open module com.swirlds.platform.test {
     requires com.swirlds.config.api.test.fixtures;
     requires com.swirlds.config.api;
     requires com.swirlds.platform.core;
-    requires com.swirlds.platform.test.fixtures;
+    requires com.swirlds.platform.core.test.fixtures;
     requires com.swirlds.test.framework;
     requires java.desktop;
     requires org.apache.logging.log4j;
