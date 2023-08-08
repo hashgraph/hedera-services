@@ -18,7 +18,6 @@ package com.swirlds.common.merkle.proof.algorithms;
 
 import static com.swirlds.common.utility.ByteUtils.intToByteArray;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
-import static com.swirlds.common.utility.ByteUtils.reverseByteArray;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
@@ -125,7 +124,7 @@ public final class StateProofTreeBuilder {
     private static List<MerkleNode> getMerkleNodesForStateProofTree(
             @NonNull final MerkleNode merkleRoot, @NonNull final List<MerkleLeaf> payloads) {
 
-        // Note: we use a reverse post-ordered depth first traversal here intentionally. This cause a node's children
+        // Note: we use a reverse post-ordered depth first traversal here intentionally. This causes a node's children
         // to be popped off the top of a stack in left-to-right order (as opposed to a standard DFS traversal,
         // which will pop them off in right-to-left order).
 
@@ -211,8 +210,8 @@ public final class StateProofTreeBuilder {
         // First, the class ID and version are appended.
         // Though happenstance, our hash builder implementation ingests integers and longs
         // in reverse order, and it's too late to change how that works now.
-        byteSegments.add(reverseByteArray(longToByteArray(node.getClassId())));
-        byteSegments.add(reverseByteArray(intToByteArray(node.getVersion())));
+        byteSegments.add(longToByteArray(Long.reverseBytes(node.getClassId())));
+        byteSegments.add(intToByteArray(Integer.reverseBytes(node.getVersion())));
 
         // Then, the hashes of the children are appended.
         for (int childIndex = 0; childIndex < node.getNumberOfChildren(); childIndex++) {

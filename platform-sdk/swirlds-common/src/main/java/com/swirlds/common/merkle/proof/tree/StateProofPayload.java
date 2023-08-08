@@ -27,7 +27,8 @@ import java.io.IOException;
 import java.security.MessageDigest;
 
 /**
- * A node in a state proof tree containing a payload.
+ * A node in a state proof tree containing a payload. Each payload corresponds to a merkle leaf in the original
+ * state that is being proven by the state proof.
  */
 public class StateProofPayload extends AbstractStateProofNode implements SelfSerializable {
     private static final long CLASS_ID = 0xd21870ecd467b717L;

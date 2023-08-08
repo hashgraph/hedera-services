@@ -27,8 +27,8 @@ public interface StateProofNode {
 
     /**
      * Compute the bytes that this node contributes to its parent's hash, and store those bytes and return them when
-     * {@link #getHashableBytes()} is called. This method called on each state proof node in a post-ordered depth first
-     * traversal of the state proof tree.
+     * {@link #getHashableBytes()} is called. This method is called on each state proof node in a post-ordered depth
+     * first traversal of the state proof tree.
      *
      * @param cryptography provides cryptographic primitives
      * @param digest       builds running hashes

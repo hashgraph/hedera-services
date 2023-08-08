@@ -24,8 +24,8 @@ import static com.swirlds.common.merkle.proof.algorithms.StateProofSerialization
 import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.buildStateProofTree;
 import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.processSignatures;
 import static com.swirlds.common.merkle.proof.algorithms.StateProofTreeBuilder.validatePayloads;
-import static com.swirlds.common.merkle.proof.algorithms.StateProofValidator.computeStateProofTreeHash;
-import static com.swirlds.common.merkle.proof.algorithms.StateProofValidator.computeValidSignatureWeight;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofUtils.computeStateProofTreeHash;
+import static com.swirlds.common.merkle.proof.algorithms.StateProofUtils.computeValidSignatureWeight;
 
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
@@ -60,6 +60,11 @@ public class StateProof implements SelfSerializable {
 
     private List<NodeSignature> signatures;
     private StateProofNode root;
+
+    /**
+     * A payload is a leaf node in the merkle tree that is being proven. There will be exactly one payload for each
+     * merkle leaf that is being proven.
+     */
     private List<MerkleLeaf> payloads;
 
     private byte[] hashBytes;
@@ -115,10 +120,10 @@ public class StateProof implements SelfSerializable {
      * <p>
      * This method is package private to permit test code to provide custom signature validation.
      *
-     * @param cryptography       provides cryptographic primitives
-     * @param addressBook        the address book to use to validate the state proof
-     * @param threshold          the threshold of signatures required to trust this state proof
-     * @param signatureValidator a function that verifies a signature
+     * @param cryptography      provides cryptographic primitives
+     * @param addressBook       the address book to use to validate the state proof
+     * @param threshold         the threshold of signatures required to trust this state proof
+     * @param signatureVerifier a function that verifies a signature
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
@@ -126,18 +131,18 @@ public class StateProof implements SelfSerializable {
             @NonNull final Cryptography cryptography,
             @NonNull final AddressBook addressBook,
             @NonNull final Threshold threshold,
-            @NonNull final SignatureValidator signatureValidator) {
+            @NonNull final SignatureVerifier signatureVerifier) {
 
         Objects.requireNonNull(cryptography);
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(threshold);
-        Objects.requireNonNull(signatureValidator);
+        Objects.requireNonNull(signatureVerifier);
 
         if (hashBytes == null) {
             // we only need to recompute the hash once
             hashBytes = computeStateProofTreeHash(cryptography, root);
         }
-        long validWeight = computeValidSignatureWeight(addressBook, signatures, signatureValidator, hashBytes);
+        long validWeight = computeValidSignatureWeight(addressBook, signatures, signatureVerifier, hashBytes);
         return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
 

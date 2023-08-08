@@ -33,6 +33,9 @@ public class StateProofInternalNode extends AbstractStateProofNode {
      */
     private List<StateProofNode> children;
 
+    /**
+     * A scratchpad variable used when iterating the state proof tree (when recomputing the root hash).
+     */
     private boolean visited = false;
 
     /**
@@ -78,8 +81,8 @@ public class StateProofInternalNode extends AbstractStateProofNode {
     }
 
     /**
-     * Mark this node as having been visited during a traversal of the state proof tree. Used during state proof
-     * validation.
+     * Mark this node as having been visited during a traversal of the state proof tree. Used when recomputing the root
+     * hash.
      */
     public void markAsVisited() {
         if (visited) {

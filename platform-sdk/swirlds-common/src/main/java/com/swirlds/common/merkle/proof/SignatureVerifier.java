@@ -24,7 +24,7 @@ import java.security.PublicKey;
  * A method that verifies a signature.
  */
 @FunctionalInterface
-public interface SignatureValidator {
+public interface SignatureVerifier {
 
     /**
      * Check if a signature is valid.

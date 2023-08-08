@@ -163,22 +163,22 @@ public class Address implements SelfSerializable {
             final int portInternal,
             @Nullable final String hostnameExternal,
             final int portExternal,
-            @Nullable final SerializablePublicKey sigPublicKey,
+            @NonNull final SerializablePublicKey sigPublicKey,
             @Nullable final SerializablePublicKey encPublicKey,
             @Nullable final SerializablePublicKey agreePublicKey,
             @NonNull final String memo) {
-        this.id = Objects.requireNonNull(id, "id must not be null");
-        this.nickname = Objects.requireNonNull(nickname, "nickname must not be null");
-        this.selfName = Objects.requireNonNull(selfName, "selfName must not be null");
+        this.id = Objects.requireNonNull(id);
+        this.nickname = Objects.requireNonNull(nickname);
+        this.selfName = Objects.requireNonNull(selfName);
         this.weight = weight;
         this.portInternal = portInternal;
         this.portExternal = portExternal;
         this.hostnameInternal = hostnameInternal;
         this.hostnameExternal = hostnameExternal;
-        this.sigPublicKey = sigPublicKey;
+        this.sigPublicKey = Objects.requireNonNull(sigPublicKey);
         this.encPublicKey = encPublicKey;
         this.agreePublicKey = agreePublicKey;
-        this.memo = Objects.requireNonNull(memo, "memo must not be null");
+        this.memo = Objects.requireNonNull(memo);
     }
 
     /**
@@ -331,7 +331,7 @@ public class Address implements SelfSerializable {
      *
      * @return This member's PublicKey for signing.
      */
-    @Nullable
+    @NonNull
     public PublicKey getSigPublicKey() {
         return sigPublicKey.getPublicKey();
     }

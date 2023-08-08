@@ -29,7 +29,7 @@ import java.util.Random;
 /**
  * Builds fake signatures and validates fake signatures. Fake signatures do not need private keys.
  */
-public class FakeSignatureBuilder implements SignatureValidator {
+public class FakeSignatureBuilder implements SignatureVerifier {
 
     private final Random random;
 

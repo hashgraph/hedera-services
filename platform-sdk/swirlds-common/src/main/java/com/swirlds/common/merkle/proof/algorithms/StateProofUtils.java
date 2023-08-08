@@ -19,7 +19,7 @@ package com.swirlds.common.merkle.proof.algorithms;
 import static com.swirlds.common.crypto.DigestType.SHA_384;
 
 import com.swirlds.common.crypto.Cryptography;
-import com.swirlds.common.merkle.proof.SignatureValidator;
+import com.swirlds.common.merkle.proof.SignatureVerifier;
 import com.swirlds.common.merkle.proof.tree.StateProofInternalNode;
 import com.swirlds.common.merkle.proof.tree.StateProofNode;
 import com.swirlds.common.system.NodeId;
@@ -36,14 +36,24 @@ import java.util.Set;
 /**
  * Utility methods for validating state proofs.
  */
-public final class StateProofValidator {
+public final class StateProofUtils {
 
-    private StateProofValidator() {}
+    private StateProofUtils() {}
 
+    /**
+     * Compute the weight of all signatures in a state proof that are valid.
+     *
+     * @param addressBook       the address book to use for verification, should be a trusted address book
+     * @param signatures        the list of signatures to check
+     * @param signatureVerifier a method that checks if a signature is valid
+     * @param hashBytes         the bytes that were signed (i.e. the hash at the root of the state the proof was derived
+     *                          from)
+     * @return the total weight of all valid signatures
+     */
     public static long computeValidSignatureWeight(
             @NonNull final AddressBook addressBook,
             @NonNull final List<NodeSignature> signatures,
-            @NonNull final SignatureValidator signatureValidator,
+            @NonNull final SignatureVerifier signatureVerifier,
             @NonNull final byte[] hashBytes) {
 
         final Set<NodeId> signingNodes = new HashSet<>();
@@ -65,8 +75,7 @@ public final class StateProofValidator {
                 continue;
             }
 
-            // nodeSignature.signature.verifySignature(hashBytes, address.getSigPublicKey())
-            if (!signatureValidator.verifySignature(nodeSignature.signature(), hashBytes, address.getSigPublicKey())) {
+            if (!signatureVerifier.verifySignature(nodeSignature.signature(), hashBytes, address.getSigPublicKey())) {
                 // Signature is invalid.
                 continue;
             }
