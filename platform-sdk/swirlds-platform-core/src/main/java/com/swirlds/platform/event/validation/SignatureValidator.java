@@ -33,6 +33,8 @@ import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,10 +48,10 @@ public class SignatureValidator implements GossipEventValidator {
 
     public SignatureValidator(
             @NonNull final List<AddressBook> addressBooks, @NonNull final SignatureVerifier signatureVerifier) {
-        this.signatureVerifier = signatureVerifier;
+        this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.keyMap = new HashMap<>();
         for (final AddressBook addressBook : addressBooks) {
-            for (final Address address : addressBook) {
+            for (final Address address : Objects.requireNonNull(addressBook)) {
                 keyMap.put(address.getNodeId(), address.getSigPublicKey());
             }
         }

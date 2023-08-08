@@ -251,6 +251,9 @@ public final class CryptoStatic {
      */
     public static boolean verifySignature(
             @NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
+        Objects.requireNonNull(data);
+        Objects.requireNonNull(signature);
+        Objects.requireNonNull(publicKey);
         try {
             final Signature sig = Signature.getInstance(CryptoConstants.SIG_TYPE2, CryptoConstants.SIG_PROVIDER);
             sig.initVerify(publicKey);
