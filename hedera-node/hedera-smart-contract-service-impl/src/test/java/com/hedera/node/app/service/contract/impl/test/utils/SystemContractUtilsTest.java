@@ -29,7 +29,8 @@ import org.junit.jupiter.api.Test;
 class SystemContractUtilsTest {
     private static final long gasUsed = 0L;
     private static final Bytes result = Bytes.EMPTY;
-    private static final ContractID contractID = ContractID.newBuilder().contractNum(111).build();
+    private static final ContractID contractID =
+            ContractID.newBuilder().contractNum(111).build();
     private static final String errorMessage = ResponseCodeEnum.FAIL_INVALID.name();
 
     @Test

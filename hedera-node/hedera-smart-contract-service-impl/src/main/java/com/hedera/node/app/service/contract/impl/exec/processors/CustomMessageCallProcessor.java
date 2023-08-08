@@ -108,7 +108,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             final var systemContract = systemContracts.get(codeAddress);
             if (evmPrecompile != null) {
                 doExecutePrecompile(evmPrecompile, frame, tracer);
-            } else if(systemContract != null) {
+            } else if (systemContract != null) {
                 doExecuteSystemContract(systemContract, frame, tracer);
             } else {
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
@@ -165,8 +165,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     private void finishPrecompileExecution(
-            @NonNull final MessageFrame frame,
-            @NonNull final PrecompileContractResult result) {
+            @NonNull final MessageFrame frame, @NonNull final PrecompileContractResult result) {
         if (frame.getState() == MessageFrame.State.REVERT) {
             frame.setRevertReason(result.getOutput());
         } else {

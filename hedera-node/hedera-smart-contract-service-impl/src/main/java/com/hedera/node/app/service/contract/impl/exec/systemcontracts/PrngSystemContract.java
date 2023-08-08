@@ -88,7 +88,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
             final var result = PrecompiledContract.PrecompileContractResult.success(randomNum);
 
             // create a child record if we are not in a static call
-            if(!frame.isStatic()) {
+            if (!frame.isStatic()) {
                 createSuccessfulRecord(randomNum, contractID);
             }
 
@@ -122,7 +122,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
 
     Bytes generatePseudoRandomData(@NonNull final Bytes input) {
         final var selector = input.getInt(0);
-        if(selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
+        if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
             return random256BitGenerator();
         }
         return null;

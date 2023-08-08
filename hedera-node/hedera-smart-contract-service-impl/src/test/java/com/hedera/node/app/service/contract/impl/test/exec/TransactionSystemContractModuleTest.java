@@ -33,20 +33,21 @@ import org.mockito.Mock;
 public class TransactionSystemContractModuleTest {
     @Mock
     GasCalculator gasCalculator;
+
     @Mock
     HederaOperations hederaOperations;
+
     @Mock
     HandleSystemContractOperations handleSystemContractOperations;
 
     @Test
     void providesHederaSystemContracts() {
-        var hederaSystemContracts = TransactionSystemContractModule.provideHederaSystemContracts(gasCalculator,
-                hederaOperations,
-                handleSystemContractOperations);
+        var hederaSystemContracts = TransactionSystemContractModule.provideHederaSystemContracts(
+                gasCalculator, hederaOperations, handleSystemContractOperations);
         assertNotNull(hederaSystemContracts);
         // Update after adding more system contracts
         assertEquals(1, hederaSystemContracts.size());
-        assertInstanceOf(PrngSystemContract.class,
-                hederaSystemContracts.get(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS)));
+        assertInstanceOf(
+                PrngSystemContract.class, hederaSystemContracts.get(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS)));
     }
 }

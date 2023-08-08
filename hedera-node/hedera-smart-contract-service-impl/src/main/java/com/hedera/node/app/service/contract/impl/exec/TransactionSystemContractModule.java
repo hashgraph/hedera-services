@@ -35,7 +35,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 public interface TransactionSystemContractModule {
     @Binds
     @TransactionScope
-    HandleSystemContractOperations bindSystemContractOperations(HandleSystemContractOperations handleSystemContractOperations);
+    HandleSystemContractOperations bindSystemContractOperations(
+            HandleSystemContractOperations handleSystemContractOperations);
 
     @Provides
     @TransactionScope
@@ -44,7 +45,7 @@ public interface TransactionSystemContractModule {
             @NonNull final HederaOperations hederaOperations,
             @NonNull final HandleSystemContractOperations handleSystemContractOperations) {
         return Map.of(
-                Address.fromHexString(PRNG_PRECOMPILE_ADDRESS), new PrngSystemContract(gasCalculator, hederaOperations, handleSystemContractOperations)
-        );
+                Address.fromHexString(PRNG_PRECOMPILE_ADDRESS),
+                new PrngSystemContract(gasCalculator, hederaOperations, handleSystemContractOperations));
     }
 }

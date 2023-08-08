@@ -47,14 +47,19 @@ class PrngSystemContractTest {
 
     @Mock
     private GasCalculator gasCalculator;
+
     @Mock
     private HederaOperations hederaOperations;
+
     @Mock
     private HandleSystemContractOperations handleSystemContractOperations;
+
     @Mock
     private MessageFrame messageFrame;
+
     @Mock
     BlockValues blockValues;
+
     @Mock
     ContractCallRecordBuilder contractCallRecordBuilder;
 
@@ -68,7 +73,8 @@ class PrngSystemContractTest {
     @Test
     void computePrecompileStaticSuccessTest() {
         var input = Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-        var expectedRandomNumber = Bytes.fromHexString("0x1234567890123456789012345678901234567890123456789012345678901234");
+        var expectedRandomNumber =
+                Bytes.fromHexString("0x1234567890123456789012345678901234567890123456789012345678901234");
         var expectedContractResult = PrecompiledContract.PrecompileContractResult.success(expectedRandomNumber);
 
         // given:
@@ -86,7 +92,8 @@ class PrngSystemContractTest {
     @Test
     void computePrecompileMutableSuccessTest() {
         var input = Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-        var expectedRandomNumber = Bytes.fromHexString("0x1234567890123456789012345678901234567890123456789012345678901234");
+        var expectedRandomNumber =
+                Bytes.fromHexString("0x1234567890123456789012345678901234567890123456789012345678901234");
         var expectedContractResult = PrecompiledContract.PrecompileContractResult.success(expectedRandomNumber);
 
         // given:
@@ -104,7 +111,8 @@ class PrngSystemContractTest {
     @Test
     void computePrecompileFailedTest() {
         var input = Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-        var expectedContractResult = PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+        var expectedContractResult =
+                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
 
         // given:
         givenCommon();
@@ -121,12 +129,14 @@ class PrngSystemContractTest {
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(messageFrame.getBlockValues().getTimestamp()).willReturn(0L);
     }
+
     private void givenCommon() {
         givenCommonBlockValues();
         given(handleSystemContractOperations.createChildRecord(any())).willReturn(contractCallRecordBuilder);
         given(contractCallRecordBuilder.contractID(any())).willReturn(contractCallRecordBuilder);
         given(contractCallRecordBuilder.status(any())).willReturn(contractCallRecordBuilder);
     }
+
     private void assertEqualContractResult(PrecompileContractResult expected, PrecompileContractResult actual) {
         assertEquals(expected.getState(), actual.getState());
         assertEquals(expected.getOutput(), actual.getOutput());

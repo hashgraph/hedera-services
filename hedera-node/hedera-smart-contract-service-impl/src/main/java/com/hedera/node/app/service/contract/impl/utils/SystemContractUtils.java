@@ -39,7 +39,8 @@ public class SystemContractUtils {
      * @param contractID    The contract ID.
      * @return              The created contract function result for a successful call.
      */
-    public static @NonNull ContractFunctionResult contractFunctionResultSuccessFor(final long gasUsed, final Bytes result, final ContractID contractID) {
+    public static @NonNull ContractFunctionResult contractFunctionResultSuccessFor(
+            final long gasUsed, final Bytes result, final ContractID contractID) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .contractCallResult(tuweniToPbjBytes(result))
@@ -54,7 +55,8 @@ public class SystemContractUtils {
      * @param contractID    The contract ID.
      * @return              The created contract function result when for a failed call.
      */
-    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(final long gasUsed, final String errorMsg, final ContractID contractID) {
+    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(
+            final long gasUsed, final String errorMsg, final ContractID contractID) {
         return ContractFunctionResult.newBuilder()
                 .gasUsed(gasUsed)
                 .errorMessage(errorMsg)
