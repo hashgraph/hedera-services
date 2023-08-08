@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,6 +38,7 @@ import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
+import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -130,18 +132,39 @@ public class TokenServiceImpl implements TokenService {
                                     .tinybarBalance(accountTinyBars)
                                     //                                    .declineReward(true)
                                     .build());
-
-                    // Set genesis network rewards state
-                    final var networkRewardsState = ctx.newStates().getSingleton(STAKING_NETWORK_REWARDS_KEY);
-                    final var networkRewards = NetworkStakingRewards.newBuilder()
-                            .pendingRewards(0)
-                            .totalStakedRewardStart(0)
-                            .totalStakedStart(0)
-                            .stakingRewardsActivated(true)
-                            .build();
-                    networkRewardsState.put(networkRewards);
                 }
+                addAccount(asAccount(800), accounts, superUserKey, expiry);
+                addAccount(asAccount(801), accounts, superUserKey, expiry);
+
+                // Set genesis network rewards state
+                final var networkRewardsState = ctx.newStates().getSingleton(STAKING_NETWORK_REWARDS_KEY);
+                final var networkRewards = NetworkStakingRewards.newBuilder()
+                        .pendingRewards(0)
+                        .totalStakedRewardStart(0)
+                        .totalStakedStart(0)
+                        .stakingRewardsActivated(true)
+                        .build();
+                networkRewardsState.put(networkRewards);
             }
         };
+    }
+
+    private void addAccount(
+            final AccountID id,
+            final WritableKVState<Object, Object> accounts,
+            final Key superUserKey,
+            final long expiry) {
+        accounts.put(
+                id,
+                Account.newBuilder()
+                        .receiverSigRequired(false)
+                        .deleted(false)
+                        .memo("")
+                        .smartContract(false)
+                        .key(superUserKey)
+                        .autoRenewSecs(expiry) // TODO is this right?
+                        .accountId(id)
+                        .tinybarBalance(0)
+                        .build());
     }
 }

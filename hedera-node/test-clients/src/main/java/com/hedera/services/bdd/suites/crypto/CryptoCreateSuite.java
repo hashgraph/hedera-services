@@ -257,6 +257,7 @@ public class CryptoCreateSuite extends HapiSuite {
                         validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
                         validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
+
     @HapiTest
     public HapiSpec syntaxChecksAreAsExpected() {
         return defaultHapiSpec("SyntaxChecksAreAsExpected")

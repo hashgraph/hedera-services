@@ -331,7 +331,7 @@ public class EndOfStakingPeriodUpdater {
         // The balance left in the rewards account (in tinybars), after paying all rewards earned so far
         final var unreservedBalance = getRewardsBalance(accountStore) - networkRewardsStore.pendingRewards();
 
-        final var thresholdBalance = stakingConfig.stakingRewardBalanceThreshold();
+        final var thresholdBalance = stakingConfig.rewardBalanceThreshold();
         // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
         final var balanceRatio = thresholdBalance > 0L
                 ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
@@ -344,9 +344,9 @@ public class EndOfStakingPeriodUpdater {
         return BigDecimal.valueOf(stakingConfig.rewardRate())
                 .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
                 .multiply(
-                        stakingConfig.stakingMaxStakeRewarded() >= stakedToReward
+                        stakingConfig.maxStakeRewarded() >= stakedToReward
                                 ? BigDecimal.ONE
-                                : BigDecimal.valueOf(stakingConfig.stakingMaxStakeRewarded())
+                                : BigDecimal.valueOf(stakingConfig.maxStakeRewarded())
                                         .divide(BigDecimal.valueOf(stakedToReward), MATH_CONTEXT))
                 .longValue();
     }
