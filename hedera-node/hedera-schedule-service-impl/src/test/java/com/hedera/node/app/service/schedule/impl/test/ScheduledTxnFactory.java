@@ -27,7 +27,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.test.utils.IdUtils;
 
-public class ScheduledTxnFactory {
+public final class ScheduledTxnFactory {
     private static final long FEE = 123L;
     private static final String SCHEDULED_TXN_MEMO = "Wait for me!";
     public static final SchedulableTransactionBody scheduledTxn = SchedulableTransactionBody.newBuilder()
