@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.network.NetworkGetExecutionTimeQuery;
+import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.FixedFee;
 import com.hedera.hapi.node.transaction.FractionalFee;
@@ -1306,6 +1307,21 @@ public final class PbjConverter {
             throw new IllegalStateException("Invalid conversion from PBJ for Key", e);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static @NonNull Optional<SchedulableTransactionBody> toPbj(
+            @Nullable final com.hederahashgraph.api.proto.java.SchedulableTransactionBody schedulableTransactionBody) {
+        if (schedulableTransactionBody == null) {
+            return Optional.empty();
+        }
+        try (final var baos = new ByteArrayOutputStream()) {
+            schedulableTransactionBody.writeTo(baos);
+            return Optional.of(SchedulableTransactionBody.PROTOBUF.parse(
+                    Bytes.wrap(baos.toByteArray()).toReadableSequentialData()));
+        } catch (final IOException e) {
+            // Should be impossible, so just propagate an exception
+            throw new IllegalStateException("Invalid conversion from PBJ for SchedulableTransactionBody", e);
         }
     }
 

@@ -18,11 +18,14 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,16 +39,22 @@ public class EmergencyReconnectLearner {
     private final EmergencySignedStateValidator validator;
 
     /**
+     * @param stateConfig
+     *      the state configuration from the platform
      * @param emergencyRecoveryFile
      * 		the emergency recovery file used for this reconnect
      * @param reconnectController
      * 		controls reconnecting as a learner
      */
     public EmergencyReconnectLearner(
-            final EmergencyRecoveryFile emergencyRecoveryFile, final ReconnectController reconnectController) {
-        this.emergencyRecoveryFile = emergencyRecoveryFile;
-        this.reconnectController = reconnectController;
-        validator = new EmergencySignedStateValidator(emergencyRecoveryFile);
+            @NonNull final StateConfig stateConfig,
+            @NonNull final EmergencyRecoveryFile emergencyRecoveryFile,
+            @NonNull final ReconnectController reconnectController) {
+        Objects.requireNonNull(stateConfig, "stateConfig must not be null");
+        this.emergencyRecoveryFile =
+                Objects.requireNonNull(emergencyRecoveryFile, "emergencyRecoveryFile must not be null");
+        this.reconnectController = Objects.requireNonNull(reconnectController, "reconnectController must not be null");
+        validator = new EmergencySignedStateValidator(stateConfig, emergencyRecoveryFile);
     }
 
     /**

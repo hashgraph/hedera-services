@@ -21,21 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Defines all data related to the emergency recovery file and how it is formatted.
  */
 public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
     private static final String OUTPUT_FILENAME = "emergencyRecovery.yaml";
-    public static final String INPUT_FILENAME =
-            ConfigurationHolder.getConfigData(StateConfig.class).emergencyStateFileName();
 
     /**
      * Creates a new emergency recovery file with data about a state being written to disk in normal operation.
@@ -103,15 +101,18 @@ public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
      * Creates a record with the data contained in the emergency recovery file in the directory specified, or null if
      * the file does not exist.
      *
+     * @param stateConfig state configuration from the platfrom
      * @param directory the directory containing the emergency recovery file. Must exist and be readable.
      * @param failOnMissingFields if true, throw an exception if the file is missing any fields. If false, ignore
      * @return a new record containing the emergency recovery data in the file, or null if no emergency recovery file
      * exists
      * @throws IOException if an exception occurs reading from the file, or the file content is not properly formatted
      */
-    public static EmergencyRecoveryFile read(@NonNull final Path directory, final boolean failOnMissingFields)
+    public static EmergencyRecoveryFile read(
+            @NonNull final StateConfig stateConfig, @NonNull final Path directory, final boolean failOnMissingFields)
             throws IOException {
-        final Path fileToRead = directory.resolve(INPUT_FILENAME);
+        Objects.requireNonNull(stateConfig, "stateConfig must not be null");
+        final Path fileToRead = directory.resolve(stateConfig.emergencyStateFileName());
         if (!Files.exists(fileToRead)) {
             return null;
         }
@@ -128,10 +129,11 @@ public record EmergencyRecoveryFile(@NonNull Recovery recovery) {
     }
 
     /**
-     * Same as {@link #read(Path, boolean)} but with failOnMissingFields set to false.
+     * Same as {@link #read(StateConfig, Path, boolean)} but with failOnMissingFields set to false.
      */
-    public static EmergencyRecoveryFile read(@NonNull final Path directory) throws IOException {
-        return read(directory, false);
+    public static EmergencyRecoveryFile read(@NonNull final StateConfig stateConfig, @NonNull final Path directory)
+            throws IOException {
+        return read(stateConfig, directory, false);
     }
 
     private static void validate(final EmergencyRecoveryFile file) throws IOException {

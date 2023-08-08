@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.List;
 
 @FunctionalInterface

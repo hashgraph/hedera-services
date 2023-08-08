@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -87,6 +88,7 @@ public class HandleWorkflow {
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
     public HandleWorkflow(
@@ -101,7 +103,8 @@ public class HandleWorkflow {
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
             @NonNull final HederaRecordCache recordCache,
-            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook) {
+            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -114,6 +117,7 @@ public class HandleWorkflow {
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     /**
@@ -173,13 +177,15 @@ public class HandleWorkflow {
             if (transaction.signedTransactionBytes().length() > 0) {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
-                // in this case, recorder hash the transaction itself, not its' bodyBytes.
+                // in this case, recorder hash the transaction itself, not its bodyBytes.
                 transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
             }
+
             recordBuilder
                     .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionBytes)
                     .transactionID(txBody.transactionID())
+                    .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
 
             // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.

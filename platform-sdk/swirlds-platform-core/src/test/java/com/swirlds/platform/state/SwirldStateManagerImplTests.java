@@ -31,7 +31,7 @@ import com.swirlds.platform.components.transaction.system.ConsensusSystemTransac
 import com.swirlds.platform.components.transaction.system.PreconsensusSystemTransactionManager;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

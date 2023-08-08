@@ -20,7 +20,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.test.event.TestSequence;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;

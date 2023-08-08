@@ -61,6 +61,7 @@ module com.swirlds.platform {
     /* Targeted Exports to External Libraries */
     exports com.swirlds.platform.internal to
             com.swirlds.platform.test,
+            com.swirlds.platform.test.fixtures,
             com.fasterxml.jackson.core,
             com.fasterxml.jackson.databind;
     exports com.swirlds.platform.event.creation to
@@ -70,7 +71,8 @@ module com.swirlds.platform {
     exports com.swirlds.platform.observers to
             com.swirlds.platform.test;
     exports com.swirlds.platform.consensus to
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.platform.test.fixtures;
     exports com.swirlds.platform.crypto to
             com.swirlds.platform.test;
     exports com.swirlds.platform.event.linking to
@@ -158,7 +160,7 @@ module com.swirlds.platform {
 
     /* Database Libraries */
     requires com.swirlds.fchashmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.config;

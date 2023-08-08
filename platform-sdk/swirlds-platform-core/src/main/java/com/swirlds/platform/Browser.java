@@ -80,7 +80,6 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.WindowConfig;
-import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
@@ -233,7 +232,6 @@ public class Browser {
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
-                .withConfigDataType(JasperDbConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
@@ -257,7 +255,7 @@ public class Browser {
                 .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
-        if (appMains.size() > 0) {
+        if (!appMains.isEmpty()) {
             appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
         }
 
@@ -270,12 +268,15 @@ public class Browser {
         ConfigurationHolder.getInstance().setConfiguration(configuration);
         CryptographyHolder.reset();
 
+        final var pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final OSFileSystemChecker osFileSystemChecker = new OSFileSystemChecker(pathsConfig);
+
         OSHealthChecker.performOSHealthChecks(
                 configuration.getConfigData(OSHealthCheckConfig.class),
                 List.of(
                         OSClockSpeedSourceChecker::performClockSourceSpeedCheck,
                         OSEntropyChecker::performEntropyChecks,
-                        OSFileSystemChecker::performFileSystemCheck));
+                        osFileSystemChecker::performFileSystemCheck));
 
         try {
             // discover the inset size and set the look and feel
@@ -299,7 +300,6 @@ public class Browser {
             // simulation to run.
 
             try {
-                final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
                 if (Files.exists(pathsConfig.getConfigPath())) {
                     CommonUtils.tellUserConsole(
                             "Reading the configuration from the file:   " + pathsConfig.getConfigPath());
@@ -431,7 +431,7 @@ public class Browser {
         }
 
         settingsUsedBuilder.append(System.lineSeparator());
-        settingsUsedBuilder.append("-------------Configuration Values-------------");
+        settingsUsedBuilder.append("------------- All Configuration -------------");
         settingsUsedBuilder.append(System.lineSeparator());
 
         // Add all config values to the string builder
@@ -655,10 +655,10 @@ public class Browser {
 
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
-                final BasicConfig basicConfig =
-                        platformContext.getConfiguration().getConfigData(BasicConfig.class);
-                final EmergencyRecoveryManager emergencyRecoveryManager =
-                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+                final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+                final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
+                        stateConfig, shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState initialState = getInitialState(
                         platformContext,
@@ -852,8 +852,8 @@ public class Browser {
             @NonNull final AddressBook configAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
-        final String actualMainClassName =
-                configuration.getConfigData(StateConfig.class).getMainClassName(mainClassName);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
         final SavedStateInfo[] savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
 
@@ -865,13 +865,14 @@ public class Browser {
                 configAddressBook,
                 savedStateFiles,
                 appVersion,
-                () -> new EmergencySignedStateValidator(emergencyRecoveryManager.getEmergencyRecoveryFile()),
+                () -> new EmergencySignedStateValidator(
+                        stateConfig, emergencyRecoveryManager.getEmergencyRecoveryFile()),
                 emergencyRecoveryManager);
         try {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
+            if (stateConfig.requireStateLoad()) {
                 exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }

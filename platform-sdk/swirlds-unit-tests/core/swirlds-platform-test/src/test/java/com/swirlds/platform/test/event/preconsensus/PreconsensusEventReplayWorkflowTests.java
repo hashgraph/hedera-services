@@ -46,7 +46,7 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.Iterator;

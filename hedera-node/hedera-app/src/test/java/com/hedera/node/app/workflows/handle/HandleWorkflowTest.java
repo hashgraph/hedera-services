@@ -25,14 +25,17 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
@@ -93,6 +96,9 @@ class HandleWorkflowTest extends AppTestBase {
     private static final PreHandleResult DUE_DILIGENCE_RESULT = PreHandleResult.nodeDueDiligenceFailure(
             NODE_1.nodeAccountID(), ResponseCodeEnum.INVALID_TRANSACTION, new TransactionScenarioBuilder().txInfo());
 
+    private static final ExchangeRateSet EXCHANGE_RATE_SET =
+            ExchangeRateSet.newBuilder().build();
+
     private static PreHandleResult createPreHandleResult(@NonNull Status status, @NonNull ResponseCodeEnum code) {
         final var key = ALICE.account().keyOrThrow();
         return new PreHandleResult(
@@ -149,6 +155,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private StakingPeriodTimeHook stakingPeriodTimeHook;
 
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
@@ -157,6 +166,7 @@ class HandleWorkflowTest extends AppTestBase {
 
         when(platformTxn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
         when(platformTxn.getMetadata()).thenReturn(OK_RESULT);
+        lenient().when(exchangeRateManager.exchangeRates()).thenReturn(ExchangeRateSet.DEFAULT);
 
         doAnswer(invocation -> {
                     final var consumer = invocation.getArgument(0, BiConsumer.class);
@@ -193,7 +203,8 @@ class HandleWorkflowTest extends AppTestBase {
                 configProvider,
                 instantSource,
                 recordCache,
-                stakingPeriodTimeHook);
+                stakingPeriodTimeHook,
+                exchangeRateManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -212,7 +223,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -226,7 +238,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -240,7 +253,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -254,7 +268,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -268,7 +283,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -282,7 +298,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -296,7 +313,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -310,7 +328,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -324,7 +343,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         instantSource,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -338,7 +358,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         null,
                         recordCache,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -352,7 +373,8 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         null,
-                        stakingPeriodTimeHook))
+                        stakingPeriodTimeHook,
+                        exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -366,6 +388,52 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
+                        null,
+                        exchangeRateManager))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        recordCache,
+                        null,
+                        exchangeRateManager))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        recordCache,
+                        stakingPeriodTimeHook,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -389,6 +457,8 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     @DisplayName("Successful execution of simple case")
     void testHappyPath() {
+        // given
+        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
         // when
         workflow.handleRound(state, round);
 
@@ -482,6 +552,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
             when(event.getCreatorId()).thenReturn(new NodeId(0));
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
 
             // when
             workflow.handleRound(state, round);
@@ -593,7 +664,7 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(signatureExpander)
                     .expand(eq(Set.of(bobsKey)), any(), any());
-
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -681,7 +752,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -754,6 +825,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -807,6 +879,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -867,7 +940,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -913,7 +986,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -954,6 +1027,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.requireKey(bobsKey);
