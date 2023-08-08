@@ -16,8 +16,8 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
-    id("com.swirlds.platform.benchmark-conventions")
+    `java-library`
+    id("com.hedera.hashgraph.benchmark-conventions")
     id("org.gradle.java-test-fixtures")
 }
 
