@@ -58,7 +58,6 @@ public interface TransactionModule {
 
     @Provides
     @Nullable
-    @javax.annotation.Nullable
     @TransactionScope
     static HydratedEthTxData maybeProvideHydratedEthTxData(
             @NonNull final HandleContext context,

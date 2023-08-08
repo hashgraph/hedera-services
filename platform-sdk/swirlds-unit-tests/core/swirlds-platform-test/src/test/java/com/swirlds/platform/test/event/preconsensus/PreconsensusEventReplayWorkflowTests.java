@@ -46,7 +46,7 @@ import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -77,14 +77,14 @@ class PreconsensusEventReplayWorkflowTests {
         final AtomicReference<TestPhase> phase = new AtomicReference<>(TestPhase.REPLAY_EVENTS);
         final long minimumGenerationNonAncient = random.nextLong(1, 1000);
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<GossipEvent> events = new ArrayList<>();
         final StandardGraphGenerator graphGenerator = buildGraphGenerator(random);
         final int eventCount = 1000;
         for (int i = 0; i < eventCount; i++) {
             final EventImpl event = graphGenerator.generateEvent();
-            events.add(event);
+            events.add(event.getBaseEvent());
         }
-        final Iterator<EventImpl> eventIterator = events.iterator();
+        final Iterator<GossipEvent> eventIterator = events.iterator();
 
         final PreconsensusEventFileManager preconsensusEventFileManager = mock(PreconsensusEventFileManager.class);
         when(preconsensusEventFileManager.getEventIterator(anyLong(), anyBoolean()))
@@ -106,7 +106,7 @@ class PreconsensusEventReplayWorkflowTests {
                     assertNotNull(event.getHashedData().getHash());
 
                     final int index = nextIndex.getAndIncrement();
-                    final EventImpl expectedEvent = events.get(index);
+                    final GossipEvent expectedEvent = events.get(index);
 
                     assertSame(event.getHashedData(), expectedEvent.getHashedData());
 

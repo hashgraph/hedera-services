@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.gradle.enterprise").version("3.10.3") }
+pluginManagement { @Suppress("UnstableApiUsage") includeBuild("../build-logic") }
+
+plugins { id("com.gradle.enterprise").version("3.11.4") }
 
 rootProject.name = "swirlds-platform"
 

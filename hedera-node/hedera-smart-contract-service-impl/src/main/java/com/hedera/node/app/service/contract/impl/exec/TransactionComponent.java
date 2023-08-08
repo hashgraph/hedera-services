@@ -35,6 +35,5 @@ public interface TransactionComponent {
 
     @Nullable
     // Use standard annotation also to alert Dagger2 this binding is nullable
-    @javax.annotation.Nullable
     HydratedEthTxData hydratedEthTxData();
 }

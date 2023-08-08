@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_INITIAL_SUPPLY;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate.WELL_KNOWN_NFT_SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -419,6 +421,10 @@ public class TxnVerbs {
 
     public static HapiEthereumCall ethereumCryptoTransferToExplicit(@NonNull final byte[] to, final long amount) {
         return HapiEthereumCall.explicitlyTo(to, amount);
+    }
+
+    public static HapiEthereumCall ethereumCryptoTransferToAddress(@NonNull final Address address, final long amount) {
+        return HapiEthereumCall.explicitlyTo(explicitBytesOf(address), amount);
     }
 
     /**

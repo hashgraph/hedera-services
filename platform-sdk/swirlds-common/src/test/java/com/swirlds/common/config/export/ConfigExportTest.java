@@ -74,7 +74,7 @@ class ConfigExportTest {
     }
 
     private String regexForLine(final String paramName, final String value, final boolean inRecord) {
-        return "^" + paramName + "\\s*-> " + value + "\\s*\\[" + (inRecord ? "" : "NOT ") + "USED IN RECORD\\]$";
+        return "^" + paramName + ", " + value + "\\s*" + (inRecord ? "" : "\\[NOT USED IN RECORD\\]") + "$";
     }
 
     private static void assertContains(final String regex, final List<String> list) {
