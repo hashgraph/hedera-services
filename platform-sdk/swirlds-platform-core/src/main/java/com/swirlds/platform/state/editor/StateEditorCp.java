@@ -28,6 +28,8 @@ import com.swirlds.common.merkle.copy.MerkleCopy;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -36,6 +38,7 @@ import picocli.CommandLine;
         description = "Copy a node from one location to another.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorCp extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorOperation.class);
 
     private String sourcePath;
     private String destinationPath = "";
@@ -62,8 +65,13 @@ public class StateEditorCp extends StateEditorOperation {
 
         final MerkleNode source = getStateEditor().getRelativeNode(sourcePath);
 
-        System.out.println("Copying " + formatNode(source) + " to " + formatRoute(destinationRoute) + " in parent "
-                + formatParent(parent, indexInParent));
+        if (logger.isInfoEnabled()) {
+            logger.info(
+                    "Copying {} to {} in parent {}",
+                    formatNode(source),
+                    formatRoute(destinationRoute),
+                    formatParent(parent, indexInParent));
+        }
 
         MerkleCopy.copyTreeToLocation(parent.asInternal(), indexInParent, source);
 

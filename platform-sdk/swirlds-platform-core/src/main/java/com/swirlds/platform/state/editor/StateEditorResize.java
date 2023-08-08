@@ -19,6 +19,8 @@ package com.swirlds.platform.state.editor;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -27,6 +29,8 @@ import picocli.CommandLine;
         description = "Change the number of children in an internal node.")
 // @SubcommandOf(StateEditorRoot.class) // This can be un-commented when resizing is implemented
 public class StateEditorResize extends StateEditorOperation {
+
+    private static final Logger logger = LogManager.getLogger(StateEditorResize.class);
 
     private String parentPath = "";
     private int newSize;
@@ -55,8 +59,13 @@ public class StateEditorResize extends StateEditorOperation {
                     + parent.getClass().getSimpleName() + " and is not an internal node.");
         }
 
-        System.out.println("Resizing [" + MerkleRouteUtils.merkleRouteToPathFormat(parent.getRoute()) + " "
-                + parent.getClass().getSimpleName() + "] to child count " + newSize);
+        if (logger.isInfoEnabled()) {
+            logger.info(
+                    "Resizing [{}{}] to child count {}",
+                    MerkleRouteUtils.merkleRouteToPathFormat(parent.getRoute()),
+                    parent.getClass().getSimpleName(),
+                    newSize);
+        }
 
         // FUTURE WORK implement merkle resizing... this would be a really handy feature!
     }

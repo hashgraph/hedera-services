@@ -26,6 +26,8 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -34,6 +36,7 @@ import picocli.CommandLine;
         description = "Remove a node, replacing it with null.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorRm extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorRm.class);
 
     private String path = "";
 
@@ -55,7 +58,9 @@ public class StateEditorRm extends StateEditorOperation {
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorRm.run()")) {
             final MerkleNode child = reservedSignedState.get().getState().getNodeAtRoute(destinationRoute);
 
-            System.out.println("Removing " + formatNode(child) + " from parent " + formatParent(parent, indexInParent));
+            if (logger.isInfoEnabled()) {
+                logger.info("Removing {} from parent {}", formatNode(child), formatParent(parent, indexInParent));
+            }
 
             parent.setChild(indexInParent, null);
 

@@ -40,6 +40,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -48,6 +50,7 @@ import picocli.CommandLine;
         description = "Read event stream files and print an informational report.")
 @SubcommandOf(EventStreamCommand.class)
 public final class EventStreamInfoCommand extends AbstractCommand {
+    private static final Logger logger = LogManager.getLogger(EventStreamInfoCommand.class);
 
     /** a format for timestamps */
     private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -173,6 +176,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
      * @param bound the lower bound to use when generating the reports
      * @throws IOException if the directory stream cannot be opened
      */
+    @SuppressWarnings("java:S106")
     private void generateMultiNodeReport(@NonNull final EventStreamLowerBound bound) throws IOException {
         Objects.requireNonNull(bound);
 
@@ -190,7 +194,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
                 final EventStreamReport individualReport = generateReport(directory, bound);
 
                 if (individualReport == null) {
-                    System.out.printf("No event stream files found in `%s`%n", directory);
+                    logger.error("No event stream files found in `{}`", directory);
                     return;
                 }
 
@@ -202,11 +206,12 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             System.out.println(multiReport);
         } catch (final NoSuchElementException e) {
             // the multi report is empty
-            System.out.println("No event stream files found in any child directory of `" + eventStreamDirectory + "`");
+            logger.error("No event stream files found in any child directory of `{}`", eventStreamDirectory);
         }
     }
 
     @Override
+    @SuppressWarnings("java:S106")
     public Integer call() throws Exception {
         setupConstructableRegistry();
         if (roundBound > 0 && !Instant.MIN.equals(timestampBound)) {
@@ -228,7 +233,7 @@ public final class EventStreamInfoCommand extends AbstractCommand {
             final EventStreamReport report = generateReport(eventStreamDirectory, bound);
 
             if (report == null) {
-                System.out.printf("No event stream files found in `%s`%n", eventStreamDirectory);
+                logger.error("No event stream files found in `{}`", eventStreamDirectory);
             } else {
                 // an individual report was requested. Simply print the report to stdout.
                 System.out.println(report);

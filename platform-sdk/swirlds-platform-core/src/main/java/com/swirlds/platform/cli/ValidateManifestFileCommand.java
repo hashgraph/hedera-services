@@ -23,6 +23,8 @@ import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -31,6 +33,7 @@ import picocli.CommandLine;
         description = "Validate whether an emergency recovery file is well formed and has the necessary information")
 @SubcommandOf(PlatformCli.class)
 public class ValidateManifestFileCommand extends AbstractCommand {
+    private static final Logger logger = LogManager.getLogger(ValidateManifestFileCommand.class);
 
     /** The path to the emergency recovery file. */
     private Path dir;
@@ -46,7 +49,7 @@ public class ValidateManifestFileCommand extends AbstractCommand {
     @Override
     public @NonNull Integer call() throws IOException {
         EmergencyRecoveryFile.read(dir, true);
-        System.out.println("The emergency recovery file is well formed and has the necessary information.");
+        logger.info("The emergency recovery file is well formed and has the necessary information.");
         return 0;
     }
 }

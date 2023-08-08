@@ -31,11 +31,14 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "save", mixinStandardHelpOptions = true, description = "Write the entire state to disk.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorSave extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorSave.class);
 
     private Path directory;
 
@@ -51,12 +54,14 @@ public class StateEditorSave extends StateEditorOperation {
     public void run() {
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorSave.run()")) {
 
-            System.out.println("Hashing state");
+            logger.info("Hashing state");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
 
-            System.out.println("Writing signed state file to " + formatFile(directory));
+            if (logger.isInfoEnabled()) {
+                logger.info("Writing signed state file to {}", formatFile(directory));
+            }
 
             if (!Files.exists(directory)) {
                 Files.createDirectories(directory);

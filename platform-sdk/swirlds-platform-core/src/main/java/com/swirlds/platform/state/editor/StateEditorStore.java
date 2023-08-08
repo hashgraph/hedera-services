@@ -29,11 +29,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "store", mixinStandardHelpOptions = true, description = "Store a subtree in a file.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorStore extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorStore.class);
 
     private String path = "";
     private Path fileName;
@@ -60,7 +63,9 @@ public class StateEditorStore extends StateEditorOperation {
                 Files.createDirectories(fileName.getParent());
             }
 
-            System.out.println("Writing " + formatNode(subtree) + " to " + formatFile(fileName));
+            if (logger.isInfoEnabled()) {
+                logger.info("Writing {} to {}", formatNode(subtree), formatFile(fileName));
+            }
 
             final MerkleDataOutputStream out =
                     new MerkleDataOutputStream(new BufferedOutputStream(new FileOutputStream(fileName.toFile())));
