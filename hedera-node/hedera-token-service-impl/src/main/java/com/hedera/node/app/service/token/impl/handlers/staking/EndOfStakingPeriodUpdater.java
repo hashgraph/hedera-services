@@ -224,7 +224,9 @@ public class EndOfStakingPeriodUpdater {
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
                 lastInstantOfPreviousPeriodFor(consensusTime), finalNodeStakes, stakingConfig);
         log.info("Exporting:\n{}", finalNodeStakes);
-        context.dispatchPrecedingTransaction(syntheticNodeStakeUpdateTxn.build(), SingleTransactionRecordBuilder.class);
+        context.dispatchChildTransaction(syntheticNodeStakeUpdateTxn.build(), SingleTransactionRecordBuilder.class);
+        // TODO: This should be a preceding record, but we have sme conditions that fail there
+        // because state changed. We should discuss that and move this back to preceding.
     }
 
     /**
