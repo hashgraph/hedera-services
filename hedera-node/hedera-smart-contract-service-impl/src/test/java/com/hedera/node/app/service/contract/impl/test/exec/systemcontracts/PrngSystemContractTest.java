@@ -16,17 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
-import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -49,12 +45,6 @@ class PrngSystemContractTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private HederaOperations hederaOperations;
-
-    @Mock
-    private HandleSystemContractOperations handleSystemContractOperations;
-
-    @Mock
     private MessageFrame messageFrame;
 
     @Mock
@@ -63,11 +53,14 @@ class PrngSystemContractTest {
     @Mock
     ContractCallRecordBuilder contractCallRecordBuilder;
 
+    @Mock
+    ProxyWorldUpdater proxyWorldUpdater;
+
     private PrngSystemContract subject;
 
     @BeforeEach
     void setUp() {
-        subject = new PrngSystemContract(gasCalculator, hederaOperations, handleSystemContractOperations);
+        subject = new PrngSystemContract(gasCalculator);
     }
 
     @Test
@@ -80,7 +73,8 @@ class PrngSystemContractTest {
         // given:
         givenCommonBlockValues();
         given(messageFrame.isStatic()).willReturn(true);
-        given(hederaOperations.entropy()).willReturn(tuweniToPbjBytes(expectedRandomNumber));
+        given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(proxyWorldUpdater.entropy()).willReturn(expectedRandomNumber);
 
         // when:
         var actual = subject.computePrecompile(input, messageFrame);
@@ -99,7 +93,8 @@ class PrngSystemContractTest {
         // given:
         givenCommon();
         given(messageFrame.isStatic()).willReturn(false);
-        given(hederaOperations.entropy()).willReturn(tuweniToPbjBytes(expectedRandomNumber));
+        given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(proxyWorldUpdater.entropy()).willReturn(expectedRandomNumber);
 
         // when:
         var actual = subject.computePrecompile(input, messageFrame);
@@ -116,7 +111,6 @@ class PrngSystemContractTest {
 
         // given:
         givenCommon();
-        given(hederaOperations.entropy()).willReturn(ZERO_ENTROPY);
 
         // when:
         var actual = subject.computePrecompile(input, messageFrame);
@@ -132,9 +126,9 @@ class PrngSystemContractTest {
 
     private void givenCommon() {
         givenCommonBlockValues();
-        given(handleSystemContractOperations.createChildRecord(any())).willReturn(contractCallRecordBuilder);
-        given(contractCallRecordBuilder.contractID(any())).willReturn(contractCallRecordBuilder);
-        given(contractCallRecordBuilder.status(any())).willReturn(contractCallRecordBuilder);
+        // TODO: uncomment out the following once there is a way to create child records
+        // given(contractCallRecordBuilder.contractID(any())).willReturn(contractCallRecordBuilder);
+        // given(contractCallRecordBuilder.status(any())).willReturn(contractCallRecordBuilder);
     }
 
     private void assertEqualContractResult(PrecompileContractResult expected, PrecompileContractResult actual) {

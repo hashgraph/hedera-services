@@ -51,7 +51,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-@Module(includes = {TransactionSystemContractModule.class})
+@Module
 public interface TransactionModule {
     @Provides
     @TransactionScope

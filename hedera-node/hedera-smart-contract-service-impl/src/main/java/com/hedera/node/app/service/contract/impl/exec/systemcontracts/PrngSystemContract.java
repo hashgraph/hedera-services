@@ -17,21 +17,17 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmContractId;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultFailedFor;
-import static com.hedera.node.app.service.contract.impl.utils.SystemContractUtils.contractFunctionResultSuccessFor;
 import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 
 import com.hedera.hapi.node.base.ContractID;
-import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
-import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
+import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Optional;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,17 +47,11 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
     // random256BitGenerator(uint256)
     static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
     public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
-    private final HederaOperations hederaOperations;
-    private final HandleSystemContractOperations handleSystemContractOperations;
     private long gasRequirement;
 
-    public PrngSystemContract(
-            @NonNull final GasCalculator gasCalculator,
-            @NonNull final HederaOperations hederaOperations,
-            @NonNull final HandleSystemContractOperations handleSystemContractOperations) {
+    @Inject
+    public PrngSystemContract(@NonNull final GasCalculator gasCalculator) {
         super(PRECOMPILE_NAME, gasCalculator);
-        this.hederaOperations = hederaOperations;
-        this.handleSystemContractOperations = handleSystemContractOperations;
     }
 
     @Override
@@ -83,7 +73,7 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
 
         try {
             // compute the pseudorandom number
-            final var randomNum = generatePseudoRandomData(input);
+            final var randomNum = generatePseudoRandomData(input, frame);
             requireNonNull(randomNum);
             final var result = PrecompiledContract.PrecompileContractResult.success(randomNum);
 
@@ -103,37 +93,41 @@ public class PrngSystemContract extends AbstractPrecompiledContract {
     void createSuccessfulRecord(@NonNull final Bytes randomNum, @NonNull final ContractID contractID) {
         requireNonNull(randomNum);
         requireNonNull(contractID);
-        final var childRecord = handleSystemContractOperations.createChildRecord(ContractCallRecordBuilder.class);
-        childRecord
-                .contractID(contractID)
-                .status(SUCCESS)
-                .contractCallResult(contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID));
+        // TODO: finish after api for creating child record is implemented
+        //        final var childRecord =
+        // handleSystemContractOperations.createChildRecord(ContractCallRecordBuilder.class);
+        //        childRecord
+        //                .contractID(contractID)
+        //                .status(SUCCESS)
+        //                .contractCallResult(contractFunctionResultSuccessFor(gasRequirement, randomNum, contractID));
     }
 
     void createFailedRecord(@NonNull final String errorMsg, @NonNull final ContractID contractID) {
         requireNonNull(errorMsg);
         requireNonNull(contractID);
-        final var childRecord = handleSystemContractOperations.createChildRecord(ContractCallRecordBuilder.class);
-        childRecord
-                .contractID(contractID)
-                .status(FAIL_INVALID)
-                .contractCallResult(contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID));
+        // TODO: finish after api for creating child record is implemented
+        //        final var childRecord =
+        // handleSystemContractOperations.createChildRecord(ContractCallRecordBuilder.class);
+        //        childRecord
+        //                .contractID(contractID)
+        //                .status(FAIL_INVALID)
+        //                .contractCallResult(contractFunctionResultFailedFor(gasRequirement, errorMsg, contractID));
     }
 
-    Bytes generatePseudoRandomData(@NonNull final Bytes input) {
+    Bytes generatePseudoRandomData(@NonNull final Bytes input, @NonNull final MessageFrame frame) {
         final var selector = input.getInt(0);
         if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
-            return random256BitGenerator();
+            return random256BitGenerator(frame);
         }
         return null;
     }
 
-    Bytes random256BitGenerator() {
-        final var entropy = hederaOperations.entropy();
-        if (entropy.equals(ZERO_ENTROPY)) {
+    Bytes random256BitGenerator(final MessageFrame frame) {
+        final var entropy = ((ProxyWorldUpdater) frame.getWorldUpdater()).entropy();
+        if (entropy.equals(Bytes.wrap(ZERO_ENTROPY.toByteArray()))) {
             return null;
         }
-        return Bytes.wrap(entropy.toByteArray(), 0, 32);
+        return entropy;
     }
 
     long calculateGas(@NonNull final Instant now) {
