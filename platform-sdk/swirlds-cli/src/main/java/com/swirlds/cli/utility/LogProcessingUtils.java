@@ -45,30 +45,6 @@ public class LogProcessingUtils {
     }
 
     /**
-     * Colorize a string with HTML span tags.
-     *
-     * @param inputString the input string
-     * @param color       the color to use
-     * @return the colorized string
-     */
-    @NonNull
-    public static String colorizeStringHtml(@NonNull final String inputString, @NonNull final Color color) {
-        return "<span class=\"color-" + color.getHtmlCode() + "\">" + inputString + "</span>";
-    }
-
-    /**
-     * Colorize a string with ANSI escape codes.
-     *
-     * @param inputString the input string
-     * @param color       the color to use
-     * @return the colorized string
-     */
-    @NonNull
-    public static String colorizeStringAnsi(@NonNull final String inputString, @NonNull final Color color) {
-        return "\033[" + color.getAnsiCode() + "m" + inputString + "\033[0m";
-    }
-
-    /**
      * Generate an ANSI colorized version of a log line if the line can be parsed.
      * <p>
      * If the line cannot be parsed, it is returned without any colorization.

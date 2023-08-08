@@ -40,7 +40,7 @@ class LogLineTests {
 
         assertEquals(parseTimestamp("2023-08-04 13:50:09.751", ZoneId.systemDefault()), logLine.getTimestamp());
         assertEquals("102", logLine.getLogNumber());
-        assertEquals(LogLevel.INFO, logLine.getLogLevel());
+        assertEquals("INFO", logLine.getLogLevel());
         assertEquals("PLATFORM_STATUS", logLine.getMarker());
         assertEquals("<<platform: status-state-machine>>", logLine.getThreadName());
         assertEquals("PlatformStatusStateMachine", logLine.getClassName());

@@ -16,6 +16,7 @@
 
 package com.swirlds.cli.utility;
 
+import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,7 @@ public class PlatformStatusLog implements FormattableString {
      */
     public static final String PLATFORM_STATUS_LOG_LINE_REGEX = "(.*spent )(.*)( in )(.*)(\\. Now in )([A-Z_]+)(.*)";
 
-    public static final Color STATUS_COLOR = Color.PURPLE;
+    public static final TextEffect STATUS_COLOR = TextEffect.BRIGHT_PURPLE;
 
     /**
      * The full original string
@@ -122,23 +123,6 @@ public class PlatformStatusLog implements FormattableString {
     }
 
     /**
-     * Generate a colorized string using the given colorizing method
-     *
-     * @param colorizingMethod the colorizing method to use
-     * @return the colorized string
-     */
-    @NonNull
-    private String generateColorizedString(@NonNull final ColorizingMethod colorizingMethod) {
-        return platformSpent
-                + colorizingMethod.colorize(duration, STATUS_COLOR)
-                + in
-                + colorizingMethod.colorize(previousStatus, STATUS_COLOR)
-                + nowIn
-                + colorizingMethod.colorize(newStatus, STATUS_COLOR)
-                + statusMessageRemainder;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @NonNull
@@ -153,7 +137,13 @@ public class PlatformStatusLog implements FormattableString {
     @NonNull
     @Override
     public String generateAnsiString() {
-        return generateColorizedString(LogProcessingUtils::colorizeStringAnsi);
+        return platformSpent
+                + STATUS_COLOR.apply(duration)
+                + in
+                + STATUS_COLOR.apply(previousStatus)
+                + nowIn
+                + STATUS_COLOR.apply(newStatus)
+                + statusMessageRemainder;
     }
 
     /**
@@ -162,6 +152,6 @@ public class PlatformStatusLog implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        return generateColorizedString(LogProcessingUtils::colorizeStringHtml);
+        throw new UnsupportedOperationException("FUTURE WORK");
     }
 }

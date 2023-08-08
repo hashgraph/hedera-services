@@ -16,9 +16,9 @@
 
 package com.swirlds.cli.utility;
 
-import static com.swirlds.cli.utility.LogProcessingUtils.colorizeStringAnsi;
 import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
 
+import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -48,15 +48,15 @@ public class LogLine implements FormattableString {
     public static final String COLON_SPACE_REGEX = "(: )";
     public static final String REMAINDER_OF_LINE_REGEX = "(.*)";
 
-    public static final Color TIMESTAMP_COLOR = Color.GRAY;
-    public static final Color LOG_NUMBER_COLOR = Color.WHITE;
-    public static final Color LOG_MARKER_COLOR = Color.BRIGHT_BLUE;
-    public static final Color THREAD_NAME_COLOR = Color.BRIGHT_WHITE;
-    public static final Color CLASS_NAME_COLOR = Color.TEAL;
+    public static final TextEffect TIMESTAMP_COLOR = TextEffect.GRAY;
+    public static final TextEffect LOG_NUMBER_COLOR = TextEffect.WHITE;
+    public static final TextEffect LOG_MARKER_COLOR = TextEffect.BRIGHT_BLUE;
+    public static final TextEffect THREAD_NAME_COLOR = TextEffect.BRIGHT_WHITE;
+    public static final TextEffect CLASS_NAME_COLOR = TextEffect.BRIGHT_CYAN;
 
-    public static final Color HARMLESS_LOG_LEVEL_COLOR = Color.GREEN;
-    public static final Color WARN_LOG_LEVEL_COLOR = Color.YELLOW;
-    public static final Color ERROR_LOG_LEVEL_COLOR = Color.RED;
+    public static final TextEffect HARMLESS_LOG_LEVEL_COLOR = TextEffect.BRIGHT_GREEN;
+    public static final TextEffect WARN_LOG_LEVEL_COLOR = TextEffect.BRIGHT_YELLOW;
+    public static final TextEffect ERROR_LOG_LEVEL_COLOR = TextEffect.BRIGHT_RED;
 
     public static final String FULL_REGEX = TIMESTAMP_REGEX
             + CAPTURED_WHITESPACE_REGEX
@@ -100,12 +100,7 @@ public class LogLine implements FormattableString {
     /**
      * The log level of the log line
      */
-    private final LogLevel logLevel;
-
-    /**
-     * The original log level string
-     */
-    private final String logLevelOriginalString;
+    private final String logLevel;
 
     /**
      * The marker of the log line
@@ -158,8 +153,7 @@ public class LogLine implements FormattableString {
         whitespaces.add(logLineMatcher.group(2));
         logNumber = logLineMatcher.group(3);
         whitespaces.add(logLineMatcher.group(4));
-        logLevelOriginalString = logLineMatcher.group(5);
-        logLevel = LogLevel.valueOf(logLevelOriginalString);
+        logLevel = logLineMatcher.group(5);
         whitespaces.add(logLineMatcher.group(6));
         marker = logLineMatcher.group(7);
         whitespaces.add(logLineMatcher.group(8));
@@ -176,36 +170,71 @@ public class LogLine implements FormattableString {
         }
     }
 
+    /**
+     * Get the timestamp of the log line
+     *
+     * @return the timestamp
+     */
     @NonNull
     public Instant getTimestamp() {
         return timestamp;
     }
 
+    /**
+     * Get the log number of the log line
+     *
+     * @return the log number
+     */
     @NonNull
     public String getLogNumber() {
         return logNumber;
     }
 
+    /**
+     * Get the level of the log line
+     *
+     * @return the log level
+     */
     @NonNull
-    public LogLevel getLogLevel() {
+    public String getLogLevel() {
         return logLevel;
     }
 
+    /**
+     * Get the marker of the log line
+     *
+     * @return the marker
+     */
     @NonNull
     public String getMarker() {
         return marker;
     }
 
+    /**
+     * Get the thread name of the log line
+     *
+     * @return the thread name
+     */
     @NonNull
     public String getThreadName() {
         return threadName;
     }
 
+    /**
+     * Get the class name of the log line
+     *
+     * @return the class name
+     */
     @NonNull
     public String getClassName() {
         return className;
     }
 
+    /**
+     * Get the formattable string remainder of the log line
+     *
+     * @return the remainder of the log line
+     */
     @NonNull
     public FormattableString getRemainderOfLine() {
         return remainderOfLine;
@@ -218,10 +247,10 @@ public class LogLine implements FormattableString {
      * @return the color
      */
     @NonNull
-    private Color getLogLevelColor(@NonNull final LogLevel logLevel) {
+    private static TextEffect getLogLevelColor(@NonNull final String logLevel) {
         return switch (logLevel) {
-            case TRACE, DEBUG, INFO -> HARMLESS_LOG_LEVEL_COLOR;
-            case WARN -> WARN_LOG_LEVEL_COLOR;
+            case "TRACE", "DEBUG", "INFO" -> HARMLESS_LOG_LEVEL_COLOR;
+            case "WARN" -> WARN_LOG_LEVEL_COLOR;
                 // all other log levels are critical
             default -> ERROR_LOG_LEVEL_COLOR;
         };
@@ -244,17 +273,17 @@ public class LogLine implements FormattableString {
     public String generateAnsiString() {
         int whitespaceIndex = 0;
 
-        return colorizeStringAnsi(timestampOriginalString, TIMESTAMP_COLOR)
+        return TIMESTAMP_COLOR.apply(timestampOriginalString)
                 + whitespaces.get(whitespaceIndex++)
-                + colorizeStringAnsi(logNumber, LOG_NUMBER_COLOR)
+                + LOG_NUMBER_COLOR.apply(logNumber)
                 + whitespaces.get(whitespaceIndex++)
-                + colorizeStringAnsi(logLevelOriginalString, getLogLevelColor(logLevel))
+                + getLogLevelColor(logLevel).apply(logLevel)
                 + whitespaces.get(whitespaceIndex++)
-                + colorizeStringAnsi(marker, LOG_MARKER_COLOR)
+                + LOG_MARKER_COLOR.apply(marker)
                 + whitespaces.get(whitespaceIndex++)
-                + colorizeStringAnsi(threadName, THREAD_NAME_COLOR)
+                + THREAD_NAME_COLOR.apply(threadName)
                 + whitespaces.get(whitespaceIndex)
-                + colorizeStringAnsi(className, CLASS_NAME_COLOR)
+                + CLASS_NAME_COLOR.apply(className)
                 + colonSpace
                 + remainderOfLine.generateAnsiString();
     }
@@ -265,6 +294,6 @@ public class LogLine implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        return "FUTURE WORK";
+        throw new UnsupportedOperationException("FUTURE WORK");
     }
 }

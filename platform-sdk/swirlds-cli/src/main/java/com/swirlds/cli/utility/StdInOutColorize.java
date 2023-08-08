@@ -18,6 +18,7 @@ package com.swirlds.cli.utility;
 
 import static com.swirlds.cli.utility.LogProcessingUtils.colorizeLogLineAnsi;
 
+import com.swirlds.common.formatting.TextEffect;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,6 +29,8 @@ import java.time.ZoneId;
  */
 public class StdInOutColorize {
     public static void main(final String[] args) throws IOException {
+        TextEffect.setTextEffectsEnabled(true);
+
         final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 
         String rawLine = bufferedReader.readLine();
