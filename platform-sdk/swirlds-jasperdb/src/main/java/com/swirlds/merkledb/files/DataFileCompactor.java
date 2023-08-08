@@ -21,7 +21,7 @@ import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
-import static com.swirlds.merkledb.files.DataFileCommon.logMergeStats;
+import static com.swirlds.merkledb.files.DataFileCommon.logCompactStats;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.units.UnitConstants;
@@ -418,13 +418,13 @@ public class DataFileCompactor {
 
         final long start = System.currentTimeMillis();
 
-        final long filesToMergeSize = getSizeOfFiles(filesToCompact);
+        final long filesToCompactSize = getSizeOfFiles(filesToCompact);
         logger.debug(
                 MERKLE_DB.getMarker(),
                 "[{}] Starting merging {} files / {}",
                 storeName,
                 filesCount,
-                formatSizeBytes(filesToMergeSize));
+                formatSizeBytes(filesToCompactSize));
 
         final List<Path> newFilesCreated = compactFiles(index, filesToCompact);
 
@@ -434,30 +434,30 @@ public class DataFileCompactor {
             reportDurationMetricFunction.accept(compactionLevel, tookMillis);
         }
 
-        final long mergedFilesSize = getSizeOfFilesByPath(newFilesCreated);
+        final long compactedFilesSize = getSizeOfFilesByPath(newFilesCreated);
         if (reportSavedSpaceMetricFunction != null) {
             reportSavedSpaceMetricFunction.accept(
-                    compactionLevel, (filesToMergeSize - mergedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
+                    compactionLevel, (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
-        logMergeStats(storeName, tookMillis, filesToCompact, filesToMergeSize, newFilesCreated, dataFileCollection);
+        logCompactStats(storeName, tookMillis, filesToCompact, filesToCompactSize, newFilesCreated, dataFileCollection);
         logger.debug(
                 MERKLE_DB.getMarker(),
-                "[{}] Finished merging {} files / {} in {} ms",
+                "[{}] Finished compaction {} files / {} in {} ms",
                 storeName,
                 filesCount,
-                formatSizeBytes(filesToMergeSize),
+                formatSizeBytes(filesToCompactSize),
                 tookMillis);
     }
 
-    private boolean isTimeForFullCompaction(final Instant startMerge) {
-        return startMerge
+    private boolean isTimeForFullCompaction(final Instant startCompaction) {
+        return startCompaction
                 .minus(config.fullMergePeriod(), config.mergePeriodUnit())
                 .isAfter(lastFullCompact);
     }
 
-    boolean isTimeForMediumCompaction(final Instant startMerge) {
-        return startMerge
+    boolean isTimeForMediumCompaction(final Instant startCompaction) {
+        return startCompaction
                 .minus(config.mediumMergePeriod(), config.mergePeriodUnit())
                 .isAfter(lastMediumCompact);
     }

@@ -46,6 +46,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.Set;
@@ -625,12 +626,12 @@ public class DataFileCollection<D> implements Snapshotable {
      */
     void deleteFiles(@NonNull final Collection<?> filesToDelete) throws IOException {
         // necessary workaround to remove compiler requirement for certain generic type which not required for deletion
-        Collection<DataFileReader<D>> files = (Collection<DataFileReader<D>>) filesToDelete;
+        Collection<DataFileReader<D>> files = (Collection<DataFileReader<D>>) new HashSet<>(filesToDelete);
         // remove files from index
         dataFiles.getAndUpdate(
                 currentFileList -> (currentFileList == null) ? null : currentFileList.withDeletedObjects(files));
         // now close and delete all the files
-        for (final DataFileReader<?> fileReader : files) {
+        for (final DataFileReader<D> fileReader : files) {
             fileReader.close();
             Files.delete(fileReader.getPath());
         }

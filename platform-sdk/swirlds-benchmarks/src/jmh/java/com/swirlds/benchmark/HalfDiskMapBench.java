@@ -18,7 +18,6 @@ package com.swirlds.benchmark;
 
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -70,7 +69,6 @@ public class HalfDiskMapBench extends BaseBench {
 
         // Merge files
         start = System.currentTimeMillis();
-        final AtomicLong count = new AtomicLong(0);
         store.compact(null, null);
         System.out.println("Compacted files in " + (System.currentTimeMillis() - start) + "ms");
 
