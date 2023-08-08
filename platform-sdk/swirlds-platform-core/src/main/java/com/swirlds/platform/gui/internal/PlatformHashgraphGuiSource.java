@@ -48,6 +48,6 @@ public class PlatformHashgraphGuiSource implements ShadowgraphGuiSource {
     }
 
     private SwirldsPlatform getPlatform() {
-        return WinBrowser.memberDisplayed.platform;
+        return WinBrowser.memberDisplayed.getPlatform();
     }
 }

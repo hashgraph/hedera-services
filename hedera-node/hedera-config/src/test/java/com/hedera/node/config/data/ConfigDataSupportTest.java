@@ -27,16 +27,16 @@ class ConfigDataSupportTest {
     @Test
     void testConfig() {
         // given
-        var builder = HederaTestConfigBuilder.create(false).withConfigDataType(ApiPermissionConfig.class);
+        var builder = HederaTestConfigBuilder.create().withConfigDataType(ApiPermissionConfig.class);
 
         // then
-        assertThatNoException().isThrownBy(() -> builder.getOrCreateConfig());
+        assertThatNoException().isThrownBy(builder::getOrCreateConfig);
     }
 
     @Test
     void testConfigRecordsAvailable() {
         // given
-        var config = HederaTestConfigBuilder.create(false)
+        var config = HederaTestConfigBuilder.create()
                 .withConfigDataType(ApiPermissionConfig.class)
                 .getOrCreateConfig();
 

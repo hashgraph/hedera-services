@@ -56,8 +56,11 @@ public class TestFixturesKeyLookup implements ReadableAccountStore {
         }
     }
 
-    private Account getNewAccount(long num, Bytes alias, Account account) {
-        return account.copyBuilder().alias(alias).accountNumber(num).build();
+    private static Account getNewAccount(long num, Bytes alias, Account account) {
+        return account.copyBuilder()
+                .alias(alias)
+                .accountId(account.accountId().copyBuilder().accountNum(num))
+                .build();
     }
 
     @Override

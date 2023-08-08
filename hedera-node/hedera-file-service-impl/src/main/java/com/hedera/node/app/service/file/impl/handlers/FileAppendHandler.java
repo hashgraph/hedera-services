@@ -19,15 +19,19 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.node.app.service.file.ReadableFileStore;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
+import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -70,19 +74,20 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
+        preValidate(transactionBody.fileID(), fileStore, context, false);
 
-        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), null, context);
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        requireNonNull(context);
+    public void handle(@NonNull final HandleContext handleContext) throws HandleException {
+        requireNonNull(handleContext);
 
-        final var op = context.body().fileAppendOrThrow();
-        final var target = op.fileID();
-        final var data = op.contents();
-        final var fileServiceConfig = context.configuration().getConfigData(FilesConfig.class);
+        final var fileAppend = handleContext.body().fileAppendOrThrow();
+        final var target = fileAppend.fileID();
+        final var data = fileAppend.contents();
+        final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
         if (data == null || data.length() <= 0) {
             logger.debug("FileAppend: No data to append");
         }
@@ -90,13 +95,25 @@ public class FileAppendHandler implements TransactionHandler {
         if (target == null) {
             throw new HandleException(INVALID_FILE_ID);
         }
-        final var fileStore = context.writableStore(WritableFileStoreImpl.class);
+
+        // the update file always will be for the node, not a particular ledger that's why we just compare the num
+        if (target.fileNum() == fileServiceConfig.upgradeFileNumber()) {
+            handleAppendUpgradeFile(fileAppend, handleContext);
+            return;
+        }
+
+        final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final var optionalFile = fileStore.get(target);
 
         if (optionalFile.isEmpty()) {
             throw new HandleException(INVALID_FILE_ID);
         }
         final var file = optionalFile.get();
+
+        // TODO: skip at least the mutability check for privileged "payer" accounts
+
+        // First validate this file is mutable; and the pending mutations are allowed
+        validateFalse(file.keys() == null, UNAUTHORIZED);
 
         if (file.deleted()) {
             throw new HandleException(FILE_DELETED);
@@ -121,5 +138,14 @@ public class FileAppendHandler implements TransactionHandler {
         /* --- Put the modified file. It will be in underlying state's modifications map.
         It will not be committed to state until commit is called on the state.--- */
         fileStore.put(fileBuilder.build());
+    }
+
+    private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
+        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
+        File file = fileStore.peek();
+        if (file == null) {
+            throw new HandleException(INVALID_FILE_ID);
+        }
+        fileStore.append(fileAppend.contents());
     }
 }

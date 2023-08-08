@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -35,6 +36,7 @@ import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class TransferWithCustomFees extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TransferWithCustomFees.class);
     private final long hbarFee = 1_000L;

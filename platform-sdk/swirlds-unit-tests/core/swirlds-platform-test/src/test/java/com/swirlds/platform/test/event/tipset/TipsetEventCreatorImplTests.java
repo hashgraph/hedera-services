@@ -17,17 +17,20 @@
 package com.swirlds.platform.test.event.tipset;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
+import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.base.test.fixtures.FakeTime;
+import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -37,6 +40,8 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.events.BaseEventHashedData;
+import com.swirlds.common.system.events.BaseEventUnhashedData;
 import com.swirlds.common.system.transaction.internal.ConsensusTransactionImpl;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
@@ -61,8 +66,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -123,11 +130,11 @@ class TipsetEventCreatorImplTests {
             final TipsetEventCreator eventCreator =
                     buildEventCreator(random, time, addressBook, address.getNodeId(), transactionSupplier);
 
-            final TipsetTracker tipsetTracker = new TipsetTracker(addressBook);
+            final TipsetTracker tipsetTracker = new TipsetTracker(time, addressBook);
 
             final ChildlessEventTracker childlessEventTracker = new ChildlessEventTracker();
             final TipsetWeightCalculator tipsetWeightCalculator = new TipsetWeightCalculator(
-                    platformContext, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
+                    platformContext, time, addressBook, address.getNodeId(), tipsetTracker, childlessEventTracker);
 
             eventCreators.put(
                     address.getNodeId(),
@@ -202,6 +209,8 @@ class TipsetEventCreatorImplTests {
 
         // We should see the expected transactions
         assertArrayEquals(expectedTransactions, newEvent.getHashedData().getTransactions());
+
+        assertDoesNotThrow(() -> simulatedNode.tipsetEventCreator.toString());
     }
 
     /**
@@ -633,5 +642,149 @@ class TipsetEventCreatorImplTests {
         // as other parents. Precisely how often is less important to this test, as long as we are
         // doing it at least some of the time.
         assertTrue(zeroWeightNodeOtherParentCount > 1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("Size One Network Test")
+    void sizeOneNetworkTest(final boolean advancingClock) {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 1;
+
+        final AddressBook addressBook =
+                new RandomAddressBookGenerator(random).setSize(networkSize).build();
+
+        final FakeTime time = new FakeTime();
+
+        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+
+        final Map<NodeId, SimulatedNode> nodes =
+                buildSimulatedNodes(random, time, addressBook, transactionSupplier::get);
+
+        final Map<Hash, EventImpl> events = new HashMap<>();
+
+        final Address address = addressBook.getAddress(addressBook.getNodeId(0));
+
+        for (int eventIndex = 0; eventIndex < 100; eventIndex++) {
+            if (advancingClock) {
+                time.tick(Duration.ofMillis(10));
+            }
+
+            transactionSupplier.set(generateRandomTransactions(random));
+
+            final NodeId nodeId = address.getNodeId();
+            final TipsetEventCreator eventCreator = nodes.get(nodeId).tipsetEventCreator;
+
+            final GossipEvent event = eventCreator.maybeCreateEvent();
+
+            // In this test, it should be impossible for a node to be unable to create an event.
+            assertNotNull(event);
+
+            linkAndDistributeEvent(nodes, events, event);
+
+            if (advancingClock) {
+                assertEquals(event.getHashedData().getTimeCreated(), time.now());
+            }
+        }
+    }
+
+    @NonNull
+    private EventImpl createMockEvent(
+            @NonNull final Random random,
+            @NonNull final NodeId creator,
+            long selfParentGeneration,
+            @Nullable final NodeId otherParentId,
+            final long otherParentGeneration) {
+        final EventImpl event = mock(EventImpl.class);
+
+        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
+        when(hashedData.getCreatorId()).thenReturn(creator);
+        when(event.getCreatorId()).thenReturn(creator);
+        final long generation = Math.max(selfParentGeneration, otherParentGeneration) + 1;
+        when(hashedData.getGeneration()).thenReturn(generation);
+        when(event.getGeneration()).thenReturn(generation);
+
+        final Hash hash = randomHash(random);
+        when(hashedData.getHash()).thenReturn(hash);
+        when(event.getBaseHash()).thenReturn(hash);
+
+        when(event.getHashedData()).thenReturn(hashedData);
+
+        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
+        when(unhashedData.getOtherId()).thenReturn(otherParentId);
+        when(event.getUnhashedData()).thenReturn(unhashedData);
+
+        return event;
+    }
+
+    /**
+     * There was once a bug that could cause event creation to become frozen. This was because we weren't properly
+     * including the advancement weight of the self parent when considering the theoretical advancement weight of a new
+     * event.
+     */
+    @Test
+    @DisplayName("Frozen Event Creation Bug")
+    void frozenEventCreationBug() {
+        final Random random = getRandomPrintSeed();
+
+        final int networkSize = 4;
+
+        final AddressBook addressBook = new RandomAddressBookGenerator(random)
+                .setCustomWeightGenerator(x -> 1L)
+                .setSize(networkSize)
+                .build();
+
+        final FakeTime time = new FakeTime();
+
+        final NodeId nodeA = addressBook.getNodeId(0); // self
+        final NodeId nodeB = addressBook.getNodeId(1);
+        final NodeId nodeC = addressBook.getNodeId(2);
+        final NodeId nodeD = addressBook.getNodeId(3);
+
+        // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
+        final TipsetEventCreator eventCreator =
+                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+
+        // Create some genesis events
+        final GossipEvent eventA1 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA1);
+
+        final EventImpl eventB1 = createMockEvent(random, nodeB, -1, null, -1);
+        final EventImpl eventC1 = createMockEvent(random, nodeC, -1, null, -1);
+        final EventImpl eventD1 = createMockEvent(random, nodeD, -1, null, -1);
+
+        eventCreator.registerEvent(eventB1);
+        eventCreator.registerEvent(eventC1);
+        eventCreator.registerEvent(eventD1);
+
+        // Create the next several events.
+        // We should be able to create a total of 3 before we exhaust all possible parents.
+
+        // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
+        final GossipEvent eventA2 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA2);
+
+        // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
+        final GossipEvent eventA3 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA3);
+
+        // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
+        final GossipEvent eventA4 = eventCreator.maybeCreateEvent();
+        assertNotNull(eventA4);
+
+        // It should not be possible to create another event since we have exhausted all possible other parents.
+        assertNull(eventCreator.maybeCreateEvent());
+
+        // Create an event from one of the other nodes that was updated in the previous snapshot,
+        // but has not been updated in the current snapshot.
+
+        final NodeId otherParentId = eventA2.getUnhashedData().getOtherId();
+        final EventImpl legalOtherParent = createMockEvent(random, otherParentId, 0, nodeA, 0);
+
+        eventCreator.registerEvent(legalOtherParent);
+
+        // We should be able to create an event on the new parent.
+        assertNotNull(eventCreator.maybeCreateEvent());
     }
 }

@@ -26,10 +26,12 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Assesses custom fees for a given crypto transfer transaction.
  */
+@Singleton
 public class CustomFeeAssessor {
     private final CustomFixedFeeAssessor fixedFeeAssessor;
     private final CustomFractionalFeeAssessor fractionalFeeAssessor;
@@ -40,12 +42,10 @@ public class CustomFeeAssessor {
     public CustomFeeAssessor(
             @NonNull final CustomFixedFeeAssessor fixedFeeAssessor,
             @NonNull final CustomFractionalFeeAssessor fractionalFeeAssessor,
-            @NonNull final CustomRoyaltyFeeAssessor royaltyFeeAssessor,
-            @NonNull final CryptoTransferTransactionBody op) {
+            @NonNull final CustomRoyaltyFeeAssessor royaltyFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
         this.fractionalFeeAssessor = fractionalFeeAssessor;
         this.royaltyFeeAssessor = royaltyFeeAssessor;
-        initialNftChanges = numNftTransfers(op);
     }
 
     private int numNftTransfers(final CryptoTransferTransactionBody op) {
@@ -81,7 +81,7 @@ public class CustomFeeAssessor {
     private void validateBalanceChanges(final AssessmentResult result, final int maxTransfersSize) {
         var inputFungibleTransfers = 0;
         var newFungibleTransfers = 0;
-        for (final var entry : result.getInputTokenAdjustments().entrySet()) {
+        for (final var entry : result.getMutableInputTokenAdjustments().entrySet()) {
             inputFungibleTransfers += entry.getValue().size();
         }
         for (final var entry : result.getHtsAdjustments().entrySet()) {
@@ -93,5 +93,18 @@ public class CustomFeeAssessor {
                 + inputFungibleTransfers
                 + initialNftChanges;
         validateFalse(balanceChanges > maxTransfersSize, CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS);
+    }
+
+    /**
+     * Sets the initial NFT changes for the transaction. These are not going to change in the course of
+     * assessing custom fees.
+     * @param op the transaction body
+     */
+    public void calculateAndSetInitialNftChanges(final CryptoTransferTransactionBody op) {
+        initialNftChanges = numNftTransfers(op);
+    }
+
+    public void resetInitialNftChanges() {
+        initialNftChanges = 0;
     }
 }

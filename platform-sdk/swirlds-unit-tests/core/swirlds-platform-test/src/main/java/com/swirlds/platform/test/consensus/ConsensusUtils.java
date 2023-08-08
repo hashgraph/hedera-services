@@ -33,14 +33,15 @@ import com.swirlds.platform.metrics.ConsensusMetrics;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
 import com.swirlds.platform.test.NoOpIntakeCycleStats;
-import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.EventEmitter;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
-import com.swirlds.platform.test.event.source.EventSource;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;

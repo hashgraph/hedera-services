@@ -32,6 +32,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -40,6 +41,7 @@ import com.swirlds.common.threading.pool.CachedPoolParallelExecutor;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.common.utility.Clearable;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
@@ -57,6 +59,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateManager;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
 import java.time.Duration;
@@ -78,7 +81,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests the emergency reconnect protocol learner and teacher flows.
  */
-public class EmergencyReconnectTests {
+class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
     private final NodeId learnerId = new NodeId(0L);
@@ -88,6 +91,7 @@ public class EmergencyReconnectTests {
     private final ParallelExecutor executor = new CachedPoolParallelExecutor(getStaticThreadManager(), "test-executor");
     private EmergencyReconnectProtocol learnerProtocol;
     private EmergencyReconnectProtocol teacherProtocol;
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
 
     @BeforeEach
     public void setup() throws ExecutionException, InterruptedException, ConstructableRegistryException {
@@ -268,13 +272,15 @@ public class EmergencyReconnectTests {
                 getStaticThreadManager(),
                 notificationEngine,
                 teacherId,
-                null,
+                mock(EmergencyRecoveryManager.class),
                 reconnectThrottle,
                 signedStateManager,
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class));
+                mock(FallenBehindManager.class),
+                mock(StatusActionSubmitter.class),
+                configuration);
     }
 
     private EmergencyReconnectProtocol createLearnerProtocol(
@@ -294,7 +300,9 @@ public class EmergencyReconnectTests {
                 Duration.of(100, ChronoUnit.MILLIS),
                 mock(ReconnectMetrics.class),
                 reconnectController,
-                mock(FallenBehindManager.class));
+                mock(FallenBehindManager.class),
+                mock(StatusActionSubmitter.class),
+                configuration);
     }
 
     private void mockTeacherHasCompatibleState(

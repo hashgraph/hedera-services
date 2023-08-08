@@ -17,8 +17,8 @@
 package com.swirlds.platform.test.event.emitter;
 
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.test.event.IndexedEvent;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import java.util.Random;
 
 /**

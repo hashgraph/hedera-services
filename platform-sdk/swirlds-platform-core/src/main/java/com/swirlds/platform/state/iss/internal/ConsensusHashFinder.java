@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.iss.internal;
 
-import static com.swirlds.platform.Utilities.isMajority;
+import static com.swirlds.common.utility.Threshold.MAJORITY;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.system.NodeId;
@@ -162,14 +162,14 @@ public class ConsensusHashFinder {
         }
 
         // Now, check and see if we are capable of making a decision
-        if (isMajority(largestPartition.getTotalWeight(), totalWeight)) {
+        if (MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight(), totalWeight)) {
             // There exists a partition with a quorum.
             consensusHash = largestPartition.getHash();
             status = ConsensusHashStatus.DECIDED;
             sendHashValidityDispatchForAllNodes();
         } else {
             long remainingWeight = totalWeight - hashReportedWeight;
-            if (!isMajority(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
+            if (!MAJORITY.isSatisfiedBy(largestPartition.getTotalWeight() + remainingWeight, totalWeight)) {
                 // There exists no partition with quorum, and there will never exist a partition with a quorum.
                 // Heaven help us.
                 status = ConsensusHashStatus.CATASTROPHIC_ISS;

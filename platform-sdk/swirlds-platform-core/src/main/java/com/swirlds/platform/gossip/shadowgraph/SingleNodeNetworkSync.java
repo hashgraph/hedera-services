@@ -30,11 +30,6 @@ import java.util.function.LongSupplier;
  */
 public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
-     * A runnable which kicks off the periodic reevaluation of the platform status
-     */
-    private final Runnable statusChecker;
-
-    /**
      * A method which accepts a node ID and creates an event
      */
     private final Consumer<NodeId> eventCreator;
@@ -52,18 +47,15 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
     /**
      * Constructor
      *
-     * @param statusChecker     runnable to check status of the platform
      * @param eventCreator      method which accepts a node ID and creates an event
      * @param sleepTimeSupplier supplier of the amount of time to sleep after creating an event (milliseconds)
      * @param selfId            the id of the single running node
      */
     public SingleNodeNetworkSync(
-            @NonNull final Runnable statusChecker,
             @NonNull final Consumer<NodeId> eventCreator,
             @NonNull final LongSupplier sleepTimeSupplier,
             @NonNull final NodeId selfId) {
 
-        this.statusChecker = Objects.requireNonNull(statusChecker, "statusChecker must not be null");
         this.eventCreator = Objects.requireNonNull(eventCreator, "eventCreator must not be null");
         this.sleepTimeSupplier = Objects.requireNonNull(sleepTimeSupplier, "sleepTimeSupplier must not be null");
         this.selfId = Objects.requireNonNull(selfId, "selfId must not be null");
@@ -80,7 +72,6 @@ public class SingleNodeNetworkSync implements InterruptableRunnable {
      */
     @Override
     public void run() throws InterruptedException {
-        statusChecker.run();
         eventCreator.accept(selfId);
 
         final long sleepTime = sleepTimeSupplier.getAsLong();

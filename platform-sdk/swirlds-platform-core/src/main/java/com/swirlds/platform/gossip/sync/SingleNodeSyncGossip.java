@@ -19,12 +19,14 @@ package com.swirlds.platform.gossip.sync;
 import static com.swirlds.logging.LogMarker.RECONNECT;
 import static com.swirlds.platform.SwirldsPlatform.PLATFORM_THREAD_POOL_NAME;
 
+import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.framework.StoppableThread;
 import com.swirlds.common.threading.framework.config.StoppableThreadConfiguration;
@@ -45,6 +47,7 @@ import com.swirlds.platform.gossip.FallenBehindManagerImpl;
 import com.swirlds.platform.gossip.shadowgraph.ShadowGraph;
 import com.swirlds.platform.gossip.shadowgraph.SingleNodeNetworkSync;
 import com.swirlds.platform.metrics.EventIntakeMetrics;
+import com.swirlds.platform.metrics.SyncMetrics;
 import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.SignedState;
@@ -77,6 +80,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      *
      * @param platformContext               the platform context
      * @param threadManager                 the thread manager
+     * @param time                          the time object used to get the current time
      * @param crypto                        can be used to sign things
      * @param addressBook                   the current address book
      * @param selfId                        this node's ID
@@ -92,13 +96,15 @@ public class SingleNodeSyncGossip extends AbstractGossip {
      * @param eventObserverDispatcher       the object used to wire event intake
      * @param eventMapper                   a data structure used to track the most recent event from each node
      * @param eventIntakeMetrics            metrics for event intake
-     * @param updatePlatformStatus          a method that updates the platform status, when called
+     * @param syncMetrics                   metrics for sync
+     * @param statusActionSubmitter         enables submitting platform status actions
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      */
     public SingleNodeSyncGossip(
             @NonNull PlatformContext platformContext,
             @NonNull ThreadManager threadManager,
+            @NonNull final Time time,
             @NonNull Crypto crypto,
             @NonNull AddressBook addressBook,
             @NonNull NodeId selfId,
@@ -113,12 +119,14 @@ public class SingleNodeSyncGossip extends AbstractGossip {
             @NonNull final EventObserverDispatcher eventObserverDispatcher,
             @NonNull final EventMapper eventMapper,
             @NonNull final EventIntakeMetrics eventIntakeMetrics,
-            @NonNull final Runnable updatePlatformStatus,
+            @NonNull final SyncMetrics syncMetrics,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Consumer<SignedState> loadReconnectState,
             @NonNull final Runnable clearAllPipelinesForReconnect) {
         super(
                 platformContext,
                 threadManager,
+                time,
                 crypto,
                 addressBook,
                 selfId,
@@ -130,8 +138,9 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 stateManagementComponent,
                 eventMapper,
                 eventIntakeMetrics,
+                syncMetrics,
                 eventObserverDispatcher,
-                updatePlatformStatus,
+                statusActionSubmitter,
                 loadReconnectState,
                 clearAllPipelinesForReconnect);
 
@@ -155,8 +164,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 .setOtherNodeId(selfId)
                 .setThreadName("SingleNodeNetworkSync")
                 .setHangingThreadPeriod(hangingThreadDuration)
-                .setWork(
-                        new SingleNodeNetworkSync(updatePlatformStatus, eventTaskCreator::createEvent, () -> 0, selfId))
+                .setWork(new SingleNodeNetworkSync(eventTaskCreator::createEvent, () -> 0, selfId))
                 .build();
 
         thingsToStart.add(syncProtocolThread);
@@ -200,7 +208,7 @@ public class SingleNodeSyncGossip extends AbstractGossip {
                 addressBook,
                 selfId,
                 topology.getConnectionGraph(),
-                updatePlatformStatus,
+                statusActionSubmitter,
                 // Fallen behind callback is intentional no-op, is impossible to fall behind
                 () -> {},
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class));

@@ -25,13 +25,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.networkadmin.impl.config.NetworkAdminServiceConfig;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.app.spi.state.WritableFreezeStore;
+import com.hedera.node.config.data.NetworkAdminConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -67,7 +68,7 @@ class FreezeUpgradeActionsTest {
     private WritableFreezeStore freezeStore;
 
     @Mock
-    private NetworkAdminServiceConfig adminServiceConfig;
+    private NetworkAdminConfig adminServiceConfig;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -102,7 +103,7 @@ class FreezeUpgradeActionsTest {
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        final byte[] invalidArchive = "Not a valid zip archive".getBytes(StandardCharsets.UTF_8);
+        final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
         subject.extractSoftwareUpgrade(invalidArchive).join();
 
         assertThat(logCaptor.errorLogs())
@@ -120,7 +121,7 @@ class FreezeUpgradeActionsTest {
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        final byte[] realArchive = Files.readAllBytes(zipArchivePath);
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
@@ -132,7 +133,7 @@ class FreezeUpgradeActionsTest {
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
-        final byte[] realArchive = Files.readAllBytes(zipArchivePath);
+        final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractTelemetryUpgrade(realArchive, then).join();
 
         assertMarkerCreated(EXEC_TELEMETRY_MARKER, then);

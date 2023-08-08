@@ -33,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /* ! WARNING - Requires a RecordCache TTL of 3s to pass ! */
+@HapiTestSuite
 public class TxnRecordRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnRecordRegression.class);
 

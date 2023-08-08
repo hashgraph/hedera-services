@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.test.comparator;
 
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
-import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.NFT_TRANSFER_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
@@ -25,7 +24,6 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import org.assertj.core.api.Assertions;
@@ -58,38 +56,6 @@ class TokenComparatorsTest {
             Assertions.assertThat(ACCOUNT_AMOUNT_COMPARATOR.compare(ACC_AMOUNT_1234, ACC_AMOUNT_9876))
                     .isNegative();
             Assertions.assertThat(ACCOUNT_AMOUNT_COMPARATOR.compare(ACC_AMOUNT_9876, ACC_AMOUNT_1234))
-                    .isPositive();
-        }
-    }
-
-    @Nested
-    class NftTransferComparator {
-        private static final NftTransfer NFT_TRANSFER_SER1 = NftTransfer.newBuilder()
-                .senderAccountID(ACCOUNT_1234_ID)
-                .receiverAccountID(ACCOUNT_9876_ID)
-                .serialNumber(1)
-                .build();
-        private static final NftTransfer NFT_TRANSFER_SER2 = NftTransfer.newBuilder()
-                .senderAccountID(ACCOUNT_9876_ID)
-                .receiverAccountID(ACCOUNT_1234_ID)
-                .serialNumber(2)
-                .build();
-
-        @Test
-        void checkComparisons() {
-            //noinspection EqualsWithItself
-            Assertions.assertThatThrownBy(() -> NFT_TRANSFER_COMPARATOR.compare(null, null))
-                    .isInstanceOf(NullPointerException.class);
-            Assertions.assertThatThrownBy(() -> NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_SER1, null))
-                    .isInstanceOf(NullPointerException.class);
-            Assertions.assertThatThrownBy(() -> NFT_TRANSFER_COMPARATOR.compare(null, NFT_TRANSFER_SER1))
-                    .isInstanceOf(NullPointerException.class);
-            //noinspection EqualsWithItself
-            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_SER1, NFT_TRANSFER_SER1))
-                    .isZero();
-            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_SER1, NFT_TRANSFER_SER2))
-                    .isNegative();
-            Assertions.assertThat(NFT_TRANSFER_COMPARATOR.compare(NFT_TRANSFER_SER2, NFT_TRANSFER_SER1))
                     .isPositive();
         }
     }

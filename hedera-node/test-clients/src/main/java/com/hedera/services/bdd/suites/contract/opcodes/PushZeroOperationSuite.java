@@ -28,6 +28,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -36,7 +37,9 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class PushZeroOperationSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(PushZeroOperationSuite.class);
     private static final long GAS_TO_OFFER = 400_000L;
     private static final String CONTRACT = "OpcodesContract";

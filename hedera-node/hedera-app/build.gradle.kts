@@ -23,6 +23,8 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
+    xtestImplementation(testFixtures(project(":app")))
+
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
@@ -33,6 +35,7 @@ dependencies {
         testImplementation(testFixtures(project(":config")))
         testImplementation(testFixtures(project(":app-service-mono")))
         testImplementation(testFixtures(project(":app-spi")))
+        testImplementation(gav("com.google.jimfs"))
         testImplementation(gav("com.swirlds.base"))
         testImplementation(gav("io.github.classgraph"))
         testImplementation(gav("org.assertj.core"))
@@ -63,6 +66,28 @@ dependencies {
         itestImplementation(gav("org.junit.jupiter.params"))
         itestImplementation(gav("io.netty.transport.classes.epoll"))
         itestImplementation(gav("io.netty.transport.epoll"))
+
+        xtestAnnotationProcessor(gav("dagger.compiler"))
+        xtestImplementation(project(":app"))
+        xtestImplementation(project(":app-spi"))
+        xtestImplementation(project(":config"))
+        xtestImplementation(project(":hapi"))
+        xtestImplementation(testFixtures(project(":app-spi")))
+        xtestImplementation(testFixtures(project(":config")))
+        xtestImplementation(gav("com.github.spotbugs.annotations"))
+        xtestImplementation(gav("com.hedera.pbj.runtime"))
+        xtestImplementation(gav("com.swirlds.common"))
+        xtestImplementation(gav("com.swirlds.config"))
+        xtestImplementation(gav("io.grpc"))
+        xtestImplementation(gav("org.apache.logging.log4j"))
+        xtestImplementation(gav("org.assertj.core"))
+        xtestImplementation(gav("org.bouncycastle.provider"))
+        xtestImplementation(gav("org.junit.jupiter.api"))
+        xtestImplementation(gav("org.junit.jupiter.params"))
+        xtestImplementation(gav("org.mockito"))
+        xtestImplementation(gav("org.mockito.junit.jupiter"))
+        xtestImplementation(gav("io.netty.transport.classes.epoll"))
+        xtestImplementation(gav("io.netty.transport.epoll"))
 
         jmhImplementation(project(":app"))
         jmhImplementation(project(":app-service-mono"))
@@ -119,6 +144,10 @@ tasks.assemble {
 val generatedSources = file("build/generated/sources/annotationProcessor/java/main")
 
 java.sourceSets["main"].java.srcDir(generatedSources)
+
+val xtestGeneratedSources = file("build/generated/sources/annotationProcessor/java/xtest")
+
+java.sourceSets["xtest"].java.srcDir(xtestGeneratedSources)
 
 // Create the "run" task for running a Hedera consensus node
 tasks.register<JavaExec>("run") {

@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyRecordFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -32,6 +33,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class RecordFileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(RecordFileSuite.class);

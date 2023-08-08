@@ -76,6 +76,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
             final var wrapperAccount = new MerkleAccount(java.util.List.of(seededAccount));
             final var pbjAccount = AccountStateTranslator.accountFromMerkle(wrapperAccount);
             final var merkleAccount = AccountStateTranslator.merkleAccountFromAccount(pbjAccount);
+
             return merkleAccount.state();
         }
     }

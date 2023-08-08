@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -58,6 +59,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ScheduleLongTermSignSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleLongTermSignSpecs.class);
 

@@ -26,9 +26,11 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
+import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -166,7 +168,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
                     balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID()));
 
             if (!approveForAllNftsAllowances.contains(nftAllowanceId)) {
-                final var approvedSpender = (EntityId) nftsLedger.get(balanceChange.nftId(), NftProperty.SPENDER);
+                final EntityId approvedSpender;
+                try {
+                    approvedSpender = (EntityId) nftsLedger.get(balanceChange.nftId(), NftProperty.SPENDER);
+                } catch (MissingEntityException ignore) {
+                    // Impossible to have an allowance on a missing NFT
+                    return INVALID_NFT_ID;
+                }
 
                 if (!approvedSpender.matches(balanceChange.getPayerID())) {
                     return SPENDER_DOES_NOT_HAVE_ALLOWANCE;

@@ -163,10 +163,10 @@ class TransferPrecompilesParameterizedTest {
     private final SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory(null);
     private PrecompilePricingUtils precompilePricingUtils;
     private TransferPrecompile subject;
-    private static final Id payerIsContractId = new Id(0, 0, 8);
-    private static final AccountID payerIsContract = asAccount("0.0.8");
-    private static final AccountID payerIsNotContract = asAccount("0.0.9");
-    private static final Address address = senderAddress;
+    private static final Id payerIsContractId = new Id(0, 0, 820);
+    private static final AccountID payerIsContract = payerIsContractId.asGrpcAccount();
+    private static final AccountID payerIsNotContract = asAccount("0.0.822");
+    private static final Address address = payerIsContractId.asEvmAddress();
     private final int maxHbarAdjusts = 5;
     private final int maxTokenAdjusts = 10;
     private final int maxOwnershipChanges = 15;

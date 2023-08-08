@@ -16,17 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.accessTrackerFor;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.proxyUpdaterFor;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPbjStateChanges;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.bloomForAll;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjLogsFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.contract.ContractLoginfo;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.streams.ContractStateChanges;
+import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -45,9 +48,8 @@ public record HederaEvmTransactionResult(
         @Nullable ContractID recipientEvmAddress,
         @NonNull Bytes output,
         @Nullable String haltReason,
-        @Nullable ResponseCodeEnum abortReason,
         @Nullable Bytes revertReason,
-        @NonNull List<ContractLoginfo> logs,
+        @NonNull List<Log> logs,
         @Nullable ContractStateChanges stateChanges) {
     public HederaEvmTransactionResult {
         requireNonNull(output);
@@ -55,15 +57,35 @@ public record HederaEvmTransactionResult(
     }
 
     /**
-     * Create a result for a transaction that was aborted before entering the EVM due to a
-     * Hedera-specific reason.
+     * Converts this result to a {@link ContractFunctionResult} for a transaction based on the given
+     * {@link RootProxyWorldUpdater}.
      *
-     * @param reason the reason for the abort
+     * @param updater the world updater
      * @return the result
      */
-    public static HederaEvmTransactionResult abortFor(@NonNull final ResponseCodeEnum reason) {
-        return new HederaEvmTransactionResult(
-                0, 0, null, null, Bytes.EMPTY, null, reason, null, Collections.emptyList(), null);
+    public ContractFunctionResult asProtoResultOf(@NonNull final RootProxyWorldUpdater updater) {
+        if (haltReason != null) {
+            throw new AssertionError("Not implemented");
+        } else if (revertReason != null) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return asSuccessResultForCommitted(updater);
+        }
+    }
+
+    /**
+     * Returns the final status of this transaction result.
+     *
+     * @return the status
+     */
+    public ResponseCodeEnum finalStatus() {
+        if (haltReason != null) {
+            throw new AssertionError("Not implemented");
+        } else if (revertReason != null) {
+            throw new AssertionError("Not implemented");
+        } else {
+            return SUCCESS;
+        }
     }
 
     /**
@@ -104,8 +126,7 @@ public record HederaEvmTransactionResult(
                 tuweniToPbjBytes(requireNonNull(output)),
                 null,
                 null,
-                null,
-                pbjLogsFrom(requireNonNull(logs)),
+                requireNonNull(logs),
                 stateChanges);
     }
 
@@ -124,12 +145,19 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.EMPTY,
                 frame.getExceptionalHaltReason().map(Object::toString).orElse(null),
-                null,
                 frame.getRevertReason().map(ConversionUtils::tuweniToPbjBytes).orElse(null),
                 Collections.emptyList(),
                 stateReadsFrom(frame));
     }
 
+    /**
+     * Create a result for a transaction that failed due to resource exhaustion.
+     *
+     * @param gasUsed the gas used by the transaction
+     * @param gasPrice the gas price of the transaction
+     * @param reason the reason for the failure
+     * @return the result
+     */
     public static HederaEvmTransactionResult resourceExhaustionFrom(
             final long gasUsed, final long gasPrice, @NonNull final ResponseCodeEnum reason) {
         requireNonNull(reason);
@@ -140,14 +168,34 @@ public record HederaEvmTransactionResult(
                 null,
                 Bytes.EMPTY,
                 null,
-                null,
                 Bytes.wrap(reason.name()),
                 Collections.emptyList(),
                 null);
     }
 
+    private ContractFunctionResult asSuccessResultForCommitted(@NonNull final RootProxyWorldUpdater updater) {
+        final var createdIds = updater.getCreatedContractIds();
+        return ContractFunctionResult.newBuilder()
+                .gasUsed(gasUsed)
+                .bloom(bloomForAll(logs))
+                .contractCallResult(output)
+                .contractID(recipientId)
+                .createdContractIDs(createdIds)
+                .logInfo(pbjLogsFrom(logs))
+                .evmAddress(recipientEvmAddressIfCreatedIn(createdIds))
+                .contractNonces(updater.getUpdatedContractNonces())
+                .errorMessage(null)
+                .build();
+    }
+
+    private @Nullable Bytes recipientEvmAddressIfCreatedIn(@NonNull final List<ContractID> contractIds) {
+        return contractIds.contains(recipientId)
+                ? requireNonNull(recipientEvmAddress).evmAddressOrThrow()
+                : null;
+    }
+
     public boolean isSuccess() {
-        return abortReason == null && revertReason == null && haltReason == null;
+        return revertReason == null && haltReason == null;
     }
 
     private static @Nullable ContractStateChanges allStateAccessesFrom(@NonNull final MessageFrame frame) {

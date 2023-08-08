@@ -17,6 +17,7 @@
 package com.swirlds.demo.consistency;
 
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.StateConfig;
@@ -30,6 +31,7 @@ import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
+import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.utility.NonCryptographicHashing;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,7 +40,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,16 +59,46 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     }
 
     /**
-     * The history of transactions that have been handled by this app
+     * The history of transactions that have been handled by this app.
      * <p>
-     * A deep copy of this object is NOT created when this state is copied
+     * A deep copy of this object is NOT created when this state is copied. This object does not affect the hash of this
+     * node.
      */
     private final TransactionHandlingHistory transactionHandlingHistory;
 
     /**
-     * The true "state" of this app. This long value is updated with every transaction, and with every round
+     * The true "state" of this app. This long value is updated with every transaction, and with every round.
+     * <p>
+     * Effects the hash of this node.
      */
     private long stateLong = 0;
+
+    /**
+     * The number of rounds handled by this app. Is incremented each time
+     * {@link #handleConsensusRound(Round, SwirldDualState)} is called. Note that this may not actually equal the round
+     * number, since we don't call {@link #handleConsensusRound(Round, SwirldDualState)} for rounds with no events.
+     *
+     * <p>
+     * Affects the hash of this node.
+     */
+    private long roundsHandled = 0;
+
+    /**
+     * If not zero, and we are handling the first round after genesis, configure a freeze this duration later.
+     * <p>
+     * Does not affect the hash of this node (although actions may be taken based on this info that DO affect the
+     * hash).
+     */
+    private Duration freezeAfterGenesis = null;
+
+    /**
+     * The set of transactions that have been preconsensus-handled by this app, but haven't yet been
+     * postconsensus-handled. This is used to ensure that transactions are prehandled exactly 1 time, prior to
+     * posthandling.
+     * <p>
+     * Does not affect the hash of this node.
+     */
+    private Set<Long> transactionsAwaitingPostHandle = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor
@@ -84,6 +119,9 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
 
         this.transactionHandlingHistory = that.transactionHandlingHistory;
         this.stateLong = that.stateLong;
+        this.roundsHandled = that.roundsHandled;
+        this.freezeAfterGenesis = that.freezeAfterGenesis;
+        this.transactionsAwaitingPostHandle = that.transactionsAwaitingPostHandle;
     }
 
     /**
@@ -115,6 +153,8 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
         }
         final Path logFilePath = logFileDirectory.resolve("ConsistencyTestLog.csv");
 
+        this.freezeAfterGenesis = testingToolConfig.freezeAfterGenesis();
+
         transactionHandlingHistory.init(logFilePath);
     }
 
@@ -133,6 +173,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     public void serialize(final @NonNull SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out);
         out.writeLong(stateLong);
+        out.writeLong(roundsHandled);
     }
 
     /**
@@ -141,6 +182,7 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     @Override
     public void deserialize(final @NonNull SerializableDataInputStream in, final int version) throws IOException {
         stateLong = Objects.requireNonNull(in).readLong();
+        roundsHandled = in.readLong();
     }
 
     /**
@@ -168,10 +210,30 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
      * @param transaction the transaction to apply to the state
      */
     private void applyTransactionToState(final @NonNull ConsensusTransaction transaction) {
-        final long transactionContents =
-                byteArrayToLong(Objects.requireNonNull(transaction).getContents(), 0);
+        Objects.requireNonNull(transaction);
+
+        final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+
+        if (!transactionsAwaitingPostHandle.remove(transactionContents)) {
+            logger.error(EXCEPTION.getMarker(), "Transaction {} was not prehandled.", transactionContents);
+        }
 
         stateLong = NonCryptographicHashing.hash64(stateLong, transactionContents);
+    }
+
+    /**
+     * Keeps track of which transactions have been prehandled.
+     */
+    @Override
+    public void preHandle(@NonNull final Event event) {
+        event.forEachTransaction(transaction -> {
+            final long transactionContents = byteArrayToLong(transaction.getContents(), 0);
+
+            if (!transactionsAwaitingPostHandle.add(transactionContents)) {
+                logger.error(
+                        EXCEPTION.getMarker(), "Transaction {} was prehandled more than once.", transactionContents);
+            }
+        });
     }
 
     /**
@@ -183,6 +245,17 @@ public class ConsistencyTestingToolState extends PartialMerkleLeaf implements Sw
     public void handleConsensusRound(final @NonNull Round round, final @NonNull SwirldDualState swirldDualState) {
         Objects.requireNonNull(round);
         Objects.requireNonNull(swirldDualState);
+
+        if (roundsHandled == 0 && !freezeAfterGenesis.equals(Duration.ZERO)) {
+            // This is the first round after genesis.
+            logger.info(
+                    STARTUP.getMarker(),
+                    "Setting freeze time to {} seconds after genesis.",
+                    freezeAfterGenesis.getSeconds());
+            swirldDualState.setFreezeTime(round.getConsensusTimestamp().plus(freezeAfterGenesis));
+        }
+
+        roundsHandled++;
 
         round.forEachTransaction(this::applyTransactionToState);
         stateLong = NonCryptographicHashing.hash64(stateLong, round.getRoundNum());

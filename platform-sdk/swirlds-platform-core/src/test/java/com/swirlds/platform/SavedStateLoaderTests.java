@@ -47,6 +47,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
@@ -433,7 +434,12 @@ public class SavedStateLoaderTests {
         }
         states.forEach(ss -> {
             try {
-                SignedStateFileWriter.writeSignedStateToDisk(new NodeId(0), getStateDir(ss.getRound()), ss, "test");
+                SignedStateFileWriter.writeSignedStateToDisk(
+                        new NodeId(0),
+                        getStateDir(ss.getRound()),
+                        ss,
+                        StateToDiskReason.PERIODIC_SNAPSHOT,
+                        prepareConfiguration());
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

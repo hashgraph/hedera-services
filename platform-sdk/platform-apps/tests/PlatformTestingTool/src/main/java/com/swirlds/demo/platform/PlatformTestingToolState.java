@@ -38,7 +38,6 @@ import com.swirlds.common.crypto.VerificationStatus;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.merkle.utility.SerializableLong;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
@@ -164,8 +163,7 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
     private static RunningAverageMetric htFCQMicroSec;
 
     /**
-     * Has init() been called on this copy
-     * or an ancestor copy of this object?
+     * Has init() been called on this copy or an ancestor copy of this object?
      */
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
@@ -256,15 +254,8 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
             setConfig(sourceState.getConfig().copy());
         }
 
-        if (platform != null && sourceState.getNextSeqCons() != null) {
+        if (sourceState.getNextSeqCons() != null) {
             setNextSeqCons(new NextSeqConsList(sourceState.getNextSeqCons()));
-
-            // If nextSeqCons is shorter than the address book then add 0s until the sizes match
-            for (int index = getNextSeqCons().size();
-                    index < platform.getAddressBook().getSize();
-                    index++) {
-                getNextSeqCons().add(new SerializableLong(0));
-            }
         }
 
         if (sourceState.getFcmFamily() != null) {
@@ -307,9 +298,9 @@ public class PlatformTestingToolState extends PartialNaryMerkleInternal implemen
         this.roundCounter = sourceState.roundCounter;
 
         if (sourceState.getTransactionCounter() != null) {
-            setTransactionCounter(
-                    new TransactionCounterList(platform.getAddressBook().getSize()));
-            for (int index = 0; index < sourceState.getTransactionCounter().size(); index++) {
+            final int size = sourceState.getTransactionCounter().size();
+            setTransactionCounter(new TransactionCounterList(size));
+            for (int index = 0; index < size; index++) {
                 getTransactionCounter()
                         .add(
                                 index,

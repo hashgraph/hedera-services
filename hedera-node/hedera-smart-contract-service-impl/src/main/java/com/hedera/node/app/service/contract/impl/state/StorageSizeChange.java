@@ -18,6 +18,10 @@ package com.hedera.node.app.service.contract.impl.state;
 
 public record StorageSizeChange(long contractNumber, int numRemovals, int numInsertions) {
     public int numAdded() {
+        return Math.max(0, numInsertions - numRemovals);
+    }
+
+    public int netChange() {
         return numInsertions - numRemovals;
     }
 }

@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.threading.manager.ThreadManager;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.metrics.ReconnectMetrics;
 import com.swirlds.platform.network.Connection;
@@ -27,8 +28,10 @@ import com.swirlds.platform.network.NetworkProtocolException;
 import com.swirlds.platform.network.protocol.Protocol;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,6 +51,7 @@ public class ReconnectProtocol implements Protocol {
     private InitiatedBy initiatedBy = InitiatedBy.NO_ONE;
     private final ThreadManager threadManager;
     private final FallenBehindManager fallenBehindManager;
+    private final Configuration configuration;
     private ReservedSignedState teacherState;
 
     /**
@@ -59,26 +63,31 @@ public class ReconnectProtocol implements Protocol {
      * @param reconnectMetrics        tracks reconnect metrics
      * @param reconnectController     controls reconnecting as a learner
      * @param fallenBehindManager     maintains this node's behind status
+     * @param configuration           platform configuration
      */
     public ReconnectProtocol(
-            final ThreadManager threadManager,
-            final NodeId peerId,
-            final ReconnectThrottle teacherThrottle,
-            final Supplier<ReservedSignedState> lastCompleteSignedState,
-            final Duration reconnectSocketTimeout,
-            final ReconnectMetrics reconnectMetrics,
-            final ReconnectController reconnectController,
-            final SignedStateValidator validator,
-            final FallenBehindManager fallenBehindManager) {
-        this.threadManager = threadManager;
-        this.peerId = peerId;
-        this.teacherThrottle = teacherThrottle;
-        this.lastCompleteSignedState = lastCompleteSignedState;
-        this.reconnectSocketTimeout = reconnectSocketTimeout;
-        this.reconnectMetrics = reconnectMetrics;
-        this.reconnectController = reconnectController;
-        this.validator = validator;
-        this.fallenBehindManager = fallenBehindManager;
+            @NonNull final ThreadManager threadManager,
+            @NonNull final NodeId peerId,
+            @NonNull final ReconnectThrottle teacherThrottle,
+            @NonNull final Supplier<ReservedSignedState> lastCompleteSignedState,
+            @NonNull final Duration reconnectSocketTimeout,
+            @NonNull final ReconnectMetrics reconnectMetrics,
+            @NonNull final ReconnectController reconnectController,
+            @NonNull final SignedStateValidator validator,
+            @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final Configuration configuration) {
+        this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
+        this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
+        this.teacherThrottle = Objects.requireNonNull(teacherThrottle, "teacherThrottle must not be null");
+        this.lastCompleteSignedState =
+                Objects.requireNonNull(lastCompleteSignedState, "lastCompleteSignedState must not be null");
+        this.reconnectSocketTimeout =
+                Objects.requireNonNull(reconnectSocketTimeout, "reconnectSocketTimeout must not be null");
+        this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
+        this.reconnectController = Objects.requireNonNull(reconnectController, "reconnectController must not be null");
+        this.validator = Objects.requireNonNull(validator, "validator must not be null");
+        this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
     /** {@inheritDoc} */
@@ -206,7 +215,8 @@ public class ReconnectProtocol implements Protocol {
                             connection.getOtherId(),
                             state.get().getRound(),
                             fallenBehindManager::hasFallenBehind,
-                            reconnectMetrics)
+                            reconnectMetrics,
+                            configuration)
                     .execute(state.get());
         } finally {
             teacherThrottle.reconnectAttemptFinished();

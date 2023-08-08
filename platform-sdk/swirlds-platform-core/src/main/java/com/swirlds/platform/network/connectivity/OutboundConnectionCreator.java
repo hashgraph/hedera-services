@@ -26,6 +26,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.sync.SyncInputStream;
 import com.swirlds.platform.gossip.sync.SyncOutputStream;
 import com.swirlds.platform.network.ByteConstants;
@@ -50,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class OutboundConnectionCreator {
     private static final Logger logger = LogManager.getLogger(OutboundConnectionCreator.class);
-    private static final byte[] LOCALHOST = new byte[] {127, 0, 0, 1};
+    private static final String LOCALHOST = "127.0.0.1";
     private final NodeId selfId;
     private final SocketConfig socketConfig;
     private final ConnectionTracker connectionTracker;
@@ -58,22 +59,24 @@ public class OutboundConnectionCreator {
     private final AddressBook addressBook;
     private final boolean doVersionCheck;
     private final SoftwareVersion softwareVersion;
+    private final Configuration configuration;
 
     public OutboundConnectionCreator(
             @NonNull final NodeId selfId,
-            @NonNull final SocketConfig socketConfig,
             @NonNull final ConnectionTracker connectionTracker,
             @NonNull final SocketFactory socketFactory,
             @NonNull final AddressBook addressBook,
             final boolean doVersionCheck,
-            @NonNull final SoftwareVersion softwareVersion) {
+            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final Configuration configuration) {
         this.selfId = Objects.requireNonNull(selfId);
-        this.socketConfig = Objects.requireNonNull(socketConfig);
         this.connectionTracker = Objects.requireNonNull(connectionTracker);
         this.socketFactory = Objects.requireNonNull(socketFactory);
         this.addressBook = Objects.requireNonNull(addressBook);
         this.doVersionCheck = doVersionCheck;
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
+        this.configuration = Objects.requireNonNull(configuration);
+        this.socketConfig = configuration.getConfigData(SocketConfig.class);
     }
 
     /**
@@ -86,16 +89,15 @@ public class OutboundConnectionCreator {
     public Connection createConnection(final NodeId otherId) {
         final Address other = addressBook.getAddress(otherId);
         final Address ownAddress = addressBook.getAddress(selfId);
-        final int port = other.getConnectPortIpv4(ownAddress);
-        final byte[] ip = getConnectAddressIpv4(ownAddress, other);
-        final String ipAddress = Address.ipString(ip);
+        final int port = other.getConnectPort(ownAddress);
+        final String hostname = getConnectHostname(ownAddress, other);
 
         Socket clientSocket = null;
         SyncOutputStream dos = null;
         SyncInputStream dis = null;
 
         try {
-            clientSocket = socketFactory.createClientSocket(ipAddress, port);
+            clientSocket = socketFactory.createClientSocket(hostname, port);
 
             dos = SyncOutputStream.createSyncOutputStream(clientSocket.getOutputStream(), socketConfig.bufferSize());
             dis = SyncInputStream.createSyncInputStream(clientSocket.getInputStream(), socketConfig.bufferSize());
@@ -122,7 +124,8 @@ public class OutboundConnectionCreator {
             }
             logger.debug(NETWORK.getMarker(), "`connect` : finished, {} connected to {}", selfId, otherId);
 
-            return SocketConnection.create(selfId, otherId, connectionTracker, true, clientSocket, dis, dos);
+            return SocketConnection.create(
+                    selfId, otherId, connectionTracker, true, clientSocket, dis, dos, configuration);
         } catch (final SocketTimeoutException | SocketException e) {
             NetworkUtils.close(clientSocket, dis, dos);
             logger.debug(
@@ -156,15 +159,15 @@ public class OutboundConnectionCreator {
      * @param to   the address to connect to
      * @return the IP address to connect to
      */
-    private byte[] getConnectAddressIpv4(final Address from, final Address to) {
+    private String getConnectHostname(final Address from, final Address to) {
         final boolean fromIsLocal = AddressBookNetworkUtils.isLocal(from);
         final boolean toIsLocal = AddressBookNetworkUtils.isLocal(to);
         if (fromIsLocal && toIsLocal && socketConfig.useLoopbackIp()) {
             return LOCALHOST;
         } else if (to.isLocalTo(from)) {
-            return to.getAddressInternalIpv4();
+            return to.getHostnameInternal();
         } else {
-            return to.getAddressExternalIpv4();
+            return to.getHostnameExternal();
         }
     }
 }

@@ -41,7 +41,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
-import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -75,7 +74,7 @@ public final class TestStoreFactory {
     private static MapWritableKVState<AccountID, Account> newAccountStateFromAccounts(Account... accounts) {
         final var backingMap = new HashMap<AccountID, Account>();
         for (final Account account : accounts) {
-            backingMap.put(BaseCryptoHandler.asAccount(account.accountNumber()), account);
+            backingMap.put(account.accountId(), account);
         }
 
         return new MapWritableKVState<>(ACCOUNTS_KEY, backingMap);

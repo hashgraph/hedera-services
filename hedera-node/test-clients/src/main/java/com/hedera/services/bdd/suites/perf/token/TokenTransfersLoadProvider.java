@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -57,6 +58,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class TokenTransfersLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenTransfersLoadProvider.class);
     private static final String TOKEN = "token";

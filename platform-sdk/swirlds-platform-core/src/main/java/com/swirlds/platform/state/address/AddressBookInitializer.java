@@ -126,6 +126,9 @@ public class AddressBookInitializer {
         this.maxNumFiles = addressBookConfig.maxRecordedAddressBookFiles();
 
         initialAddressBook = initialize();
+        if (!useConfigAddressBook) {
+            AddressBookValidator.validateNewAddressBook(stateAddressBook, initialAddressBook);
+        }
     }
 
     /**

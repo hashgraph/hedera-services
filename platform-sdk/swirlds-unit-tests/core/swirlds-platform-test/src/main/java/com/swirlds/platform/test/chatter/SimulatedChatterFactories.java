@@ -77,7 +77,7 @@ public class SimulatedChatterFactories implements SimulatedChatterFactory {
                         selfId,
                         registry,
                         Executors.newSingleThreadScheduledExecutor(),
-                        new DefaultMetricsFactory(),
+                        new DefaultMetricsFactory(metricsConfig),
                         metricsConfig));
         final EventDedup dedup = new EventDedup(List.of(core::eventReceived, eventTracker::newEvent));
         for (final NodeId nodeId : nodeIds) {

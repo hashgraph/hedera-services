@@ -20,18 +20,22 @@ import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.test.fixtures.WeightGenerators;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.ConsensusImpl;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.test.NoOpConsensusMetrics;
-import com.swirlds.platform.test.event.IndexedEvent;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
+import com.swirlds.platform.test.consensus.ConsensusTestDefinition;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -70,18 +74,16 @@ public class ConsensusBenchmark {
     private Consensus consensus;
 
     @Setup
-    public void setup() {
+    public void setup() throws Exception {
         final List<EventSource<?>> eventSources =
                 EventSourceFactory.newStandardEventSources(WeightGenerators.balancedNodeWeights(numNodes));
         final StandardGraphGenerator generator = new StandardGraphGenerator(seed, eventSources);
         final StandardEventEmitter emitter = new StandardEventEmitter(generator);
         events = emitter.emitEvents(numEvents);
 
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
-
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
         consensus = new ConsensusImpl(
-                configurationBuilder.build().getConfigData(ConsensusConfig.class),
+                configuration.getConfigData(ConsensusConfig.class),
                 new NoOpConsensusMetrics(),
                 emitter.getGraphGenerator().getAddressBook());
     }

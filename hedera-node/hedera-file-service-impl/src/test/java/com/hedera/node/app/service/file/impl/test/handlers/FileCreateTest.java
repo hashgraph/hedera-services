@@ -46,7 +46,7 @@ import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.file.impl.WritableFileStoreImpl;
+import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
@@ -89,18 +89,12 @@ class FileCreateTest extends FileTestBase {
     @Mock
     private Configuration configuration;
 
-    //    @Mock
-    //    private LongSupplier consensusSecondNow;
-    //
-    //    @Mock
-    //    private GlobalDynamicProperties dynamicProperties;
-
     @Mock
     private CreateFileRecordBuilder recordBuilder;
 
     private FilesConfig config;
 
-    private WritableFileStoreImpl fileStore;
+    private WritableFileStore fileStore;
     private FileCreateHandler subject;
 
     private TransactionBody newCreateTxn(KeyList keys, long expirationTime) {
@@ -127,11 +121,11 @@ class FileCreateTest extends FileTestBase {
     @BeforeEach
     void setUp() {
         subject = new FileCreateHandler();
-        fileStore = new WritableFileStoreImpl(writableStates);
-        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024);
+        fileStore = new WritableFileStore(writableStates);
+        config = new FilesConfig(101L, 121L, 112L, 111L, 122L, 102L, 123L, 1000000L, 1024, 150L);
         lenient().when(handleContext.configuration()).thenReturn(configuration);
         lenient().when(configuration.getConfigData(FilesConfig.class)).thenReturn(config);
-        lenient().when(handleContext.writableStore(WritableFileStoreImpl.class)).thenReturn(fileStore);
+        lenient().when(handleContext.writableStore(WritableFileStore.class)).thenReturn(fileStore);
     }
 
     @Test
@@ -202,7 +196,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
@@ -233,7 +227,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
@@ -264,7 +258,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willThrow(new HandleException(ResponseCodeEnum.INVALID_EXPIRATION_TIME));
 
@@ -280,7 +274,7 @@ class FileCreateTest extends FileTestBase {
 
         given(handleContext.body()).willReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(validator);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(writableStore);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.resolveCreationAttempt(anyBoolean(), any()))
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
@@ -302,12 +296,12 @@ class FileCreateTest extends FileTestBase {
         final var writableState = writableFileStateWithOneKey();
 
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableState);
-        final var fileStore = new WritableFileStoreImpl(writableStates);
-        given(handleContext.writableStore(WritableFileStoreImpl.class)).willReturn(fileStore);
+        final var fileStore = new WritableFileStore(writableStates);
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(fileStore);
 
         assertEquals(2, fileStore.sizeOfState());
 
-        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1);
+        config = new FilesConfig(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1, 150L);
         given(configuration.getConfigData(any())).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
