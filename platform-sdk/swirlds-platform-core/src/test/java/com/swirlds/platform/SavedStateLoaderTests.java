@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
@@ -78,6 +79,8 @@ public class SavedStateLoaderTests {
     private EmergencySignedStateValidator emergencyValidator;
     private EmergencyRecoveryManager emergencyRecoveryManager;
     private SavedStateLoader savedStateLoader;
+    private final StateConfig stateConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
     @BeforeEach
     void beforeEach() throws IOException {
@@ -310,7 +313,7 @@ public class SavedStateLoaderTests {
     }
 
     private void initEmergencyRecoveryManager() {
-        emergencyRecoveryManager = new EmergencyRecoveryManager(shutdownTrigger, tmpDir);
+        emergencyRecoveryManager = new EmergencyRecoveryManager(stateConfig, shutdownTrigger, tmpDir);
     }
 
     @Test
