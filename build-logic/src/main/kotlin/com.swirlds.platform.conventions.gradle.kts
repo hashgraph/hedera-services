@@ -21,11 +21,11 @@ plugins {
     java
     jacoco
     id("com.gorylenko.gradle-git-properties")
-    id("com.swirlds.platform.jpms-modules")
-    id("com.swirlds.platform.repositories")
-    id("com.swirlds.platform.spotless-conventions")
-    id("com.swirlds.platform.spotless-java-conventions")
-    id("com.swirlds.platform.spotless-kotlin-conventions")
+    id("com.hedera.hashgraph.jpms-modules")
+    id("com.hedera.hashgraph.repositories")
+    id("com.hedera.hashgraph.spotless-conventions")
+    id("com.hedera.hashgraph.spotless-java-conventions")
+    id("com.hedera.hashgraph.spotless-kotlin-conventions")
     id("com.adarshr.test-logger")
 }
 
@@ -47,11 +47,11 @@ tasks.withType<AbstractArchiveTask> {
     dirMode = 775
 }
 
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
-tasks.withType<Javadoc> {
+tasks.withType<Javadoc>().configureEach {
     options.encoding = "UTF-8"
     (options as StandardJavadocDocletOptions)
         .tags("apiNote:a:API Note:", "implSpec:a:Implementation Requirements:", "implNote:a:Implementation Note:")
@@ -102,7 +102,7 @@ testing {
             }
 
             dependencies {
-                implementation(project)
+                implementation(project(project.path))
             }
 
             targets {
@@ -139,7 +139,7 @@ testing {
             }
 
             dependencies {
-                implementation(project)
+                implementation(project(project.path))
             }
 
             targets {

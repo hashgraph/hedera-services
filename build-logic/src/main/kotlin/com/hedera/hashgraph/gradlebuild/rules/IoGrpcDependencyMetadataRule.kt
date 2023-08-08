@@ -11,6 +11,7 @@ abstract class IoGrpcDependencyMetadataRule : ComponentMetadataRule {
                 removeAll { it.name == "grpc-api" }
                 removeAll { it.name == "grpc-context" }
                 removeAll { it.name == "grpc-core" }
+                removeAll { it.group == "com.google.code.findbugs" }
                 add("io.helidon.grpc:io.grpc")
             }
         }

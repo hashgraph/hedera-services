@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
 }
 
 dependencies {
