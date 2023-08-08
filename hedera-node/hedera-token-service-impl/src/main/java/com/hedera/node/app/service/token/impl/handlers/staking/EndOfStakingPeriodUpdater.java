@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
@@ -34,9 +35,9 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
@@ -224,9 +225,13 @@ public class EndOfStakingPeriodUpdater {
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
                 lastInstantOfPreviousPeriodFor(consensusTime), finalNodeStakes, stakingConfig);
         log.info("Exporting:\n{}", finalNodeStakes);
-        context.dispatchChildTransaction(syntheticNodeStakeUpdateTxn.build(), SingleTransactionRecordBuilder.class);
-        // TODO: This should be a preceding record, but we have sme conditions that fail there
-        // because state changed. We should discuss that and move this back to preceding.
+
+        // Is this correct ?
+        final var nodeStakeUpdateBuilder = context.recordBuilder(NodeStakeUpdateRecordBuilder.class);
+        nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
+                .body(syntheticNodeStakeUpdateTxn.build())
+                .build());
+        context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
     }
 
     /**

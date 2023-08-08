@@ -49,6 +49,7 @@ import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
@@ -96,7 +97,8 @@ public class SingleTransactionRecordBuilderImpl
                 ContractCreateRecordBuilder,
                 ContractCallRecordBuilder,
                 CryptoDeleteRecordBuilder,
-                TokenUpdateRecordBuilder {
+                TokenUpdateRecordBuilder,
+                NodeStakeUpdateRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
