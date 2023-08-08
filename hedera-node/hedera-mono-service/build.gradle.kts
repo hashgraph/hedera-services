@@ -28,6 +28,7 @@ dependencies {
 
         testImplementation(project(":app-service-mono"))
         testImplementation(gav("awaitility"))
+        testImplementation(gav("com.github.benmanes.caffeine"))
         testImplementation(gav("io.github.classgraph"))
         testImplementation(gav("net.i2p.crypto.eddsa"))
         testImplementation(gav("org.apache.logging.log4j.core"))
