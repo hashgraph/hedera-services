@@ -37,7 +37,8 @@ import java.time.Duration;
  *                                       to compute bully scores.
  * @param eventIntakeThrottle            when the size of the event intake queue equals or exceeds this value, do not
  *                                       permit the creation of new self events.
- * @param creationQueueSize              the size of the intake queue for the event creator
+ * @param creationQueueThrottle          when the size of the event creator intake queue equals or exceeds this value,
+ *                                       do not permit the creation of new self events.
  * @param creationQueueBufferSize        the size of the buffer for the event creator
  * @param creationQueueWaitForWorkPeriod the amount of time the event creator spends waiting for work in its intake
  *                                       queue
@@ -49,6 +50,6 @@ public record EventCreationConfig(
         @ConfigProperty(defaultValue = "10") double antiBullyingFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
-        @ConfigProperty(defaultValue = "1024") int creationQueueSize,
+        @ConfigProperty(defaultValue = "1024") int creationQueueThrottle,
         @ConfigProperty(defaultValue = "1024") int creationQueueBufferSize,
         @ConfigProperty(defaultValue = "1 ms") @NonNull Duration creationQueueWaitForWorkPeriod) {}
