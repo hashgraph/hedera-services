@@ -19,7 +19,8 @@ package com.swirlds.config.processor.generated; // Generated from JavaParser.g4 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
- * This interface defines a complete listener for a parse tree produced by {@link JavaParser}.
+ * This interface defines a complete listener for a parse tree produced by
+ * {@link JavaParser}.
  */
 public interface JavaParserListener extends ParseTreeListener {
     /**

@@ -18,9 +18,7 @@ package com.swirlds.config.processor;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import com.swirlds.config.processor.generated.JavaParser.AnnotationContext;
-import com.swirlds.config.processor.generated.JavaParser.RecordComponentContext;
-import com.swirlds.config.processor.generated.JavaParser.RecordDeclarationContext;
+import com.swirlds.config.processor.generated.JavaParser.*;
 import com.swirlds.config.processor.generated.JavaParserBaseListener;
 import java.util.List;
 import java.util.Optional;

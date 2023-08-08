@@ -197,6 +197,7 @@ ELLIPSIS:           '...';
 
 // Whitespace and comments
 
+JAVADOC_COMMENT:   '/**' .*? '*/';
 WS:                 [ \t\r\n\u000C]+ -> channel(HIDDEN);
 COMMENT:            '/*' .*? '*/'    -> channel(HIDDEN);
 LINE_COMMENT:       '//' ~[\r\n]*    -> channel(HIDDEN);

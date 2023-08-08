@@ -18,11 +18,11 @@ plugins {
     id("com.swirlds.platform.conventions")
     id("com.swirlds.platform.library")
     id("com.swirlds.platform.maven-publish")
-    // antlr
+    antlr
 }
 
 dependencies {
-    // antlr(libs.antlr4.tool)
+    antlr(libs.antlr4.tool)
     annotationProcessor(libs.auto.service.processor)
 
     implementation(project(":swirlds-config-api"))

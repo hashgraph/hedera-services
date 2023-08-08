@@ -180,7 +180,7 @@ public class AntlrUtils {
      * Returns the value of an annotation {@code value} attribute
      *
      * @param annotationContext the annotation context
-     * @return the value of the {@code value attribute
+     * @return the value of the {@code value} attribute
      */
     @NonNull
     public static Optional<String> getAnnotationValue(@NonNull final AnnotationContext annotationContext) {

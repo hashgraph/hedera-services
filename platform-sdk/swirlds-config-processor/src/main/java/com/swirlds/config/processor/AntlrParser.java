@@ -16,8 +16,6 @@
 
 package com.swirlds.config.processor;
 
-import com.swirlds.config.processor.generated.JavaLexer;
-import com.swirlds.config.processor.generated.JavaParser;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import javax.tools.FileObject;
