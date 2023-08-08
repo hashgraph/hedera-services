@@ -17,35 +17,26 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
-    id("org.gradle.java-test-fixtures")
 }
 
-extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
-
 dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-platform-core"))
-    compileOnly(libs.spotbugs.annotations)
+    javaModuleDependencies {
+        jmhImplementation(project(":swirlds-common"))
+        jmhImplementation(project(":swirlds-config-api"))
+        jmhImplementation(project(":swirlds-platform-core"))
+        jmhImplementation(testFixtures(project(":swirlds-common")))
+        jmhImplementation(testFixtures(project(":swirlds-platform-core")))
+        jmhImplementation(gav("jmh.core"))
+        jmhImplementation(gav("org.apache.commons.lang3"))
 
-    // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(testLibs.bundles.mocking)
-    implementation(project(":swirlds-common-testing"))
-    implementation(project(":swirlds-test-framework"))
-    implementation(testFixtures(project(":swirlds-config-api")))
-    implementation(testFixtures(project(":swirlds-common")))
-    implementation(testFixtures(project(":swirlds-platform-core")))
-
-    testImplementation(project(":swirlds-merkle"))
-    testImplementation(project(":swirlds-sign-tool")) // FUTURE WORK: should be removed in future
-    testImplementation(libs.classgraph)
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(testFixtures(project(":swirlds-base")))
-    testImplementation(testFixtures(project(":swirlds-common")))
-    testImplementation(testFixtures(project(":swirlds-platform-core")))
-
-    testImplementation(project(":swirlds-config-impl"))
+        testImplementation(project(":swirlds-common-testing"))
+        testImplementation(project(":swirlds-merkle"))
+        testImplementation(project(":swirlds-sign-tool")) // should be removed in future
+        testImplementation(testFixtures(project(":swirlds-base")))
+        testImplementation(gav("awaitility"))
+        testImplementation(gav("org.apache.commons.collections4"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
+    }
 }

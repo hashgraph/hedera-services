@@ -26,9 +26,8 @@ val eclipseCollectionsVersion = "10.4.0"
 val grpcVersion = "1.54.1"
 val helidonVersion = "3.2.1"
 val jacksonVersion = "2.13.5"
-val lazysodiumVersion = "5.1.1"
-val log4jVersion = "2.17.1"
-val mockitoVersion = "4.6.1"
+val log4jVersion = "2.17.2"
+val mockitoVersion = "4.11.0"
 val nettyVersion = "4.1.87.Final"
 val prometheusVersion = "0.16.0"
 val protobufVersion = "3.21.7"
@@ -120,8 +119,11 @@ dependencies.constraints {
         api(gav("uk.org.webcompere.systemstubs.core", systemStubsVersion))
         api(gav("uk.org.webcompere.systemstubs.jupiter", systemStubsVersion))
 
+        api(gav("com.google.truth", "1.1.3"))
         api(gav("io.prometheus.simpleclient", prometheusVersion))
         api(gav("io.prometheus.simpleclient.httpserver", prometheusVersion))
-        api(gav("lazysodium.java", lazysodiumVersion))
+        api(gav("javafx.base", "17"))
+        api(gav("lazysodium.java", "5.1.1"))
+        api(gav("portmapper", "2.0.4"))
     }
 }

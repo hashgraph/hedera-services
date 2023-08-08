@@ -28,14 +28,10 @@ open module com.swirlds.merkledb {
     exports com.swirlds.merkledb.serialize;
     exports com.swirlds.merkledb.utilities;
 
-    requires com.swirlds.base;
-    requires com.swirlds.common;
-    requires com.swirlds.config.api;
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.virtualmap;
     requires com.swirlds.logging;
-    requires com.swirlds.virtualmap;
-    requires org.eclipse.collections.impl;
-    requires org.eclipse.collections.api;
-    requires org.apache.logging.log4j;
     requires java.management;
     requires jdk.management;
     requires jdk.unsupported;

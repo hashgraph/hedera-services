@@ -158,23 +158,21 @@ module com.swirlds.common {
             com.swirlds.gui;
     exports com.swirlds.common.startup;
 
+    requires transitive com.fasterxml.jackson.core;
+    requires transitive com.fasterxml.jackson.databind;
     requires transitive com.swirlds.base;
-    requires com.fasterxml.jackson.core;
-    requires com.fasterxml.jackson.databind;
-    requires com.fasterxml.jackson.datatype.jsr310;
-    requires com.swirlds.config.api;
-    requires com.swirlds.logging;
+    requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.logging;
+    requires transitive io.prometheus.simpleclient;
+    requires transitive lazysodium.java;
+    requires transitive org.apache.commons.lang3;
+    requires transitive org.apache.logging.log4j;
     requires io.github.classgraph;
     requires io.prometheus.simpleclient.httpserver;
-    requires io.prometheus.simpleclient;
     requires java.desktop;
     requires jdk.httpserver;
     requires jdk.management;
-    requires lazysodium.java;
     requires org.apache.commons.codec;
-    requires org.apache.commons.lang3;
-    requires org.apache.logging.log4j.core;
-    requires org.apache.logging.log4j;
     requires org.bouncycastle.provider;
     requires static com.github.spotbugs.annotations;
 }

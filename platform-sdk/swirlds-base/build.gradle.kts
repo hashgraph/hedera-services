@@ -21,11 +21,8 @@ plugins {
 }
 
 dependencies {
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testImplementation(testLibs.bundles.junit)
-
-    // Should be removed in future
-    testFixturesImplementation(project(":swirlds-common"))
+    javaModuleDependencies {
+        testImplementation(project(":swirlds-base"))
+        testImplementation(gav("org.junit.jupiter.api"))
+    }
 }

@@ -1,9 +1,10 @@
 open module com.swirlds.platform.core.test.fixtures {
-    requires com.swirlds.common;
-    requires com.swirlds.common.test.fixtures;
-    requires com.swirlds.platform.core;
-    requires org.junit.jupiter.api;
+    requires transitive com.swirlds.common.test.fixtures;
+    requires transitive com.swirlds.common;
+    requires transitive com.swirlds.platform.core;
+    requires transitive org.apache.commons.lang3;
     requires com.swirlds.test.framework;
+    requires org.junit.jupiter.api;
     requires static com.github.spotbugs.annotations;
 
     exports com.swirlds.platform.test.fixtures.stream;

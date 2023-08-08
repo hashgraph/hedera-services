@@ -19,10 +19,3 @@ plugins {
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
-
-dependencies {
-    api(project(":swirlds-base"))
-    implementation(project(":swirlds-common"))
-    implementation(project(":swirlds-logging"))
-    compileOnly(libs.spotbugs.annotations)
-}

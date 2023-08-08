@@ -20,10 +20,16 @@ plugins {
 }
 
 dependencies {
-    // JMH Dependencies
-    jmhImplementation(project(":swirlds-platform-core"))
-    jmhImplementation(project(":swirlds-config-api"))
-    jmhImplementation(project(":swirlds-config-impl"))
+    javaModuleDependencies {
+        jmhImplementation(project(":swirlds-common"))
+        jmhImplementation(project(":swirlds-config-api"))
+        jmhImplementation(project(":swirlds-fchashmap"))
+        jmhImplementation(project(":swirlds-jasperdb"))
+        jmhImplementation(project(":swirlds-virtualmap"))
+        jmhImplementation(gav("jmh.core"))
+        jmhImplementation(gav("org.apache.commons.lang3"))
+        jmhImplementation(gav("org.apache.logging.log4j"))
+    }
 }
 
 fun getListProperty(arg: String): ListProperty<String> {

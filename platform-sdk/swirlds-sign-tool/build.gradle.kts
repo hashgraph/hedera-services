@@ -22,14 +22,10 @@ plugins {
 application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
 dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-common"))
-    implementation(project(":swirlds-base"))
-    implementation(project(":swirlds-logging"))
-    implementation(libs.bundles.logging.impl)
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.datatype.jsr310)
-    compileOnly(libs.spotbugs.annotations)
-
-    testImplementation(project(":swirlds-test-framework"))
+    javaModuleDependencies {
+        testImplementation(project(":swirlds-common"))
+        testImplementation(project(":swirlds-test-framework"))
+        testImplementation(gav("org.apache.commons.lang3"))
+        testImplementation(gav("org.junit.jupiter.api"))
+    }
 }

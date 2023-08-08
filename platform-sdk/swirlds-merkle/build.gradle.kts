@@ -20,13 +20,14 @@ plugins {
 }
 
 dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-platform-core"))
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testImplementation(project(":swirlds-test-framework"))
-    testImplementation(project(":swirlds-common-testing"))
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testFixtures(project(":swirlds-config-api")))
+    javaModuleDependencies {
+        testImplementation(project(":swirlds-common-testing"))
+        testImplementation(project(":swirlds-config-api"))
+        testImplementation(project(":swirlds-jasperdb"))
+        testImplementation(project(":swirlds-test-framework"))
+        testImplementation(project(":swirlds-virtualmap"))
+        testImplementation(testFixtures(project(":swirlds-config-api")))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+    }
 }

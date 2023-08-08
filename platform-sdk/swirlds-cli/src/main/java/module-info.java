@@ -10,8 +10,8 @@ module com.swirlds.cli {
     opens com.swirlds.cli.commands to
             info.picocli;
 
+    requires transitive info.picocli;
     requires com.swirlds.common;
-    requires info.picocli;
     requires io.github.classgraph;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;

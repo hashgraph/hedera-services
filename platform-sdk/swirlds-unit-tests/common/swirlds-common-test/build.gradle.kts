@@ -20,35 +20,17 @@ plugins {
     id("org.gradle.java-test-fixtures")
 }
 
-extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
-
 dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-base"))
-    implementation(project(":swirlds-common"))
-    implementation(project(":swirlds-base"))
-    api(testLibs.junit.jupiter.api)
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-test-framework"))
-    implementation(testFixtures(project(":swirlds-common")))
-    implementation(libs.log4j.core)
-
-    testImplementation(libs.bundles.logging.impl)
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(testFixtures(project(":swirlds-base")))
-    testImplementation(testFixtures(project(":swirlds-common")))
-
-    testImplementation(libs.prometheus.httpserver) {
-        exclude("io.prometheus", "simpleclient_tracer_otel")
-        exclude("io.prometheus", "simpleclient_tracer_otel_agent")
+    javaModuleDependencies {
+        testImplementation(project(":swirlds-base"))
+        testImplementation(project(":swirlds-config-api"))
+        testImplementation(project(":swirlds-test-framework"))
+        testImplementation(testFixtures(project(":swirlds-base")))
+        testImplementation(testFixtures(project(":swirlds-common")))
+        testImplementation(gav("com.google.truth"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
     }
-    testImplementation(testFixtures(project(":swirlds-config-api")))
 }

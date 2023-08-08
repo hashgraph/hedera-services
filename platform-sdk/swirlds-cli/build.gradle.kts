@@ -18,11 +18,3 @@ plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.swirlds.platform.maven-publish")
 }
-
-dependencies {
-    api(project(":swirlds-common"))
-    implementation(libs.bundles.picocli)
-    implementation(libs.classgraph)
-    implementation(libs.bundles.logging.impl)
-    compileOnly(libs.spotbugs.annotations)
-}

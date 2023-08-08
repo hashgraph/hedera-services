@@ -5,10 +5,9 @@ module com.swirlds.config.impl {
     exports com.swirlds.config.impl.converters;
     exports com.swirlds.config.impl.validators;
 
+    requires transitive com.swirlds.config.api;
     requires com.swirlds.base;
     requires com.swirlds.common;
-    requires com.swirlds.config.api;
-    requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
 
     provides ConfigurationBuilderFactory with

@@ -17,39 +17,25 @@
 plugins {
     id("com.hedera.hashgraph.sdk.conventions")
     id("com.swirlds.platform.maven-publish")
-    id("org.gradle.java-test-fixtures")
+    id("java-test-fixtures")
 }
 
 dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-base"))
-    api(project(":swirlds-logging"))
-    api(project(":swirlds-config-api"))
-    implementation(libs.classgraph)
-    implementation(libs.prometheus.httpserver) {
-        exclude("io.prometheus", "simpleclient_tracer_otel")
-        exclude("io.prometheus", "simpleclient_tracer_otel_agent")
+    javaModuleDependencies {
+        runtimeOnly(gav("resource.loader"))
+        runtimeOnly(gav("com.sun.jna"))
+
+        testImplementation(project(":swirlds-common"))
+        testImplementation(project(":swirlds-common-testing"))
+        testImplementation(project(":swirlds-test-framework"))
+        testImplementation(testFixtures(project(":swirlds-base")))
+        testImplementation(testFixtures(project(":swirlds-config-api")))
+        testImplementation(gav("org.apache.logging.log4j.core"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
     }
-    compileOnly(libs.spotbugs.annotations)
-
-    // Bundle Dependencies
-    api(libs.bundles.cryptography.core)
-    runtimeOnly(libs.bundles.cryptography.runtime)
-    implementation(libs.bundles.logging.impl)
-    compileOnly(libs.spotbugs.annotations)
-
-    // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(testFixtures(project(":swirlds-base")))
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-test-framework"))
-    testImplementation(project(":swirlds-common-testing"))
-    testImplementation(testFixtures(project(":swirlds-config-api")))
-
-    // Test Fixtures
-    testFixturesImplementation(testLibs.bundles.junit)
-    testFixturesCompileOnly(libs.spotbugs.annotations)
 }

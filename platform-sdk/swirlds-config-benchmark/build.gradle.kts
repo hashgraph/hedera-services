@@ -20,9 +20,11 @@ plugins {
 }
 
 dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-config-impl"))
-    compileOnly(libs.spotbugs.annotations)
+    javaModuleDependencies {
+        jmhImplementation(project(":swirlds-common"))
+        jmhImplementation(project(":swirlds-config-api"))
+        jmhImplementation(gav("jmh.core"))
+    }
 }
 
-tasks.withType<Javadoc>() { enabled = false }
+tasks.withType<Javadoc>().configureEach { enabled = false }

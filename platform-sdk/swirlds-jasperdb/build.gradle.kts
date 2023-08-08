@@ -21,23 +21,15 @@ plugins {
 }
 
 dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-base"))
-    api(project(":swirlds-virtualmap"))
-    api(project(":swirlds-config-api"))
-    compileOnly(libs.spotbugs.annotations)
+    javaModuleDependencies {
+        jmhImplementation(gav("jmh.core"))
 
-    // Bundle Dependencies
-    implementation(libs.bundles.eclipse)
-
-    // Test Dependencies
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-test-framework"))
-    testImplementation(project(":swirlds-common-testing"))
-    testImplementation(testFixtures(project(":swirlds-common")))
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    // to enable mocking of final classes
-    testImplementation(testFixtures(project(":swirlds-config-api")))
-    testImplementation(libs.log4j.core)
+        testImplementation(project(":swirlds-test-framework"))
+        testImplementation(testFixtures(project(":swirlds-common")))
+        testImplementation(testFixtures(project(":swirlds-config-api")))
+        testImplementation(gav("org.apache.logging.log4j.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+    }
 }

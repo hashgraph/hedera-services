@@ -20,43 +20,22 @@ plugins {
     id("org.gradle.java-test-fixtures")
 }
 
-extraJavaModuleInfo { failOnMissingModuleInfo.set(false) }
-
 dependencies {
-    // Individual Dependencies
-    api(project(":swirlds-fchashmap"))
-    api(project(":swirlds-fcqueue"))
-    api(project(":swirlds-jasperdb"))
-    api(project(":swirlds-cli"))
-    api(project(":swirlds-base"))
-    api(project(":swirlds-platform-gui"))
-    compileOnly(libs.spotbugs.annotations)
-    runtimeOnly(project(":swirlds-config-impl"))
+    javaModuleDependencies {
+        runtimeOnly(project(":swirlds-config-impl"))
 
-    // Bundle Dependencies
-    implementation(libs.bundles.logging.impl)
-    implementation(libs.bundles.javafx)
-    implementation(libs.bundles.picocli)
-    implementation(libs.bundles.jackson)
-
-    // Test Dependencies
-    testCompileOnly(libs.spotbugs.annotations)
-
-    // These should not be implementation() based deps, but this requires refactoring to eliminate.
-    implementation(project(":swirlds-common-testing"))
-    implementation(project(":swirlds-test-framework"))
-
-    testImplementation(testLibs.bundles.junit)
-    testImplementation(testLibs.bundles.mocking)
-    testImplementation(testLibs.bundles.utils)
-    testImplementation(project(":swirlds-config-impl"))
-    testImplementation(project(":swirlds-platform-test"))
-    testImplementation(testFixtures(project(":swirlds-base")))
-    testImplementation(testFixtures(project(":swirlds-common")))
-    testImplementation(testFixtures(project(":swirlds-config-api")))
-
-    testFixturesImplementation(testLibs.bundles.junit)
-    testFixturesImplementation(testFixtures(project(":swirlds-common")))
-    testFixturesImplementation(project(":swirlds-test-framework"))
-    testFixturesCompileOnly(libs.spotbugs.annotations)
+        testImplementation(testFixtures(project(":swirlds-base")))
+        testImplementation(testFixtures(project(":swirlds-common")))
+        testImplementation(testFixtures(project(":swirlds-config-api")))
+        testImplementation(project(":swirlds-common-testing"))
+        testImplementation(project(":swirlds-platform-core"))
+        testImplementation(project(":swirlds-test-framework"))
+        testImplementation(gav("org.apache.commons.io"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("awaitility"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
+        testImplementation(gav("org.mockito"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
+    }
 }

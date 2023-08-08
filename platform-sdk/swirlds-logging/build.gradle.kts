@@ -19,17 +19,4 @@ plugins {
     id("com.swirlds.platform.maven-publish")
 }
 
-dependencies {
-    // Individual Dependencies
-    implementation(project(":swirlds-base"))
-    compileOnly(libs.spotbugs.annotations)
-
-    // Bundle Dependencies
-    api(libs.bundles.logging.api)
-    api(libs.bundles.jackson)
-
-    // Test Dependencies
-    testImplementation(project(":swirlds-test-framework"))
-    testImplementation(libs.bundles.logging.impl)
-    testImplementation(testLibs.bundles.junit)
-}
+dependencies { javaModuleDependencies { testImplementation(project(":swirlds-logging")) } }

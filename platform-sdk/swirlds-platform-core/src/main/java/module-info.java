@@ -127,21 +127,22 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.recovery.emergencyfile;
     exports com.swirlds.platform.event;
 
+    requires transitive com.fasterxml.jackson.annotation;
+    requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.swirlds.base;
+    requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.platform.gui;
-    requires com.fasterxml.jackson.databind;
+    requires transitive info.picocli;
+    requires transitive org.apache.logging.log4j;
+    requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
-    requires com.swirlds.base;
-    requires com.swirlds.cli;
-    requires com.swirlds.common.testing;
-    requires com.swirlds.config.api;
     requires com.swirlds.fchashmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.jasperdb;
     requires com.swirlds.logging;
-    requires com.swirlds.test.framework;
     requires com.swirlds.virtualmap;
-    requires info.picocli;
     requires java.management;
     requires java.scripting;
     requires java.sql;
@@ -149,7 +150,6 @@ module com.swirlds.platform.core {
     requires jdk.management;
     requires jdk.net;
     requires org.apache.logging.log4j.core;
-    requires org.apache.logging.log4j;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
     requires portmapper;

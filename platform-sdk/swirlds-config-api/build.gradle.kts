@@ -19,12 +19,3 @@ plugins {
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
-
-dependencies {
-    // Test Dependencies
-    testImplementation(testLibs.bundles.junit)
-    compileOnly(libs.spotbugs.annotations)
-
-    testFixturesImplementation(project(":swirlds-common"))
-    testFixturesCompileOnly(libs.spotbugs.annotations)
-}
