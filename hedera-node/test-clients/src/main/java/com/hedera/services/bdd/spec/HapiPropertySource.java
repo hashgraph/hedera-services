@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,15 @@ import java.util.stream.Stream;
 public interface HapiPropertySource {
 
     String ENTITY_STRING = "%d.%d.%d";
+
+    static byte[] explicitBytesOf(@NonNull final Address address) {
+        var asBytes = address.value().toByteArray();
+        // Might have a leading zero byte to make it positive
+        if (asBytes.length == 21) {
+            asBytes = Arrays.copyOfRange(asBytes, 1, 21);
+        }
+        return asBytes;
+    }
 
     String get(String property);
 

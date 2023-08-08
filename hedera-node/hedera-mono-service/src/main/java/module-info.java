@@ -256,6 +256,7 @@ module com.hedera.node.app.service.mono {
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.evm;
+    requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.hapi;
     requires transitive com.fasterxml.jackson.databind;
@@ -283,6 +284,7 @@ module com.hedera.node.app.service.mono {
     requires transitive tuweni.units;
     requires com.fasterxml.jackson.core;
     requires com.swirlds.base;
+    requires com.swirlds.config;
     requires com.swirlds.logging;
     requires com.swirlds.platform;
     requires io.netty.handler;
@@ -295,5 +297,4 @@ module com.hedera.node.app.service.mono {
     requires org.eclipse.collections.impl;
     requires org.slf4j;
     requires static com.github.spotbugs.annotations;
-    requires com.hedera.node.app.service.token;
 }

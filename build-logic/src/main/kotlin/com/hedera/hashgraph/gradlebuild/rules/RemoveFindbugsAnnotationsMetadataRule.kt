@@ -3,13 +3,13 @@ package com.hedera.hashgraph.gradlebuild.rules
 import org.gradle.api.artifacts.ComponentMetadataContext
 import org.gradle.api.artifacts.ComponentMetadataRule
 
-abstract class JavaxAnnotationMetadataRule : ComponentMetadataRule {
+abstract class RemoveFindbugsAnnotationsMetadataRule : ComponentMetadataRule {
 
     override fun execute(context: ComponentMetadataContext) {
         context.details.allVariants {
             withDependencies {
-                // because of the split package, 'javax.annotation' libraries always need to go together
-                add("javax.annotation:javax.annotation-api:1.3.2")
+                // 'findbugs' annotations are not used and cause split package with 'javax.annotation-api'
+                removeAll { it.group == "com.google.code.findbugs" }
             }
         }
     }
