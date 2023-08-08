@@ -404,6 +404,20 @@ class HandleWorkflowTest extends AppTestBase {
                 stakingPeriodTimeHook,
                 null))
                 .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        recordCache,
+                        null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
