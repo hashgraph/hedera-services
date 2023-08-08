@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,24 @@
 
 package com.swirlds.benchmark;
 
-import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
+public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue> {
 
     // Serializer class ID
-    private static final long CLASS_ID = 0xbfadab77596df06L;
+    private static final long CLASS_ID = 0xbae262725c67b901L;
 
     // Serializer version
-    private static final int VERSION = 1;
+    private static final class ClassVersion {
+        public static final int ORIGINAL = 1;
+    }
 
-    // Key data version
+    // Value data version
     private static final int DATA_VERSION = 1;
 
-    public BenchmarkKeySerializer() {
+    public BenchmarkValueSerializer() {
         // required for deserialization
     }
 
@@ -42,7 +44,7 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
 
     @Override
     public int getVersion() {
-        return VERSION;
+        return ClassVersion.ORIGINAL;
     }
 
     @Override
@@ -52,29 +54,19 @@ public class BenchmarkKeySerializer implements KeySerializer<BenchmarkKey> {
 
     @Override
     public int getSerializedSize() {
-        return BenchmarkKey.getKeySize();
+        return Integer.BYTES + BenchmarkValue.getValueSize();
     }
 
     @Override
-    public int serialize(final BenchmarkKey data, final ByteBuffer buffer) throws IOException {
+    public int serialize(final BenchmarkValue data, final ByteBuffer buffer) throws IOException {
         data.serialize(buffer);
         return getSerializedSize();
     }
 
     @Override
-    public int deserializeKeySize(final ByteBuffer buffer) {
-        return getSerializedSize();
-    }
-
-    @Override
-    public BenchmarkKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        BenchmarkKey key = new BenchmarkKey();
-        key.deserialize(buffer, (int) dataVersion);
-        return key;
-    }
-
-    @Override
-    public boolean equals(final ByteBuffer buffer, final int dataVersion, final BenchmarkKey keyToCompare) {
-        return keyToCompare.equals(buffer, dataVersion);
+    public BenchmarkValue deserialize(final ByteBuffer buffer, final long version) throws IOException {
+        final BenchmarkValue value = new BenchmarkValue();
+        value.deserialize(buffer, (int) version);
+        return value;
     }
 }

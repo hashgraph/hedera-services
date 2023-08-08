@@ -7,5 +7,5 @@ module com.swirlds.demo.migration {
     requires lazysodium.java;
     requires com.swirlds.logging;
     requires com.swirlds.virtualmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
 }

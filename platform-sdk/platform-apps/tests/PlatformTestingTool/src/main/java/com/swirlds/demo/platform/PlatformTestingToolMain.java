@@ -559,11 +559,6 @@ public class PlatformTestingToolMain implements SwirldMain {
 
             // Parameters[1]: JSON file for app client (parsed below), optional
 
-            // Parameters[2]: indicates whether to use MerkleDb (true) or JasperDB (false) for virtual maps, optional
-            final boolean useMerkleDb =
-                    parameters != null && parameters.length > 2 && Boolean.parseBoolean(parameters[2]);
-            logger.info(LOGM_DEMO_INFO, "Using {} data sources", (useMerkleDb ? "MerkleDb" : "JasperDB"));
-
             final ProgressCfg progressCfg = new ProgressCfg();
 
             if (jsonFileName != null && jsonFileName.length() > 0) {
@@ -620,8 +615,7 @@ public class PlatformTestingToolMain implements SwirldMain {
                             final Pair<Long, Long> entitiesFirstIds = extractFirstIdForEntitiesFromSavedState(platform);
                             virtualMerkleConfig.setFirstAccountId(entitiesFirstIds.key());
                             virtualMerkleConfig.setFirstSmartContractId(entitiesFirstIds.value());
-                            VirtualMerkleStateInitializer.initStateChildren(
-                                    platform, selfId.id(), virtualMerkleConfig, useMerkleDb);
+                            VirtualMerkleStateInitializer.initStateChildren(platform, selfId.id(), virtualMerkleConfig);
                         }
                         final Metrics metrics = platform.getContext().getMetrics();
                         if (state.getVirtualMap() != null) {
