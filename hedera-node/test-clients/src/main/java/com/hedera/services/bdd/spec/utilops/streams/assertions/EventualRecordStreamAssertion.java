@@ -21,10 +21,10 @@ import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACC
 import com.hedera.services.bdd.junit.RecordStreamAccess;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.Assertions;
 
 /**
