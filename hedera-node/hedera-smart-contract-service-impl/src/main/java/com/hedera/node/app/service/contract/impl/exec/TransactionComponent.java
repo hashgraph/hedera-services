@@ -34,6 +34,5 @@ public interface TransactionComponent {
     ContextTransactionProcessor contextTransactionProcessor();
 
     @Nullable
-    // Use standard annotation also to alert Dagger2 this binding is nullable
     HydratedEthTxData hydratedEthTxData();
 }

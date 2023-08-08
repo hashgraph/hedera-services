@@ -143,16 +143,6 @@ class HandleHederaNativeOperationsTest {
     }
 
     @Test
-    void collectFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.collectFee(1L, 2L));
-    }
-
-    @Test
-    void refundFeeNotImplemented() {
-        assertThrows(AssertionError.class, () -> subject.refundFee(1L, 2L));
-    }
-
-    @Test
     void transferWithReceiverSigCheckUsesApi() {
         given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 

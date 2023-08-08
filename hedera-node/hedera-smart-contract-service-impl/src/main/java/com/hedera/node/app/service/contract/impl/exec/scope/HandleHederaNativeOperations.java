@@ -123,22 +123,6 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      * {@inheritDoc}
      */
     @Override
-    public void collectFee(final long fromEntityNumber, final long amount) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void refundFee(final long fromEntityNumber, final long amount) {
-        throw new AssertionError("Not implemented");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public @NonNull ResponseCodeEnum transferWithReceiverSigCheck(
             final long amount,
             final long fromEntityNumber,
