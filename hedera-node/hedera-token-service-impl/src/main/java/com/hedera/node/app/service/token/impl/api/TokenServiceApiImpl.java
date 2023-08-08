@@ -35,11 +35,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements {@link TokenServiceApi} via {@link WritableAccountStore} calls.
  */
 public class TokenServiceApiImpl implements TokenServiceApi {
+    private static final Logger log = LoggerFactory.getLogger(TokenServiceApiImpl.class);
     private static final Key STANDIN_CONTRACT_KEY =
             Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
@@ -117,10 +120,20 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         requireNonNull(contractId);
         final var store = new WritableAccountStore(writableStates);
         final var contract = requireNonNull(store.getContractById(contractId));
-        store.put(contract.copyBuilder().deleted(true).build());
-        if (contractId.hasEvmAddress()) {
-            store.removeAlias(contractId.evmAddressOrThrow());
+
+        final var evmAddress = contract.alias();
+        final var usedEvmAddress = contractId.evmAddressOrElse(Bytes.EMPTY);
+        if (!usedEvmAddress.equals(evmAddress)) {
+            log.error(
+                    "Contract {} has an alias {} different than its referencing EVM address {}",
+                    contractId,
+                    evmAddress,
+                    usedEvmAddress);
         }
+        maybeRemoveAlias(store, evmAddress);
+        maybeRemoveAlias(store, usedEvmAddress);
+
+        store.put(contract.copyBuilder().alias(Bytes.EMPTY).deleted(true).build());
     }
 
     /**
@@ -228,5 +241,11 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .firstContractStorageKey(firstKey)
                 .contractKvPairsNumber(newNumKvPairs)
                 .build());
+    }
+
+    private void maybeRemoveAlias(@NonNull final WritableAccountStore store, @NonNull final Bytes alias) {
+        if (!Bytes.EMPTY.equals(alias)) {
+            store.removeAlias(alias);
+        }
     }
 }

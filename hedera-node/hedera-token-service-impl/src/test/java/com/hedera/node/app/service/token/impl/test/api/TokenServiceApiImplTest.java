@@ -57,8 +57,10 @@ class TokenServiceApiImplTest {
     private static final Key STANDIN_CONTRACT_KEY =
             Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
-    private static final Bytes EVM_ADDRESS = Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
-    private static final Bytes SOME_STORE_KEY = Bytes.fromHex("0123456789");
+    private static final Bytes EVM_ADDRESS =
+            com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("89abcdef89abcdef89abcdef89abcdef89abcdef");
+    private static final Bytes OTHER_EVM_ADDRESS = Bytes.fromHex("29abcde089abcde089abcde089abcde089abcde0");
+    private static final Bytes SOME_STORE_KEY = com.hedera.pbj.runtime.io.buffer.Bytes.fromHex("0123456789");
 
     public static final ContractID CONTRACT_ID_BY_NUM =
             ContractID.newBuilder().contractNum(666).build();
@@ -211,6 +213,28 @@ class TokenServiceApiImplTest {
         assertEquals(1, accountStore.sizeOfAccountState());
         final var deletedContract = accountStore.getContractById(CONTRACT_ID_BY_NUM);
         assertTrue(deletedContract.deleted());
+        assertEquals(0, accountStore.sizeOfAliasesState());
+    }
+
+    @Test
+    void warnsLoudlyButRemovesBothAliasesIfPresent() {
+        // This scenario with two aliases referencing the same selfdestruct-ed contract is currently
+        // impossible (since only auto-created accounts with ECDSA keys can have two aliases), but if
+        // it somehow occurs, we might as well clean up both aliases
+        accountStore.put(Account.newBuilder()
+                .accountId(AccountID.newBuilder().accountNum(CONTRACT_ID_BY_NUM.contractNumOrThrow()))
+                .alias(OTHER_EVM_ADDRESS)
+                .smartContract(true)
+                .build());
+        accountStore.putAlias(EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+        accountStore.putAlias(OTHER_EVM_ADDRESS, CONTRACT_ACCOUNT_ID);
+
+        subject.deleteAndMaybeUnaliasContract(CONTRACT_ID_BY_ALIAS);
+
+        assertEquals(1, accountStore.sizeOfAccountState());
+        final var deletedContract = requireNonNull(accountStore.getContractById(CONTRACT_ID_BY_NUM));
+        assertTrue(deletedContract.deleted());
+        assertEquals(Bytes.EMPTY, deletedContract.alias());
         assertEquals(0, accountStore.sizeOfAliasesState());
     }
 

@@ -139,6 +139,7 @@ class HandleHederaNativeOperationsTest {
         subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
         verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID, INITIAL_CONTRACT_NONCE);
+        verify(context).newEntityNum();
     }
 
     @Test

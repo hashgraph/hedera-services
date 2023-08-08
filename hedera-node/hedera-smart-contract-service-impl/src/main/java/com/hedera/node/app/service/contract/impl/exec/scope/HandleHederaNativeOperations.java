@@ -115,6 +115,8 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
         final var tokenServiceApi = context.serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId, INITIAL_CONTRACT_NONCE);
+        // For temporary backward-compatibility with mono-service, consume an entity id
+        context.newEntityNum();
     }
 
     /**
