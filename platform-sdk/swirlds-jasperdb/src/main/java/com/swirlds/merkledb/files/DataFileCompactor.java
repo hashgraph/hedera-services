@@ -18,6 +18,10 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
+import static com.swirlds.merkledb.CompactionType.FULL;
+import static com.swirlds.merkledb.CompactionType.MEDIUM;
+import static com.swirlds.merkledb.CompactionType.NO_COMPACTION;
+import static com.swirlds.merkledb.CompactionType.SMALL;
 import static com.swirlds.merkledb.files.DataFileCommon.formatSizeBytes;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
@@ -140,12 +144,14 @@ public class DataFileCompactor {
      *                       returns it is assumed all readers will no longer be looking in old location, so old files
      *                       can be safely deleted.
      * @param filesToCompact   list of files to compact
+     * @param compactionType the type of the compaction to perform
      * @return list of files created during the compaction
      * @throws IOException          If there was a problem with the compaction
      * @throws InterruptedException If the compaction thread was interrupted
      */
     // visible for testing
-    synchronized List<Path> compactFiles(final CASableLongIndex index, final List<DataFileReader<?>> filesToCompact)
+    synchronized List<Path> compactFiles(
+            final CASableLongIndex index, final List<DataFileReader<?>> filesToCompact, CompactionType compactionType)
             throws IOException, InterruptedException {
         if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
@@ -156,7 +162,6 @@ public class DataFileCompactor {
             return Collections.emptyList();
         }
 
-        int currentLevel = filesToCompact.get(0).getMetadata().getCompactionLevel();
         // create a merge time stamp, this timestamp is the newest time of the set of files we are
         // merging
         final Instant startTime = filesToCompact.stream()
@@ -167,7 +172,7 @@ public class DataFileCompactor {
         try {
             currentCompactionStartTime.set(startTime);
             newCompactedFiles.clear();
-            startNewCompactionFile(currentLevel + 1);
+            startNewCompactionFile(compactionType.getLevel());
         } finally {
             snapshotCompactionLock.release();
         }
@@ -365,7 +370,7 @@ public class DataFileCompactor {
         Instant timestamp = Instant.now(clock);
 
         final UnaryOperator<List<DataFileReader<?>>> filesToCompactFilter;
-        final CompactionType compactionLevel;
+        final CompactionType targetCompactionLevel;
         final String storeName = dataFileCollection.getStoreName();
         final List<? extends DataFileReader<?>> allCompactableFiles = dataFileCollection.getAllCompletedFiles();
 
@@ -373,7 +378,7 @@ public class DataFileCompactor {
             lastFullCompact = timestamp;
             /* Filter nothing during a full merge */
             filesToCompactFilter = dataFileReaders -> dataFileReaders;
-            compactionLevel = CompactionType.FULL;
+            targetCompactionLevel = FULL;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Large Merge", storeName);
         } else if (isTimeForMediumCompaction(timestamp)
                 ||
@@ -385,17 +390,17 @@ public class DataFileCompactor {
                 // See https://www.notion.so/swirldslabs/Compaction-Improvements-247726614d924fbaa34aa82a157a2f20 for
                 // details
 
-                readersOfLevel(1)
+                (readersOfLevel(SMALL)
                                 .apply((List<DataFileReader<?>>) allCompactableFiles)
                                 .size()
-                        > MAX_FIRST_LEVEL_FILES_ALLOWED) {
+                        > MAX_FIRST_LEVEL_FILES_ALLOWED)) {
             lastMediumCompact = timestamp;
-            filesToCompactFilter = readersOfLevel(1);
-            compactionLevel = CompactionType.MEDIUM;
+            filesToCompactFilter = readersOfLevel(SMALL);
+            targetCompactionLevel = MEDIUM;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Medium Merge", storeName);
         } else {
-            filesToCompactFilter = readersOfLevel(0);
-            compactionLevel = CompactionType.SMALL;
+            filesToCompactFilter = readersOfLevel(NO_COMPACTION);
+            targetCompactionLevel = SMALL;
             logger.info(MERKLE_DB.getMarker(), "[{}] Starting Small Merge", storeName);
         }
 
@@ -426,18 +431,19 @@ public class DataFileCompactor {
                 filesCount,
                 formatSizeBytes(filesToCompactSize));
 
-        final List<Path> newFilesCreated = compactFiles(index, filesToCompact);
+        final List<Path> newFilesCreated = compactFiles(index, filesToCompact, targetCompactionLevel);
 
         final long end = System.currentTimeMillis();
         final long tookMillis = end - start;
         if (reportDurationMetricFunction != null) {
-            reportDurationMetricFunction.accept(compactionLevel, tookMillis);
+            reportDurationMetricFunction.accept(targetCompactionLevel, tookMillis);
         }
 
         final long compactedFilesSize = getSizeOfFilesByPath(newFilesCreated);
         if (reportSavedSpaceMetricFunction != null) {
             reportSavedSpaceMetricFunction.accept(
-                    compactionLevel, (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
+                    targetCompactionLevel,
+                    (filesToCompactSize - compactedFilesSize) * UnitConstants.BYTES_TO_MEBIBYTES);
         }
 
         logCompactStats(storeName, tookMillis, filesToCompact, filesToCompactSize, newFilesCreated, dataFileCollection);
@@ -465,12 +471,12 @@ public class DataFileCompactor {
     /**
      * Create a filter to only return all new files that belong to certain compaction level
      *
-     * @param expectedCompactionLevel compaction level to filter by
+     * @param compactionType compaction type to filter by
      * @return filter to filter list of files
      */
-    public static UnaryOperator<List<DataFileReader<?>>> readersOfLevel(int expectedCompactionLevel) {
+    public static UnaryOperator<List<DataFileReader<?>>> readersOfLevel(CompactionType compactionType) {
         return dataFileReaders -> dataFileReaders.stream()
-                .filter(file -> file.getMetadata().getCompactionLevel() == expectedCompactionLevel)
+                .filter(file -> file.getMetadata().getCompactionLevel() == compactionType.getLevel())
                 .collect(Collectors.toList());
     }
 }
