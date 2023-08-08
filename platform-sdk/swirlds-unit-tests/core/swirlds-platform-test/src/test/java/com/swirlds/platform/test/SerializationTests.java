@@ -25,7 +25,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
-import com.swirlds.platform.test.event.RandomEventUtils;
+import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import com.swirlds.test.framework.TestTypeTags;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.io.IOException;

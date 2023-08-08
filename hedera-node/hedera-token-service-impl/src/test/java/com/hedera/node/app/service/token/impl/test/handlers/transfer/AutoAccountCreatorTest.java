@@ -74,7 +74,7 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -102,7 +102,7 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -131,7 +131,7 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(address, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

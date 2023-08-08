@@ -32,7 +32,7 @@ import com.swirlds.platform.event.EventIntakeTask;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;

@@ -96,7 +96,7 @@ class ContextTransactionProcessorTest {
                         HEVM_CREATION, baseProxyWorldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, CONFIGURATION))
                 .willReturn(SUCCESS_RESULT);
 
-        final var expectedResult = new CallOutcome(SUCCESS_RESULT.asProtoResultForBase(baseProxyWorldUpdater), SUCCESS);
+        final var expectedResult = new CallOutcome(SUCCESS_RESULT.asProtoResultOf(baseProxyWorldUpdater), SUCCESS);
         assertEquals(expectedResult, subject.call());
     }
 }

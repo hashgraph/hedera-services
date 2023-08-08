@@ -51,7 +51,7 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
     private static final Logger logger = LogManager.getLogger(DefaultMetricsProvider.class);
 
-    private final MetricsFactory factory = new DefaultMetricsFactory();
+    private final MetricsFactory factory;
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
             getStaticThreadManager().createThreadFactory("platform-core", "MetricsThread"));
 
@@ -73,6 +73,7 @@ public class DefaultMetricsProvider implements MetricsProvider, Lifecycle {
 
         metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final PrometheusConfig prometheusConfig = configuration.getConfigData(PrometheusConfig.class);
+        factory = new DefaultMetricsFactory(metricsConfig);
 
         globalMetrics = new DefaultMetrics(null, metricKeyRegistry, executor, factory, metricsConfig);
 

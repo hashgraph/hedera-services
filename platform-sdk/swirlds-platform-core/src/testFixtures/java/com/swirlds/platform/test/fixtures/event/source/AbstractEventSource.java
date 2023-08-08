@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test.event.source;
+package com.swirlds.platform.test.fixtures.event.source;
 
-import static com.swirlds.platform.test.event.EventUtils.integerPowerDistribution;
-import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
-import static com.swirlds.platform.test.event.RandomEventUtils.randomEventWithTimestamp;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
 import com.swirlds.common.test.fixtures.TransactionUtils;
-import com.swirlds.platform.test.event.DynamicValue;
-import com.swirlds.platform.test.event.DynamicValueGenerator;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.LinkedList;
@@ -224,7 +224,7 @@ public abstract class AbstractEventSource<T extends AbstractEventSource<T>> impl
 
         final IndexedEvent otherParentEvent = otherParent.getRecentEvent(random, otherParentIndex);
 
-        event = randomEventWithTimestamp(
+        event = RandomEventUtils.randomEventWithTimestamp(
                 random,
                 nodeId,
                 timestamp,

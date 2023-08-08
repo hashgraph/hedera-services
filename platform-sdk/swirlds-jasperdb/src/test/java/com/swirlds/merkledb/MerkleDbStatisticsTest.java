@@ -55,7 +55,11 @@ class MerkleDbStatisticsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
     }
@@ -255,7 +259,11 @@ class MerkleDbStatisticsTest {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
         final MerkleDbStatistics statistics = new MerkleDbStatistics(LABEL);
         statistics.registerMetrics(metrics);
         final Metric metric =

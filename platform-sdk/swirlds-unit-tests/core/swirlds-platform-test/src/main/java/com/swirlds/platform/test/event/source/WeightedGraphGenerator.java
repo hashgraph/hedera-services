@@ -16,7 +16,8 @@
 
 package com.swirlds.platform.test.event.source;
 
-import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
 import java.util.List;
 
 /**

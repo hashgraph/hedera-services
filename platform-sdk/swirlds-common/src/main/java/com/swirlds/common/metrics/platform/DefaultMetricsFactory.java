@@ -31,11 +31,19 @@ import com.swirlds.common.metrics.MetricsFactory;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.StatEntry;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * An implementation of {@link MetricsFactory} that creates platform-internal {@link Metric}-instances
  */
 public class DefaultMetricsFactory implements MetricsFactory {
+    private final MetricsConfig metricsConfig;
+
+    public DefaultMetricsFactory(@NonNull final MetricsConfig metricsConfig) {
+        this.metricsConfig = Objects.requireNonNull(metricsConfig, "metricsConfig is null");
+    }
 
     /**
      * {@inheritDoc}
@@ -119,6 +127,9 @@ public class DefaultMetricsFactory implements MetricsFactory {
      */
     @Override
     public RunningAverageMetric createRunningAverageMetric(final RunningAverageMetric.Config config) {
+        if (config.isUseDefaultHalfLife()) {
+            return new DefaultRunningAverageMetric(config.withHalfLife(metricsConfig.halfLife()));
+        }
         return new DefaultRunningAverageMetric(config);
     }
 
@@ -127,6 +138,9 @@ public class DefaultMetricsFactory implements MetricsFactory {
      */
     @Override
     public SpeedometerMetric createSpeedometerMetric(final SpeedometerMetric.Config config) {
+        if (config.isUseDefaultHalfLife()) {
+            return new DefaultSpeedometerMetric(config.withHalfLife(metricsConfig.halfLife()));
+        }
         return new DefaultSpeedometerMetric(config);
     }
 

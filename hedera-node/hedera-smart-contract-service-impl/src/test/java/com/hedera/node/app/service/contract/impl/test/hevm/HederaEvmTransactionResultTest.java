@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.test.hevm;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.BESU_LOGS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_EVM_ADDRESS;
@@ -61,18 +60,10 @@ class HederaEvmTransactionResultTest {
     private ProxyWorldUpdater proxyWorldUpdater;
 
     @Mock
-    private RootProxyWorldUpdater committedUpdater;
+    private RootProxyWorldUpdater rootProxyWorldUpdater;
 
     @Mock
     private StorageAccessTracker accessTracker;
-
-    @Test
-    void abortsWithTranslatedStatus() {
-        final var subject = HederaEvmTransactionResult.abortFor(INVALID_SIGNATURE);
-
-        assertEquals(INVALID_SIGNATURE, subject.abortReason());
-        assertEquals(INVALID_SIGNATURE, subject.finalStatus());
-    }
 
     @Test
     void finalStatusFromHaltNotImplemented() {
@@ -101,12 +92,12 @@ class HederaEvmTransactionResultTest {
         given(frame.getLogs()).willReturn(BESU_LOGS);
         given(frame.getOutputData()).willReturn(pbjToTuweniBytes(OUTPUT_DATA));
         final var createdIds = List.of(CALLED_CONTRACT_ID, CHILD_CONTRACT_ID);
-        given(committedUpdater.getCreatedContractIds()).willReturn(createdIds);
-        given(committedUpdater.getUpdatedContractNonces()).willReturn(NONCES);
+        given(rootProxyWorldUpdater.getCreatedContractIds()).willReturn(createdIds);
+        given(rootProxyWorldUpdater.getUpdatedContractNonces()).willReturn(NONCES);
 
         final var result = HederaEvmTransactionResult.successFrom(
                 GAS_LIMIT / 2, CALLED_CONTRACT_ID, CALLED_CONTRACT_EVM_ADDRESS, frame);
-        final var protoResult = result.asProtoResultForBase(committedUpdater);
+        final var protoResult = result.asProtoResultOf(rootProxyWorldUpdater);
         assertEquals(GAS_LIMIT / 2, protoResult.gasUsed());
         assertEquals(bloomForAll(BESU_LOGS), protoResult.bloom());
         assertEquals(OUTPUT_DATA, protoResult.contractCallResult());

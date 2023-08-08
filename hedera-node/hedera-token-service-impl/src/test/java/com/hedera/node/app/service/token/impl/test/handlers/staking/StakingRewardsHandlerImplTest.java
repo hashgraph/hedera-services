@@ -36,6 +36,7 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsDis
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.ConfigProvider;
 import java.time.Instant;
@@ -56,6 +57,9 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext handleContext;
+
+    @Mock
+    private CryptoDeleteRecordBuilder recordBuilder;
 
     private StakingRewardsHandlerImpl subject;
     private StakePeriodManager stakePeriodManager;
@@ -431,13 +435,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                 .build();
         addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
 
-        writableAccountStore.put(account.copyBuilder()
-                .tinybarBalance(accountBalance - HBARS_TO_TINYBARS)
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
                 .stakedNodeId(0L)
                 .build());
-        writableAccountStore.put(ownerAccount
+        writableAccountStore.put(ownerAccountBefore
                 .copyBuilder()
-                .tinybarBalance(ownerBalance + HBARS_TO_TINYBARS)
+                .tinybarBalance(ownerBalance + accountBalance)
                 .stakedNodeId(0L)
                 .build());
 
@@ -446,9 +451,14 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
                         .atStartOfDay(ZoneOffset.UTC)
                         .toInstant());
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
 
-        // TODO: this will change once transfer to beneficiary is implemented
-        assertThatThrownBy(() -> subject.applyStakingRewards(handleContext)).isInstanceOf(IllegalStateException.class);
+        final var rewards = subject.applyStakingRewards(handleContext);
+        assertThat(rewards).hasSize(1);
+        // because the transferId is owner for the deleted payer account
+        assertThat(rewards).containsEntry(ownerId, 178900L);
     }
 
     @Test
@@ -640,22 +650,157 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         // Only worthwhile to update stakedPeriodStart for an account staking to a node
         assertThat(modifiedPayer.stakePeriodStart()).isEqualTo(stakePeriodStart);
     }
-    //
-    //    @Test
-    //    void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
-    //        TODO: Need to add this test once implemented
-    //    }
-    //
-    //    @Test
-    //    void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
-    //        TODO: Need to add this test once implemented
-    //    }
-    //
-    //    @Test
-    //    void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
-    //        TODO: Need to add this test once implemented
-    //    }
-    //
+
+    @Test
+    void rewardsUltimateBeneficiaryInsteadOfDeletedAccount() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
+                .stakedNodeId(0L)
+                .build());
+        writableAccountStore.put(ownerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(ownerBalance + accountBalance)
+                .stakedNodeId(0L)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+
+        final var rewards = subject.applyStakingRewards(handleContext);
+        assertThat(rewards).hasSize(1);
+        // because the transferId is owner for the deleted payer account
+        assertThat(rewards).containsEntry(ownerId, 178900L);
+    }
+
+    @Test
+    void doesntTrackAnythingIfRedirectBeneficiaryDeclinedReward() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(true)
+                .withDeleted(false)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore));
+
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
+                .stakedNodeId(0L)
+                .build());
+        writableAccountStore.put(ownerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(ownerBalance + accountBalance)
+                .stakedNodeId(0L)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(1);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+
+        final var rewards = subject.applyStakingRewards(handleContext);
+        // because the transferId is owner and it declined reward
+        assertThat(rewards).hasSize(0);
+    }
+
+    @Test
+    void failsHardIfMoreRedirectsThanDeletedEntitiesAreNeeded() {
+        final var accountBalance = 555L * HBARS_TO_TINYBARS;
+        final var ownerBalance = 111L * HBARS_TO_TINYBARS;
+        final var payerAccountBefore = new AccountCustomizer()
+                .withAccount(account)
+                .withBalance(accountBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var ownerAccountBefore = new AccountCustomizer()
+                .withAccount(ownerAccount)
+                .withBalance(ownerBalance)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        final var spenderAccountBefore = new AccountCustomizer()
+                .withAccount(spenderAccount)
+                .withBalance(0L)
+                .withStakeAtStartOfLastRewardPeriod(-1L)
+                .withStakePeriodStart(stakePeriodStart)
+                .withDeclineReward(false)
+                .withDeleted(true)
+                .build();
+        addToState(Map.of(payerId, payerAccountBefore, ownerId, ownerAccountBefore, spenderId, spenderAccountBefore));
+
+        writableAccountStore.put(payerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(0)
+                .stakedNodeId(0L)
+                .build());
+        writableAccountStore.put(ownerAccountBefore
+                .copyBuilder()
+                .tinybarBalance(ownerBalance + accountBalance)
+                .stakedNodeId(0L)
+                .build());
+
+        given(handleContext.consensusNow())
+                .willReturn(LocalDate.ofEpochDay(stakePeriodStart + 2)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant());
+        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(handleContext.recordBuilder(CryptoDeleteRecordBuilder.class)).willReturn(recordBuilder);
+
+        given(recordBuilder.getNumberOfDeletedAccounts()).willReturn(2);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(payerId)).willReturn(ownerId);
+        given(recordBuilder.getDeletedAccountBeneficiaryFor(ownerId)).willReturn(spenderId);
+
+        assertThatThrownBy(() -> subject.applyStakingRewards(handleContext)).isInstanceOf(IllegalStateException.class);
+    }
+
     @Test
     void updatesStakedToMeSideEffects() {
         final var accountBalance = 55L * HBARS_TO_TINYBARS;
@@ -845,7 +990,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         writableAccountStore.put(account.copyBuilder()
                 .tinybarBalance(100L)
                 .stakedNodeId(0L)
-                .declineReward(true)
+                .declineReward(false)
                 .build());
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
     }

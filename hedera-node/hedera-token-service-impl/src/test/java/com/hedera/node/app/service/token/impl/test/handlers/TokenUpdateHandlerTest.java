@@ -52,11 +52,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -76,6 +78,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenUpdateValidator;
+import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -107,6 +110,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock(strictness = LENIENT)
     private GlobalDynamicProperties dynamicProperties;
+
+    @Mock
+    private TokenUpdateRecordBuilder recordBuilder;
 
     private TransactionBody txn;
     private ExpiryValidator expiryValidator;
@@ -374,6 +380,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
         given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
 
         final var token = readableTokenStore.get(fungibleTokenId);
@@ -417,6 +424,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(rel.frozen()).isFalse();
         assertThat(rel.kycGranted()).isTrue();
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test
@@ -460,6 +473,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var newTreasuryRel = writableTokenRelStore.get(payerId, nonFungibleTokenId);
         final var oldTreasuryRel = writableTokenRelStore.get(treasuryId, nonFungibleTokenId);
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
+
         assertThat(newTreasuryRel).isNull();
         assertThat(oldTreasuryRel.balance()).isEqualTo(1);
 
@@ -493,6 +508,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         final var modifiedOldTreasury = writableAccountStore.get(treasuryId);
         assertThat(modifiedNewTreasury.numberOwnedNfts()).isEqualTo(3);
         assertThat(modifiedOldTreasury.numberOwnedNfts()).isEqualTo(1);
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(nonFungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test
@@ -771,6 +792,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(writableAccountStore);
         assertThat(writableTokenRelStore.get(payerId, fungibleTokenId)).isNull();
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -791,6 +813,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         assertThat(modifiedToken.memo()).isEqualTo("test token1");
         assertThat(modifiedToken.autoRenewSecs()).isEqualTo(fungibleToken.autoRenewSecs());
         assertThat(modifiedToken.tokenType()).isEqualTo(FUNGIBLE_COMMON);
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test
@@ -817,6 +845,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        given(handleContext.recordBuilder(TokenUpdateRecordBuilder.class)).willReturn(recordBuilder);
 
         assertThatNoException().isThrownBy(() -> subject.handle(handleContext));
 
@@ -840,6 +869,12 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         assertThat(rel.frozen()).isFalse();
         assertThat(rel.kycGranted()).isTrue();
+
+        verify(recordBuilder)
+                .addAutomaticTokenAssociation(TokenAssociation.newBuilder()
+                        .tokenId(fungibleTokenId)
+                        .accountId(payerId)
+                        .build());
     }
 
     @Test

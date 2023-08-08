@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.fees;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -82,7 +83,8 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                 baseNftMintOperationIsChargedExpectedFee(),
                 baseNftWipeOperationIsChargedExpectedFee(),
                 baseNftBurnOperationIsChargedExpectedFee(),
-                NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers()));
+                NftMintsScaleLinearlyBasedOnNumberOfSerialNumbers(),
+                NftMintsScaleLinearlyBasedOnNumberOfSignatures()));
     }
 
     private HapiSpec baseNftMintOperationIsChargedExpectedFee() {
@@ -140,6 +142,31 @@ public class AllBaseOpFeesSuite extends HapiSuite {
                         .fee(ONE_HUNDRED_HBARS)
                         .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
+    }
+
+    private HapiSpec NftMintsScaleLinearlyBasedOnNumberOfSignatures() {
+        final var numOfSigs = 10;
+        final var extraSigPrice = 0.0006016996;
+        final var expectedFee = EXPECTED_NFT_MINT_PRICE_USD + ((numOfSigs - 1) * extraSigPrice);
+        final var standard100ByteMetadata = ByteString.copyFromUtf8(
+                "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789");
+
+        return defaultHapiSpec("NftMintsScaleLinearlyBasedOnNumberOfSignatures")
+                .given(
+                        newKeyNamed(SUPPLY_KEY).shape(listOf(numOfSigs)),
+                        cryptoCreate(CIVILIAN_ACCT).balance(ONE_MILLION_HBARS).key(SUPPLY_KEY),
+                        tokenCreate(UNIQUE_TOKEN)
+                                .initialSupply(0L)
+                                .expiry(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
+                                .supplyKey(SUPPLY_KEY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE))
+                .when(mintToken(UNIQUE_TOKEN, List.of(standard100ByteMetadata))
+                        .payingWith(CIVILIAN_ACCT)
+                        .signedBy(SUPPLY_KEY, SUPPLY_KEY, SUPPLY_KEY)
+                        .blankMemo()
+                        .fee(ONE_HUNDRED_HBARS)
+                        .via("moreSigsTxn"))
+                .then(validateChargedUsdWithin("moreSigsTxn", expectedFee, ALLOWED_DIFFERENCE_PERCENTAGE));
     }
 
     private HapiSpec baseNftWipeOperationIsChargedExpectedFee() {
