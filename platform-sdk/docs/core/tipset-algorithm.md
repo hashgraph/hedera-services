@@ -247,20 +247,22 @@ When it next comes time for A to create an event, it will start comparing agains
 When it comes time to create a new event, if there are multiple other parents to choose from, select the other parent
 that results in the greatest tipset score improvement.
 
-# Bully Scores
+# Selfishness Scores
 
-Informally, bullying is when the network decides (for whatever reason) not to use an event creator's events as other
-parents very often. The node being bullied (the nerd) will then find that it is difficult or impossible for its events
+Informally, selfishness is when the network decides (for whatever reason) not to use an event creator's events as other
+parents very often. The node being ignored will then find that it is difficult or impossible for its events
 to reach consensus.
 
-A bully score is a numeric value that increases the more a "nerd" is getting ignored. The more time that passes
-without putting a nerd's event into the ancestry of recent events, the higher the bully score is against that node.
+A selfishness score is a numeric value that increases the more a node is getting ignored. The more time that passes
+without putting a node's event into the ancestry of recent events, the higher the selfishness score is against that
+node.
 
-To compute the bully score against a node `X`, look at recent snapshot tipsets. Starting with the current snapshot
-and going backwards towards older snapshots, count the number of snapshots that need to be iterated over before an
-advancement in `X`'s generation is observed. That count is the bully score against `X`.
+To compute the selfishness score against a node `X`, look at recent snapshot tipsets. Starting with the current
+snapshot and going backwards towards older snapshots, count the number of snapshots that need to be iterated
+over before an advancement in `X`'s generation is observed. That count is the selfishness score against `X`.
 
-In order to prevent nodes from being bullied too badly, it is important to periodically choose a nerdy event as an
-other parent, even if that choice of other parent does not improve the snapshot advancement score much. The exact
-algorithm for this is a bit of a heuristic, and needs to be tuned on a variety of factors. Failure to occasionally
-select nerdy events may cause some nodes to be unable to create events that reach consensus.
+In order to prevent nodes from being ignored too badly, it is important to periodically choose an event from an
+ignored node as an other parent, even if that choice of other parent does not improve the snapshot advancement
+score much. The exact algorithm for this is a bit of a heuristic, and needs to be tuned on a variety of factors.
+Failure to occasionally select an ignored node's events may cause some nodes to be unable to create events that
+reach consensus.

@@ -258,11 +258,11 @@ class TipsetWeightCalculatorTests {
         assertNotSame(snapshot1, snapshot2);
 
         // D should have a bully score of 1, all others a score of 0.
-        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
-        assertEquals(1, calculator.getBullyScoreForNode(nodeD));
-        assertEquals(1, calculator.getMaxBullyScore());
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
+        assertEquals(1, calculator.getSelfishnessScoreForNode(nodeD));
+        assertEquals(1, calculator.getMaxSelfishnessScore());
 
         // Create another batch of events where D is bullied.
         final EventDescriptor eventA3 = new EventDescriptor(randomHash(random), nodeA, 3);
@@ -287,11 +287,11 @@ class TipsetWeightCalculatorTests {
         assertNotSame(snapshot2, snapshot3);
 
         // D should have a bully score of 2, all others a score of 0.
-        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
-        assertEquals(2, calculator.getBullyScoreForNode(nodeD));
-        assertEquals(2, calculator.getMaxBullyScore());
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
+        assertEquals(2, calculator.getSelfishnessScoreForNode(nodeD));
+        assertEquals(2, calculator.getMaxSelfishnessScore());
 
         // Create a bach of events that don't bully D. Let's all bully C, because C is a jerk.
         final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
@@ -316,11 +316,11 @@ class TipsetWeightCalculatorTests {
         assertNotSame(snapshot3, snapshot4);
 
         // Now, all nodes should have a bully score of 0 except for C, which should have a score of 1.
-        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
-        assertEquals(1, calculator.getBullyScoreForNode(nodeC));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
-        assertEquals(1, calculator.getMaxBullyScore());
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
+        assertEquals(1, calculator.getSelfishnessScoreForNode(nodeC));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeD));
+        assertEquals(1, calculator.getMaxSelfishnessScore());
 
         // Stop bullying C. D stops creating events.
         final EventDescriptor eventA5 = new EventDescriptor(randomHash(random), nodeA, 5);
@@ -341,11 +341,11 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot5 = calculator.getSnapshot();
         assertNotSame(snapshot4, snapshot5);
 
-        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
-        assertEquals(0, calculator.getMaxBullyScore());
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeD));
+        assertEquals(0, calculator.getMaxSelfishnessScore());
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
         // count as bullying.
@@ -367,11 +367,11 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot6 = calculator.getSnapshot();
         assertNotSame(snapshot5, snapshot6);
 
-        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
-        assertEquals(0, calculator.getMaxBullyScore());
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeD));
+        assertEquals(0, calculator.getMaxSelfishnessScore());
 
         // Rinse and repeat.
         final EventDescriptor eventA7 = new EventDescriptor(randomHash(random), nodeA, 7);
@@ -392,11 +392,11 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot7 = calculator.getSnapshot();
         assertNotSame(snapshot6, snapshot7);
 
-        assertEquals(0, calculator.getBullyScoreForNode(nodeA));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeB));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeC));
-        assertEquals(0, calculator.getBullyScoreForNode(nodeD));
-        assertEquals(0, calculator.getMaxBullyScore());
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
+        assertEquals(0, calculator.getSelfishnessScoreForNode(nodeD));
+        assertEquals(0, calculator.getMaxSelfishnessScore());
     }
 
     @Test

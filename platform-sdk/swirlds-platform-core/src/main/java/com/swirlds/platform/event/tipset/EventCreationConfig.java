@@ -29,12 +29,13 @@ import java.time.Duration;
  *                                       for the entire network is equal to this value times the number of nodes. A
  *                                       value of 0 means that there is no limit to the number of events that can be
  *                                       created (as long as those events are legal to create).
- * @param antiBullyingFactor             the lower this number, the more likely it is that a new event will be created
- *                                       that reduces this node's bully score. Setting this too low may result in a
- *                                       suboptimal hashgraph topology. Setting this number too high may lead to some
- *                                       nodes being bullied and unable to cause their events to reach consensus.
+ * @param antiSelfishnessFactor          the lower this number, the more likely it is that a new event will be created
+ *                                       that reduces this node's selfishness score. Setting this too low may result in
+ *                                       a suboptimal hashgraph topology. Setting this number too high may lead to some
+ *                                       nodes being ignored by selfish nodes and unable to cause their events to reach
+ *                                       consensus.
  * @param tipsetSnapshotHistorySize      the number of tipsets to keep in the snapshot history. These tipsets are used
- *                                       to compute bully scores.
+ *                                       to compute selfishness scores.
  * @param eventIntakeThrottle            when the size of the event intake queue equals or exceeds this value, do not
  *                                       permit the creation of new self events.
  * @param creationQueueSize              the size of the intake queue for the event creator
@@ -46,7 +47,7 @@ import java.time.Duration;
 public record EventCreationConfig(
         @ConfigProperty(defaultValue = "true") boolean useTipsetAlgorithm,
         @ConfigProperty(defaultValue = "0") double maxCreationRate,
-        @ConfigProperty(defaultValue = "10") double antiBullyingFactor,
+        @ConfigProperty(defaultValue = "10") double antiSelfishnessFactor,
         @ConfigProperty(defaultValue = "10") int tipsetSnapshotHistorySize,
         @ConfigProperty(defaultValue = "1024") int eventIntakeThrottle,
         @ConfigProperty(defaultValue = "1024") int creationQueueSize,
