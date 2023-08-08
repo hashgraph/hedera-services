@@ -44,5 +44,5 @@ public interface MultiQueueThread extends StoppableThread, Clearable {
      *
      * @return the number of items in the queue
      */
-    int size(); // TODO test
+    int size();
 }
