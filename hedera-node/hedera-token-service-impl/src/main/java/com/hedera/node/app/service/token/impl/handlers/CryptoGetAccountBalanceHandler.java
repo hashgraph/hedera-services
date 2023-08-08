@@ -87,9 +87,7 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
         } else if (op.hasContractID()) {
             final var contract = accountStore.getContractById(requireNonNull(op.contractID()));
             validateFalsePreCheck(contract == null || !contract.smartContract(), INVALID_CONTRACT_ID);
-            if (contract != null) {
-                validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
-            }
+            validateFalsePreCheck(contract.deleted(), CONTRACT_DELETED);
         } else {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }

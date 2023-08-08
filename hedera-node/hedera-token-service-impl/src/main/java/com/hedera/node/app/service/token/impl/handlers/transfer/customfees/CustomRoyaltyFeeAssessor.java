@@ -69,7 +69,7 @@ public class CustomRoyaltyFeeAssessor {
             @NonNull final AccountID receiver,
             @NonNull final AssessmentResult result,
             @NonNull final HandleContext handleContext) {
-        // TODO: remove the @SuppressWarnings("java:S1854") when this variable is in use
+        // FUTURE: remove the @SuppressWarnings("java:S1854") when this variable is in use
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         final var tokenId = feeMeta.tokenId();

@@ -223,7 +223,7 @@ public class CryptoTransferHandler implements TransactionHandler {
 
             // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT.
             // Will be a no-op for every txn except possibly the first (i.e., the top-level txn).
-            // Since assessed custom fees never change NFT owners
+            // This is because assessed custom fees never change NFT owners
             final var changeNftOwners = new NFTOwnersChangeStep(txn, topLevelPayer);
             steps.add(changeNftOwners);
         }

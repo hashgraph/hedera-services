@@ -24,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class NetworkingStakingTranslator {
 
     private NetworkingStakingTranslator() {
-        throw new IllegalStateException("Utility class");
+        throw new UnsupportedOperationException("Utility class");
     }
 
     @NonNull

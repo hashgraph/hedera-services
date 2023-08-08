@@ -298,7 +298,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
             // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
             // preserve an already-recorded memory of her stake at the beginning of this period.
-            // While in scenario 4 there is no point in recording anything---it will go unused.)
+            // In scenario 4 there is no point in recording anything---her stake will go unused.)
             if (earnedZeroRewardsBecauseOfZeroStake(account, stakingRewardStore, consensusNow)) {
                 return true;
             }
