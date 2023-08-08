@@ -257,7 +257,7 @@ public class Browser {
                 .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
-        if (appMains.size() > 0) {
+        if (!appMains.isEmpty()) {
             appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
         }
 
@@ -431,7 +431,7 @@ public class Browser {
         }
 
         settingsUsedBuilder.append(System.lineSeparator());
-        settingsUsedBuilder.append("-------------Configuration Values-------------");
+        settingsUsedBuilder.append("------------- All Configuration -------------");
         settingsUsedBuilder.append(System.lineSeparator());
 
         // Add all config values to the string builder
