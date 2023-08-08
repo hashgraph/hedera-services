@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.consensus.framework;
 
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.Utilities;
 import java.util.HashSet;
 import java.util.List;
@@ -36,13 +37,13 @@ public class Util {
         long partitionedStake = 0L;
         for (int i = 0; i < nodeStakes.size(); i++) {
             // If we have enough partitioned nodes to make a strong minority, stop and return
-            if (Utilities.isStrongMinority(partitionedStake, totalStake)) {
+            if (Threshold.STRONG_MINORITY.isSatisfiedBy(partitionedStake, totalStake)) {
                 break;
             }
             // If adding this node to the partition would give the partition a super majority, skip
             // this node because
             // the remaining group of nodes would not have a strong minority
-            if (Utilities.isSuperMajority(partitionedStake + nodeStakes.get(i), totalStake)) {
+            if (Threshold.SUPER_MAJORITY.isSatisfiedBy(partitionedStake + nodeStakes.get(i), totalStake)) {
                 continue;
             }
             partitionedNodes.add(i);
@@ -75,7 +76,7 @@ public class Util {
             // If adding this node to the partition would give the partition a strong minority, skip
             // this node because
             // the remaining group of nodes would not have a super majority
-            if (Utilities.isStrongMinority(partitionedStake + nodeStakes.get(i), totalStake)) {
+            if (Threshold.STRONG_MINORITY.isSatisfiedBy(partitionedStake + nodeStakes.get(i), totalStake)) {
                 continue;
             }
             partitionedNodes.add(i);

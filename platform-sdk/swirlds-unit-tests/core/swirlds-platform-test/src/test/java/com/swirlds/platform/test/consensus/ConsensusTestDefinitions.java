@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.platform.test.event.EventUtils.integerPowerDistribution;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createBalancedOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createCliqueOtherParentMatrix;
 import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createPartitionedOtherParentAffinityMatrix;
@@ -25,7 +25,7 @@ import static com.swirlds.platform.test.graph.OtherParentMatrixFactory.createShu
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.platform.Utilities;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
@@ -35,19 +35,17 @@ import com.swirlds.platform.test.consensus.framework.TestInput;
 import com.swirlds.platform.test.consensus.framework.Util;
 import com.swirlds.platform.test.consensus.framework.validation.EventRatioValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
-import com.swirlds.platform.test.event.DynamicValue;
-import com.swirlds.platform.test.event.EventUtils;
 import com.swirlds.platform.test.event.emitter.PriorityEventEmitter;
 import com.swirlds.platform.test.event.emitter.StandardEventEmitter;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
-import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.EventUtils;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.ResourceLoader;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -128,7 +126,7 @@ public final class ConsensusTestDefinitions {
 			int forkingNodeId = -1;
 			for (int i = 0; i < nodeWeights.size(); i++) {
 				final long weight = nodeWeights.get(i);
-				if (!Utilities.isStrongMinority(weight, totalWeight)) {
+				if (!Threshold.STRONG_MINORITY.isSatisfiedBy(weight, totalWeight)) {
 					forkingNodeId = i;
 					break;
 				}

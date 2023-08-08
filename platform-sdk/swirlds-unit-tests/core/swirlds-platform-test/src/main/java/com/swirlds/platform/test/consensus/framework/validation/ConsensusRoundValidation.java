@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;

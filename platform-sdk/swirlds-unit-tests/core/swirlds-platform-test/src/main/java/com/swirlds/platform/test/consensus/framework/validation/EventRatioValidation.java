@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
-import static com.swirlds.platform.test.event.EventUtils.countConsensusAndStaleEvents;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.countConsensusAndStaleEvents;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.internal.EventImpl;

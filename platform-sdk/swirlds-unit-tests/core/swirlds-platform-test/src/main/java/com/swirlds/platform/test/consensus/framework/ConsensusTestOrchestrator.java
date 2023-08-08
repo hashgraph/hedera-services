@@ -21,7 +21,7 @@ import com.swirlds.platform.event.EventConstants;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import java.util.List;
 import java.util.function.Consumer;
@@ -140,7 +140,7 @@ public class ConsensusTestOrchestrator {
     }
 
     /**
-     * Calls {@link com.swirlds.platform.test.event.source.EventSource#setNewEventWeight(double)}
+     * Calls {@link com.swirlds.platform.test.fixtures.event.source.EventSource#setNewEventWeight(double)}
      */
     public void setNewEventWeight(final int nodeIndex, final double eventWeight) {
         for (final ConsensusTestNode node : nodes) {

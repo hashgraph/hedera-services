@@ -21,6 +21,7 @@ import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.ConsensusConfig;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.consensus.AncestorSearch;
 import com.swirlds.platform.consensus.CandidateWitness;
 import com.swirlds.platform.consensus.ConsensusConstants;
@@ -582,7 +583,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
         }
         final long totalWeight = addressBook.getTotalWeight();
         final boolean superMajority =
-                Utilities.isSuperMajority(yesWeight, totalWeight) || Utilities.isSuperMajority(noWeight, totalWeight);
+                Threshold.SUPER_MAJORITY.isSatisfiedBy(yesWeight, totalWeight)
+                        || Threshold.SUPER_MAJORITY.isSatisfiedBy(noWeight, totalWeight);
         final boolean countingVote = yesWeight >= noWeight;
 
         return CountingVote.get(countingVote, superMajority);
@@ -989,7 +991,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
                             weight += addressBook.getAddress(addressBook.getNodeId(m3)).getWeight();
                         }
                     }
-                    if (Utilities.isSuperMajority(weight, totalWeight)) { // strongly see supermajority of
+                    if (Threshold.SUPER_MAJORITY.isSatisfiedBy(weight, totalWeight)) { // strongly see supermajority of
                         // intermediates
                         x.setStronglySeeP(mm, st);
                     } else {
@@ -1092,7 +1094,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus,
             }
         }
         consensusMetrics.witnessesStronglySeen(numStronglySeen);
-        if (Utilities.isSuperMajority(weight, addressBook.getTotalWeight())) {
+        if (Threshold.SUPER_MAJORITY.isSatisfiedBy(weight, addressBook.getTotalWeight())) {
             // it's a supermajority, so advance to the next round
             x.setRoundCreated(1 + parentRound(x));
             consensusMetrics.roundIncrementedByStronglySeen();
