@@ -18,9 +18,9 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
-import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
@@ -63,7 +63,7 @@ public class EmergencyReconnectLearner {
         this.reconnectController = Objects.requireNonNull(reconnectController);
         this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
 
-        validator = new EmergencySignedStateValidator(emergencyRecoveryFile);
+        validator = new EmergencySignedStateValidator(stateConfig, emergencyRecoveryFile);
     }
 
     /**
