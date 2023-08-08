@@ -118,7 +118,7 @@ public interface HandleContext {
      * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
      *
      * @param subType The {@link SubType} of the transaction.
-     * @return The {@Link FeeCalculator} to use.
+     * @return The {@link FeeCalculator} to use.
      */
     @NonNull
     FeeCalculator feeCalculator(@NonNull final SubType subType);
