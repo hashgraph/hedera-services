@@ -73,15 +73,6 @@ class TransactionModuleTest {
     @Mock
     private HandleContext context;
 
-    @Mock
-    private GasCalculator gasCalculator;
-
-    @Mock
-    private HandleSystemContractOperations handleSystemContractOperations;
-
-    @Mock
-    private ContractsConfig contractsConfig;
-
     @Test
     void createsEvmActionTracer() {
         assertInstanceOf(EvmActionTracer.class, provideActionSidecarContentTracer());
