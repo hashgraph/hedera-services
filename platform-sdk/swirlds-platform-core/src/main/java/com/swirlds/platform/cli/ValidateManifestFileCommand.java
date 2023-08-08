@@ -20,7 +20,8 @@ import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.config.StateConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -47,7 +48,9 @@ public class ValidateManifestFileCommand extends AbstractCommand {
 
     @Override
     public @NonNull Integer call() throws IOException {
-        final StateConfig stateConfig = ConfigurationHolder.getConfigData(StateConfig.class);
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+
         EmergencyRecoveryFile.read(stateConfig, dir, true);
         System.out.println("The emergency recovery file is well formed and has the necessary information.");
         return 0;

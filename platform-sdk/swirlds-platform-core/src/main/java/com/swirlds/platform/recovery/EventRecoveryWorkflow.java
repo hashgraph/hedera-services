@@ -161,11 +161,14 @@ public final class EventRecoveryWorkflow {
     /**
      * Update the resulting emergency recovery file to contain the bootstrap timestamp.
      *
+     * @param stateConfig     the state configuration for the platform
      * @param recoveryFileDir the directory containing the emergency recovery file
      * @param bootstrapTime   the consensus timestamp of the bootstrap state
      */
     public static void updateEmergencyRecoveryFile(
-            final StateConfig stateConfig, final Path recoveryFileDir, final Instant bootstrapTime) {
+            @NonNull final StateConfig stateConfig,
+            @NonNull final Path recoveryFileDir,
+            @NonNull final Instant bootstrapTime) {
         try {
             // Read the existing recovery file and write it to a backup directory
             final EmergencyRecoveryFile oldRecoveryFile = EmergencyRecoveryFile.read(stateConfig, recoveryFileDir);

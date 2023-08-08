@@ -41,7 +41,11 @@ public final class OSFileSystemChecker {
         this.pathsConfig = Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
     }
 
-    public boolean performFileSystemCheck(final StringBuilder sb, final OSHealthCheckConfig osHealthConfig) {
+    public boolean performFileSystemCheck(
+            @NonNull final StringBuilder sb, @NonNull final OSHealthCheckConfig osHealthConfig) {
+        Objects.requireNonNull(sb, "sb must not be null");
+        Objects.requireNonNull(osHealthConfig, "osHealthConfig must not be null");
+
         try {
             final OSFileSystemCheck.Report fileSystemReport =
                     OSFileSystemCheck.execute(pathsConfig.getConfigPath(), osHealthConfig.fileReadTimeoutMillis());
