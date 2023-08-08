@@ -152,7 +152,7 @@ public class TokenGetInfoHandler extends PaidQueryHandler {
             info.totalSupply(token.totalSupply());
             info.maxSupply(token.maxSupply());
             info.decimals(token.decimals());
-            info.expiry(Timestamp.newBuilder().seconds(token.expiry()));
+            info.expiry(Timestamp.newBuilder().seconds(token.expirationSeconds()));
             if (!isEmpty(token.adminKey())) info.adminKey(token.adminKey());
             if (!isEmpty(token.supplyKey())) {
                 info.supplyKey(token.supplyKey());

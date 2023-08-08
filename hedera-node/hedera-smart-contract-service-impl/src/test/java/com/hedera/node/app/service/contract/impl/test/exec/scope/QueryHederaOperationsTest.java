@@ -105,10 +105,10 @@ class QueryHederaOperationsTest {
 
     @Test
     void creatingAndDeletingContractsNotSupported() {
-        assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, 3L, null));
+        assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, null));
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> subject.createContract(1L, ContractCreateTransactionBody.DEFAULT, 3L, null));
+                () -> subject.createContract(1L, ContractCreateTransactionBody.DEFAULT, null));
         assertThrows(UnsupportedOperationException.class, () -> subject.deleteAliasedContract(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.deleteUnaliasedContract(1234L));
     }

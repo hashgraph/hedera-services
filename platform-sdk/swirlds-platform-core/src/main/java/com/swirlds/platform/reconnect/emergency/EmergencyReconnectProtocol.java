@@ -18,12 +18,12 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.status.StatusActionSubmitter;
-import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
@@ -118,7 +118,6 @@ public class EmergencyReconnectProtocol implements Protocol {
             // if a permit is acquired, it will be released by either initiateFailed or runProtocol
             final boolean shouldInitiate = reconnectController.acquireLearnerPermit();
             if (shouldInitiate) {
-                statusActionSubmitter.submitStatusAction(new EmergencyReconnectStartedAction());
                 initiatedBy = InitiatedBy.SELF;
             }
             return shouldInitiate;
@@ -183,8 +182,12 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void learner(final Connection connection) {
         registerReconnectCompleteListener();
         try {
+            final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
             final boolean peerHasState = new EmergencyReconnectLearner(
-                            emergencyRecoveryManager.getEmergencyRecoveryFile(), reconnectController)
+                            stateConfig,
+                            emergencyRecoveryManager.getEmergencyRecoveryFile(),
+                            reconnectController,
+                            statusActionSubmitter)
                     .execute(connection);
             if (!peerHasState) {
                 reconnectController.cancelLearnerPermit();

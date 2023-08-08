@@ -25,6 +25,7 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.EventConfig;
 import com.swirlds.common.config.SocketConfig;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
@@ -242,6 +243,7 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
 
         reconnectMetrics = new ReconnectMetrics(platformContext.getMetrics());
 
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         reconnectHelper = new ReconnectHelper(
                 this::pause,
                 clearAllPipelinesForReconnect::run,
@@ -254,7 +256,8 @@ public abstract class AbstractGossip implements ConnectionTracker, Gossip {
                         threadManager,
                         addressBook,
                         reconnectConfig.asyncStreamTimeout(),
-                        reconnectMetrics));
+                        reconnectMetrics),
+                stateConfig);
     }
 
     /**

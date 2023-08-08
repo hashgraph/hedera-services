@@ -36,7 +36,7 @@ public abstract class FileStore {
         Objects.requireNonNull(file);
         return new FileMetadata(
                 file.fileId(),
-                Timestamp.newBuilder().seconds(file.expirationTime()).build(),
+                Timestamp.newBuilder().seconds(file.expirationSeconds()).build(),
                 file.keys(),
                 file.contents(),
                 file.memo(),

@@ -432,11 +432,11 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
         final var txn = new CryptoUpdateBuilder().withExpiration(1234600L).build();
         givenTxnWith(txn);
         // initially account has 1234567L expiration
-        assertEquals(1234567L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234567L, writableStore.get(updateAccountId).expirationSeconds());
 
         // change it to given number
         subject.handle(handleContext);
-        assertEquals(1234600L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234600L, writableStore.get(updateAccountId).expirationSeconds());
     }
 
     @Test
@@ -602,7 +602,7 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
                         .copyBuilder()
                         .expiredAndPendingRemoval(true)
                         .tinybarBalance(0)
-                        .expiry(0)
+                        .expirationSeconds(0)
                         .build(),
                 accountNum,
                 account));
@@ -643,17 +643,17 @@ class CryptoUpdateHandlerTest extends CryptoHandlerTestBase {
 
         final var txn = new CryptoUpdateBuilder().withExpiration(1234600L).build();
         givenTxnWith(txn);
-        assertEquals(1234567L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234567L, writableStore.get(updateAccountId).expirationSeconds());
 
         subject.handle(handleContext);
-        assertEquals(1234600L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234600L, writableStore.get(updateAccountId).expirationSeconds());
     }
 
     @Test
     void rejectsExpiryReduction() {
         final var txn = new CryptoUpdateBuilder().withExpiration(10L).build();
         givenTxnWith(txn);
-        assertEquals(1234567L, writableStore.get(updateAccountId).expiry());
+        assertEquals(1234567L, writableStore.get(updateAccountId).expirationSeconds());
 
         assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)

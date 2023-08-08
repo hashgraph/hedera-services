@@ -162,7 +162,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull RentFactors getRentFactorsFor(final long number) {
         final var account = validatedAccount(number);
-        return new RentFactors(account.contractKvPairsNumber(), account.expiry());
+        return new RentFactors(account.contractKvPairsNumber(), account.expirationSeconds());
     }
 
     /**
@@ -281,7 +281,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Address getAddress(final long number) {
+    public @Nullable Address getAddress(final long number) {
         final var account = validatedAccount(number);
         if (account.deleted()) {
             return null;

@@ -48,11 +48,14 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenAttributesValidator {
+
     public static final Key IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
 
     @Inject
-    public TokenAttributesValidator() {}
+    public TokenAttributesValidator() {
+        // Dagger
+    }
 
     /**
      * Validates the token symbol, if it is exists and is not empty or not too long.

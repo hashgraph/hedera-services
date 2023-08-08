@@ -267,7 +267,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .totalSupply(fungibleToken.totalSupply())
                 .maxSupply(fungibleToken.maxSupply())
                 .decimals(fungibleToken.decimals())
-                .expiry(Timestamp.newBuilder().seconds(fungibleToken.expiry()))
+                .expiry(Timestamp.newBuilder().seconds(fungibleToken.expirationSeconds()))
                 .adminKey(fungibleToken.adminKey())
                 .kycKey(fungibleToken.kycKey())
                 .freezeKey(fungibleToken.freezeKey())
