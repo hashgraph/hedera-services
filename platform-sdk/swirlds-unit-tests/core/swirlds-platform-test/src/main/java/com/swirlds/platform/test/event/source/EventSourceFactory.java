@@ -17,6 +17,8 @@
 package com.swirlds.platform.test.event.source;
 
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.LinkedList;

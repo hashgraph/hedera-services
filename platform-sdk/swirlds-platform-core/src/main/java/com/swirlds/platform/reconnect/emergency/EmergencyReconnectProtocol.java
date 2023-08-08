@@ -18,6 +18,7 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
@@ -181,7 +182,9 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void learner(final Connection connection) {
         registerReconnectCompleteListener();
         try {
+            final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
             final boolean peerHasState = new EmergencyReconnectLearner(
+                            stateConfig,
                             emergencyRecoveryManager.getEmergencyRecoveryFile(),
                             reconnectController,
                             statusActionSubmitter)

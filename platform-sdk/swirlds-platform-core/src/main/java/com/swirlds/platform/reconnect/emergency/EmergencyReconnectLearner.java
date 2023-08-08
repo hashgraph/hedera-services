@@ -20,6 +20,7 @@ import static com.swirlds.logging.LogMarker.RECONNECT;
 
 import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.reconnect.ReconnectController;
 import com.swirlds.platform.reconnect.ReconnectException;
@@ -45,14 +46,18 @@ public class EmergencyReconnectLearner {
     private final StatusActionSubmitter statusActionSubmitter;
 
     /**
+     * @param stateConfig           the state configuration from the platform
      * @param emergencyRecoveryFile the emergency recovery file used for this reconnect
      * @param reconnectController   controls reconnecting as a learner
      * @param statusActionSubmitter used to submit status actions
      */
     public EmergencyReconnectLearner(
+            @NonNull final StateConfig stateConfig,
             @NonNull final EmergencyRecoveryFile emergencyRecoveryFile,
             @NonNull final ReconnectController reconnectController,
             @NonNull final StatusActionSubmitter statusActionSubmitter) {
+
+        Objects.requireNonNull(stateConfig);
 
         this.emergencyRecoveryFile = Objects.requireNonNull(emergencyRecoveryFile);
         this.reconnectController = Objects.requireNonNull(reconnectController);

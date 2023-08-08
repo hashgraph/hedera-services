@@ -28,6 +28,7 @@ import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.crypto.PublicStores;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.test.consensus.GenerateConsensus;
+import com.swirlds.platform.test.fixtures.stream.StreamUtils;
 import com.swirlds.signingtool.FileSignTool;
 import java.io.IOException;
 import java.nio.file.Files;
