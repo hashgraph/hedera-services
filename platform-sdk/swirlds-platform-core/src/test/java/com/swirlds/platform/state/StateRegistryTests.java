@@ -23,7 +23,7 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.io.InputOutputStream;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.test.state.DummySwirldState;
+import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestTypeTags;
 import java.io.IOException;

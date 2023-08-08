@@ -55,4 +55,5 @@ module com.hedera.node.hapi {
     requires grpc.protobuf;
     requires org.antlr.antlr4.runtime;
     requires static com.github.spotbugs.annotations;
+    requires static java.annotation;
 }

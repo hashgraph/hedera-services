@@ -16,9 +16,9 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
-    id("com.swirlds.platform.benchmark-conventions")
+    id("com.hedera.hashgraph.benchmark-conventions")
 }
 
 dependencies {
