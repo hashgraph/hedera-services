@@ -34,6 +34,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fixtures.signature.ExpandedSignaturePairFactory;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
@@ -425,7 +426,7 @@ class HandleWorkflowTest extends AppTestBase {
     @DisplayName("Successful execution of simple case")
     void testHappyPath() {
         // given
-        when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+        when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
         // when
         workflow.handleRound(state, round);
 
@@ -519,7 +520,7 @@ class HandleWorkflowTest extends AppTestBase {
             // given
             when(platformTxn.getMetadata()).thenReturn(null);
             when(event.getCreatorId()).thenReturn(new NodeId(0));
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
 
             // when
             workflow.handleRound(state, round);
@@ -631,7 +632,7 @@ class HandleWorkflowTest extends AppTestBase {
                     })
                     .when(signatureExpander)
                     .expand(eq(Set.of(bobsKey)), any(), any());
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -719,7 +720,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -792,7 +793,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -846,7 +847,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.optionalKey(bobsKey);
@@ -907,7 +908,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -953,7 +954,7 @@ class HandleWorkflowTest extends AppTestBase {
                             argThat(set -> set.size() == 1
                                     && bobsKey.equals(set.iterator().next().key()))))
                     .thenReturn(verificationResults);
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             // when
             workflow.handleRound(state, round);
 
@@ -994,7 +995,7 @@ class HandleWorkflowTest extends AppTestBase {
                     null,
                     CONFIG_VERSION);
             when(platformTxn.getMetadata()).thenReturn(preHandleResult);
-            when(exchangeRateManager.getExchangeRateSet()).thenReturn(EXCHANGE_RATE_SET);
+            when(exchangeRateManager.exchangeRates()).thenReturn(EXCHANGE_RATE_SET);
             doAnswer(invocation -> {
                         final var context = invocation.getArgument(0, PreHandleContext.class);
                         context.requireKey(bobsKey);

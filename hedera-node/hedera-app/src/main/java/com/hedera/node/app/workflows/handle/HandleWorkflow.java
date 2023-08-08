@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -176,7 +177,7 @@ public class HandleWorkflow {
             if (transaction.signedTransactionBytes().length() > 0) {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
-                // in this case, recorder hash the transaction itself, not its' bodyBytes.
+                // in this case, recorder hash the transaction itself, not its bodyBytes.
                 transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
             }
 
@@ -184,8 +185,8 @@ public class HandleWorkflow {
                     .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionBytes)
                     .transactionID(txBody.transactionID())
-                    .memo(txBody.memo())
-                    .exchangeRate(exchangeRateManager.getExchangeRateSet());
+                    .exchangeRate(exchangeRateManager.exchangeRates())
+                    .memo(txBody.memo());
 
             // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
             switch (preHandleResult.status()) {
