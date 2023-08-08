@@ -53,9 +53,6 @@ public interface ContractServiceModule {
     @Singleton
     GasCalculator bindGasCalculator(@NonNull final CustomGasCalculator gasCalculator);
 
-    //    @Multibinds
-    //    Map<Address, PrecompiledContract> bindHederaPrecompiles();
-
     @Binds
     @IntoMap
     @Singleton

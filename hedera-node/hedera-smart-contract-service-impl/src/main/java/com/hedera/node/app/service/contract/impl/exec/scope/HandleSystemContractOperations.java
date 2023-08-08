@@ -129,16 +129,4 @@ public class HandleSystemContractOperations {
             @NonNull final TransactionBody syntheticTransaction, @NonNull final VerificationStrategy strategy) {
         throw new AssertionError("Not implemented");
     }
-
-    /**
-     * Adds and returns a new child record of the given record builder class.
-     * Simply delegates to {@link HandleContext#addChildRecordBuilder(Class)}.
-     *
-     * @param <T> the record type
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     * @return the new created child record builder
-     */
-    public <T> T createChildRecord(@NonNull Class<T> recordBuilderClass) {
-        return context.addChildRecordBuilder(recordBuilderClass);
-    }
 }
