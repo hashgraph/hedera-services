@@ -18,7 +18,7 @@ module com.swirlds.demo.platform {
     requires com.swirlds.common.test;
     requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
 
     exports com.swirlds.demo.platform.fs.stresstest.proto to
             com.google.protobuf,
