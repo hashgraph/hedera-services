@@ -17,18 +17,19 @@
 import com.google.protobuf.gradle.ProtobufExtract
 
 plugins {
-    id("com.swirlds.platform.application")
+    id("com.hedera.hashgraph.application")
     id("com.google.protobuf") version "0.9.4"
 }
 
+application.mainClass.set("com.swirlds.demo.platform.PlatformTestingToolMain")
+
 dependencies {
-    // testImplementation(testLibs.bundles.junit)
-    // testImplementation(testLibs.bundles.mocking)
-    // testImplementation(testFixtures(project(":swirlds-common")))
+    testImplementation(gav("com.swirlds.platform.core"))
+    testImplementation(gav("org.junit.jupiter.api"))
+    testImplementation(gav("org.mockito"))
 }
 
 protobuf { protoc { artifact = "com.google.protobuf:protoc:3.21.5" } }
-
 
 // Make all dependency versions accessible to proto compile
 configurations {

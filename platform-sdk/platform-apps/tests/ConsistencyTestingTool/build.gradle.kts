@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.swirlds.platform.application")
-}
+plugins { id("com.hedera.hashgraph.application") }
+
+application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
 
 dependencies {
     javaModuleDependencies {

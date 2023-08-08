@@ -36,6 +36,10 @@ tasks.register<JavaExec>("run") {
         )
     classpath = rootProject.files(File(sdkDir, "data/lib"))
     maxHeapSize = "8g"
+    /*
+
+    FIXME - clarify how this should work
+
     project(":swirlds-platform-apps:demos").subprojects.forEach {
         dependsOn(it.tasks.named("copyApp"))
         dependsOn(it.tasks.named("copyLib"))
@@ -45,4 +49,5 @@ tasks.register<JavaExec>("run") {
         dependsOn(it.tasks.named("copyLib"))
     }
     dependsOn(project(":swirlds").tasks.named("copyApp"))
+    */
 }

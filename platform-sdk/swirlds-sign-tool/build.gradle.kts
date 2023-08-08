@@ -15,10 +15,11 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
+    id("com.hedera.hashgraph.application")
     id("com.swirlds.platform.maven-publish")
-    id("com.swirlds.platform.application")
 }
+
+application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
 dependencies {
     // Individual Dependencies

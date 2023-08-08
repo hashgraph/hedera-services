@@ -1,3 +1,5 @@
+import gradle.kotlin.dsl.accessors._43cbf62894d99994471eb2bf6678bbf3.application
+
 /*
  * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
  *
@@ -14,6 +16,6 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.swirlds.platform.application")
-}
+plugins { id("com.hedera.hashgraph.application") }
+
+application.mainClass.set("com.swirlds.demo.crypto.CryptocurrencyDemoMain")

@@ -23,16 +23,19 @@ plugins {
 
 group = "com.swirlds"
 
+// Find the central SDK deployment dir by searching up the folder hierarchy
+fun sdkDir(dir: Directory): Directory = if (dir.dir("sdk").asFile.exists()) dir.dir("sdk") else sdkDir(dir.dir(".."))
+
 // Copy dependencies into `sdk/data/lib`
 val copyLib = tasks.register<Copy>("copyLib") {
     from(project.configurations.runtimeClasspath)
-    into(layout.projectDirectory.dir("../../../sdk/data/lib"))
+    into(sdkDir(layout.projectDirectory).dir("data/lib"))
 }
 
 // Copy built jar into `data/apps` and rename
 val copyApp = tasks.register<Copy>("copyApp") {
     from(tasks.jar)
-    into(File(rootProject.projectDir, "../../../sdk/data/apps"))
+    into(sdkDir(layout.projectDirectory).dir("data/apps"))
     rename { "${project.name}.jar" }
 }
 
@@ -42,7 +45,7 @@ tasks.assemble {
 }
 
 val cleanRun = tasks.register<Delete>("cleanRun") {
-    val sdkDir = layout.projectDirectory.dir("../../../sdk")
+    val sdkDir = sdkDir(layout.projectDirectory)
     delete(sdkDir.asFileTree.matching {
         include("settingsUsed.txt")
         include("swirlds.jar")
@@ -64,10 +67,19 @@ tasks.clean {
 }
 
 tasks.jar {
-    val mainClass: String by project
+    // Gradle fails to track 'configurations.runtimeClasspath' as an input to the task if it is
+    // only used in the 'mainfest.attributes'. Hence, we explicitly add it as input.
+    inputs.files(configurations.runtimeClasspath)
     manifest {
         attributes(
-            "Main-Class" to mainClass,
+            "Main-Class" to application.mainClass,
+            "Class-Path" to
+                    configurations.runtimeClasspath.get().elements.map { entry ->
+                        entry
+                            .map { copyLib.get().destinationDir.relativeTo(File(copyApp.get().destinationDir, it.asFile.name)) }
+                            .sorted()
+                            .joinToString(separator = " ")
+                    }
         )
     }
 }

@@ -112,18 +112,17 @@ tasks.withType<Test> {
 
 // Add all the libs dependencies into the jar manifest!
 tasks.jar {
-    doFirst {
-        tasks.jar.configure {
-            manifest {
-                attributes(
-                    "Main-Class" to "com.hedera.node.app.ServicesMain",
-                    "Class-Path" to
-                        configurations.getByName("runtimeClasspath").joinToString(separator = " ") {
-                            "../../data/lib/" + it.name
-                        }
-                )
-            }
-        }
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.node.app.ServicesMain",
+            "Class-Path" to
+                configurations.runtimeClasspath.get().elements.map { entry ->
+                    entry
+                        .map { "../../data/lib/" + it.asFile.name }
+                        .sorted()
+                        .joinToString(separator = " ")
+                }
+        )
     }
 }
 
