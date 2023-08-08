@@ -17,11 +17,6 @@
 package com.hedera.node.app.service.contract.impl.test.state;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.NEXT_NUMBER;
-import static com.hedera.node.app.service.contract.impl.test.state.ProxyWorldUpdaterTest.SOME_EVM_ADDRESS;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -44,7 +39,6 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;

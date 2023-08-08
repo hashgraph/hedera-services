@@ -27,10 +27,6 @@ import java.util.Map;
 public class AssortedOpsXTestConstants {
     static final long NEXT_ENTITY_NUM = 1004L;
     static final long ONE_HBAR = 100_000_000L;
-    static final long LAZY_CREATION_AMOUNT = ONE_HBAR;
-    static final long FINALIZATION_AMOUNT = ONE_HBAR;
-    static final long SENDER_START_BALANCE = 100 * ONE_HBAR;
-    static final long TAKE_FIVE_AMOUNT = 5;
     static final long EXPECTED_ASSORTED_OPS_NONCE = 4;
     static final long EXPECTED_ASSORTED_OPS_BALANCE = 2 * ONE_HBAR - 5;
     static final Bytes SENDER_ALIAS =
