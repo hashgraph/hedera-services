@@ -16,6 +16,7 @@
 
 package com.swirlds.common.crypto;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -131,6 +132,7 @@ public enum DigestType {
      *
      * @return a new message digest
      */
+    @NonNull
     public MessageDigest buildDigest() {
         try {
             return MessageDigest.getInstance(algorithmName());

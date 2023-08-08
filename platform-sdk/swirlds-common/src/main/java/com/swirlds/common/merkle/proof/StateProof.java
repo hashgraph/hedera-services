@@ -35,7 +35,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.proof.algorithms.NodeSignature;
-import com.swirlds.common.merkle.proof.algorithms.SignatureValidator;
 import com.swirlds.common.merkle.proof.tree.StateProofNode;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
@@ -99,6 +98,7 @@ public class StateProof implements SelfSerializable {
      *
      * @param cryptography provides cryptographic primitives
      * @param addressBook  the address book to use to validate the state proof
+     * @param threshold    the threshold of signatures required to trust this state proof
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
@@ -117,11 +117,12 @@ public class StateProof implements SelfSerializable {
      *
      * @param cryptography       provides cryptographic primitives
      * @param addressBook        the address book to use to validate the state proof
+     * @param threshold          the threshold of signatures required to trust this state proof
      * @param signatureValidator a function that verifies a signature
      * @return true if this state proof is valid, otherwise false
      * @throws IllegalStateException if this method is called before this object has been fully deserialized
      */
-    boolean isValid(
+    public boolean isValid(
             @NonNull final Cryptography cryptography,
             @NonNull final AddressBook addressBook,
             @NonNull final Threshold threshold,
