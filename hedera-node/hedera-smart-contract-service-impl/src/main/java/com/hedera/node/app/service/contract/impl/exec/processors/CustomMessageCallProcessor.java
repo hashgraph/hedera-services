@@ -40,6 +40,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
@@ -97,17 +98,18 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     @Override
     public void start(@NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
         final var codeAddress = frame.getContractAddress();
-        if (systemContracts.containsKey(codeAddress)) {
-            throw new UnsupportedOperationException("Hedera precompiles");
-        } else if (addressChecks.isSystemAccount(codeAddress)) {
+        if (addressChecks.isSystemAccount(codeAddress)) {
             doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
         } else if (transfersValue(frame)) {
             doTransferValueOrHalt(frame, tracer);
         }
         if (!alreadyHalted(frame)) {
             final var evmPrecompile = precompiles.get(codeAddress);
+            final var systemContract = systemContracts.get(codeAddress);
             if (evmPrecompile != null) {
-                doExecute(evmPrecompile, frame, tracer);
+                doExecutePrecompile(evmPrecompile, frame, tracer);
+            } else if(systemContract != null) {
+                doExecuteSystemContract(systemContract, frame, tracer);
             } else {
                 frame.setState(MessageFrame.State.CODE_EXECUTING);
             }
@@ -118,7 +120,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
         return featureFlags.isImplicitCreationEnabled(config);
     }
 
-    private void doExecute(
+    private void doExecutePrecompile(
             @NonNull final PrecompiledContract precompile,
             @NonNull final MessageFrame frame,
             @NonNull final OperationTracer tracer) {
@@ -132,14 +134,46 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             if (result.isRefundGas()) {
                 frame.incrementRemainingGas(gasRequirement);
             }
-            if (frame.getState() == MessageFrame.State.REVERT) {
-                frame.setRevertReason(result.getOutput());
-            } else {
-                frame.setOutputData(result.getOutput());
-            }
-            frame.setState(result.getState());
-            frame.setExceptionalHaltReason(result.getHaltReason());
+            finishPrecompileExecution(frame, result);
         }
+    }
+
+    /**
+     * This method is necessary as the system contracts do not calculate their gas requirements until after
+     * the call to computePrecompile. Thus, the logic for checking for sufficient gas must be done in a different
+     * order vs normal precompiles.
+     *
+     * @param systemContract    the system contract to execute
+     * @param frame             the current frame
+     * @param tracer            the operation tracer
+     */
+    private void doExecuteSystemContract(
+            @NonNull final PrecompiledContract systemContract,
+            @NonNull final MessageFrame frame,
+            @NonNull final OperationTracer tracer) {
+        final var result = systemContract.computePrecompile(frame.getInputData(), frame);
+        final var gasRequirement = systemContract.gasRequirement(frame.getInputData());
+        tracer.tracePrecompileCall(frame, gasRequirement, result.getOutput());
+        if (frame.getRemainingGas() < gasRequirement) {
+            doHalt(frame, INSUFFICIENT_GAS);
+        } else {
+            if (!result.isRefundGas()) {
+                frame.decrementRemainingGas(gasRequirement);
+            }
+            finishPrecompileExecution(frame, result);
+        }
+    }
+
+    private void finishPrecompileExecution(
+            @NonNull final MessageFrame frame,
+            @NonNull final PrecompileContractResult result) {
+        if (frame.getState() == MessageFrame.State.REVERT) {
+            frame.setRevertReason(result.getOutput());
+        } else {
+            frame.setOutputData(result.getOutput());
+        }
+        frame.setState(result.getState());
+        frame.setExceptionalHaltReason(result.getHaltReason());
     }
 
     private void doTransferValueOrHalt(

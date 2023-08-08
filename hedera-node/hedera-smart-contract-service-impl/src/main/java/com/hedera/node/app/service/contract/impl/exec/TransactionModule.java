@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.contract.impl.exec;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.contract.impl.annotations.InitialTokenServiceApi;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.scope.HandleSystemContractOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.utils.ActionStack;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HandleContextHevmBlocks;
@@ -49,9 +52,13 @@ import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.Supplier;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-@Module
+@Module(includes = {TransactionSystemContractModule.class})
 public interface TransactionModule {
     @Provides
     @TransactionScope
