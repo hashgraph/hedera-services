@@ -211,7 +211,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         tipsetMetrics.getSelfishnessMetric().update(selfishness);
 
         // Never bother with anti-selfishness techniques if we have a selfishness score of 1.
-        // We are pretty much guaranteed to selfishness ~1/3 of other nodes by a score of 1.
+        // We are pretty much guaranteed to selfish to ~1/3 of other nodes by a score of 1.
         final double beNiceChance = (selfishness - 1) / antiSelfishnessFactor;
 
         if (beNiceChance > 0 && random.nextDouble() < beNiceChance) {
@@ -286,7 +286,7 @@ public class TipsetEventCreatorImpl implements TipsetEventCreator {
         final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
 
-        // Choose a random ignored node, weighted by how much it is currently being bullied.
+        // Choose a random ignored node, weighted by how much it is currently being ignored.
 
         // First, figure out who is an ignored node and sum up all selfishness scores.
         int selfishnessSum = 0;

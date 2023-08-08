@@ -189,8 +189,8 @@ class TipsetWeightCalculatorTests {
     }
 
     @Test
-    @DisplayName("Bully Test")
-    void bullyTest() {
+    @DisplayName("Selfish Node Test")
+    void selfishNodeTest() {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
@@ -257,7 +257,7 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot2 = calculator.getSnapshot();
         assertNotSame(snapshot1, snapshot2);
 
-        // D should have a bully score of 1, all others a score of 0.
+        // D should have a selfishness score of 1, all others a score of 0.
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
@@ -286,14 +286,14 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot3 = calculator.getSnapshot();
         assertNotSame(snapshot2, snapshot3);
 
-        // D should have a bully score of 2, all others a score of 0.
+        // D should have a selfishness score of 2, all others a score of 0.
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeC));
         assertEquals(2, calculator.getSelfishnessScoreForNode(nodeD));
         assertEquals(2, calculator.getMaxSelfishnessScore());
 
-        // Create a bach of events that don't bully D. Let's all bully C, because C is a jerk.
+        // Create a bach of events that don't ignore D. Let's all ignore C, because C is a jerk.
         final EventDescriptor eventA4 = new EventDescriptor(randomHash(random), nodeA, 4);
         tracker.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
         childlessEventTracker.addEvent(eventA4, List.of(eventA3, eventB3, eventD3));
@@ -315,14 +315,14 @@ class TipsetWeightCalculatorTests {
         final Tipset snapshot4 = calculator.getSnapshot();
         assertNotSame(snapshot3, snapshot4);
 
-        // Now, all nodes should have a bully score of 0 except for C, which should have a score of 1.
+        // Now, all nodes should have a selfishness score of 0 except for C, which should have a score of 1.
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeA));
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeB));
         assertEquals(1, calculator.getSelfishnessScoreForNode(nodeC));
         assertEquals(0, calculator.getSelfishnessScoreForNode(nodeD));
         assertEquals(1, calculator.getMaxSelfishnessScore());
 
-        // Stop bullying C. D stops creating events.
+        // Stop ignoring C. D stops creating events.
         final EventDescriptor eventA5 = new EventDescriptor(randomHash(random), nodeA, 5);
         tracker.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
         childlessEventTracker.addEvent(eventA5, List.of(eventA4, eventB4, eventC4, eventD4));
@@ -348,7 +348,7 @@ class TipsetWeightCalculatorTests {
         assertEquals(0, calculator.getMaxSelfishnessScore());
 
         // D still is not creating events. Since there is no legal event from D to use as a parent, this doesn't
-        // count as bullying.
+        // count as being selfish.
         final EventDescriptor eventA6 = new EventDescriptor(randomHash(random), nodeA, 6);
         tracker.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));
         childlessEventTracker.addEvent(eventA6, List.of(eventA5, eventB5, eventC5));

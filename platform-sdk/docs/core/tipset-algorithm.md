@@ -126,7 +126,7 @@ only if it increased or did not increase.
 # Weighted Tipset Advancement Score
 
 A weighted tipset advancement score is very similar to a tipset advancement score. But instead of adding 1 for
-each entry that has a greater value, instead add the amount of consensus weight held by that node.
+each entry that has a greater value, add the amount of consensus weight held by that node.
 
 ```
 Example
