@@ -589,7 +589,7 @@ public final class JrsTestReader {
             generateHyperlink(sb, "data", testUrl);
             sb.append("</td>\n");
 
-            final String notesUrl = notes.get(testType); // TODO write warning for unused notes and vice versa
+            final String notesUrl = notes.get(testType);
             sb.append("<td>\n");
             if (notesUrl != null) {
                 generateHyperlink(sb, "notes", notesUrl);
