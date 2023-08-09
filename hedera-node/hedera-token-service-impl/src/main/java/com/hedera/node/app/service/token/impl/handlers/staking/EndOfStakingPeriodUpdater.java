@@ -226,7 +226,6 @@ public class EndOfStakingPeriodUpdater {
                 lastInstantOfPreviousPeriodFor(consensusTime), finalNodeStakes, stakingConfig);
         log.info("Exporting:\n{}", finalNodeStakes);
 
-
         final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
                 .body(syntheticNodeStakeUpdateTxn.build())
