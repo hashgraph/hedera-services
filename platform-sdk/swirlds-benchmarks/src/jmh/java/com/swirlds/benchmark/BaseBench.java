@@ -27,6 +27,7 @@ import com.swirlds.common.io.utility.TemporaryFileBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import java.io.IOException;
@@ -92,6 +93,7 @@ public abstract class BaseBench {
                 .withConfigDataType(BenchmarkConfig.class)
                 .withConfigDataType(VirtualMapConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
+                .withConfigDataType(JasperDbConfig.class)
                 .withConfigDataType(MetricsConfig.class)
                 .withConfigDataType(CryptoConfig.class)
                 .build();
