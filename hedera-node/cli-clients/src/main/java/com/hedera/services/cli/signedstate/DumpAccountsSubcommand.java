@@ -154,7 +154,7 @@ public class DumpAccountsSubcommand {
         final var accounts = new ConcurrentLinkedQueue<HederaAccount>();
         final var processed = new AtomicInteger();
         accountStore.forEach((entityNum, hederaAccount) -> {
-            final var n = processed.incrementAndGet();
+            processed.incrementAndGet();
             if (lowLimit <= entityNum.longValue() && entityNum.longValue() <= highLimit) accounts.add(hederaAccount);
         });
         final var accountsArr = accounts.toArray(new HederaAccount[0]);

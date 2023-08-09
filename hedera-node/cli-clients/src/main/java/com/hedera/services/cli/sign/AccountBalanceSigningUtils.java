@@ -35,11 +35,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Utility class for signing account balance files
  */
 public class AccountBalanceSigningUtils {
+
+    private static final Logger log = LogManager.getLogger(AccountBalanceSigningUtils.class);
 
     /**
      * Hidden constructor
@@ -54,6 +58,7 @@ public class AccountBalanceSigningUtils {
      * @param keyPair                  the keyPair used for signing
      * @return true if the signature file was generated successfully, false otherwise
      */
+    @SuppressWarnings("java:S112") // Suppressing that we are throwing RuntimeException(generic exception)
     public static boolean signAccountBalanceFile(
             @NonNull final Path signatureFileDestination,
             @NonNull final Path streamFileToSign,
@@ -70,16 +75,16 @@ public class AccountBalanceSigningUtils {
 
             generateSigBalanceFile(signatureFileDestination.toFile(), signature, fileHashByte);
 
-            System.out.println("Generated signature file: " + signatureFileDestination);
+            log.info("Generated signature file: {}", signatureFileDestination);
 
             return true;
         } catch (final SignatureException | InvalidKeyException | IOException e) {
-            System.err.printf(
-                    "signAccountBalanceFile :: Failed to sign file [%s] with exception : [%s]%n", streamFileToSign, e);
+            log.error(
+                    "signAccountBalanceFile :: Failed to sign file [{}] with exception : [{}]%n", streamFileToSign, e);
             return false;
         } catch (final NoSuchAlgorithmException | NoSuchProviderException e) {
-            System.err.printf(
-                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [%s] with exception : [%s]%n",
+            log.error(
+                    "signAccountBalanceFile :: Irrecoverable error encountered when signing [{}] with exception : [{}]%n",
                     streamFileToSign, e);
             throw new RuntimeException("signAccountBalanceFile :: Irrecoverable error encountered", e);
         }
@@ -95,8 +100,8 @@ public class AccountBalanceSigningUtils {
             output.write(signature);
             output.flush();
         } catch (final IOException e) {
-            System.err.printf(
-                    "generateSigBalanceFile :: Failed to generate signature file [%s] with exception : [%s]%n",
+            log.error(
+                    "generateSigBalanceFile :: Failed to generate signature file [{}] with exception : [{}]%n",
                     filePath.getAbsolutePath(), e);
             throw e;
         }
