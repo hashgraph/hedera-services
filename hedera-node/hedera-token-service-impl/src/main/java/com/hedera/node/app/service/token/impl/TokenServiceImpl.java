@@ -17,6 +17,8 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,8 +35,6 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.serdes.StringCodec;
-import com.hedera.node.app.service.token.impl.serdes.EntityNumCodec;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
@@ -79,7 +79,7 @@ public class TokenServiceImpl implements TokenService {
                 return Set.of(
                         StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
                         StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
-                        StateDefinition.onDisk(ALIASES_KEY, new StringCodec(), AccountID.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(ALIASES_KEY, StringCodec.SINGLETON, AccountID.PROTOBUF, MAX_ACCOUNTS),
                         StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                         StateDefinition.onDisk(
                                 TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
@@ -132,11 +132,10 @@ public class TokenServiceImpl implements TokenService {
                                     .autoRenewSecs(expiry) // TODO is this right?
                                     .accountId(id)
                                     .tinybarBalance(accountTinyBars)
-                                    //                                    .declineReward(true)
                                     .build());
                 }
-                addAccount(asAccount(800), accounts, superUserKey, expiry);
-                addAccount(asAccount(801), accounts, superUserKey, expiry);
+                addStakingAccounts(asAccount(800), accounts, FUNDING_ACCOUNT_EXPIRY);
+                addStakingAccounts(asAccount(801), accounts, FUNDING_ACCOUNT_EXPIRY);
 
                 updateNetworkRewards(ctx);
             }
@@ -155,11 +154,8 @@ public class TokenServiceImpl implements TokenService {
         networkRewardsState.put(networkRewards);
     }
 
-    private void addAccount(
-            final AccountID id,
-            final WritableKVState<Object, Object> accounts,
-            final Key superUserKey,
-            final long expiry) {
+    private void addStakingAccounts(
+            final AccountID id, final WritableKVState<Object, Object> accounts, final long expiry) {
         accounts.put(
                 id,
                 Account.newBuilder()
@@ -167,9 +163,10 @@ public class TokenServiceImpl implements TokenService {
                         .deleted(false)
                         .memo("")
                         .smartContract(false)
-                        .key(superUserKey)
-                        .autoRenewSecs(expiry) // TODO is this right?
+                        .key(EMPTY_KEY_LIST)
+                        .expiry(expiry)
                         .accountId(id)
+                        .maxAutoAssociations(0)
                         .tinybarBalance(0)
                         .build());
     }

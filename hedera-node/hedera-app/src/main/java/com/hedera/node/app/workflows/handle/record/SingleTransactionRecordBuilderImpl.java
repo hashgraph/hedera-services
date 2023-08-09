@@ -214,6 +214,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param transaction the transaction
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");

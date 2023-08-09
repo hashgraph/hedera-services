@@ -39,8 +39,9 @@ import java.util.Set;
  */
 public class HapiUtils {
     private static final int EVM_ADDRESS_ALIAS_LENGTH = 20;
-    private static final Key EMPTY_KEY_LIST =
+    public static final Key EMPTY_KEY_LIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
 
     /** A {@link Comparator} for {@link AccountID}s. Sorts first by account number, then by alias. */
     public static final Comparator<AccountID> ACCOUNT_ID_COMPARATOR = (o1, o2) -> {
