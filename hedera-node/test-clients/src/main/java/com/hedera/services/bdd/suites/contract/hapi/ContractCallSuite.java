@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAdd
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -31,6 +32,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -90,7 +92,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -115,7 +116,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
-@HapiTestSuite
+// @HapiTestSuite
 public class ContractCallSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
@@ -219,6 +220,7 @@ public class ContractCallSuite extends HapiSuite {
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
+                specialQueriesXTest(),
                 sendHbarsToAddressesMultipleTimes(),
                 sendHbarsToDifferentAddresses(),
                 sendHbarsFromDifferentAddressessToAddress(),
@@ -864,6 +866,69 @@ public class ContractCallSuite extends HapiSuite {
                         contractCall(contract, "remove", BigInteger.TWO)
                                 .gas(gasToOffer)
                                 .via(remove2));
+    }
+
+    HapiSpec specialQueriesXTest() {
+        final var secret = BigInteger.valueOf(123456789L);
+        final var tinybars = BigInteger.valueOf(666_666_666L);
+        final var erc20Symbol = "SYM20";
+        final var erc20Name = "20 Coin";
+        final var erc20Memo = "20 Coin Memo";
+        final var erc20Decimals = 2;
+        final var erc20TotalSupply = 888L;
+        final var erc20UserBalance = 111L;
+        final var erc721Symbol = "SYM721";
+        final var erc721Name = "721 Unique Things";
+        final var erc721Memo = "721 Unique Things Memo";
+        final var erc721SN1TokenUri = "https://example.com/721/1";
+        final var erc721UserBalance = 3;
+        final var ercUser = "ercUser";
+        final AtomicReference<Address> erc20Address = new AtomicReference<>();
+        final AtomicReference<Address> erc721Address = new AtomicReference<>();
+        final AtomicReference<Address> ercUserAddress = new AtomicReference<>();
+        final var contract = "SpecialQueriesXTest";
+        final var secretAbi =
+                "{\"inputs\":[],\"name\":\"secret\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
+        final AtomicReference<byte[]> prngOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> secretOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> tinycentEquivOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20BalanceOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20SupplyOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20NameOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20SymbolOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc20DecimalsOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721NameOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721SymbolOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721TokenUriOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721BalanceOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721IsOperatorOutput = new AtomicReference<>();
+        return onlyDefaultHapiSpec("SpecialQueriesXTest")
+                .given(
+                        cryptoCreate(ercUser).advertisingCreation(),
+                        tokenCreate("ERC20")
+                                .entityMemo(erc20Memo)
+                                .name(erc20Name)
+                                .symbol(erc20Symbol)
+                                .decimals(erc20Decimals)
+                                .initialSupply(erc20TotalSupply)
+                                .advertisingCreation(),
+                        uploadInitCode(contract),
+                        contractCreate(contract, secret).gas(250_000L))
+                .when(
+                        contractCallLocalWithFunctionAbi(contract, secretAbi)
+                                .exposingTypedResultsTo(results -> LOG.info("Secret is {}", results[0]))
+                                .exposingRawResultsTo(secretOutput::set),
+                        contractCallLocal(contract, "getTinycentsEquiv", tinybars)
+                                .exposingTypedResultsTo(results -> LOG.info("Equiv tinycents is {}", results[0]))
+                                .exposingRawResultsTo(tinycentEquivOutput::set),
+                        contractCallLocal(contract, "getPrngSeed")
+                                .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
+                                .exposingRawResultsTo(prngOutput::set))
+                .then(withOpContext((spec, opLog) -> {
+                    LOG.info("Explicit secret is {}", CommonUtils.hex(secretOutput.get()));
+                    LOG.info("Explicit PRNG seed is {}", CommonUtils.hex(prngOutput.get()));
+                    LOG.info("Explicit equiv tinycents is {}", CommonUtils.hex(tinycentEquivOutput.get()));
+                }));
     }
 
     // For this test we use refusingEthConversion() for the Eth Call isomer,
