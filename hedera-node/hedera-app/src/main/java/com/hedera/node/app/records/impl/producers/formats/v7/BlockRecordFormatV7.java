@@ -140,7 +140,7 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
         }
     }
 
-    private void writeHeader( // TODO: should we remove this unused method?
+    private void writeHeader(
             @NonNull final WritableStreamingData outputStream,
             @NonNull final SemanticVersion hapiProtoVersion,
             @NonNull final HashObject startObjectRunningHash) {
@@ -165,13 +165,12 @@ public final class BlockRecordFormatV7 implements BlockRecordFormat {
      * @param outputStream the output stream to write to
      * @param item the item to extract/convert
      */
-    private void writeRecordStreamItem( // TODO: should we remove this unused method?
+    private void writeRecordStreamItem(
             @NonNull final WritableStreamingData outputStream, @NonNull final SerializedSingleTransactionRecord item) {
         final Bytes itemBytes = item.protobufSerializedRecordStreamItem();
         // [3] - record_stream_items
         // FUTURE can change once https://github.com/hashgraph/pbj/issues/44 is fixed to:
-        // ProtoWriterTools.writeTag(outputStream, RECORD_STREAM_ITEMS, ProtoConstants.WIRE_TYPE_DELIMITED); // TODO
-        // should we remove commented out code?
+        // ProtoWriterTools.writeTag(outputStream, RECORD_STREAM_ITEMS, ProtoConstants.WIRE_TYPE_DELIMITED);
         outputStream.writeVarInt((RECORD_STREAM_ITEMS.number() << TAG_TYPE_BITS) | WIRE_TYPE_DELIMITED, false);
         outputStream.writeVarInt((int) itemBytes.length(), false);
         outputStream.writeBytes(itemBytes);
