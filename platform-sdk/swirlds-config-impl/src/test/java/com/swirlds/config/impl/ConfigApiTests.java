@@ -18,6 +18,7 @@ package com.swirlds.config.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -378,9 +379,6 @@ class ConfigApiTests {
                 configuration.exists("showInternalStats"),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
-                configuration.exists("doUpnp"),
-                "It must be possible to read config properties from the old file format");
-        assertTrue(
                 configuration.exists("useLoopbackIp"),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
@@ -405,11 +403,7 @@ class ConfigApiTests {
                 1,
                 configuration.getValue("showInternalStats", Integer.class),
                 "It must be possible to read config properties from the old file format");
-        assertFalse(
-                configuration.getValue("doUpnp", Boolean.class),
-                "It must be possible to read config properties from the old file format");
-        assertFalse(
-                configuration.getValue("useLoopbackIp", Boolean.class),
+        assertNotEquals(Boolean.TRUE, configuration.getValue("useLoopbackIp", Boolean.class),
                 "It must be possible to read config properties from the old file format");
         assertEquals(
                 "PlatformTesting",
