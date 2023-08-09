@@ -403,7 +403,9 @@ class ConfigApiTests {
                 1,
                 configuration.getValue("showInternalStats", Integer.class),
                 "It must be possible to read config properties from the old file format");
-        assertNotEquals(Boolean.TRUE, configuration.getValue("useLoopbackIp", Boolean.class),
+        assertNotEquals(
+                Boolean.TRUE,
+                configuration.getValue("useLoopbackIp", Boolean.class),
                 "It must be possible to read config properties from the old file format");
         assertEquals(
                 "PlatformTesting",

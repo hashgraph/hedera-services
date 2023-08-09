@@ -43,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 public class Network {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
     private static final Logger logger = LogManager.getLogger(Network.class);
+
     private static final String LOCALHOST = "127.0.0.1";
 
     private static Collection<InetAddress> ownAddresses;
@@ -78,7 +79,8 @@ public class Network {
     @NonNull
     public static ExternalIpAddress getExternalIpAddress() {
         if (externalAddress == null) {
-            final String ip = getOwnAddresses().stream().filter(Objects::nonNull)
+            final String ip = getOwnAddresses().stream()
+                    .filter(Objects::nonNull)
                     .filter(address -> !isPrivateIP(address))
                     .map(InetAddress::getHostAddress)
                     .findFirst()
@@ -138,7 +140,8 @@ public class Network {
         try {
             for (final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
                     interfaces.hasMoreElements(); ) {
-                for (final Enumeration<InetAddress> addresses = interfaces.nextElement().getInetAddresses();
+                for (final Enumeration<InetAddress> addresses =
+                                interfaces.nextElement().getInetAddresses();
                         addresses.hasMoreElements(); ) {
                     InetAddress addr = addresses.nextElement();
                     result.add(addr);
@@ -170,10 +173,12 @@ public class Network {
 
             // @formatter:off
             return
-                    // Check for 10.x.x.x
-                    firstBlock == 10 ||
+            // Check for 10.x.x.x
+            firstBlock == 10
+                    ||
                     // Check for 172.16.x.x - 172.31.x.x
-                    (firstBlock == 172 && secondBlock >= 16 && secondBlock <= 31) ||
+                    (firstBlock == 172 && secondBlock >= 16 && secondBlock <= 31)
+                    ||
                     // Check for 192.168.x.x
                     (firstBlock == 192 && secondBlock == 168);
             // @formatter:on
@@ -183,8 +188,9 @@ public class Network {
         else if (addr instanceof Inet6Address) {
             // @formatter:off
             return
-                    // Check for link-local (starts with fe80::)
-                    ((ip[0] & 0xFF) == 0xfe && (ip[1] & 0xC0) == 0x80) ||
+            // Check for link-local (starts with fe80::)
+            ((ip[0] & 0xFF) == 0xfe && (ip[1] & 0xC0) == 0x80)
+                    ||
                     // Check for unique local (starts with fd00::)
                     (ip[0] & 0xFF) == 0xfd;
             // @formatter:on

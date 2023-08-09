@@ -51,5 +51,4 @@ public record SocketConfig(
         @ConfigProperty(defaultValue = "5000") int timeoutServerAcceptConnect,
         @ConfigProperty(defaultValue = "true") boolean useTLS,
         @ConfigProperty(defaultValue = "false") boolean useLoopbackIp,
-        @ConfigProperty(defaultValue = "true") boolean tcpNoDelay) {
-}
+        @ConfigProperty(defaultValue = "true") boolean tcpNoDelay) {}
