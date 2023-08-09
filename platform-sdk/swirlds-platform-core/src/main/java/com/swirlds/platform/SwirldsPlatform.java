@@ -650,9 +650,16 @@ public class SwirldsPlatform implements Platform, Startable {
             });
         }
 
+        final Clearable pauseEventCreation = () -> {
+            if (tipsetEventCreator != null) {
+                tipsetEventCreator.pauseEventCreation();
+            }
+        };
+
         clearAllPipelines = new LoggingClearables(
                 RECONNECT.getMarker(),
                 List.of(
+                        Pair.of(pauseEventCreation, "eventCreator"),
                         Pair.of(gossip, "gossip"),
                         Pair.of(preConsensusEventHandler, "preConsensusEventHandler"),
                         Pair.of(consensusRoundHandler, "consensusRoundHandler"),
@@ -908,6 +915,7 @@ public class SwirldsPlatform implements Platform, Startable {
         }
 
         gossip.resetFallenBehind();
+        tipsetEventCreator.resumeEventCreation();
         platformStatusManager.submitStatusAction(new ReconnectCompleteAction(signedState.getRound()));
     }
 

@@ -29,7 +29,6 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.EventIntakeTask;
-import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -38,7 +37,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -108,9 +106,6 @@ public final class TipsetEventCreationManagerFactory {
             return null;
         }
 
-        final Consumer<GossipEvent> newEventHandler =
-                event -> abortAndThrowIfInterrupted(eventIntakeQueue::put, event, "intakeQueue.put() interrupted");
-
         final TipsetEventCreationManager manager = new TipsetEventCreationManager(
                 platformContext,
                 threadManager,
@@ -121,7 +116,7 @@ public final class TipsetEventCreationManagerFactory {
                 selfId,
                 appVersion,
                 transactionPool,
-                newEventHandler,
+                eventIntakeQueue::offer,
                 eventIntakeQueue::size,
                 platformStatusSupplier,
                 startUpEventFrozenManager,
