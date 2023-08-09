@@ -28,7 +28,7 @@ public class AntlrTest {
     public static void main(String[] args) throws Exception {
 
         final String path =
-                "/Users/hendrikebbers/git/hedera-services/platform-sdk/swirlds-common/src/main/java/com/swirlds/common/config/BasicConfig.java";
+                "/Users/hendrikebbers/git/hedera-services/platform-sdk/swirlds-common/src/main/java/com/swirlds/common/config/StateConfig.java";
         final String content = Files.readString(Path.of(path));
         final List<ConfigDataRecordDefinition> definitions = AntlrConfigRecordParser.parse(content);
 

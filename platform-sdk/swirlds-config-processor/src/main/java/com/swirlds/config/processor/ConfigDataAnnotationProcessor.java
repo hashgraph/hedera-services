@@ -95,10 +95,15 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
             final FileObject recordSource = getSource(fileName, packageName);
             final List<ConfigDataRecordDefinition> recordDefinitions = AntlrConfigRecordParser.parse(
                     recordSource.getCharContent(true).toString());
-            final JavaFileObject constantsSourceFile = getConstantSourceFile(packageName, simpleClassName, typeElement);
-            // ConstantClassFactory.doWork(recordDefinition, constantsSourceFile);
-            // DocumentationFactory.doWork(recordDefinition, configDocumentationFile);
 
+            if (!recordDefinitions.isEmpty()) {
+                final JavaFileObject constantsSourceFile = getConstantSourceFile(packageName, simpleClassName,
+                        typeElement);
+                log("generating config constants file: " + constantsSourceFile.getName());
+                ConstantClassFactory.doWork(recordDefinitions.get(0), constantsSourceFile);
+                log("generating config doc file: " + configDocumentationFile.getFileName());
+                DocumentationFactory.doWork(recordDefinitions.get(0), configDocumentationFile);
+            }
         } catch (final IOException e) {
             throw new RuntimeException("Error while handling " + typeElement, e);
         }

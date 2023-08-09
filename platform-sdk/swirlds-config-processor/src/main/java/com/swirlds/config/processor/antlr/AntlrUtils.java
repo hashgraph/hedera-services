@@ -190,7 +190,7 @@ public class AntlrUtils {
     public static Optional<String> getAnnotationValue(
             @NonNull final AnnotationContext annotationContext, @NonNull final String identifier) {
         return annotationContext.elementValuePairs().elementValuePair().stream()
-                .filter(p -> Objects.equals(p.identifier(), identifier))
+                .filter(p -> Objects.equals(p.identifier().getText(), identifier))
                 .map(p -> p.elementValue().getText())
                 .findAny();
     }

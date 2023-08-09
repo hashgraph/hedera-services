@@ -16,11 +16,13 @@
 
 package com.swirlds.config.processor;
 
+import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Utilities for generating documentation based on a given {@link ConfigDataRecordDefinition}.
@@ -54,8 +56,19 @@ public class DocumentationFactory {
             configDataRecordDefinition.propertyDefinitions().forEach(propertyDefinition -> {
                 try {
                     writer.write("## " + propertyDefinition.name() + "\n\n");
-                    writer.write("**type:** " + propertyDefinition.type() + "\n\n");
-                    writer.write("**default value:** " + propertyDefinition.defaultValue() + "\n\n");
+                    final String fullRecordName = Optional.ofNullable(configDataRecordDefinition.packageName())
+                            .map(packageName -> packageName + "." + configDataRecordDefinition.simpleClassName())
+                            .orElse(configDataRecordDefinition.simpleClassName());
+                    writer.write("**record:** `" + fullRecordName + "`\n\n");
+                    writer.write("**type:** `" + propertyDefinition.type() + "`\n\n");
+                    if (Objects.equals(propertyDefinition.defaultValue(), ConfigProperty.UNDEFINED_DEFAULT_VALUE)) {
+                        writer.write("**no default value**\n\n");
+                    } else if (Objects.equals(propertyDefinition.defaultValue(),
+                            ConfigProperty.NULL_DEFAULT_VALUE)) {
+                        writer.write("**default value is `null`**\n\n");
+                    } else {
+                        writer.write("**default value:** `" + propertyDefinition.defaultValue() + "`\n\n");
+                    }
                     writer.write("**description:** " + propertyDefinition.description() + "\n\n");
                     writer.write("\n");
                 } catch (IOException e) {

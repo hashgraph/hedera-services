@@ -35,6 +35,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.TokenStream;
 
 /**
  * Creates a {@link ConfigDataRecordDefinition} from a given Java source file.
@@ -42,8 +44,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 public class AntlrConfigRecordParser {
 
     public static List<ConfigDataRecordDefinition> parse(@NonNull final String fileContent) throws IOException {
-        JavaLexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        Lexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
+        TokenStream tokens = new CommonTokenStream(lexer);
         JavaParser parser = new JavaParser(tokens);
         CompilationUnitContext context = parser.compilationUnit();
         Optional.ofNullable(context.exception).ifPresent(e -> {
@@ -70,19 +72,21 @@ public class AntlrConfigRecordParser {
         return getConfigDataAnnotation(ctx, packageName, imports)
                 .map(annotationContext -> annotationContext.elementValue())
                 .map(elementValueContext -> elementValueContext.getText())
+                .map(text -> text.substring(1, text.length() - 1)) // remove quotes
                 .orElse("");
     }
 
     private static Optional<AnnotationContext> getConfigPropertyAnnotation(
             final RecordComponentContext ctx, final String packageName, final List<String> imports) {
         final List<AnnotationContext> annotations = AntlrUtils.getAllAnnotations(ctx);
-        return AntlrUtils.findAnnotationOfType(ConfigData.class, annotations, packageName, imports);
+        return AntlrUtils.findAnnotationOfType(ConfigProperty.class, annotations, packageName, imports);
     }
 
     private static String getConfigPropertyAnnotationDefaultValue(
             final RecordComponentContext ctx, final String packageName, final List<String> imports) {
         return getConfigPropertyAnnotation(ctx, packageName, imports)
                 .flatMap(annotationContext -> AntlrUtils.getAnnotationValue(annotationContext, "defaultValue"))
+                .map(text -> text.substring(1, text.length() - 1)) // remove quotes
                 .orElse(ConfigProperty.UNDEFINED_DEFAULT_VALUE);
     }
 
@@ -94,12 +98,14 @@ public class AntlrConfigRecordParser {
 
     private static ConfigDataPropertyDefinition createPropertyDefinition(
             RecordComponentContext ctx,
+            final String configPropertyNamePrefix,
             final String packageName,
             final List<String> imports,
             Map<String, String> javadocParams) {
         final String componentName = ctx.identifier().getText();
-        final String name =
-                getConfigPropertyAnnotationName(ctx, packageName, imports).orElse(componentName);
+        final String configPropertyNameSuffix = getConfigPropertyAnnotationName(ctx, packageName, imports).orElse(
+                componentName);
+        final String name = createPropertyName(configPropertyNamePrefix, configPropertyNameSuffix);
         final String defaultValue = getConfigPropertyAnnotationDefaultValue(ctx, packageName, imports);
         final String type = Optional.ofNullable(ctx.typeType().classOrInterfaceType())
                 .map(c -> c.getText())
@@ -112,6 +118,15 @@ public class AntlrConfigRecordParser {
         final String description =
                 Optional.ofNullable(javadocParams.get(componentName)).orElse("");
         return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description);
+    }
+
+    private static String createPropertyName(final String configPropertyNamePrefix,
+            final String configPropertyNameSuffix) {
+        if (configPropertyNamePrefix.isBlank()) {
+            return configPropertyNameSuffix;
+        } else {
+            return configPropertyNamePrefix + "." + configPropertyNameSuffix;
+        }
     }
 
     private static String getTypeForJavaLang(String type) {
@@ -148,7 +163,8 @@ public class AntlrConfigRecordParser {
                 .orElse(Map.of());
         final Set<ConfigDataPropertyDefinition> propertyDefinitions =
                 recordContext.recordHeader().recordComponentList().recordComponent().stream()
-                        .map(c -> createPropertyDefinition(c, packageName, imports, javadocParams))
+                        .map(c -> createPropertyDefinition(c, configPropertyNamePrefix, packageName, imports,
+                                javadocParams))
                         .collect(Collectors.toSet());
         return new ConfigDataRecordDefinition(packageName, recordName, configPropertyNamePrefix, propertyDefinitions);
     }
