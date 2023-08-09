@@ -226,12 +226,10 @@ public class EndOfStakingPeriodUpdater {
                 lastInstantOfPreviousPeriodFor(consensusTime), finalNodeStakes, stakingConfig);
         log.info("Exporting:\n{}", finalNodeStakes);
 
-        // Is this correct ?
-        final var nodeStakeUpdateBuilder = context.recordBuilder(NodeStakeUpdateRecordBuilder.class);
+        final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
         nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
                 .body(syntheticNodeStakeUpdateTxn.build())
                 .build());
-        context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
     }
 
     /**

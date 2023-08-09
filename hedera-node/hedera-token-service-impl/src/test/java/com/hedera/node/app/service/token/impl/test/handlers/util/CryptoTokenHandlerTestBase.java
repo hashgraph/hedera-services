@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenSupplyType;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
@@ -123,6 +124,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected final Key treasuryKey = C_COMPLEX_KEY;
     protected final Key EMPTY_KEYLIST =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
+    /* ---------- Node IDs */
+    protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
+    protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
 
     /* ---------- Account IDs */
     protected final AccountID payerId = AccountID.newBuilder().accountNum(3).build();
@@ -289,8 +293,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
     protected MapReadableKVState<NftID, Nft> readableNftState;
     protected MapWritableKVState<NftID, Nft> writableNftState;
-    protected MapReadableKVState<Long, StakingNodeInfo> readableStakingInfoState;
-    protected MapWritableKVState<Long, StakingNodeInfo> writableStakingInfoState;
+    protected MapReadableKVState<EntityNumber, StakingNodeInfo> readableStakingInfoState;
+    protected MapWritableKVState<EntityNumber, StakingNodeInfo> writableStakingInfoState;
     protected ReadableSingletonState<NetworkStakingRewards> readableRewardsState;
     protected WritableSingletonState<NetworkStakingRewards> writableRewardsState;
 
@@ -480,20 +484,20 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     private void givenReadableStakingInfoStore() {
-        readableStakingInfoState = MapReadableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
-                .value(0L, node0Info)
-                .value(1L, node1Info)
+        readableStakingInfoState = MapReadableKVState.<EntityNumber, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(node0Id, node0Info)
+                .value(node1Id, node1Info)
                 .build();
-        given(readableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
+        given(readableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO)).willReturn(readableStakingInfoState);
         readableStakingInfoStore = new ReadableStakingInfoStoreImpl(readableStates);
     }
 
     private void givenWritableStakingInfoStore() {
-        writableStakingInfoState = MapWritableKVState.<Long, StakingNodeInfo>builder("STAKING_INFOS")
-                .value(0L, node0Info)
-                .value(1L, node1Info)
+        writableStakingInfoState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder("STAKING_INFOS")
+                .value(node0Id, node0Info)
+                .value(node1Id, node1Info)
                 .build();
-        given(writableStates.<Long, StakingNodeInfo>get(STAKING_INFO)).willReturn(writableStakingInfoState);
+        given(writableStates.<EntityNumber, StakingNodeInfo>get(STAKING_INFO)).willReturn(writableStakingInfoState);
         writableStakingInfoStore = new WritableStakingInfoStore(writableStates);
     }
 
