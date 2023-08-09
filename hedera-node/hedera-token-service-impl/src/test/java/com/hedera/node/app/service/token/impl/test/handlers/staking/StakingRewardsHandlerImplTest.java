@@ -132,8 +132,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var expectedStakePeriodStart = stakePeriodManager.currentStakePeriod(consensusInstant);
         assertThat(stakedToMeAfter).isEqualTo(stakedToMeBefore);
-        assertThat(stakePeriodStartAfter).isNotEqualTo(stakePeriodStartBefore);
-        assertThat(stakePeriodStartAfter).isEqualTo(expectedStakePeriodStart);
+        assertThat(stakePeriodStartAfter).isNotEqualTo(stakePeriodStartBefore).isEqualTo(expectedStakePeriodStart);
         assertThat(stakeAtStartOfLastRewardedPeriodAfter).isEqualTo(stakeAtStartOfLastRewardedPeriodBefore);
     }
 
@@ -261,7 +260,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -288,7 +287,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     //    @Test
@@ -345,7 +344,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         final var node1Info = writableStakingInfoState.get(node1Id);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -411,7 +410,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         assertThat(node1InfoAfter.unclaimedStakeRewardStart())
                 .isEqualTo(node1InfoBefore.unclaimedStakeRewardStart() + accountBalance);
 
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
     }
 
     @Test
@@ -496,7 +495,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance())
@@ -540,7 +539,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
@@ -584,7 +583,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         assertThat(node1InfoAfter.stake()).isEqualTo(node1InfoBefore.stake());
         assertThat(node1InfoAfter.unclaimedStakeRewardStart()).isEqualTo(node1InfoBefore.unclaimedStakeRewardStart());
-        assertThat(node1Info.unclaimedStakeRewardStart()).isEqualTo(0);
+        assertThat(node1Info.unclaimedStakeRewardStart()).isZero();
 
         final var modifiedAccount = writableAccountStore.get(payerId);
         assertThat(modifiedAccount.tinybarBalance()).isEqualTo(accountBalance - HBARS_TO_TINYBARS);
@@ -970,7 +969,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         final var modifiedPayer = writableAccountStore.get(payerId);
         final var modifiedOwner = writableAccountStore.get(ownerId);
         // Since payer is staked to reward account now, its balance should not add to stakedToMe of owner
-        assertThat(modifiedOwner.stakedToMe()).isEqualTo(0L);
+        assertThat(modifiedOwner.stakedToMe()).isZero();
         // stakePeriodStart is updated everytime when reward is applied
         assertThat(modifiedOwner.stakePeriodStart()).isEqualTo(stakePeriodStart - 1);
         // stakePeriodStart is not updated here

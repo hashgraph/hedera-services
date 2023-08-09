@@ -101,6 +101,10 @@ public enum LogMarker {
      * Marker for config
      */
     CONFIG(LogMarkerType.INFO),
+    /**
+     * Marker for CLI
+     */
+    CLI(LogMarkerType.INFO),
 
     /**
      * log each event as it's added to the intake queue
@@ -191,11 +195,6 @@ public enum LogMarker {
      * log all platform status changes
      */
     PLATFORM_STATUS(LogMarkerType.INFO),
-
-    /**
-     * Detail information about JasperDb.
-     */
-    JASPER_DB(LogMarkerType.INFO),
 
     /**
      * Detail information about MerkleDb.
