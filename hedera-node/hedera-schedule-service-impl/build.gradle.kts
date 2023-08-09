@@ -22,6 +22,17 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
+        testImplementation(testFixtures(project(":app-service-mono")))
+        testImplementation(testFixtures(project(":app-spi")))
+        testImplementation(testFixtures(project(":config")))
+        testImplementation(project(":app"))
+        testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.mockito"))
+        testImplementation(gav("org.mockito.junit.jupiter"))
+        testImplementation(gav("com.google.protobuf"))
+        testImplementation(gav("com.swirlds.common"))
+        testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }
 }

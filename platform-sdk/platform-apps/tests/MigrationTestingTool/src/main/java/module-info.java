@@ -8,5 +8,5 @@ module com.swirlds.demo.migration {
     requires org.apache.commons.lang3;
     requires com.swirlds.logging;
     requires com.swirlds.virtualmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
 }

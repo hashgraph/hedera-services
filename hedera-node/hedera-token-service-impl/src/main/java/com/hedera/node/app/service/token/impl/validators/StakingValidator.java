@@ -35,6 +35,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakingValidator {
+
     @Inject
     public StakingValidator() {
         // Dagger2

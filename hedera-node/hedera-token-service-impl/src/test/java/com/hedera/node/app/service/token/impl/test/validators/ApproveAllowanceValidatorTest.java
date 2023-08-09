@@ -226,13 +226,11 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void canGrantNftSerialAllowanceIfDelegatingSpenderHasNoApproveForAllAllowance() {
-        assertThat(ownerAccount
-                        .approveForAllNftAllowances()
-                        .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderId(spenderId)
-                                .tokenId(nonFungibleTokenId)
-                                .build()))
-                .isTrue();
+        assertThat(ownerAccount.approveForAllNftAllowances())
+                .contains(AccountApprovalForAllAllowance.newBuilder()
+                        .spenderId(spenderId)
+                        .tokenId(nonFungibleTokenId)
+                        .build());
 
         givenApproveAllowanceTxn(
                 payerId,
@@ -260,14 +258,11 @@ class ApproveAllowanceValidatorTest extends CryptoTokenHandlerTestBase {
                         .delegatingSpender(transferAccountId)
                         .build()));
 
-        assertThat(readableAccountStore
-                        .getAccountById(ownerId)
-                        .approveForAllNftAllowances()
-                        .contains(AccountApprovalForAllAllowance.newBuilder()
-                                .spenderId(payerId)
-                                .tokenId(nonFungibleTokenId)
-                                .build()))
-                .isFalse();
+        assertThat(readableAccountStore.getAccountById(ownerId).approveForAllNftAllowances())
+                .doesNotContain(AccountApprovalForAllAllowance.newBuilder()
+                        .spenderId(payerId)
+                        .tokenId(nonFungibleTokenId)
+                        .build());
 
         assertThatThrownBy(() -> subject.validate(handleContext, account, readableAccountStore))
                 .isInstanceOf(HandleException.class)
