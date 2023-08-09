@@ -75,6 +75,13 @@ public final class SystemExitUtils {
     }
 
     /**
+     * Same as {@link #exitSystem(SystemExitCode, String)}, but with a reversed order of parameters.
+     */
+    public static void exitSystem(@Nullable final String message, @NonNull final SystemExitCode exitCode) {
+        exitSystem(exitCode, message, false);
+    }
+
+    /**
      * Same as {@link #exitSystem(SystemExitCode, String, boolean)}, but with haltRuntime set to false and no message.
      *
      * @param exitCode the reason for the exit
