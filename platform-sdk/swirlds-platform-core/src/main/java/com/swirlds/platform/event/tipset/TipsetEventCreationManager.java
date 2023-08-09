@@ -170,7 +170,7 @@ public class TipsetEventCreationManager implements Lifecycle {
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
-                .setUnlimitedCapacity()
+                .setCapacity(eventCreationConfig.creationQueueSize())
                 .setMaxBufferSize(eventCreationConfig.creationQueueBufferSize())
                 .addHandler(EventImpl.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
