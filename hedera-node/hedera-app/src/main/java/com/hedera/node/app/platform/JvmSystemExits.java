@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.metrics;
+package com.hedera.node.app.platform;
 
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
-import dagger.Module;
-import dagger.Provides;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.hedera.node.app.service.mono.utils.SystemExits;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/** A Dagger module for providing dependencies based on {@link Metrics}. */
-@Module
-public interface MetricsInjectionModule {
-    @Provides
-    @Singleton
-    static Metrics provideMetrics(@NonNull final Platform platform) {
-        return platform.getContext().getMetrics();
+@Singleton
+public class JvmSystemExits implements SystemExits {
+    @Inject
+    public JvmSystemExits() {
+        // Default Constructor
+    }
+
+    @Override
+    public void fail(int returnCode) {
+        System.exit(returnCode);
     }
 }

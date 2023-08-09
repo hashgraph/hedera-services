@@ -89,6 +89,11 @@ abstract class GrpcTestBase extends TestBase {
      * This {@link NettyGrpcServerManager} is used to handle the wire protocol tasks and delegate to our gRPC handlers
      */
     private NettyGrpcServerManager grpcServer;
+
+    private final Configuration configuration = ConfigurationBuilder.create()
+            .withConfigDataType(MetricsConfig.class)
+            .build();
+
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
      * correctly for different types of calls.
@@ -97,11 +102,8 @@ abstract class GrpcTestBase extends TestBase {
             nodeSelfId,
             new MetricKeyRegistry(),
             METRIC_EXECUTOR,
-            new DefaultMetricsFactory(),
-            ConfigurationBuilder.create()
-                    .withConfigDataType(MetricsConfig.class)
-                    .build()
-                    .getConfigData(MetricsConfig.class));
+            new DefaultMetricsFactory(configuration.getConfigData(MetricsConfig.class)),
+            configuration.getConfigData(MetricsConfig.class));
     /** The query method to set up on the server. Only one method supported today */
     private String queryMethodName;
     /** The ingest method to set up on the server. Only one method supported today */
