@@ -66,7 +66,6 @@ import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.SystemExitCode;
@@ -107,8 +106,6 @@ import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
 import com.swirlds.platform.health.entropy.OSEntropyChecker;
 import com.swirlds.platform.health.filesystem.OSFileSystemChecker;
 import com.swirlds.platform.network.Network;
-import com.swirlds.platform.portforwarding.PortForwarder;
-import com.swirlds.platform.portforwarding.PortMapping;
 import com.swirlds.platform.reconnect.emergency.EmergencySignedStateValidator;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.state.State;
@@ -132,22 +129,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -325,32 +322,9 @@ public class Browser {
                 logger.trace(
                         STARTUP.getMarker(),
                         "All of this computer's addresses: {}",
-                        () -> (Arrays.toString(Network.getOwnAddresses2())));
-
-                // port forwarding
-                final SocketConfig socketConfig = configuration.getConfigData(SocketConfig.class);
-                if (socketConfig.doUpnp()) {
-                    final List<PortMapping> portsToBeMapped = new LinkedList<>();
-                    synchronized (getPlatforms()) {
-                        for (final Platform p : getPlatforms()) {
-                            final Address address = p.getSelfAddress();
-                            final String ip = Address.ipString(address.getListenAddressIpv4());
-                            final PortMapping pm = new PortMapping(
-                                    ip,
-                                    // ip address (not used by portMapper, which tries all external port
-                                    // network
-                                    // interfaces)
-                                    // (should probably use ports >50000, this is considered the dynamic
-                                    // range)
-                                    address.getPortInternal(),
-                                    address.getPortExternal(), // internal port
-                                    PortForwarder.Protocol.TCP // transport protocol
-                                    );
-                            portsToBeMapped.add(pm);
-                        }
-                    }
-                    Network.doPortForwarding(getStaticThreadManager(), portsToBeMapped);
-                }
+                        () -> Network.getOwnAddresses().stream()
+                                .map(InetAddress::getHostAddress)
+                                .collect(Collectors.joining(", ")));
             } catch (final Exception e) {
                 logger.error(EXCEPTION.getMarker(), "", e);
             }

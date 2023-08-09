@@ -16,28 +16,27 @@
 
 package com.swirlds.platform;
 
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.swirlds.platform.network.ExternalIpAddress;
-import com.swirlds.platform.network.IpAddressStatus;
 import com.swirlds.platform.network.Network;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
-import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class NetworkTests {
+class NetworkTests {
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
     @DisplayName("Validates that the local ip is retrieved as internal ip")
-    public void getInternalIPAddressTest() {
+    void getInternalIPAddressTest() {
         final String internalIp = Network.getInternalIPAddress();
+        assertNotNull(internalIp);
         assertFalse(internalIp.isEmpty());
         assertNotEquals("127.0.0.1", internalIp);
     }
@@ -46,18 +45,8 @@ public class NetworkTests {
     @Tag(TestTypeTags.FUNCTIONAL)
     @Tag(TestQualifierTags.TIME_CONSUMING)
     @DisplayName("No ip is found running as unit test")
-    public void getExternalIpAddressWithNoIpFound() {
+    void getExternalIpAddressWithNoIpFound() {
         final ExternalIpAddress address = Network.getExternalIpAddress();
         assertEquals(ExternalIpAddress.NO_IP, address, "No IP should be found on unit test");
-    }
-
-    @Test
-    @Tag(TestTypeTags.FUNCTIONAL)
-    @DisplayName("No IP is found with empty collection of ports to be mapped")
-    public void getNoIpFoundWithNoPorts() {
-        Network.doPortForwarding(getStaticThreadManager(), Collections.emptyList());
-        final ExternalIpAddress address = Network.getExternalIpAddress();
-        assertEquals(IpAddressStatus.NO_IP_FOUND, address.getStatus(), "No IP should be found on unit test");
-        Network.stopPortForwarding();
     }
 }

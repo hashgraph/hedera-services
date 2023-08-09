@@ -123,9 +123,6 @@ dependencyResolutionManagement {
             // Parsers
             version("jackson-version", "2.13.3")
 
-            // Network
-            version("portmapper-version", "2.0.4")
-
             // JavaFX
             version("javafx-version", "17")
 
@@ -152,94 +149,90 @@ dependencyResolutionManagement {
             bundle("logging-api", listOf("log4j-api", "slf4j-api"))
             bundle("logging-impl", listOf("log4j-core", "slf4j-nop"))
             bundle(
-                "jackson",
-                listOf("jackson-databind", "jackson-datatype-jsr310", "jackson-dataformat-yaml")
+                    "jackson",
+                    listOf("jackson-databind", "jackson-datatype-jsr310", "jackson-dataformat-yaml")
             )
-            bundle("networking", listOf("portmapper"))
             bundle("javafx", listOf("javafx-base"))
             bundle("picocli", listOf("picocli"))
 
             // Define the individual libraries
             // Commons Bundle
             library("commons-lang3", "org.apache.commons", "commons-lang3")
-                .versionRef("commons-lang3-version")
+                    .versionRef("commons-lang3-version")
             library("commons-io", "commons-io", "commons-io").versionRef("commons-io-version")
             library("commons-codec", "commons-codec", "commons-codec")
-                .versionRef("commons-codec-version")
+                    .versionRef("commons-codec-version")
             library("commons-math3", "org.apache.commons", "commons-math3")
-                .versionRef("commons-math3-version")
+                    .versionRef("commons-math3-version")
             library("commons-collections4", "org.apache.commons", "commons-collections4")
-                .versionRef("commons-collections4-version")
+                    .versionRef("commons-collections4-version")
             // Eclipse Bundle
             library("eclipse-collections", "org.eclipse.collections", "eclipse-collections")
-                .versionRef("eclipse-collections-version")
+                    .versionRef("eclipse-collections-version")
             // Cryptography Bundle
             library("bc-provider", "org.bouncycastle", "bcprov-jdk15on")
-                .versionRef("bouncycastle-version")
+                    .versionRef("bouncycastle-version")
             library("bc-pkix", "org.bouncycastle", "bcpkix-jdk15on")
-                .versionRef("bouncycastle-version")
+                    .versionRef("bouncycastle-version")
             library("lazysodium", "com.goterl", "lazysodium-java").versionRef("lazysodium-version")
             // Log4j Bundle
             library("log4j-api", "org.apache.logging.log4j", "log4j-api")
-                .versionRef("log4j-version")
+                    .versionRef("log4j-version")
             library("log4j-core", "org.apache.logging.log4j", "log4j-core")
-                .versionRef("log4j-version")
+                    .versionRef("log4j-version")
             // Slf4j Bundle
             library("slf4j-api", "org.slf4j", "slf4j-api").versionRef("slf4j-version")
             library("slf4j-nop", "org.slf4j", "slf4j-nop").versionRef("slf4j-version")
             // Jackson Bundle
             library("jackson-databind", "com.fasterxml.jackson.core", "jackson-databind")
-                .versionRef("jackson-version")
+                    .versionRef("jackson-version")
             library(
                     "jackson-datatype-joda",
                     "com.fasterxml.jackson.datatype",
                     "jackson-datatype-joda"
-                )
-                .versionRef("jackson-version")
+            )
+                    .versionRef("jackson-version")
             library(
                     "jackson-datatype-guava",
                     "com.fasterxml.jackson.datatype",
                     "jackson-datatype-guava"
-                )
-                .versionRef("jackson-version")
+            )
+                    .versionRef("jackson-version")
             library(
                     "jackson-datatype-jdk8",
                     "com.fasterxml.jackson.datatype",
                     "jackson-datatype-jdk8"
-                )
-                .versionRef("jackson-version")
+            )
+                    .versionRef("jackson-version")
             library(
                     "jackson-datatype-jsr310",
                     "com.fasterxml.jackson.datatype",
                     "jackson-datatype-jsr310"
-                )
-                .versionRef("jackson-version")
+            )
+                    .versionRef("jackson-version")
             library(
                     "jackson-dataformat-yaml",
                     "com.fasterxml.jackson.dataformat",
                     "jackson-dataformat-yaml"
-                )
-                .versionRef("jackson-version")
-            // Networking Bundle
-            library("portmapper", "com.offbynull.portmapper", "portmapper")
-                .versionRef("portmapper-version")
+            )
+                    .versionRef("jackson-version")
             // JavaFX Bundle
             library("javafx-base", "org.openjfx", "javafx-base").versionRef("javafx-version")
             // Misc
             library("classgraph", "io.github.classgraph", "classgraph")
-                .versionRef("classgraph-version")
+                    .versionRef("classgraph-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
             library("resource-loader", "com.goterl", "resource-loader")
-                .versionRef("resource-loader-version")
+                    .versionRef("resource-loader-version")
             library("protobuf", "com.google.protobuf", "protobuf-java")
-                .versionRef("protobuf-version")
+                    .versionRef("protobuf-version")
             library("prometheus-httpserver", "io.prometheus", "simpleclient_httpserver")
-                .versionRef("prometheus-client")
+                    .versionRef("prometheus-client")
             // PicoCLI Bundle
             library("picocli", "info.picocli", "picocli").versionRef("picocli-version")
 
             library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations")
-                .versionRef("spotbugs-version")
+                    .versionRef("spotbugs-version")
         }
 
         create("testLibs") {
@@ -266,16 +259,16 @@ dependencyResolutionManagement {
             // Define the individual libraries
             // JUnit Bundle
             library("junit-jupiter", "org.junit.jupiter", "junit-jupiter")
-                .versionRef("junit-version")
+                    .versionRef("junit-version")
             library("junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api")
-                .versionRef("junit-version")
+                    .versionRef("junit-version")
             library("junit-jupiter-params", "org.junit.jupiter", "junit-jupiter-params")
-                .versionRef("junit-version")
+                    .versionRef("junit-version")
 
             // Mocking Bundle
             library("mockito-core", "org.mockito", "mockito-core").versionRef("mockito-version")
             library("mockito-junit", "org.mockito", "mockito-junit-jupiter")
-                .versionRef("mockito-version")
+                    .versionRef("mockito-version")
 
             // Utils Bundle
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
