@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  */
 public class RecordListBuilder {
 
-    public static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
+    private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
     private final List<SingleTransactionRecordBuilderImpl> recordBuilders = new ArrayList<>();
 
     private List<SingleTransactionRecordBuilderImpl> precedingRecordBuilders;
