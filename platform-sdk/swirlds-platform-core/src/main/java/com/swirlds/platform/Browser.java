@@ -880,9 +880,7 @@ public class Browser {
 
         // if the local machine did not match any address in the address book then we should log an error and exit
         if (ownHostCount < 1) {
-            final String externalIpAddress = (Network.getExternalIpAddress() != null)
-                    ? Network.getExternalIpAddress().getIpAddress()
-                    : null;
+            final String externalIpAddress = Network.getExternalIpAddress().getIpAddress();
             logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
