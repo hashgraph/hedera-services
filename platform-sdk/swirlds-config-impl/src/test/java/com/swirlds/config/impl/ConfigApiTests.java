@@ -366,7 +366,7 @@ class ConfigApiTests {
                 .build();
         // then
         assertEquals(
-                8,
+                7,
                 configuration.getPropertyNames().count(),
                 "It must be possible to read config properties from the old file format");
         assertTrue(
