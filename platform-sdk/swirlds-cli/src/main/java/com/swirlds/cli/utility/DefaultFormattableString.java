@@ -18,6 +18,8 @@ package com.swirlds.cli.utility;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
+
 /**
  * Default implementation of {@link FormattableString}. Doesn't do any formatting.
  */
@@ -60,6 +62,6 @@ public class DefaultFormattableString implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        return originalString;
+        return escapeHtml4(originalString);
     }
 }

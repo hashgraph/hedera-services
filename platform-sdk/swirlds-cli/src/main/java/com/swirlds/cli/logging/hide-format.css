@@ -1,0 +1,3 @@
+[data-hide]:not([data-hide~='0']):not([data-hide~="NaN"]) {
+    display: none;
+}

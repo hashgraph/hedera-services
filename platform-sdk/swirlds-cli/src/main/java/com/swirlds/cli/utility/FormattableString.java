@@ -40,6 +40,8 @@ public interface FormattableString {
 
     /**
      * Generate a string with HTML formatting
+     * <p>
+     * This method must return a string that is safe to be inserted into an HTML document
      *
      * @return the string with HTML formatting
      */

@@ -16,8 +16,13 @@
 
 package com.swirlds.cli.utility;
 
+import static com.swirlds.cli.utility.LogProcessingUtils.HTML_SPAN_TAG;
+import static com.swirlds.cli.utility.LogProcessingUtils.createHtmlTag;
+import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
+
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -35,6 +40,8 @@ public class PlatformStatusLog implements FormattableString {
     public static final String PLATFORM_STATUS_LOG_LINE_REGEX = "(.*spent )(.*)( in )(.*)(\\. Now in )([A-Z_]+)(.*)";
 
     public static final TextEffect STATUS_COLOR = TextEffect.BRIGHT_PURPLE;
+
+    public static final String STATUS_HTML_CLASS = "status-detail";
 
     /**
      * The full original string
@@ -152,6 +159,12 @@ public class PlatformStatusLog implements FormattableString {
     @NonNull
     @Override
     public String generateHtmlString() {
-        throw new UnsupportedOperationException("FUTURE WORK");
+        return platformSpent
+                + createHtmlTag(HTML_SPAN_TAG, duration, List.of(STATUS_HTML_CLASS))
+                + in
+                + createHtmlTag(HTML_SPAN_TAG, previousStatus, List.of(STATUS_HTML_CLASS))
+                + nowIn
+                + createHtmlTag(HTML_SPAN_TAG, newStatus, List.of(STATUS_HTML_CLASS))
+                + escapeHtml4(statusMessageRemainder);
     }
 }

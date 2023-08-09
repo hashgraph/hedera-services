@@ -19,6 +19,8 @@ package com.swirlds.cli.utility;
 import static com.swirlds.cli.utility.LogProcessingUtils.parseTimestamp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.swirlds.common.system.NodeId;
+import java.time.Instant;
 import java.time.ZoneId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
