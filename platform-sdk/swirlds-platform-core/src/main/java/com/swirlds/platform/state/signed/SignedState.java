@@ -121,6 +121,14 @@ public class SignedState implements SignedStateInfo {
     private SignedStateGarbageCollector signedStateGarbageCollector;
 
     /**
+     * Indicates whether this signed state has been saved to disk.
+     * <p>
+     * Note: this value only applies to signed states that are saved inside the normal workflow: states that are dumped
+     * out of band do not affect this value.
+     */
+    private boolean hasBeenSavedToDisk;
+
+    /**
      * Used to track the lifespan of this signed state.
      */
     private final RuntimeObjectRecord registryRecord;
@@ -153,6 +161,7 @@ public class SignedState implements SignedStateInfo {
             final boolean freezeState) {
         this(platformContext, state, reason);
         this.freezeState = freezeState;
+        this.hasBeenSavedToDisk = false;
     }
 
     /**
@@ -513,6 +522,31 @@ public class SignedState implements SignedStateInfo {
     @Nullable
     public StateToDiskReason getStateToDiskReason() {
         return stateToDiskReason;
+    }
+
+    /**
+     * Checks whether this state has been saved to disk.
+     * <p>
+     * The return value of this method applies only to states saved in the normal course of operation, NOT
+     * states that have been dumped to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     *
+     * @return true if this state has been saved to disk, false otherwise
+     */
+    public boolean hasStateBeenSavedToDisk() {
+        return hasBeenSavedToDisk;
+    }
+
+    /**
+     * Indicate that this state has been saved to disk.
+     * <p>
+     * This method shouldn't be called when dumping state to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     */
+    public void stateSavedToDisk() {
+        hasBeenSavedToDisk = true;
     }
 
     /**

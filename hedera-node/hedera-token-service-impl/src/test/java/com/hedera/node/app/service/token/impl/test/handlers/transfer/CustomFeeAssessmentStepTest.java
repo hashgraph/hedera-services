@@ -446,11 +446,11 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     private void assertThatTransfersContains(
             final List<AccountAmount> transfers, final Map<AccountID, Long> expectedTransfers) {
         for (final var entry : expectedTransfers.entrySet()) {
-            assertThat(transfers.contains(AccountAmount.newBuilder()
+            assertThat(transfers)
+                    .contains(AccountAmount.newBuilder()
                             .accountID(entry.getKey())
                             .amount(entry.getValue())
-                            .build()))
-                    .isTrue();
+                            .build());
         }
     }
 

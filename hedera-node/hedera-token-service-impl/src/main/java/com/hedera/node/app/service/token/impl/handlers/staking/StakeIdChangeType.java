@@ -118,8 +118,8 @@ public enum StakeIdChangeType {
             } else if (curStakedIdCase.equals(STAKED_ACCOUNT_ID)) {
                 return FROM_ACCOUNT_TO_NODE;
             } else {
-                // We don't care if newStakedId == curStakedId, just run the withdraw/reward logic;
-                // it may be necessary in any case if declineReward changed
+                // We don't care if newStakedId == curStakedId, just run the withdraw/reward logic.
+                // It may be necessary in any case if declineReward changed
                 return FROM_NODE_TO_NODE;
             }
         } else if (newStakedIdCase.equals(STAKED_ACCOUNT_ID)) {

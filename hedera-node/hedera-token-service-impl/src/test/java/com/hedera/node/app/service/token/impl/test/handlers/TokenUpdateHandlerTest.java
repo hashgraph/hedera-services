@@ -130,6 +130,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void happyPathForFungibleTokenUpdate() {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
@@ -172,6 +174,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void happyPathForNonFungibleTokenUpdate() {
         txn = new TokenUpdateBuilder().build();
         given(handleContext.body()).willReturn(txn);
@@ -362,6 +366,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void worksWithUnassociatedNewTreasuryIfAutoAssociationsAvailable() {
         txn = new TokenUpdateBuilder()
                 .withTreasury(payerId)
@@ -427,6 +433,8 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void worksWithUnassociatedNewTreasuryIfAutoAssociationsAvailableForNFT() {
         txn = new TokenUpdateBuilder()
                 .withTreasury(payerId)
