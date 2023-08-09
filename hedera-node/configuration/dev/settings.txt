@@ -26,11 +26,11 @@ virtualMap.preferredFlushQueueSize,            10000
                                           #          Events           #
                                           #############################
 
+event.creation.maxCreationRate,                30
 event.enableEventStreaming,                    false                        # differs from mainnet
 event.eventsLogDir,                            /opt/hgcapp/eventsStreams
 event.eventsLogPeriod,                         5
 event.maxEventQueueForCons,                    1000
-event.creation.maxCreationRate,                1
 
                                           #############################
                                           #         Reconnect         #
