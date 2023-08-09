@@ -23,36 +23,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
-import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.stream.Signer;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.SoftwareVersion;
-import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
-import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
-import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
 import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
-import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
-import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
-import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import java.util.function.IntSupplier;
-import java.util.function.Supplier;
 
 // TODO unit tests
 
@@ -116,78 +98,31 @@ public class TipsetEventCreationManager implements Lifecycle {
     /**
      * Constructor.
      *
-     * @param platformContext           the platform's context
-     * @param threadManager             manages the creation of new threads
-     * @param time                      provides the wall clock time
-     * @param random                    a source of randomness, does not need to be cryptographically secure
-     * @param signer                    can sign with this node's key
-     * @param addressBook               the current address book
-     * @param selfId                    the ID of this node
-     * @param softwareVersion           the current software version
-     * @param transactionPool           provides transactions to be added to new events
-     * @param newEventHandler           when the event creator makes a new event, pass it to this lambda. If this method
-     *                                  returns true then the event was accepted, if this method returns false then the
-     *                                  event was rejected and needs to be submitted again later.
-     * @param eventIntakeQueueSize      provides the current size of the event intake queue
-     * @param platformStatusSupplier    provides the current platform status
-     * @param startUpEventFrozenManager prevents event creation when the platform has just started up
-     * @param latestReconnectRound      provides the latest reconnect round
-     * @param latestSavedStateRound     provides the latest saved state round
+     * @param platformContext    the platform's context
+     * @param threadManager      manages the creation of new threads
+     * @param eventCreator       creates new events
+     * @param eventCreationRules rules that limit when it is permitted to create events
+     * @param newEventHandler    when the event creator makes a new event, pass it to this lambda. If this method
+     *                           returns true then the event was accepted, if this method returns false then the event
+     *                           was rejected and needs to be submitted again later.
      */
     public TipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final Time time,
-            @NonNull final Random random,
-            @NonNull final Signer signer,
-            @NonNull final AddressBook addressBook,
-            @NonNull final NodeId selfId,
-            @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final EventTransactionPool transactionPool,
-            @NonNull final Function<GossipEvent, Boolean> newEventHandler,
-            @NonNull final IntSupplier eventIntakeQueueSize,
-            @NonNull final Supplier<PlatformStatus> platformStatusSupplier,
-            @NonNull final StartUpEventFrozenManager startUpEventFrozenManager,
-            @NonNull final Supplier<Long> latestReconnectRound,
-            @NonNull final Supplier<Long> latestSavedStateRound) {
+            @NonNull final TipsetEventCreator eventCreator,
+            @NonNull final TipsetEventCreationRule eventCreationRules,
+            @NonNull final Function<GossipEvent, Boolean> newEventHandler) {
 
         this.newEventHandler = Objects.requireNonNull(newEventHandler);
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
-        Objects.requireNonNull(time);
-        Objects.requireNonNull(random);
-        Objects.requireNonNull(signer);
-        Objects.requireNonNull(addressBook);
-        Objects.requireNonNull(selfId);
-        Objects.requireNonNull(softwareVersion);
-        Objects.requireNonNull(transactionPool);
-        Objects.requireNonNull(eventIntakeQueueSize);
-        Objects.requireNonNull(platformStatusSupplier);
-        Objects.requireNonNull(startUpEventFrozenManager);
-        Objects.requireNonNull(latestReconnectRound);
-        Objects.requireNonNull(latestSavedStateRound);
 
         final EventCreationConfig eventCreationConfig =
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
-        final List<TipsetEventCreationRule> rules = new ArrayList<>();
-        rules.add(new TipsetMaximumRateRule(platformContext, time));
-        rules.add(new TipsetBackpressureRule(platformContext, eventIntakeQueueSize));
-        rules.add(new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager));
-        rules.add(new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
-
-        eventCreationRules = AggregateTipsetEventCreationRules.of(rules);
-
-        eventCreator = new TipsetEventCreatorImpl(
-                platformContext,
-                time,
-                random /* does not need to be cryptographically secure */,
-                signer,
-                addressBook,
-                selfId,
-                softwareVersion,
-                transactionPool);
+        this.eventCreator = Objects.requireNonNull(eventCreator);
+        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
@@ -331,8 +266,8 @@ public class TipsetEventCreationManager implements Lifecycle {
         try {
             setPauseStatusInserter.put(true);
             while (!isPaused.get()) {
-                // Busy waits are ugly and inefficient. But pausing is very rare (only during reconnects),
-                // and so the impact of this busy wait is negligible.
+                // Busy waits are ugly and inefficient. But pausing event creation is very rare
+                // (only during reconnects), and so the impact of this busy wait is negligible.
                 MILLISECONDS.sleep(1);
             }
         } catch (final InterruptedException e) {

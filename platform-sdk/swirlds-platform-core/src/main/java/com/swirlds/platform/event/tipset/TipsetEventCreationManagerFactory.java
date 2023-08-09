@@ -29,6 +29,12 @@ import com.swirlds.common.threading.framework.QueueThread;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
+import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
+import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
+import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
+import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
+import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.observers.ConsensusRoundObserver;
 import com.swirlds.platform.observers.EventObserverDispatcher;
@@ -106,22 +112,24 @@ public final class TipsetEventCreationManagerFactory {
             return null;
         }
 
-        final TipsetEventCreationManager manager = new TipsetEventCreationManager(
+        final TipsetEventCreator eventCreator = new TipsetEventCreatorImpl(
                 platformContext,
-                threadManager,
                 time,
                 new Random() /* does not need to be cryptographically secure */,
                 signer,
                 addressBook,
                 selfId,
                 appVersion,
-                transactionPool,
-                eventIntakeQueue::offer,
-                eventIntakeQueue::size,
-                platformStatusSupplier,
-                startUpEventFrozenManager,
-                latestReconnectRound,
-                latestSavedStateRound);
+                transactionPool);
+
+        final TipsetEventCreationRule eventCreationRules = AggregateTipsetEventCreationRules.of(
+                new TipsetMaximumRateRule(platformContext, time),
+                new TipsetBackpressureRule(platformContext, eventIntakeQueue::size),
+                new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager),
+                new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
+
+        final TipsetEventCreationManager manager = new TipsetEventCreationManager(
+                platformContext, threadManager, eventCreator, eventCreationRules, eventIntakeQueue::offer);
 
         eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                 manager::registerEvent,
