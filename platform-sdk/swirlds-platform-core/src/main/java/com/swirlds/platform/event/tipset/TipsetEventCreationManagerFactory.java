@@ -46,7 +46,7 @@ import java.util.Random;
 import java.util.function.Supplier;
 
 /**
- * A factory for creating {@link TipsetEventCreationManager} instances.
+ * A factory for creating {@link AsyncTipsetEventCreationManager} instances.
  */
 public final class TipsetEventCreationManagerFactory {
 
@@ -72,7 +72,7 @@ public final class TipsetEventCreationManagerFactory {
      * @return a new tipset event creation manager, or null if tipset event creation is disabled
      */
     @Nullable
-    public static TipsetEventCreationManager buildTipsetEventCreationManager(
+    public static AsyncTipsetEventCreationManager buildTipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
             @NonNull final Time time,
@@ -128,8 +128,11 @@ public final class TipsetEventCreationManagerFactory {
                 new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager),
                 new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
 
-        final TipsetEventCreationManager manager = new TipsetEventCreationManager(
-                platformContext, threadManager, eventCreator, eventCreationRules, eventIntakeQueue::offer);
+        final SyncTipsetEventCreationManager syncEventCreationManager =
+                new SyncTipsetEventCreationManager(eventCreator, eventCreationRules, eventIntakeQueue::offer);
+
+        final AsyncTipsetEventCreationManager manager =
+                new AsyncTipsetEventCreationManager(platformContext, threadManager, syncEventCreationManager);
 
         eventObserverDispatcher.addObserver((PreConsensusEventObserver) event -> abortAndThrowIfInterrupted(
                 manager::registerEvent,

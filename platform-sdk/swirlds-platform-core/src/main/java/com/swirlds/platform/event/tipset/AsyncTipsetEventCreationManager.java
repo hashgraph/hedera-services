@@ -19,7 +19,6 @@ package com.swirlds.platform.event.tipset;
 import static com.swirlds.base.state.LifecyclePhase.NOT_STARTED;
 import static com.swirlds.base.state.LifecyclePhase.STARTED;
 import static com.swirlds.base.state.LifecyclePhase.STOPPED;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.swirlds.base.state.Lifecycle;
 import com.swirlds.base.state.LifecyclePhase;
@@ -27,21 +26,19 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
+import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.common.threading.manager.ThreadManager;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 // TODO unit tests
 
 /**
- * Manages the creation of events.
+ * Manages the creation of events. Wraps a {@link SyncTipsetEventCreationManager} and provides an asynchronous
+ * interface.
  */
-public class TipsetEventCreationManager implements Lifecycle {
+public class AsyncTipsetEventCreationManager implements Lifecycle {
 
     /**
      * Tracks the lifecycle of this object.
@@ -51,7 +48,7 @@ public class TipsetEventCreationManager implements Lifecycle {
     /**
      * The core logic for creating events.
      */
-    private final TipsetEventCreator eventCreator;
+    private final SyncTipsetEventCreationManager eventCreator;
 
     /**
      * Contains tasks that need to be run on the processing thread for this component.
@@ -64,56 +61,34 @@ public class TipsetEventCreationManager implements Lifecycle {
     private final BlockingQueueInserter<EventImpl> eventInserter;
 
     /**
-     * If not null, contains an event that was created but was unable to be submitted right away.
-     */
-    private GossipEvent mostRecentlyCreatedEvent;
-
-    /**
      * The object used to enqueue updates to the minimum generation non-ancient onto the work queue.
      */
     private final BlockingQueueInserter<Long> minimumGenerationNonAncientInserter;
 
     /**
+     * Used to signal a desired pause.
+     *
+     * @param shouldBePaused     true if event creation should be paused, false if it should be unpaused
+     * @param pauseStatusAdopted a future that will be completed when the requested pause status has been adopted
+     */
+    private record PauseRequest(boolean shouldBePaused, @NonNull StandardFuture<Void> pauseStatusAdopted) {}
+
+    /**
      * The object used to enqueue updates to the pause status on the work queue.
      */
-    private final BlockingQueueInserter<Boolean> setPauseStatusInserter;
-
-    /**
-     * When the event creator makes a new event, pass it to this lambda. If this method returns true then the event was
-     * accepted, if this method returns false then the event was rejected and needs to be submitted again later.
-     */
-    private final Function<GossipEvent, Boolean> newEventHandler;
-
-    /**
-     * The rules that determine whether or not a new event should be created.
-     */
-    private final TipsetEventCreationRule eventCreationRules;
-
-    /**
-     * Whether or not event creation is paused. If unpaused, event creation may be blocked by the event creation rules
-     * or by the tipset algorithm's requirements. If paused, event creation is blocked regardless of all other factors.
-     */
-    private final AtomicBoolean isPaused = new AtomicBoolean(false);
+    private final BlockingQueueInserter<PauseRequest> setPauseStatusInserter;
 
     /**
      * Constructor.
      *
-     * @param platformContext    the platform's context
-     * @param threadManager      manages the creation of new threads
-     * @param eventCreator       creates new events
-     * @param eventCreationRules rules that limit when it is permitted to create events
-     * @param newEventHandler    when the event creator makes a new event, pass it to this lambda. If this method
-     *                           returns true then the event was accepted, if this method returns false then the event
-     *                           was rejected and needs to be submitted again later.
+     * @param platformContext the platform's context
+     * @param threadManager   manages the creation of new threads
+     * @param eventCreator    creates new events
      */
-    public TipsetEventCreationManager(
+    public AsyncTipsetEventCreationManager(
             @NonNull final PlatformContext platformContext,
             @NonNull final ThreadManager threadManager,
-            @NonNull final TipsetEventCreator eventCreator,
-            @NonNull final TipsetEventCreationRule eventCreationRules,
-            @NonNull final Function<GossipEvent, Boolean> newEventHandler) {
-
-        this.newEventHandler = Objects.requireNonNull(newEventHandler);
+            @NonNull final SyncTipsetEventCreationManager eventCreator) {
 
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(threadManager);
@@ -122,7 +97,6 @@ public class TipsetEventCreationManager implements Lifecycle {
                 platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
 
         this.eventCreator = Objects.requireNonNull(eventCreator);
-        this.eventCreationRules = Objects.requireNonNull(eventCreationRules);
 
         workQueue = new MultiQueueThreadConfiguration(threadManager)
                 .setThreadName("event-creator")
@@ -130,15 +104,15 @@ public class TipsetEventCreationManager implements Lifecycle {
                 .setMaxBufferSize(eventCreationConfig.creationQueueBufferSize())
                 .addHandler(EventImpl.class, this::handleEvent)
                 .addHandler(Long.class, this::handleMinimumGenerationNonAncient)
-                .addHandler(Boolean.class, this::handlePauseStatusChange)
-                .setIdleCallback(this::maybeCreateEvent)
-                .setBatchHandledCallback(this::maybeCreateEvent)
+                .addHandler(PauseRequest.class, this::handlePauseStatusChange)
+                .setIdleCallback(eventCreator::maybeCreateEvent)
+                .setBatchHandledCallback(eventCreator::maybeCreateEvent)
                 .setWaitForWorkDuration(eventCreationConfig.creationQueueWaitForWorkPeriod())
                 .build();
 
         eventInserter = workQueue.getInserter(EventImpl.class);
         minimumGenerationNonAncientInserter = workQueue.getInserter(Long.class);
-        setPauseStatusInserter = workQueue.getInserter(Boolean.class);
+        setPauseStatusInserter = workQueue.getInserter(PauseRequest.class);
     }
 
     /**
@@ -181,52 +155,15 @@ public class TipsetEventCreationManager implements Lifecycle {
     /**
      * Update the pause status.
      *
-     * @param shouldBePaused true if event creation should be paused, false if it should be unpaused
+     * @param pauseRequest describes the desired pause status
      */
-    private void handlePauseStatusChange(final boolean shouldBePaused) {
-        if (shouldBePaused && !this.isPaused.get()) {
-            // We are not currently paused and we want to be paused. Before we can pause, we must
-            // make sure that the most recently created event has been accepted.
-
-            while (mostRecentlyCreatedEvent != null) {
-                tryToSubmitMostRecentEvent();
-            }
+    private void handlePauseStatusChange(final PauseRequest pauseRequest) {
+        if (pauseRequest.shouldBePaused()) {
+            eventCreator.pauseEventCreation();
+        } else {
+            eventCreator.resumeEventCreation();
         }
-
-        this.isPaused.set(shouldBePaused);
-    }
-
-    /**
-     * If there is an unsubmitted self event then attempt to submit it.
-     */
-    private void tryToSubmitMostRecentEvent() {
-        if (mostRecentlyCreatedEvent != null) {
-            final boolean accepted = newEventHandler.apply(mostRecentlyCreatedEvent);
-            if (accepted) {
-                mostRecentlyCreatedEvent = null;
-            }
-        }
-    }
-
-    /**
-     * Create a new event if it is legal to do so.
-     */
-    private void maybeCreateEvent() {
-        if (!eventCreationRules.isEventCreationPermitted() || isPaused.get()) {
-            return;
-        }
-
-        tryToSubmitMostRecentEvent();
-        if (mostRecentlyCreatedEvent != null) {
-            // Don't create a new event until the previous one has been accepted.
-            return;
-        }
-
-        mostRecentlyCreatedEvent = eventCreator.maybeCreateEvent();
-        if (mostRecentlyCreatedEvent != null) {
-            eventCreationRules.eventWasCreated();
-            tryToSubmitMostRecentEvent();
-        }
+        pauseRequest.pauseStatusAdopted.complete(null);
     }
 
     /**
@@ -260,16 +197,13 @@ public class TipsetEventCreationManager implements Lifecycle {
 
     /**
      * Pause event creation. This method blocks until it is guaranteed that no new events will be created and until all
-     * created events have been submitted. Calling this method while event creation is already paused has no effect.
+     * created events have been submitted.
      */
     public void pauseEventCreation() {
         try {
-            setPauseStatusInserter.put(true);
-            while (!isPaused.get()) {
-                // Busy waits are ugly and inefficient. But pausing event creation is very rare
-                // (only during reconnects), and so the impact of this busy wait is negligible.
-                MILLISECONDS.sleep(1);
-            }
+            final StandardFuture<Void> future = new StandardFuture<>();
+            setPauseStatusInserter.put(new PauseRequest(true, future));
+            future.getAndRethrow();
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted while attempting to pause event creation", e);
@@ -277,11 +211,11 @@ public class TipsetEventCreationManager implements Lifecycle {
     }
 
     /**
-     * Resume event creation. Calling this method while event creation is already unpaused has no effect.
+     * Resume event creation. Unlike {@link #pauseEventCreation()}, does not block until event creation resumes.
      */
     public void resumeEventCreation() {
         try {
-            setPauseStatusInserter.put(false);
+            setPauseStatusInserter.put(new PauseRequest(false, new StandardFuture<>()));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while attempting to unpause event creation", e);
