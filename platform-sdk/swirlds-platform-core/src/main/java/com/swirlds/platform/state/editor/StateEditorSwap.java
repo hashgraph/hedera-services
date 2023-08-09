@@ -23,6 +23,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,8 +56,8 @@ public class StateEditorSwap extends StateEditorOperation {
             final MerkleNode nodeA = reservedSignedState.get().getState().getNodeAtRoute(parentInfoA.target());
             final MerkleNode nodeB = reservedSignedState.get().getState().getNodeAtRoute(parentInfoB.target());
 
-            if (logger.isInfoEnabled()) {
-                logger.info("Swapping {} and {}", formatNode(nodeA), formatNode(nodeB));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(LogMarker.CLI.getMarker(), "Swapping {} and {}", formatNode(nodeA), formatNode(nodeB));
             }
 
             // Take a reservation on B so it doesn't get prematurely deleted

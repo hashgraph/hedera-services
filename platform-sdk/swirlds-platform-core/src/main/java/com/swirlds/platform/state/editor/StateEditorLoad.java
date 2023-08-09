@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -70,8 +71,8 @@ public class StateEditorLoad extends StateEditorOperation {
         final MerkleInternal parent = parentInfo.parent();
         final int indexInParent = parentInfo.indexInParent();
 
-        if (logger.isInfoEnabled()) {
-            logger.info("Loading subtree from {}", formatFile(fileName));
+        if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+            logger.info(LogMarker.CLI.getMarker(), "Loading subtree from {}", formatFile(fileName));
         }
 
         final MerkleNode subtree;
@@ -83,8 +84,9 @@ public class StateEditorLoad extends StateEditorOperation {
             throw new UncheckedIOException(e);
         }
 
-        if (logger.isInfoEnabled()) {
+        if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
             logger.info(
+                    LogMarker.CLI.getMarker(),
                     "Loaded {} subtree into {}, new parent is {}",
                     formatNodeType(subtree),
                     formatRoute(destinationRoute),

@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
@@ -54,13 +55,13 @@ public class StateEditorSave extends StateEditorOperation {
     public void run() {
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorSave.run()")) {
 
-            logger.info("Hashing state");
+            logger.info(LogMarker.CLI.getMarker(), "Hashing state");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
 
-            if (logger.isInfoEnabled()) {
-                logger.info("Writing signed state file to {}", formatFile(directory));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(LogMarker.CLI.getMarker(), "Writing signed state file to {}", formatFile(directory));
             }
 
             if (!Files.exists(directory)) {

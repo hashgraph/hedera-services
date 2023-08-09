@@ -19,6 +19,7 @@ package com.swirlds.platform.cli;
 import com.swirlds.cli.commands.StateCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
@@ -35,7 +36,7 @@ public final class ValidateStateCommand extends AbstractCommand {
 
     @Override
     public Integer call() {
-        logger.info("This command is a work in progress (Deepak)");
+        logger.info(LogMarker.CLI.getMarker(), "This command is a work in progress (Deepak)");
         return 0;
     }
 }

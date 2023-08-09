@@ -24,6 +24,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.crypto.Hashable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -69,14 +70,16 @@ public class StateEditorExec extends StateEditorOperation {
             final Class<?> clazz = classLoader.loadClass(className);
             final Method method = clazz.getMethod(methodName, MerkleNode.class);
 
-            if (logger.isInfoEnabled()) {
-                logger.info("Applying {} to {}", BRIGHT_CYAN.apply(function), formatNode(node));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(
+                        LogMarker.CLI.getMarker(), "Applying {} to {}", BRIGHT_CYAN.apply(function), formatNode(node));
             }
             final MerkleNode result = (MerkleNode) method.invoke(null, node);
 
             if (result != node) {
-                if (logger.isInfoEnabled()) {
+                if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
                     logger.info(
+                            LogMarker.CLI.getMarker(),
                             "Replacing {} with node {} returned by {}()",
                             formatNode(node),
                             formatNodeType(result),

@@ -22,6 +22,7 @@ import static com.swirlds.platform.util.BootstrapUtils.setupConstructableRegistr
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileRepairer;
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +55,11 @@ public class EventStreamRepairCommand extends AbstractCommand {
                         .orElseThrow();
                 this.eventStreamFile = fileMustExist(pathToLastFile);
             } catch (final IOException | NoSuchElementException e) {
-                logger.error("Failed to find event stream from Path: {}", eventStreamFileOrDirectory, e);
+                logger.error(
+                        LogMarker.EXCEPTION.getMarker(),
+                        "Failed to find event stream from Path: {}",
+                        eventStreamFileOrDirectory,
+                        e);
             }
         } else {
             this.eventStreamFile = fileMustExist(eventStreamFileOrDirectory);
@@ -66,12 +71,17 @@ public class EventStreamRepairCommand extends AbstractCommand {
         setupConstructableRegistry();
         final EventStreamSingleFileRepairer repairer = new EventStreamSingleFileRepairer(eventStreamFile);
         if (repairer.repair()) {
-            logger.info("Event Stream Repaired.");
-            logger.info("Damaged file: {}{}", eventStreamFile.getAbsolutePath(), DAMAGED_SUFFIX);
-            logger.info("Repaired file: {}", eventStreamFile.getAbsolutePath());
+            logger.info(LogMarker.CLI.getMarker(), "Event Stream Repaired.");
+            logger.info(
+                    LogMarker.CLI.getMarker(), "Damaged file: {}{}", eventStreamFile.getAbsolutePath(), DAMAGED_SUFFIX);
+            logger.info(LogMarker.CLI.getMarker(), "Repaired file: {}", eventStreamFile.getAbsolutePath());
         } else {
-            logger.warn("Event Stream Did Not Need Repair.");
-            logger.warn("Evaluated file: {}{}", eventStreamFile.getAbsolutePath(), DAMAGED_SUFFIX);
+            logger.warn(LogMarker.CLI.getMarker(), "Event Stream Did Not Need Repair.");
+            logger.warn(
+                    LogMarker.CLI.getMarker(),
+                    "Evaluated file: {}{}",
+                    eventStreamFile.getAbsolutePath(),
+                    DAMAGED_SUFFIX);
         }
         logger.info("File event count: {}", repairer.getEventCount());
         return 0;

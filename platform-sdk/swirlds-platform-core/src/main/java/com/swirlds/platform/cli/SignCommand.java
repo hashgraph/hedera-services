@@ -18,6 +18,7 @@ package com.swirlds.platform.cli;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.common.io.utility.FileUtils;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.util.FileSigningUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -160,7 +161,11 @@ public abstract class SignCommand extends AbstractCommand {
 
         // if signature file already exists, don't continue
         if (Files.exists(signatureFileDestinationPath)) {
-            logger.warn("Signature file {} already exists. Skipping file {}", signatureFileDestinationPath, fileToSign);
+            logger.warn(
+                    LogMarker.CLI.getMarker(),
+                    "Signature file {} already exists. Skipping file {}",
+                    signatureFileDestinationPath,
+                    fileToSign);
             return;
         }
 
@@ -179,6 +184,7 @@ public abstract class SignCommand extends AbstractCommand {
             Files.copy(fileToSign, destinationDirectory.resolve(fileToSign.getFileName()));
         } catch (final IOException e) {
             logger.error(
+                    LogMarker.EXCEPTION.getMarker(),
                     "Failed to copy source file {} to destination directory {}",
                     fileToSign.getFileName(),
                     destinationDirectory,

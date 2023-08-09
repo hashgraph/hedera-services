@@ -23,6 +23,7 @@ import static com.swirlds.platform.state.editor.StateEditorUtils.formatNode;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.logging.LogMarker;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -63,8 +64,8 @@ public class StateEditorStore extends StateEditorOperation {
                 Files.createDirectories(fileName.getParent());
             }
 
-            if (logger.isInfoEnabled()) {
-                logger.info("Writing {} to {}", formatNode(subtree), formatFile(fileName));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(LogMarker.CLI.getMarker(), "Writing {} to {}", formatNode(subtree), formatFile(fileName));
             }
 
             final MerkleDataOutputStream out =

@@ -42,6 +42,9 @@ import picocli.CommandLine.Command;
         description = "Miscellaneous platform utilities.")
 public class PlatformCli extends AbstractCommand {
 
+    private static final String DOCUMENTATION_PURPOSES_ONLY =
+            "This argument is included here for documentation purposes only.";
+
     /**
      * Set the paths where jar files should be loaded from.
      */
@@ -53,7 +56,7 @@ public class PlatformCli extends AbstractCommand {
     private void setLoadPath(final List<Path> loadPath) {
         throw buildParameterException(
                 "The load path parameter is expected to be parsed prior to the JVM being started. "
-                        + "This argument is included here for documentation purposes only.");
+                        + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     @CommandLine.Option(
@@ -62,7 +65,7 @@ public class PlatformCli extends AbstractCommand {
             description = "An argument that will be passed to the JVM, e.g. '-Xmx10g'")
     private void setJvmArgs(final List<String> jvmArgs) {
         throw buildParameterException("The jvm args parameter is expected to be parsed prior to the JVM being started. "
-                + "This argument is included here for documentation purposes only.");
+                + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     @CommandLine.Option(
@@ -72,8 +75,8 @@ public class PlatformCli extends AbstractCommand {
                     + "Commands annotated with '@SubcommandOf' in these packages are automatically "
                     + "integrated into pcli.")
     private void setCliPackagePrefixes(final List<String> cliPackagePrefixes) {
-        throw buildParameterException("The cli parameter is expected to be parsed using a different pathway. "
-                + "This argument is included here for documentation purposes only.");
+        throw buildParameterException(
+                "The cli parameter is expected to be parsed using a different pathway. " + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     @CommandLine.Option(
@@ -83,7 +86,7 @@ public class PlatformCli extends AbstractCommand {
                     + "is attached to port 8888 before continuing.")
     private void setDebug(final boolean debug) {
         throw buildParameterException("The debug parameter is expected to be parsed prior to the JVM being started. "
-                + "This argument is included here for documentation purposes only.");
+                + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     @CommandLine.Option(
@@ -93,7 +96,7 @@ public class PlatformCli extends AbstractCommand {
                     + "'-M 16' is equivalent to '-J -Xmx16g'.")
     private void setJvmArgs(final int memory) {
         throw buildParameterException("The memory parameter is expected to be parsed prior to the JVM being started. "
-                + "This argument is included here for documentation purposes only.");
+                + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     /**
@@ -104,8 +107,8 @@ public class PlatformCli extends AbstractCommand {
             scope = CommandLine.ScopeType.INHERIT,
             description = "The path where the log4j configuration file can be found.")
     private void setLog4jPath(final Path log4jPath) {
-        throw buildParameterException("The log4j path parameter is expected to be parsed manually. "
-                + "This argument is included here for documentation purposes only.");
+        throw buildParameterException(
+                "The log4j path parameter is expected to be parsed manually. " + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     @CommandLine.Option(
@@ -114,8 +117,8 @@ public class PlatformCli extends AbstractCommand {
                     + "boring people living boring lives, who want their console "
                     + "output to be just as boring as they are.")
     private void setColorDisabled(final boolean colorDisabled) {
-        throw buildParameterException("The setColorDisabled parameter is expected to be parsed manually. "
-                + "This argument is included here for documentation purposes only.");
+        throw buildParameterException(
+                "The setColorDisabled parameter is expected to be parsed manually. " + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     /**
@@ -132,7 +135,7 @@ public class PlatformCli extends AbstractCommand {
     private void setIgnoreJars(final boolean ignoreJars) {
         throw buildParameterException(
                 "The ignore jars parameter is expected to be parsed prior to the JVM being started. "
-                        + "This argument is included here for documentation purposes only.");
+                        + DOCUMENTATION_PURPOSES_ONLY);
     }
 
     /**
@@ -162,6 +165,7 @@ public class PlatformCli extends AbstractCommand {
      * 		the path to the log4j configuration if it exists, or null if it doesn't
      * @return a latch that counts down when log4j has been started
      */
+    @SuppressWarnings("java:S106")
     private static CountDownLatch startLog4j(final Path log4jPath) {
         final CountDownLatch log4jLoadedLatch = new CountDownLatch(1);
 
@@ -193,6 +197,7 @@ public class PlatformCli extends AbstractCommand {
      * @param args
      * 		program arguments
      */
+    @SuppressWarnings("java:S106")
     public static void main(final String[] args) throws InterruptedException {
         final PlatformCliPreParser preParser = preParse(args);
 
@@ -203,10 +208,8 @@ public class PlatformCli extends AbstractCommand {
 
         final CountDownLatch log4jLatch = startLog4j(preParser.getLog4jPath());
 
-        whitelistCliPackage("com.swirlds.platform.cli.commands");
         whitelistCliPackage("com.swirlds.platform.cli");
         whitelistCliPackage("com.swirlds.platform.state.editor");
-        whitelistCliPackage("com.swirlds.common.cli");
         if (preParser.getCliPackagePrefixes() != null) {
             for (final String cliPackagePrefix : preParser.getCliPackagePrefixes()) {
                 whitelistCliPackage(cliPackagePrefix);
