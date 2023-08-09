@@ -153,6 +153,10 @@ extraJavaModuleInfo {
         exportAllPackages()
         requires("org.connid.framework") // this is missing in POM
     }
+    module("com.offbynull.portmapper:portmapper", "portmapper") {
+        exportAllPackages()
+        requireAllDefinedDependencies()
+    }
     module("org.jetbrains:annotations", "org.jetbrains.annotations") {
         exportAllPackages()
         // no dependencies
