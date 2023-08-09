@@ -71,15 +71,16 @@ public class EventStreamRepairCommand extends AbstractCommand {
         setupConstructableRegistry();
         final EventStreamSingleFileRepairer repairer = new EventStreamSingleFileRepairer(eventStreamFile);
         if (repairer.repair()) {
-            logger.info(LogMarker.CLI.getMarker(), "Event Stream Repaired.");
             logger.info(
-                    LogMarker.CLI.getMarker(), "Damaged file: {}{}", eventStreamFile.getAbsolutePath(), DAMAGED_SUFFIX);
-            logger.info(LogMarker.CLI.getMarker(), "Repaired file: {}", eventStreamFile.getAbsolutePath());
-        } else {
-            logger.warn(LogMarker.CLI.getMarker(), "Event Stream Did Not Need Repair.");
-            logger.warn(
                     LogMarker.CLI.getMarker(),
-                    "Evaluated file: {}{}",
+                    "Event Stream Repaired.\nDamaged file: {}{}\nRepaired file: {}",
+                    eventStreamFile.getAbsolutePath(),
+                    DAMAGED_SUFFIX,
+                    eventStreamFile.getAbsolutePath());
+        } else {
+            logger.info(
+                    LogMarker.CLI.getMarker(),
+                    "Event Stream Did Not Need Repair.\nEvaluated file: {}{}",
                     eventStreamFile.getAbsolutePath(),
                     DAMAGED_SUFFIX);
         }

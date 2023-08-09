@@ -63,7 +63,7 @@ public class StateEditorResize extends StateEditorOperation {
         if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
             logger.info(
                     LogMarker.CLI.getMarker(),
-                    "Resizing [{}{}] to child count {}",
+                    "Resizing [{} {}] to child count {}",
                     MerkleRouteUtils.merkleRouteToPathFormat(parent.getRoute()),
                     parent.getClass().getSimpleName(),
                     newSize);
