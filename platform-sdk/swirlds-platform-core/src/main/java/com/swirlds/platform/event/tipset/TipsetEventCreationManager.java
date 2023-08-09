@@ -32,15 +32,16 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.threading.framework.BlockingQueueInserter;
 import com.swirlds.common.threading.framework.MultiQueueThread;
 import com.swirlds.common.threading.framework.config.MultiQueueThreadConfiguration;
+import com.swirlds.common.threading.framework.config.QueueThreadMetricsConfiguration;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.StartUpEventFrozenManager;
 import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.event.tipset.rules.AggregateTipsetEventCreationRules;
 import com.swirlds.platform.event.tipset.rules.ReconnectStateSavedRule;
-import com.swirlds.platform.event.tipset.rules.TipsetBackpressureRule;
 import com.swirlds.platform.event.tipset.rules.TipsetEventCreationRule;
 import com.swirlds.platform.event.tipset.rules.TipsetMaximumRateRule;
 import com.swirlds.platform.event.tipset.rules.TipsetPlatformStatusRule;
+import com.swirlds.platform.event.tipset.rules.TipsetQueueBackpressureRule;
 import com.swirlds.platform.eventhandling.EventTransactionPool;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -150,7 +151,8 @@ public class TipsetEventCreationManager implements Lifecycle {
 
         final List<TipsetEventCreationRule> rules = new ArrayList<>();
         rules.add(new TipsetMaximumRateRule(platformContext, time));
-        rules.add(new TipsetBackpressureRule(platformContext, eventIntakeQueueSize));
+        rules.add(new TipsetQueueBackpressureRule(eventIntakeQueueSize, eventCreationConfig.eventIntakeThrottle()));
+        rules.add(new TipsetQueueBackpressureRule(this::getQueueSize, eventCreationConfig.creationQueueThrottle()));
         rules.add(new TipsetPlatformStatusRule(platformStatusSupplier, transactionPool, startUpEventFrozenManager));
         rules.add(new ReconnectStateSavedRule(latestReconnectRound, latestSavedStateRound));
 
@@ -175,6 +177,9 @@ public class TipsetEventCreationManager implements Lifecycle {
                 .setIdleCallback(this::maybeCreateEvent)
                 .setBatchHandledCallback(this::maybeCreateEvent)
                 .setWaitForWorkDuration(eventCreationConfig.creationQueueWaitForWorkPeriod())
+                .setMetricsConfiguration(new QueueThreadMetricsConfiguration(platformContext.getMetrics())
+                        .enableMaxSizeMetric()
+                        .enableBusyTimeMetric())
                 .build();
 
         eventInserter = workQueue.getInserter(EventImpl.class);
@@ -231,6 +236,13 @@ public class TipsetEventCreationManager implements Lifecycle {
             eventCreationRules.eventWasCreated();
             newEventHandler.accept(event);
         }
+    }
+
+    /**
+     * Get the size of the work queue.
+     */
+    private int getQueueSize() {
+        return workQueue.size();
     }
 
     /**

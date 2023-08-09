@@ -16,6 +16,7 @@
 
 package com.swirlds.common.test.threading;
 
+import static com.swirlds.common.test.fixtures.AssertionUtils.assertEventuallyEquals;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -295,5 +296,58 @@ class MultiQueueThreadTests {
         assertEquals(2, stringCount.get());
         assertEquals("3", objects.get(2));
         assertEquals("6", objects.get(5));
+    }
+
+    @Test
+    @DisplayName("size() Test")
+    void sizeTest() throws InterruptedException {
+        final List<Object> objects = new ArrayList<>();
+        final AtomicInteger intCount = new AtomicInteger(0);
+        final AtomicInteger doubleCount = new AtomicInteger(0);
+        final AtomicInteger stringCount = new AtomicInteger(0);
+
+        final MultiQueueThread multiQueueThread = new MultiQueueThreadConfiguration(
+                        AdHocThreadManager.getStaticThreadManager())
+                .setThreadName("test")
+                .setCapacity(5)
+                .setMaxBufferSize(1)
+                .addHandler(Integer.class, (final Integer i) -> {
+                    intCount.getAndIncrement();
+                    objects.add(i);
+                })
+                .addHandler(Double.class, (d) -> {
+                    doubleCount.getAndIncrement();
+                    objects.add(d);
+                })
+                .addHandler(String.class, (s) -> {
+                    stringCount.getAndIncrement();
+                    objects.add(s);
+                })
+                .build();
+
+        final BlockingQueueInserter<Integer> intInserter = multiQueueThread.getInserter(Integer.class);
+        final BlockingQueueInserter<Double> doubleInserter = multiQueueThread.getInserter(Double.class);
+        final BlockingQueueInserter<String> stringInserter = multiQueueThread.getInserter(String.class);
+
+        intInserter.put(0);
+        assertEquals(1, multiQueueThread.size());
+        doubleInserter.put(0.0);
+        assertEquals(2, multiQueueThread.size());
+        stringInserter.put("0");
+        assertEquals(3, multiQueueThread.size());
+        intInserter.put(0);
+        assertEquals(4, multiQueueThread.size());
+        doubleInserter.put(0.0);
+        assertEquals(5, multiQueueThread.size());
+
+        multiQueueThread.start();
+
+        assertEventuallyEquals(0, multiQueueThread::size, Duration.ofSeconds(1), "size should eventually be 0");
+
+        assertEquals(2, intCount.get());
+        assertEquals(2, doubleCount.get());
+        assertEquals(1, stringCount.get());
+
+        multiQueueThread.stop();
     }
 }

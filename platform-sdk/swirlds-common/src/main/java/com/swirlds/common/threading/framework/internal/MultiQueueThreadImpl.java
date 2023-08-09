@@ -255,4 +255,12 @@ public class MultiQueueThreadImpl implements MultiQueueThread {
     public void waitUntilNotBusy() throws InterruptedException {
         queueThread.waitUntilNotBusy();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int size() {
+        return queueThread.size();
+    }
 }
