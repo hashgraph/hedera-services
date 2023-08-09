@@ -101,6 +101,10 @@ public enum LogMarker {
      * Marker for config
      */
     CONFIG(LogMarkerType.INFO),
+    /**
+     * Marker for CLI
+     */
+    CLI(LogMarkerType.INFO),
 
     /**
      * log each event as it's added to the intake queue
