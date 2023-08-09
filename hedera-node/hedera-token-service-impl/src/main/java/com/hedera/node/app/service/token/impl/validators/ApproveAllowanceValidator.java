@@ -16,7 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.validators;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
@@ -49,7 +59,9 @@ import javax.inject.Singleton;
 public class ApproveAllowanceValidator extends AllowanceValidator {
 
     @Inject
-    public ApproveAllowanceValidator() {}
+    public ApproveAllowanceValidator() {
+        // Dagger
+    }
 
     public void validate(
             @NonNull final HandleContext context, final Account payerAccount, final ReadableAccountStore accountStore) {

@@ -18,20 +18,21 @@ package com.swirlds.virtual.merkle;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
+import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public class TestValueSerializer implements SelfSerializableSupplier<TestValue> {
-    @Override
-    public long getClassId() {
-        return 53543453;
+public class TestValueSerializer implements ValueSerializer<TestValue> {
+
+    public TestValueSerializer() {
+        // required for deserialization
     }
 
     @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {}
-
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {}
+    public long getClassId() {
+        return 53543454;
+    }
 
     @Override
     public int getVersion() {
@@ -39,7 +40,44 @@ public class TestValueSerializer implements SelfSerializableSupplier<TestValue> 
     }
 
     @Override
-    public TestValue get() {
-        return new TestValue();
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        // no-op
+    }
+
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        // no-op
+    }
+
+    @Override
+    public long getCurrentDataVersion() {
+        return 1;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
+    }
+
+    @Override
+    public int getTypicalSerializedSize() {
+        return 20; // guesstimation
+    }
+
+    @Override
+    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(data.getValue());
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
+        return Integer.BYTES + bytes.length;
+    }
+
+    @Override
+    public TestValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        final int size = buffer.getInt();
+        final byte[] bytes = new byte[size];
+        buffer.get(bytes);
+        final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
+        return new TestValue(value);
     }
 }
