@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
@@ -30,6 +29,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * the state of the world (including all changes up to and including the current frame).
  */
 public interface HederaNativeOperations {
+    long MISSING_ENTITY_NUMBER = -1L;
+
     /**
      * Returns the {@link Account} with the given number.
      *
@@ -53,10 +54,9 @@ public interface HederaNativeOperations {
      * is an alias for.
      *
      * @param evmAddress the EVM address
-     * @return the account or contract number, or {@code null} if the address is not an alias
+     * @return the account or contract number, or -1 if no such account or contract exists
      */
-    @Nullable
-    EntityNumber resolveAlias(@NonNull Bytes evmAddress);
+    long resolveAlias(@NonNull Bytes evmAddress);
 
     /**
      * Assigns the given {@code nonce} to the given {@code contractNumber}.

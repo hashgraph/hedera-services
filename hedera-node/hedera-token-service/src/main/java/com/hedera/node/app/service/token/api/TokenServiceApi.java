@@ -19,7 +19,12 @@ package com.hedera.node.app.service.token.api;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
 
@@ -31,10 +36,30 @@ import java.util.Set;
  */
 public interface TokenServiceApi {
     /**
+     * Validates the given staking election relative to the given account store, network info, and staking config.
+     *
+     * @param isStakingEnabled       if staking is enabled
+     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     * @throws HandleException if the staking election is invalid
+     */
+    void assertValidStakingElection(
+            boolean isStakingEnabled,
+            boolean hasDeclineRewardChange,
+            @NonNull String stakedIdKind,
+            @Nullable AccountID stakedAccountIdInOp,
+            @Nullable Long stakedNodeIdInOp,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull NetworkInfo networkInfo);
+
+    /**
      * Marks an account as a contract.
      *
      */
-    void markNewlyCreatedAsContract(@NonNull AccountID justCreated);
+    void markAsContract(@NonNull AccountID justCreated);
 
     /**
      * Deletes the contract with the given id.
@@ -58,6 +83,14 @@ public interface TokenServiceApi {
     void incrementSenderNonce(@NonNull AccountID senderId);
 
     /**
+     * Sets the nonce of the given account.
+     *
+     * @param accountId the id of the account whose nonce should set
+     * @param nonce the nonce to set
+     */
+    void setNonce(@NonNull AccountID accountId, long nonce);
+
+    /**
      * Transfers the given amount from the given sender to the given recipient.
      *
      * @param from the id of the sender
@@ -79,4 +112,13 @@ public interface TokenServiceApi {
      * @return a list of all the account ids that were modified by this {@link TokenServiceApi}
      */
     List<ContractNonceInfo> updatedContractNonces();
+
+    /**
+     * Updates the storage metadata for the given contract.
+     *
+     * @param accountId the id of the contract
+     * @param firstKey       the first key in the storage linked list, empty if the storage is empty
+     * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
+     */
+    void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 }

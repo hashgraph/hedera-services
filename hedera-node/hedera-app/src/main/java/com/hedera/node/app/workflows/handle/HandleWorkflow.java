@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -36,6 +37,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -85,6 +87,8 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
+    private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
     public HandleWorkflow(
@@ -98,7 +102,9 @@ public class HandleWorkflow {
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
-            @NonNull final HederaRecordCache recordCache) {
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -110,6 +116,8 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
+        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
     }
 
     /**
@@ -169,13 +177,15 @@ public class HandleWorkflow {
             if (transaction.signedTransactionBytes().length() > 0) {
                 transactionBytes = transaction.signedTransactionBytes();
             } else {
-                // in this case, recorder hash the transaction itself, not its' bodyBytes.
+                // in this case, recorder hash the transaction itself, not its bodyBytes.
                 transactionBytes = Bytes.wrap(PbjConverter.fromPbj(transaction).toByteArray());
             }
+
             recordBuilder
                     .transaction(transactionInfo.transaction())
                     .transactionBytes(transactionBytes)
                     .transactionID(txBody.transactionID())
+                    .exchangeRate(exchangeRateManager.exchangeRates())
                     .memo(txBody.memo());
 
             // If pre-handle was successful, we return the result. Otherwise, we charge the node or throw an exception.
@@ -225,6 +235,11 @@ public class HandleWorkflow {
                     serviceScopeLookup,
                     blockRecordManager,
                     recordCache);
+
+            // Now that we have a created handle context object and a consensus timestamp, run the appropriate {@code
+            // ConsensusTimeHook} event handlers
+            stakingPeriodTimeHook.process(consensusNow, context);
+            // @future('7836'): update the exchange rate and call from here
 
             // Dispatch the transaction to the handler
             dispatcher.dispatchHandle(context);

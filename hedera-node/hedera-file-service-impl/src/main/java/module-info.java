@@ -2,6 +2,7 @@ import com.hedera.node.app.service.file.impl.FileServiceImpl;
 
 module com.hedera.node.app.service.file.impl {
     requires com.fasterxml.jackson.databind;
+    requires com.swirlds.common;
     requires com.swirlds.config;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;

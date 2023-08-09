@@ -41,7 +41,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
@@ -894,7 +894,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
             contextDispatcher.accept(context);
 
             // then
-            verify(checker).checkTransactionBody(txBody);
             verify(dispatcher).dispatchPureChecks(txBody);
             assertThat(stack.createReadableStates(FOOD_SERVICE)
                             .get(FRUIT_STATE_KEY)
@@ -902,30 +901,6 @@ class HandleContextImplTest extends StateTestBase implements Scenarios {
                     .isEqualTo(ACAI);
             assertThat(context.configuration()).isEqualTo(CONFIG_2);
             verify(childRecordBuilder, never()).status(any());
-            // TODO: Check that record was added to recordListBuilder
-        }
-
-        @ParameterizedTest
-        @MethodSource("createContextDispatchers")
-        void testDispatchCheckerFails(Consumer<HandleContext> contextDispatcher) throws PreCheckException {
-            // given
-            final var txBody = TransactionBody.newBuilder().build();
-            doThrow(new PreCheckException(ResponseCodeEnum.INSUFFICIENT_TX_FEE))
-                    .when(checker)
-                    .checkTransactionBody(txBody);
-            final var context = createContext(txBody, TransactionCategory.USER);
-
-            // when
-            contextDispatcher.accept(context);
-
-            // then
-            verify(childRecordBuilder).status(ResponseCodeEnum.INSUFFICIENT_TX_FEE);
-            verify(dispatcher, never()).dispatchHandle(any());
-            assertThat(stack.createReadableStates(FOOD_SERVICE)
-                            .get(FRUIT_STATE_KEY)
-                            .get(A_KEY))
-                    .isEqualTo(APPLE);
-            assertThat(context.configuration()).isEqualTo(CONFIG_1);
             // TODO: Check that record was added to recordListBuilder
         }
 

@@ -61,6 +61,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileManager;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.BufferedReader;
@@ -161,7 +162,8 @@ class SignedStateFileReadWriteTest {
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
         final Configuration configuration = changeConfigAndConfigHolder("data/saved");
-        writeSignedStateToDisk(new NodeId(0), directory, signedState, "test", configuration);
+        writeSignedStateToDisk(
+                new NodeId(0), directory, signedState, StateToDiskReason.PERIODIC_SNAPSHOT, configuration);
 
         assertTrue(exists(stateFile), "state file should exist");
         assertTrue(exists(hashInfoFile), "hash info file should exist");

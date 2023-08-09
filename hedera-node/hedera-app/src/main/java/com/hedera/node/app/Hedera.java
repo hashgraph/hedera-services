@@ -24,12 +24,14 @@ import static com.swirlds.common.system.InitTrigger.RESTART;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.FileID;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
@@ -52,6 +54,7 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -587,6 +590,8 @@ public final class Hedera implements SwirldMain {
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
 
+        initializeExchangeRateManager(state);
+
         // Store the version in state
         // TODO Who is responsible for saving this in the tree? I assumed it went into dual state... not sensible!
         logger.debug("Saving version information in state");
@@ -783,6 +788,26 @@ public final class Hedera implements SwirldMain {
             info.setMaxStake(maxStakePerNode);
             stakingInfos.put(nodeNum, info);
         }
+    }
+
+    private void initializeExchangeRateManager(@NonNull final HederaState state) {
+        logger.info("Initializing exchange rates");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.exchangeRates();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build(); // default to shard=0, realm=0
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            daggerApp.exchangeRateManager().update(fileData);
+        });
+        logger.info("Exchange rates initialized");
     }
 
     /*==================================================================================================================

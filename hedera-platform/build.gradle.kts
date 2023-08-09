@@ -80,6 +80,7 @@ dependencies.constraints {
         api(gav("io.netty.transport.classes.epoll", nettyVersion))
         api(gav("io.netty.transport.epoll", nettyVersion))
         api(gav("io.perfmark", "0.25.0"))
+        api(gav("java.annotation", "1.3.2"))
         api(gav("javax.inject", "1"))
         api(gav("net.i2p.crypto.eddsa", "0.3.0"))
         api(gav("org.antlr.antlr4.runtime", "4.11.1"))

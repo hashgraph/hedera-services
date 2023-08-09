@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.TemporaryFileBuilder;
@@ -47,6 +48,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileWriter;
 import com.swirlds.platform.state.signed.SignedStateInvalidException;
+import com.swirlds.platform.state.signed.StateToDiskReason;
 import com.swirlds.test.framework.config.TestConfigBuilder;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.io.IOException;
@@ -77,6 +79,8 @@ public class SavedStateLoaderTests {
     private EmergencySignedStateValidator emergencyValidator;
     private EmergencyRecoveryManager emergencyRecoveryManager;
     private SavedStateLoader savedStateLoader;
+    private final StateConfig stateConfig =
+            new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
 
     @BeforeEach
     void beforeEach() throws IOException {
@@ -309,7 +313,7 @@ public class SavedStateLoaderTests {
     }
 
     private void initEmergencyRecoveryManager() {
-        emergencyRecoveryManager = new EmergencyRecoveryManager(shutdownTrigger, tmpDir);
+        emergencyRecoveryManager = new EmergencyRecoveryManager(stateConfig, shutdownTrigger, tmpDir);
     }
 
     @Test
@@ -434,7 +438,11 @@ public class SavedStateLoaderTests {
         states.forEach(ss -> {
             try {
                 SignedStateFileWriter.writeSignedStateToDisk(
-                        new NodeId(0), getStateDir(ss.getRound()), ss, "test", prepareConfiguration());
+                        new NodeId(0),
+                        getStateDir(ss.getRound()),
+                        ss,
+                        StateToDiskReason.PERIODIC_SNAPSHOT,
+                        prepareConfiguration());
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

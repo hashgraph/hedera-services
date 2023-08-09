@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -32,6 +33,7 @@ import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.StatusActionSubmitter;
 import com.swirlds.common.test.fixtures.AssertionUtils;
 import com.swirlds.common.test.fixtures.RandomAddressBookGenerator;
 import com.swirlds.common.test.fixtures.RandomUtils;
@@ -80,7 +82,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests the emergency reconnect protocol learner and teacher flows.
  */
-public class EmergencyReconnectTests {
+class EmergencyReconnectTests {
     private static final Future<Boolean> trueFuture = mock(Future.class);
     private final RandomSignedStateGenerator signedStateGenerator = new RandomSignedStateGenerator();
     private final NodeId learnerId = new NodeId(0L);
@@ -225,6 +227,7 @@ public class EmergencyReconnectTests {
             final Supplier<State> learnerState,
             final Consumer<SignedState> receivedStateConsumer) {
 
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final ReconnectHelper helper = new ReconnectHelper(
                 () -> {},
                 mock(Clearable.class),
@@ -237,7 +240,8 @@ public class EmergencyReconnectTests {
                         getStaticThreadManager(),
                         addressBook,
                         Duration.of(100_000, ChronoUnit.MILLIS),
-                        mock(ReconnectMetrics.class)));
+                        mock(ReconnectMetrics.class)),
+                stateConfig);
 
         return new ReconnectController(getStaticThreadManager(), helper, () -> {});
     }
@@ -278,6 +282,7 @@ public class EmergencyReconnectTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(FallenBehindManager.class),
+                mock(StatusActionSubmitter.class),
                 configuration);
     }
 
@@ -299,6 +304,7 @@ public class EmergencyReconnectTests {
                 mock(ReconnectMetrics.class),
                 reconnectController,
                 mock(FallenBehindManager.class),
+                mock(StatusActionSubmitter.class),
                 configuration);
     }
 

@@ -18,10 +18,13 @@ package com.swirlds.platform.reconnect.emergency;
 
 import static com.swirlds.logging.LogMarker.RECONNECT;
 
+import com.swirlds.common.config.StateConfig;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.status.StatusActionSubmitter;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.gossip.FallenBehindManager;
@@ -61,26 +64,23 @@ public class EmergencyReconnectProtocol implements Protocol {
     private final FallenBehindManager fallenBehindManager;
 
     /**
-     * @param threadManager
-     * 		responsible for managing thread lifecycles
-     * @param peerId
-     * 		the ID of the peer we are communicating with
-     * @param emergencyRecoveryManager
-     * 		the state of emergency recovery, if any
-     * @param teacherThrottle
-     * 		restricts reconnects as a teacher
-     * @param stateFinder
-     * 		finds compatible states based on round number and hash
-     * @param reconnectSocketTimeout
-     * 		the socket timeout to use when executing a reconnect
-     * @param reconnectMetrics
-     * 		tracks reconnect metrics
-     * @param reconnectController
-     * 		controls reconnecting as a learner
-     * @param fallenBehindManager
-     *      maintains this node's behind status
-     * @param configuration
-     *      the platform configuration
+     * Enables submitting platform status actions
+     */
+    private final StatusActionSubmitter statusActionSubmitter;
+
+    /**
+     * @param threadManager            responsible for managing thread lifecycles
+     * @param notificationEngine       the notification engine to use
+     * @param peerId                   the ID of the peer we are communicating with
+     * @param emergencyRecoveryManager the state of emergency recovery, if any
+     * @param teacherThrottle          restricts reconnects as a teacher
+     * @param stateFinder              finds compatible states based on round number and hash
+     * @param reconnectSocketTimeout   the socket timeout to use when executing a reconnect
+     * @param reconnectMetrics         tracks reconnect metrics
+     * @param reconnectController      controls reconnecting as a learner
+     * @param fallenBehindManager      maintains this node's behind status
+     * @param statusActionSubmitter    enables submitting platform status actions
+     * @param configuration            the platform configuration
      */
     public EmergencyReconnectProtocol(
             @NonNull final ThreadManager threadManager,
@@ -93,7 +93,9 @@ public class EmergencyReconnectProtocol implements Protocol {
             @NonNull final ReconnectMetrics reconnectMetrics,
             @NonNull final ReconnectController reconnectController,
             @NonNull final FallenBehindManager fallenBehindManager,
+            @NonNull final StatusActionSubmitter statusActionSubmitter,
             @NonNull final Configuration configuration) {
+
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager must not be null");
         this.notificationEngine = Objects.requireNonNull(notificationEngine, "notificationEngine must not be null");
         this.peerId = Objects.requireNonNull(peerId, "peerId must not be null");
@@ -106,6 +108,7 @@ public class EmergencyReconnectProtocol implements Protocol {
         this.reconnectMetrics = Objects.requireNonNull(reconnectMetrics, "reconnectMetrics must not be null");
         this.reconnectController = Objects.requireNonNull(reconnectController, "reconnectController must not be null");
         this.fallenBehindManager = Objects.requireNonNull(fallenBehindManager, "fallenBehindManager must not be null");
+        this.statusActionSubmitter = Objects.requireNonNull(statusActionSubmitter);
         this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
     }
 
@@ -116,6 +119,7 @@ public class EmergencyReconnectProtocol implements Protocol {
             // if a permit is acquired, it will be released by either initiateFailed or runProtocol
             final boolean shouldInitiate = reconnectController.acquireLearnerPermit();
             if (shouldInitiate) {
+                statusActionSubmitter.submitStatusAction(new EmergencyReconnectStartedAction());
                 initiatedBy = InitiatedBy.SELF;
             }
             return shouldInitiate;
@@ -180,8 +184,9 @@ public class EmergencyReconnectProtocol implements Protocol {
     private void learner(final Connection connection) {
         registerReconnectCompleteListener();
         try {
+            final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
             final boolean peerHasState = new EmergencyReconnectLearner(
-                            emergencyRecoveryManager.getEmergencyRecoveryFile(), reconnectController)
+                            stateConfig, emergencyRecoveryManager.getEmergencyRecoveryFile(), reconnectController)
                     .execute(connection);
             if (!peerHasState) {
                 reconnectController.cancelLearnerPermit();
