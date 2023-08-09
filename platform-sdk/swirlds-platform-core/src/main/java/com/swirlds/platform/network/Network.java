@@ -162,7 +162,7 @@ public class Network {
      *
      * @return true if addr is a private address
      */
-    private static boolean isPrivateIP(@NonNull InetAddress addr) {
+    public static boolean isPrivateIP(@NonNull InetAddress addr) {
         Objects.requireNonNull(addr);
         final byte[] ip = addr.getAddress();
 

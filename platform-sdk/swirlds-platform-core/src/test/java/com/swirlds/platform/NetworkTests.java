@@ -25,11 +25,52 @@ import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.Network;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class NetworkTests {
+
+    @ParameterizedTest
+    @CsvSource({
+        "10.0.0.1, true",
+        "172.16.0.1, true",
+        "172.31.255.255, true",
+        "192.168.0.1, true",
+        "192.169.0.1, false",
+        "172.15.0.1, false",
+        "172.32.0.1, false"
+    })
+    @DisplayName("Validates that the private ip v4 is detected correctly")
+    void isPrivateIPWithIPv4(String ip, boolean expected) throws Exception {
+        // given:
+        final InetAddress addr = Inet4Address.getByName(ip);
+
+        // when:
+        boolean result = Network.isPrivateIP(addr);
+
+        // then:
+        assertEquals(expected, result);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"fe80::1, true", "fd00::1, true", "fe7f::1, false", "fc00::1, false"})
+    @DisplayName("Validates that the private ip v6 is detected correctly")
+    void isPrivateIPWithIPv6(String ip, boolean expected) throws Exception {
+        // given:
+        final InetAddress addr = Inet6Address.getByName(ip);
+
+        // when:
+        boolean result = Network.isPrivateIP(addr);
+
+        // then:
+        assertEquals(expected, result);
+    }
 
     @Test
     @Tag(TestTypeTags.FUNCTIONAL)
