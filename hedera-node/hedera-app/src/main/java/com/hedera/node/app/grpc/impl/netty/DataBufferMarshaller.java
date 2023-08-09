@@ -40,10 +40,12 @@ final class DataBufferMarshaller implements MethodDescriptor.Marshaller<Buffered
      * Per-thread shared ByteBuffer for reading. We store these in a thread local, because we do not
      * have control over the thread pool used by the underlying gRPC server.
      */
+    @SuppressWarnings(
+            "java:S5164") // looks like a false positive ("ThreadLocal" variables should be cleaned up when no longer
+    // used), but these threads are long-lived and the lifetime of the thread local is the same as
+    // the application
     private static final ThreadLocal<BufferedData> BUFFER_THREAD_LOCAL =
-            ThreadLocal.withInitial(() -> BufferedData.allocate(
-                    TOO_BIG_MESSAGE_SIZE)); // TODO: should we address this "ThreadLocal" variables should be cleaned up
-    // when no longer used i.e. call remove() on BUFFER_THREAD_LOCAL somewhere?
+            ThreadLocal.withInitial(() -> BufferedData.allocate(TOO_BIG_MESSAGE_SIZE));
 
     /** Constructs a new {@link DataBufferMarshaller}. Only called by {@link GrpcServiceBuilder}. */
     DataBufferMarshaller() {}
