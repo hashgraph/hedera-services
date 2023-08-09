@@ -41,8 +41,11 @@ import javax.inject.Inject;
  * Token Burn operations in handle
  */
 public class TokenSupplyChangeOpsValidator {
+
     @Inject
-    public TokenSupplyChangeOpsValidator() {}
+    public TokenSupplyChangeOpsValidator() {
+        // Dagger
+    }
 
     /**
      * Validate the transaction data for a token mint operation

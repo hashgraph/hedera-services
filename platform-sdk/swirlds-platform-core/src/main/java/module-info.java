@@ -160,7 +160,7 @@ module com.swirlds.platform {
 
     /* Database Libraries */
     requires com.swirlds.fchashmap;
-    requires com.swirlds.jasperdb;
+    requires com.swirlds.merkledb;
     requires com.swirlds.virtualmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.config;
