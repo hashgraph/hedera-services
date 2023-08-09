@@ -14,20 +14,43 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.processor;
+package com.swirlds.config.processor.antlr;
 
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import com.swirlds.config.processor.generated.JavaParser.*;
-import com.swirlds.config.processor.generated.JavaParserBaseListener;
+import com.swirlds.config.processor.ConfigDataPropertyDefinition;
+import com.swirlds.config.processor.ConfigDataRecordDefinition;
+import com.swirlds.config.processor.antlr.generated.JavaLexer;
+import com.swirlds.config.processor.antlr.generated.JavaParser;
+import com.swirlds.config.processor.antlr.generated.JavaParser.AnnotationContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.CompilationUnitContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.RecordComponentContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.RecordDeclarationContext;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 
-public class AntlrListener extends JavaParserBaseListener {
+/**
+ * Creates a {@link ConfigDataRecordDefinition} from a given Java source file.
+ */
+public class AntlrConfigRecordParser {
 
-    private ConfigDataRecordDefinition definition;
+    public static List<ConfigDataRecordDefinition> parse(@NonNull final String fileContent) throws IOException {
+        JavaLexer lexer = new JavaLexer(CharStreams.fromString(fileContent));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        JavaParser parser = new JavaParser(tokens);
+        CompilationUnitContext context = parser.compilationUnit();
+        Optional.ofNullable(context.exception).ifPresent(e -> {
+            throw new IllegalStateException("Error in ANTLR parsing", e);
+        });
+        return createDefinitions(context);
+    }
 
     private static boolean isAnnotatedWithConfigData(
             final RecordDeclarationContext ctx, String packageName, List<String> imports) {
@@ -70,7 +93,10 @@ public class AntlrListener extends JavaParserBaseListener {
     }
 
     private static ConfigDataPropertyDefinition createPropertyDefinition(
-            RecordComponentContext ctx, final String packageName, final List<String> imports) {
+            RecordComponentContext ctx,
+            final String packageName,
+            final List<String> imports,
+            Map<String, String> javadocParams) {
         final String componentName = ctx.identifier().getText();
         final String name =
                 getConfigPropertyAnnotationName(ctx, packageName, imports).orElse(componentName);
@@ -83,7 +109,9 @@ public class AntlrListener extends JavaParserBaseListener {
                         .orElse(typeText))
                 .map(typeText -> getTypeForJavaLang(typeText))
                 .orElseGet(() -> ctx.typeType().primitiveType().getText());
-        return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, "");
+        final String description =
+                Optional.ofNullable(javadocParams.get(componentName)).orElse("");
+        return new ConfigDataPropertyDefinition(componentName, name, type, defaultValue, description);
     }
 
     private static String getTypeForJavaLang(String type) {
@@ -93,24 +121,35 @@ public class AntlrListener extends JavaParserBaseListener {
         return type;
     }
 
-    @Override
-    public void enterRecordDeclaration(RecordDeclarationContext ctx) {
-        final String packageName = AntlrUtils.getPackage(ctx);
-        final List<String> imports = AntlrUtils.getImports(ctx);
-        if (isAnnotatedWithConfigData(ctx, packageName, imports)) {
-            final String recordName = ctx.identifier().getText();
-            final String configPropertyNamePrefix = getConfigDataAnnotationValue(ctx, packageName, imports);
-            final Set<ConfigDataPropertyDefinition> propertyDefinitions =
-                    ctx.recordHeader().recordComponentList().recordComponent().stream()
-                            .map(c -> createPropertyDefinition(c, packageName, imports))
-                            .collect(Collectors.toSet());
-
-            definition = new ConfigDataRecordDefinition(
-                    packageName, recordName, configPropertyNamePrefix, propertyDefinitions);
-        }
+    private static List<ConfigDataRecordDefinition> createDefinitions(CompilationUnitContext unitContext) {
+        final String packageName = AntlrUtils.getPackage(unitContext);
+        final List<String> imports = AntlrUtils.getImports(unitContext);
+        return AntlrUtils.getRecordDeclarationContext(unitContext).stream()
+                .filter(c -> isAnnotatedWithConfigData(c, packageName, imports))
+                .map(recordContext -> createDefinition(unitContext, recordContext, packageName, imports))
+                .collect(Collectors.toList());
     }
 
-    public ConfigDataRecordDefinition getDefinition() {
-        return definition;
+    private static ConfigDataRecordDefinition createDefinition(
+            CompilationUnitContext unitContext,
+            RecordDeclarationContext recordContext,
+            String packageName,
+            List<String> imports) {
+        final String recordName = recordContext.identifier().getText();
+        final String configPropertyNamePrefix = getConfigDataAnnotationValue(recordContext, packageName, imports);
+        final Map<String, String> javadocParams = unitContext.children.stream()
+                .filter(c -> AntlrUtils.isJavaDocNode(c))
+                .map(c -> c.getText())
+                .map(t -> AntlrUtils.getJavaDocParams(t))
+                .reduce((m1, m2) -> {
+                    m1.putAll(m2);
+                    return m1;
+                })
+                .orElse(Map.of());
+        final Set<ConfigDataPropertyDefinition> propertyDefinitions =
+                recordContext.recordHeader().recordComponentList().recordComponent().stream()
+                        .map(c -> createPropertyDefinition(c, packageName, imports, javadocParams))
+                        .collect(Collectors.toSet());
+        return new ConfigDataRecordDefinition(packageName, recordName, configPropertyNamePrefix, propertyDefinitions);
     }
 }

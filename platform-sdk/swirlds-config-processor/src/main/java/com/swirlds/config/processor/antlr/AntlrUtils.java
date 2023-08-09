@@ -14,27 +14,47 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.processor;
+package com.swirlds.config.processor.antlr;
 
-import com.swirlds.config.processor.generated.JavaParser.AnnotationContext;
-import com.swirlds.config.processor.generated.JavaParser.ClassOrInterfaceModifierContext;
-import com.swirlds.config.processor.generated.JavaParser.CompilationUnitContext;
-import com.swirlds.config.processor.generated.JavaParser.ElementValueContext;
-import com.swirlds.config.processor.generated.JavaParser.RecordComponentContext;
-import com.swirlds.config.processor.generated.JavaParser.RecordDeclarationContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser;
+import com.swirlds.config.processor.antlr.generated.JavaParser.AnnotationContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.ClassOrInterfaceModifierContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.CompilationUnitContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.ElementValueContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.RecordComponentContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.RecordDeclarationContext;
+import com.swirlds.config.processor.antlr.generated.JavaParser.TypeDeclarationContext;
+import com.swirlds.config.processor.antlr.generated.JavadocLexer;
+import com.swirlds.config.processor.antlr.generated.JavadocParser;
+import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagContext;
+import com.swirlds.config.processor.antlr.generated.JavadocParser.BlockTagTextContext;
+import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContentContext;
+import com.swirlds.config.processor.antlr.generated.JavadocParser.DocumentationContext;
+import com.swirlds.config.processor.antlr.generated.JavadocParser.TagSectionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
  * Utils for antlr4 parsing of Java source code
  */
 public class AntlrUtils {
+
+    public static final String JAVADOC_PARAM = "param";
 
     private AntlrUtils() {}
 
@@ -125,18 +145,17 @@ public class AntlrUtils {
     @NonNull
     public static CompilationUnitContext getCompilationUnit(@NonNull final ParserRuleContext ctx) {
         Objects.requireNonNull(ctx, "ctx must not be null");
-        final ParserRuleContext parent = ctx.getParent();
-        if (parent instanceof CompilationUnitContext compilationUnitContext) {
+        if (ctx instanceof CompilationUnitContext compilationUnitContext) {
             return compilationUnitContext;
         } else {
-            return getCompilationUnit(parent);
+            return getCompilationUnit(ctx.getParent());
         }
     }
 
     /**
      * Returns all imports of a given declaration context (by going up to the compilation unit context)
      *
-     * @param ctx the antlr context
+     * @param ctx the antlr contexts
      * @return all imports as strings
      */
     @NonNull
@@ -155,7 +174,7 @@ public class AntlrUtils {
      * @return the package name
      */
     @NonNull
-    public static String getPackage(@NonNull final RecordDeclarationContext ctx) {
+    public static String getPackage(@NonNull final ParserRuleContext ctx) {
         CompilationUnitContext compilationUnitContext = getCompilationUnit(ctx);
         return compilationUnitContext.packageDeclaration().qualifiedName().getText();
     }
@@ -176,6 +195,15 @@ public class AntlrUtils {
                 .findAny();
     }
 
+    public static boolean isJavaDocNode(@NonNull final ParseTree node) {
+        if (node instanceof TerminalNode terminalNode) {
+            if (terminalNode.getSymbol().getType() == JavaParser.JAVADOC_COMMENT) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Returns the value of an annotation {@code value} attribute
      *
@@ -189,5 +217,62 @@ public class AntlrUtils {
             return Optional.of(elementValueContext.getText());
         }
         return getAnnotationValue(annotationContext, "value");
+    }
+
+    public static List<RecordDeclarationContext> getRecordDeclarationContext(
+            CompilationUnitContext compilationUnitContext) {
+        return compilationUnitContext.children.stream()
+                .filter(child -> child instanceof TypeDeclarationContext)
+                .map(child -> (TypeDeclarationContext) child)
+                .flatMap(typeDeclarationContext -> typeDeclarationContext.children.stream())
+                .filter(child -> child instanceof RecordDeclarationContext)
+                .map(child -> (RecordDeclarationContext) child)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns all {@code @param} tags of a given java doc. The key of the map is the name of the parameter and the
+     * value is the description of the parameter.
+     *
+     * @param rawDocContent the javadoc
+     * @return the params
+     */
+    @NonNull
+    public static Map<String, String> getJavaDocParams(@NonNull String rawDocContent) {
+        Objects.requireNonNull(rawDocContent, "rawDocContent must not be null");
+        final Map<String, String> params = new HashMap<>();
+        Lexer lexer = new JavadocLexer(CharStreams.fromString(rawDocContent));
+        TokenStream tokens = new CommonTokenStream(lexer);
+        JavadocParser parser = new JavadocParser(tokens);
+        DocumentationContext documentationContext = parser.documentation();
+        Optional.ofNullable(documentationContext.exception).ifPresent(e -> {
+            throw new IllegalStateException("Error in ANTLR parsing", e);
+        });
+        documentationContext.children.stream()
+                .filter(c -> c instanceof DocumentationContentContext)
+                .map(c -> (DocumentationContentContext) c)
+                .flatMap(context -> context.children.stream())
+                .filter(c -> c instanceof TagSectionContext)
+                .map(c -> (TagSectionContext) c)
+                .flatMap(context -> context.children.stream())
+                .filter(c -> c instanceof BlockTagContext)
+                .map(c -> (BlockTagContext) c)
+                .filter(c -> Objects.equals(c.blockTagName().NAME().getText(), JAVADOC_PARAM))
+                .forEach(c -> {
+                    final BlockTagTextContext paramContext =
+                            c.blockTagContent().get(0).blockTagText();
+                    Optional.ofNullable(paramContext).map(co -> co.getText()).ifPresent(paramName -> {
+                        final String description = IntStream.range(
+                                        1, c.blockTagContent().size())
+                                .mapToObj(i -> c.blockTagContent().get(i).blockTagText())
+                                .filter(Objects::nonNull)
+                                .map(co -> co.getText().trim())
+                                .filter(t -> !t.isBlank())
+                                .reduce((a, b) -> a + b)
+                                .orElse("");
+                        params.put(paramName, description);
+                    });
+                });
+        return params;
     }
 }

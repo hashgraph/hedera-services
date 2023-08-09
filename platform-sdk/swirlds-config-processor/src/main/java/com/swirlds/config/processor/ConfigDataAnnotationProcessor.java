@@ -19,11 +19,13 @@ package com.swirlds.config.processor;
 import static com.swirlds.config.processor.ConfigProcessorConstants.CONSTANTS_CLASS_SUFFIX;
 
 import com.google.auto.service.AutoService;
+import com.swirlds.config.processor.antlr.AntlrConfigRecordParser;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -91,12 +93,11 @@ public class ConfigDataAnnotationProcessor extends AbstractProcessor {
         log("handling: " + fileName + " in " + packageName);
         try {
             final FileObject recordSource = getSource(fileName, packageName);
-            final ConfigDataRecordDefinition recordDefinition = AntlrParser.parse(recordSource);
+            final List<ConfigDataRecordDefinition> recordDefinitions = AntlrConfigRecordParser.parse(
+                    recordSource.getCharContent(true).toString());
             final JavaFileObject constantsSourceFile = getConstantSourceFile(packageName, simpleClassName, typeElement);
-
-            ConstantClassFactory.doWork(recordDefinition, constantsSourceFile);
-
-            DocumentationFactory.doWork(recordDefinition, configDocumentationFile);
+            // ConstantClassFactory.doWork(recordDefinition, constantsSourceFile);
+            // DocumentationFactory.doWork(recordDefinition, configDocumentationFile);
 
         } catch (final IOException e) {
             throw new RuntimeException("Error while handling " + typeElement, e);

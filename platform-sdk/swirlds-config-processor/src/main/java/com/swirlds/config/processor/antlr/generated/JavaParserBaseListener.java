@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.config.processor.generated; // Generated from JavaParser.g4 by ANTLR 4.13.0
+package com.swirlds.config.processor.antlr.generated; // Generated from JavaParser.g4 by ANTLR 4.13.0
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
