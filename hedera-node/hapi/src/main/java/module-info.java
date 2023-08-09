@@ -43,6 +43,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.blockrecords;
     exports com.hedera.hapi.node.state.blockrecords.codec;
     exports com.hedera.hapi.node.state.blockrecords.schema;
+    exports com.hedera.hapi.node.state.schedule;
     exports com.hedera.services.stream.proto;
     exports com.hederahashgraph.api.proto.java;
     exports com.hederahashgraph.service.proto.java;

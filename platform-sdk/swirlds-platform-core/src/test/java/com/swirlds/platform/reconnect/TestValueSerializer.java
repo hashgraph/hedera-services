@@ -18,14 +18,16 @@ package com.swirlds.platform.reconnect;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.SelfSerializableSupplier;
+import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public class TestValueSerializer implements SelfSerializableSupplier<TestValue> {
+public class TestValueSerializer implements ValueSerializer<TestValue> {
 
     @Override
     public long getClassId() {
-        return 53543453;
+        return 53543454;
     }
 
     @Override
@@ -40,7 +42,38 @@ public class TestValueSerializer implements SelfSerializableSupplier<TestValue> 
     }
 
     @Override
-    public TestValue get() {
-        return new TestValue();
+    public long getCurrentDataVersion() {
+        return 1;
+    }
+
+    @Override
+    public int getSerializedSize() {
+        return VARIABLE_DATA_SIZE;
+    }
+
+    @Override
+    public int getTypicalSerializedSize() {
+        return 20; // guesstimation
+    }
+
+    @Override
+    public int serialize(final TestValue data, final ByteBuffer buffer) throws IOException {
+        final String s = data.getValue();
+        final byte[] bytes = CommonUtils.getNormalisedStringBytes(s);
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
+        return Integer.BYTES + bytes.length;
+    }
+
+    @Override
+    public TestValue deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        if (dataVersion != getCurrentDataVersion()) {
+            throw new IllegalStateException("Data version mismatch");
+        }
+        final int length = buffer.getInt();
+        final byte[] bytes = new byte[length];
+        buffer.get(bytes);
+        final String s = CommonUtils.getNormalisedStringFromBytes(bytes);
+        return new TestValue(s);
     }
 }

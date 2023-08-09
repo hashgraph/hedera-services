@@ -119,8 +119,8 @@ public class StakePeriodManager {
         // The earliest period by which an account can have started staking, _without_ becoming
         // eligible for a reward; if staking is not active, this will return Long.MIN_VALUE so
         // no account can ever be eligible.
-        // Remember that accounts are only rewarded for _full_ periods;
-        // so if Alice started staking in the previous period (current - 1), she will not have
+        // Remember that accounts are only rewarded for _full_ periods.
+        // So if Alice started staking in the previous period (current - 1), she will not have
         // completed a full period until current has ended
         return rewardsStore.isStakingRewardsActivated() ? currentStakePeriod(consensusNow) - 1 : Long.MIN_VALUE;
     }
