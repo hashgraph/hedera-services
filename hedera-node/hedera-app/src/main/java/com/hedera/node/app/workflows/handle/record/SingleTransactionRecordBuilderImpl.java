@@ -103,7 +103,7 @@ public class SingleTransactionRecordBuilderImpl
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
                 NodeStakeUpdateRecordBuilder,
-                FeeRecordBuilder{
+                FeeRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
