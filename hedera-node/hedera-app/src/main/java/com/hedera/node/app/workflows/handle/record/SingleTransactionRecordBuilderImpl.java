@@ -47,6 +47,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -101,7 +102,8 @@ public class SingleTransactionRecordBuilderImpl
                 ContractCallRecordBuilder,
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
-                NodeStakeUpdateRecordBuilder {
+                NodeStakeUpdateRecordBuilder,
+                FeeRecordBuilder{
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -126,6 +128,10 @@ public class SingleTransactionRecordBuilderImpl
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
     private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
+
+    // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
+    // there is no way to get the transaction fee from the PBJ object.
+    private long transactionFee;
 
     /**
      * Creates new transaction record builder.
@@ -282,6 +288,11 @@ public class SingleTransactionRecordBuilderImpl
         return parentConsensus;
     }
 
+    @Override
+    public long transactionFee() {
+        return transactionFee;
+    }
+
     /**
      * Sets the consensus transaction fee.
      *
@@ -289,8 +300,10 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
+    @Override
     public SingleTransactionRecordBuilderImpl transactionFee(final long transactionFee) {
-        transactionRecordBuilder.transactionFee(transactionFee);
+        this.transactionFee = transactionFee;
+        this.transactionRecordBuilder.transactionFee(transactionFee);
         return this;
     }
 

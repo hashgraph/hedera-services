@@ -75,6 +75,7 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
@@ -889,32 +890,53 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .build();
     }
 
-    protected void givenStoresAndConfig(final HandleContext handleContext) {
+    protected void givenStoresAndConfig(final HandleContext context) {
         configuration = HederaTestConfigBuilder.createConfig();
-        given(handleContext.configuration()).willReturn(configuration);
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.configuration()).willReturn(configuration);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
-        given(handleContext.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
-        given(handleContext.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
-        given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
-        given(handleContext.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
-        given(handleContext.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
 
-        given(handleContext.readableStore(ReadableNetworkStakingRewardsStore.class))
-                .willReturn(readableRewardsStore);
-        given(handleContext.writableStore(WritableNetworkStakingRewardsStore.class))
-                .willReturn(writableRewardsStore);
+        given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
 
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
-        given(handleContext.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+        given(context.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
+        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
 
-        given(handleContext.readableStore(ReadableNetworkStakingRewardsStore.class))
-                .willReturn(readableRewardsStore);
-        given(handleContext.writableStore(WritableNetworkStakingRewardsStore.class))
-                .willReturn(writableRewardsStore);
+        given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
+    }
+
+    protected void givenStoresAndConfig(final FinalizeContext context) {
+        configuration = HederaTestConfigBuilder.createConfig();
+        given(context.configuration()).willReturn(configuration);
+        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+
+        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+
+        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+
+        given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+
+        given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
+
+        given(context.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
+        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+
+        given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
+        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
     }
 }

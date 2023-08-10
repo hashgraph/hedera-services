@@ -155,7 +155,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         this.metrics = new DefaultMetrics(
-                nodeSelfId, new MetricKeyRegistry(), METRIC_EXECUTOR, new DefaultMetricsFactory(), metricsConfig);
+                nodeSelfId,
+                new MetricKeyRegistry(),
+                METRIC_EXECUTOR,
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
     }
 
     protected Counter counterMetric(final String name) {

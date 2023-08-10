@@ -18,6 +18,7 @@ package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +36,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
@@ -54,6 +56,12 @@ class IngestComponentTest {
     private Platform platform;
 
     @Mock
+    private PlatformContext platformContext;
+
+    @Mock
+    private Metrics metrics;
+
+    @Mock
     private Cryptography cryptography;
 
     private HederaInjectionComponent app;
@@ -63,7 +71,7 @@ class IngestComponentTest {
     void setUp() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
-        when(platformContext.getConfiguration()).thenReturn(configuration);
+        lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
         when(platform.getContext()).thenReturn(platformContext);
 
         final var selfNodeId = new NodeId(1L);
@@ -93,7 +101,8 @@ class IngestComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getSelfId()).willReturn(new NodeId(0L));
+        given(platform.getContext()).willReturn(platformContext);
+        given(platformContext.getMetrics()).willReturn(metrics);
 
         final IngestInjectionComponent subject =
                 app.ingestComponentFactory().get().create();

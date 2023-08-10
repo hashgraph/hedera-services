@@ -30,6 +30,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Set;
@@ -120,6 +121,24 @@ public class HapiUtils {
     /** Determines whether the first timestamp is before the second timestamp. Think of it as, "Is t1 before t2?" */
     public static boolean isBefore(@NonNull final Timestamp t1, @NonNull final Timestamp t2) {
         return TIMESTAMP_COMPARATOR.compare(t1, t2) < 0;
+    }
+
+    /** Given a key, determines the number of cryptographic keys contained within it. */
+    public static int countOfCryptographicKeys(@NonNull final Key key) {
+        return switch (key.key().kind()) {
+            case ECDSA_384, ED25519, RSA_3072, ECDSA_SECP256K1 -> 1;
+            case KEY_LIST -> key.keyListOrThrow().keysOrElse(Collections.emptyList()).stream()
+                    .mapToInt(HapiUtils::countOfCryptographicKeys)
+                    .sum();
+            case THRESHOLD_KEY -> key
+                    .thresholdKeyOrThrow()
+                    .keysOrElse(KeyList.DEFAULT)
+                    .keysOrElse(Collections.emptyList())
+                    .stream()
+                    .mapToInt(HapiUtils::countOfCryptographicKeys)
+                    .sum();
+            case CONTRACT_ID, DELEGATABLE_CONTRACT_ID, UNSET -> 0;
+        };
     }
 
     public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
