@@ -19,7 +19,6 @@ package com.swirlds.common.io.streams;
 import static com.swirlds.common.constructable.ClassIdFormatter.classIdString;
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
 import static com.swirlds.common.merkle.copy.MerkleInitialize.initializeAndMigrateTreeAfterDeserialization;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.io.ExternalSelfSerializable;
@@ -32,6 +31,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.exceptions.IllegalChildCountException;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 
 /**
@@ -174,8 +175,8 @@ public class MerkleDataInputStream extends SerializableDataInputStream {
      * Perform basic sanity checks on the output directory.
      */
     @SuppressWarnings("DuplicatedCode")
-    private static void validateDirectory(final Path directory) {
-        throwArgNull(directory, "directory");
+    private static void validateDirectory(@NonNull final Path directory) {
+        Objects.requireNonNull(directory, "directory must not be null");
         if (!Files.exists(directory)) {
             throw new IllegalArgumentException("directory " + directory + " does not exist");
         }
