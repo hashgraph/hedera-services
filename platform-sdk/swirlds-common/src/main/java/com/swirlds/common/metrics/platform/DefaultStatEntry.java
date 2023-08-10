@@ -20,7 +20,6 @@ import static com.swirlds.common.metrics.Metric.ValueType.MAX;
 import static com.swirlds.common.metrics.Metric.ValueType.MIN;
 import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.StatEntry;
@@ -29,7 +28,6 @@ import com.swirlds.common.metrics.statistics.StatsBuffered;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Platform-implementation of {@link StatEntry}
@@ -160,9 +158,6 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .appendSuper(super.toString())
-                .append("value", statsStringSupplier.get())
-                .toString();
+        return "DefaultStatEntry{" + "halfLife=" + halfLife + "value=" + statsStringSupplier.get() + '}';
     }
 }

@@ -24,7 +24,6 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.MERKLE_DB;
 import static com.swirlds.merkledb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.merkledb.MerkleDb.MERKLEDB_COMPONENT;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -83,7 +82,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -926,21 +924,21 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** toString for debugging */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("maxNumberOfKeys", tableConfig.getMaxNumberOfKeys())
-                .append("preferDiskBasedIndexes", tableConfig.isPreferDiskBasedIndices())
-                .append("isLongKeyMode", isLongKeyMode)
-                .append("pathToDiskLocationInternalNodes.size", pathToDiskLocationInternalNodes.size())
-                .append("pathToDiskLocationLeafNodes.size", pathToDiskLocationLeafNodes.size())
-                .append("hashesRamToDiskThreshold", tableConfig.getHashesRamToDiskThreshold())
-                .append("hashStoreRam.size", hashStoreRam == null ? null : hashStoreRam.size())
-                .append("hashStoreDisk", hashStoreDisk)
-                .append("hasDiskStoreForHashes", hasDiskStoreForHashes)
-                .append("longKeyToPath.size", longKeyToPath == null ? null : longKeyToPath.size())
-                .append("objectKeyToPath", objectKeyToPath)
-                .append("pathToKeyValue", pathToKeyValue)
-                .append("snapshotInProgress", snapshotInProgress.get())
-                .toString();
+        return "MerkleDbDataSource["
+                + "maxNumberOfKeys=" + tableConfig.getMaxNumberOfKeys() + ", "
+                + "preferDiskBasedIndexes=" + tableConfig.isPreferDiskBasedIndices() + ", "
+                + "isLongKeyMode=" + isLongKeyMode + ", "
+                + "pathToDiskLocationInternalNodes.size=" + pathToDiskLocationInternalNodes.size() + ", "
+                + "pathToDiskLocationLeafNodes.size=" + pathToDiskLocationLeafNodes.size() + ", "
+                + "hashesRamToDiskThreshold=" + tableConfig.getHashesRamToDiskThreshold() + ", "
+                + "hashStoreRam.size=" + (hashStoreRam == null ? null : hashStoreRam.size()) + ", "
+                + "hashStoreDisk=" + hashStoreDisk + ", "
+                + "hasDiskStoreForHashes=" + hasDiskStoreForHashes + ", "
+                + "longKeyToPath.size=" + (longKeyToPath == null ? null : longKeyToPath.size()) + ", "
+                + "objectKeyToPath=" + objectKeyToPath + ", "
+                + "pathToKeyValue=" + pathToKeyValue + ", "
+                + "snapshotInProgress=" + snapshotInProgress.get()
+                + "]";
     }
 
     /**

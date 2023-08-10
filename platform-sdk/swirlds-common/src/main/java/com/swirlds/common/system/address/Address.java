@@ -17,7 +17,6 @@
 package com.swirlds.common.system.address;
 
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.crypto.SerializablePublicKey;
 import com.swirlds.common.io.SelfSerializable;
@@ -30,7 +29,6 @@ import java.io.IOException;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * One address in an address book, including all the info about a member. It is immutable. Each getter for a byte array
@@ -698,19 +696,18 @@ public class Address implements SelfSerializable {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("id", id)
-                .append("nickname", nickname)
-                .append("selfName", selfName)
-                .append("weight", weight)
-                .append("hostnameInternal", hostnameInternal)
-                .append("portInternalIpv4", portInternal)
-                .append("hostnameExternal", hostnameExternal)
-                .append("portExternalIpv4", portExternal)
-                .append("sigPublicKey", sigPublicKey)
-                .append("encPublicKey", encPublicKey)
-                .append("agreePublicKey", agreePublicKey)
-                .append("memo", memo)
-                .toString();
+        return "Address{" + "id="
+                + id + ", nickname='"
+                + nickname + '\'' + ", selfName='"
+                + selfName + '\'' + ", weight="
+                + weight + ", hostnameInternal='"
+                + hostnameInternal + '\'' + ", portInternal="
+                + portInternal + ", hostnameExternal='"
+                + hostnameExternal + '\'' + ", portExternal="
+                + portExternal + ", sigPublicKey="
+                + sigPublicKey + ", encPublicKey="
+                + encPublicKey + ", agreePublicKey="
+                + agreePublicKey + ", memo='"
+                + memo + '\'' + '}';
     }
 }

@@ -160,27 +160,28 @@ public class RecordStreamObject extends AbstractSerializableHashable
     @Override
     public String toString() {
         ensureNonNullGrpcRecord();
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("TransactionRecord", transactionRecord)
-                .append("Transaction", transaction)
-                .append("ConsensusTimestamp", consensusTimestamp)
-                .append("Sidecars", sidecars)
-                .toString();
+        return "RecordStreamObject["
+                + "TransactionRecord=" + transactionRecord
+                + ", Transaction=" + transaction
+                + ", ConsensusTimestamp=" + consensusTimestamp
+                + ", Sidecars=" + sidecars
+                + "]";
     }
 
     String toShortString() {
         ensureNonNullGrpcRecord();
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("TransactionRecord", toShortStringRecord(transactionRecord))
-                .append("ConsensusTimestamp", consensusTimestamp)
-                .toString();
+        return "RecordStreamObject["
+                + "TransactionRecord=" + toShortStringRecord(transactionRecord)
+                + ", ConsensusTimestamp=" + consensusTimestamp
+                + "]";
     }
 
     static String toShortStringRecord(TransactionRecord transactionRecord) {
-        return new ToStringBuilder(transactionRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
-                .append("TransactionID", transactionRecord.getTransactionID())
-                .toString();
+        return "TransactionRecord["
+                + "TransactionID=" + transactionRecord.getTransactionID()
+                + "]";
     }
+
 
     @Override
     public boolean equals(Object obj) {

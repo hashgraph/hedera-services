@@ -23,8 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Random;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class TransactionRecord extends AbstractSerializableHashable implements FastCopyable {
 
@@ -191,15 +189,15 @@ public class TransactionRecord extends AbstractSerializableHashable implements F
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE)
-                .append("status", status.getBytes())
-                .append("accountID", accountID)
-                .append("fileID", fileID)
-                .append("contractID", contractID)
-                .append("timestamp", timestamp)
-                .append("transactionHash", transactionHash)
-                .append("deleted", deleted)
-                .toString();
+        return "TransactionRecord{" + "status='"
+                + status + '\'' + ", accountID="
+                + accountID + ", fileID="
+                + fileID + ", contractID="
+                + contractID + ", timestamp="
+                + timestamp + ", transactionHash="
+                + transactionHash + ", deleted="
+                + deleted + ", immutable="
+                + immutable + '}';
     }
 
     /**

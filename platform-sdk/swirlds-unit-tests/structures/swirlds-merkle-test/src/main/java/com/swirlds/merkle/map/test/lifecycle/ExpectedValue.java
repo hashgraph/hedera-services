@@ -23,8 +23,6 @@ import com.swirlds.merkle.map.test.pta.MapValue;
 import java.io.Serializable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Value stored in the ExpectedMap with corresponding MapKey
@@ -205,14 +203,14 @@ public class ExpectedValue implements Serializable {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("EntityType", entityType)
-                .append("Hash", hash)
-                .append("isErrored", isErrored)
-                .append("latestHandledStatus", latestHandledStatus)
-                .append("latestSubmitStatus", latestSubmitStatus)
-                .append("historyHandledStatus", historyHandledStatus)
-                .toString();
+        return "ExpectedValue{" + "entityType="
+                + entityType + ", hash="
+                + hash + ", isErrored="
+                + isErrored + ", latestHandledStatus="
+                + latestHandledStatus + ", latestSubmitStatus="
+                + latestSubmitStatus + ", historyHandledStatus="
+                + historyHandledStatus + ", uid="
+                + uid + '}';
     }
 
     /**

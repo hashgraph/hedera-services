@@ -21,7 +21,6 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.consensus.GraphGenerations;
 import java.io.IOException;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class Generations implements GraphGenerations, SelfSerializable {
     /** The generations at genesis */
@@ -100,11 +99,10 @@ public class Generations implements GraphGenerations, SelfSerializable {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("minRoundGeneration", minRoundGeneration)
-                .append("minGenNonAncient", minGenNonAncient)
-                .append("maxRoundGeneration", maxRoundGeneration)
-                .toString();
+        return "Generations{" + "minRoundGeneration="
+                + minRoundGeneration + ", minGenNonAncient="
+                + minGenNonAncient + ", maxRoundGeneration="
+                + maxRoundGeneration + '}';
     }
 
     /**

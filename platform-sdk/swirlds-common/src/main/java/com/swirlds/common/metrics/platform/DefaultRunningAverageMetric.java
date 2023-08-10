@@ -20,7 +20,6 @@ import com.swirlds.base.time.Time;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.metrics.statistics.StatsRunningAverage;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Platform-implementation of {@link RunningAverageMetric}
@@ -76,10 +75,6 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .appendSuper(super.toString())
-                .append("halfLife", halfLife)
-                .append("value", get())
-                .toString();
+        return "DefaultRunningAverageMetric{" + ", halfLife=" + halfLife + ", value=" + get() + '}';
     }
 }

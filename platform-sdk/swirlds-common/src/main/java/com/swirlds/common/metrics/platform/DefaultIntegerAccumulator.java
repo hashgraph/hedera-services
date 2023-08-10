@@ -17,7 +17,6 @@
 package com.swirlds.common.metrics.platform;
 
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.IntegerAccumulator;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntBinaryOperator;
 import java.util.function.IntSupplier;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Platform-implementation of {@link IntegerAccumulator}
@@ -89,9 +87,10 @@ public class DefaultIntegerAccumulator extends DefaultMetric implements IntegerA
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .appendSuper(super.toString())
-                .append("value", get())
-                .toString();
+        return "DefaultIntegerAccumulator{" + super.toString()
+                + "container="
+                + container + ", accumulator="
+                + accumulator + ", initializer="
+                + initializer + '}';
     }
 }

@@ -24,8 +24,6 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import java.io.IOException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A unique identifier for an {@link Nft}.
@@ -189,11 +187,8 @@ public class MerkleNftId extends PartialMerkleLeaf implements MerkleLeaf {
     /**
      * {@inheritDoc}
      */
+    @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("ShardNum", shardNum)
-                .append("RealmNum", realmNum)
-                .append("TokenNum", tokenNum)
-                .toString();
+        return "MerkleNftId{" + "shardNum=" + shardNum + ", realmNum=" + realmNum + ", tokenNum=" + tokenNum + '}';
     }
 }

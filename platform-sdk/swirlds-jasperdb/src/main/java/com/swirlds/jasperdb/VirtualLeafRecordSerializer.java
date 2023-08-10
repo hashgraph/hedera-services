@@ -31,8 +31,6 @@ import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * VirtualLeafRecordSerializer serializer responsible for serializing and deserializing virtual leaf records. It depends
@@ -361,12 +359,13 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("currentVersion", currentVersion)
-                .append("hasVariableDataSize", hasVariableDataSize)
-                .append("totalSerializedSize", totalSerializedSize)
-                .append("headerSize", headerSize)
-                .append("byteMaxSize", byteMaxSize)
-                .toString();
+        return "VirtualLeafRecordSerializer{" + "currentVersion="
+                + currentVersion + ", keyConstructor="
+                + keyConstructor + ", valueConstructor="
+                + valueConstructor + ", hasVariableDataSize="
+                + hasVariableDataSize + ", totalSerializedSize="
+                + totalSerializedSize + ", headerSize="
+                + headerSize + ", byteMaxSize="
+                + byteMaxSize + '}';
     }
 }

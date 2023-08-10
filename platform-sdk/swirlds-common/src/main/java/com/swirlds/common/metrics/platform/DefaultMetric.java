@@ -16,8 +16,6 @@
 
 package com.swirlds.common.metrics.platform;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
 import com.swirlds.common.metrics.LegacyMetric;
 import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
@@ -26,7 +24,6 @@ import com.swirlds.common.metrics.statistics.StatsBuffered;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Basic implementation of all platform-implementations of {@link Metric}
@@ -116,8 +113,12 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
      */
     @Override
     public boolean equals(final Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
         final DefaultMetric metric = (DefaultMetric) other;
         return category.equals(metric.category) && name.equals(metric.name);
     }
@@ -135,13 +136,12 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("category", category)
-                .append("name", name)
-                .append("description", description)
-                .append("unit", unit)
-                .append("format", format)
-                .append("dataType", getDataType())
-                .toString();
+        return "DefaultMetric{" + "category='"
+                + category + '\'' + ", name='"
+                + name + '\'' + ", description='"
+                + description + '\'' + ", unit='"
+                + unit + '\'' + ", format='"
+                + format + '\'' + ", dataType='"
+                + getDataType() + '\'' + '}';
     }
 }

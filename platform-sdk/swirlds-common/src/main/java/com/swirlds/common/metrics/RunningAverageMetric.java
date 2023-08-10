@@ -20,11 +20,9 @@ import static com.swirlds.common.metrics.Metric.ValueType.MAX;
 import static com.swirlds.common.metrics.Metric.ValueType.MIN;
 import static com.swirlds.common.metrics.Metric.ValueType.STD_DEV;
 import static com.swirlds.common.metrics.Metric.ValueType.VALUE;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.metrics.config.MetricsConfig;
 import java.util.EnumSet;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * This class maintains a running average of some numeric value. It is exponentially weighted in time, with
@@ -237,10 +235,7 @@ public interface RunningAverageMetric extends Metric {
          */
         @Override
         public String toString() {
-            return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                    .appendSuper(super.toString())
-                    .append("halfLife", halfLife)
-                    .toString();
+            return "RunningAverageMetric.Config[" + super.toString() + ", halfLife=" + halfLife + "]";
         }
     }
 }

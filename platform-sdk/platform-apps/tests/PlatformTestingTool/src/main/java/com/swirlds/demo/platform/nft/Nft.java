@@ -25,8 +25,6 @@ import com.swirlds.merkle.map.test.pta.MapKey;
 import java.io.IOException;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * This simulates an NFT token that Hedera uses for its token services.
@@ -222,14 +220,13 @@ public class Nft extends PartialMerkleLeaf implements Keyed<NftId>, MerkleLeaf {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("shardNum", getShardNum())
-                .append("realmNum", getRealmNum())
-                .append("tokenNum", getTokenNum())
-                .append("owner", getMapKey())
-                .append("memo", getMemo())
-                .append("serialNumber", getSerialNumber())
-                .build();
+        return "Nft{" + "shardNum="
+                + shardNum + ", realmNum="
+                + realmNum + ", tokenNum="
+                + tokenNum + ", mapKey="
+                + mapKey + ", serialNumber='"
+                + serialNumber + '\'' + ", memo='"
+                + memo + '\'' + '}';
     }
 
     /**

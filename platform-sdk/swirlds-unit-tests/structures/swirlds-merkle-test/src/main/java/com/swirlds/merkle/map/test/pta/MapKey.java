@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.util.Comparator;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyable {
 
@@ -73,8 +71,12 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         MapKey mapKey = (MapKey) o;
         return new EqualsBuilder()
                 .append(shardId, mapKey.shardId)
@@ -94,11 +96,7 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append(shardId)
-                .append(realmId)
-                .append(accountId)
-                .toString();
+        return "MapKey{" + "shardId=" + shardId + ", realmId=" + realmId + ", accountId=" + accountId + '}';
     }
 
     @Override

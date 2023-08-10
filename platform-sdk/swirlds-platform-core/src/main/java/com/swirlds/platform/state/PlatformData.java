@@ -36,8 +36,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A collection of miscellaneous platform data.
@@ -586,15 +584,17 @@ public class PlatformData extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
-                .append("round", round)
-                .append("numEventsCons", numEventsCons)
-                .append("hashEventsCons", hashEventsCons)
-                .append("events", events)
-                .append("consensusTimestamp", consensusTimestamp)
-                .append("minGenInfo", minGenInfo)
-                .append("epochHash", epochHash)
-                .append("roundsNonAncient", roundsNonAncient)
-                .toString();
+        return "PlatformData{" + "round="
+                + round + ", numEventsCons="
+                + numEventsCons + ", hashEventsCons="
+                + hashEventsCons + ", events="
+                + Arrays.toString(events) + ", consensusTimestamp="
+                + consensusTimestamp + ", minGenInfo="
+                + minGenInfo + ", lastTransactionTimestamp="
+                + lastTransactionTimestamp + ", creationSoftwareVersion="
+                + creationSoftwareVersion + ", epochHash="
+                + epochHash + ", nextEpochHash="
+                + nextEpochHash + ", roundsNonAncient="
+                + roundsNonAncient + '}';
     }
 }

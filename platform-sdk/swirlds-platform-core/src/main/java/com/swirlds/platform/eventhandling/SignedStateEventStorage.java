@@ -23,8 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Keeps events that need to be stored in the signed state when it is created. It makes sure it has last {@code
@@ -117,7 +115,9 @@ public class SignedStateEventStorage {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
         if (o == null || getClass() != o.getClass()) {
             return false;
@@ -141,9 +141,9 @@ public class SignedStateEventStorage {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
-                .append("queue", queue)
-                .append("latestRoundReceived", latestRoundReceived)
-                .toString();
+        return "SignedStateEventStorage{" + "queue="
+                + queue + ", latestRoundReceived="
+                + latestRoundReceived + ", minRoundCreatedInQueue="
+                + minRoundCreatedInQueue + '}';
     }
 }

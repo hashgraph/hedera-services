@@ -16,8 +16,6 @@
 
 package com.swirlds.common.system.events;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.RunningHashable;
@@ -27,7 +25,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
@@ -189,10 +186,10 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("baseEventHashedData", baseEventHashedData)
-                .append("baseEventUnhashedData", baseEventUnhashedData)
-                .append("consensusData", consensusData)
-                .toString();
+        return "DetailedConsensusEvent{" + "baseEventHashedData="
+                + baseEventHashedData + ", baseEventUnhashedData="
+                + baseEventUnhashedData + ", consensusData="
+                + consensusData + ", runningHash="
+                + runningHash + '}';
     }
 }

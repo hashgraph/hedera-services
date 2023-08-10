@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.sync;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 /**
  * Data holder for parameters needed for every sync unit test.
  */
@@ -85,12 +83,11 @@ public class SyncTestParams {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this)
-                .append("numNetworkNodes", numNetworkNodes)
-                .append("numCommonEvents", numCommonEvents)
-                .append("numCallerEvents", numCallerEvents)
-                .append("numListenerEvents", numListenerEvents)
-                .append("customSeed", customSeed)
-                .toString();
+        return "SyncTestParams{" + "numNetworkNodes="
+                + numNetworkNodes + ", numCommonEvents="
+                + numCommonEvents + ", numCallerEvents="
+                + numCallerEvents + ", numListenerEvents="
+                + numListenerEvents + ", customSeed="
+                + customSeed + '}';
     }
 }

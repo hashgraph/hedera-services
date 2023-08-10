@@ -33,8 +33,6 @@ import java.io.IOException;
 import java.time.Instant;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -216,10 +214,10 @@ public class DualStateImpl extends PartialMerkleLeaf implements PlatformDualStat
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
-                .append("freezeTime", freezeTime)
-                .append("lastFrozenTime", lastFrozenTime)
-                .toString();
+        return "DualStateImpl{" + "freezeTime="
+                + freezeTime + ", lastFrozenTime="
+                + lastFrozenTime + ", uptimeData="
+                + uptimeData + '}';
     }
 
     /**

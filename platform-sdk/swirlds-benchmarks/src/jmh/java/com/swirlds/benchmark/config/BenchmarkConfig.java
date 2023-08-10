@@ -16,11 +16,8 @@
 
 package com.swirlds.benchmark.config;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Settimgs for the benchmarks
@@ -62,19 +59,20 @@ public record BenchmarkConfig(
         @ConfigProperty(defaultValue = "0") int csvWriteFrequency,
         @ConfigProperty(defaultValue = "false") boolean csvAppend,
         @ConfigProperty(defaultValue = "sda") String deviceName) {
+
+    @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("benchmarkData", benchmarkData)
-                .append("saveDataDirectory", saveDataDirectory)
-                .append("verifyResult", verifyResult)
-                .append("enableSnapshots", enableSnapshots)
-                .append("printHistogram", printHistogram)
-                .append("csvOutputFolder", csvOutputFolder)
-                .append("csvMetricsFileName", csvMetricsFileName)
-                .append("csvMetricNamesFileName", csvMetricNamesFileName)
-                .append("csvWriteFrequency", csvWriteFrequency)
-                .append("csvAppend", csvAppend)
-                .append("deviceName", deviceName)
-                .toString();
+        return "BenchmarkConfig{" + "benchmarkData='"
+                + benchmarkData + '\'' + ", saveDataDirectory="
+                + saveDataDirectory + ", verifyResult="
+                + verifyResult + ", enableSnapshots="
+                + enableSnapshots + ", printHistogram="
+                + printHistogram + ", csvOutputFolder='"
+                + csvOutputFolder + '\'' + ", csvMetricsFileName='"
+                + csvMetricsFileName + '\'' + ", csvMetricNamesFileName='"
+                + csvMetricNamesFileName + '\'' + ", csvWriteFrequency="
+                + csvWriteFrequency + ", csvAppend="
+                + csvAppend + ", deviceName='"
+                + deviceName + '\'' + '}';
     }
 }

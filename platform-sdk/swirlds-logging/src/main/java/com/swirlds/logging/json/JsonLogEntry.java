@@ -18,13 +18,11 @@ package com.swirlds.logging.json;
 
 import static com.swirlds.logging.payloads.AbstractLogPayload.extractPayloadType;
 import static com.swirlds.logging.payloads.AbstractLogPayload.parsePayload;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.swirlds.logging.payloads.LogPayload;
 import java.time.Instant;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A single entry in a json log file.
@@ -196,19 +194,21 @@ public class JsonLogEntry {
      */
     @Override
     public String toString() {
-        ToStringBuilder tsb = new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("timestamp", timestamp.toString())
-                .append("thread", thread)
-                .append("level", level)
-                .append("logger", loggerName)
-                .append("marker", marker)
-                .append("payload", payload);
+        String result = getClass().getSimpleName() + "["
+                + "timestamp=" + timestamp.toString()
+                + ", thread=" + thread
+                + ", level=" + level
+                + ", logger=" + loggerName
+                + ", marker=" + marker
+                + ", payload=" + payload;
 
         if (hasException()) {
-            tsb.append("exception type", exceptionType).append("exception message", exceptionMessage);
+            result += ", exception type=" + exceptionType + ", exception message=" + exceptionMessage;
         }
 
-        return tsb.build();
+        result += "]";
+
+        return result;
     }
 
     @Override

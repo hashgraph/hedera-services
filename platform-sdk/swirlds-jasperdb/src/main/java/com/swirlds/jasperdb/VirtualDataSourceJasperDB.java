@@ -21,7 +21,6 @@ import static com.swirlds.jasperdb.KeyRange.INVALID_KEY_RANGE;
 import static com.swirlds.logging.LogMarker.ERROR;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.JASPER_DB;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.DigestType;
@@ -82,7 +81,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -825,7 +823,7 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      * @param path
      * 		Node path
      * @return
-     * 		Node hash if the node was stored for the given path or null if not stored
+     *        Node hash if the node was stored for the given path or null if not stored
      * @throws IOException
      * 		If there was an I/O problem
      */
@@ -1038,19 +1036,19 @@ public class VirtualDataSourceJasperDB<K extends VirtualKey, V extends VirtualVa
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("isLongKeyMode", isLongKeyMode)
-                .append("pathToDiskLocationInternalNodes.size", hashPathToDiskLocation.size())
-                .append("pathToDiskLocationLeafNodes.size", leafPathToDiskLocation.size())
-                .append("pathToHashRam.size", pathToHashRam == null ? null : pathToHashRam.size())
-                .append("pathToHashDisk", pathToHashDisk)
-                .append("hashesRamToDiskThreshold", hashesRamToDiskThreshold)
-                .append("hasDiskStoreForHashes", hasDiskStoreForHashes)
-                .append("longKeyToPath.size", longKeyToPath == null ? null : longKeyToPath.size())
-                .append("objectKeyToPath", objectKeyToPath)
-                .append("pathToKeyValue", pathToKeyValue)
-                .append("snapshotInProgress", snapshotInProgress.get())
-                .toString();
+        return "VirtualDataSourceJasperDB["
+                + "isLongKeyMode=" + isLongKeyMode + ", "
+                + "pathToDiskLocationInternalNodes.size=" + hashPathToDiskLocation.size() + ", "
+                + "pathToDiskLocationLeafNodes.size=" + leafPathToDiskLocation.size() + ", "
+                + "pathToHashRam.size=" + (pathToHashRam == null ? null : pathToHashRam.size()) + ", "
+                + "pathToHashDisk=" + pathToHashDisk + ", "
+                + "hashesRamToDiskThreshold=" + hashesRamToDiskThreshold + ", "
+                + "hasDiskStoreForHashes=" + hasDiskStoreForHashes + ", "
+                + "longKeyToPath.size=" + (longKeyToPath == null ? null : longKeyToPath.size()) + ", "
+                + "objectKeyToPath=" + objectKeyToPath + ", "
+                + "pathToKeyValue=" + pathToKeyValue + ", "
+                + "snapshotInProgress=" + snapshotInProgress.get()
+                + "]";
     }
 
     /**

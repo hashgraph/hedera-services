@@ -17,7 +17,6 @@
 package com.swirlds.common.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -38,7 +37,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -297,17 +295,17 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("softwareVersion", softwareVersion)
-                .append("creatorId", creatorId)
-                .append("selfParentGen", selfParentGen)
-                .append("otherParentGen", otherParentGen)
-                .append("selfParentHash", CommonUtils.hex(valueOrNull(selfParentHash), TO_STRING_BYTE_ARRAY_LENGTH))
-                .append("otherParentHash", CommonUtils.hex(valueOrNull(otherParentHash), TO_STRING_BYTE_ARRAY_LENGTH))
-                .append("timeCreated", timeCreated)
-                .append("transactions size", transactions == null ? "null" : transactions.length)
-                .append("hash", CommonUtils.hex(valueOrNull(getHash()), TO_STRING_BYTE_ARRAY_LENGTH))
-                .toString();
+        return "BaseEventHashedData{" + "softwareVersion="
+                + softwareVersion + ", creatorId="
+                + creatorId + ", selfParentGen="
+                + CommonUtils.hex(valueOrNull(selfParentHash), TO_STRING_BYTE_ARRAY_LENGTH) + ", otherParentGen="
+                + CommonUtils.hex(valueOrNull(otherParentHash), TO_STRING_BYTE_ARRAY_LENGTH) + ", selfParentHash="
+                + selfParentHash + ", otherParentHash="
+                + otherParentHash + ", timeCreated="
+                + timeCreated + ", transaction size="
+                + (transactions == null ? "null" : transactions.length) + ", hasUserTransactions="
+                + hasUserTransactions + ", hash="
+                + CommonUtils.hex(valueOrNull(getHash()), TO_STRING_BYTE_ARRAY_LENGTH) + '}';
     }
 
     private byte[] valueOrNull(final Hash hash) {

@@ -19,7 +19,6 @@ package com.swirlds.common.crypto;
 import static com.swirlds.common.crypto.SignatureType.RSA;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -32,7 +31,6 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -169,9 +167,8 @@ public class Signature implements SelfSerializable {
      */
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("signatureType", signatureType)
-                .append("sigBytes", hex(signatureBytes))
-                .toString();
+        return "Signature{" + "signatureType="
+                + signatureType + ", signatureBytes="
+                + Arrays.toString(signatureBytes) + '}';
     }
 }
