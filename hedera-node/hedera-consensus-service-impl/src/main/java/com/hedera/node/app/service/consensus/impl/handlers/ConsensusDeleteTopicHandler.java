@@ -18,12 +18,16 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -70,6 +74,19 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
         requireNonNull(context, "The argument 'context' must not be null");
 
         final var op = context.body().consensusDeleteTopicOrThrow();
+
+        final var fees =  context.feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> {
+                    try {
+                        final var protoBody = fromPbj(context.body());
+                        return ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(protoBody, sigValueObj);
+                    } catch (InvalidTxBodyException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        context.feeAccumulator().charge(context.payer(), fees);
+
         final var topicStore = context.writableStore(WritableTopicStore.class);
 
         var topicId = op.topicIDOrElse(TopicID.DEFAULT);

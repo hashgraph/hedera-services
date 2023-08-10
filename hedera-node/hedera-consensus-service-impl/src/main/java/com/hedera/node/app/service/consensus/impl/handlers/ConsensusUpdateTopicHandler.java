@@ -19,6 +19,9 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
@@ -27,11 +30,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -39,15 +46,21 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.InvalidKeyException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#CONSENSUS_UPDATE_TOPIC}.
  */
 @Singleton
 public class ConsensusUpdateTopicHandler implements TransactionHandler {
+    private static final Logger logger = LogManager.getLogger(ConsensusUpdateTopicHandler.class);
+
     @Inject
     public ConsensusUpdateTopicHandler() {
         // Exists for injection
@@ -110,6 +123,39 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         validateTrue(maybeTopic.isPresent(), INVALID_TOPIC_ID);
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
+
+        final var fees =  handleContext.feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> {
+                    // Get the merkle topic and do some stuff to see what the rbsIncrease is.
+                    long rbsIncrease = 0;
+                    if (topic.hasAdminKey()) {
+                        final var expiry = Timestamp.newBuilder()
+                                .setSeconds(topic.expiry())
+                                .build();
+                        try {
+                            rbsIncrease = getUpdateTopicRbsIncrease(
+                                    fromPbj(handleContext.body().transactionID().transactionValidStart()),
+                                    topic.hasAdminKey() ? JKey.mapJKey(mapKey(topic.adminKeyOrThrow())) : null,
+                                    topic.hasSubmitKey() ? JKey.mapJKey(mapKey(topic.submitKeyOrThrow())) : null,
+                                    topic.memo(),
+                                    topic.hasAutoRenewAccountId(),
+                                    expiry,
+                                    fromPbj(handleContext.body()).getConsensusUpdateTopic());
+                        } catch (final InvalidKeyException illegal) {
+                            logger.warn("Usage estimation unexpectedly failed for {}!", topicUpdate, illegal);
+                            throw new RuntimeException(illegal);
+                        }
+                    }
+
+                    try {
+                        final var protoBody = fromPbj(handleContext.body());
+                        return ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(protoBody, rbsIncrease, sigValueObj);
+                    } catch (InvalidTxBodyException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
         // First validate this topic is mutable; and the pending mutations are allowed
         validateFalse(topic.adminKey() == null && wantsToMutateNonExpiryField(topicUpdate), UNAUTHORIZED);
