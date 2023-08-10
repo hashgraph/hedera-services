@@ -16,40 +16,49 @@
 
 package com.swirlds.cli.utility;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.StringEscapeUtils;
+import static com.swirlds.cli.utility.HtmlTagFactory.CLASS_NAME_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.ELAPSED_TIME_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.FILTER_HEADING_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.HIDER_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.HIDER_LABEL_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_BODY_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_BREAK_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CHECKBOX_TYPE;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CLASS_ATTRIBUTE;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_H3_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_HEAD_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_HTML_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_INPUT_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_LABEL_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_SCRIPT_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_SOURCE_ATTRIBUTE;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_STYLE_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_TABLE_TAG;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_TYPE_ATTRIBUTE;
+import static com.swirlds.cli.utility.HtmlTagFactory.LOG_BODY_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.LOG_LEVEL_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.LOG_NUMBER_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.MARKER_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.NODE_ID_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.REMAINDER_OF_LINE_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.THREAD_NAME_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.TIMESTAMP_COLUMN_LABEL;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Utility methods for processing log files into a more readable format.
  */
 public class LogProcessingUtils {
-    public static final String HTML_ROW_TAG = "tr";
-    public static final String HTML_DATA_CELL_TAG = "td";
-    public static final String HTML_SPAN_TAG = "span";
-
-    public static final String HIDEABLE_LABEL = "hideable";
-    public static final String NODE_ID_LABEL = "node-id";
-    public static final String ELAPSED_TIME_LABEL = "elapsed-time";
-    public static final String TIMESTAMP_LABEL = "timestamp";
-    public static final String LOG_NUMBER_LABEL = "log-number";
-    public static final String LOG_LEVEL_LABEL = "log-level";
-    public static final String MARKER_LABEL = "marker";
-    public static final String THREAD_NAME_LABEL = "thread-name";
-    public static final String CLASS_NAME_LABEL = "class-name";
-    public static final String REMAINDER_OF_LINE_LABEL = "remainder-of-line";
-
     /**
      * Hidden constructor.
      */
-    private LogProcessingUtils() {
-    }
+    private LogProcessingUtils() {}
 
     /**
      * Parse a log timestamp string into an Instant.
@@ -84,32 +93,130 @@ public class LogProcessingUtils {
         }
     }
 
-    /**
-     * Concatenate a list of HTML class names into a single string
-     * <p>
-     * Escapes the class names.
-     *
-     * @param classNames the class names to concatenate
-     * @return the concatenated class names
-     */
-    private static String concatenateHtmlClassNames(@NonNull final List<String> classNames) {
-        return classNames.stream().map(StringEscapeUtils::escapeHtml4).collect(Collectors.joining(" "));
+    private static String createHiderCheckbox(@NonNull final String elementName) {
+        final String inputTag = new HtmlTagFactory(HTML_INPUT_TAG, null, true)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(HIDER_LABEL, elementName))
+                .addAttribute(HTML_TYPE_ATTRIBUTE, HTML_CHECKBOX_TYPE)
+                .generateTag();
+
+        final String labelTag = new HtmlTagFactory(HTML_LABEL_TAG, "Hide " + elementName, false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(HIDER_LABEL_LABEL))
+                .generateTag();
+
+        final String breakTag = new HtmlTagFactory(HTML_BREAK_TAG, null, true).generateTag();
+
+        return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
     }
 
-    /**
-     * Generate an HTML tag with string content.
-     * <p>
-     * Content string must be escaped.
-     *
-     * @param tagName    the tag name
-     * @param content    the content of the tag. MUST BE ESCAPED ALREADY
-     * @param classNames the class names to use
-     * @return the HTML tag
-     */
-    public static String createHtmlTag(
-            @NonNull final String tagName, @NonNull final String content, @NonNull final List<String> classNames) {
+    public static String generateHtmlPage(@NonNull final List<String> logLineStrings) {
+        final List<String> logLines = logLineStrings.stream()
+                .map(string -> {
+                    try {
+                        return new LogLine(string, ZoneId.systemDefault()).generateHtmlString();
+                    } catch (final Exception e) {
+                        // TODO handle this case
+                        return "";
+                        //                        return string;
+                    }
+                })
+                .toList();
 
-        return "<" + tagName + " class=\"" + concatenateHtmlClassNames(classNames) + "\">" + content + "</" + tagName
-                + ">";
+        // this css has the logic to filter logs
+        final String hiderCss = "[data-hide]:not([data-hide~='0']):not([data-hide~=\"NaN\"]) {display: none;}";
+        final String hiderCssTag = new HtmlTagFactory(HTML_STYLE_TAG, hiderCss, false).generateTag();
+
+        final String minJsSource = "https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js";
+        final String minJsSourceTag = new HtmlTagFactory(HTML_SCRIPT_TAG, "", false)
+                .addAttribute(HTML_SOURCE_ATTRIBUTE, minJsSource)
+                .generateTag();
+
+        final String headTag = new HtmlTagFactory(
+                        HTML_HEAD_TAG, "\n" + hiderCssTag + "\n" + minJsSourceTag + "\n", false)
+                .generateTag();
+
+        final String logTableTag =
+                new HtmlTagFactory(HTML_TABLE_TAG, "\n" + String.join("\n", logLines) + "\n", false).generateTag();
+
+        // TODO read this from file instead
+        final String TEMP_hiderJs =
+                """
+                // the checkboxes that have the ability to hide things
+                var hiders = document.getElementsByClassName("hider");
+
+                // add a listener to each checkbox
+                for (var i = 0; i < hiders.length; i++) {
+                    hiders[i].addEventListener("click", function() {
+                        // the classes that exist on the checkbox that is clicked
+                        var checkboxClasses = this.classList;
+
+                        // the name of the class that should be hidden
+                        // each checkbox has 2 classes, "hider", and the name of the class to be hidden
+                        var toggleClass;
+                        for (j = 0; j < checkboxClasses.length; j++) {
+                            if (checkboxClasses[j] == "hider") {
+                                continue;
+                            }
+
+                            toggleClass = checkboxClasses[j];
+                            break;
+                        }
+
+                        // these are the objects on the page which match the class to toggle (discluding the input boxes)
+                        var matchingObjects = $("." + toggleClass).not("input");
+
+                        // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                        for (j = 0; j < matchingObjects.length; j++) {
+                            var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
+
+                            var newHideCount;
+                            if ($(this).is(":checked")) {
+                                newHideCount = currentHideCount + 1;
+                            } else {
+                                newHideCount = currentHideCount - 1;
+                            }
+
+                            $(matchingObjects[j]).attr('data-hide', newHideCount);
+                        }
+                    });
+                }
+                """;
+
+        final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, TEMP_hiderJs, false).generateTag();
+
+        final String filterColumnsHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter Columns", false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_HEADING_LABEL)
+                .generateTag();
+
+        final String hideNodeIdCheckbox = createHiderCheckbox(NODE_ID_COLUMN_LABEL);
+        final String hideElapsedTimeCheckbox = createHiderCheckbox(ELAPSED_TIME_COLUMN_LABEL);
+        final String hideTimestampCheckbox = createHiderCheckbox(TIMESTAMP_COLUMN_LABEL);
+        final String hideLogNumberCheckbox = createHiderCheckbox(LOG_NUMBER_COLUMN_LABEL);
+        final String hideLogLevelCheckbox = createHiderCheckbox(LOG_LEVEL_COLUMN_LABEL);
+        final String hideMarkerCheckbox = createHiderCheckbox(MARKER_COLUMN_LABEL);
+        final String hideThreadNameCheckbox = createHiderCheckbox(THREAD_NAME_COLUMN_LABEL);
+        final String hideClassNameCheckbox = createHiderCheckbox(CLASS_NAME_COLUMN_LABEL);
+        final String hideRemainderOfLineCheckbox = createHiderCheckbox(REMAINDER_OF_LINE_COLUMN_LABEL);
+
+        final List<String> bodyElements =
+                List.of(filterColumnsHeading,
+                        hideNodeIdCheckbox,
+                        hideElapsedTimeCheckbox,
+                        hideTimestampCheckbox,
+                        hideLogNumberCheckbox,
+                        hideLogLevelCheckbox,
+                        hideMarkerCheckbox,
+                        hideThreadNameCheckbox,
+                        hideClassNameCheckbox,
+                        hideRemainderOfLineCheckbox,
+                        logTableTag,
+                        scriptTag);
+
+        final String bodyTag = new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, LOG_BODY_LABEL)
+                .generateTag();
+
+        final List<String> pageElements = List.of(headTag, bodyTag);
+
+        return new HtmlTagFactory(HTML_HTML_TAG, "\n" + String.join("\n", pageElements) + "\n", false).generateTag();
     }
 }

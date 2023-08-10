@@ -16,13 +16,12 @@
 
 package com.swirlds.cli.utility;
 
-import static com.swirlds.cli.utility.LogProcessingUtils.HTML_SPAN_TAG;
-import static com.swirlds.cli.utility.LogProcessingUtils.createHtmlTag;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CLASS_ATTRIBUTE;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_SPAN_TAG;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -160,11 +159,17 @@ public class PlatformStatusLog implements FormattableString {
     @Override
     public String generateHtmlString() {
         return platformSpent
-                + createHtmlTag(HTML_SPAN_TAG, duration, List.of(STATUS_HTML_CLASS))
+                + new HtmlTagFactory(HTML_SPAN_TAG, duration, false)
+                        .addAttribute(HTML_CLASS_ATTRIBUTE, STATUS_HTML_CLASS)
+                        .generateTag()
                 + in
-                + createHtmlTag(HTML_SPAN_TAG, previousStatus, List.of(STATUS_HTML_CLASS))
+                + new HtmlTagFactory(HTML_SPAN_TAG, previousStatus, false)
+                        .addAttribute(HTML_CLASS_ATTRIBUTE, STATUS_HTML_CLASS)
+                        .generateTag()
                 + nowIn
-                + createHtmlTag(HTML_SPAN_TAG, newStatus, List.of(STATUS_HTML_CLASS))
+                + new HtmlTagFactory(HTML_SPAN_TAG, newStatus, false)
+                        .addAttribute(HTML_CLASS_ATTRIBUTE, STATUS_HTML_CLASS)
+                        .generateTag()
                 + escapeHtml4(statusMessageRemainder);
     }
 }

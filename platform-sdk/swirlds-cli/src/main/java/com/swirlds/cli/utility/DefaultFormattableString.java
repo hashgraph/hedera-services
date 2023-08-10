@@ -16,9 +16,9 @@
 
 package com.swirlds.cli.utility;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Default implementation of {@link FormattableString}. Doesn't do any formatting.
