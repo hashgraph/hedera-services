@@ -45,7 +45,7 @@ import java.time.temporal.ChronoUnit;
  * @param smallMergeCutoffMb
  * 		The cutoff size in MB of files to include in a "small" merge.
  * @param mergePeriodUnit
- * 		The time unit to use when interpreting merge periods. Note this requires the {@code merkleDb.mergePeriodUnit}
+ * 		The time unit to use when interpreting merge periods. Note this requires the {@code jasperDb.mergePeriodUnit}
  * 		to be one of the constants of the {@link ChronoUnit} enum ("SECONDS", "MINUTES", or "HOURS" are the most
  * 		likely to be used). Default is MINUTES.
  * @param maxNumberOfFilesInMerge
@@ -102,7 +102,7 @@ import java.time.temporal.ChronoUnit;
  * @param reservedBufferLengthForLeafList
  *      Length of a reserved buffer in a LongList used to store leafs. Value in bytes.
  * @param leafRecordCacheSize
- *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from MerkleDb config.
+ *      Cache size in bytes for reading virtual leaf records. Initialized in data source creation time from JasperDB config.
  *      If the value is zero, leaf records cache isn't used.
  */
 @ConfigData("merkleDb")

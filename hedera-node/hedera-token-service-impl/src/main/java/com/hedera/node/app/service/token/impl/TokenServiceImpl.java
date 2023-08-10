@@ -134,6 +134,45 @@ public class TokenServiceImpl implements TokenService {
                                     //                                    .declineReward(true)
                                     .build());
                 }
+
+                // Add staking reward and node reward accounts
+                final var stakingRewardAccountId = AccountID.newBuilder()
+                        .shardNum(hederaConfig.shard())
+                        .realmNum(hederaConfig.realm())
+                        .accountNum(accountsConfig.stakingRewardAccount())
+                        .build();
+
+                accounts.put(
+                        stakingRewardAccountId,
+                        Account.newBuilder()
+                                .accountId(stakingRewardAccountId)
+                                .tinybarBalance(0)
+                                .memo("")
+                                .expiry(Long.MAX_VALUE)
+                                .autoRenewSecs(Long.MAX_VALUE)
+                                .receiverSigRequired(false)
+                                .deleted(false)
+                                .smartContract(false)
+                                .build());
+
+                final var nodeRewardAccountId = AccountID.newBuilder()
+                        .shardNum(hederaConfig.shard())
+                        .realmNum(hederaConfig.realm())
+                        .accountNum(accountsConfig.nodeRewardAccount())
+                        .build();
+
+                accounts.put(
+                        nodeRewardAccountId,
+                        Account.newBuilder()
+                                .accountId(nodeRewardAccountId)
+                                .tinybarBalance(0)
+                                .memo("")
+                                .expiry(Long.MAX_VALUE)
+                                .autoRenewSecs(Long.MAX_VALUE)
+                                .receiverSigRequired(false)
+                                .deleted(false)
+                                .smartContract(false)
+                                .build());
             }
         };
     }

@@ -19,7 +19,13 @@
  * A disk-based VirtualDataSource implementation; complete module documentation to be assembled over time as the full
  * implementation is transplanted here.
  */
-open module com.swirlds.merkledb {
+open module com.swirlds.jasperdb {
+    exports com.swirlds.jasperdb.collections;
+    exports com.swirlds.jasperdb.utilities;
+    exports com.swirlds.jasperdb.files;
+    exports com.swirlds.jasperdb.files.hashmap;
+    exports com.swirlds.jasperdb;
+    exports com.swirlds.jasperdb.config;
     exports com.swirlds.merkledb;
     exports com.swirlds.merkledb.collections;
     exports com.swirlds.merkledb.config;

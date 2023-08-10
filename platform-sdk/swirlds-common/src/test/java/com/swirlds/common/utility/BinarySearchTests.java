@@ -143,7 +143,7 @@ class BinarySearchTests {
 
                 // Null search function.
                 assertThrows(
-                        IllegalArgumentException.class,
+                        NullPointerException.class,
                         () -> BinarySearch.search(0, 1, null),
                         "null comparison function should not be permitted");
 
