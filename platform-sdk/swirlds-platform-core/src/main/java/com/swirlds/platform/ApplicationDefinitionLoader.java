@@ -50,8 +50,7 @@ public final class ApplicationDefinitionLoader {
 
     private ApplicationDefinitionLoader() {}
 
-    public static ApplicationDefinition loadDefault(final Path configPath)
-            throws ConfigurationException {
+    public static ApplicationDefinition loadDefault(final Path configPath) throws ConfigurationException {
         return load(LegacyConfigPropertiesLoader.loadConfigFile(configPath));
     }
 

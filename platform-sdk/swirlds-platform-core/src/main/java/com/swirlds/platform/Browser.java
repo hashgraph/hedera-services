@@ -16,6 +16,18 @@
 
 package com.swirlds.platform;
 
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static com.swirlds.logging.LogMarker.EXCEPTION;
+import static com.swirlds.logging.LogMarker.STARTUP;
+import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
+import static com.swirlds.platform.util.BootstrapUtils.*;
+
 import com.swirlds.common.StartupTime;
 import com.swirlds.common.config.BasicConfig;
 import com.swirlds.common.config.PathsConfig;
@@ -57,9 +69,6 @@ import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -69,19 +78,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.swirlds.common.system.SystemExitUtils.exitSystem;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static com.swirlds.logging.LogMarker.EXCEPTION;
-import static com.swirlds.logging.LogMarker.STARTUP;
-import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
-import static com.swirlds.platform.util.BootstrapUtils.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The Browser that launches the Platforms that run the apps.
@@ -135,11 +133,12 @@ public class Browser {
         if (STARTED.getAndSet(true)) {
             return;
         }
-        final Path log4jPath = ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
+        final Path log4jPath =
+                ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
         Log4jSetup.startLoggingFramework(log4jPath);
         logger = LogManager.getLogger(Browser.class);
         try {
-           launchUnhandled(commandLineArgs);
+            launchUnhandled(commandLineArgs);
         } catch (Exception e) {
             logger.error(EXCEPTION.getMarker(), "", e);
             throw new RuntimeException("Unable to start Browser", e);
@@ -159,9 +158,11 @@ public class Browser {
         final PathsConfig pathsConfig = loadPathsConfig();
 
         // Load config.txt file, parse application jar file name, main class name, address book, and parameters
-        final ApplicationDefinition appDefinition = ApplicationDefinitionLoader.loadDefault(pathsConfig.getConfigPath());
+        final ApplicationDefinition appDefinition =
+                ApplicationDefinitionLoader.loadDefault(pathsConfig.getConfigPath());
         // Determine which nodes to run locally
-        final List<NodeId> nodesToRun = getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
+        final List<NodeId> nodesToRun =
+                getNodesToRun(appDefinition.getConfigAddressBook(), commandLineArgs.localNodesToStart());
         checkNodesToRun(nodesToRun);
         // Load all SwirldMain instances for locally run nodes.
         final Map<NodeId, SwirldMain> appMains = loadSwirldMains(appDefinition, nodesToRun);
@@ -221,15 +222,14 @@ public class Browser {
             platforms.put(
                     nodeId,
                     buildPlatform(
-                        nodeId,
-                        appDefinition,
-                        configAddressBook,
-                        appMains.get(nodeId),
-                        metricsProvider,
-                        configuration,
-                        infoSwirld,
-                        crypto.get(nodeId)
-            ));
+                            nodeId,
+                            appDefinition,
+                            configAddressBook,
+                            appMains.get(nodeId),
+                            metricsProvider,
+                            configuration,
+                            infoSwirld,
+                            crypto.get(nodeId)));
         }
 
         addPlatforms(platforms.values());
@@ -275,17 +275,14 @@ public class Browser {
         showBrowserWindow();
         moveBrowserWindowToFront();
 
-        CommonUtils.tellUserConsole(
-                "This computer has an internal IP address:  " + Network.getInternalIPAddress());
+        CommonUtils.tellUserConsole("This computer has an internal IP address:  " + Network.getInternalIPAddress());
         logger.trace(
                 STARTUP.getMarker(),
                 "All of this computer's addresses: {}",
                 () -> (Arrays.toString(Network.getOwnAddresses2())));
 
-
         logger.debug(STARTUP.getMarker(), "main() finished");
     }
-
 
     /**
      * Build a single instance of a platform
@@ -307,7 +304,8 @@ public class Browser {
             final MetricsProvider metricsProvider,
             final Configuration configuration,
             final InfoSwirld infoSwirld,
-            final Crypto crypto) throws IOException {
+            final Crypto crypto)
+            throws IOException {
         final Address address = configAddressBook.getAddress(nodeId);
         final int instanceNumber = configAddressBook.getIndexOfNodeId(nodeId);
 
@@ -317,8 +315,7 @@ public class Browser {
                 + " - " + infoSwirld.getName()
                 + " - " + infoSwirld.getApp().getName();
 
-        final PlatformContext platformContext =
-                new DefaultPlatformContext(nodeId, metricsProvider, configuration);
+        final PlatformContext platformContext = new DefaultPlatformContext(nodeId, metricsProvider, configuration);
 
         // name of the app's SwirldMain class
         final String mainClassName = appDefinition.getMainClassName();
@@ -362,7 +359,9 @@ public class Browser {
                 // Update the address book with the current address book read from config.txt.
                 // Eventually we will not do this, and only transactions will be capable of
                 // modifying the address book.
-                state.getPlatformState().setAddressBook(addressBookInitializer.getInitialAddressBook().copy());
+                state.getPlatformState()
+                        .setAddressBook(
+                                addressBookInitializer.getInitialAddressBook().copy());
             }
 
             GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
@@ -382,7 +381,5 @@ public class Browser {
             new InfoMember(infoSwirld, platform);
             return platform;
         }
-
     }
-
 }

@@ -99,7 +99,6 @@ import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.awt.Dimension;
 import java.awt.GraphicsEnvironment;
 import java.io.FileOutputStream;
@@ -113,19 +112,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Utility methods that are helpful when starting up a JVM.
@@ -144,8 +140,7 @@ public final class BootstrapUtils {
     public static @NonNull PathsConfig loadPathsConfig() {
         final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
         if (Files.exists(pathsConfig.getConfigPath())) {
-            CommonUtils.tellUserConsole(
-                    "Reading the configuration from the file:   " + pathsConfig.getConfigPath());
+            CommonUtils.tellUserConsole("Reading the configuration from the file:   " + pathsConfig.getConfigPath());
         } else {
             final String message = "A config.txt file could be created here:   " + pathsConfig.getConfigPath();
             CommonUtils.tellUserConsole(message);
@@ -163,20 +158,21 @@ public final class BootstrapUtils {
      * @return a new configuration instance
      * @throws IOException if there is a problem reading the configuration files
      */
-    public static Configuration loadConfig(@NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains) throws IOException {
+    public static Configuration loadConfig(
+            @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
+            throws IOException {
         Objects.requireNonNull(pathsConfig);
         Objects.requireNonNull(appMains);
 
         // The properties from the config.txt
-        final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
-                pathsConfig.getConfigPath());
+        final LegacyConfigProperties configurationProperties =
+                LegacyConfigPropertiesLoader.loadConfigFile(pathsConfig.getConfigPath());
 
         final ConfigSource settingsConfigSource = LegacyFileConfigSource.ofSettingsFile();
         final ConfigSource mappedSettingsConfigSource = ConfigMappings.addConfigMapping(settingsConfigSource);
 
         final ConfigSource configPropertiesConfigSource = new ConfigPropertiesSource(configurationProperties);
         final ConfigSource threadCountPropertyConfigSource = new ThreadCountPropertyConfigSource();
-
 
         // Load Configuration Definitions
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create()
@@ -228,9 +224,10 @@ public final class BootstrapUtils {
      * Perform health all health checks
      * @param configuration the configuration
      */
-    public static void performHealthChecks(@NonNull final Configuration configuration){
+    public static void performHealthChecks(@NonNull final Configuration configuration) {
         Objects.requireNonNull(configuration);
-        final OSFileSystemChecker osFileSystemChecker = new OSFileSystemChecker(configuration.getConfigData(PathsConfig.class));
+        final OSFileSystemChecker osFileSystemChecker =
+                new OSFileSystemChecker(configuration.getConfigData(PathsConfig.class));
 
         OSHealthChecker.performOSHealthChecks(
                 configuration.getConfigData(OSHealthCheckConfig.class),
@@ -243,8 +240,9 @@ public final class BootstrapUtils {
     /**
      * Sets up the browser window
      */
-    public static void setupBrowserWindow() throws UnsupportedLookAndFeelException, ClassNotFoundException,
-            InstantiationException, IllegalAccessException {
+    public static void setupBrowserWindow()
+            throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException,
+                    IllegalAccessException {
         // discover the inset size and set the look and feel
         if (!GraphicsEnvironment.isHeadless()) {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -386,7 +384,8 @@ public final class BootstrapUtils {
      * @param appLoader     an object capable of loading the app
      * @return the new app main
      */
-    public static @NonNull SwirldMain buildAppMain(@NonNull final ApplicationDefinition appDefinition, @NonNull final SwirldAppLoader appLoader) {
+    public static @NonNull SwirldMain buildAppMain(
+            @NonNull final ApplicationDefinition appDefinition, @NonNull final SwirldAppLoader appLoader) {
         Objects.requireNonNull(appDefinition);
         Objects.requireNonNull(appLoader);
         try {
@@ -460,7 +459,8 @@ public final class BootstrapUtils {
      * @param localNodesToStart local nodes specified to start by the user
      * @return the nodes to run locally
      */
-    public static @NonNull List<NodeId> getNodesToRun(@NonNull final AddressBook addressBook, @NonNull final Set<NodeId> localNodesToStart){
+    public static @NonNull List<NodeId> getNodesToRun(
+            @NonNull final AddressBook addressBook, @NonNull final Set<NodeId> localNodesToStart) {
         Objects.requireNonNull(addressBook);
         Objects.requireNonNull(localNodesToStart);
         final List<NodeId> nodesToRun = new ArrayList<>();
@@ -479,7 +479,7 @@ public final class BootstrapUtils {
      * Checks the nodes to run and exits if there are no nodes to run
      * @param nodesToRun the nodes to run
      */
-    public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun){
+    public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun) {
         // if the local machine did not match any address in the address book then we should log an error and exit
         if (nodesToRun.isEmpty()) {
             final String externalIpAddress = (Network.getExternalIpAddress() != null)

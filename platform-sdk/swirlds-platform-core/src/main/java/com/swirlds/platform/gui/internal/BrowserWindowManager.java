@@ -18,7 +18,6 @@ package com.swirlds.platform.gui.internal;
 
 import com.swirlds.gui.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
-
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;

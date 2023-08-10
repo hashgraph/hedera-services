@@ -17,9 +17,7 @@
 package com.swirlds.platform;
 
 import com.swirlds.common.internal.ConfigurationException;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
-import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
