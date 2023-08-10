@@ -35,8 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Contains a TransactionRecord, its related Transaction, consensus Timestamp of the Transaction and
@@ -177,11 +175,8 @@ public class RecordStreamObject extends AbstractSerializableHashable
     }
 
     static String toShortStringRecord(TransactionRecord transactionRecord) {
-        return "TransactionRecord["
-                + "TransactionID=" + transactionRecord.getTransactionID()
-                + "]";
+        return "TransactionRecord[" + "TransactionID=" + transactionRecord.getTransactionID() + "]";
     }
-
 
     @Override
     public boolean equals(Object obj) {
