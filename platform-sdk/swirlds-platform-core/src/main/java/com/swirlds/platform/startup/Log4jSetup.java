@@ -42,8 +42,7 @@ public final class Log4jSetup {
 	}
 
 	/**
-	 * Initialize the log4j2 configuration and logging subsystem if a log4j2.xml file is present in the current working
-	 * directory
+	 * Initialize the log4j2 configuration and logging subsystem if log4j config file is present in the path specified
 	 *
 	 * @param configPath
 	 * 		the path to the log4j configuration file. If path does not exist then this method is a no-op.

@@ -116,7 +116,10 @@ public final class BrowserWindowManager {
         setBrowserWindow(new WinBrowser(new PlatformHashgraphGuiSource()));
     }
 
-    public static void moveBroswerWindowToFront() {
+    /**
+     * Move the browser window to the front of the screen.
+     */
+    public static void moveBrowserWindowToFront() {
         for (final Frame f : Frame.getFrames()) {
             if (!f.equals(getBrowserWindow())) {
                 f.toFront();

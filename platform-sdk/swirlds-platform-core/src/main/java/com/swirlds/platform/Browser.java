@@ -50,6 +50,7 @@ import com.swirlds.platform.network.Network;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
 import com.swirlds.platform.startup.CommandLineArgs;
 import com.swirlds.platform.startup.Log4jSetup;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
@@ -77,7 +78,7 @@ import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.addPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBroswerWindowToFront;
+import static com.swirlds.platform.gui.internal.BrowserWindowManager.moveBrowserWindowToFront;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.util.BootstrapUtils.*;
@@ -272,7 +273,7 @@ public class Browser {
 
         // create the browser window, which uses those Statistics objects
         showBrowserWindow();
-        moveBroswerWindowToFront();
+        moveBrowserWindowToFront();
 
         CommonUtils.tellUserConsole(
                 "This computer has an internal IP address:  " + Network.getInternalIPAddress());
@@ -357,8 +358,11 @@ public class Browser {
                     appVersion, softwareUpgrade, initialState.get(), configAddressBook.copy(), platformContext);
 
             if (!initialState.get().isGenesisState()) {
-                updateLoadedStateAddressBook(
-                        initialState.get(), addressBookInitializer.getInitialAddressBook());
+                final State state = initialState.get().getState();
+                // Update the address book with the current address book read from config.txt.
+                // Eventually we will not do this, and only transactions will be capable of
+                // modifying the address book.
+                state.getPlatformState().setAddressBook(addressBookInitializer.getInitialAddressBook().copy());
             }
 
             GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);

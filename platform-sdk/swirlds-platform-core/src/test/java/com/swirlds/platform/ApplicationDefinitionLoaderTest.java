@@ -32,16 +32,12 @@ class ApplicationDefinitionLoaderTest {
     @Test
     void testNullParam() {
         Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null));
-        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null));
-        Assertions.assertThrows(
-                NullPointerException.class, () -> ApplicationDefinitionLoader.load(new LegacyConfigProperties()));
     }
 
     @Test
     void testEmptyParams() {
         // given
         final LegacyConfigProperties configProperties = new LegacyConfigProperties();
-        final Set<NodeId> nodes = Set.of();
 
         // then
         Assertions.assertThrows(

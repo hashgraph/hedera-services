@@ -137,7 +137,11 @@ public final class BootstrapUtils {
 
     private BootstrapUtils() {}
 
-    public static PathsConfig loadPathsConfig() {
+    /**
+     * Load the config for paths
+     * @return the paths configuration files
+     */
+    public static @NonNull PathsConfig loadPathsConfig() {
         final PathsConfig pathsConfig = ConfigurationHolder.getConfigData(PathsConfig.class);
         if (Files.exists(pathsConfig.getConfigPath())) {
             CommonUtils.tellUserConsole(
@@ -151,7 +155,18 @@ public final class BootstrapUtils {
         return pathsConfig;
     }
 
-    public static Configuration loadConfig(final PathsConfig pathsConfig, final Map<NodeId, SwirldMain> appMains) throws IOException {
+    /**
+     * Load the configuration for the platform and the app.
+     * Note: at some point the app configuration should be separated from the platform configuration
+     * @param pathsConfig the paths of configuration files
+     * @param appMains the app main instances
+     * @return a new configuration instance
+     * @throws IOException if there is a problem reading the configuration files
+     */
+    public static Configuration loadConfig(@NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains) throws IOException {
+        Objects.requireNonNull(pathsConfig);
+        Objects.requireNonNull(appMains);
+
         // The properties from the config.txt
         final LegacyConfigProperties configurationProperties = LegacyConfigPropertiesLoader.loadConfigFile(
                 pathsConfig.getConfigPath());
@@ -209,7 +224,12 @@ public final class BootstrapUtils {
         return configuration;
     }
 
-    public static void performHealthChecks(final Configuration configuration){
+    /**
+     * Perform health all health checks
+     * @param configuration the configuration
+     */
+    public static void performHealthChecks(@NonNull final Configuration configuration){
+        Objects.requireNonNull(configuration);
         final OSFileSystemChecker osFileSystemChecker = new OSFileSystemChecker(configuration.getConfigData(PathsConfig.class));
 
         OSHealthChecker.performOSHealthChecks(
@@ -220,6 +240,9 @@ public final class BootstrapUtils {
                         osFileSystemChecker::performFileSystemCheck));
     }
 
+    /**
+     * Sets up the browser window
+     */
     public static void setupBrowserWindow() throws UnsupportedLookAndFeelException, ClassNotFoundException,
             InstantiationException, IllegalAccessException {
         // discover the inset size and set the look and feel
@@ -247,7 +270,8 @@ public final class BootstrapUtils {
     /**
      * Load the SwirldMain for the app.
      */
-    public static SwirldMain loadAppMain(final String appMainName) {
+    public static @NonNull SwirldMain loadAppMain(@NonNull final String appMainName) {
+        Objects.requireNonNull(appMainName);
         try {
             final Class<?> mainClass = Class.forName(appMainName);
             final Constructor<?>[] constructors = mainClass.getDeclaredConstructors();
@@ -318,6 +342,7 @@ public final class BootstrapUtils {
      * Instantiate and start the thread dump generator.
      */
     public static void startThreadDumpGenerator(@NonNull final Configuration configuration) {
+        Objects.requireNonNull(configuration);
         final ThreadConfig threadConfig = configuration.getConfigData(ThreadConfig.class);
 
         if (threadConfig.threadDumpPeriodMs() > 0) {
@@ -335,6 +360,7 @@ public final class BootstrapUtils {
      * {@link BasicConfig#jvmPauseDetectorSleepMs()} setting.
      */
     public static void startJVMPauseDetectorThread(@NonNull final Configuration configuration) {
+        Objects.requireNonNull(configuration);
         final BasicConfig basicConfig = Objects.requireNonNull(configuration).getConfigData(BasicConfig.class);
         if (basicConfig.jvmPauseDetectorSleepMs() > 0) {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
@@ -360,7 +386,9 @@ public final class BootstrapUtils {
      * @param appLoader     an object capable of loading the app
      * @return the new app main
      */
-    public static SwirldMain buildAppMain(final ApplicationDefinition appDefinition, final SwirldAppLoader appLoader) {
+    public static @NonNull SwirldMain buildAppMain(@NonNull final ApplicationDefinition appDefinition, @NonNull final SwirldAppLoader appLoader) {
+        Objects.requireNonNull(appDefinition);
+        Objects.requireNonNull(appLoader);
         try {
             return appLoader.instantiateSwirldMain();
         } catch (final Exception e) {
@@ -378,7 +406,8 @@ public final class BootstrapUtils {
      *
      * @param configuration the configuration values to write
      */
-    public static void writeSettingsUsed(final Configuration configuration) {
+    public static void writeSettingsUsed(@NonNull final Configuration configuration) {
+        Objects.requireNonNull(configuration);
         final StringBuilder settingsUsedBuilder = new StringBuilder();
 
         // Add all settings values to the string builder
@@ -412,8 +441,10 @@ public final class BootstrapUtils {
      * @param initialSignedState the initial signed state
      * @return a copy of the initial signed state
      */
-    public static ReservedSignedState copyInitialSignedState(
+    public static @NonNull ReservedSignedState copyInitialSignedState(
             @NonNull final PlatformContext platformContext, @NonNull final SignedState initialSignedState) {
+        Objects.requireNonNull(platformContext);
+        Objects.requireNonNull(initialSignedState);
 
         final State stateCopy = initialSignedState.getState().copy();
         final SignedState signedStateCopy =
@@ -424,24 +455,14 @@ public final class BootstrapUtils {
     }
 
     /**
-     * Update the address book with the current address book read from config.txt. Eventually we will not do this, and
-     * only transactions will be capable of modifying the address book.
-     *
-     * @param signedState the state that was loaded from disk
-     * @param addressBook the address book specified in config.txt
+     * Determine which nodes should be run locally
+     * @param addressBook the address book
+     * @param localNodesToStart local nodes specified to start by the user
+     * @return the nodes to run locally
      */
-    public static void updateLoadedStateAddressBook(
-            @NonNull final SignedState signedState, @NonNull final AddressBook addressBook) {
-
-        final State state = signedState.getState();
-
-        // Update the address book with the current address book read from config.txt.
-        // Eventually we will not do this, and only transactions will be capable of
-        // modifying the address book.
-        state.getPlatformState().setAddressBook(addressBook.copy());
-    }
-
-    public static List<NodeId> getNodesToRun(final AddressBook addressBook, final Set<NodeId> localNodesToStart){
+    public static @NonNull List<NodeId> getNodesToRun(@NonNull final AddressBook addressBook, @NonNull final Set<NodeId> localNodesToStart){
+        Objects.requireNonNull(addressBook);
+        Objects.requireNonNull(localNodesToStart);
         final List<NodeId> nodesToRun = new ArrayList<>();
         for (final Address address : addressBook) {
             if (AddressBookNetworkUtils.isLocal(address)) {
@@ -454,6 +475,10 @@ public final class BootstrapUtils {
         return nodesToRun;
     }
 
+    /**
+     * Checks the nodes to run and exits if there are no nodes to run
+     * @param nodesToRun the nodes to run
+     */
     public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun){
         // if the local machine did not match any address in the address book then we should log an error and exit
         if (nodesToRun.isEmpty()) {
