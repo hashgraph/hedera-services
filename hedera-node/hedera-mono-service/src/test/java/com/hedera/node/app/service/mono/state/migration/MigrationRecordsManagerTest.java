@@ -27,6 +27,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -243,8 +244,7 @@ class MigrationRecordsManagerTest {
         final var record = ExpirableTxnRecord.newBuilder();
 
         given(consensusTimeTracker.unlimitedPreceding()).willReturn(true);
-        given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker2, SYSTEM_ACCOUNT_CREATION_MEMO))
-                .willReturn(record);
+        given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(record);
         given(systemAccountsCreator.getTreasuryClonesCreated()).willReturn(List.of());
         given(systemAccountsCreator.getSystemAccountsCreated()).willReturn(List.of(merkleAccount));
         given(merkleAccount.number()).willReturn(2);
@@ -253,17 +253,18 @@ class MigrationRecordsManagerTest {
         given(merkleAccount.isReceiverSigRequired()).willReturn(true);
         given(merkleAccount.getAccountKey()).willReturn(pretendTreasuryKey);
         given(merkleAccount.getMemo()).willReturn("123");
-        given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
 
         subject.publishMigrationRecords(now);
 
         verify(sigImpactHistorian).markEntityChanged(2L);
-        verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));
+        verify(recordsHistorian, times(3))
+                .trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(record));
         verify(networkCtx).markMigrationRecordsStreamed();
         verify(systemAccountsCreator).forgetCreations();
 
         final var bodies = bodyCaptor.getAllValues();
-        assertEquals(systemAccountSynthBody, bodies.get(0).build());
+        assertEquals(3, bodies.size());
+        assertEquals(systemAccountSynthBody, bodies.get(2).build());
         assertFalse(record.getHbarAdjustments().isEmpty());
         assertEquals(1, record.getHbarAdjustments().getAccountNums().length);
         assertEquals(1, record.getHbarAdjustments().getHbars().length);
