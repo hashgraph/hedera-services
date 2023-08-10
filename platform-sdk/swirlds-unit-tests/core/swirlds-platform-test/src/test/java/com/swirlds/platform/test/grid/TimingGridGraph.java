@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.test.grid;
 
+import com.swirlds.common.utility.StopWatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.time.StopWatch;
 
 /**
  * A type which stores and generates textual report grid of timing values.
@@ -119,7 +119,7 @@ public class TimingGridGraph<X extends Comparable<X>, Y extends Comparable<Y>> e
      * Stop the timer for the most recently start coordinates
      */
     public void stop() {
-        if (!watch.isStarted()) {
+        if (!watch.isRunning()) {
             return;
         }
 
@@ -205,7 +205,7 @@ public class TimingGridGraph<X extends Comparable<X>, Y extends Comparable<Y>> e
          * Stop the stopwatch. The reports the timing result to the parent.
          */
         public void stop() {
-            if (!capturing || !watch.isStarted()) {
+            if (!capturing || !watch.isRunning()) {
                 return;
             }
 
