@@ -51,11 +51,7 @@ class StopWatchTest {
         Thread.sleep(100);
         stopWatch.stop();
 
-        assertTrue(stopWatch.getElapsedTimeMillis() >= 100); // Ensure elapsed time is at least 100ms
-
-        // Make sure exception is thrown if trying to get elapsed time while stopwatch is running
-        stopWatch.start();
-        assertThrows(IllegalStateException.class, stopWatch::getElapsedTimeMillis);
+        assertTrue(stopWatch.getTime(TimeUnit.MILLISECONDS) >= 100); // Ensure elapsed time is at least 100ms
     }
 
     @Test
@@ -66,13 +62,13 @@ class StopWatchTest {
         Thread.sleep(50);
         stopWatch.stop();
 
-        long firstRunTime = stopWatch.getElapsedTimeMillis();
+        long firstRunTime = stopWatch.getTime(TimeUnit.MILLISECONDS);
 
         stopWatch.start();
         Thread.sleep(100);
         stopWatch.stop();
 
-        long secondRunTime = stopWatch.getElapsedTimeMillis();
+        long secondRunTime = stopWatch.getTime(TimeUnit.MILLISECONDS);
 
         assertTrue(firstRunTime >= 50);
         assertTrue(secondRunTime >= 100);
@@ -87,20 +83,20 @@ class StopWatchTest {
         Thread.sleep(50);
         stopWatch.stop();
 
-        assertTrue(stopWatch.getElapsedTimeMillis() >= 50);
+        assertTrue(stopWatch.getTime(TimeUnit.MILLISECONDS) >= 50);
 
         stopWatch.reset();
         assertFalse(stopWatch.isRunning());
         assertThrows(
                 IllegalStateException.class,
-                stopWatch::getElapsedTimeMillis); // Shouldn't be able to get elapsed time after reset
+                stopWatch::getElapsedTimeNano); // Shouldn't be able to get elapsed time after reset
 
         stopWatch.start();
         assertTrue(stopWatch.isRunning());
         Thread.sleep(50);
         stopWatch.stop();
 
-        assertTrue(stopWatch.getElapsedTimeMillis() >= 50); // Ensure it still works as expected after a reset
+        assertTrue(stopWatch.getTime(TimeUnit.MILLISECONDS) >= 50); // Ensure it still works as expected after a reset
     }
 
     @Test
@@ -111,7 +107,7 @@ class StopWatchTest {
         Thread.sleep(2050); // Sleep for a little more than 2 seconds for test precision
         stopWatch.stop();
 
-        assertEquals(stopWatch.getElapsedTimeMillis(), stopWatch.getTime(TimeUnit.MILLISECONDS));
+        assertEquals(stopWatch.getTime(TimeUnit.MILLISECONDS), stopWatch.getTime(TimeUnit.MILLISECONDS));
         assertEquals(stopWatch.getElapsedTimeNano(), stopWatch.getTime(TimeUnit.NANOSECONDS));
         assertTrue(stopWatch.getTime(TimeUnit.SECONDS) >= 2);
         assertEquals(0, stopWatch.getTime(TimeUnit.MINUTES));
@@ -144,7 +140,7 @@ class StopWatchTest {
         assertTrue(stopWatch.isRunning());
         stopWatch.stop();
 
-        long elapsedTime = stopWatch.getElapsedTimeMillis();
+        long elapsedTime = stopWatch.getTime(TimeUnit.MILLISECONDS);
         assertTrue(elapsedTime >= 0); // Confirming we can get time after resuming
     }
 }

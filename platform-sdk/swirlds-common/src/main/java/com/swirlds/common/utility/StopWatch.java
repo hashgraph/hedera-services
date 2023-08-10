@@ -85,28 +85,18 @@ public class StopWatch {
      * Returns the elapsed time in nanoseconds.
      *
      * @return the elapsed time in nanoseconds
-     * @throws IllegalStateException if the StopWatch is still running or has not been started yet
+     * @throws IllegalStateException if the StopWatch has not started yet
      */
-    long getElapsedTimeNano() {
-        if (startTime == 0 || endTime == 0) {
-            throw new IllegalStateException("StopWatch has not been started yet.");
+    public long getElapsedTimeNano() {
+        if (startTime == 0 && endTime == 0) {
+            throw new IllegalStateException("StopWatch has not started yet.");
         }
 
         if (running) {
-            throw new IllegalStateException("StopWatch is still running.");
+            return System.nanoTime() - startTime;
         }
 
         return endTime - startTime;
-    }
-
-    /**
-     * Returns the elapsed time in microseconds.
-     *
-     * @return the elapsed time in microseconds
-     * @throws IllegalStateException if the StopWatch is still running or has not been started yet
-     */
-    public long getElapsedTimeMillis() {
-        return TimeUnit.NANOSECONDS.toMillis(getElapsedTimeNano());
     }
 
     /**
@@ -151,7 +141,7 @@ public class StopWatch {
      * @param unit
      * 		the time unit to return the elapsed time in
      * @return the elapsed time in the specified {@code unit}
-     * @throws IllegalStateException if the StopWatch is still running or has not been started yet
+     * @throws IllegalStateException if the StopWatch has not started yet
      */
     public long getTime(@NonNull final TimeUnit unit) {
         Objects.requireNonNull(unit, "unit is null");

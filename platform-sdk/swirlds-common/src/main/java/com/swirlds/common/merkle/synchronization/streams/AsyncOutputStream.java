@@ -237,7 +237,7 @@ public class AsyncOutputStream<T extends SelfSerializable> implements AutoClosea
      * Flush the stream if necessary.
      */
     private void flushIfRequired() {
-        if (timeSinceLastFlush.getTime(TimeUnit.MILLISECONDS) > flushInterval.toMillis()) {
+        if (timeSinceLastFlush.getElapsedTimeNano() > flushInterval.toNanos()) {
             flush();
         }
     }
