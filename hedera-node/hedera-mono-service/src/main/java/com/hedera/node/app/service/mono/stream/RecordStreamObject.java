@@ -160,9 +160,9 @@ public class RecordStreamObject extends AbstractSerializableHashable
         ensureNonNullGrpcRecord();
         return "RecordStreamObject["
                 + "TransactionRecord=" + transactionRecord
-                + ", Transaction=" + transaction
-                + ", ConsensusTimestamp=" + consensusTimestamp
-                + ", Sidecars=" + sidecars
+                + ",Transaction=" + transaction
+                + ",consensusTimestamp=" + consensusTimestamp
+                + ",Sidecars=" + sidecars
                 + "]";
     }
 
@@ -170,12 +170,12 @@ public class RecordStreamObject extends AbstractSerializableHashable
         ensureNonNullGrpcRecord();
         return "RecordStreamObject["
                 + "TransactionRecord=" + toShortStringRecord(transactionRecord)
-                + ", ConsensusTimestamp=" + consensusTimestamp
+                + ",ConsensusTimestamp=" + consensusTimestamp
                 + "]";
     }
 
     static String toShortStringRecord(TransactionRecord transactionRecord) {
-        return "TransactionRecord[" + "TransactionID=" + transactionRecord.getTransactionID() + "]";
+        return "TransactionRecord" + "TransactionID=" + transactionRecord.getTransactionID();
     }
 
     @Override
