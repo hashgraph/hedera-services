@@ -35,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * Contains a TransactionRecord, its related Transaction, consensus Timestamp of the Transaction and
@@ -158,24 +160,26 @@ public class RecordStreamObject extends AbstractSerializableHashable
     @Override
     public String toString() {
         ensureNonNullGrpcRecord();
-        return "RecordStreamObject["
-                + "TransactionRecord=" + transactionRecord
-                + ",Transaction=" + transaction
-                + ",consensusTimestamp=" + consensusTimestamp
-                + ",Sidecars=" + sidecars
-                + "]";
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("TransactionRecord", transactionRecord)
+                .append("Transaction", transaction)
+                .append("ConsensusTimestamp", consensusTimestamp)
+                .append("Sidecars", sidecars)
+                .toString();
     }
 
     String toShortString() {
         ensureNonNullGrpcRecord();
-        return "RecordStreamObject["
-                + "TransactionRecord=" + toShortStringRecord(transactionRecord)
-                + ",ConsensusTimestamp=" + consensusTimestamp
-                + "]";
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("TransactionRecord", toShortStringRecord(transactionRecord))
+                .append("ConsensusTimestamp", consensusTimestamp)
+                .toString();
     }
 
     static String toShortStringRecord(TransactionRecord transactionRecord) {
-        return "TransactionRecord" + "TransactionID=" + transactionRecord.getTransactionID();
+        return new ToStringBuilder(transactionRecord, ToStringStyle.NO_CLASS_NAME_STYLE)
+                .append("TransactionID", transactionRecord.getTransactionID())
+                .toString();
     }
 
     @Override
