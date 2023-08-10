@@ -75,15 +75,14 @@ public class ConsensusDeleteTopicHandler implements TransactionHandler {
 
         final var op = context.body().consensusDeleteTopicOrThrow();
 
-        final var fees =  context.feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> {
-                    try {
-                        final var protoBody = fromPbj(context.body());
-                        return ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(protoBody, sigValueObj);
-                    } catch (InvalidTxBodyException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        final var fees = context.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                final var protoBody = fromPbj(context.body());
+                return ConsensusServiceFeeBuilder.getConsensusDeleteTopicFee(protoBody, sigValueObj);
+            } catch (InvalidTxBodyException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         context.feeAccumulator().charge(context.payer(), fees);
 

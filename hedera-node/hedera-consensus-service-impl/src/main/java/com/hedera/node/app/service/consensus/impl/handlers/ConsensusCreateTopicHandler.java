@@ -86,8 +86,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
 
-        final var fees =  handleContext.feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> {
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
             try {
                 final var protoBody = fromPbj(handleContext.body());
                 return ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(protoBody, sigValueObj);

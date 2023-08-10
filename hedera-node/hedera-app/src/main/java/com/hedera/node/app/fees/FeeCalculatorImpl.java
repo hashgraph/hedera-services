@@ -55,6 +55,7 @@ public class FeeCalculatorImpl implements FeeCalculator {
     private final com.hederahashgraph.api.proto.java.FeeData feeData;
     /** The current Google Protobuf representation of the current exchange rate */
     private final com.hederahashgraph.api.proto.java.ExchangeRate currentRate;
+    /** The basic info from parsing the transaction */
     private final SigUsage sigUsage;
 
     /**

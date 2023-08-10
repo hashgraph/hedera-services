@@ -19,8 +19,7 @@ package com.hedera.node.app.service.consensus.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
-import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.node.app.service.consensus.impl.codecs.ConsensusServiceStateTranslator.pbjToState;
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
@@ -35,10 +34,9 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.consensus.ConsensusUpdateTopicTransactionBody;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
-import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.txns.UpdateTopicResourceUsage;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -46,9 +44,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.InvalidKeyException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -124,36 +120,14 @@ public class ConsensusUpdateTopicHandler implements TransactionHandler {
         final var topic = maybeTopic.get();
         validateFalse(topic.deleted(), INVALID_TOPIC_ID);
 
-        final var fees =  handleContext.feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> {
-                    // Get the merkle topic and do some stuff to see what the rbsIncrease is.
-                    long rbsIncrease = 0;
-                    if (topic.hasAdminKey()) {
-                        final var expiry = Timestamp.newBuilder()
-                                .setSeconds(topic.expiry())
-                                .build();
-                        try {
-                            rbsIncrease = getUpdateTopicRbsIncrease(
-                                    fromPbj(handleContext.body().transactionID().transactionValidStart()),
-                                    topic.hasAdminKey() ? JKey.mapJKey(mapKey(topic.adminKeyOrThrow())) : null,
-                                    topic.hasSubmitKey() ? JKey.mapJKey(mapKey(topic.submitKeyOrThrow())) : null,
-                                    topic.memo(),
-                                    topic.hasAutoRenewAccountId(),
-                                    expiry,
-                                    fromPbj(handleContext.body()).getConsensusUpdateTopic());
-                        } catch (final InvalidKeyException illegal) {
-                            logger.warn("Usage estimation unexpectedly failed for {}!", topicUpdate, illegal);
-                            throw new RuntimeException(illegal);
-                        }
-                    }
-
-                    try {
-                        final var protoBody = fromPbj(handleContext.body());
-                        return ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee(protoBody, rbsIncrease, sigValueObj);
-                    } catch (InvalidTxBodyException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                return new UpdateTopicResourceUsage()
+                        .usageGivenExplicit(fromPbj(handleContext.body()), sigValueObj, pbjToState(topic));
+            } catch (InvalidTxBodyException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         handleContext.feeAccumulator().charge(handleContext.payer(), fees);
 
