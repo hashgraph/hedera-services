@@ -434,7 +434,7 @@ public interface StatEntry extends Metric {
          */
         @Override
         public String toString() {
-            return "StatEntry.Config[" + super.toString() + ", halfLife=" + halfLife + "]";
+            return "StatEntry.Config[" + super.toString() + ", type=" + type.getName() + ", halfLife=" + halfLife + "]";
         }
     }
 }

@@ -347,7 +347,7 @@ public class LegacyCsvWriter {
      */
     @Override
     public String toString() {
-        return "LegacyCsvWriter{" + "csvFilePath=" + csvFilePath + '}';
+        return "LegacyCsvWriter[" + "csvFilePath=" + csvFilePath + ']';
     }
 
     // Collects cells for one or more rows in the CSV-file. Handles all formatting.

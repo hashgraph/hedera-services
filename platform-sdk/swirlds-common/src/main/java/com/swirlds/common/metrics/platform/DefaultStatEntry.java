@@ -158,6 +158,7 @@ public class DefaultStatEntry extends DefaultMetric implements StatEntry {
      */
     @Override
     public String toString() {
-        return "DefaultStatEntry{" + "halfLife=" + halfLife + "value=" + statsStringSupplier.get() + '}';
+        return "DefaultStatEntry{" + super.toString() + "halfLife=" + halfLife + "value=" + statsStringSupplier.get()
+                + '}';
     }
 }

@@ -75,6 +75,6 @@ public class DefaultRunningAverageMetric extends AbstractDistributionMetric impl
      */
     @Override
     public String toString() {
-        return "DefaultRunningAverageMetric{" + ", halfLife=" + halfLife + ", value=" + get() + '}';
+        return "DefaultRunningAverageMetric{" + super.toString() + ", halfLife=" + halfLife + ", value=" + get() + '}';
     }
 }

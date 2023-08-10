@@ -64,6 +64,6 @@ public class DefaultDoubleGauge extends DefaultMetric implements DoubleGauge {
      */
     @Override
     public String toString() {
-        return "DefaultDoubleGauge{" + super.toString() + "value=" + value + '}';
+        return "DefaultDoubleGauge{" + super.toString() + "value=" + value.get() + '}';
     }
 }

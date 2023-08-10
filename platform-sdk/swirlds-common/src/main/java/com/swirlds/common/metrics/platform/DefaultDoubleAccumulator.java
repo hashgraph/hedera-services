@@ -87,9 +87,10 @@ public class DefaultDoubleAccumulator extends DefaultMetric implements DoubleAcc
      */
     @Override
     public String toString() {
-        return "DefaultDoubleAccumulator{" + "container="
+        return "DefaultDoubleAccumulator{" + super.toString() + ", container="
                 + container + ", accumulator="
-                + accumulator + ", initializer="
+                + accumulator + ", value="
+                + get() + ", initializer="
                 + initializer + '}';
     }
 }
