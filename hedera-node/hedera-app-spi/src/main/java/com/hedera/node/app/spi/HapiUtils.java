@@ -140,7 +140,9 @@ public class HapiUtils {
         };
     }
 
-    public static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
+    // Suppressing the warning that this field is not used
+    @SuppressWarnings("java:S1068")
+    private static final Set<HederaFunctionality> QUERY_FUNCTIONS = EnumSet.of(
             HederaFunctionality.CONSENSUS_GET_TOPIC_INFO,
             HederaFunctionality.GET_BY_SOLIDITY_ID,
             HederaFunctionality.CONTRACT_CALL_LOCAL,

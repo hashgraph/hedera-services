@@ -25,6 +25,8 @@ import java.io.IOException;
 
 public class BytesCodec implements Codec<Bytes> {
 
+    private static final String CANNOT_BE_IMPLEMENTED_ERROR = "Cannot be implemented";
+
     @NonNull
     @Override
     public Bytes parse(@NonNull ReadableSequentialData input) throws IOException {
@@ -47,22 +49,17 @@ public class BytesCodec implements Codec<Bytes> {
     @Override
     // ReadableSequentialData view is incorrect it consumes the stream
     public int measure(@NonNull ReadableSequentialData input) throws IOException {
-        throw new UnsupportedOperationException("Cannot be implemented");
-        //        return input.view(4).readInt() + 4;
+        throw new UnsupportedOperationException(CANNOT_BE_IMPLEMENTED_ERROR);
     }
 
     @Override
     public int measureRecord(Bytes item) {
-        throw new UnsupportedOperationException("Cannot be implemented");
-        //        return Math.toIntExact(item.length());
+        throw new UnsupportedOperationException(CANNOT_BE_IMPLEMENTED_ERROR);
     }
 
     @Override
     public boolean fastEquals(@NonNull Bytes item, @NonNull ReadableSequentialData input) throws IOException {
-        throw new UnsupportedOperationException("Cannot be implemented");
-        //        final ReadableSequentialData comparisonView = input.view(measure(input));
-        //        final Bytes other = parseStrict(comparisonView);
-        //        return item.equals(other);
+        throw new UnsupportedOperationException(CANNOT_BE_IMPLEMENTED_ERROR);
     }
 
     @Override

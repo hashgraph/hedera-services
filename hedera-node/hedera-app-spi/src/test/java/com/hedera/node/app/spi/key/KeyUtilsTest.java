@@ -31,13 +31,13 @@ import org.junit.jupiter.api.Test;
 
 public class KeyUtilsTest {
     @Test
-    public void returnsEmptyIfKeyIsNull() {
+    void returnsEmptyIfKeyIsNull() {
         assertTrue(KeyUtils.isEmpty(null));
         assertFalse(KeyUtils.isValid(null));
     }
 
     @Test
-    public void checksEmptyKeys() {
+    void checksEmptyKeys() {
         assertTrue(KeyUtils.isEmpty(Key.DEFAULT));
         assertTrue(KeyUtils.isEmpty(Key.newBuilder().keyList(KeyList.DEFAULT).build()));
         assertTrue(KeyUtils.isEmpty(
@@ -65,7 +65,7 @@ public class KeyUtilsTest {
     }
 
     @Test
-    public void returnInvalidIfEmpty() {
+    void returnInvalidIfEmpty() {
         assertFalse(KeyUtils.isValid(Key.DEFAULT));
         assertFalse(KeyUtils.isValid(Key.newBuilder().keyList(KeyList.DEFAULT).build()));
         assertFalse(KeyUtils.isValid(
@@ -94,7 +94,7 @@ public class KeyUtilsTest {
     }
 
     @Test
-    public void extraValidationsForInvalidKeys() {
+    void extraValidationsForInvalidKeys() {
         assertFalse(KeyUtils.isValid(Key.newBuilder()
                 .keyList(KeyList.newBuilder()
                         .keys(Key.newBuilder()
@@ -135,7 +135,7 @@ public class KeyUtilsTest {
     }
 
     @Test
-    public void checksValidKeys() {
+    void checksValidKeys() {
         assertTrue(KeyUtils.isValid(Key.newBuilder()
                 .keyList(KeyList.newBuilder()
                         .keys(Key.newBuilder()
