@@ -50,7 +50,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -118,7 +117,6 @@ public class CryptoCreateSuite extends HapiSuite {
                 cannotCreateAnAccountWithLongZeroKeyButCanUseEvmAddress());
     }
 
-    @HapiTest
     private HapiSpec createAnAccountWithStakingFields() {
         return defaultHapiSpec("createAnAccountWithStakingFields")
                 .given(
@@ -264,9 +262,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 .when()
                 .then(
                         cryptoCreate("broken").autoRenewSecs(1L).hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
-                        cryptoCreate("alsoBroken")
-                                .entityMemo(ZERO_BYTE_MEMO)
-                                .hasKnownStatus(INVALID_ZERO_BYTE_IN_STRING));
+                        cryptoCreate("alsoBroken").entityMemo(ZERO_BYTE_MEMO).hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
     private HapiSpec createAnAccountEmptyThresholdKey() {
