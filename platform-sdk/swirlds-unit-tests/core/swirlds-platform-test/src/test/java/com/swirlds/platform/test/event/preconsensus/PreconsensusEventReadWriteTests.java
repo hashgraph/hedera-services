@@ -37,7 +37,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventMutableFile;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -517,13 +516,7 @@ class PreconsensusEventReadWriteTests {
     @Test
     @DisplayName("Empty File Test")
     void emptyFileTest() throws IOException {
-        final PreconsensusEventFile file = PreconsensusEventFile.of(
-                0,
-                0,
-                100,
-                Instant.now(),
-                testDirectory,
-                false);
+        final PreconsensusEventFile file = PreconsensusEventFile.of(0, 0, 100, Instant.now(), testDirectory, false);
 
         final Path path = file.getPath();
 
