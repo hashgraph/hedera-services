@@ -46,7 +46,7 @@ public class JrsTestReaderCommand extends AbstractCommand {
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
         // "gs://swirlds-circleci-jrs-results/cody-littley"
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
-        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
+        final String root = "gs://swirlds-circleci-jrs-results/cody-littley";
 
         JrsTestReader.generateTestReport(
                 terminal,

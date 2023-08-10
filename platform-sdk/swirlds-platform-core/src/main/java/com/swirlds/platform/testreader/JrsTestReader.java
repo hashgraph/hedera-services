@@ -18,12 +18,11 @@ package com.swirlds.platform.testreader;
 
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.platform.testreader.JrsTestReportGenerator.generateReport;
 import static com.swirlds.platform.testreader.TestStatus.FAIL;
 import static com.swirlds.platform.testreader.TestStatus.PASS;
 import static com.swirlds.platform.testreader.TestStatus.UNKNOWN;
 
-import com.swirlds.common.formatting.UnitFormatter;
 import com.swirlds.common.utility.CompareTo;
 import com.swirlds.platform.util.CommandResult;
 import com.swirlds.platform.util.VirtualTerminal;
@@ -31,20 +30,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -326,70 +321,6 @@ public final class JrsTestReader {
         return new ArrayList<>(testResults);
     }
 
-    // TODO make these configurable
-    private static final String GS_URL_PREFIX = "gs://swirlds-circleci-jrs-results/";
-    private static final String GS_URL_REPLACEMENT = "http://35.247.76.217:8095/";
-
-    /**
-     * The test url stored in this test result is a gs:// url. This method generates a url that can be visited in a web
-     * browser.
-     *
-     * @return a url that can be visited in a web browser
-     */
-    public static String generateWebBrowserUrl(@NonNull final String testDirectory) {
-        return testDirectory.replace(GS_URL_PREFIX, GS_URL_REPLACEMENT);
-    }
-
-    public static void generateHyperlink(
-            @NonNull final StringBuilder sb, @NonNull final String text, @NonNull final String url) {
-
-        sb.append("<a target=\"_blank\" href=\"")
-                .append(url)
-                .append("\">")
-                .append(text)
-                .append("</a>");
-    }
-
-    public static void generateColoredHyperlink(
-            @NonNull final StringBuilder sb,
-            @NonNull final String text,
-            @NonNull final String url,
-            @NonNull final String color) {
-
-        sb.append("<a target=\"_blank\" style=\"color: ")
-                .append(color)
-                .append("\", href=\"")
-                .append(url)
-                .append("\">")
-                .append(text)
-                .append("</a>");
-    }
-
-    private static void generateHistory(
-            @NonNull final StringBuilder sb, @NonNull final List<JrsTestResult> historicalResults) {
-
-        // Always ignore the first result since it is already reported
-        for (int index = 1; index < historicalResults.size(); index++) {
-
-            final JrsTestResult result = historicalResults.get(index);
-
-            final String testUrl = generateWebBrowserUrl(result.testDirectory());
-            final String resultString;
-            final String color;
-            if (result.status() == PASS) {
-                resultString = "P";
-                color = "mediumSeaGreen";
-            } else if (result.status() == FAIL) {
-                resultString = "F";
-                color = "tomato";
-            } else {
-                resultString = "?";
-                color = "slateBlue";
-            }
-            generateColoredHyperlink(sb, resultString, testUrl, color);
-        }
-    }
-
     /**
      * Parse note URLs from the notes file. A notes file is a CSV (commas) with three columns: panel, test name, and a
      * URL.
@@ -435,53 +366,6 @@ public final class JrsTestReader {
         return notes;
     }
 
-    /**
-     * Print some warnings if we are missing notes or if we have notes for tests that were not discovered.
-     *
-     * @param tests all tests discovered by this utility
-     * @param notes note URLs for this test
-     */
-    public static void validateNotes(
-            @NonNull final List<JrsTestIdentifier> tests, @NonNull final Map<JrsTestIdentifier, String> notes) {
-
-        final Set<JrsTestIdentifier> unassignedNotes = new HashSet<>(notes.keySet());
-        final List<JrsTestIdentifier> testsWithoutNotes = new ArrayList<>();
-
-        for (final JrsTestIdentifier test : tests) {
-            final boolean noteFound = unassignedNotes.remove(test);
-
-            if (!noteFound) {
-                testsWithoutNotes.add(test);
-            }
-        }
-
-        if (!testsWithoutNotes.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("The following test(s) do not have a notes URL:\n");
-            for (final JrsTestIdentifier test : testsWithoutNotes) {
-                sb.append("  - ")
-                        .append(test.panel())
-                        .append(": ")
-                        .append(test.name())
-                        .append("\n");
-            }
-            System.out.println(sb);
-        }
-        if (!unassignedNotes.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append("There are note URLs defined for the following test(s), "
-                    + "but these test(s) were not discovered during scan:\n");
-            for (final JrsTestIdentifier test : unassignedNotes) {
-                sb.append("  - ")
-                        .append(test.panel())
-                        .append(": ")
-                        .append(test.name())
-                        .append("\n");
-            }
-            System.out.println(sb);
-        }
-    }
-
     public static void generateTestReport(
             @NonNull final VirtualTerminal terminal,
             @NonNull final ExecutorService executor,
@@ -495,122 +379,6 @@ public final class JrsTestReader {
         final Map<JrsTestIdentifier, String> notes = parseNoteFile(notesFile);
         final List<JrsTestResult> results = findTestResults(terminal, executor, rootDirectory, now, maximumAge);
 
-        // Sort tests by unique type.
-        final Map<JrsTestIdentifier, List<JrsTestResult>> resultsByTestType = new HashMap<>();
-        for (final JrsTestResult result : results) {
-            final JrsTestIdentifier id = result.id();
-            final List<JrsTestResult> resultsForType = resultsByTestType.computeIfAbsent(id, k -> new ArrayList<>());
-            resultsForType.add(result);
-        }
-
-        // Get an alphabetized list of test types.
-        final List<JrsTestIdentifier> testTypes = new ArrayList<>(resultsByTestType.keySet());
-        Collections.sort(testTypes);
-
-        // Sort each test of the same type by timestamp.
-        for (final List<JrsTestResult> tests : resultsByTestType.values()) {
-            Collections.sort(tests);
-        }
-
-        final StringBuilder sb = new StringBuilder();
-
-        sb.append("<!DOCTYPE html>\n");
-        sb.append("<html>\n");
-        sb.append("<head>\n");
-        sb.append("<title>").append("JRS Test Report: ").append(now).append("</title>\n"); // TODO date formatting
-
-        sb.append("<style>\n");
-        sb.append("table { border: 5px solid black; }\n");
-        sb.append("th { border: 1px solid black; background-color: #96D4D4; position: sticky; top: 0; }\n");
-        sb.append("td { border: 1px solid black; padding: 10px; }\n");
-        sb.append("tr:nth-child(even) { background-color: lightgray; }\n");
-
-        sb.append("</style>\n");
-
-        sb.append("</head>\n");
-        sb.append("<body>\n");
-
-        sb.append("<center>\n");
-        sb.append("<table>\n");
-
-        // Headers
-        sb.append("<tr>\n");
-        sb.append("<th>Panel</th>\n");
-        sb.append("<th>Test Name</th>\n");
-        sb.append("<th>Age</th>\n");
-        sb.append("<th>Status</th>\n");
-        sb.append("<th>History</th>\n");
-        sb.append("<th>Summary</th>\n");
-        sb.append("<th>Metrics</th>\n");
-        sb.append("<th>Data</th>\n");
-        sb.append("<th>Notes</th>\n");
-        sb.append("</tr>\n");
-
-        for (final JrsTestIdentifier testType : testTypes) {
-
-            final List<JrsTestResult> tests = resultsByTestType.get(testType);
-            final JrsTestResult mostRecentTest = tests.get(0);
-
-            final String testUrl = generateWebBrowserUrl(mostRecentTest.testDirectory());
-
-            sb.append("<tr>\n");
-            sb.append("<td>").append(testType.panel()).append("</td>\n");
-            sb.append("<td><b>").append(testType.name()).append("</b></td>\n");
-
-            final Duration testAge = Duration.between(mostRecentTest.timestamp(), now);
-            final String ageString =
-                    new UnitFormatter(testAge.toMillis(), UNIT_MILLISECONDS)
-                                    .setAbbreviate(false)
-                                    .render() + " ago";
-
-            sb.append("<td>").append(ageString).append("</td>\n");
-
-            sb.append("<td ");
-            if (mostRecentTest.status() == PASS) {
-                sb.append("bgcolor=\"mediumSeaGreen\"");
-            } else if (mostRecentTest.status() == FAIL) {
-                sb.append("bgcolor=\"tomato\"");
-            } else {
-                sb.append("bgcolor=\"slateBlue\"");
-            }
-            sb.append("><center>").append(mostRecentTest.status().name()).append("</center></td>\n");
-
-            sb.append("<td>");
-            generateHistory(sb, tests);
-            sb.append("</td>\n");
-
-            sb.append("<td>");
-            generateHyperlink(sb, "summary", testUrl + "summary.txt");
-            sb.append("</td>\n");
-            sb.append("<td>");
-            generateHyperlink(sb, "metrics", testUrl + "multipage_pdf.pdf");
-            sb.append("</td>\n");
-            sb.append("<td>");
-            generateHyperlink(sb, "data", testUrl);
-            sb.append("</td>\n");
-
-            final String notesUrl = notes.get(testType);
-            sb.append("<td>\n");
-            if (notesUrl != null) {
-                generateHyperlink(sb, "notes", notesUrl);
-            }
-            sb.append("</td>");
-
-            sb.append("</tr>\n");
-        }
-
-        sb.append("</table>\n");
-        sb.append("</center>\n");
-        sb.append("</body>\n");
-        sb.append("</html>\n");
-
-        final String reportString = sb.toString();
-        try {
-            Files.write(outputFile, reportString.getBytes());
-        } catch (final IOException e) {
-            throw new UncheckedIOException("unable to generate test report", e);
-        }
-
-        validateNotes(testTypes, notes);
+        generateReport(results, notes, now, outputFile);
     }
 }

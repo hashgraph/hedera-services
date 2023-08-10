@@ -1,0 +1,362 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.swirlds.platform.testreader;
+
+import static com.swirlds.common.units.TimeUnit.UNIT_MILLISECONDS;
+import static com.swirlds.platform.testreader.TestStatus.FAIL;
+import static com.swirlds.platform.testreader.TestStatus.PASS;
+
+import com.swirlds.common.formatting.UnitFormatter;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Generates HTML JRS Test Reports.
+ */
+public final class JrsTestReportGenerator {
+
+    private JrsTestReportGenerator() {}
+
+    // TODO make these configurable
+    private static final String GS_URL_PREFIX = "gs://swirlds-circleci-jrs-results/";
+    private static final String GS_URL_REPLACEMENT = "http://35.247.76.217:8095/";
+
+    /**
+     * The test url stored in this test result is a gs:// url. This method generates a url that can be visited in a web
+     * browser.
+     *
+     * @return a url that can be visited in a web browser
+     */
+    private static String generateWebBrowserUrl(@NonNull final String testDirectory) {
+        return testDirectory.replace(GS_URL_PREFIX, GS_URL_REPLACEMENT);
+    }
+
+    private static void generateHyperlink(
+            @NonNull final StringBuilder sb, @NonNull final String text, @NonNull final String url) {
+
+        sb.append("<a target=\"_blank\" href=\"")
+                .append(url)
+                .append("\">")
+                .append(text)
+                .append("</a>");
+    }
+
+    private static void generateColoredHyperlink(
+            @NonNull final StringBuilder sb,
+            @NonNull final String text,
+            @NonNull final String url,
+            @NonNull final String color) {
+
+        sb.append("<a target=\"_blank\" style=\"color: ")
+                .append(color)
+                .append("\", href=\"")
+                .append(url)
+                .append("\">")
+                .append(text)
+                .append("</a>");
+    }
+
+    private static void generateTitle(@NonNull final StringBuilder sb, @NonNull final Instant now) {
+        sb.append("<title>").append("JRS Test Report: ").append(now).append("</title>\n"); // TODO date formatting
+    }
+
+    private static void generatePageStyle(@NonNull final StringBuilder sb) {
+        sb.append("<style>\n");
+        sb.append("table { border: 5px solid black; }\n");
+        sb.append("th { border: 1px solid black; background-color: #96D4D4; position: sticky; top: 0; }\n");
+        sb.append("td { border: 1px solid black; padding: 10px; }\n");
+        sb.append("tr:nth-child(even) { background-color: lightgray; }\n");
+        sb.append("</style>\n");
+    }
+
+    private static void generateHeader(@NonNull final StringBuilder sb, @NonNull final Instant now) {
+        sb.append("<head>\n");
+        generateTitle(sb, now);
+        generatePageStyle(sb);
+        sb.append("</head>\n");
+    }
+
+    private static void generateHeaderCell(@NonNull final StringBuilder sb, @NonNull final String contents) {
+        sb.append("<th>").append(contents).append("</th>\n");
+    }
+
+    private static void generateTableHeader(@NonNull final StringBuilder sb) {
+        sb.append("<tr>\n");
+        generateHeaderCell(sb, "Panel");
+        generateHeaderCell(sb, "Test Name");
+        generateHeaderCell(sb, "Age");
+        generateHeaderCell(sb, "Status");
+        generateHeaderCell(sb, "History");
+        generateHeaderCell(sb, "Summary");
+        generateHeaderCell(sb, "Metrics");
+        generateHeaderCell(sb, "Data");
+        generateHeaderCell(sb, "Notes");
+        sb.append("</tr>\n");
+    }
+
+    private static void generatePanelCell(@NonNull final StringBuilder sb, @NonNull final String panelName) {
+        sb.append("<td>").append(panelName).append("</td>\n");
+    }
+
+    private static void generateNameCell(@NonNull final StringBuilder sb, @NonNull final String testName) {
+        sb.append("<td><b>").append(testName).append("</b></td>\n");
+    }
+
+    private static void generateAgeCell(
+            @NonNull final StringBuilder sb, @NonNull final Instant now, @NonNull final Instant testTime) {
+
+        final Duration testAge = Duration.between(testTime, now);
+        final String ageString = new UnitFormatter(testAge.toMillis(), UNIT_MILLISECONDS)
+                .setAbbreviate(false)
+                .render();
+
+        sb.append("<td>").append(ageString).append(" ago</td>\n");
+    }
+
+    private static void generateStatusCell(@NonNull final StringBuilder sb, @NonNull final TestStatus status) {
+        final String statusColor;
+        if (status == TestStatus.PASS) {
+            statusColor = "mediumSeaGreen";
+        } else if (status == TestStatus.FAIL) {
+            statusColor = "tomato";
+        } else {
+            statusColor = "slateBlue";
+        }
+
+        sb.append("<td bgcolor=\"")
+                .append(statusColor)
+                .append("\">><center>")
+                .append(status.name())
+                .append("</center></td>\n");
+    }
+
+    private static void generateHistoryCell(
+            @NonNull final StringBuilder sb, @NonNull final List<JrsTestResult> historicalResults) {
+
+        sb.append("<td>");
+
+        // Always ignore the first result since it is already reported
+        for (int index = 1; index < historicalResults.size(); index++) {
+
+            final JrsTestResult result = historicalResults.get(index);
+
+            final String testUrl = generateWebBrowserUrl(result.testDirectory());
+            final String resultString;
+            final String color;
+            if (result.status() == PASS) {
+                resultString = "P";
+                color = "mediumSeaGreen";
+            } else if (result.status() == FAIL) {
+                resultString = "F";
+                color = "tomato";
+            } else {
+                resultString = "?";
+                color = "slateBlue";
+            }
+            generateColoredHyperlink(sb, resultString, testUrl, color);
+        }
+
+        sb.append("</td>\n");
+    }
+
+    private static void generateSummaryCell(@NonNull final StringBuilder sb, @NonNull final String testUrl) {
+        sb.append("<td>");
+        generateHyperlink(sb, "summary", testUrl + "summary.txt");
+        sb.append("</td>\n");
+    }
+
+    private static void generateMetricsCell(@NonNull final StringBuilder sb, @NonNull final String testUrl) {
+        sb.append("<td>");
+        generateHyperlink(sb, "metrics", testUrl + "multipage_pdf.pdf");
+        sb.append("</td>\n");
+    }
+
+    private static void generateDataCell(@NonNull final StringBuilder sb, @NonNull final String testUrl) {
+        sb.append("<td>");
+        generateHyperlink(sb, "data", testUrl);
+        sb.append("</td>\n");
+    }
+
+    private static void generateNotesCell(@NonNull final StringBuilder sb, @NonNull final String notesUrl) {
+        sb.append("<td>");
+        if (!notesUrl.isBlank()) {
+            generateHyperlink(sb, "notes", notesUrl);
+        }
+        sb.append("</td>\n");
+    }
+
+    private static void generateTableRow(
+            @NonNull final StringBuilder sb, @NonNull final JrsTestReportRow row, @NonNull final Instant now) {
+
+        final String testUrl = generateWebBrowserUrl(row.getMostRecentTest().testDirectory());
+
+        sb.append("<tr>\n");
+        generatePanelCell(sb, row.getMostRecentTest().id().panel());
+        generateNameCell(sb, row.getMostRecentTest().id().name());
+        generateAgeCell(sb, now, row.getMostRecentTest().timestamp());
+        generateStatusCell(sb, row.getMostRecentTest().status());
+        generateHistoryCell(sb, row.tests());
+        generateSummaryCell(sb, testUrl);
+        generateMetricsCell(sb, testUrl);
+        generateDataCell(sb, testUrl);
+        generateNotesCell(sb, row.notesUrl());
+        sb.append("</tr>\n");
+    }
+
+    private static void generateTable(
+            @NonNull final StringBuilder sb,
+            @NonNull final String tableId,
+            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final Instant now,
+            @NonNull final Comparator<JrsTestReportRow> comparator) {
+
+        Collections.sort(rows, comparator);
+
+        sb.append("<center>\n");
+        sb.append("<table id=\"").append(tableId).append("\">\n");
+        generateTableHeader(sb);
+
+        for (final JrsTestReportRow row : rows) {
+            generateTableRow(sb, row, now);
+        }
+
+        sb.append("</table>\n");
+        sb.append("</center>\n");
+    }
+
+    private static void generateBody(
+            @NonNull final StringBuilder sb, @NonNull final List<JrsTestReportRow> rows, @NonNull final Instant now) {
+        generateTable(sb, "results", rows, now, Comparator.comparing(a -> a.getMostRecentTest()
+                .id()));
+    }
+
+    private static void generatePage(
+            @NonNull final StringBuilder sb, @NonNull final List<JrsTestReportRow> rows, @NonNull final Instant now) {
+        sb.append("<!DOCTYPE html>\n");
+        sb.append("<html>\n");
+        generateHeader(sb, now);
+        generateBody(sb, rows, now);
+        sb.append("</body>\n");
+        sb.append("</html>\n");
+    }
+
+    /**
+     * Print some warnings if we are missing notes or if we have notes for tests that were not discovered.
+     *
+     * @param tests all tests discovered by this utility
+     * @param notes note URLs for this test
+     */
+    public static void validateNotes(
+            @NonNull final Set<JrsTestIdentifier> tests, @NonNull final Map<JrsTestIdentifier, String> notes) {
+
+        final Set<JrsTestIdentifier> unassignedNotes = new HashSet<>(notes.keySet());
+        final List<JrsTestIdentifier> testsWithoutNotes = new ArrayList<>();
+
+        for (final JrsTestIdentifier test : tests) {
+            final boolean noteFound = unassignedNotes.remove(test);
+
+            if (!noteFound) {
+                testsWithoutNotes.add(test);
+            }
+        }
+
+        if (!testsWithoutNotes.isEmpty()) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("The following test(s) do not have a notes URL:\n");
+            for (final JrsTestIdentifier test : testsWithoutNotes) {
+                sb.append("  - ")
+                        .append(test.panel())
+                        .append(": ")
+                        .append(test.name())
+                        .append("\n");
+            }
+            System.out.println(sb);
+        }
+        if (!unassignedNotes.isEmpty()) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("There are note URLs defined for the following test(s), "
+                    + "but these test(s) were not discovered during scan:\n");
+            for (final JrsTestIdentifier test : unassignedNotes) {
+                sb.append("  - ")
+                        .append(test.panel())
+                        .append(": ")
+                        .append(test.name())
+                        .append("\n");
+            }
+            System.out.println(sb);
+        }
+    }
+
+    @NonNull
+    private static List<JrsTestReportRow> buildTableRows(
+            @NonNull final List<JrsTestResult> results, @NonNull final Map<JrsTestIdentifier, String> notes) {
+
+        // Sort tests by unique type.
+        final Map<JrsTestIdentifier, List<JrsTestResult>> resultsByTestType = new HashMap<>();
+        for (final JrsTestResult result : results) {
+            final JrsTestIdentifier id = result.id();
+            final List<JrsTestResult> resultsForType = resultsByTestType.computeIfAbsent(id, k -> new ArrayList<>());
+            resultsForType.add(result);
+        }
+
+        // Sort each test of the same type by timestamp.
+        for (final List<JrsTestResult> tests : resultsByTestType.values()) {
+            Collections.sort(tests);
+        }
+
+        final List<JrsTestReportRow> rows = new ArrayList<>();
+        for (final JrsTestIdentifier testType : resultsByTestType.keySet()) {
+            rows.add(new JrsTestReportRow(resultsByTestType.get(testType), notes.getOrDefault(testType, "")));
+        }
+
+        validateNotes(resultsByTestType.keySet(), notes);
+
+        return rows;
+    }
+
+    public static void generateReport(
+            @NonNull final List<JrsTestResult> results,
+            @NonNull final Map<JrsTestIdentifier, String> notes,
+            @NonNull final Instant now,
+            @NonNull final Path outputFile) {
+
+        @NonNull final List<JrsTestReportRow> rows = buildTableRows(results, notes);
+
+        @NonNull final StringBuilder sb = new StringBuilder();
+        generatePage(sb, rows, now);
+
+        final String reportString = sb.toString();
+        try {
+            Files.write(outputFile, reportString.getBytes());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to generate test report", e);
+        }
+    }
+}
