@@ -49,7 +49,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Utility methods for processing log files into a more readable format.
@@ -109,16 +112,20 @@ public class LogProcessingUtils {
     }
 
     public static String generateHtmlPage(@NonNull final List<String> logLineStrings) {
-        final List<String> logLines = logLineStrings.stream()
+        final List<LogLine> logLines = logLineStrings.stream()
                 .map(string -> {
                     try {
-                        return new LogLine(string, ZoneId.systemDefault()).generateHtmlString();
+                        return new LogLine(string, ZoneId.systemDefault());
                     } catch (final Exception e) {
                         // TODO handle this case
-                        return "";
-                        //                        return string;
+                        return null;
                     }
                 })
+                .filter(Objects::nonNull)
+                .toList();
+
+        final List<String> formattedLogLines = logLines.stream()
+                .map(LogLine::generateHtmlString)
                 .toList();
 
         // this css has the logic to filter logs
@@ -134,82 +141,88 @@ public class LogProcessingUtils {
                         HTML_HEAD_TAG, "\n" + hiderCssTag + "\n" + minJsSourceTag + "\n", false)
                 .generateTag();
 
-        final String logTableTag =
-                new HtmlTagFactory(HTML_TABLE_TAG, "\n" + String.join("\n", logLines) + "\n", false).generateTag();
+        final String logTableTag = new HtmlTagFactory(
+                        HTML_TABLE_TAG, "\n" + String.join("\n", formattedLogLines) + "\n", false)
+                .generateTag();
 
         // TODO read this from file instead
         final String TEMP_hiderJs =
                 """
-                // the checkboxes that have the ability to hide things
-                var hiders = document.getElementsByClassName("hider");
+                        // the checkboxes that have the ability to hide things
+                        var hiders = document.getElementsByClassName("hider");
 
-                // add a listener to each checkbox
-                for (var i = 0; i < hiders.length; i++) {
-                    hiders[i].addEventListener("click", function() {
-                        // the classes that exist on the checkbox that is clicked
-                        var checkboxClasses = this.classList;
+                        // add a listener to each checkbox
+                        for (var i = 0; i < hiders.length; i++) {
+                            hiders[i].addEventListener("click", function() {
+                                // the classes that exist on the checkbox that is clicked
+                                var checkboxClasses = this.classList;
 
-                        // the name of the class that should be hidden
-                        // each checkbox has 2 classes, "hider", and the name of the class to be hidden
-                        var toggleClass;
-                        for (j = 0; j < checkboxClasses.length; j++) {
-                            if (checkboxClasses[j] == "hider") {
-                                continue;
-                            }
+                                // the name of the class that should be hidden
+                                // each checkbox has 2 classes, "hider", and the name of the class to be hidden
+                                var toggleClass;
+                                for (j = 0; j < checkboxClasses.length; j++) {
+                                    if (checkboxClasses[j] == "hider") {
+                                        continue;
+                                    }
 
-                            toggleClass = checkboxClasses[j];
-                            break;
+                                    toggleClass = checkboxClasses[j];
+                                    break;
+                                }
+
+                                // these are the objects on the page which match the class to toggle (discluding the input boxes)
+                                var matchingObjects = $("." + toggleClass).not("input");
+
+                                // go through each of the matching objects, and modify the hide count according to the value of the checkbox
+                                for (j = 0; j < matchingObjects.length; j++) {
+                                    var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
+
+                                    var newHideCount;
+                                    if ($(this).is(":checked")) {
+                                        newHideCount = currentHideCount + 1;
+                                    } else {
+                                        newHideCount = currentHideCount - 1;
+                                    }
+
+                                    $(matchingObjects[j]).attr('data-hide', newHideCount);
+                                }
+                            });
                         }
-
-                        // these are the objects on the page which match the class to toggle (discluding the input boxes)
-                        var matchingObjects = $("." + toggleClass).not("input");
-
-                        // go through each of the matching objects, and modify the hide count according to the value of the checkbox
-                        for (j = 0; j < matchingObjects.length; j++) {
-                            var currentHideCount = parseInt($(matchingObjects[j]).attr('data-hide')) || 0;
-
-                            var newHideCount;
-                            if ($(this).is(":checked")) {
-                                newHideCount = currentHideCount + 1;
-                            } else {
-                                newHideCount = currentHideCount - 1;
-                            }
-
-                            $(matchingObjects[j]).attr('data-hide', newHideCount);
-                        }
-                    });
-                }
-                """;
+                        """;
 
         final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, TEMP_hiderJs, false).generateTag();
 
         final String filterColumnsHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter Columns", false)
                 .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_HEADING_LABEL)
                 .generateTag();
+        final List<String> columnFilterCheckboxes = Stream.of(
+                        NODE_ID_COLUMN_LABEL,
+                        ELAPSED_TIME_COLUMN_LABEL,
+                        TIMESTAMP_COLUMN_LABEL,
+                        LOG_NUMBER_COLUMN_LABEL,
+                        LOG_LEVEL_COLUMN_LABEL,
+                        MARKER_COLUMN_LABEL,
+                        THREAD_NAME_COLUMN_LABEL,
+                        CLASS_NAME_COLUMN_LABEL,
+                        REMAINDER_OF_LINE_COLUMN_LABEL)
+                .map(LogProcessingUtils::createHiderCheckbox)
+                .toList();
 
-        final String hideNodeIdCheckbox = createHiderCheckbox(NODE_ID_COLUMN_LABEL);
-        final String hideElapsedTimeCheckbox = createHiderCheckbox(ELAPSED_TIME_COLUMN_LABEL);
-        final String hideTimestampCheckbox = createHiderCheckbox(TIMESTAMP_COLUMN_LABEL);
-        final String hideLogNumberCheckbox = createHiderCheckbox(LOG_NUMBER_COLUMN_LABEL);
-        final String hideLogLevelCheckbox = createHiderCheckbox(LOG_LEVEL_COLUMN_LABEL);
-        final String hideMarkerCheckbox = createHiderCheckbox(MARKER_COLUMN_LABEL);
-        final String hideThreadNameCheckbox = createHiderCheckbox(THREAD_NAME_COLUMN_LABEL);
-        final String hideClassNameCheckbox = createHiderCheckbox(CLASS_NAME_COLUMN_LABEL);
-        final String hideRemainderOfLineCheckbox = createHiderCheckbox(REMAINDER_OF_LINE_COLUMN_LABEL);
+        final String filterLogLevelHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter Log Level", false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_HEADING_LABEL)
+                .generateTag();
+        final List<String> existingLogLevels =
+                logLines.stream().map(LogLine::getLogLevel).distinct().toList();
+        final List<String> logLevelFilterCheckboxes = existingLogLevels.stream()
+                .map(LogProcessingUtils::createHiderCheckbox)
+                .toList();
 
-        final List<String> bodyElements =
-                List.of(filterColumnsHeading,
-                        hideNodeIdCheckbox,
-                        hideElapsedTimeCheckbox,
-                        hideTimestampCheckbox,
-                        hideLogNumberCheckbox,
-                        hideLogLevelCheckbox,
-                        hideMarkerCheckbox,
-                        hideThreadNameCheckbox,
-                        hideClassNameCheckbox,
-                        hideRemainderOfLineCheckbox,
-                        logTableTag,
-                        scriptTag);
+        final List<String> bodyElements = new ArrayList<>();
+        bodyElements.add(filterColumnsHeading);
+        bodyElements.addAll(columnFilterCheckboxes);
+        bodyElements.add(filterLogLevelHeading);
+        bodyElements.addAll(logLevelFilterCheckboxes);
+        bodyElements.add(logTableTag);
+        bodyElements.add(scriptTag);
 
         final String bodyTag = new HtmlTagFactory(HTML_BODY_TAG, String.join("\n", bodyElements), false)
                 .addAttribute(HTML_CLASS_ATTRIBUTE, LOG_BODY_LABEL)
