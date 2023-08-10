@@ -197,7 +197,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         //        given(handleContext.feeCalculator()).willReturn(fees);
-        //        given(fees.computePayment(any(), any())).willReturn(new FeeObject(100, 100, 100));
+        //        given(fees.computeFees(any(), any())).willReturn(new FeeObject(100, 100, 100));
     }
 
     protected void givenAutoCreationDispatchEffects() {

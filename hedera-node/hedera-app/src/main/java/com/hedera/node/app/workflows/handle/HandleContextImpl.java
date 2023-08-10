@@ -16,17 +16,28 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.spi.HapiUtils.functionOf;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.UnknownHederaFunctionality;
+import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
@@ -39,6 +50,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -57,11 +69,15 @@ import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of {@link HandleContext}.
  */
 public class HandleContextImpl implements HandleContext {
+    private static final Logger logger = LogManager.getLogger(HandleContextImpl.class);
 
     private final TransactionBody txBody;
     private final AccountID payer;
@@ -79,6 +95,10 @@ public class HandleContextImpl implements HandleContext {
     private final WritableStoreFactory writableStoreFactory;
     private final BlockRecordInfo blockRecordInfo;
     private final RecordCache recordCache;
+    private final FeeAccumulator feeAccumulator;
+    private final Function<SubType, FeeCalculator> feeCalculatorCreator;
+    private final FeeManager feeManager;
+    private final Instant userTransactionConsensusTime;
 
     private ReadableStoreFactory readableStoreFactory;
     private AttributeValidator attributeValidator;
@@ -87,7 +107,7 @@ public class HandleContextImpl implements HandleContext {
     /**
      * Constructs a {@link HandleContextImpl}.
      *
-     * @param txBody             The {@link TransactionBody} of the transaction
+     * @param txInfo             The {@link TransactionInfo} of the transaction
      * @param payer              The {@link AccountID} of the payer
      * @param payerKey           The {@link Key} of the payer
      * @param networkInfo
@@ -99,9 +119,11 @@ public class HandleContextImpl implements HandleContext {
      * @param checker            The {@link TransactionChecker} used to check dispatched transaction
      * @param dispatcher         The {@link TransactionDispatcher} used to dispatch child transactions
      * @param serviceScopeLookup The {@link ServiceScopeLookup} used to look up the scope of a service
+     * @param feeManager         The {@link FeeManager} used to convert usage into fees
+     * @param userTransactionConsensusTime The consensus time of the user transaction, not any child transactions
      */
     public HandleContextImpl(
-            @NonNull final TransactionBody txBody,
+            @NonNull final TransactionInfo txInfo,
             @NonNull final AccountID payer,
             @NonNull final Key payerKey,
             @NonNull final NetworkInfo networkInfo,
@@ -114,8 +136,10 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final BlockRecordInfo blockRecordInfo,
-            @NonNull final RecordCache recordCache) {
-        this.txBody = requireNonNull(txBody, "txBody must not be null");
+            @NonNull final RecordCache recordCache,
+            @NonNull final FeeManager feeManager,
+            @NonNull final Instant userTransactionConsensusTime) {
+        this.txBody = requireNonNull(txInfo, "txInfo must not be null").txBody();
         this.payer = requireNonNull(payer, "payer must not be null");
         this.payerKey = requireNonNull(payerKey, "payerKey must not be null");
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -129,10 +153,28 @@ public class HandleContextImpl implements HandleContext {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
         this.blockRecordInfo = requireNonNull(blockRecordInfo, "blockRecordInfo must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
+        this.userTransactionConsensusTime =
+                requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
+        this.feeCalculatorCreator = (subType) -> feeManager.createFeeCalculator(
+                txInfo, payerKey, verifier.numSignaturesVerified(), userTransactionConsensusTime, subType);
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
         this.serviceApiFactory = new ServiceApiFactory(stack);
+
+        final var tokenApi = this.serviceApiFactory.getApi(TokenServiceApi.class);
+        this.feeAccumulator = new FeeAccumulator() {
+            @Override
+            public void charge(@NonNull AccountID payer, @NonNull Fees fees) {
+                tokenApi.chargeFees(payer, fees, recordBuilder);
+            }
+
+            @Override
+            public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {
+                tokenApi.refundFees(receiver, fees, recordBuilder);
+            }
+        };
     }
 
     private Savepoint current() {
@@ -161,6 +203,18 @@ public class HandleContextImpl implements HandleContext {
     @Override
     public Key payerKey() {
         return payerKey;
+    }
+
+    @NonNull
+    @Override
+    public FeeCalculator feeCalculator(@NonNull SubType subType) {
+        return feeCalculatorCreator.apply(subType);
+    }
+
+    @NonNull
+    @Override
+    public FeeAccumulator feeAccumulator() {
+        return feeAccumulator;
     }
 
     @Override
@@ -405,8 +459,17 @@ public class HandleContextImpl implements HandleContext {
         }
 
         final var childStack = new SavepointStackImpl(current().state(), configuration());
+        HederaFunctionality function;
+        try {
+            function = functionOf(txBody);
+        } catch (UnknownHederaFunctionality e) {
+            logger.error("Possible bug: unknown function in transaction body", e);
+            childRecordBuilder.status(ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+            return;
+        }
+
         final var childContext = new HandleContextImpl(
-                txBody,
+                new TransactionInfo(Transaction.DEFAULT, txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function),
                 payer,
                 payerKey,
                 networkInfo,
@@ -419,7 +482,9 @@ public class HandleContextImpl implements HandleContext {
                 dispatcher,
                 serviceScopeLookup,
                 blockRecordInfo,
-                recordCache);
+                recordCache,
+                feeManager,
+                userTransactionConsensusTime);
 
         try {
             dispatcher.dispatchHandle(childContext);

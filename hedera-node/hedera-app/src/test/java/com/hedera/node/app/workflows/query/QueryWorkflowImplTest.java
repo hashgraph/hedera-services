@@ -55,15 +55,15 @@ import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.AppTestBase;
 import com.hedera.node.app.config.VersionedConfigImpl;
-import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.file.impl.handlers.FileGetInfoHandler;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkGetExecutionTimeHandler;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
@@ -121,9 +121,6 @@ class QueryWorkflowImplTest extends AppTestBase {
 
     @Mock
     private HapiOpCounters opCounters;
-
-    @Mock
-    private FeeAccumulator feeAccumulator;
 
     @Mock(strictness = LENIENT)
     private Codec<Query> queryParser;
@@ -192,7 +189,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 queryChecker,
                 ingestChecker,
                 dispatcher,
-                feeAccumulator,
                 queryParser,
                 configProvider,
                 recordCache);
@@ -208,7 +204,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         configProvider,
                         recordCache))
@@ -220,7 +215,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         configProvider,
                         recordCache))
@@ -232,7 +226,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         configProvider,
                         recordCache))
@@ -244,7 +237,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         null,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         configProvider,
                         recordCache))
@@ -256,7 +248,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         null,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         configProvider,
                         recordCache))
@@ -267,19 +258,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         submissionManager,
                         queryChecker,
                         ingestChecker,
-                        null,
-                        feeAccumulator,
-                        queryParser,
-                        configProvider,
-                        recordCache))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryWorkflowImpl(
-                        stateAccessor,
-                        throttleAccumulator,
-                        submissionManager,
-                        queryChecker,
-                        ingestChecker,
-                        dispatcher,
                         null,
                         queryParser,
                         configProvider,
@@ -292,7 +270,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         null,
                         configProvider,
                         recordCache))
@@ -304,7 +281,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         null,
                         recordCache))
@@ -316,7 +292,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                         queryChecker,
                         ingestChecker,
                         dispatcher,
-                        feeAccumulator,
                         queryParser,
                         configProvider,
                         null))
@@ -353,7 +328,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testSuccessIfPaymentRequired() throws IOException {
         // given
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         given(handler.requiresNodePayment(any())).willReturn(true);
         when(handler.findResponse(any(), any()))
                 .thenReturn(Response.newBuilder()
@@ -415,7 +390,6 @@ class QueryWorkflowImplTest extends AppTestBase {
                 queryChecker,
                 ingestChecker,
                 localDispatcher,
-                feeAccumulator,
                 queryParser,
                 configProvider,
                 recordCache);
@@ -567,7 +541,7 @@ class QueryWorkflowImplTest extends AppTestBase {
     @Test
     void testPaidQueryWithInsufficientBalanceFails() throws PreCheckException, IOException {
         // given
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)
@@ -652,7 +626,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
                 .when(submissionManager)
                 .submit(txBody, payment.bodyBytes());
-        given(feeAccumulator.computePayment(any(), any(), any(), any())).willReturn(new FeeObject(100L, 0L, 100L));
+        given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(100L, 0L, 100L));
         final var responseBuffer = newEmptyBuffer();
 
         // when
