@@ -28,6 +28,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -89,36 +91,57 @@ public final class JrsTestReportGenerator {
 
     private static void generatePageStyle(@NonNull final StringBuilder sb) {
         sb.append("<style>\n");
-        sb.append("table { border: 5px solid black; }\n");
-        sb.append("th { border: 1px solid black; background-color: #96D4D4; position: sticky; top: 0; }\n");
+        //        sb.append("table { border: 5px solid black; }\n");
+        sb.append("th { border: 1px solid black; background-color: #96D4D4; "
+                + "position: sticky; top: 0; padding: 5px; }\n");
         sb.append("td { border: 1px solid black; padding: 10px; }\n");
         sb.append("tr:nth-child(even) { background-color: lightgray; }\n");
+        sb.append(".button {color: black; background-color: transparent; border: 2px solid transparent; }\n");
+        sb.append(".button:hover {color: black; background-color: transparent; border: 2px solid black; }\n");
+        sb.append(".button:active {color: white; background-color: black; border: 2px solid black; }\n");
+
+        final LocalDate currentDate = LocalDate.now();
+        final boolean april2 = currentDate.getMonth().equals(Month.APRIL) && currentDate.getDayOfMonth() == 2;
+        if (april2) {
+            sb.append("html * { font-family: Snell Roundhand, cursive; }\n");
+        }
+
         sb.append("</style>\n");
+    }
+
+    /**
+     * Generate javascript functions to sort the table. In reality there exist a bunch of pre-sorted tables,
+     * and these methods just change which table is visible.
+     */
+    private static void generateSortingFunctions(@NonNull final StringBuilder sb) {
+        sb.append(
+                """
+                <script>
+                    function sortByName() {
+                        document.getElementById('table_sortedByName').style.display = "block"
+                        document.getElementById('table_sortedByAge').style.display = "none"
+                        document.getElementById('table_sortedByStatus').style.display = "none"
+                    }
+                    function sortByAge() {
+                        document.getElementById('table_sortedByName').style.display = "none"
+                        document.getElementById('table_sortedByAge').style.display = "block"
+                        document.getElementById('table_sortedByStatus').style.display = "none"
+                    }
+                    function sortByStatus() {
+                        document.getElementById('table_sortedByName').style.display = "none"
+                        document.getElementById('table_sortedByAge').style.display = "none"
+                        document.getElementById('table_sortedByStatus').style.display = "block"
+                    }
+                </script>
+                """);
     }
 
     private static void generateHeader(@NonNull final StringBuilder sb, @NonNull final Instant now) {
         sb.append("<head>\n");
         generateTitle(sb, now);
         generatePageStyle(sb);
+        generateSortingFunctions(sb);
         sb.append("</head>\n");
-    }
-
-    private static void generateHeaderCell(@NonNull final StringBuilder sb, @NonNull final String contents) {
-        sb.append("<th>").append(contents).append("</th>\n");
-    }
-
-    private static void generateTableHeader(@NonNull final StringBuilder sb) {
-        sb.append("<tr>\n");
-        generateHeaderCell(sb, "Panel");
-        generateHeaderCell(sb, "Test Name");
-        generateHeaderCell(sb, "Age");
-        generateHeaderCell(sb, "Status");
-        generateHeaderCell(sb, "History");
-        generateHeaderCell(sb, "Summary");
-        generateHeaderCell(sb, "Metrics");
-        generateHeaderCell(sb, "Data");
-        generateHeaderCell(sb, "Notes");
-        sb.append("</tr>\n");
     }
 
     private static void generatePanelCell(@NonNull final StringBuilder sb, @NonNull final String panelName) {
@@ -152,7 +175,7 @@ public final class JrsTestReportGenerator {
 
         sb.append("<td bgcolor=\"")
                 .append(statusColor)
-                .append("\">><center>")
+                .append("\"><center>")
                 .append(status.name())
                 .append("</center></td>\n");
     }
@@ -235,26 +258,123 @@ public final class JrsTestReportGenerator {
             @NonNull final String tableId,
             @NonNull final List<JrsTestReportRow> rows,
             @NonNull final Instant now,
-            @NonNull final Comparator<JrsTestReportRow> comparator) {
+            @NonNull final Comparator<JrsTestReportRow> comparator,
+            final boolean hidden) {
 
-        Collections.sort(rows, comparator);
+        rows.sort(comparator);
 
-        sb.append("<center>\n");
-        sb.append("<table id=\"").append(tableId).append("\">\n");
-        generateTableHeader(sb);
+        sb.append(
+                """
+                <center>
+                <table id="%s" style="display: %s">
+                    <tr>
+                        <th>Panel</th>
+                        <th><button class="button" onclick="sortByName()">Test Name ↓</button></th>
+                        <th><button class="button" onclick="sortByAge()">Age ↓</button></th>
+                        <th><button class="button" onclick="sortByStatus()">Status ↓</button></th>
+                        <th>History</th>
+                        <th>Summary</th>
+                        <th>Metrics</th>
+                        <th>Data</th>
+                        <th>Notes</th>
+                    </tr>
+                 """
+                        .formatted(tableId, hidden ? "none" : "block"));
 
         for (final JrsTestReportRow row : rows) {
             generateTableRow(sb, row, now);
         }
 
-        sb.append("</table>\n");
-        sb.append("</center>\n");
+        sb.append("</table>\n</center>\n");
+    }
+
+    /**
+     * Used to sort tests by status.
+     */
+    private static int statusComparator(@NonNull final JrsTestReportRow a, @NonNull final JrsTestReportRow b) {
+
+        final JrsTestResult aResult = a.getMostRecentTest();
+        final JrsTestResult bResult = b.getMostRecentTest();
+
+        if (aResult.status() != bResult.status()) {
+            return Integer.compare(aResult.status().ordinal(), bResult.status().ordinal());
+        }
+
+        if (aResult.status() == PASS) {
+            // For passing tests, give priority to the test with the most recent failure
+
+            int mostRecentFailureA = Integer.MAX_VALUE;
+            for (int index = 1; index < a.tests().size(); index++) {
+                if (a.tests().get(index).status() == FAIL) {
+                    mostRecentFailureA = index;
+                    break;
+                }
+            }
+
+            int mostRecentFailureB = Integer.MAX_VALUE;
+            for (int index = 1; index < b.tests().size(); index++) {
+                if (b.tests().get(index).status() != PASS) {
+                    mostRecentFailureB = index;
+                    break;
+                }
+            }
+
+            if (mostRecentFailureA != mostRecentFailureB) {
+                return Integer.compare(mostRecentFailureA, mostRecentFailureB);
+            }
+        } else {
+            // For failing/unknown tests, give priority to the test with the most recent passing run
+
+            int mostRecentPassA = Integer.MAX_VALUE;
+            for (int index = 1; index < a.tests().size(); index++) {
+                if (a.tests().get(index).status() == PASS) {
+                    mostRecentPassA = index;
+                    break;
+                }
+            }
+
+            int mostRecentPassB = Integer.MAX_VALUE;
+            for (int index = 1; index < b.tests().size(); index++) {
+                if (b.tests().get(index).status() == PASS) {
+                    mostRecentPassB = index;
+                    break;
+                }
+            }
+
+            if (mostRecentPassA != mostRecentPassB) {
+                return Integer.compare(mostRecentPassA, mostRecentPassB);
+            }
+        }
+
+        // If all else fails, sort by panel & name
+        return aResult.id().compareTo(bResult.id());
+    }
+
+    /**
+     * Used to sort tests by age.
+     */
+    private static int ageComparator(@NonNull final JrsTestReportRow a, @NonNull final JrsTestReportRow b) {
+        if (!a.getMostRecentTest().timestamp().equals(b.getMostRecentTest().timestamp())) {
+            return b.getMostRecentTest()
+                    .timestamp()
+                    .compareTo(a.getMostRecentTest().timestamp());
+        }
+        // If timestamps are equal, sort by panel & name.
+        return a.getMostRecentTest().id().compareTo(b.getMostRecentTest().id());
     }
 
     private static void generateBody(
             @NonNull final StringBuilder sb, @NonNull final List<JrsTestReportRow> rows, @NonNull final Instant now) {
-        generateTable(sb, "results", rows, now, Comparator.comparing(a -> a.getMostRecentTest()
-                .id()));
+
+        generateTable(
+                sb,
+                "table_sortedByName",
+                rows,
+                now,
+                Comparator.comparing(a -> a.getMostRecentTest().id()),
+                false);
+        generateTable(sb, "table_sortedByAge", rows, now, JrsTestReportGenerator::ageComparator, true);
+        generateTable(sb, "table_sortedByStatus", rows, now, JrsTestReportGenerator::statusComparator, true);
     }
 
     private static void generatePage(
