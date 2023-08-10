@@ -40,11 +40,13 @@ import com.swirlds.platform.test.event.source.StandardEventSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -509,5 +511,21 @@ class PreconsensusEventReadWriteTests {
         for (int i = 0; i < events.size(); i++) {
             assertEventsAreEqual(events.get(i), deserializedEvents.get(i));
         }
+    }
+
+    @Test
+    @DisplayName("Empty File Test")
+    void emptyFileTest() throws IOException {
+        final PreconsensusEventFile file = PreconsensusEventFile.of(0, 0, 100, Instant.now(), testDirectory, false);
+
+        final Path path = file.getPath();
+
+        Files.createDirectories(path.getParent());
+        assertTrue(path.toFile().createNewFile());
+        assertTrue(Files.exists(path));
+
+        final PreconsensusEventFileIterator iterator = file.iterator(Long.MIN_VALUE);
+        assertFalse(iterator.hasNext());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 }
