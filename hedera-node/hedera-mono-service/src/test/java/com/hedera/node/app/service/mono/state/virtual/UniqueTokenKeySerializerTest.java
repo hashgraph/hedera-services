@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.mono.state.virtual;
 
+import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,13 +47,12 @@ class UniqueTokenKeySerializerTest {
 
     @Test
     void serializeUniqueTokenKey_shouldReturnExpectedBytes() throws IOException {
-        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(17);
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        final int len = serializer.serialize(
-                new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), new SerializableDataOutputStream(byteStream));
+        final int len = serializer.serialize(new UniqueTokenKey(Long.MAX_VALUE, EXAMPLE_SERIAL), byteBuffer);
 
         assertThat(len).isEqualTo(17);
-        assertThat(byteStream.toByteArray())
+        assertThat(byteBuffer.array())
                 .isEqualTo(Bytes.concat(
                         new byte[] {(byte) 0x88},
                         Longs.toByteArray(Long.MAX_VALUE),
@@ -95,7 +94,7 @@ class UniqueTokenKeySerializerTest {
     @Test
     void serializer_shouldBeVariable() {
         final UniqueTokenKeySerializer serializer = new UniqueTokenKeySerializer();
-        assertThat(serializer.getSerializedSize()).isEqualTo(DataFileCommon.VARIABLE_DATA_SIZE);
+        assertThat(serializer.getSerializedSize()).isEqualTo(VARIABLE_DATA_SIZE);
         assertThat(serializer.isVariableSize()).isTrue();
     }
 

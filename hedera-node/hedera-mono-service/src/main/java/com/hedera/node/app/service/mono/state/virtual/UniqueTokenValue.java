@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static java.lang.Math.min;
 
 import com.google.common.base.MoreObjects;
@@ -30,7 +31,7 @@ import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import com.swirlds.virtualmap.VirtualValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -113,11 +114,10 @@ public class UniqueTokenValue implements VirtualValue {
     }
 
     /**
-     * Returns the size in bytes of the class (if fixed) or {@link
-     * DataFileCommon#VARIABLE_DATA_SIZE} if variable sized.
+     * Returns the size in bytes of the class (if fixed) or {@link BaseSerializer#VARIABLE_DATA_SIZE} if variable sized.
      */
     public static int sizeInBytes() {
-        return DataFileCommon.VARIABLE_DATA_SIZE;
+        return VARIABLE_DATA_SIZE;
     }
 
     @Override

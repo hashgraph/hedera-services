@@ -503,8 +503,6 @@ class ServicesStateTest extends ResponsibleVMapUser {
     void genesisInitRespectsSelectedOnDiskMapsAndConsolidatedRecords() {
         // setup:
         // it should correspond to the default value in test/resources/bootstrap.properties
-        given(bootstrapProperties.getBooleanProperty(PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB))
-                .willReturn(true);
         subject = tracked(new ServicesState(bootstrapProperties));
         given(bootstrapProperties.getBooleanProperty(PropertyNames.TOKENS_NFTS_USE_VIRTUAL_MERKLE))
                 .willReturn(true);

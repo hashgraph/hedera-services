@@ -237,7 +237,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UPGRADE_ARTIFACTS_PATH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.UTIL_PRNG_IS_ENABLED;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.WORKFLOWS_ENABLED;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Map.entry;
@@ -614,8 +613,7 @@ public final class BootstrapProperties implements PropertySource {
             STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS,
             STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS,
             STATS_RUNNING_AVG_HALF_LIFE_SECS,
-            STATS_SPEEDOMETER_HALF_LIFE_SECS,
-            VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB); // possibly network property
+            STATS_SPEEDOMETER_HALF_LIFE_SECS);
 
     public static final Set<String> BOOTSTRAP_PROP_NAMES =
             unmodifiableSet(Stream.of(BOOTSTRAP_PROPS, GLOBAL_STATIC_PROPS, GLOBAL_DYNAMIC_PROPS, NODE_PROPS)
@@ -828,7 +826,6 @@ public final class BootstrapProperties implements PropertySource {
             entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
             entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
             entry(WORKFLOWS_ENABLED, AS_FUNCTIONS),
-            entry(VIRTUALDATASOURCE_JASPERDB_TO_MERKLEDB, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_ENABLED, AS_BOOLEAN),
             entry(ACCOUNTS_BLOCKLIST_RESOURCE, AS_STRING),
             entry(CACHE_CRYPTO_TRANSFER_WARM_THREADS, AS_INT),

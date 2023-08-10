@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.hedera.node.app.service.mono.utils.subjects.UniqueTokenValueSubject.assertThatTokenValue;
+import static com.swirlds.merkledb.serialize.BaseSerializer.VARIABLE_DATA_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -29,7 +30,6 @@ import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.jasperdb.files.DataFileCommon;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -412,7 +412,7 @@ class UniqueTokenValueTest {
     @Test
     void reportedSize_isVariable() {
         // This will fail if the size is accidentally swapped to a non-variable size.
-        assertThat(UniqueTokenValue.sizeInBytes()).isEqualTo(DataFileCommon.VARIABLE_DATA_SIZE);
+        assertThat(UniqueTokenValue.sizeInBytes()).isEqualTo(VARIABLE_DATA_SIZE);
     }
 
     @Test
