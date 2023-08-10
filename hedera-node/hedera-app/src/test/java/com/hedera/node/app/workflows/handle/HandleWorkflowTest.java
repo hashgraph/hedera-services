@@ -261,7 +261,7 @@ class HandleWorkflowTest extends AppTestBase {
                         feeManager,
                         exchangeRateManager,
                         finalizer,
-                       systemFileUpdateFacility))
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
