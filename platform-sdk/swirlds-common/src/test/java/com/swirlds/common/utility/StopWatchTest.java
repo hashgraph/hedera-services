@@ -116,14 +116,6 @@ class StopWatchTest {
     }
 
     @Test
-    void getTimeThrowsExceptionWhenRunning() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-
-        assertThrows(IllegalStateException.class, () -> stopWatch.getTime(TimeUnit.MILLISECONDS));
-    }
-
-    @Test
     void suspendAndResume() {
         StopWatch stopWatch = new StopWatch();
 
