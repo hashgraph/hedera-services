@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.records;
 
-import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -35,5 +34,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * for the child record
  */
 public interface ChildRecordFinalizer {
-    void finalizeChildRecord(@NonNull final HandleContext context);
+    void finalizeChildRecord(@NonNull final FinalizeContext context);
 }

@@ -16,7 +16,9 @@
 
 package com.swirlds.demo.migration.virtual;
 
-import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -25,7 +27,7 @@ import java.nio.ByteBuffer;
  */
 public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirtualMapKey> {
 
-    private static final long CLASS_ID = 0x93efc6111338834eL;
+    private static final long CLASS_ID = 0x93efc6111338834dL;
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
@@ -35,23 +37,7 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.ORIGINAL;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getSerializedSize() {
+    public int getSerializedSize(long dataVersion) {
         return AccountVirtualMapKey.getSizeInBytes();
     }
 
@@ -67,19 +53,20 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
      * {@inheritDoc}
      */
     @Override
-    public int serialize(final AccountVirtualMapKey data, final ByteBuffer buffer) throws IOException {
-        data.serialize(buffer);
-        return AccountVirtualMapKey.getSizeInBytes();
+    public AccountVirtualMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
+        final AccountVirtualMapKey key = new AccountVirtualMapKey();
+        key.deserialize(buffer, (int) dataVersion);
+        return key;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public AccountVirtualMapKey deserialize(final ByteBuffer buffer, final long dataVersion) throws IOException {
-        final AccountVirtualMapKey key = new AccountVirtualMapKey();
-        key.deserialize(buffer, (int) dataVersion);
-        return key;
+    public int serialize(final AccountVirtualMapKey data, final SerializableDataOutputStream outputStream)
+            throws IOException {
+        outputStream.writeSerializable(data, false);
+        return AccountVirtualMapKey.getSizeInBytes();
     }
 
     /**
@@ -97,5 +84,37 @@ public class AccountVirtualMapKeySerializer implements KeySerializer<AccountVirt
     public boolean equals(final ByteBuffer buffer, final int dataVersion, final AccountVirtualMapKey keyToCompare)
             throws IOException {
         return keyToCompare.equals(buffer, dataVersion);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        // nothing to serialize
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+        // nothing to deserialize
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getVersion() {
+        return ClassVersion.ORIGINAL;
     }
 }

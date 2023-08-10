@@ -23,6 +23,7 @@ import com.swirlds.common.config.sources.ThreadCountPropertyConfigSource;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.config.internal.ConfigMappings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -30,6 +31,8 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A utility class for building a basic configuration with the default configuration sources and paths.
@@ -37,6 +40,8 @@ import java.util.Set;
  * Can be used in cli tools to build a basic configuration.
  */
 public class DefaultConfiguration {
+    private static final Logger logger = LogManager.getLogger(DefaultConfiguration.class);
+
     private DefaultConfiguration() {
         // Avoid instantiation for utility class
     }
@@ -74,7 +79,7 @@ public class DefaultConfiguration {
         ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.swirlds"));
 
         for (final Path configurationPath : configurationPaths) {
-            System.out.printf("Loading configuration from %s%n", configurationPath);
+            logger.info(LogMarker.CONFIG.getMarker(), "Loading configuration from {}", configurationPath);
             configurationBuilder.withSource(new LegacyFileConfigSource(configurationPath));
         }
 

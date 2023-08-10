@@ -23,7 +23,6 @@ import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.platform.Snapshot.SnapshotEntry;
 import com.swirlds.common.metrics.statistics.StatsBuffered;
-import com.swirlds.common.utility.CommonUtils;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -40,7 +39,7 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
     private final String format;
 
     DefaultMetric(MetricConfig<?, ?> config) {
-        CommonUtils.throwArgNull(config, "config");
+        Objects.requireNonNull(config, "config must not be null");
         this.category = config.getCategory();
         this.name = config.getName();
         this.description = config.getDescription();
