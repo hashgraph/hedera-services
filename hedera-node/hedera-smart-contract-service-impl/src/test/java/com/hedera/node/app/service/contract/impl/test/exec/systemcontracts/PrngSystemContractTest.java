@@ -16,19 +16,20 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.systemcontracts;
 
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations.ZERO_ENTROPY;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EXPECTED_RANDOM_NUMBER;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PRECOMPILE_CONTRACT_FAILED_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PRECOMPILE_CONTRACT_SUCCESS_RESULT;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +40,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PrngSystemContractTest {
 
-    static final String PSEUDORANDOM_SEED_GENERATOR_SELECTOR = "0xd83bf9a1";
-
     @Mock
     private GasCalculator gasCalculator;
 
@@ -49,9 +48,6 @@ class PrngSystemContractTest {
 
     @Mock
     BlockValues blockValues;
-
-    @Mock
-    ContractCallRecordBuilder contractCallRecordBuilder;
 
     @Mock
     ProxyWorldUpdater proxyWorldUpdater;
@@ -64,59 +60,68 @@ class PrngSystemContractTest {
     }
 
     @Test
-    void computePrecompileStaticSuccessTest() {
-        var input = Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-        var expectedRandomNumber =
-                Bytes.fromHexString("0x1234567890123456789012345678901234567890123456789012345678901234");
-        var expectedContractResult = PrecompiledContract.PrecompileContractResult.success(expectedRandomNumber);
+    void gasRequirementTest() {
+        // when:
+        var actual = subject.gasRequirement(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS);
 
+        // then:
+        assertEquals(0, actual);
+    }
+
+    @Test
+    void computePrecompileStaticSuccessTest() {
         // given:
         givenCommonBlockValues();
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(proxyWorldUpdater.entropy()).willReturn(expectedRandomNumber);
+        given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
-        var actual = subject.computePrecompile(input, messageFrame);
+        var actual = subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
 
         // then:
-        assertEqualContractResult(expectedContractResult, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
     }
 
     @Test
     void computePrecompileMutableSuccessTest() {
-        var input = Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-        var expectedRandomNumber =
-                Bytes.fromHexString("0x1234567890123456789012345678901234567890123456789012345678901234");
-        var expectedContractResult = PrecompiledContract.PrecompileContractResult.success(expectedRandomNumber);
-
         // given:
         givenCommon();
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
-        given(proxyWorldUpdater.entropy()).willReturn(expectedRandomNumber);
+        given(proxyWorldUpdater.entropy()).willReturn(EXPECTED_RANDOM_NUMBER);
 
         // when:
-        var actual = subject.computePrecompile(input, messageFrame);
+        var actual = subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
 
         // then:
-        assertEqualContractResult(expectedContractResult, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_SUCCESS_RESULT, actual);
     }
 
     @Test
     void computePrecompileFailedTest() {
-        var input = Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
-        var expectedContractResult =
-                PrecompiledContract.PrecompileContractResult.halt(Bytes.EMPTY, Optional.of(INVALID_OPERATION));
+        // given:
+        givenCommon();
+        given(messageFrame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(proxyWorldUpdater.entropy()).willReturn(Bytes.wrap(ZERO_ENTROPY.toByteArray()));
 
+        // when:
+        var actual = subject.computePrecompile(PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS, messageFrame);
+
+        // then:
+        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);
+    }
+
+    @Test
+    void wrongFunctionSelectorFailedTest() {
         // given:
         givenCommon();
 
         // when:
-        var actual = subject.computePrecompile(input, messageFrame);
+        var actual = subject.computePrecompile(EXPECTED_RANDOM_NUMBER, messageFrame);
 
         // then:
-        assertEqualContractResult(expectedContractResult, actual);
+        assertEqualContractResult(PRECOMPILE_CONTRACT_FAILED_RESULT, actual);
     }
 
     public void givenCommonBlockValues() {

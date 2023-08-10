@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.tuweniToPbjBytes;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -65,6 +66,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -73,6 +75,8 @@ import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 public class TestHelpers {
     public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
@@ -133,6 +137,7 @@ public class TestHelpers {
     public static final Address SYSTEM_ADDRESS =
             Address.fromHexString(BigInteger.valueOf(750).toString(16));
     public static final Address HTS_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x167");
+    public static final Address PRNG_SYSTEM_CONTRACT_ADDRESS = Address.fromHexString("0x169");
     public static final Address NON_SYSTEM_LONG_ZERO_ADDRESS = Address.fromHexString("0x1234576890");
     public static final FileID INITCODE_FILE_ID =
             FileID.newBuilder().fileNum(6789L).build();
@@ -173,6 +178,18 @@ public class TestHelpers {
 
     public static final GasCharges CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, MAX_GAS_ALLOWANCE / 2);
     public static final GasCharges NO_ALLOWANCE_CHARGING_RESULT = new GasCharges(INTRINSIC_GAS, 0);
+
+    public static final String PSEUDORANDOM_SEED_GENERATOR_SELECTOR = "0xd83bf9a1";
+    public static final org.apache.tuweni.bytes.Bytes PSEUDO_RANDOM_SYSTEM_CONTRACT_ADDRESS =
+            org.apache.tuweni.bytes.Bytes.fromHexString(PSEUDORANDOM_SEED_GENERATOR_SELECTOR);
+    public static final org.apache.tuweni.bytes.Bytes EXPECTED_RANDOM_NUMBER =
+            org.apache.tuweni.bytes.Bytes.fromHexString(
+                    "0x1234567890123456789012345678901234567890123456789012345678901234");
+    public static final PrecompileContractResult PRECOMPILE_CONTRACT_SUCCESS_RESULT =
+            PrecompiledContract.PrecompileContractResult.success(EXPECTED_RANDOM_NUMBER);
+    public static final PrecompileContractResult PRECOMPILE_CONTRACT_FAILED_RESULT =
+            PrecompiledContract.PrecompileContractResult.halt(
+                    org.apache.tuweni.bytes.Bytes.EMPTY, Optional.of(INVALID_OPERATION));
 
     public static final HederaEvmTransaction HEVM_CREATION = new HederaEvmTransaction(
             SENDER_ID,
