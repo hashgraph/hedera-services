@@ -45,7 +45,8 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 @Singleton
 public class CustomRoyaltyFeeAssessor {
-    private CustomFixedFeeAssessor fixedFeeAssessor;
+
+    private final CustomFixedFeeAssessor fixedFeeAssessor;
 
     @Inject
     public CustomRoyaltyFeeAssessor(final CustomFixedFeeAssessor fixedFeeAssessor) {
@@ -60,12 +61,15 @@ public class CustomRoyaltyFeeAssessor {
      * @param result
      * @param handleContext
      */
+    // Suppressing the warning about using two "continue" statements and having unused variable
+    @SuppressWarnings({"java:S1854", "java:S135"})
     public void assessRoyaltyFees(
             @NonNull final CustomFeeMeta feeMeta,
             @NonNull final AccountID sender,
             @NonNull final AccountID receiver,
             @NonNull final AssessmentResult result,
             @NonNull final HandleContext handleContext) {
+        // FUTURE: remove the @SuppressWarnings("java:S1854") when this variable is in use
         final var accountStore = handleContext.writableStore(WritableAccountStore.class);
 
         final var tokenId = feeMeta.tokenId();
