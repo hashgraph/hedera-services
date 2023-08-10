@@ -21,11 +21,14 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.config.StateConfig;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -34,6 +37,7 @@ import picocli.CommandLine;
         description = "Validate whether an emergency recovery file is well formed and has the necessary information")
 @SubcommandOf(PlatformCli.class)
 public class ValidateManifestFileCommand extends AbstractCommand {
+    private static final Logger logger = LogManager.getLogger(ValidateManifestFileCommand.class);
 
     /** The path to the emergency recovery file. */
     private Path dir;
@@ -52,7 +56,9 @@ public class ValidateManifestFileCommand extends AbstractCommand {
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
 
         EmergencyRecoveryFile.read(stateConfig, dir, true);
-        System.out.println("The emergency recovery file is well formed and has the necessary information.");
+        logger.info(
+                LogMarker.CLI.getMarker(),
+                "The emergency recovery file is well formed and has the necessary information.");
         return 0;
     }
 }

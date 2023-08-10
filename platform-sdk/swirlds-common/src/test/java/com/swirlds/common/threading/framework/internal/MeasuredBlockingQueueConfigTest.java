@@ -96,12 +96,12 @@ class MeasuredBlockingQueueConfigTest {
     @DisplayName("Testing config constructor with invalid parameter")
     void configConstructorWithInvalidParameter() {
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(null, null, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(null, CATEGORY, QUEUE_NAME))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(metrics, null, QUEUE_NAME))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new MeasuredBlockingQueue.Config(metrics, CATEGORY, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 }
