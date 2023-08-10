@@ -476,9 +476,6 @@ public final class BootstrapUtils {
      * @param appDefinition     the application definition
      * @param nodesToRun        the locally run nodeIds
      * @return a map from nodeIds to {@link SwirldMain} instances
-     * @throws AppLoaderException             if there are issues loading the user app
-     * @throws ConstructableRegistryException if there are issues registering
-     *                                        {@link com.swirlds.common.constructable.RuntimeConstructable} classes
      */
     @NonNull
     public static Map<NodeId, SwirldMain> loadSwirldMains(

@@ -64,7 +64,7 @@ public class BrowseCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException, InterruptedException {
         try {
-            Browser.launch(new CommandLineArgs(new HashSet<>(localNodes)), null);
+            Browser.launch(new CommandLineArgs(new HashSet<>(localNodes)));
         } catch (final Exception e) {
             e.printStackTrace();
             return FATAL_ERROR.getExitCode();

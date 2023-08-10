@@ -60,17 +60,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.swirlds.common.system.SystemExitUtils.exitSystem;
@@ -121,55 +117,39 @@ public class Browser {
     }
 
     /**
-     * Start the browser running, if it isn't already running. If it's already running, then Browser.main does nothing.
-     * Normally, an app calling Browser.main has no effect, because it was the browser that launched the app in the
-     * first place, so the browser is already running.
-     * <p>
-     * But during app development, it can be convenient to give the app a main method that calls Browser.main. If there
-     * is a config.txt file that says to run the app that is being developed, then the developer can run the app within
-     * Eclipse. Eclipse will call the app's main() method, which will call the browser's main() method, which launches
-     * the browser. The app's main() then returns, and the app stops running. Then the browser will load the app
-     * (because of the config.txt file) and let it run normally within the browser. All of this happens within Eclipse,
-     * so the Eclipse debugger works, and Eclipse breakpoints within the app will work.
-     *
-     * @param args args is ignored, and has no effect
+     * Main method for starting the browser
+     * @param args command line arguments
      */
     public static void parseCommandLineArgsAndLaunch(final String... args) {
-        if (STARTED.getAndSet(true)) {
-            return;
-        }
-
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
-        launch(commandLineArgs, ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath());
+        launch(commandLineArgs);
     }
 
     /**
-     * Launch the browser.
-     *
-     * @param log4jPath         the path to the log4j configuraiton file, if null then log4j is not started
+     * Launch the browser with the command line arguments already parsed
+     * @param commandLineArgs the parsed command line arguments
      */
-    public static void launch(final CommandLineArgs commandLineArgs, final Path log4jPath) {
+    public static void launch(final CommandLineArgs commandLineArgs) {
         if (STARTED.getAndSet(true)) {
             return;
         }
+        final Path log4jPath = ConfigurationHolder.getConfigData(PathsConfig.class).getLogPath();
         Log4jSetup.startLoggingFramework(log4jPath);
         logger = LogManager.getLogger(Browser.class);
         try {
-           launch(commandLineArgs);
+           launchUnhandled(commandLineArgs);
         } catch (Exception e) {
             logger.error(EXCEPTION.getMarker(), "", e);
-            throw new RuntimeException("Unable to create Browser", e);
+            throw new RuntimeException("Unable to start Browser", e);
         }
     }
 
     /**
-     * Prevent this class from being instantiated.
+     * Launch the browser but do not handle any exceptions
+     * @param commandLineArgs the parsed command line arguments
      */
-    private static void launch(@NonNull final CommandLineArgs commandLineArgs) throws Exception {
-        if (STARTED.getAndSet(true)) {
-            return;
-        }
+    private static void launchUnhandled(@NonNull final CommandLineArgs commandLineArgs) throws Exception {
         StartupTime.markStartupTime();
         Objects.requireNonNull(commandLineArgs, "localNodesToStart must not be null");
         logger.info(STARTUP.getMarker(), "\n\n" + STARTUP_MESSAGE + "\n");
@@ -306,6 +286,18 @@ public class Browser {
     }
 
 
+    /**
+     * Build a single instance of a platform
+     * @param nodeId the node id of the platform
+     * @param appDefinition the application definition
+     * @param configAddressBook the address book loaded from the config.txt file
+     * @param appMain the swirld main for the platform
+     * @param metricsProvider the metrics provider
+     * @param configuration the configuration
+     * @param infoSwirld the info swirld
+     * @param crypto the crypto instance for this platform
+     * @return the built platform
+     */
     private static SwirldsPlatform buildPlatform(
             final NodeId nodeId,
             final ApplicationDefinition appDefinition,
