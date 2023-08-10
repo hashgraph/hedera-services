@@ -18,6 +18,8 @@ package com.swirlds.platform.gui.internal;
 
 import com.swirlds.gui.ScrollableJPanel;
 import com.swirlds.platform.SwirldsPlatform;
+
+import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,6 +82,15 @@ public final class BrowserWindowManager {
     }
 
     /**
+     * Add a platform to the list of platforms running on this machine.
+     */
+    public static void addPlatforms(final Collection<SwirldsPlatform> toAdd) {
+        synchronized (platforms) {
+            platforms.addAll(toAdd);
+        }
+    }
+
+    /**
      * Make the browser window visible. If it doesn't yet exist, then create it. Then switch to the given tab, with a
      * component name of the form Browser.browserWindow.tab* such as Browser.browserWindow.tabCalls to switch to the
      * "Calls" tab.
@@ -103,5 +114,13 @@ public final class BrowserWindowManager {
             return;
         }
         setBrowserWindow(new WinBrowser(new PlatformHashgraphGuiSource()));
+    }
+
+    public static void moveBroswerWindowToFront() {
+        for (final Frame f : Frame.getFrames()) {
+            if (!f.equals(getBrowserWindow())) {
+                f.toFront();
+            }
+        }
     }
 }

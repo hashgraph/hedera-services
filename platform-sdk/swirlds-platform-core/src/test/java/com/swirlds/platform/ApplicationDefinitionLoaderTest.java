@@ -31,10 +31,10 @@ class ApplicationDefinitionLoaderTest {
 
     @Test
     void testNullParam() {
-        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null, null));
-        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null, Set.of()));
+        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null));
+        Assertions.assertThrows(NullPointerException.class, () -> ApplicationDefinitionLoader.load(null));
         Assertions.assertThrows(
-                NullPointerException.class, () -> ApplicationDefinitionLoader.load(new LegacyConfigProperties(), null));
+                NullPointerException.class, () -> ApplicationDefinitionLoader.load(new LegacyConfigProperties()));
     }
 
     @Test
@@ -46,7 +46,7 @@ class ApplicationDefinitionLoaderTest {
         // then
         Assertions.assertThrows(
                 ConfigurationException.class,
-                () -> ApplicationDefinitionLoader.load(configProperties, nodes),
+                () -> ApplicationDefinitionLoader.load(configProperties),
                 "Configuration properties must contain application definition");
     }
 }

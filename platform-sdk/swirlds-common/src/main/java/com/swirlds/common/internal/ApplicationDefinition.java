@@ -29,27 +29,22 @@ public class ApplicationDefinition {
 
     private final String swirldName;
     private final String[] appParameters;
-    private final String appJarFileName;
     private final String mainClassName;
     private final Path appJarPath;
-    private final AddressBook addressBook;
-
-    private byte[] masterKey;
+    private final AddressBook configAddressBook;
     private byte[] swirldId;
 
     public ApplicationDefinition(
             @NonNull final String swirldName,
             @NonNull final String[] appParameters,
-            @NonNull final String appJarFileName,
             @NonNull final String mainClassName,
             @NonNull final Path appJarPath,
-            @NonNull final AddressBook addressBook) {
+            @NonNull final AddressBook configAddressBook) {
         this.swirldName = Objects.requireNonNull(swirldName, "swirldName must not be null");
         this.appParameters = Objects.requireNonNull(appParameters, "appParameters must not be null");
-        this.appJarFileName = Objects.requireNonNull(appJarFileName, "appJarFileName must not be null");
         this.mainClassName = Objects.requireNonNull(mainClassName, "mainClassName must not be null");
         this.appJarPath = Objects.requireNonNull(appJarPath, "appJarPath must not be null");
-        this.addressBook = Objects.requireNonNull(addressBook, "addressBook must not be null");
+        this.configAddressBook = Objects.requireNonNull(configAddressBook, "configAddressBook must not be null");
     }
 
     public String getSwirldName() {
@@ -58,10 +53,6 @@ public class ApplicationDefinition {
 
     public String[] getAppParameters() {
         return appParameters;
-    }
-
-    public String getAppJarFileName() {
-        return appJarFileName;
     }
 
     public String getMainClassName() {
@@ -76,20 +67,12 @@ public class ApplicationDefinition {
         return appJarPath;
     }
 
-    public AddressBook getAddressBook() {
-        return addressBook;
-    }
-
-    public byte[] getMasterKey() {
-        return masterKey;
+    public AddressBook getConfigAddressBook() {
+        return configAddressBook;
     }
 
     public byte[] getSwirldId() {
         return swirldId;
-    }
-
-    public void setMasterKey(final byte[] masterKey) {
-        this.masterKey = masterKey;
     }
 
     public void setSwirldId(final byte[] swirldId) {

@@ -24,6 +24,7 @@ import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.platform.Browser;
+import com.swirlds.platform.startup.CommandLineArgs;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,7 +64,7 @@ public class BrowseCommand extends AbstractCommand {
     @Override
     public Integer call() throws IOException, InterruptedException {
         try {
-            Browser.launch(new HashSet<>(localNodes), null);
+            Browser.launch(new CommandLineArgs(new HashSet<>(localNodes)), null);
         } catch (final Exception e) {
             e.printStackTrace();
             return FATAL_ERROR.getExitCode();

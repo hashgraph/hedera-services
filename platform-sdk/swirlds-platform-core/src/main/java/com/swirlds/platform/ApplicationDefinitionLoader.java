@@ -22,15 +22,14 @@ import com.swirlds.common.config.PathsConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.internal.ApplicationDefinition;
 import com.swirlds.common.internal.ConfigurationException;
-import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.config.legacy.JarAppConfig;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -51,21 +50,22 @@ public final class ApplicationDefinitionLoader {
 
     private ApplicationDefinitionLoader() {}
 
+    public static ApplicationDefinition loadDefault(final Path configPath)
+            throws ConfigurationException {
+        return load(LegacyConfigPropertiesLoader.loadConfigFile(configPath));
+    }
+
     /**
      * Parses the configuration file specified by the {@link PathsConfig#getConfigPath()} setting, configures all
      * appropriate system settings, and returns a generic {@link ApplicationDefinition}.
      *
-     * @param localNodesToStart
-     * 		the {@link Set} of local nodes to be started, if specified
      * @return an {@link ApplicationDefinition} specifying the application to be loaded and all related configuration
      * @throws ConfigurationException
      * 		if the configuration file specified by {@link PathsConfig#getConfigPath()} does not exist
      */
-    public static ApplicationDefinition load(
-            @NonNull final LegacyConfigProperties configurationProperties, @NonNull final Set<NodeId> localNodesToStart)
+    public static ApplicationDefinition load(@NonNull final LegacyConfigProperties configurationProperties)
             throws ConfigurationException {
         Objects.requireNonNull(configurationProperties, "configurationProperties must not be null");
-        Objects.requireNonNull(localNodesToStart, "localNodesToStart must not be null");
 
         final String swirldName = configurationProperties.swirldName().orElse("");
 
@@ -79,7 +79,6 @@ public final class ApplicationDefinitionLoader {
         return new ApplicationDefinition(
                 swirldName,
                 appStartParams.appParameters(),
-                appStartParams.appJarFilename(),
                 appStartParams.mainClassname(),
                 appStartParams.appJarPath(),
                 addressBook);
