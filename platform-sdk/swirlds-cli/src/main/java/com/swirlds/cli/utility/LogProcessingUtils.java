@@ -18,13 +18,15 @@ package com.swirlds.cli.utility;
 
 import static com.swirlds.cli.utility.HtmlTagFactory.CLASS_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.ELAPSED_TIME_COLUMN_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.FILTER_HEADING_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.FILTERS_DIV_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.FILTER_COLUMN_DIV_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.HIDER_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.HIDER_LABEL_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_BODY_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_BREAK_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CHECKBOX_TYPE;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CLASS_ATTRIBUTE;
+import static com.swirlds.cli.utility.HtmlTagFactory.HTML_DIV_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_H3_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_HEAD_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_HTML_TAG;
@@ -41,6 +43,7 @@ import static com.swirlds.cli.utility.HtmlTagFactory.LOG_NUMBER_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.MARKER_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.NODE_ID_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.REMAINDER_OF_LINE_COLUMN_LABEL;
+import static com.swirlds.cli.utility.HtmlTagFactory.SECTION_HEADING;
 import static com.swirlds.cli.utility.HtmlTagFactory.THREAD_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.TIMESTAMP_COLUMN_LABEL;
 
@@ -124,13 +127,17 @@ public class LogProcessingUtils {
                 .filter(Objects::nonNull)
                 .toList();
 
-        final List<String> formattedLogLines = logLines.stream()
-                .map(LogLine::generateHtmlString)
-                .toList();
+        final List<String> formattedLogLines =
+                logLines.stream().map(LogLine::generateHtmlString).toList();
 
-        // this css has the logic to filter logs
-        final String hiderCss = "[data-hide]:not([data-hide~='0']):not([data-hide~=\"NaN\"]) {display: none;}";
-        final String hiderCssTag = new HtmlTagFactory(HTML_STYLE_TAG, hiderCss, false).generateTag();
+        final List<String> css = new ArrayList<>();
+        // TODO use the variables instead of literal class names
+        // TODO better yet, just make a css factory
+        css.add("[data-hide]:not([data-hide~='0']):not([data-hide~=\"NaN\"]) {display: none;}");
+        css.add(".filters {display: flex;}");
+        css.add(".filter-column {padding-left: 2em;}");
+
+        final String hiderCssTag = new HtmlTagFactory(HTML_STYLE_TAG, String.join("\n", css), false).generateTag();
 
         final String minJsSource = "https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js";
         final String minJsSourceTag = new HtmlTagFactory(HTML_SCRIPT_TAG, "", false)
@@ -145,7 +152,7 @@ public class LogProcessingUtils {
                         HTML_TABLE_TAG, "\n" + String.join("\n", formattedLogLines) + "\n", false)
                 .generateTag();
 
-        // TODO read this from file instead
+        // TODO read this from file instead??
         final String TEMP_hiderJs =
                 """
                         // the checkboxes that have the ability to hide things
@@ -192,7 +199,7 @@ public class LogProcessingUtils {
         final String scriptTag = new HtmlTagFactory(HTML_SCRIPT_TAG, TEMP_hiderJs, false).generateTag();
 
         final String filterColumnsHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter Columns", false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_HEADING_LABEL)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, SECTION_HEADING)
                 .generateTag();
         final List<String> columnFilterCheckboxes = Stream.of(
                         NODE_ID_COLUMN_LABEL,
@@ -208,7 +215,7 @@ public class LogProcessingUtils {
                 .toList();
 
         final String filterLogLevelHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter Log Level", false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_HEADING_LABEL)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, SECTION_HEADING)
                 .generateTag();
         final List<String> existingLogLevels =
                 logLines.stream().map(LogLine::getLogLevel).distinct().toList();
@@ -216,11 +223,50 @@ public class LogProcessingUtils {
                 .map(LogProcessingUtils::createHiderCheckbox)
                 .toList();
 
+        final String filterMarkerHeading = new HtmlTagFactory(HTML_H3_TAG, "Filter Marker", false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, SECTION_HEADING)
+                .generateTag();
+        final List<String> existingMarkers =
+                logLines.stream().map(LogLine::getMarker).distinct().toList();
+        final List<String> logMarkerFilterCheckboxes = existingMarkers.stream()
+                .map(LogProcessingUtils::createHiderCheckbox)
+                .toList();
+
+        final String filterColumnsDiv = new HtmlTagFactory(
+                        HTML_DIV_TAG,
+                        "\n" + filterColumnsHeading + "\n" + String.join("\n", columnFilterCheckboxes),
+                        false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_COLUMN_DIV_LABEL)
+                .generateTag();
+
+        final String filterLogLevelDiv = new HtmlTagFactory(
+                        HTML_DIV_TAG,
+                        "\n" + filterLogLevelHeading + "\n" + String.join("\n", logLevelFilterCheckboxes),
+                        false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_COLUMN_DIV_LABEL)
+                .generateTag();
+
+        final String filterMarkerDiv = new HtmlTagFactory(
+                        HTML_DIV_TAG,
+                        "\n" + filterMarkerHeading + "\n" + String.join("\n", logMarkerFilterCheckboxes),
+                        false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTER_COLUMN_DIV_LABEL)
+                .generateTag();
+
+        final String filtersDiv = new HtmlTagFactory(
+                        HTML_DIV_TAG,
+                        "\n" + filterColumnsDiv + "\n" + filterLogLevelDiv + "\n" + filterMarkerDiv + "\n",
+                        false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, FILTERS_DIV_LABEL)
+                .generateTag();
+
+        final String logsHeading = new HtmlTagFactory(HTML_H3_TAG, "Logs", false)
+                .addAttribute(HTML_CLASS_ATTRIBUTE, SECTION_HEADING)
+                .generateTag();
+
         final List<String> bodyElements = new ArrayList<>();
-        bodyElements.add(filterColumnsHeading);
-        bodyElements.addAll(columnFilterCheckboxes);
-        bodyElements.add(filterLogLevelHeading);
-        bodyElements.addAll(logLevelFilterCheckboxes);
+        bodyElements.add(filtersDiv);
+        bodyElements.add(logsHeading);
         bodyElements.add(logTableTag);
         bodyElements.add(scriptTag);
 

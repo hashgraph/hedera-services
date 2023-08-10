@@ -41,6 +41,7 @@ public class HtmlTagFactory {
     public static final String HTML_HEAD_TAG = "head";
     public static final String HTML_STYLE_TAG = "style";
     public static final String HTML_BREAK_TAG = "br";
+    public static final String HTML_DIV_TAG = "div";
 
     public static final String HTML_CLASS_ATTRIBUTE = "class";
     public static final String HTML_SOURCE_ATTRIBUTE = "src";
@@ -59,10 +60,12 @@ public class HtmlTagFactory {
     public static final String CLASS_NAME_COLUMN_LABEL = "class-name";
     public static final String REMAINDER_OF_LINE_COLUMN_LABEL = "remainder-of-line";
 
-    public static final String FILTER_HEADING_LABEL = "filter-heading";
+    public static final String SECTION_HEADING = "section-heading";
     public static final String HIDER_LABEL = "hider";
     public static final String HIDER_LABEL_LABEL = "hider-label";
     public static final String LOG_BODY_LABEL = "log-body";
+    public static final String FILTERS_DIV_LABEL = "filters";
+    public static final String FILTER_COLUMN_DIV_LABEL = "filter-column";
 
     /**
      * Map from attribute name to list of attribute values.
