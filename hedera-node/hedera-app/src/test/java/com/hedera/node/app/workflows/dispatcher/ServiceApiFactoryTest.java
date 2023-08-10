@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -37,9 +37,6 @@ class ServiceApiFactoryTest {
     private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     @Mock
-    private Savepoint savepoint;
-
-    @Mock
     private WritableStates writableStates;
 
     @Mock
@@ -49,7 +46,7 @@ class ServiceApiFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ServiceApiFactory(stack);
+        subject = new ServiceApiFactory(stack, DEFAULT_CONFIG);
     }
 
     @Test
@@ -60,8 +57,6 @@ class ServiceApiFactoryTest {
     @Test
     void canCreateTokenServiceApi() {
         given(stack.createWritableStates(TokenService.NAME)).willReturn(writableStates);
-        given(stack.peek()).willReturn(savepoint);
-        given(savepoint.configuration()).willReturn(DEFAULT_CONFIG);
         assertNotNull(subject.getApi(TokenServiceApi.class));
     }
 

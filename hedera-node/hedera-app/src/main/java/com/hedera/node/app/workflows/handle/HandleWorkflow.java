@@ -222,6 +222,7 @@ public class HandleWorkflow {
 
             // Setup context
             final var stack = new SavepointStackImpl(state, configuration);
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                     transactionInfo,
                     preHandleResult.payer(),
@@ -230,6 +231,7 @@ public class HandleWorkflow {
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
+                    configuration,
                     verifier,
                     recordListBuilder,
                     checker,
@@ -249,14 +251,15 @@ public class HandleWorkflow {
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction with the help of the token service
-            final var finalizationContext = new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, stack);
+            final var finalizationContext =
+                    new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, configuration, stack);
             transactionFinalizer.finalizeParentRecord(
                     finalizationContext, List.of()); // TODO Need actual list of child records?
 
             recordBuilder.status(SUCCESS);
 
             // commit state
-            stack.commit();
+            stack.commitFullStack();
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
