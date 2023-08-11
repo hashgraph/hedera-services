@@ -273,7 +273,7 @@ public class Browser {
         logger.debug(STARTUP.getMarker(), "Done with starting platforms");
 
         // create the browser window, which uses those Statistics objects
-        showBrowserWindow();
+        showBrowserWindow(null);
         moveBrowserWindowToFront();
 
         CommonUtils.tellUserConsole("This computer has an internal IP address:  " + Network.getInternalIPAddress());
