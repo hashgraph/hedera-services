@@ -124,10 +124,6 @@ public final class StateProofTreeBuilder {
     private static List<MerkleNode> getMerkleNodesForStateProofTree(
             @NonNull final MerkleNode merkleRoot, @NonNull final List<MerkleLeaf> payloads) {
 
-        // Note: we use a reverse post-ordered depth first traversal here intentionally. This causes a node's children
-        // to be popped off the top of a stack in left-to-right order (as opposed to a standard DFS traversal,
-        // which will pop them off in right-to-left order).
-
         final List<MerkleNode> nodes = new ArrayList<>();
         merkleRoot
                 .treeIterator()

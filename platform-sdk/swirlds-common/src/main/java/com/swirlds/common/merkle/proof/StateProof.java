@@ -117,8 +117,6 @@ public class StateProof implements SelfSerializable {
 
     /**
      * Cryptographically validate this state proof using the provided threshold.
-     * <p>
-     * This method is package private to permit test code to provide custom signature validation.
      *
      * @param cryptography      provides cryptographic primitives
      * @param addressBook       the address book to use to validate the state proof
@@ -142,7 +140,7 @@ public class StateProof implements SelfSerializable {
             // we only need to recompute the hash once
             hashBytes = computeStateProofTreeHash(cryptography, root);
         }
-        long validWeight = computeValidSignatureWeight(addressBook, signatures, signatureVerifier, hashBytes);
+        final long validWeight = computeValidSignatureWeight(addressBook, signatures, signatureVerifier, hashBytes);
         return threshold.isSatisfiedBy(validWeight, addressBook.getTotalWeight());
     }
 
