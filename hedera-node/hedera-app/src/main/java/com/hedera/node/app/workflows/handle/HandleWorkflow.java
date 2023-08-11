@@ -347,12 +347,7 @@ public class HandleWorkflow {
         final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
         final var creator = networkInfo.nodeInfo(platformEvent.getCreatorId().id());
         final var creatorId = creator == null ? null : creator.accountId();
-        return preHandleWorkflow.preHandleTransaction(
-                creatorId, // TODO: if creatorId can be null should we update the preHandleTransaction annotation or not
-                // call preHandleTransaction if creatorId is null?
-                storeFactory,
-                accountStore,
-                platformTxn);
+        return preHandleWorkflow.preHandleTransaction(creatorId, storeFactory, accountStore, platformTxn);
     }
 
     @NonNull
