@@ -209,7 +209,6 @@ public class HandleWorkflow {
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
-            final var maxMillis = instantSource.millis() + timeout;
             final var payerKeyVerification =
                     preHandleResult.verificationResults().get(preHandleResult.payerKey());
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
