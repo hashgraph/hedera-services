@@ -20,8 +20,6 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.spi.fixtures.state.StateTestBase;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.codec.LongCodec;
-import com.hedera.node.app.spi.state.codec.StringCodec;
 import com.hedera.node.app.state.merkle.disk.OnDiskKey;
 import com.hedera.node.app.state.merkle.disk.OnDiskKeySerializer;
 import com.hedera.node.app.state.merkle.disk.OnDiskValue;
@@ -77,10 +75,10 @@ public class MerkleTestBase extends StateTestBase {
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";
 
-    /** A {@link Codec} to be used with String data types */
-    public static final Codec<String> STRING_CODEC = StringCodec.SINGLETON;
-    /** A {@link Codec} to be used with Long data types */
-    public static final Codec<Long> LONG_CODEC = LongCodec.SINGLETON;
+    /** A TEST ONLY {@link Codec} to be used with String data types */
+    public static final Codec<String> STRING_CODEC = TestStringCodec.SINGLETON;
+    /** A TEST ONLY {@link Codec} to be used with Long data types */
+    public static final Codec<Long> LONG_CODEC = TestLongCodec.SINGLETON;
 
     /** Used by some tests that need to hash */
     protected static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();

@@ -51,6 +51,7 @@ import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
@@ -101,6 +102,7 @@ public class SingleTransactionRecordBuilderImpl
                 ContractCallRecordBuilder,
                 CryptoDeleteRecordBuilder,
                 TokenUpdateRecordBuilder,
+                NodeStakeUpdateRecordBuilder,
                 FeeRecordBuilder {
     // base transaction data
     private Transaction transaction;
@@ -218,6 +220,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param transaction the transaction
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");

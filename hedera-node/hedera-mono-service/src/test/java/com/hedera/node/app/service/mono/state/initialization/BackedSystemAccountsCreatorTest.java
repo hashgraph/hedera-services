@@ -138,11 +138,13 @@ class BackedSystemAccountsCreatorTest {
 
         assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
         assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
+        assertEquals(2, subject.getStakingFundAccountsCreated().size());
 
         subject.forgetCreations();
 
         verify(treasuryCloner).forgetCreatedClones();
         assertEquals(0, subject.getSystemAccountsCreated().size());
+        assertEquals(0, subject.getStakingFundAccountsCreated().size());
     }
 
     @Test
@@ -222,6 +224,8 @@ class BackedSystemAccountsCreatorTest {
         given(backingAccounts.contains(funding801)).willReturn(false);
 
         subject.ensureSystemAccounts(backingAccounts, book);
+
+        assertEquals(List.of(canonicalFundingAccount()), subject.getStakingFundAccountsCreated());
 
         verify(backingAccounts).put(eq(funding801), captor.capture());
         final var new801 = captor.getValue();
