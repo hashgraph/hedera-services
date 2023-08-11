@@ -19,17 +19,17 @@ package com.hedera.node.app.service.mono.state.initialization;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_NUM_SYSTEM_ACCOUNTS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
@@ -135,6 +135,7 @@ class BackedSystemAccountsCreatorTest {
 
         // when:
         subject.ensureSystemAccounts(backingAccounts, book);
+        assertDoesNotThrow(subject::ensureSynthRecordsPresentOnFirstEverTransaction);
 
         assertEquals(missingSystemAccount, subject.getSystemAccountsCreated());
         assertEquals(treasuryClones, subject.getTreasuryClonesCreated());
@@ -203,17 +204,15 @@ class BackedSystemAccountsCreatorTest {
     }
 
     @Test
-    void createsNothingIfAllPresent() {
-        given(backingAccounts.contains(any())).willReturn(true);
-        final var desiredInfo = String.format("Ledger float is %d tinyBars in %d accounts.", totalBalance, 4);
-
-        // when:
-        subject.ensureSystemAccounts(backingAccounts, book);
+    void internalCreateOnlyPrepsSyntheticRecords() {
+        subject.ensureSynthRecordsPresentOnFirstEverTransaction();
 
         // then:
-        verify(backingAccounts, never()).put(any(), any());
+        verifyNoInteractions(backingAccounts);
         // and:
-        assertThat(logCaptor.infoLogs(), contains(desiredInfo));
+        assertNotEquals(0, subject.getSystemAccountsCreated().size());
+        assertNotEquals(0, subject.getStakingFundAccountsCreated().size());
+        verify(treasuryCloner).ensureTreasuryClonesExist(false);
     }
 
     @Test
@@ -230,7 +229,7 @@ class BackedSystemAccountsCreatorTest {
         verify(backingAccounts).put(eq(funding801), captor.capture());
         final var new801 = captor.getValue();
         assertEquals(canonicalFundingAccount(), new801);
-        verify(treasuryCloner).ensureTreasuryClonesExist();
+        verify(treasuryCloner).ensureTreasuryClonesExist(true);
     }
 
     private MerkleAccount canonicalFundingAccount() {
