@@ -18,7 +18,8 @@ package com.swirlds.common.threading;
 
 import com.swirlds.common.threading.locks.internal.AcquiredOnTry;
 import com.swirlds.common.threading.locks.locked.MaybeLocked;
-import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -37,10 +38,13 @@ public class SyncLock {
         this(new ReentrantLock(), onObtained, onClose);
     }
 
-    public SyncLock(final Lock lock, final Consumer<Boolean> onObtained, final Consumer<Boolean> onClose) {
-        this.lock = CommonUtils.throwArgNull(lock, "lock");
-        this.onObtained = CommonUtils.throwArgNull(onObtained, "onObtained");
-        this.onClose = CommonUtils.throwArgNull(onClose, "onClose");
+    public SyncLock(
+            @NonNull final Lock lock,
+            @NonNull final Consumer<Boolean> onObtained,
+            @NonNull final Consumer<Boolean> onClose) {
+        this.lock = Objects.requireNonNull(lock, "lock must not be null");
+        this.onObtained = Objects.requireNonNull(onObtained, "onObtained must not be null");
+        this.onClose = Objects.requireNonNull(onClose, "onClose must not be null");
         this.outBoundObtained = new AcquiredOnTry(this::closeOutbound);
         this.inBoundObtained = new AcquiredOnTry(this::closeInbound);
     }

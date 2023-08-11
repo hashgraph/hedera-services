@@ -80,6 +80,11 @@ import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.gui.WindowConfig;
+import com.swirlds.gui.model.GuiModel;
+import com.swirlds.gui.model.InfoApp;
+import com.swirlds.gui.model.InfoMember;
+import com.swirlds.gui.model.InfoSwirld;
+import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.logging.payloads.SavedStateLoadedPayload;
@@ -97,10 +102,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.gui.internal.InfoApp;
-import com.swirlds.platform.gui.internal.InfoMember;
-import com.swirlds.platform.gui.internal.InfoSwirld;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
@@ -232,6 +233,7 @@ public class Browser {
                 .withConfigDataType(TemporaryFileConfig.class)
                 .withConfigDataType(ReconnectConfig.class)
                 .withConfigDataType(FCHashMapConfig.class)
+                .withConfigDataType(JasperDbConfig.class)
                 .withConfigDataType(MerkleDbConfig.class)
                 .withConfigDataType(ChatterConfig.class)
                 .withConfigDataType(AddressBookConfig.class)
@@ -313,7 +315,7 @@ public class Browser {
                 startPlatforms(configuration, appDefinition, appMains);
 
                 // create the browser window, which uses those Statistics objects
-                showBrowserWindow();
+                showBrowserWindow(null);
                 for (final Frame f : Frame.getFrames()) {
                     if (!f.equals(getBrowserWindow())) {
                         f.toFront();
@@ -693,9 +695,9 @@ public class Browser {
                                 initialState.get(), addressBookInitializer.getInitialAddressBook());
                     }
 
-                    GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
-                    GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-                    GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+                    GuiModel.getInstance().setPlatformName(nodeId, platformName);
+                    GuiModel.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+                    GuiModel.getInstance().setInstanceNumber(nodeId, instanceNumber);
 
                     platform = new SwirldsPlatform(
                             platformContext,

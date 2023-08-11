@@ -61,6 +61,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 
     private JKey genesisKey;
     private final List<HederaAccount> systemAccountsCreated = new ArrayList<>();
+    private final List<HederaAccount> stakingFundAccountsCreated = new ArrayList<>();
 
     @Inject
     public BackedSystemAccountsCreator(
@@ -109,6 +110,7 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
                 final var stakingFundAccount = accountSupplier.get();
                 customizeAsStakingFund(stakingFundAccount);
                 accounts.put(id, stakingFundAccount);
+                stakingFundAccountsCreated.add(stakingFundAccount);
             }
         }
         for (long num = 900; num <= 1000; num++) {
@@ -171,6 +173,10 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
         return systemAccountsCreated;
     }
 
+    public List<HederaAccount> getStakingFundAccountsCreated() {
+        return stakingFundAccountsCreated;
+    }
+
     public List<HederaAccount> getTreasuryClonesCreated() {
         return treasuryCloner.getClonesCreated();
     }
@@ -178,5 +184,6 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
     public void forgetCreations() {
         treasuryCloner.forgetCreatedClones();
         systemAccountsCreated.clear();
+        stakingFundAccountsCreated.clear();
     }
 }
