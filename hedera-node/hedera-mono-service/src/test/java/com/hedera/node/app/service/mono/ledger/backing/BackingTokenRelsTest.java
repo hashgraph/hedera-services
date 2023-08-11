@@ -24,7 +24,6 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -153,12 +152,6 @@ class BackingTokenRelsTest {
         // and:
         verify(rels, times(2)).getForModify(any());
         verify(rels, times(1)).get(any());
-    }
-
-    @Test
-    void irrelevantMethodsNotSupported() {
-        // expect:
-        assertThrows(UnsupportedOperationException.class, subject::idSet);
     }
 
     @Test

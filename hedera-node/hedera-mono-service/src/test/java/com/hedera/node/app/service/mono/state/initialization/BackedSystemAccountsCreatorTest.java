@@ -43,10 +43,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -57,15 +54,11 @@ import com.swirlds.common.system.address.AddressBook;
 import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
-@ExtendWith(LogCaptureExtension.class)
 class BackedSystemAccountsCreatorTest {
-
     private final long shard = 0;
     private final long realm = 0;
     private final long totalBalance = 100l;
@@ -79,9 +72,6 @@ class BackedSystemAccountsCreatorTest {
     private BackingStore<AccountID, HederaAccount> backingAccounts;
     private TreasuryCloner treasuryCloner;
     private HederaAccountNumbers accountNums;
-
-    @LoggingTarget
-    private LogCaptor logCaptor;
 
     @LoggingSubject
     private BackedSystemAccountsCreator subject;
@@ -113,8 +103,6 @@ class BackedSystemAccountsCreatorTest {
         given(book.getAddress(new NodeId(0L))).willReturn(address);
 
         backingAccounts = (BackingStore<AccountID, HederaAccount>) mock(BackingStore.class);
-        given(backingAccounts.idSet())
-                .willReturn(Set.of(accountWith(1), accountWith(2), accountWith(3), accountWith(4)));
         given(backingAccounts.getImmutableRef(accountWith(1))).willReturn(withExpectedBalance(0));
         given(backingAccounts.getImmutableRef(accountWith(2))).willReturn(withExpectedBalance(totalBalance));
         given(backingAccounts.getImmutableRef(accountWith(3))).willReturn(withExpectedBalance(0));
