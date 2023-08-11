@@ -120,7 +120,7 @@ public class Browser {
      * Main method for starting the browser
      * @param args command line arguments
      */
-    public static void parseCommandLineArgsAndLaunch(final String... args) {
+    public static void parseCommandLineArgsAndLaunch(@NonNull final String... args) {
         final CommandLineArgs commandLineArgs = CommandLineArgs.parse(args);
 
         launch(commandLineArgs);
@@ -130,7 +130,7 @@ public class Browser {
      * Launch the browser with the command line arguments already parsed
      * @param commandLineArgs the parsed command line arguments
      */
-    public static void launch(final CommandLineArgs commandLineArgs) {
+    public static void launch(@NonNull final CommandLineArgs commandLineArgs) {
         if (STARTED.getAndSet(true)) {
             return;
         }

@@ -50,7 +50,7 @@ public final class ApplicationDefinitionLoader {
 
     private ApplicationDefinitionLoader() {}
 
-    public static ApplicationDefinition loadDefault(final Path configPath) throws ConfigurationException {
+    public static @NonNull ApplicationDefinition loadDefault(@NonNull final Path configPath) throws ConfigurationException {
         return load(LegacyConfigPropertiesLoader.loadConfigFile(configPath));
     }
 
@@ -62,7 +62,7 @@ public final class ApplicationDefinitionLoader {
      * @throws ConfigurationException
      * 		if the configuration file specified by {@link PathsConfig#getConfigPath()} does not exist
      */
-    public static ApplicationDefinition load(@NonNull final LegacyConfigProperties configurationProperties)
+    public static @NonNull ApplicationDefinition load(@NonNull final LegacyConfigProperties configurationProperties)
             throws ConfigurationException {
         Objects.requireNonNull(configurationProperties, "configurationProperties must not be null");
 
@@ -83,7 +83,7 @@ public final class ApplicationDefinitionLoader {
                 addressBook);
     }
 
-    private static AppStartParams convertToStartParams(final JarAppConfig appConfig) {
+    private static @NonNull AppStartParams convertToStartParams(@NonNull final JarAppConfig appConfig) {
         final String[] appParameters = appConfig.params();
         // the line is: app, jarFilename, optionalParameters
         final String appJarFilename = appConfig.jarName();

@@ -130,7 +130,7 @@ import org.apache.logging.log4j.Logger;
 public final class BootstrapUtils {
 
     /** The logger for this class */
-    private static final Logger LOG = LogManager.getLogger(BootstrapUtils.class);
+    private static final Logger logger = LogManager.getLogger(BootstrapUtils.class);
 
     private BootstrapUtils() {}
 
@@ -145,7 +145,7 @@ public final class BootstrapUtils {
         } else {
             final String message = "A config.txt file could be created here:   " + pathsConfig.getConfigPath();
             CommonUtils.tellUserConsole(message);
-            LOG.error(STARTUP.getMarker(), message);
+            logger.error(STARTUP.getMarker(), message);
             SystemExitUtils.exitSystem(SystemExitCode.CONFIGURATION_ERROR, message);
         }
         return pathsConfig;
@@ -159,7 +159,7 @@ public final class BootstrapUtils {
      * @return a new configuration instance
      * @throws IOException if there is a problem reading the configuration files
      */
-    public static Configuration loadConfig(
+    public static @NonNull Configuration loadConfig(
             @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
             throws IOException {
         Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
@@ -323,14 +323,14 @@ public final class BootstrapUtils {
                             + loadedSoftwareVersion + "` that created the state that was loaded from disk.");
         } else if (versionComparison > 0) {
             softwareUpgrade = true;
-            LOG.info(
+            logger.info(
                     STARTUP.getMarker(),
                     "Software upgrade in progress. Previous software version was {}, current version is {}.",
                     loadedSoftwareVersion,
                     appVersion);
         } else {
             softwareUpgrade = false;
-            LOG.info(
+            logger.info(
                     STARTUP.getMarker(),
                     "Not upgrading software, current software is version {}.",
                     loadedSoftwareVersion);
@@ -350,7 +350,7 @@ public final class BootstrapUtils {
             if (!Files.exists(dir)) {
                 rethrowIO(() -> Files.createDirectories(dir));
             }
-            LOG.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
+            logger.info(STARTUP.getMarker(), "Starting thread dump generator and save to directory {}", dir);
             ThreadDumpGenerator.generateThreadDumpAtIntervals(dir, threadConfig.threadDumpPeriodMs());
         }
     }
@@ -366,7 +366,7 @@ public final class BootstrapUtils {
             final JVMPauseDetectorThread jvmPauseDetectorThread = new JVMPauseDetectorThread(
                     (pauseTimeMs, allocTimeMs) -> {
                         if (pauseTimeMs > basicConfig.jvmPauseReportMs()) {
-                            LOG.warn(
+                            logger.warn(
                                     EXCEPTION.getMarker(),
                                     "jvmPauseDetectorThread detected JVM paused for {} ms, allocation pause {} ms",
                                     pauseTimeMs,
@@ -375,7 +375,7 @@ public final class BootstrapUtils {
                     },
                     basicConfig.jvmPauseDetectorSleepMs());
             jvmPauseDetectorThread.start();
-            LOG.debug(STARTUP.getMarker(), "jvmPauseDetectorThread started");
+            logger.debug(STARTUP.getMarker(), "jvmPauseDetectorThread started");
         }
     }
 
@@ -397,7 +397,7 @@ public final class BootstrapUtils {
                     "ERROR",
                     "ERROR: There are problems starting class " + appDefinition.getMainClassName() + "\n"
                             + ExceptionUtils.getStackTrace(e));
-            LOG.error(EXCEPTION.getMarker(), "Problems with class {}", appDefinition.getMainClassName(), e);
+            logger.error(EXCEPTION.getMarker(), "Problems with class {}", appDefinition.getMainClassName(), e);
             throw new RuntimeException("Problems with class " + appDefinition.getMainClassName(),e);
         }
     }
@@ -430,7 +430,7 @@ public final class BootstrapUtils {
         try (final OutputStream outputStream = new FileOutputStream(settingsUsedPath.toFile())) {
             outputStream.write(settingsUsedBuilder.toString().getBytes(StandardCharsets.UTF_8));
         } catch (final IOException | RuntimeException e) {
-            LOG.error(STARTUP.getMarker(), "Failed to write settingsUsed to file {}", settingsUsedPath, e);
+            logger.error(STARTUP.getMarker(), "Failed to write settingsUsed to file {}", settingsUsedPath, e);
         }
     }
 
@@ -487,12 +487,12 @@ public final class BootstrapUtils {
             final String externalIpAddress = (Network.getExternalIpAddress() != null)
                     ? Network.getExternalIpAddress().getIpAddress()
                     : null;
-            LOG.error(
+            logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));
             exitSystem(NODE_ADDRESS_MISMATCH);
         }
-        LOG.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", nodesToRun.size());
+        logger.info(STARTUP.getMarker(), "there are {} nodes with local IP addresses", nodesToRun.size());
     }
 
     /**
@@ -521,10 +521,10 @@ public final class BootstrapUtils {
             }
 
             // Register all RuntimeConstructable classes
-            LOG.debug(STARTUP.getMarker(), "Scanning the classpath for RuntimeConstructable classes");
+            logger.debug(STARTUP.getMarker(), "Scanning the classpath for RuntimeConstructable classes");
             final long start = System.currentTimeMillis();
             ConstructableRegistry.getInstance().registerConstructables("", appLoader.getClassLoader());
-            LOG.debug(
+            logger.debug(
                     STARTUP.getMarker(),
                     "Done with registerConstructables, time taken {}ms",
                     System.currentTimeMillis() - start);
@@ -580,7 +580,7 @@ public final class BootstrapUtils {
         try {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
-            LOG.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
+            logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
             if (stateConfig.requireStateLoad()) {
                 exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
@@ -629,7 +629,7 @@ public final class BootstrapUtils {
 
         try (loadedState) {
             if (loadedState.isNotNull()) {
-                LOG.info(
+                logger.info(
                         STARTUP.getMarker(),
                         new SavedStateLoadedPayload(
                                 loadedState.get().getRound(), loadedState.get().getConsensusTimestamp()));
