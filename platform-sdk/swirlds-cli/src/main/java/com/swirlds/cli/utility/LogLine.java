@@ -19,7 +19,6 @@ package com.swirlds.cli.utility;
 import static com.swirlds.cli.utility.HtmlTagFactory.CLASS_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.ELAPSED_TIME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.HIDEABLE_LABEL;
-import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CLASS_ATTRIBUTE;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_DATA_CELL_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_ROW_TAG;
 import static com.swirlds.cli.utility.HtmlTagFactory.LOG_LEVEL_COLUMN_LABEL;
@@ -341,7 +340,7 @@ public class LogLine implements FormattableString {
         if (nodeId != null) {
             final HtmlTagFactory nodeIdTagFactory = new HtmlTagFactory(
                             HTML_DATA_CELL_TAG, "node" + escapeHtml4(nodeId.toString()) + " ", false)
-                    .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
+                    .addClasses(List.of(NODE_ID_COLUMN_LABEL, HIDEABLE_LABEL));
             dataCellTags.add(nodeIdTagFactory.generateTag());
         }
 
@@ -350,7 +349,7 @@ public class LogLine implements FormattableString {
                     new UnitFormatter(timestamp.toEpochMilli() - logStartTime.toEpochMilli(), UNIT_MILLISECONDS);
             final HtmlTagFactory logStartTimeTagFactory = new HtmlTagFactory(
                             HTML_DATA_CELL_TAG, escapeHtml4(unitFormatter.render()) + " ", false)
-                    .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
+                    .addClasses(List.of(ELAPSED_TIME_COLUMN_LABEL, HIDEABLE_LABEL));
             dataCellTags.add(logStartTimeTagFactory.generateTag());
         }
 
@@ -360,32 +359,32 @@ public class LogLine implements FormattableString {
                         HTML_DATA_CELL_TAG,
                         escapeHtml4(timestampOriginalString) + whitespaces.get(whitespaceIndex++),
                         false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(timestampTagFactory.generateTag());
 
         final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(logNumber) + whitespaces.get(whitespaceIndex++), false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logNumberTagFactory.generateTag());
 
         final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(logLevel) + whitespaces.get(whitespaceIndex++), false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logLevelTagFactory.generateTag());
 
         final HtmlTagFactory markerTagFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(marker) + whitespaces.get(whitespaceIndex++), false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(markerTagFactory.generateTag());
 
         final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(threadName) + whitespaces.get(whitespaceIndex), false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(threadNameTagFactory.generateTag());
 
         final HtmlTagFactory classNameTagFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(className) + colonSpace, false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(CLASS_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(CLASS_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(classNameTagFactory.generateTag());
 
         final HtmlTagFactory remainderOfLineTagFactory = new HtmlTagFactory(
@@ -394,7 +393,7 @@ public class LogLine implements FormattableString {
                         // escaped
                         remainderOfLine.generateHtmlString(),
                         false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, List.of(REMAINDER_OF_LINE_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(REMAINDER_OF_LINE_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(remainderOfLineTagFactory.generateTag());
 
         // the actual value of these elements of the line become classes for the line itself, so that we can filter
@@ -404,7 +403,7 @@ public class LogLine implements FormattableString {
                 .toList();
 
         return new HtmlTagFactory(HTML_ROW_TAG, "\n" + String.join("\n", dataCellTags) + "\n", false)
-                .addAttribute(HTML_CLASS_ATTRIBUTE, rowClassNames)
+                .addClasses(rowClassNames)
                 .generateTag();
     }
 }

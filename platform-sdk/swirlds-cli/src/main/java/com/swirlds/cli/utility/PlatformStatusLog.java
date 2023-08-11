@@ -16,7 +16,6 @@
 
 package com.swirlds.cli.utility;
 
-import static com.swirlds.cli.utility.HtmlTagFactory.HTML_CLASS_ATTRIBUTE;
 import static com.swirlds.cli.utility.HtmlTagFactory.HTML_SPAN_TAG;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeHtml4;
 
@@ -160,15 +159,15 @@ public class PlatformStatusLog implements FormattableString {
     public String generateHtmlString() {
         return platformSpent
                 + new HtmlTagFactory(HTML_SPAN_TAG, duration, false)
-                        .addAttribute(HTML_CLASS_ATTRIBUTE, STATUS_HTML_CLASS)
+                        .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + in
                 + new HtmlTagFactory(HTML_SPAN_TAG, previousStatus, false)
-                        .addAttribute(HTML_CLASS_ATTRIBUTE, STATUS_HTML_CLASS)
+                        .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + nowIn
                 + new HtmlTagFactory(HTML_SPAN_TAG, newStatus, false)
-                        .addAttribute(HTML_CLASS_ATTRIBUTE, STATUS_HTML_CLASS)
+                        .addClass(STATUS_HTML_CLASS)
                         .generateTag()
                 + escapeHtml4(statusMessageRemainder);
     }

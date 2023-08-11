@@ -68,6 +68,13 @@ public class HtmlTagFactory {
     public static final String FILTER_COLUMN_DIV_LABEL = "filter-column";
 
     /**
+     * This label is used to hold the value of how many filters are currently applied to a field
+     * <p>
+     * This is used to determine if the field should be hidden or not
+     */
+    public static final String DATA_HIDE_LABEL = "data-hide";
+
+    /**
      * Map from attribute name to list of attribute values.
      */
     private final Map<String, List<String>> attributeMap = new HashMap<>();
@@ -141,6 +148,26 @@ public class HtmlTagFactory {
         }
 
         return this;
+    }
+
+    /**
+     * Convenience method for adding a class attribute.
+     *
+     * @param className The class name
+     * @return this
+     */
+    public HtmlTagFactory addClass(@NonNull final String className) {
+        return addAttribute(HTML_CLASS_ATTRIBUTE, className);
+    }
+
+    /**
+     * Convenience method for adding multiple class attributes.
+     *
+     * @param classNames The class names
+     * @return this
+     */
+    public HtmlTagFactory addClasses(@NonNull final List<String> classNames) {
+        return addAttribute(HTML_CLASS_ATTRIBUTE, classNames);
     }
 
     /**
