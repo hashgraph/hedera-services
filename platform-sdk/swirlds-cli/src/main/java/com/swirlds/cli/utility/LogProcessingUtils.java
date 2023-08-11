@@ -30,6 +30,7 @@ import static com.swirlds.cli.utility.CssRuleSetFactory.TOP_VALUE;
 import static com.swirlds.cli.utility.CssRuleSetFactory.VERTICAL_ALIGN_PROPERTY;
 import static com.swirlds.cli.utility.CssRuleSetFactory.WHITE_SPACE_PROPERTY;
 import static com.swirlds.cli.utility.CssRuleSetFactory.WORD_BREAK_PROPERTY;
+import static com.swirlds.cli.utility.HtmlColors.getHtmlColor;
 import static com.swirlds.cli.utility.HtmlTagFactory.CLASS_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.DATA_HIDE_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.ELAPSED_TIME_COLUMN_LABEL;
@@ -67,6 +68,7 @@ import static com.swirlds.cli.utility.LogLine.LOG_NUMBER_COLOR;
 import static com.swirlds.cli.utility.LogLine.THREAD_NAME_COLOR;
 import static com.swirlds.cli.utility.LogLine.TIMESTAMP_COLOR;
 import static com.swirlds.cli.utility.LogLine.getLogLevelColor;
+import static com.swirlds.cli.utility.PlatformStatusLog.STATUS_HTML_CLASS;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -194,23 +196,27 @@ public class LogProcessingUtils {
         // specify colors for each column
         cssRules.add(new CssRuleSetFactory(
                         "." + TIMESTAMP_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(TIMESTAMP_COLOR)))
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(TIMESTAMP_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
                         "." + LOG_NUMBER_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(LOG_NUMBER_COLOR)))
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(LOG_NUMBER_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
                         "." + MARKER_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(LOG_MARKER_COLOR)))
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(LOG_MARKER_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
                         "." + THREAD_NAME_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(THREAD_NAME_COLOR)))
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(THREAD_NAME_COLOR)))
                 .generateCss());
         cssRules.add(new CssRuleSetFactory(
                         "." + CLASS_NAME_COLUMN_LABEL,
-                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(CLASS_NAME_COLOR)))
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(CLASS_NAME_COLOR)))
+                .generateCss());
+        cssRules.add(new CssRuleSetFactory(
+                        "." + STATUS_HTML_CLASS,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, getHtmlColor(PlatformStatusLog.STATUS_COLOR)))
                 .generateCss());
 
         // TODO make css rule set construction less of a hassle
@@ -222,7 +228,7 @@ public class LogProcessingUtils {
                 .map(logLevel -> new CssRuleSetFactory(
                                 List.of(HTML_DATA_CELL_TAG + "." + logLevel),
                                 List.of(new CssDeclaration(
-                                        TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(getLogLevelColor(logLevel)))))
+                                        TEXT_COLOR_PROPERTY, getHtmlColor(getLogLevelColor(logLevel)))))
                         .generateCss())
                 .toList());
 

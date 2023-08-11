@@ -353,32 +353,25 @@ public class LogLine implements FormattableString {
             dataCellTags.add(logStartTimeTagFactory.generateTag());
         }
 
-        int whitespaceIndex = 0;
-
         final HtmlTagFactory timestampTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG,
-                        escapeHtml4(timestampOriginalString) + whitespaces.get(whitespaceIndex++),
-                        false)
+                        HTML_DATA_CELL_TAG, escapeHtml4(timestampOriginalString), false)
                 .addClasses(List.of(TIMESTAMP_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(timestampTagFactory.generateTag());
 
-        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(logNumber) + whitespaces.get(whitespaceIndex++), false)
+        final HtmlTagFactory logNumberTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(logNumber), false)
                 .addClasses(List.of(LOG_NUMBER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(logNumberTagFactory.generateTag());
 
-        final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(logLevel) + whitespaces.get(whitespaceIndex++), false)
+        final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(logLevel), false)
                 .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL, logLevel));
         dataCellTags.add(logLevelTagFactory.generateTag());
 
-        final HtmlTagFactory markerTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(marker) + whitespaces.get(whitespaceIndex++), false)
+        final HtmlTagFactory markerTagFactory = new HtmlTagFactory(HTML_DATA_CELL_TAG, escapeHtml4(marker), false)
                 .addClasses(List.of(MARKER_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(markerTagFactory.generateTag());
 
         final HtmlTagFactory threadNameTagFactory = new HtmlTagFactory(
-                        HTML_DATA_CELL_TAG, escapeHtml4(threadName) + whitespaces.get(whitespaceIndex), false)
+                        HTML_DATA_CELL_TAG, escapeHtml4(threadName), false)
                 .addClasses(List.of(THREAD_NAME_COLUMN_LABEL, HIDEABLE_LABEL));
         dataCellTags.add(threadNameTagFactory.generateTag());
 
