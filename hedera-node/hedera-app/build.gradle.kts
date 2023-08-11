@@ -130,16 +130,16 @@ tasks.jar {
 val copyLib =
     tasks.register<Copy>("copyLib") {
         from(project.configurations.getByName("runtimeClasspath"))
-        into(project(":hedera-node").file("data/lib"))
+        into(rootProject.layout.projectDirectory.file("data/lib"))
     }
 
 // Copy built jar into `data/apps` and rename HederaNode.jar
 val copyApp =
     tasks.register<Copy>("copyApp") {
         from(tasks.jar)
-        into(project(":hedera-node").file("data/apps"))
+        into(rootProject.layout.projectDirectory.file("data/apps"))
         rename { "HederaNode.jar" }
-        shouldRunAfter(tasks.getByName("copyLib"))
+        shouldRunAfter(tasks.named("copyLib"))
     }
 
 tasks.assemble {
@@ -159,7 +159,7 @@ java.sourceSets["xtest"].java.srcDir(xtestGeneratedSources)
 tasks.register<JavaExec>("run") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = project(":hedera-node").projectDir
+    workingDir = rootProject.layout.projectDirectory.asFile
     jvmArgs = listOf("-cp", "data/lib/*")
     mainClass.set("com.swirlds.platform.Browser")
 }
@@ -167,28 +167,27 @@ tasks.register<JavaExec>("run") {
 tasks.register<JavaExec>("modrun") {
     group = "application"
     dependsOn(tasks.assemble)
-    workingDir = project(":hedera-node").projectDir
+    workingDir = rootProject.layout.projectDirectory.asFile
     jvmArgs = listOf("-cp", "data/lib/*", "-Dhedera.workflows.enabled=true")
     mainClass.set("com.swirlds.platform.Browser")
 }
 
 val cleanRun =
-    tasks.register("cleanRun") {
-        val prj = project(":hedera-node")
-        prj.delete(File(prj.projectDir, "database"))
-        prj.delete(File(prj.projectDir, "output"))
-        prj.delete(File(prj.projectDir, "settingsUsed.txt"))
-        prj.delete(File(prj.projectDir, "swirlds.jar"))
-        prj.projectDir
-            .list { _, fileName -> fileName.startsWith("MainNetStats") }
-            ?.forEach { file -> prj.delete(file) }
-
-        val dataDir = File(prj.projectDir, "data")
-        prj.delete(File(dataDir, "accountBalances"))
-        prj.delete(File(dataDir, "apps"))
-        prj.delete(File(dataDir, "lib"))
-        prj.delete(File(dataDir, "recordstreams"))
-        prj.delete(File(dataDir, "saved"))
+    tasks.register<Delete>("cleanRun") {
+        val prjDir = rootProject.layout.projectDirectory
+        delete(prjDir.dir("database"))
+        delete(prjDir.dir("output"))
+        delete(prjDir.dir("settingsUsed.txt"))
+        delete(prjDir.dir("swirlds.jar"))
+        delete(prjDir.asFileTree.matching {
+            include("MainNetStats*")
+        })
+        val dataDir = prjDir.dir("data")
+        delete(dataDir.dir("accountBalances"))
+        delete(dataDir.dir("apps"))
+        delete(dataDir.dir("lib"))
+        delete(dataDir.dir("recordstreams"))
+        delete(dataDir.dir("saved"))
     }
 
 tasks.clean { dependsOn(cleanRun) }

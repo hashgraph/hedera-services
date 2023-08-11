@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.aggregate-reports")
-    id("com.hedera.hashgraph.spotless-conventions")
-    id("com.hedera.hashgraph.spotless-kotlin-conventions")
-    id("com.hedera.hashgraph.dependency-analysis")
+tasks.register("checkAllModuleInfo") {
+    dependsOn(gradle.includedBuilds.map { build ->
+        build.task(":checkAllModuleInfo")
+    })
 }
 
-repositories {
-    mavenCentral()
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+tasks.register("assemble") {
+    dependsOn(gradle.includedBuilds.map { build ->
+        build.task(":assemble")
+    })
 }

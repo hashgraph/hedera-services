@@ -15,10 +15,27 @@
  */
 
 plugins {
+    id("com.hedera.hashgraph.aggregate-reports")
+    id("com.hedera.hashgraph.dependency-analysis")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
 }
 
-repositories { mavenCentral() }
+tasks.register("checkAllModuleInfo") {
+    dependsOn(subprojects.map { subproject ->
+        ":${subproject.name}:checkAllModuleInfo"
+    })
+}
+
+tasks.named("assemble") {
+    dependsOn(subprojects.map { subproject ->
+        ":${subproject.name}:assemble"
+    })
+}
+
+repositories {
+    mavenCentral()
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+}
 
 description = "Hedera Services Node"

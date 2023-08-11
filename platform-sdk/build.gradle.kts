@@ -21,6 +21,18 @@ plugins {
     id("com.hedera.hashgraph.dependency-analysis")
 }
 
+tasks.named("assemble") {
+    dependsOn(subprojects.map { subproject ->
+        ":${subproject.name}:assemble"
+    })
+}
+
+tasks.register("checkAllModuleInfo") {
+    dependsOn(subprojects.map { subproject ->
+        ":${subproject.name}:checkAllModuleInfo"
+    })
+}
+
 repositories { mavenCentral() }
 
 tasks.register<JavaExec>("run") {
