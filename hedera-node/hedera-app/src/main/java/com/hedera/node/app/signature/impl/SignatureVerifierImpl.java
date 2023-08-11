@@ -87,7 +87,9 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
                                 "Unsupported signature type: " + kind);
                     };
 
-            assert preparer != null;
+            if (preparer == null) {
+                throw new RuntimeException("Preparer should not be null");
+            }
             preparer.addSignature(sigPair.signature());
             preparer.addKey(sigPair.keyBytes());
             final var txSig = preparer.prepareTransactionSignature();
