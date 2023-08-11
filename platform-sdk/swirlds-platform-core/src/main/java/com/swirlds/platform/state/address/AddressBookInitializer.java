@@ -168,14 +168,12 @@ public class AddressBookInitializer {
     @NonNull
     private InitializedAddressBooks initialize() {
         AddressBook candidateAddressBook;
-        final AddressBook previousAddressBook;
         if (useConfigAddressBook) {
             // settings.txt override to use config.txt address book
             logger.info(
                     STARTUP.getMarker(),
                     "Overriding the address book in the state with the address book from config.txt");
             candidateAddressBook = configAddressBook;
-            previousAddressBook = stateAddressBook;
         } else if (initialState.isGenesisState()) {
             // Starting from Genesis, config and state address book should be the same.
             if (!Objects.equals(configAddressBook, initialState.getAddressBook())) {
@@ -184,25 +182,23 @@ public class AddressBookInitializer {
             logger.info(STARTUP.getMarker(), "Starting from genesis: using the config address book.");
             candidateAddressBook = configAddressBook;
             checkCandidateAddressBookValidity(candidateAddressBook);
-            previousAddressBook = null;
         } else if (!softwareUpgrade) {
             // Loaded State From Disk, Non-Genesis, No Software Upgrade
             logger.info(STARTUP.getMarker(), "Using the loaded state's address book and weight values.");
             candidateAddressBook = stateAddressBook;
             // since state address book was checked for validity prior to adoption, no check needed here.
-            previousAddressBook = candidateAddressBook;
         } else {
             // Loaded State from Disk, Non-Genesis, There is a software version upgrade
             logger.info(
                     STARTUP.getMarker(),
                     "The address book weight may be updated by the application using data from the state snapshot.");
-            previousAddressBook = stateAddressBook;
             candidateAddressBook = initialState
                     .getSwirldState()
                     .updateWeight(configAddressBook.copy(), platformContext)
                     .copy();
             candidateAddressBook = checkCandidateAddressBookValidity(candidateAddressBook);
         }
+        final AddressBook previousAddressBook = initialState.isGenesisState() ? null : stateAddressBook;
         recordAddressBooks(candidateAddressBook);
         return new InitializedAddressBooks(candidateAddressBook, previousAddressBook);
     }
