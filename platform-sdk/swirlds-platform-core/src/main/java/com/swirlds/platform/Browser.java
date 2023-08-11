@@ -50,13 +50,14 @@ import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.gui.model.GuiModel;
+import com.swirlds.gui.model.InfoApp;
+import com.swirlds.gui.model.InfoMember;
+import com.swirlds.gui.model.InfoSwirld;
 import com.swirlds.logging.payloads.NodeStartPayload;
 import com.swirlds.platform.config.internal.PlatformConfigUtils;
 import com.swirlds.platform.crypto.CryptoConstants;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.gui.internal.InfoApp;
-import com.swirlds.platform.gui.internal.InfoMember;
-import com.swirlds.platform.gui.internal.InfoSwirld;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.network.Network;
 import com.swirlds.platform.recovery.EmergencyRecoveryManager;
@@ -364,9 +365,9 @@ public class Browser {
                                 addressBookInitializer.getInitialAddressBook().copy());
             }
 
-            GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
-            GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-            GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+            GuiModel.getInstance().setPlatformName(nodeId, platformName);
+            GuiModel.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+            GuiModel.getInstance().setInstanceNumber(nodeId, instanceNumber);
 
             final SwirldsPlatform platform = new SwirldsPlatform(
                     platformContext,
