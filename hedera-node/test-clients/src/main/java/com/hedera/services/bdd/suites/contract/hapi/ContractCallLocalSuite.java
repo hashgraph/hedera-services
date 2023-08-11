@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -78,8 +77,6 @@ public class ContractCallLocalSuite extends HapiSuite {
     private static final String OWNERSHIP_CHECK_CONTRACT = "OwnershipCheck";
     private static final String OWNERSHIP_CHECK_CONTRACT_IS_OWNER_FUNCTION = "isOwner";
     private static final String TOKEN = "TestToken";
-    private static final String ACCOUNT = "Account";
-    private static final String SECOND_ACCOUNT = "Account2";
     private static final String NFT_TOKEN = "NftToken";
     private static final String SUPPLY_KEY = "SupplyKey";
     private static final String FIRST_MEMO = "firstMemo";
@@ -99,14 +96,14 @@ public class ContractCallLocalSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(new HapiSpec[] {
-            //            invalidDeletedContract(),
-            //            invalidContractID(),
-            //            impureCallFails(),
-            //            insufficientFeeFails(),
-            //            lowBalanceFails(),
-            //            erc20Query(),
-            //            vanillaSuccess(),
-            //            callLocalDoesNotCheckSignaturesNorPayer(),
+            invalidDeletedContract(),
+            invalidContractID(),
+            impureCallFails(),
+            insufficientFeeFails(),
+            lowBalanceFails(),
+            erc20Query(),
+            vanillaSuccess(),
+            callLocalDoesNotCheckSignaturesNorPayer(),
             htsOwnershipCheckWorksWithAliasAddress()
         });
     }
@@ -143,7 +140,6 @@ public class ContractCallLocalSuite extends HapiSuite {
                             final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
                             final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                             final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
                             final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                             ecdsaAccountId.set(registry.getAccountID(SECP_256K1_SOURCE_KEY));
                             ecdsaAccountIdLongZeroAddress.set(
