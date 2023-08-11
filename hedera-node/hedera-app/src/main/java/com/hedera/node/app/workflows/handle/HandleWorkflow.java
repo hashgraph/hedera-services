@@ -86,7 +86,6 @@ public class HandleWorkflow {
     private final TransactionChecker checker;
     private final ServiceScopeLookup serviceScopeLookup;
     private final ConfigProvider configProvider;
-    private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
