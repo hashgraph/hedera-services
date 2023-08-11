@@ -309,7 +309,7 @@ public interface DoubleAccumulator extends Metric {
          */
         @Override
         public String toString() {
-            return "DoubleAccumulatorConfig{" + "accumulator="
+            return "DoubleAccumulatorConfig{" + super.toString() + "accumulator="
                     + accumulator + ", initializer="
                     + initializer + ", initialValue="
                     + initialValue + '}';
