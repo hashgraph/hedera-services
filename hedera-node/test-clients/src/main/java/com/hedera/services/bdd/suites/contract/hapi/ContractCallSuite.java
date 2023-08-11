@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -118,7 +117,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -919,13 +917,13 @@ public class ContractCallSuite extends HapiSuite {
                 .given(
                         newKeyNamed(supplyKey),
                         newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(
-                                GENESIS, ercUserKey, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ercUserKey, ONE_HUNDRED_HBARS)),
                         withOpContext((spec, opLog) -> {
                             final AtomicReference<AccountID> ercUserId = new AtomicReference<>();
                             final var lookup = getAliasedAccountInfo(ercUserKey)
                                     .logged()
-                                    .exposingContractAccountIdTo(evmAddress -> ercUserAddress.set(asHeadlongAddress(CommonUtils.unhex(evmAddress))))
+                                    .exposingContractAccountIdTo(evmAddress ->
+                                            ercUserAddress.set(asHeadlongAddress(CommonUtils.unhex(evmAddress))))
                                     .exposingIdTo(ercUserId::set);
                             allRunFor(spec, lookup);
                             System.out.println("ERC user is " + ercUserAddress.get() + " (" + ercUserId.get() + ")");
@@ -946,8 +944,7 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingAddressTo(erc20Address::set)
                                 .advertisingCreation(),
                         tokenAssociate(ercUser, erc20Name),
-                        cryptoTransfer(moving(erc20UserBalance, erc20Name)
-                                .between(TOKEN_TREASURY, ercUser)),
+                        cryptoTransfer(moving(erc20UserBalance, erc20Name).between(TOKEN_TREASURY, ercUser)),
                         tokenCreate(erc721Name)
                                 .entityMemo(erc721Memo)
                                 .name(erc721Name)
@@ -958,17 +955,17 @@ public class ContractCallSuite extends HapiSuite {
                                 .supplyKey(supplyKey)
                                 .treasury(TOKEN_TREASURY)
                                 .advertisingCreation(),
-                        mintToken(erc721Name, IntStream.range(0, erc721UserBalance + 1)
-                                .mapToObj(i -> ByteString.copyFromUtf8(
-                                        "https://example.com/721/" + (i + 1)))
-                                .toList()),
+                        mintToken(
+                                erc721Name,
+                                IntStream.range(0, erc721UserBalance + 1)
+                                        .mapToObj(i -> ByteString.copyFromUtf8("https://example.com/721/" + (i + 1)))
+                                        .toList()),
                         tokenAssociate(ercUser, erc721Name),
                         cryptoApproveAllowance()
                                 .addNftAllowance(ercUser, erc721Name, ercOperator, true, List.of())
                                 .signedBy(DEFAULT_PAYER, ercUser),
                         cryptoTransfer(LongStream.rangeClosed(1, erc721UserBalance)
-                                .mapToObj(i -> movingUnique(erc721Name, i)
-                                        .between(TOKEN_TREASURY, ercUser))
+                                .mapToObj(i -> movingUnique(erc721Name, i).between(TOKEN_TREASURY, ercUser))
                                 .toArray(TokenMovement[]::new)),
                         uploadInitCode(contract),
                         contractCreate(contract, secret).gas(250_000L))
@@ -983,73 +980,47 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
                                 .exposingRawResultsTo(prngOutput::set),
                         sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc20Balance",
-                                erc20Address.get(),
-                                ercUserAddress.get())
+                                        contract, "getErc20Balance", erc20Address.get(), ercUserAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-20 user balance is {}", results[0]))
                                 .exposingRawResultsTo(erc20BalanceOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc20Supply",
-                                erc20Address.get())
+                        sourcing(() -> contractCallLocal(contract, "getErc20Supply", erc20Address.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-20 supply is {}", results[0]))
                                 .exposingRawResultsTo(erc20SupplyOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc20Name",
-                                erc20Address.get())
+                        sourcing(() -> contractCallLocal(contract, "getErc20Name", erc20Address.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-20 name is {}", results[0]))
                                 .exposingRawResultsTo(erc20NameOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc20Symbol",
-                                erc20Address.get())
+                        sourcing(() -> contractCallLocal(contract, "getErc20Symbol", erc20Address.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-20 symbol is {}", results[0]))
                                 .exposingRawResultsTo(erc20SymbolOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc20Decimals",
-                                erc20Address.get())
+                        sourcing(() -> contractCallLocal(contract, "getErc20Decimals", erc20Address.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-20 decimals is {}", results[0]))
                                 .exposingRawResultsTo(erc20DecimalsOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc721Name",
-                                erc721Address.get())
+                        sourcing(() -> contractCallLocal(contract, "getErc721Name", erc721Address.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-721 name is {}", results[0]))
                                 .exposingRawResultsTo(erc721NameOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc721Symbol",
-                                erc721Address.get())
+                        sourcing(() -> contractCallLocal(contract, "getErc721Symbol", erc721Address.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-721 symbol is {}", results[0]))
                                 .exposingRawResultsTo(erc721SymbolOutput::set)),
                         sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc721TokenUri",
-                                erc721Address.get(), BigInteger.TWO)
+                                        contract, "getErc721TokenUri", erc721Address.get(), BigInteger.TWO)
                                 .exposingTypedResultsTo(results -> LOG.info("SN#2 token URI is {}", results[0]))
                                 .exposingRawResultsTo(erc721TokenUriOutput::set)),
                         sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc721Balance",
-                                erc721Address.get(), ercUserAddress.get())
+                                        contract, "getErc721Balance", erc721Address.get(), ercUserAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("ERC-721 user balance is {}", results[0]))
                                 .exposingRawResultsTo(erc721BalanceOutput::set)),
+                        sourcing(
+                                () -> contractCallLocal(contract, "getErc721Owner", erc721Address.get(), BigInteger.ONE)
+                                        .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
+                                        .exposingRawResultsTo(erc721OwnerOutput::set)),
                         sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc721Owner",
-                                erc721Address.get(), BigInteger.ONE)
-                                .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
-                                .exposingRawResultsTo(erc721OwnerOutput::set)),
-                        sourcing(() -> contractCallLocal(
-                                contract,
-                                "getErc721IsOperator",
-                                erc721Address.get(), ercUserAddress.get(), ercOperatorAddress.get())
+                                        contract,
+                                        "getErc721IsOperator",
+                                        erc721Address.get(),
+                                        ercUserAddress.get(),
+                                        ercOperatorAddress.get())
                                 .exposingTypedResultsTo(results -> LOG.info("Is operator? {}", results[0]))
-                                .exposingRawResultsTo(erc721IsOperatorOutput::set))
-                        )
+                                .exposingRawResultsTo(erc721IsOperatorOutput::set)))
                 .then(withOpContext((spec, opLog) -> {
                     LOG.info("Explicit secret is {}", CommonUtils.hex(secretOutput.get()));
                     LOG.info("Explicit PRNG seed is {}", CommonUtils.hex(prngOutput.get()));

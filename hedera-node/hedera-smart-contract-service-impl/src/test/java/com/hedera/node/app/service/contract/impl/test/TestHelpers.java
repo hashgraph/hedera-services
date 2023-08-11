@@ -385,7 +385,8 @@ public class TestHelpers {
         assertEquals(status, ex.getStatus());
     }
 
-    public static void assertFailsPrecheckWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
+    public static void assertFailsPrecheckWith(
+            @NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
         final var ex = assertThrows(PreCheckException.class, something::run);
         assertEquals(status, ex.getStatus());
     }

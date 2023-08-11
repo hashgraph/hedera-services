@@ -78,8 +78,7 @@ public interface TransactionModule {
     @Provides
     @TransactionScope
     static HederaEvmContext provideHederaEvmContext(
-            @NonNull final HederaOperations extWorldScope,
-            @NonNull final HederaEvmBlocks hederaEvmBlocks) {
+            @NonNull final HederaOperations extWorldScope, @NonNull final HederaEvmBlocks hederaEvmBlocks) {
         return new HederaEvmContext(extWorldScope.gasPriceInTinybars(), false, hederaEvmBlocks);
     }
 
