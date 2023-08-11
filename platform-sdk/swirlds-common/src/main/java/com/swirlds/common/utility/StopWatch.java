@@ -16,6 +16,7 @@
 
 package com.swirlds.common.utility;
 
+import com.swirlds.base.time.Time;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  * A simple stop watch that can be used to measure elapsed time.
  */
 public class StopWatch {
+    private final Time time;
     private long startTime;
     private long endTime;
     private boolean running;
@@ -33,6 +35,11 @@ public class StopWatch {
      * Creates a new StopWatch.
      */
     public StopWatch() {
+        this(Time.getCurrent());
+    }
+
+    public StopWatch(@NonNull final Time time) {
+        this.time = Objects.requireNonNull(time);
         this.running = false;
         this.suspended = false;
     }
@@ -44,18 +51,19 @@ public class StopWatch {
         if (running) {
             throw new IllegalStateException("StopWatch is already running.");
         }
-        this.startTime = System.nanoTime();
         this.running = true;
+        this.startTime = time.nanoTime();
     }
 
     /**
      * Stops StopWatch only after being running
      */
     public void stop() {
+        final long nanoTime = time.nanoTime();
         if (!running || suspended) {
             throw new IllegalStateException("StopWatch is not running.");
         }
-        this.endTime = System.nanoTime();
+        this.endTime = nanoTime;
         this.running = false;
     }
 
@@ -63,10 +71,11 @@ public class StopWatch {
      * Suspends StopWatch only after being started
      */
     public void suspend() {
+        final long nanoTime = time.nanoTime();
         if (!running || suspended) {
             throw new IllegalStateException("StopWatch is not running or is already suspended.");
         }
-        this.endTime = System.nanoTime();
+        this.endTime = nanoTime;
         this.suspended = true;
     }
 
@@ -74,10 +83,11 @@ public class StopWatch {
      * Resumes StopWatch only after being suspended
      */
     public void resume() {
+        final long nanoTime = time.nanoTime();
         if (!suspended) {
             throw new IllegalStateException("StopWatch is not suspended.");
         }
-        this.startTime += (System.nanoTime() - endTime); // Adjusting the startTime
+        this.startTime += (nanoTime - endTime); // Adjusting the startTime
         this.suspended = false;
     }
 
@@ -88,12 +98,13 @@ public class StopWatch {
      * @throws IllegalStateException if the StopWatch has not started yet
      */
     public long getElapsedTimeNano() {
+        final long nanoTime = time.nanoTime();
         if (startTime == 0 && endTime == 0) {
             throw new IllegalStateException("StopWatch has not started yet.");
         }
 
         if (running) {
-            return System.nanoTime() - startTime;
+            return nanoTime - startTime;
         }
 
         return endTime - startTime;
