@@ -162,7 +162,7 @@ public final class BootstrapUtils {
     public static Configuration loadConfig(
             @NonNull final PathsConfig pathsConfig, @NonNull final Map<NodeId, SwirldMain> appMains)
             throws IOException {
-        Objects.requireNonNull(pathsConfig);
+        Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
         Objects.requireNonNull(appMains);
 
         // The properties from the config.txt
