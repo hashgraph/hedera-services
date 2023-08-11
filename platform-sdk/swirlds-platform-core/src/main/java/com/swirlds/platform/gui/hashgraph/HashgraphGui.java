@@ -17,7 +17,7 @@
 package com.swirlds.platform.gui.hashgraph;
 
 import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.components.PrePaintableJPanel;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.CachingGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.HashgraphGuiControls;
