@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -35,6 +36,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -45,14 +47,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -83,6 +89,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -104,12 +111,14 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -796,7 +805,7 @@ public class ContractCallSuite extends HapiSuite {
                         uploadInitCode(contractAlternatives),
                         contractCreate(contractAlternatives),
                         tokenCreate("nft")
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .exposingAddressTo(nftAddr::set)
                                 .initialSupply(0)
                                 .supplyKey(DEFAULT_PAYER)
@@ -880,12 +889,13 @@ public class ContractCallSuite extends HapiSuite {
         final var erc721Symbol = "SYM721";
         final var erc721Name = "721 Unique Things";
         final var erc721Memo = "721 Unique Things Memo";
-        final var erc721SN1TokenUri = "https://example.com/721/1";
         final var erc721UserBalance = 3;
         final var ercUser = "ercUser";
+        final var ercOperator = "ercOperator";
         final AtomicReference<Address> erc20Address = new AtomicReference<>();
         final AtomicReference<Address> erc721Address = new AtomicReference<>();
         final AtomicReference<Address> ercUserAddress = new AtomicReference<>();
+        final AtomicReference<Address> ercOperatorAddress = new AtomicReference<>();
         final var contract = "SpecialQueriesXTest";
         final var secretAbi =
                 "{\"inputs\":[],\"name\":\"secret\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -901,17 +911,65 @@ public class ContractCallSuite extends HapiSuite {
         final AtomicReference<byte[]> erc721SymbolOutput = new AtomicReference<>();
         final AtomicReference<byte[]> erc721TokenUriOutput = new AtomicReference<>();
         final AtomicReference<byte[]> erc721BalanceOutput = new AtomicReference<>();
+        final AtomicReference<byte[]> erc721OwnerOutput = new AtomicReference<>();
         final AtomicReference<byte[]> erc721IsOperatorOutput = new AtomicReference<>();
+        final var supplyKey = "supplyKey";
+        final var ercUserKey = "ercUserKey";
         return onlyDefaultHapiSpec("SpecialQueriesXTest")
                 .given(
-                        cryptoCreate(ercUser).advertisingCreation(),
-                        tokenCreate("ERC20")
+                        newKeyNamed(supplyKey),
+                        newKeyNamed(ercUserKey).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(
+                                GENESIS, ercUserKey, ONE_HUNDRED_HBARS)),
+                        withOpContext((spec, opLog) -> {
+                            final AtomicReference<AccountID> ercUserId = new AtomicReference<>();
+                            final var lookup = getAliasedAccountInfo(ercUserKey)
+                                    .logged()
+                                    .exposingContractAccountIdTo(evmAddress -> ercUserAddress.set(asHeadlongAddress(CommonUtils.unhex(evmAddress))))
+                                    .exposingIdTo(ercUserId::set);
+                            allRunFor(spec, lookup);
+                            System.out.println("ERC user is " + ercUserAddress.get() + " (" + ercUserId.get() + ")");
+                            spec.registry().saveAccountId(ercUser, ercUserId.get());
+                            spec.registry().saveKey(ercUser, spec.registry().getKey(ercUserKey));
+                        }),
+                        cryptoCreate(ercOperator)
+                                .exposingCreatedIdTo(id -> ercOperatorAddress.set(idAsHeadlongAddress(id)))
+                                .advertisingCreation(),
+                        cryptoCreate(TOKEN_TREASURY).advertisingCreation(),
+                        tokenCreate(erc20Name)
                                 .entityMemo(erc20Memo)
                                 .name(erc20Name)
                                 .symbol(erc20Symbol)
                                 .decimals(erc20Decimals)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(erc20TotalSupply)
+                                .exposingAddressTo(erc20Address::set)
                                 .advertisingCreation(),
+                        tokenAssociate(ercUser, erc20Name),
+                        cryptoTransfer(moving(erc20UserBalance, erc20Name)
+                                .between(TOKEN_TREASURY, ercUser)),
+                        tokenCreate(erc721Name)
+                                .entityMemo(erc721Memo)
+                                .name(erc721Name)
+                                .symbol(erc721Symbol)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .exposingAddressTo(erc721Address::set)
+                                .supplyKey(supplyKey)
+                                .treasury(TOKEN_TREASURY)
+                                .advertisingCreation(),
+                        mintToken(erc721Name, IntStream.range(0, erc721UserBalance + 1)
+                                .mapToObj(i -> ByteString.copyFromUtf8(
+                                        "https://example.com/721/" + (i + 1)))
+                                .toList()),
+                        tokenAssociate(ercUser, erc721Name),
+                        cryptoApproveAllowance()
+                                .addNftAllowance(ercUser, erc721Name, ercOperator, true, List.of())
+                                .signedBy(DEFAULT_PAYER, ercUser),
+                        cryptoTransfer(LongStream.rangeClosed(1, erc721UserBalance)
+                                .mapToObj(i -> movingUnique(erc721Name, i)
+                                        .between(TOKEN_TREASURY, ercUser))
+                                .toArray(TokenMovement[]::new)),
                         uploadInitCode(contract),
                         contractCreate(contract, secret).gas(250_000L))
                 .when(
@@ -923,11 +981,90 @@ public class ContractCallSuite extends HapiSuite {
                                 .exposingRawResultsTo(tinycentEquivOutput::set),
                         contractCallLocal(contract, "getPrngSeed")
                                 .exposingTypedResultsTo(results -> LOG.info("PRNG seed is {}", results[0]))
-                                .exposingRawResultsTo(prngOutput::set))
+                                .exposingRawResultsTo(prngOutput::set),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc20Balance",
+                                erc20Address.get(),
+                                ercUserAddress.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 user balance is {}", results[0]))
+                                .exposingRawResultsTo(erc20BalanceOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc20Supply",
+                                erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 supply is {}", results[0]))
+                                .exposingRawResultsTo(erc20SupplyOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc20Name",
+                                erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 name is {}", results[0]))
+                                .exposingRawResultsTo(erc20NameOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc20Symbol",
+                                erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 symbol is {}", results[0]))
+                                .exposingRawResultsTo(erc20SymbolOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc20Decimals",
+                                erc20Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-20 decimals is {}", results[0]))
+                                .exposingRawResultsTo(erc20DecimalsOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721Name",
+                                erc721Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 name is {}", results[0]))
+                                .exposingRawResultsTo(erc721NameOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721Symbol",
+                                erc721Address.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 symbol is {}", results[0]))
+                                .exposingRawResultsTo(erc721SymbolOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721TokenUri",
+                                erc721Address.get(), BigInteger.TWO)
+                                .exposingTypedResultsTo(results -> LOG.info("SN#2 token URI is {}", results[0]))
+                                .exposingRawResultsTo(erc721TokenUriOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721Balance",
+                                erc721Address.get(), ercUserAddress.get())
+                                .exposingTypedResultsTo(results -> LOG.info("ERC-721 user balance is {}", results[0]))
+                                .exposingRawResultsTo(erc721BalanceOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721Owner",
+                                erc721Address.get(), BigInteger.ONE)
+                                .exposingTypedResultsTo(results -> LOG.info("SN#1 owner is {}", results[0]))
+                                .exposingRawResultsTo(erc721OwnerOutput::set)),
+                        sourcing(() -> contractCallLocal(
+                                contract,
+                                "getErc721IsOperator",
+                                erc721Address.get(), ercUserAddress.get(), ercOperatorAddress.get())
+                                .exposingTypedResultsTo(results -> LOG.info("Is operator? {}", results[0]))
+                                .exposingRawResultsTo(erc721IsOperatorOutput::set))
+                        )
                 .then(withOpContext((spec, opLog) -> {
                     LOG.info("Explicit secret is {}", CommonUtils.hex(secretOutput.get()));
                     LOG.info("Explicit PRNG seed is {}", CommonUtils.hex(prngOutput.get()));
                     LOG.info("Explicit equiv tinycents is {}", CommonUtils.hex(tinycentEquivOutput.get()));
+                    LOG.info("Explicit ERC-20 balance {}", CommonUtils.hex(erc20BalanceOutput.get()));
+                    LOG.info("Explicit ERC-20 supply {}", CommonUtils.hex(erc20SupplyOutput.get()));
+                    LOG.info("Explicit ERC-20 name {}", CommonUtils.hex(erc20NameOutput.get()));
+                    LOG.info("Explicit ERC-20 symbol {}", CommonUtils.hex(erc20SymbolOutput.get()));
+                    LOG.info("Explicit ERC-20 decimals {}", CommonUtils.hex(erc20DecimalsOutput.get()));
+                    LOG.info("Explicit ERC-721 name {}", CommonUtils.hex(erc721NameOutput.get()));
+                    LOG.info("Explicit ERC-721 symbol {}", CommonUtils.hex(erc721SymbolOutput.get()));
+                    LOG.info("Explicit ERC-721 SN#2 metadata {}", CommonUtils.hex(erc721TokenUriOutput.get()));
+                    LOG.info("Explicit ERC-721 user balance is {}", CommonUtils.hex(erc721BalanceOutput.get()));
+                    LOG.info("Explicit ERC-721 SN#1 owner is {}", CommonUtils.hex(erc721OwnerOutput.get()));
+                    LOG.info("Explicit ERC-721 operator is {}", CommonUtils.hex(erc721IsOperatorOutput.get()));
                 }));
     }
 

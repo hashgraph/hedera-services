@@ -54,6 +54,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -381,6 +382,11 @@ public class TestHelpers {
 
     public static void assertFailsWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
         final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
+    }
+
+    public static void assertFailsPrecheckWith(@NonNull final ResponseCodeEnum status, @NonNull final Runnable something) {
+        final var ex = assertThrows(PreCheckException.class, something::run);
         assertEquals(status, ex.getStatus());
     }
 

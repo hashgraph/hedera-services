@@ -20,14 +20,20 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
+import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.ids.EntityIdService;
@@ -43,6 +49,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
@@ -51,6 +58,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,6 +96,18 @@ public abstract class AbstractContractXTest {
     }
 
     protected abstract long initialEntityNum();
+
+    protected Map<TokenID, Token> initialTokens() {
+        return new HashMap<>();
+    }
+
+    protected Map<EntityIDPair, TokenRelation> initialTokenRelationships() {
+        return new HashMap<>();
+    }
+
+    protected Map<NftID, Nft> initialNfts() {
+        return new HashMap<>();
+    }
 
     protected abstract Map<FileID, File> initialFiles();
 
@@ -147,9 +167,11 @@ public abstract class AbstractContractXTest {
         fakeHederaState.addService(
                 TokenService.NAME,
                 Map.of(
+                        TokenServiceImpl.TOKEN_RELS_KEY, initialTokenRelationships(),
                         TokenServiceImpl.ACCOUNTS_KEY, initialAccounts(),
                         TokenServiceImpl.ALIASES_KEY, initialAliases(),
-                        TokenServiceImpl.TOKENS_KEY, new HashMap<>()));
+                        TokenServiceImpl.TOKENS_KEY, initialTokens(),
+                        TokenServiceImpl.NFTS_KEY, initialNfts()));
         fakeHederaState.addService(FileServiceImpl.NAME, Map.of(FileServiceImpl.BLOBS_KEY, initialFiles()));
         fakeHederaState.addService(
                 ContractServiceImpl.NAME,
