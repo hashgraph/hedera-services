@@ -70,7 +70,6 @@ public class OnDiskValue<V> implements VirtualValue {
     /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
-        //        throwIfImmutable(); //TODO: uncomment this or remove?
         final var copy = new OnDiskValue<>(md, value);
         this.immutable = true;
         return copy;
