@@ -61,6 +61,12 @@ import static com.swirlds.cli.utility.HtmlTagFactory.REMAINDER_OF_LINE_COLUMN_LA
 import static com.swirlds.cli.utility.HtmlTagFactory.SECTION_HEADING;
 import static com.swirlds.cli.utility.HtmlTagFactory.THREAD_NAME_COLUMN_LABEL;
 import static com.swirlds.cli.utility.HtmlTagFactory.TIMESTAMP_COLUMN_LABEL;
+import static com.swirlds.cli.utility.LogLine.CLASS_NAME_COLOR;
+import static com.swirlds.cli.utility.LogLine.LOG_MARKER_COLOR;
+import static com.swirlds.cli.utility.LogLine.LOG_NUMBER_COLOR;
+import static com.swirlds.cli.utility.LogLine.THREAD_NAME_COLOR;
+import static com.swirlds.cli.utility.LogLine.TIMESTAMP_COLOR;
+import static com.swirlds.cli.utility.LogLine.getLogLevelColor;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -135,6 +141,94 @@ public class LogProcessingUtils {
         return inputTag + "\n" + labelTag + "\n" + breakTag + "\n";
     }
 
+    public static List<String> generateCssRules(@NonNull final List<LogLine> logLines) {
+        final List<String> cssRules = new ArrayList<>();
+
+        // hide elements that have a data-hide value that isn't 0 or NaN
+        cssRules.add(new CssRuleSetFactory(
+                        "[%s]:not([%s~='0']):not([%s~=\"NaN\"])"
+                                .formatted(DATA_HIDE_LABEL, DATA_HIDE_LABEL, DATA_HIDE_LABEL),
+                        new CssDeclaration(DISPLAY_PROPERTY, "none"))
+                .generateCss());
+        // display the filter checkboxes horizontally
+        cssRules.add(new CssRuleSetFactory("." + FILTERS_DIV_LABEL, new CssDeclaration(DISPLAY_PROPERTY, "flex"))
+                .generateCss());
+        // add padding between columns of filter checkboxes
+        cssRules.add(
+                new CssRuleSetFactory("." + FILTER_COLUMN_DIV_LABEL, new CssDeclaration(PADDING_LEFT_PROPERTY, "2em"))
+                        .generateCss());
+        // set page defaults
+        cssRules.add(new CssRuleSetFactory(
+                        List.of("html", "*"),
+                        List.of(
+                                new CssDeclaration(FONT_PROPERTY, DEFAULT_FONT),
+                                new CssDeclaration(BACKGROUND_COLOR_PROPERTY, PAGE_BACKGROUND_COLOR),
+                                new CssDeclaration(TEXT_COLOR_PROPERTY, DEFAULT_TEXT_COLOR),
+                                new CssDeclaration(WHITE_SPACE_PROPERTY, NO_WRAP_VALUE),
+                                new CssDeclaration(VERTICAL_ALIGN_PROPERTY, TOP_VALUE)))
+                .generateCss());
+        // pad the log table columns
+        cssRules.add(new CssRuleSetFactory(HTML_DATA_CELL_TAG, new CssDeclaration(PADDING_LEFT_PROPERTY, "1em"))
+                .generateCss());
+
+        // set a max width for remainder column, and wrap words
+        cssRules.add(new CssRuleSetFactory(
+                        List.of("." + REMAINDER_OF_LINE_COLUMN_LABEL),
+                        List.of(
+                                new CssDeclaration(MAX_WIDTH_PROPERTY, "100em"),
+                                new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
+                                new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
+                                new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
+                .generateCss());
+
+        // set a max width for thread name column, and wrap words
+        cssRules.add(new CssRuleSetFactory(
+                        List.of("." + THREAD_NAME_COLUMN_LABEL),
+                        List.of(
+                                new CssDeclaration(MAX_WIDTH_PROPERTY, "30em"),
+                                new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
+                                new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
+                                new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
+                .generateCss());
+
+        // specify colors for each column
+        cssRules.add(new CssRuleSetFactory(
+                        "." + TIMESTAMP_COLUMN_LABEL,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(TIMESTAMP_COLOR)))
+                .generateCss());
+        cssRules.add(new CssRuleSetFactory(
+                        "." + LOG_NUMBER_COLUMN_LABEL,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(LOG_NUMBER_COLOR)))
+                .generateCss());
+        cssRules.add(new CssRuleSetFactory(
+                        "." + MARKER_COLUMN_LABEL,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(LOG_MARKER_COLOR)))
+                .generateCss());
+        cssRules.add(new CssRuleSetFactory(
+                        "." + THREAD_NAME_COLUMN_LABEL,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(THREAD_NAME_COLOR)))
+                .generateCss());
+        cssRules.add(new CssRuleSetFactory(
+                        "." + CLASS_NAME_COLUMN_LABEL,
+                        new CssDeclaration(TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(CLASS_NAME_COLOR)))
+                .generateCss());
+
+        // TODO make css rule set construction less of a hassle
+
+        // create color rules for each log level
+        final List<String> existingLogLevels =
+                logLines.stream().map(LogLine::getLogLevel).distinct().toList();
+        cssRules.addAll(existingLogLevels.stream()
+                .map(logLevel -> new CssRuleSetFactory(
+                                List.of(HTML_DATA_CELL_TAG + "." + logLevel),
+                                List.of(new CssDeclaration(
+                                        TEXT_COLOR_PROPERTY, HtmlColors.getHtmlColor(getLogLevelColor(logLevel)))))
+                        .generateCss())
+                .toList());
+
+        return cssRules;
+    }
+
     public static String generateHtmlPage(@NonNull final List<String> logLineStrings) {
         final List<LogLine> logLines = logLineStrings.stream()
                 .map(string -> {
@@ -151,63 +245,15 @@ public class LogProcessingUtils {
         final List<String> formattedLogLines =
                 logLines.stream().map(LogLine::generateHtmlString).toList();
 
-        final List<String> css = new ArrayList<>();
-
-        // hide elements that have a data-hide value that isn't 0 or NaN
-        css.add(new CssRuleSetFactory(
-                        "[%s]:not([%s~='0']):not([%s~=\"NaN\"])"
-                                .formatted(DATA_HIDE_LABEL, DATA_HIDE_LABEL, DATA_HIDE_LABEL),
-                        new CssDeclaration(DISPLAY_PROPERTY, "none"))
-                .generateCss());
-        // display the filter checkboxes horizontally
-        css.add(new CssRuleSetFactory("." + FILTERS_DIV_LABEL, new CssDeclaration(DISPLAY_PROPERTY, "flex"))
-                .generateCss());
-        // add padding between columns of filter checkboxes
-        css.add(new CssRuleSetFactory("." + FILTER_COLUMN_DIV_LABEL, new CssDeclaration(PADDING_LEFT_PROPERTY, "2em"))
-                .generateCss());
-        // set page defaults
-        css.add(new CssRuleSetFactory(
-                        List.of("html", "*"),
-                        List.of(
-                                new CssDeclaration(FONT_PROPERTY, DEFAULT_FONT),
-                                new CssDeclaration(BACKGROUND_COLOR_PROPERTY, PAGE_BACKGROUND_COLOR),
-                                new CssDeclaration(TEXT_COLOR_PROPERTY, DEFAULT_TEXT_COLOR),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NO_WRAP_VALUE),
-                                new CssDeclaration(VERTICAL_ALIGN_PROPERTY, TOP_VALUE)))
-                .generateCss());
-        // pad the log table columns
-        css.add(new CssRuleSetFactory(HTML_DATA_CELL_TAG, new CssDeclaration(PADDING_LEFT_PROPERTY, "1em"))
-                .generateCss());
-
-        // set a max width for remainder column, and wrap words
-        css.add(new CssRuleSetFactory(
-                        List.of("." + REMAINDER_OF_LINE_COLUMN_LABEL),
-                        List.of(
-                                new CssDeclaration(MAX_WIDTH_PROPERTY, "100em"),
-                                new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
-                .generateCss());
-
-        // set a max width for thread name column, and wrap words
-        css.add(new CssRuleSetFactory(
-                        List.of("." + THREAD_NAME_COLUMN_LABEL),
-                        List.of(
-                                new CssDeclaration(MAX_WIDTH_PROPERTY, "30em"),
-                                new CssDeclaration(OVERFLOW_WRAP_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WORD_BREAK_PROPERTY, BREAK_WORD_VALUE),
-                                new CssDeclaration(WHITE_SPACE_PROPERTY, NORMAL_VALUE)))
-                .generateCss());
-
-        final String hiderCssTag = new HtmlTagFactory(HTML_STYLE_TAG, String.join("\n", css), false).generateTag();
+        final String cssTag =
+                new HtmlTagFactory(HTML_STYLE_TAG, String.join("\n", generateCssRules(logLines)), false).generateTag();
 
         final String minJsSourceTag = new HtmlTagFactory(HTML_SCRIPT_TAG, "", false)
                 .addAttribute(HTML_SOURCE_ATTRIBUTE, MIN_JS_SOURCE)
                 .generateTag();
 
-        final String headTag = new HtmlTagFactory(
-                        HTML_HEAD_TAG, "\n" + hiderCssTag + "\n" + minJsSourceTag + "\n", false)
-                .generateTag();
+        final String headTag =
+                new HtmlTagFactory(HTML_HEAD_TAG, "\n" + cssTag + "\n" + minJsSourceTag + "\n", false).generateTag();
 
         final String logTableTag = new HtmlTagFactory(
                         HTML_TABLE_TAG, "\n" + String.join("\n", formattedLogLines) + "\n", false)

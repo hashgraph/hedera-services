@@ -288,7 +288,7 @@ public class LogLine implements FormattableString {
      * @return the color
      */
     @NonNull
-    private static TextEffect getLogLevelColor(@NonNull final String logLevel) {
+    public static TextEffect getLogLevelColor(@NonNull final String logLevel) {
         return switch (logLevel) {
             case "TRACE", "DEBUG", "INFO" -> HARMLESS_LOG_LEVEL_COLOR;
             case "WARN" -> WARN_LOG_LEVEL_COLOR;
@@ -369,7 +369,7 @@ public class LogLine implements FormattableString {
 
         final HtmlTagFactory logLevelTagFactory = new HtmlTagFactory(
                         HTML_DATA_CELL_TAG, escapeHtml4(logLevel) + whitespaces.get(whitespaceIndex++), false)
-                .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL));
+                .addClasses(List.of(LOG_LEVEL_COLUMN_LABEL, HIDEABLE_LABEL, logLevel));
         dataCellTags.add(logLevelTagFactory.generateTag());
 
         final HtmlTagFactory markerTagFactory = new HtmlTagFactory(

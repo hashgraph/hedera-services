@@ -18,7 +18,6 @@ package com.swirlds.cli.utility;
 
 import com.swirlds.common.formatting.TextEffect;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 
@@ -51,12 +50,12 @@ public class HtmlColors {
      * @param ansiColor the ANSI color
      * @return the HTML color, or null if the map doesn't contain the given ANSI color
      */
-    @Nullable
-    public String getHtmlColor(@NonNull final TextEffect ansiColor) {
+    @NonNull
+    public static String getHtmlColor(@NonNull final TextEffect ansiColor) {
         Objects.requireNonNull(ansiColor);
 
         if (!ansiToHtmlColors.containsKey(ansiColor)) {
-            return null;
+            return "";
         }
 
         return ansiToHtmlColors.get(ansiColor);
