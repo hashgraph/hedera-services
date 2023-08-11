@@ -193,11 +193,11 @@ public final class DataFileMetadata {
     public String toString() {
         return getClass().getSimpleName() + "["
                 + "fileFormatVersion=" + fileFormatVersion
-                + ", dataItemValueSize=" + dataItemValueSize
-                + ", dataItemCount=" + dataItemCount
-                + ", index=" + index
-                + ", creationDate=" + creationDate
-                + ", serializationVersion=" + serializationVersion
+                + ",dataItemValueSize=" + dataItemValueSize
+                + ",dataItemCount=" + dataItemCount
+                + ",index=" + index
+                + ",creationDate=" + creationDate
+                + ",serializationVersion=" + serializationVersion
                 + "]";
     }
 

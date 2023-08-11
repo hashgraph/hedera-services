@@ -204,14 +204,14 @@ public final class DataFileMetadata {
     /** toString for debugging */
     @Override
     public String toString() {
-        return "DataFileMetadata{" + "fileFormatVersion="
-                + fileFormatVersion + ", dataItemValueSize="
-                + dataItemValueSize + ", dataItemCount="
-                + dataItemCount + ", index="
-                + index + ", creationDate="
-                + creationDate + ", isMergeFile="
-                + isMergeFile + ", serializationVersion="
-                + serializationVersion + '}';
+        return "DataFileMetadata[" + "fileFormatVersion="
+                + fileFormatVersion + ",dataItemValueSize="
+                + dataItemValueSize + ",dataItemCount="
+                + dataItemCount + ",index="
+                + index + ",creationDate="
+                + creationDate + ",isMergeFile="
+                + isMergeFile + ",serializationVersion="
+                + serializationVersion + ']';
     }
 
     /**

@@ -51,7 +51,7 @@ public class DataItemHeader {
 
     @Override
     public String toString() {
-        return "DataItemHeader{" + "sizeBytes=" + sizeBytes + ", key=" + key + '}';
+        return "DataItemHeader[size=" + sizeBytes + ",key=" + key + "]";
     }
 
     @Override

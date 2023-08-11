@@ -359,13 +359,11 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     @Override
     public String toString() {
-        return "VirtualLeafRecordSerializer{" + "currentVersion="
-                + currentVersion + ", keyConstructor="
-                + keyConstructor + ", valueConstructor="
-                + valueConstructor + ", hasVariableDataSize="
-                + hasVariableDataSize + ", totalSerializedSize="
-                + totalSerializedSize + ", headerSize="
-                + headerSize + ", byteMaxSize="
-                + byteMaxSize + '}';
+        return "VirtualLeafRecordSerializer[" + "currentVersion="
+                + currentVersion + ",hasVariableDataSize="
+                + hasVariableDataSize + ",totalSerializedSize="
+                + totalSerializedSize + ",headerSize="
+                + headerSize + ",byteMaxSize="
+                + byteMaxSize + ']';
     }
 }
