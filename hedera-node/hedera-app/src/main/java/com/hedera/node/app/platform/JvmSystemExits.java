@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,21 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.hedera.node.app.platform;
 
-import com.swirlds.gui.InfoEntity;
-import java.util.ArrayList;
-import java.util.List;
+import com.hedera.node.app.service.mono.utils.SystemExits;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-/**
- * Metadata about an app that is installed locally.
- */
-public class InfoApp extends InfoEntity {
-    private List<InfoSwirld> swirlds = new ArrayList<>(); // children
-
-    public InfoApp(String name) {
-        super(name);
+@Singleton
+public class JvmSystemExits implements SystemExits {
+    @Inject
+    public JvmSystemExits() {
+        // Default Constructor
     }
 
-    public List<InfoSwirld> getSwirlds() {
-        return swirlds;
+    @Override
+    public void fail(int returnCode) {
+        System.exit(returnCode);
     }
 }

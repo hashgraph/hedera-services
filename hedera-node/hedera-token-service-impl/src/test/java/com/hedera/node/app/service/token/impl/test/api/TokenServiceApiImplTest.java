@@ -18,6 +18,8 @@ package com.hedera.node.app.service.token.impl.test.api;
 
 import static com.hedera.node.app.service.token.impl.validators.TokenAttributesValidator.IMMUTABILITY_SENTINEL_KEY;
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,25 +30,31 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.fixtures.FakeFeeRecordBuilder;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.api.TokenServiceApiImpl;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.test.framework.config.TestConfigBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -363,5 +371,167 @@ class TokenServiceApiImplTest {
         subject.incrementParentNonce(CONTRACT_ID_BY_NUM);
         final var postIncrementAccount = requireNonNull(accountState.get(CONTRACT_ACCOUNT_ID));
         assertEquals(124L, postIncrementAccount.ethereumNonce());
+    }
+
+    @Nested
+    final class FeeChargingTests {
+        // Using non-standard account numbers to tease out any bugs
+        private static final AccountID FUNDING_ACCOUNT_ID =
+                AccountID.newBuilder().accountNum(12).build();
+        private static final AccountID STAKING_REWARD_ACCOUNT_ID =
+                AccountID.newBuilder().accountNum(13).build();
+        private static final AccountID NODE_REWARD_ACCOUNT_ID =
+                AccountID.newBuilder().accountNum(14).build();
+
+        private Fees fees;
+        private TestConfigBuilder configBuilder;
+        private FakeFeeRecordBuilder rb;
+
+        @BeforeEach
+        void setUp() {
+            configBuilder = HederaTestConfigBuilder.create()
+                    .withValue("staking.isEnabled", true)
+                    .withValue("staking.fees.nodeRewardPercentage", 10)
+                    .withValue("staking.fees.stakingRewardPercentage", 20)
+                    .withValue("hedera.shard", 3)
+                    .withValue("hedera.realm", 4)
+                    .withValue("ledger.fundingAccount", 12)
+                    .withValue("accounts.stakingRewardAccount", 13)
+                    .withValue("accounts.nodeRewardAccount", 14);
+
+            accountStore.put(Account.newBuilder().accountId(FUNDING_ACCOUNT_ID).build());
+
+            accountStore.put(
+                    Account.newBuilder().accountId(STAKING_REWARD_ACCOUNT_ID).build());
+
+            accountStore.put(
+                    Account.newBuilder().accountId(NODE_REWARD_ACCOUNT_ID).build());
+
+            accountStore.put(Account.newBuilder()
+                    .accountId(EOA_ACCOUNT_ID)
+                    .tinybarBalance(100)
+                    .build());
+
+            rb = new FakeFeeRecordBuilder();
+            fees = new Fees(2, 3, 5); // 10 tinybars
+        }
+
+        @Test
+        void withStakingRewards() {
+            // Given that staking is enabled
+            final var config =
+                    configBuilder.withValue("staking.isEnabled", true).getOrCreateConfig();
+
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+
+            // When we charge fees of 10 tinybars
+            subject.chargeFees(EOA_ACCOUNT_ID, fees, rb);
+
+            // Then we find that 10% go to node rewards, 20% to staking rewards, and the rest to the funding account
+            final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
+            assertThat(payerAccount.tinybarBalance()).isEqualTo(90);
+
+            final var nodeRewardAccount = requireNonNull(accountState.get(NODE_REWARD_ACCOUNT_ID));
+            assertThat(nodeRewardAccount.tinybarBalance()).isEqualTo(1);
+
+            final var stakingRewardAccount = requireNonNull(accountState.get(STAKING_REWARD_ACCOUNT_ID));
+            assertThat(stakingRewardAccount.tinybarBalance()).isEqualTo(2);
+
+            final var fundingAccount = requireNonNull(accountState.get(FUNDING_ACCOUNT_ID));
+            assertThat(fundingAccount.tinybarBalance()).isEqualTo(7);
+
+            assertThat(rb.transactionFee()).isEqualTo(10);
+        }
+
+        @Test
+        void withoutStakingRewards() {
+            // Given that staking is disabled
+            final var config =
+                    configBuilder.withValue("staking.isEnabled", false).getOrCreateConfig();
+
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+
+            // When we charge fees of 10 tinybars
+            subject.chargeFees(EOA_ACCOUNT_ID, fees, rb);
+
+            // Then we find that all the fees go to the funding account
+            final var payerAccount = requireNonNull(accountState.get(EOA_ACCOUNT_ID));
+            assertThat(payerAccount.tinybarBalance()).isEqualTo(90);
+
+            final var nodeRewardAccount = requireNonNull(accountState.get(NODE_REWARD_ACCOUNT_ID));
+            assertThat(nodeRewardAccount.tinybarBalance()).isZero();
+
+            final var stakingRewardAccount = requireNonNull(accountState.get(STAKING_REWARD_ACCOUNT_ID));
+            assertThat(stakingRewardAccount.tinybarBalance()).isZero();
+
+            final var fundingAccount = requireNonNull(accountState.get(FUNDING_ACCOUNT_ID));
+            assertThat(fundingAccount.tinybarBalance()).isEqualTo(10);
+
+            assertThat(rb.transactionFee()).isEqualTo(10);
+        }
+
+        @Test
+        void missingPayerAccount() {
+            // When we try to charge a payer account that DOES NOT EXIST, then we get an IllegalStateException.
+            final var unknownAccountId =
+                    AccountID.newBuilder().accountNum(12345678L).build();
+            assertThatThrownBy(() -> subject.chargeFees(unknownAccountId, fees, rb))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Payer account does not exist");
+        }
+
+        @Test
+        void missingFundingAccount() {
+            // Given a configuration that refers to a funding account that DOES NOT EXIST
+            final var config =
+                    configBuilder.withValue("ledger.fundingAccount", 12345678L).getOrCreateConfig();
+
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+
+            // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Funding account does not exist");
+        }
+
+        @Test
+        void missingStakingRewardAccount() {
+            // Given a configuration that refers to a staking reward account that DOES NOT EXIST
+            final var config = configBuilder
+                    .withValue("accounts.stakingRewardAccount", 12345678L)
+                    .getOrCreateConfig();
+
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+
+            // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Staking reward account does not exist");
+        }
+
+        @Test
+        void missingNodeRewardAccount() {
+            // Given a configuration that refers to a node reward account that DOES NOT EXIST
+            final var config = configBuilder
+                    .withValue("accounts.nodeRewardAccount", 12345678L)
+                    .getOrCreateConfig();
+
+            subject = new TokenServiceApiImpl(config, stakingValidator, writableStates);
+
+            // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("Node reward account does not exist");
+        }
+
+        @Test
+        void payerHasInsufficientFunds() {
+            // Given a payer and fees that are so large, the payer cannot pay for them.
+            fees = new Fees(1000, 1000, 1000); // more than the 100 the user has
+            // When we charge the fees, then a HandleException is thrown with INSUFFICIENT_PAYER_BALANCE as the reason.
+            assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, fees, rb))
+                    .isInstanceOf(HandleException.class)
+                    .hasFieldOrPropertyWithValue("status", ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
+        }
     }
 }

@@ -38,13 +38,13 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitive.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.codec.BytesCodec;
 import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -86,7 +86,7 @@ public class GenesisSchema extends Schema {
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
                 StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT),
-                StateDefinition.queue(UPGRADE_DATA_KEY, new BytesCodec()));
+                StateDefinition.queue(UPGRADE_DATA_KEY, ProtoBytes.PROTOBUF));
     }
 
     @Override

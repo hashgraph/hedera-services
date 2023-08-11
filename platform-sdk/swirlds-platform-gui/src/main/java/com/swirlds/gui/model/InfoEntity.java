@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.gui;
+package com.swirlds.gui.model;
 
 import javax.swing.JPanel;
 

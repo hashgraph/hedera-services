@@ -22,8 +22,9 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
-        testImplementation(project(":app-service-token-impl"))
+        testImplementation(project(":hapi"))
         testImplementation(project(":app"))
+        testImplementation(project(":app-service-token-impl"))
         testImplementation(testFixtures(project(":app-service-mono")))
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(testFixtures(project(":config")))
@@ -38,5 +39,7 @@ dependencies {
         testImplementation(gav("org.mockito.junit.jupiter"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
+
+        testImplementation(testFixtures(project(":app-service-token")))
     }
 }

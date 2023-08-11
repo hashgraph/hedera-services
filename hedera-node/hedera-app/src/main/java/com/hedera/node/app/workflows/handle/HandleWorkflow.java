@@ -23,9 +23,11 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureExpander;
@@ -63,6 +65,7 @@ import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
@@ -88,7 +91,9 @@ public class HandleWorkflow {
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
+    private final ParentRecordFinalizer transactionFinalizer;
 
     @Inject
     public HandleWorkflow(
@@ -104,7 +109,9 @@ public class HandleWorkflow {
             @NonNull final InstantSource instantSource,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final FeeManager feeManager,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final ParentRecordFinalizer transactionFinalizer) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -117,7 +124,9 @@ public class HandleWorkflow {
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
+        this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
+        this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
     }
 
     /**
@@ -221,7 +230,7 @@ public class HandleWorkflow {
             final var stack = new SavepointStackImpl(state, configuration);
             final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
-                    txBody,
+                    transactionInfo,
                     preHandleResult.payer(),
                     preHandleResult.payerKey(),
                     networkInfo,
@@ -234,7 +243,9 @@ public class HandleWorkflow {
                     dispatcher,
                     serviceScopeLookup,
                     blockRecordManager,
-                    recordCache);
+                    recordCache,
+                    feeManager,
+                    consensusNow);
 
             // Now that we have a created handle context object and a consensus timestamp, run the appropriate {@code
             // ConsensusTimeHook} event handlers
@@ -245,6 +256,9 @@ public class HandleWorkflow {
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction with the help of the token service
+            final var finalizationContext = new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, stack);
+            transactionFinalizer.finalizeParentRecord(
+                    finalizationContext, List.of()); // TODO Need actual list of child records?
 
             recordBuilder.status(SUCCESS);
 

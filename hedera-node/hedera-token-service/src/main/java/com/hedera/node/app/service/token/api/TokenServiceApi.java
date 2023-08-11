@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -127,4 +128,22 @@ public interface TokenServiceApi {
      * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
     void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+
+    /**
+     * Charges the payer the given fees, and records those fees in the given record builder.
+     *
+     * @param payer         the id of the account that should be charged
+     * @param fees          the fees to charge
+     * @param recordBuilder the record builder to record the fees in
+     */
+    void chargeFees(@NonNull AccountID payer, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
+
+    /**
+     * Refunds the given fees to the given receiver, and records those fees in the given record builder.
+     *
+     * @param receiver      the id of the account that should be refunded
+     * @param fees          the fees to refund
+     * @param recordBuilder the record builder to record the fees in
+     */
+    void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
 }

@@ -22,7 +22,7 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatform
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.components.PrePaintableJPanel;
 import javax.swing.JTextArea;
 
 /**

@@ -153,7 +153,8 @@ module com.swirlds.common {
             com.swirlds.demo.platform,
             com.swirlds.jrs,
             com.swirlds.platform,
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.gui;
 
     requires transitive com.swirlds.base;
     requires com.swirlds.config;

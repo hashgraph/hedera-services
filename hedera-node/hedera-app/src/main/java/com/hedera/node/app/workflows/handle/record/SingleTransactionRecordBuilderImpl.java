@@ -48,9 +48,11 @@ import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBui
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
@@ -101,7 +103,9 @@ public class SingleTransactionRecordBuilderImpl
                 ContractCallRecordBuilder,
                 EthereumTransactionRecordBuilder,
                 CryptoDeleteRecordBuilder,
-                TokenUpdateRecordBuilder {
+                TokenUpdateRecordBuilder,
+                NodeStakeUpdateRecordBuilder,
+                FeeRecordBuilder {
     // base transaction data
     private Transaction transaction;
     private Bytes transactionBytes = Bytes.EMPTY;
@@ -126,6 +130,10 @@ public class SingleTransactionRecordBuilderImpl
     // Fields that are not in TransactionRecord, but are needed for computing staking rewards
     // These are not persisted to the record file
     private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
+
+    // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
+    // there is no way to get the transaction fee from the PBJ object.
+    private long transactionFee;
 
     /**
      * Creates new transaction record builder.
@@ -214,6 +222,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param transaction the transaction
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
@@ -281,6 +290,11 @@ public class SingleTransactionRecordBuilderImpl
         return parentConsensus;
     }
 
+    @Override
+    public long transactionFee() {
+        return transactionFee;
+    }
+
     /**
      * Sets the consensus transaction fee.
      *
@@ -288,8 +302,10 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
+    @Override
     public SingleTransactionRecordBuilderImpl transactionFee(final long transactionFee) {
-        transactionRecordBuilder.transactionFee(transactionFee);
+        this.transactionFee = transactionFee;
+        this.transactionRecordBuilder.transactionFee(transactionFee);
         return this;
     }
 
