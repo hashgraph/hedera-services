@@ -20,16 +20,16 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DAT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.node.app.service.contract.impl.infra.EthereumSignatures;
+import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import org.junit.jupiter.api.Test;
 
-class EthereumSignaturesTest {
-    private final EthereumSignatures subject = new EthereumSignatures();
+class EthTxSigsCacheTest {
+    private final EthTxSigsCache subject = new EthTxSigsCache();
 
     @Test
     void reportsExpectedSignatures() {
         final var expectedSigs = EthTxSigs.extractSignatures(ETH_DATA_WITH_TO_ADDRESS);
 
-        assertEquals(expectedSigs, subject.impliedBy(ETH_DATA_WITH_TO_ADDRESS));
+        assertEquals(expectedSigs, subject.computeIfAbsent(ETH_DATA_WITH_TO_ADDRESS));
     }
 }

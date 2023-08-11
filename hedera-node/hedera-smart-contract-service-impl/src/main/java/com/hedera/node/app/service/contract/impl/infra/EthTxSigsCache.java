@@ -26,7 +26,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class EthereumSignatures {
+public class EthTxSigsCache {
     private static final int ETH_SIGS_CACHE_TTL_SECS = 15;
 
     private final LoadingCache<EthTxData, EthTxSigs> cache = Caffeine.newBuilder()
@@ -35,11 +35,11 @@ public class EthereumSignatures {
             .build(EthTxSigs::extractSignatures);
 
     @Inject
-    public EthereumSignatures() {
+    public EthTxSigsCache() {
         // Dagger2
     }
 
-    public EthTxSigs impliedBy(@NonNull final EthTxData data) {
+    public EthTxSigs computeIfAbsent(@NonNull final EthTxData data) {
         // Since preHandle() is multi-threaded, we are happy to synchronously load the signatures
         // for this EthTxData if they are not already cached; with a 15s TTL, this should make the
         // subsequent lookup in handle() very fast almost always

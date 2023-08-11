@@ -307,10 +307,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
         if (pendingCreation.isHapiCreation()) {
             hederaOperations.createContract(
-                    number, requireNonNull(pendingCreation.body()), nonce, pendingCreation.aliasIfApplicable());
+                    number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
         } else {
             hederaOperations.createContract(
-                    number, pendingCreation.parentNumber(), nonce, pendingCreation.aliasIfApplicable());
+                    number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
         }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
@@ -363,7 +363,10 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
     @Override
     public @NonNull ProxyWorldUpdater updater() {
         final var child = new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
-        // "Hand off" the pending creation to the child, if there is one
+        // Hand off any pending creation to the child updater; this a bit of a hack, but
+        // lets the TransactionProcessor client code "flow" as naturally as possible,
+        // without need to defer setting up creation until the initial frame is built
+        // (since its updater will be a child of the RootProxyWorldUpdater)
         if (this.pendingCreation != null) {
             child.pendingCreation = this.pendingCreation;
         }

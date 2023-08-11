@@ -87,7 +87,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
-import com.hedera.node.app.service.contract.impl.infra.EthereumSignatures;
+import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -115,7 +115,7 @@ class HevmTransactionFactoryTest {
     private NetworkInfo networkInfo;
 
     @Mock
-    private EthereumSignatures ethereumSignatures;
+    private EthTxSigsCache ethereumSignatures;
 
     @Mock
     private TokenServiceApi tokenServiceApi;
@@ -452,7 +452,7 @@ class HevmTransactionFactoryTest {
     void fromHapiEthRepresentsCallAsExpected() {
         givenInsteadHydratedEthTxWithRightChainId(ETH_DATA_WITH_TO_ADDRESS);
         final var sig = EthTxSigs.extractSignatures(ETH_DATA_WITH_TO_ADDRESS);
-        given(ethereumSignatures.impliedBy(ETH_DATA_WITH_TO_ADDRESS)).willReturn(sig);
+        given(ethereumSignatures.computeIfAbsent(ETH_DATA_WITH_TO_ADDRESS)).willReturn(sig);
         System.out.println(ETH_DATA_WITH_TO_ADDRESS);
         final var transaction = getManufacturedEthTx(b -> b.maxGasAllowance(MAX_GAS_ALLOWANCE));
         final var expectedSenderId =
@@ -485,7 +485,7 @@ class HevmTransactionFactoryTest {
         final var dataToUse = ETH_DATA_WITHOUT_TO_ADDRESS.replaceCallData(CALL_DATA.toByteArray());
         givenInsteadHydratedEthTxWithRightChainId(dataToUse);
         final var sig = EthTxSigs.extractSignatures(dataToUse);
-        given(ethereumSignatures.impliedBy(dataToUse)).willReturn(sig);
+        given(ethereumSignatures.computeIfAbsent(dataToUse)).willReturn(sig);
         System.out.println(dataToUse);
         final var transaction = getManufacturedEthTx(b -> b.maxGasAllowance(MAX_GAS_ALLOWANCE));
         final var expectedSenderId =

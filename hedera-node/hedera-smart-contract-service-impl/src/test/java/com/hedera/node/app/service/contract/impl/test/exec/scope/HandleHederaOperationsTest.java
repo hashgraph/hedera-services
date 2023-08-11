@@ -231,7 +231,7 @@ class HandleHederaOperationsTest {
         given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(parent);
 
-        subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), 1L, CANONICAL_ALIAS);
+        subject.createContract(666L, NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), CANONICAL_ALIAS);
 
         verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
         verify(tokenServiceApi)
@@ -254,7 +254,7 @@ class HandleHederaOperationsTest {
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
-        subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS);
+        subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
         verify(context).dispatchChildTransaction(synthTxn, CryptoCreateRecordBuilder.class);
         verify(tokenServiceApi)
@@ -276,7 +276,7 @@ class HandleHederaOperationsTest {
                 .willReturn(cryptoCreateRecordBuilder);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
-        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, 1L, CANONICAL_ALIAS));
+        assertThrows(AssertionError.class, () -> subject.createContract(666L, someBody, CANONICAL_ALIAS));
     }
 
     @Test

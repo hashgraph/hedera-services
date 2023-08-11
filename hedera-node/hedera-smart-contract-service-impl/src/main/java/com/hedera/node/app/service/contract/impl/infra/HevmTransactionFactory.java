@@ -88,7 +88,7 @@ public class HevmTransactionFactory {
     private final ExpiryValidator expiryValidator;
     private final AttributeValidator attributeValidator;
     private final HydratedEthTxData hydratedEthTxData;
-    private final EthereumSignatures ethereumSignatures;
+    private final EthTxSigsCache ethereumSignatures;
 
     @Inject
     public HevmTransactionFactory(
@@ -103,7 +103,7 @@ public class HevmTransactionFactory {
             @NonNull @InitialState final ReadableFileStore fileStore,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull @InitialState final TokenServiceApi tokenServiceApi,
-            @NonNull final EthereumSignatures ethereumSignatures) {
+            @NonNull final EthTxSigsCache ethereumSignatures) {
         this.hydratedEthTxData = hydratedEthTxData;
         this.gasCalculator = requireNonNull(gasCalculator);
         this.fileStore = requireNonNull(fileStore);
@@ -175,7 +175,7 @@ public class HevmTransactionFactory {
     private HederaEvmTransaction fromHapiEthereum(
             @NonNull final AccountID payerId, @NonNull final EthereumTransactionBody body) {
         final var ethTxData = assertValidEthTx(body);
-        final var ethTxSig = ethereumSignatures.impliedBy(ethTxData);
+        final var ethTxSig = ethereumSignatures.computeIfAbsent(ethTxData);
         final var senderId =
                 AccountID.newBuilder().alias(Bytes.wrap(ethTxSig.address())).build();
         return ethTxData.hasToAddress()

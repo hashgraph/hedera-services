@@ -198,8 +198,7 @@ public class HandleHederaOperations implements HederaOperations {
      * {@inheritDoc}
      */
     @Override
-    public void createContract(
-            final long number, final long parentNumber, final long nonce, @Nullable final Bytes evmAddress) {
+    public void createContract(final long number, final long parentNumber, @Nullable final Bytes evmAddress) {
         final var accountStore = context.readableStore(ReadableAccountStore.class);
         final var parent = accountStore.getAccountById(
                 AccountID.newBuilder().accountNum(parentNumber).build());
@@ -216,10 +215,7 @@ public class HandleHederaOperations implements HederaOperations {
      */
     @Override
     public void createContract(
-            final long number,
-            @NonNull final ContractCreateTransactionBody body,
-            final long nonce,
-            @Nullable final Bytes evmAddress) {
+            final long number, @NonNull final ContractCreateTransactionBody body, @Nullable final Bytes evmAddress) {
         requireNonNull(body);
         dispatchAndMarkCreation(
                 number,

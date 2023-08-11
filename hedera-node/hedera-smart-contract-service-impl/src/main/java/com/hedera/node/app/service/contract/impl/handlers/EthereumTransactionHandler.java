@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
+import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.infra.EthereumSignatures;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -40,13 +40,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class EthereumTransactionHandler implements TransactionHandler {
-    private final EthereumSignatures ethereumSignatures;
+    private final EthTxSigsCache ethereumSignatures;
     private final EthereumCallDataHydration callDataHydration;
     private final Provider<TransactionComponent.Factory> provider;
 
     @Inject
     public EthereumTransactionHandler(
-            @NonNull final EthereumSignatures ethereumSignatures,
+            @NonNull final EthTxSigsCache ethereumSignatures,
             @NonNull final EthereumCallDataHydration callDataHydration,
             @NonNull final Provider<TransactionComponent.Factory> provider) {
         this.ethereumSignatures = requireNonNull(ethereumSignatures);
@@ -62,7 +62,7 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var ethTxData = callDataHydration.tryToHydrate(body, fileStore).ethTxData();
         if (ethTxData != null) {
             // Ignore the return value; we just want to cache the signature for use in handle()
-            ethereumSignatures.impliedBy(ethTxData);
+            ethereumSignatures.computeIfAbsent(ethTxData);
         }
     }
 

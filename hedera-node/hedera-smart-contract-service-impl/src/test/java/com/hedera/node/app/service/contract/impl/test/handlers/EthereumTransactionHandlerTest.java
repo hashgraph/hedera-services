@@ -34,8 +34,8 @@ import com.hedera.node.app.service.contract.impl.exec.ContextTransactionProcesso
 import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
+import com.hedera.node.app.service.contract.impl.infra.EthTxSigsCache;
 import com.hedera.node.app.service.contract.impl.infra.EthereumCallDataHydration;
-import com.hedera.node.app.service.contract.impl.infra.EthereumSignatures;
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
@@ -56,7 +56,7 @@ class EthereumTransactionHandlerTest {
     private EthereumCallDataHydration callDataHydration;
 
     @Mock
-    private EthereumSignatures ethereumSignatures;
+    private EthTxSigsCache ethereumSignatures;
 
     @Mock
     private ReadableFileStore fileStore;
@@ -142,7 +142,7 @@ class EthereumTransactionHandlerTest {
         given(callDataHydration.tryToHydrate(ethTxn, fileStore))
                 .willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         subject.preHandle(preHandleContext);
-        verify(ethereumSignatures).impliedBy(ETH_DATA_WITH_TO_ADDRESS);
+        verify(ethereumSignatures).computeIfAbsent(ETH_DATA_WITH_TO_ADDRESS);
     }
 
     @Test
