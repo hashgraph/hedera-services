@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.spi.state.codec;
+package com.hedera.node.app.state.merkle;
 
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
@@ -23,11 +23,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+/**
+ * This is a test-only class used exclusively by MerkleTestBase.
+ * <strong>This class should not be used elsewhere.</strong>
+ * The use of Codec implementations is not ideal, and we have the protobuf ProtoString as
+ * a replacement.  When time permits this class needs to be removed and all usages replaced
+ * with ProtoString and the ProtoString.PROTOBUF codec.
+ * @deprecated Use ProtoString and ProtoString.PROTOBUF instead of String and this codec.
+ */
 @SuppressWarnings("Singleton")
-public class StringCodec implements Codec<String> {
-    public static final StringCodec SINGLETON = new StringCodec();
+class TestStringCodec implements Codec<String> {
+    public static final TestStringCodec SINGLETON = new TestStringCodec();
 
-    private StringCodec() {}
+    private TestStringCodec() {}
 
     @NonNull
     @Override
@@ -55,24 +63,14 @@ public class StringCodec implements Codec<String> {
 
     @Override
     public int measure(final @NonNull ReadableSequentialData input) {
-        return getView(input, Integer.BYTES).readInt() + Integer.BYTES;
-    }
-
-    private ReadableSequentialData getView(final ReadableSequentialData input, final int length) {
-        // @todo THIS IS WRONG.
-        //     Unfortunately ReadableSequentialData.view is implemented incorrectly and
-        //     consumes the internal stream.  What we should have, once ReadableSequentialData is fixed,
-        //     is something like this (in fact we should inline the call and remove this method):
-        //         input.view(length)
-        //     If we call input.view now, however, we break parsing, so we pretend it will work.
-        return input;
+        return input.readInt() + Integer.BYTES;
     }
 
     @Override
     public boolean fastEquals(final @NonNull String value, final @NonNull ReadableSequentialData input) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(input);
-        return value.equals(parse(getView(input, measure(input))));
+        return value.equals(parse(input));
     }
 
     @Override
