@@ -215,20 +215,17 @@ public class HandleWorkflow {
             if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
+
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             for (final var key : preHandleResult.requiredKeys()) {
-                final var remainingMillis = maxMillis - instantSource.millis();
-                if (remainingMillis <= 0) {
-                    throw new TimeoutException("Verification of signatures timed out");
-                }
-                final var verification = preHandleResult.verificationResults().get(key);
-                if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
+                final var verification = verifier.verificationFor(key);
+                if (verification.failed()) {
                     throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
                 }
             }
 
             // Setup context
             final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                     transactionInfo,
                     preHandleResult.payer(),
