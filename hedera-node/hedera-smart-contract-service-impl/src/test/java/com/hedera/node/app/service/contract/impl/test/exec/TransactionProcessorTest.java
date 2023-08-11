@@ -37,6 +37,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.USER_OFFERED_GAS_PRICE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.VALUE;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownContextWith;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCall;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.wellKnownHapiCreate;
@@ -55,6 +56,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.FrameRunner;
 import com.hedera.node.app.service.contract.impl.exec.TransactionProcessor;
 import com.hedera.node.app.service.contract.impl.exec.failure.ResourceExhaustedException;
@@ -159,7 +161,8 @@ class TransactionProcessorTest {
                 VALUE,
                 GAS_LIMIT,
                 USER_OFFERED_GAS_PRICE,
-                MAX_GAS_ALLOWANCE);
+                MAX_GAS_ALLOWANCE,
+                null);
         given(messageCallProcessor.isImplicitCreationEnabled(config)).willReturn(true);
         assertAbortsWith(invalidCreation, INVALID_CONTRACT_ID);
     }
@@ -210,7 +213,8 @@ class TransactionProcessorTest {
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        inOrder.verify(worldUpdater).setupAliasedCreate(EIP_1014_ADDRESS, expectedToAddress);
+        inOrder.verify(worldUpdater)
+                .setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, expectedToAddress);
         inOrder.verify(senderAccount).incrementNonce();
         inOrder.verify(gasCharging).chargeForGas(senderAccount, relayerAccount, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
@@ -251,7 +255,8 @@ class TransactionProcessorTest {
         given(gasCharging.chargeForGas(senderAccount, null, context, worldUpdater, transaction))
                 .willReturn(NO_ALLOWANCE_CHARGING_RESULT);
         given(senderAccount.getAddress()).willReturn(EIP_1014_ADDRESS);
-        given(worldUpdater.setupCreate(EIP_1014_ADDRESS)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
+        given(worldUpdater.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT))
+                .willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
         given(frameBuilder.buildInitialFrameWith(
                         transaction,
                         worldUpdater,
@@ -269,7 +274,7 @@ class TransactionProcessorTest {
         final var result =
                 subject.processTransaction(transaction, worldUpdater, () -> feesOnlyUpdater, context, tracer, config);
 
-        inOrder.verify(worldUpdater).setupCreate(EIP_1014_ADDRESS);
+        inOrder.verify(worldUpdater).setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT);
         inOrder.verify(gasCharging).chargeForGas(senderAccount, null, context, worldUpdater, transaction);
         inOrder.verify(frameBuilder)
                 .buildInitialFrameWith(
@@ -432,7 +437,6 @@ class TransactionProcessorTest {
         assertFalse(result.isSuccess());
         assertEquals(GAS_LIMIT, result.gasUsed());
         assertEquals(NETWORK_GAS_PRICE, result.gasPrice());
-        assertNull(result.abortReason());
         assertNull(result.haltReason());
         assertEquals(Bytes.wrap(reason.name()), result.revertReason());
     }
@@ -443,9 +447,15 @@ class TransactionProcessorTest {
 
     private void assertAbortsWith(
             @NonNull final HederaEvmTransaction transaction, @NonNull final ResponseCodeEnum reason) {
-        final var result = subject.processTransaction(
-                transaction, worldUpdater, () -> feesOnlyUpdater, wellKnownContextWith(blocks), tracer, config);
-        assertEquals(reason, result.abortReason());
+        assertFailsWith(
+                reason,
+                () -> subject.processTransaction(
+                        transaction,
+                        worldUpdater,
+                        () -> feesOnlyUpdater,
+                        wellKnownContextWith(blocks),
+                        tracer,
+                        config));
     }
 
     private void givenFeeOnlyParties() {

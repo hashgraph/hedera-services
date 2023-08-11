@@ -18,13 +18,14 @@ package com.swirlds.common.utility;
 
 import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToShort;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.crypto.CryptographyHolder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A utility class for creating mnemonic words.
@@ -2151,8 +2152,8 @@ public final class Mnemonics {
      * 		the number of mnemonic words to generate
      * @return a mnemonic
      */
-    public static List<String> generateMnemonicWords(final byte[] data, final int wordCount) {
-        throwArgNull(data, "data");
+    public static List<String> generateMnemonicWords(@NonNull final byte[] data, final int wordCount) {
+        Objects.requireNonNull(data, "data must not be null");
 
         final List<String> mnemonics = new ArrayList<>(wordCount);
 

@@ -84,7 +84,8 @@ class DefaultSpeedometerMetricTest {
     void testReset() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
         sendCycles(metric, time, 0, 1000, 1000);
         time.set(Duration.ofSeconds(1000));
@@ -109,7 +110,8 @@ class DefaultSpeedometerMetricTest {
     void testRegularRateOnePerSecond() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         for (int i = 0; i < 1000; i++) {
@@ -128,7 +130,8 @@ class DefaultSpeedometerMetricTest {
     void testRegularRateFivePerSecond() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -150,7 +153,8 @@ class DefaultSpeedometerMetricTest {
     void testRegularRateFivePerSecondWithUpdate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -170,7 +174,8 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForRegularRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -235,7 +240,8 @@ class DefaultSpeedometerMetricTest {
     void testDistributionForTwiceIncreasedRate() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -299,7 +305,8 @@ class DefaultSpeedometerMetricTest {
     void testSnapshot() {
         // given
         final FakeTime time = new FakeTime();
-        final SpeedometerMetric.Config config = new SpeedometerMetric.Config(CATEGORY, NAME);
+        final SpeedometerMetric.Config config =
+                new SpeedometerMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final DefaultSpeedometerMetric metric = new DefaultSpeedometerMetric(config, time);
 
         // when
@@ -331,8 +338,7 @@ class DefaultSpeedometerMetricTest {
         final SpeedometerMetric metric = new DefaultSpeedometerMetric(config);
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
     }
 
     @Test

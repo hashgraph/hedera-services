@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.sound.midi.MidiChannel;
@@ -245,6 +246,23 @@ public class CommonUtils {
     public static <T> T throwArgNull(final T arg, final String argName) {
         if (arg == null) {
             throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be null!", argName));
+        }
+        return arg;
+    }
+
+    /**
+     * Throw an {@link IllegalArgumentException} if the supplied {@code String} is blank.
+     *
+     * @param arg     the argument checked
+     * @param argName the name of the argument
+     * @see StringUtils#isBlank(CharSequence)
+     * @deprecated use {@link com.swirlds.base.ArgumentUtils#throwArgBlank(String, String)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public static String throwArgBlank(final String arg, final String argName) {
+        Objects.requireNonNull(arg, argName);
+        if (StringUtils.isBlank(arg)) {
+            throw new IllegalArgumentException(String.format("The supplied argument '%s' cannot be blank!", argName));
         }
         return arg;
     }

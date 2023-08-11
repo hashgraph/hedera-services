@@ -34,7 +34,6 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeS
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +42,6 @@ class ChangeNFTOwnersStepTest extends StepsBase {
     @BeforeEach
     public void setUp() {
         super.setUp();
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
         givenTxn();
         refreshWritableStores();
         // since we can't change NFT owner with auto association if KYC key exists on token

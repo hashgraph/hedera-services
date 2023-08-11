@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.spi.workflows.QueryContext;
@@ -105,6 +106,9 @@ class QueryHederaOperationsTest {
     @Test
     void creatingAndDeletingContractsNotSupported() {
         assertThrows(UnsupportedOperationException.class, () -> subject.createContract(1L, 2L, 3L, null));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.createContract(1L, ContractCreateTransactionBody.DEFAULT, 3L, null));
         assertThrows(UnsupportedOperationException.class, () -> subject.deleteAliasedContract(Bytes.EMPTY));
         assertThrows(UnsupportedOperationException.class, () -> subject.deleteUnaliasedContract(1234L));
     }

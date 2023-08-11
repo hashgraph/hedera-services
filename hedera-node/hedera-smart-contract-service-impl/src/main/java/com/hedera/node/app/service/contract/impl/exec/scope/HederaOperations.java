@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
@@ -146,12 +147,13 @@ public interface HederaOperations {
      *
      * @param contractNumber the number of the contract
      * @param firstKey       the first key in the storage linked list, or {@code null} if the list is empty
-     * @param slotsUsed      the number of storage slots used by the contract
+     * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
      */
-    void updateStorageMetadata(long contractNumber, @Nullable final Bytes firstKey, final int slotsUsed);
+    void updateStorageMetadata(long contractNumber, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
 
     /**
-     * Creates a new contract with the given entity number and EVM address; and also "links" the alias.
+     * Creates a new contract with the given entity number and EVM address; and also "links" the alias
+     * if it is set.
      *
      * <p>Any inheritable Hedera-native properties managed by the {@code TokenService} should be set on
      * the new contract based on the given model account.
@@ -163,7 +165,23 @@ public interface HederaOperations {
      * @param nonce        the nonce of the contract to create
      * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
      */
-    void createContract(long number, final long parentNumber, final long nonce, @Nullable final Bytes evmAddress);
+    void createContract(long number, long parentNumber, long nonce, @Nullable Bytes evmAddress);
+
+    /**
+     * Creates a new contract with the given entity number and EVM address; and also "links" the alias
+     * if it is set.
+     *
+     * <p>Any inheritable Hedera-native properties managed by the {@code TokenService} should be set
+     * the new contract based on the given {@link ContractCreateTransactionBody}.
+     *
+     * <p>The record of this creation should only be externalized if the top-level HAPI transaction succeeds.
+     *
+     * @param number       the number of the contract to create
+     * @param op           the top-level operation creating this contract
+     * @param nonce        the nonce of the contract to create
+     * @param evmAddress   if not null, the EVM address to use as an alias of the created contract
+     */
+    void createContract(long number, @NonNull ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress);
 
     /**
      * Deletes the contract whose alias is the given {@code evmAddress}, and also "unlinks" the alias.
@@ -191,9 +209,9 @@ public interface HederaOperations {
     List<Long> getModifiedAccountNumbers();
 
     /**
-     * Returns a list of the contract numbers that have been created in this scope.
+     * Returns a list of the contract ids that have been created in this scope, in increasing id order.
      *
-     * @return the list of created contract numbers
+     * @return the list of created contract ids
      */
     List<ContractID> createdContractIds();
 

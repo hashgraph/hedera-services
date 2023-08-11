@@ -40,13 +40,13 @@ class CallOutcomeTest {
     @Test
     void recognizesCreatedIdWhenEvmAddressIsSet() {
         given(updater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
-        final var outcome = new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultForBase(updater), SUCCESS);
+        final var outcome = new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS);
         assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCreated());
     }
 
     @Test
     void recognizesNoCreatedIdWhenEvmAddressNotSet() {
-        final var outcome = new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultForBase(updater), SUCCESS);
+        final var outcome = new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultOf(updater), SUCCESS);
         assertNull(outcome.recipientIdIfCreated());
     }
 
@@ -58,8 +58,7 @@ class CallOutcomeTest {
 
     @Test
     void calledIdIsFromResultIfExtant() {
-        final var outcome =
-                new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultForBase(updater), INVALID_CONTRACT_ID);
+        final var outcome = new CallOutcome(TestHelpers.SUCCESS_RESULT.asProtoResultOf(updater), INVALID_CONTRACT_ID);
         assertEquals(CALLED_CONTRACT_ID, outcome.recipientIdIfCalled());
     }
 }

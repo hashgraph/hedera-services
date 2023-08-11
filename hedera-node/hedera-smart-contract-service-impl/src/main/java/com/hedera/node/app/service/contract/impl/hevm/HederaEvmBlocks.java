@@ -48,7 +48,7 @@ public interface HederaEvmBlocks {
      */
     BlockValues blockValuesOf(long gasLimit);
 
-    static Hash besuHashFrom(@NonNull final com.swirlds.common.crypto.Hash hash) {
+    private static Hash besuHashFrom(@NonNull final com.swirlds.common.crypto.Hash hash) {
         final byte[] hashBytesToConvert = hash.getValue();
         final byte[] prefixBytes = new byte[32];
         System.arraycopy(hashBytesToConvert, 0, prefixBytes, 0, 32);

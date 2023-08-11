@@ -1047,7 +1047,7 @@
 			  "nodedata": {
 				"constant": 0,
 				"bpt": 40000000000,
-				"vpt": 0,
+				"vpt": 376062755,
 				"rbh": 0,
 				"sbh": 0,
 				"gas": 0,
@@ -1059,7 +1059,7 @@
 			  "networkdata": {
 				"constant": 0,
 				"bpt": 160000000000,
-				"vpt": 0,
+				"vpt": 6017004081,
 				"rbh": 0,
 				"sbh": 0,
 				"gas": 0,
@@ -3876,7 +3876,7 @@
 				  "nodedata": {
 					  "constant": 0,
 					  "bpt": 40000000000,
-					  "vpt": 0,
+					  "vpt": 376062755,
 					  "rbh": 0,
 					  "sbh": 0,
 					  "gas": 0,
@@ -3888,7 +3888,7 @@
 				  "networkdata": {
 					  "constant": 0,
 					  "bpt": 160000000000,
-					  "vpt": 0,
+					  "vpt": 6017004081,
 					  "rbh": 0,
 					  "sbh": 0,
 					  "gas": 0,

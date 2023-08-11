@@ -308,7 +308,11 @@ public class MerkleDbTestUtils {
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         return new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
     }
 
     /**

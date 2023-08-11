@@ -127,6 +127,11 @@ public class BaseHandleContextVerifier implements HandleContextVerifier {
         return failedVerification(evmAlias);
     }
 
+    @Override
+    public int numSignaturesVerified() {
+        return keyVerifications.size();
+    }
+
     /**
      * Get a {@link Future<SignatureVerification>} for the given key.
      *
