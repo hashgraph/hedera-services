@@ -43,10 +43,10 @@ public class JrsTestReaderCommand extends AbstractCommand {
         final VirtualTerminal terminal =
                 new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
 
-        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
         // "gs://swirlds-circleci-jrs-results/cody-littley"
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
-        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
+        // "gs://swirlds-circleci-jrs-results/swirlds-automation/release/0.41"
+        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/release/0.41";
 
         JrsTestReader.generateTestReport(
                 terminal,
