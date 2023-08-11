@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CreateOperationTestBase {
     protected static final long VALUE = 123_456L;
+    protected static final long NONCE = 789L;
     protected static final long GAS_COST = 1_234L;
     protected static final long CHILD_STIPEND = 1_000_000L;
     protected static final Wei GAS_PRICE = Wei.of(1000L);
