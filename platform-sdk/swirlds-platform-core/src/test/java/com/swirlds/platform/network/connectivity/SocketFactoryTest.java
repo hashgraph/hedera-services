@@ -19,7 +19,6 @@ package com.swirlds.platform.network.connectivity;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.swirlds.common.config.SocketConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.config.api.Configuration;
@@ -43,6 +42,7 @@ class SocketFactoryTest {
     private static final int PORT = 30_000;
     private static final SocketConfig NO_IP_TOS;
     private static final SocketConfig IP_TOS;
+    private static final CryptoConfig CRYPTO_CONFIG;
 
     static {
         final Configuration configurationNoIpTos =
@@ -52,6 +52,8 @@ class SocketFactoryTest {
         final Configuration configurationIpTos =
                 new TestConfigBuilder().withValue("socket.ipTos", "100").getOrCreateConfig();
         IP_TOS = configurationIpTos.getConfigData(SocketConfig.class);
+
+        CRYPTO_CONFIG = configurationIpTos.getConfigData(CryptoConfig.class);
     }
 
     /**
@@ -135,15 +137,12 @@ class SocketFactoryTest {
         final int node1 = random.nextInt(addressBook.getSize());
         final int node2 = random.nextInt(addressBook.getSize());
 
-        final CryptoConfig cryptoConfig =
-                ConfigurationHolder.getInstance().get().getConfigData(CryptoConfig.class);
-
         testSocketsBoth(
-                new TlsFactory(keysAndCerts[node1], NO_IP_TOS, cryptoConfig),
-                new TlsFactory(keysAndCerts[node2], NO_IP_TOS, cryptoConfig));
+                new TlsFactory(keysAndCerts[node1], NO_IP_TOS, CRYPTO_CONFIG),
+                new TlsFactory(keysAndCerts[node2], NO_IP_TOS, CRYPTO_CONFIG));
         testSocketsBoth(
-                new TlsFactory(keysAndCerts[node1], IP_TOS, cryptoConfig),
-                new TlsFactory(keysAndCerts[node2], IP_TOS, cryptoConfig));
+                new TlsFactory(keysAndCerts[node1], IP_TOS, CRYPTO_CONFIG),
+                new TlsFactory(keysAndCerts[node2], IP_TOS, CRYPTO_CONFIG));
     }
 
     @Test

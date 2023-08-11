@@ -27,6 +27,12 @@ import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.time.Instant;
@@ -37,6 +43,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionModuleTest {
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private AttributeValidator attributeValidator;
+
+    @Mock
+    private ExpiryValidator expiryValidator;
+
+    @Mock
+    private ReadableAccountStore readableAccountStore;
+
+    @Mock
+    private TokenServiceApi tokenServiceApi;
+
+    @Mock
+    private ReadableFileStore readableFileStore;
+
     @Mock
     private HederaOperations hederaOperations;
 
@@ -60,16 +84,46 @@ class TransactionModuleTest {
     }
 
     @Test
+    void providesValidators() {
+        given(context.attributeValidator()).willReturn(attributeValidator);
+        given(context.expiryValidator()).willReturn(expiryValidator);
+        assertSame(attributeValidator, TransactionModule.provideAttributeValidator(context));
+        assertSame(expiryValidator, TransactionModule.provideExpiryValidator(context));
+    }
+
+    @Test
+    void providesStores() {
+        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.readableStore(ReadableFileStore.class)).willReturn(readableFileStore);
+        assertSame(readableAccountStore, TransactionModule.provideReadableAccountStore(context));
+        assertSame(readableFileStore, TransactionModule.provideReadableFileStore(context));
+    }
+
+    @Test
+    void providesNetworkInfo() {
+        given(context.networkInfo()).willReturn(networkInfo);
+        assertSame(networkInfo, TransactionModule.provideNetworkInfo(context));
+    }
+
+    @Test
     void providesExpectedConfig() {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(context.configuration()).willReturn(config);
         assertSame(config, TransactionModule.provideConfiguration(context));
         assertNotNull(TransactionModule.provideContractsConfig(config));
+        assertNotNull(TransactionModule.provideLedgerConfig(config));
+        assertNotNull(TransactionModule.provideStakingConfig(config));
     }
 
     @Test
     void providesExpectedConsTime() {
         given(context.consensusNow()).willReturn(Instant.MAX);
         assertSame(Instant.MAX, TransactionModule.provideConsensusTime(context));
+    }
+
+    @Test
+    void providesTokenServiceApi() {
+        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        assertSame(tokenServiceApi, TransactionModule.provideInitialTokenServiceApi(context));
     }
 }

@@ -23,6 +23,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public final class NetworkingStakingTranslator {
 
+    private NetworkingStakingTranslator() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     @NonNull
     /**
      * Converts a Part of {@link com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext} to {@link NetworkStakingRewards}.

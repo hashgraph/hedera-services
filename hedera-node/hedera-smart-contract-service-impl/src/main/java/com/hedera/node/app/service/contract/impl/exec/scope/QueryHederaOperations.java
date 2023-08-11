@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -166,7 +167,8 @@ public class QueryHederaOperations implements HederaOperations {
      * @throws UnsupportedOperationException always
      */
     @Override
-    public void updateStorageMetadata(final long contractNumber, @Nullable final Bytes firstKey, final int slotsUsed) {
+    public void updateStorageMetadata(
+            final long contractNumber, @NonNull final Bytes firstKey, final int netChangeInSlotsUsed) {
         throw new UnsupportedOperationException("Queries cannot update storage metadata");
     }
 
@@ -178,6 +180,17 @@ public class QueryHederaOperations implements HederaOperations {
     @Override
     public void createContract(
             final long number, final long parentNumber, final long nonce, final @Nullable Bytes evmAddress) {
+        throw new UnsupportedOperationException("Queries cannot create a contract");
+    }
+
+    /**
+     * Refuses to create a contract.
+     *
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public void createContract(
+            long number, @NonNull final ContractCreateTransactionBody op, long nonce, @Nullable Bytes evmAddress) {
         throw new UnsupportedOperationException("Queries cannot create a contract");
     }
 

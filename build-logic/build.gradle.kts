@@ -37,4 +37,9 @@ dependencies {
     implementation("org.gradlex:java-ecosystem-capabilities:1.1")
     implementation("org.gradlex:java-module-dependencies:1.3.1")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
+
+    implementation("com.adarshr:gradle-test-logger-plugin:3.2.0")
+    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
+    implementation("gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.1.5")
+    implementation("org.owasp:dependency-check-gradle:8.1.0")
 }

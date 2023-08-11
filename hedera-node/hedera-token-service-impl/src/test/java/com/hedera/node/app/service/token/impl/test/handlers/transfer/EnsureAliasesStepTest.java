@@ -68,14 +68,14 @@ class EnsureAliasesStepTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -131,7 +131,7 @@ class EnsureAliasesStepTest extends StepsBase {
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias1, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
@@ -140,7 +140,7 @@ class EnsureAliasesStepTest extends StepsBase {
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias2, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 })
                 .will((invocation) -> {
                     final var copy = account.copyBuilder()
@@ -149,7 +149,7 @@ class EnsureAliasesStepTest extends StepsBase {
                             .build();
                     writableAccountStore.put(copy);
                     writableAliases.put(evmAddressAlias3, asAccount(hbarReceiver + 2));
-                    return recordBuilder.accountID(asAccount(hbarReceiver + 2));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver + 2));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -227,14 +227,14 @@ class EnsureAliasesStepTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

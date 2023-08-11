@@ -18,10 +18,11 @@ package com.swirlds.platform.gui.internal;
 
 import static com.swirlds.gui.GuiUtils.wrap;
 
+import com.swirlds.common.system.Platform;
 import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.PrePaintableJPanel;
+import com.swirlds.gui.components.PrePaintableJPanel;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Consensus;
-import com.swirlds.platform.SwirldsPlatform;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
 import com.swirlds.platform.state.signed.SignedStateInfo;
@@ -55,9 +56,9 @@ class WinTab2Consensus extends PrePaintableJPanel {
             if (WinBrowser.memberDisplayed == null) {
                 return;
             }
-            SwirldsPlatform platform = WinBrowser.memberDisplayed.getPlatform();
+            Platform platform = WinBrowser.memberDisplayed.getPlatform();
             String s = "";
-            s += GuiPlatformAccessor.getInstance().getPlatformName(platform.getSelfId());
+            s += GuiModel.getInstance().getPlatformName(platform.getSelfId());
             final Consensus consensus = GuiPlatformAccessor.getInstance().getConsensus(platform.getSelfId());
             long r1 = consensus.getDeleteRound();
             long r2 = consensus.getFameDecidedBelow();

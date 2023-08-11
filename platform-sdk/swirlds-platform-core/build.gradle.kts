@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
@@ -56,4 +56,9 @@ dependencies {
     testImplementation(testFixtures(project(":swirlds-base")))
     testImplementation(testFixtures(project(":swirlds-common")))
     testImplementation(testFixtures(project(":swirlds-config-api")))
+
+    testFixturesImplementation(testLibs.bundles.junit)
+    testFixturesImplementation(testFixtures(project(":swirlds-common")))
+    testFixturesImplementation(project(":swirlds-unit-tests:common:swirlds-test-framework"))
+    testFixturesCompileOnly(libs.spotbugs.annotations)
 }

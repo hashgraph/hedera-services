@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.contract.impl.annotations.InitialTokenServiceApi;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
@@ -32,8 +33,16 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.ScopedEvmFrameStateFactory;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.validation.AttributeValidator;
+import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.swirlds.config.api.Configuration;
 import dagger.Binds;
 import dagger.Module;
@@ -54,6 +63,18 @@ public interface TransactionModule {
     @TransactionScope
     static ContractsConfig provideContractsConfig(@NonNull final Configuration configuration) {
         return requireNonNull(configuration).getConfigData(ContractsConfig.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static LedgerConfig provideLedgerConfig(@NonNull final Configuration configuration) {
+        return requireNonNull(configuration).getConfigData(LedgerConfig.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static StakingConfig provideStakingConfig(@NonNull final Configuration configuration) {
+        return requireNonNull(configuration).getConfigData(StakingConfig.class);
     }
 
     @Provides
@@ -80,6 +101,43 @@ public interface TransactionModule {
     static Supplier<HederaWorldUpdater> provideFeesOnlyUpdater(
             @NonNull final HederaOperations extWorldScope, @NonNull final EvmFrameStateFactory factory) {
         return () -> new ProxyWorldUpdater(requireNonNull(extWorldScope), requireNonNull(factory), null);
+    }
+
+    @Provides
+    @TransactionScope
+    static AttributeValidator provideAttributeValidator(@NonNull final HandleContext context) {
+        return context.attributeValidator();
+    }
+
+    @Provides
+    @TransactionScope
+    static ExpiryValidator provideExpiryValidator(@NonNull final HandleContext context) {
+        return context.expiryValidator();
+    }
+
+    @Provides
+    @TransactionScope
+    static ReadableFileStore provideReadableFileStore(@NonNull final HandleContext context) {
+        return context.readableStore(ReadableFileStore.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static ReadableAccountStore provideReadableAccountStore(@NonNull final HandleContext context) {
+        return context.readableStore(ReadableAccountStore.class);
+    }
+
+    @Provides
+    @TransactionScope
+    @InitialTokenServiceApi
+    static TokenServiceApi provideInitialTokenServiceApi(@NonNull final HandleContext context) {
+        return context.serviceApi(TokenServiceApi.class);
+    }
+
+    @Provides
+    @TransactionScope
+    static NetworkInfo provideNetworkInfo(@NonNull final HandleContext context) {
+        return context.networkInfo();
     }
 
     @Binds

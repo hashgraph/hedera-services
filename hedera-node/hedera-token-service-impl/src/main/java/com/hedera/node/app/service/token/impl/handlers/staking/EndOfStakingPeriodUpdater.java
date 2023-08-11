@@ -25,6 +25,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.Fraction;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.hapi.node.transaction.NodeStake;
@@ -34,9 +35,9 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
+import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigDecimal;
@@ -77,8 +78,6 @@ public class EndOfStakingPeriodUpdater {
     /**
      * Updates all (relevant) staking-related values for all nodes, as well as any network reward information,
      * at the end of a staking period. This method must be invoked during handling of a transaction
-     *
-     * TODO: this method is still not called by the handle workflow (will be done in issue #7721)
      *
      * @param consensusTime the consensus time of the transaction used to end the staking period
      * @param context the context of the transaction used to end the staking period
@@ -226,7 +225,11 @@ public class EndOfStakingPeriodUpdater {
         final var syntheticNodeStakeUpdateTxn = newNodeStakeUpdateBuilder(
                 lastInstantOfPreviousPeriodFor(consensusTime), finalNodeStakes, stakingConfig);
         log.info("Exporting:\n{}", finalNodeStakes);
-        context.dispatchPrecedingTransaction(syntheticNodeStakeUpdateTxn.build(), SingleTransactionRecordBuilder.class);
+
+        final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
+        nodeStakeUpdateBuilder.transaction(Transaction.newBuilder()
+                .body(syntheticNodeStakeUpdateTxn.build())
+                .build());
     }
 
     /**
@@ -333,7 +336,7 @@ public class EndOfStakingPeriodUpdater {
         // The balance left in the rewards account (in tinybars), after paying all rewards earned so far
         final var unreservedBalance = getRewardsBalance(accountStore) - networkRewardsStore.pendingRewards();
 
-        final var thresholdBalance = stakingConfig.stakingRewardBalanceThreshold();
+        final var thresholdBalance = stakingConfig.rewardBalanceThreshold();
         // A number proportional to the unreserved balance, from 0 for empty, up to 1 at the threshold
         final var balanceRatio = thresholdBalance > 0L
                 ? BigDecimal.valueOf(Math.min(unreservedBalance, thresholdBalance))
@@ -346,9 +349,9 @@ public class EndOfStakingPeriodUpdater {
         return BigDecimal.valueOf(stakingConfig.rewardRate())
                 .multiply(balanceRatio.multiply(BigDecimal.valueOf(2).subtract(balanceRatio)))
                 .multiply(
-                        stakingConfig.stakingMaxStakeRewarded() >= stakedToReward
+                        stakingConfig.maxStakeRewarded() >= stakedToReward
                                 ? BigDecimal.ONE
-                                : BigDecimal.valueOf(stakingConfig.stakingMaxStakeRewarded())
+                                : BigDecimal.valueOf(stakingConfig.maxStakeRewarded())
                                         .divide(BigDecimal.valueOf(stakedToReward), MATH_CONTEXT))
                 .longValue();
     }

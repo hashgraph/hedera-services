@@ -42,7 +42,7 @@ import com.swirlds.platform.observers.EventObserverDispatcher;
 import com.swirlds.platform.observers.StaleEventObserver;
 import com.swirlds.platform.state.signed.LoadableFromSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.test.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.test.framework.context.TestPlatformContextBuilder;
 import java.util.Arrays;
 import java.util.Deque;

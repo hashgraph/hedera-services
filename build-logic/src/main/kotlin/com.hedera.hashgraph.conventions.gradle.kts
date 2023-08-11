@@ -19,10 +19,12 @@ import java.util.Date
 plugins {
     `java-library`
     jacoco
+    id("com.hedera.hashgraph.repositories")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-java-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")
     id("com.hedera.hashgraph.jpms-modules")
+    id("com.hedera.hashgraph.jpms-module-dependencies")
 }
 
 group = "com.hedera.hashgraph"
@@ -38,25 +40,7 @@ java {
 // Define the repositories from which we will pull dependencies
 repositories {
     maven {
-        url = uri("https://repo.maven.apache.org/maven2/")
-    }
-    maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-    }
-    maven {
-        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel")
-    }
-    maven {
-        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-commits")
-    }
-    maven {
-        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits")
-    }
-    maven {
-        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-daily-snapshots")
-    }
-    maven {
-        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots")
     }
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven")

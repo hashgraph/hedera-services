@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.fixtures.state;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableKVStateBase;
 import com.hedera.node.app.spi.state.WritableQueueState;
@@ -38,7 +39,7 @@ import java.util.Set;
  * <p>A convenient {@link Builder} is provided to define the set of states available.
  */
 @SuppressWarnings("rawtypes")
-public class MapWritableStates implements WritableStates {
+public class MapWritableStates implements WritableStates, CommittableWritableStates {
     private final Map<String, ?> states;
 
     public MapWritableStates(@NonNull final Map<String, ?> states) {
@@ -97,6 +98,7 @@ public class MapWritableStates implements WritableStates {
         return states.size();
     }
 
+    @Override
     public void commit() {
         states.values().forEach(state -> {
             if (state instanceof WritableKVStateBase kv) {

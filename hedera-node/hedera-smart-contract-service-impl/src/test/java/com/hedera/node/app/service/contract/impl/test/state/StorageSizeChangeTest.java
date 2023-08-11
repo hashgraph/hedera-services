@@ -26,5 +26,6 @@ class StorageSizeChangeTest {
     void neverAddsNegativeNumberOfSlots() {
         final var changes = new StorageSizeChange(1L, 5, 2);
         assertEquals(0, changes.numAdded());
+        assertEquals(-3, changes.netChange());
     }
 }

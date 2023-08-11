@@ -49,10 +49,11 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,9 +81,10 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
             .tinybarBalance(10000)
             .build();
     private static final TokenID TOKEN_321 = asToken(321);
+    private static final List<TransactionRecord> EMPTY_TRANSACTION_RECORD_LIST = Collections.emptyList();
 
     @Mock(strictness = LENIENT)
-    private HandleContext context;
+    private FinalizeContext context;
 
     @Mock
     private CryptoTransferRecordBuilder recordBuilder;
@@ -105,7 +107,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void handleNullArg() {
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -120,7 +122,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -142,7 +144,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -464,7 +466,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        assertThatThrownBy(() -> subject.finalizeParentRecord(context, List.of()))
+        assertThatThrownBy(() -> subject.finalizeParentRecord(context, EMPTY_TRANSACTION_RECORD_LIST))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -897,7 +899,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                 .build()));
     }
 
-    private HandleContext mockContext() {
+    private FinalizeContext mockContext() {
         given(context.recordBuilder(CryptoTransferRecordBuilder.class)).willReturn(recordBuilder);
 
         given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);

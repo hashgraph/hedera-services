@@ -22,8 +22,9 @@ import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowser
 
 import com.swirlds.gui.GuiConstants;
 import com.swirlds.gui.GuiUtils;
-import com.swirlds.gui.ScrollableJPanel;
+import com.swirlds.gui.components.ScrollableJPanel;
 import com.swirlds.gui.hashgraph.HashgraphGuiSource;
+import com.swirlds.gui.model.InfoMember;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -67,7 +68,7 @@ public class WinBrowser extends JFrame {
     /** refresh the screen every this many milliseconds */
     final int refreshPeriod = 500;
     /** the InfoMember that is currently being shown by all tabs in the browser window */
-    static volatile InfoMember memberDisplayed = null;
+    public static volatile InfoMember memberDisplayed = null;
     /** have all the tabs been initialized yet? */
     private boolean didInit = false;
 
