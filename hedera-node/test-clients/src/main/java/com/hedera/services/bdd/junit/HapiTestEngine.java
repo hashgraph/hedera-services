@@ -407,6 +407,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
                         initialSignedState,
                         new EmergencyRecoveryManager(
+                                platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
                                     System.out.println("Asked to shutdownGrpcServer because of " + s);
                                     System.exit(exitCode.getExitCode());
