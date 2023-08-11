@@ -22,7 +22,6 @@ dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
 
-        testImplementation(project(":hapi"))
         testImplementation(project(":app"))
         testImplementation(project(":app-service-token-impl"))
         testImplementation(testFixtures(project(":app-service-mono")))

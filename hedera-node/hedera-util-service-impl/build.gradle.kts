@@ -25,9 +25,12 @@ dependencies {
         testImplementation(project(":app-service-network-admin"))
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(testFixtures(project(":config")))
+        testImplementation(gav("com.swirlds.config.api"))
         testImplementation(gav("com.swirlds.test.framework"))
         testImplementation(gav("org.assertj.core"))
+        testImplementation(gav("org.checkerframework.checker.qual"))
         testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
     }

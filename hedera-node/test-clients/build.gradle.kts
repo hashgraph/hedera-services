@@ -67,6 +67,7 @@ dependencies {
         api(gav("tuweni.bytes"))
 
         implementation(project(":app-service-evm"))
+        implementation(project(":config"))
         implementation(gav("com.fasterxml.jackson.core"))
         implementation(gav("com.fasterxml.jackson.databind"))
         implementation(gav("com.github.docker.java.api"))

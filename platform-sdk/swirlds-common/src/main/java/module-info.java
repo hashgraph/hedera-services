@@ -155,7 +155,7 @@ module com.swirlds.common {
             com.swirlds.jrs,
             com.swirlds.platform.core,
             com.swirlds.platform.test,
-            com.swirlds.gui;
+            com.swirlds.platform.gui;
     exports com.swirlds.common.startup;
 
     requires transitive com.fasterxml.jackson.core;
