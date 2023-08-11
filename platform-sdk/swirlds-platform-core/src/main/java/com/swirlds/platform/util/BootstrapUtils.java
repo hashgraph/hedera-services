@@ -96,6 +96,7 @@ import com.swirlds.platform.state.signed.SavedStateInfo;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
+import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -570,7 +571,7 @@ public final class BootstrapUtils {
         // time this class is used.
         final SavedStateLoader savedStateLoader = new SavedStateLoader(
                 platformContext,
-                SystemExitUtils::exitSystem,
+                new Shutdown()::shutdown,
                 configAddressBook,
                 savedStateFiles,
                 appVersion,

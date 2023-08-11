@@ -67,6 +67,7 @@ import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.address.AddressBookInitializer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateFileUtils;
+import com.swirlds.platform.system.Shutdown;
 import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -331,7 +332,7 @@ public class Browser {
         final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
         final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
-                stateConfig, SystemExitUtils::exitSystem, basicConfig.getEmergencyRecoveryFileLoadDir());
+                stateConfig, new Shutdown()::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
         final ReservedSignedState initialState = getInitialState(
                 platformContext,
