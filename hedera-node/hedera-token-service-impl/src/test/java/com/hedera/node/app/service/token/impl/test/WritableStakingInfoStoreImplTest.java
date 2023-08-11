@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test;
 
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.impl.TokenServiceImpl;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
@@ -30,17 +31,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class WritableStakingInfoStoreImplTest {
-    public static final long NODE_ID_1 = 1;
+    public static final EntityNumber NODE_ID_1 =
+            EntityNumber.newBuilder().number(1L).build();
 
     private WritableStakingInfoStore subject;
 
     @BeforeEach
     void setUp() {
-        final var wrappedState = MapWritableKVState.<Long, StakingNodeInfo>builder(TokenServiceImpl.STAKING_INFO_KEY)
+        final var wrappedState = MapWritableKVState.<EntityNumber, StakingNodeInfo>builder(
+                        TokenServiceImpl.STAKING_INFO_KEY)
                 .value(
                         NODE_ID_1,
                         StakingNodeInfo.newBuilder()
-                                .nodeNumber(NODE_ID_1)
+                                .nodeNumber(NODE_ID_1.number())
                                 .stake(25)
                                 .stakeRewardStart(15)
                                 .unclaimedStakeRewardStart(5)
@@ -66,23 +69,24 @@ public class WritableStakingInfoStoreImplTest {
     @Test
     void getForModifyNodeIdNotFound() {
         Assertions.assertThat(subject.get(-1)).isNull();
-        Assertions.assertThat(subject.get(NODE_ID_1 + 1)).isNull();
+        Assertions.assertThat(subject.get(NODE_ID_1.number() + 1)).isNull();
     }
 
     @Test
     void getForModifyInfoFound() {
-        Assertions.assertThat(subject.get(NODE_ID_1)).isNotNull().isInstanceOf(StakingNodeInfo.class);
+        Assertions.assertThat(subject.get(NODE_ID_1.number())).isNotNull().isInstanceOf(StakingNodeInfo.class);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void putWithNullArg() {
-        Assertions.assertThatThrownBy(() -> subject.put(NODE_ID_1 + 1, null)).isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> subject.put(NODE_ID_1.number() + 1, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void putSuccess() {
-        final var newNodeId = NODE_ID_1 + 1;
+        final var newNodeId = NODE_ID_1.number() + 1;
         final var newStakingInfo =
                 StakingNodeInfo.newBuilder().nodeNumber(newNodeId).stake(20).build();
         subject.put(newNodeId, newStakingInfo);
