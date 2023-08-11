@@ -33,7 +33,7 @@ import java.nio.file.StandardCopyOption;
  */
 public class PreconsensusEventMutableFile {
     /** the file version to write at the beginning of the file. atm, this is just a placeholder for future changes */
-    private static final int FILE_VERSION = 1;
+    public static final int FILE_VERSION = 1;
 
     /**
      * Describes the file that is being written to.

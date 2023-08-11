@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -351,8 +352,10 @@ class FileUpdateTest extends FileTestBase {
         subject.handle(handleContext);
 
         final var newFile = writableUpgradeStates.poll();
-        assertEquals(newContent.length(), newFile.length());
-        assertEquals(newContent.toString(), newFile.toString());
+        assertNotNull(newFile);
+        assertNotNull(newFile.value());
+        assertEquals(newContent.length(), newFile.value().length());
+        assertEquals(newContent.toString(), newFile.value().toString());
     }
 
     @Test

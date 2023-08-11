@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
+package com.swirlds.gui.model;
 
-import com.swirlds.gui.InfoEntity;
-import com.swirlds.platform.SwirldsPlatform;
+import com.swirlds.common.system.Platform;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,9 +27,9 @@ public class InfoMember extends InfoEntity {
 
     private final List<InfoState> states = new ArrayList<>(); // children
 
-    private final SwirldsPlatform platform;
+    private final Platform platform;
 
-    public InfoMember(final InfoSwirld swirld, final SwirldsPlatform platform) {
+    public InfoMember(final InfoSwirld swirld, final Platform platform) {
         super(platform.getSelfAddress().getNickname() + " - "
                 + platform.getSelfAddress().getSelfName());
         this.platform = platform;
@@ -41,7 +40,7 @@ public class InfoMember extends InfoEntity {
         return states;
     }
 
-    public SwirldsPlatform getPlatform() {
+    public Platform getPlatform() {
         return platform;
     }
 }

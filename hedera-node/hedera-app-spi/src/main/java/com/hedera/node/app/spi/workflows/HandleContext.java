@@ -421,6 +421,19 @@ public interface HandleContext {
     <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
+     * Adds a preceding child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+     * context) is rolled back, all child record builders will be reverted.
+     *
+     * @param recordBuilderClass the record type
+     * @return the new child record builder
+     * @param <T> the record type
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+    /**
      * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
      * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
      * rolled back.

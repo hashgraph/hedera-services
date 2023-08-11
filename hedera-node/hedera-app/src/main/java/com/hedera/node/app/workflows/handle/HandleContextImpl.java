@@ -505,6 +505,13 @@ public class HandleContextImpl implements HandleContext {
 
     @Override
     @NonNull
+    public <T> T addPrecedingChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
+        final var result = recordListBuilder.addPreceding(configuration());
+        return castRecordBuilder(result, recordBuilderClass);
+    }
+
+    @Override
+    @NonNull
     public <T> T addRemovableChildRecordBuilder(@NonNull final Class<T> recordBuilderClass) {
         final var result = recordListBuilder.addRemovableChild(configuration());
         return castRecordBuilder(result, recordBuilderClass);
