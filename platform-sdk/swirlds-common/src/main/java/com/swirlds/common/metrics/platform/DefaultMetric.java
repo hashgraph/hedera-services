@@ -135,12 +135,12 @@ public abstract class DefaultMetric implements Metric, LegacyMetric {
      */
     @Override
     public String toString() {
-        return "DefaultMetric{" +
-                "category='" + category + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", unit='" + unit + '\'' +
-                ", format='" + format + '\'' +
-                '}';
+        return "DefaultMetric{" + "category='"
+                + category + '\'' + ", name='"
+                + name + '\'' + ", description='"
+                + description + '\'' + ", unit='"
+                + unit + '\'' + ", format='"
+                + format + '\'' + ", dataType='"
+                + getDataType() + '\'' + '}';
     }
 }
