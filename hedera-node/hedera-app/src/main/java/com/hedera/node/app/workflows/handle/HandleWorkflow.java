@@ -207,6 +207,9 @@ public class HandleWorkflow {
                 default -> throw new PreCheckException(preHandleResult.responseCode());
             }
 
+            // Check the time box of the transaction
+            checker.checkTimeBox(txBody, consensusNow);
+
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var timeout = hederaConfig.workflowVerificationTimeoutMS();
             final var maxMillis = instantSource.millis() + timeout;
