@@ -399,7 +399,7 @@ public final class BootstrapUtils {
                     "ERROR: There are problems starting class " + appDefinition.getMainClassName() + "\n"
                             + ExceptionUtils.getStackTrace(e));
             logger.error(EXCEPTION.getMarker(), "Problems with class {}", appDefinition.getMainClassName(), e);
-            throw new RuntimeException("Problems with class " + appDefinition.getMainClassName(),e);
+            throw new RuntimeException("Problems with class " + appDefinition.getMainClassName(), e);
         }
     }
 
