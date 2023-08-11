@@ -141,7 +141,7 @@ public class Browser {
         try {
             launchUnhandled(commandLineArgs);
         } catch (Exception e) {
-            logger.error(EXCEPTION.getMarker(), "", e);
+            logger.error(EXCEPTION.getMarker(), "Unable to start Browser", e);
             throw new RuntimeException("Unable to start Browser", e);
         }
     }
