@@ -23,8 +23,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.function.Function;
 
-// TODO unit tests
-
 /**
  * Wraps a {@link TipsetEventCreator} and provides additional functionality. Will sometimes decide not to create new
  * events based on external rules or based on paused status. Forwards created events to a consumer, and retries

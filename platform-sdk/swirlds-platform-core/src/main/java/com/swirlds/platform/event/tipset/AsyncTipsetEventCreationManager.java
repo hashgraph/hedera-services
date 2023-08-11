@@ -32,8 +32,6 @@ import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
-// TODO unit tests
-
 /**
  * Manages the creation of events. Wraps a {@link SyncTipsetEventCreationManager} and provides an asynchronous
  * interface.
