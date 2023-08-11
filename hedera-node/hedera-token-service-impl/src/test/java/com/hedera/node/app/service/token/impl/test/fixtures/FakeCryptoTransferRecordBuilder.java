@@ -1,0 +1,79 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.token.impl.test.fixtures;
+
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import java.util.Arrays;
+import java.util.List;
+import org.jetbrains.annotations.NotNull;
+
+public class FakeCryptoTransferRecordBuilder {
+
+    public FakeCryptoTransferRecordBuilder() {}
+
+    public CryptoTransferRecordBuilder create() {
+        return new CryptoTransferRecordBuilder() {
+            private TransferList transferList;
+            private List<TokenTransferList> tokenTransferLists;
+            private List<AssessedCustomFee> assessedCustomFees;
+            private List<AccountAmount> paidStakingRewards;
+            private List<TokenAssociation> automaticTokenAssociations;
+
+            @NotNull
+            @Override
+            public CryptoTransferRecordBuilder transferList(@NotNull final TransferList hbarTransfers) {
+                this.transferList = hbarTransfers;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public CryptoTransferRecordBuilder tokenTransferLists(
+                    @NotNull final List<TokenTransferList> tokenTransferLists) {
+                this.tokenTransferLists = tokenTransferLists;
+                return this;
+            }
+
+            @NotNull
+            @Override
+            public CryptoTransferRecordBuilder assessedCustomFees(
+                    @NotNull final List<AssessedCustomFee> assessedCustomFees) {
+                this.assessedCustomFees = assessedCustomFees;
+                return this;
+            }
+
+            @Override
+            public CryptoTransferRecordBuilder paidStakingRewards(
+                    @NotNull final List<AccountAmount> paidStakingRewards) {
+                this.paidStakingRewards = paidStakingRewards;
+                return this;
+            }
+
+            @Override
+            public CryptoTransferRecordBuilder addAutomaticTokenAssociation(
+                    @NotNull final TokenAssociation tokenAssociation) {
+                this.automaticTokenAssociations = Arrays.asList(tokenAssociation);
+                return this;
+            }
+        };
+    }
+}

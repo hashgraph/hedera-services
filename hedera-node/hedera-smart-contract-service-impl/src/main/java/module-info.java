@@ -1,29 +1,28 @@
-import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
-
 module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.app.service.contract;
+    requires transitive com.hedera.node.app.service.file;
+    requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
+    requires transitive com.swirlds.config;
     requires transitive dagger;
     requires transitive javax.inject;
+    requires transitive org.apache.logging.log4j;
     requires transitive org.hyperledger.besu.datatypes;
     requires transitive org.hyperledger.besu.evm;
     requires transitive tuweni.bytes;
     requires transitive tuweni.units;
+    requires com.hedera.node.app.service.evm;
+    requires com.google.common;
     requires com.swirlds.common;
-    requires com.swirlds.config;
-    requires com.hedera.node.app.service.mono;
-    requires com.hedera.node.app.service.token;
-    requires com.swirlds.jasperdb;
-    requires static com.github.spotbugs.annotations;
     requires org.bouncycastle.provider;
-
-    provides com.hedera.node.app.service.contract.ContractService with
-            ContractServiceImpl;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.node.app.service.contract.impl;
+    exports com.hedera.node.app.service.contract.impl.exec.scope;
+    exports com.hedera.node.app.service.contract.impl.records;
     exports com.hedera.node.app.service.contract.impl.handlers;
     exports com.hedera.node.app.service.contract.impl.hevm;
     exports com.hedera.node.app.service.contract.impl.state to

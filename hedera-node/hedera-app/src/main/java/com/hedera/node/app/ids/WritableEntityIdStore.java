@@ -43,13 +43,22 @@ public class WritableEntityIdStore {
     }
 
     /**
+     * Returns the next entity number that will be used.
+     *
+     * @return the next entity number that will be used
+     */
+    public long peekAtNextNumber() {
+        final var oldEntityNum = entityIdState.get();
+        return oldEntityNum == null ? 1 : oldEntityNum.number() + 1;
+    }
+
+    /**
      * Increments the current entity number in state and returns the new value.
      *
      * @return the next new entity number
      */
     public long incrementAndGet() {
-        final EntityNumber oldEntityNum = entityIdState.get();
-        long newEntityNum = oldEntityNum == null ? 1 : oldEntityNum.number() + 1;
+        final var newEntityNum = peekAtNextNumber();
         entityIdState.put(new EntityNumber(newEntityNum));
         return newEntityNum;
     }

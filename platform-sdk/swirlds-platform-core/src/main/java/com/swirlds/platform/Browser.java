@@ -18,6 +18,8 @@ package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
+import static com.swirlds.common.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
+import static com.swirlds.common.system.SystemExitUtils.exitSystem;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
@@ -25,15 +27,12 @@ import static com.swirlds.platform.crypto.CryptoSetup.initNodeSecurity;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getBrowserWindow;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getPlatforms;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.getStateHierarchy;
-import static com.swirlds.platform.gui.internal.BrowserWindowManager.setInsets;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.setStateHierarchy;
 import static com.swirlds.platform.gui.internal.BrowserWindowManager.showBrowserWindow;
 import static com.swirlds.platform.state.GenesisStateBuilder.buildGenesisState;
 import static com.swirlds.platform.state.address.AddressBookNetworkUtils.getLocalAddressCount;
 import static com.swirlds.platform.state.signed.ReservedSignedState.createNullReservation;
 import static com.swirlds.platform.state.signed.SignedStateFileReader.getSavedStateFiles;
-import static com.swirlds.platform.system.SystemExitCode.NODE_ADDRESS_MISMATCH;
-import static com.swirlds.platform.system.SystemExitUtils.exitSystem;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
 import com.swirlds.common.StartupTime;
@@ -70,6 +69,7 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SystemExitCode;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.status.PlatformStatusConfig;
@@ -79,6 +79,11 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
+import com.swirlds.gui.WindowConfig;
+import com.swirlds.gui.model.GuiModel;
+import com.swirlds.gui.model.InfoApp;
+import com.swirlds.gui.model.InfoMember;
+import com.swirlds.gui.model.InfoSwirld;
 import com.swirlds.jasperdb.config.JasperDbConfig;
 import com.swirlds.logging.payloads.NodeAddressMismatchPayload;
 import com.swirlds.logging.payloads.NodeStartPayload;
@@ -97,10 +102,6 @@ import com.swirlds.platform.event.preconsensus.PreconsensusEventStreamConfig;
 import com.swirlds.platform.event.tipset.EventCreationConfig;
 import com.swirlds.platform.gossip.chatter.config.ChatterConfig;
 import com.swirlds.platform.gossip.sync.config.SyncConfig;
-import com.swirlds.platform.gui.GuiPlatformAccessor;
-import com.swirlds.platform.gui.internal.InfoApp;
-import com.swirlds.platform.gui.internal.InfoMember;
-import com.swirlds.platform.gui.internal.InfoSwirld;
 import com.swirlds.platform.gui.internal.StateHierarchy;
 import com.swirlds.platform.health.OSHealthChecker;
 import com.swirlds.platform.health.clock.OSClockSpeedSourceChecker;
@@ -121,7 +122,6 @@ import com.swirlds.platform.state.signed.SignedStateFileUtils;
 import com.swirlds.platform.swirldapp.AppLoaderException;
 import com.swirlds.platform.swirldapp.SwirldAppLoader;
 import com.swirlds.platform.system.Shutdown;
-import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.uptime.UptimeConfig;
 import com.swirlds.platform.util.MetricsDocUtils;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
@@ -257,7 +257,7 @@ public class Browser {
                 .withConfigDataType(TransactionConfig.class);
 
         // Assume all locally run instances provide the same configuration definitions to the configuration builder.
-        if (appMains.size() > 0) {
+        if (!appMains.isEmpty()) {
             appMains.values().iterator().next().updateConfigurationBuilder(configurationBuilder);
         }
 
@@ -270,12 +270,15 @@ public class Browser {
         ConfigurationHolder.getInstance().setConfiguration(configuration);
         CryptographyHolder.reset();
 
+        final var pathsConfig = configuration.getConfigData(PathsConfig.class);
+        final OSFileSystemChecker osFileSystemChecker = new OSFileSystemChecker(pathsConfig);
+
         OSHealthChecker.performOSHealthChecks(
                 configuration.getConfigData(OSHealthCheckConfig.class),
                 List.of(
                         OSClockSpeedSourceChecker::performClockSourceSpeedCheck,
                         OSEntropyChecker::performEntropyChecks,
-                        OSFileSystemChecker::performFileSystemCheck));
+                        osFileSystemChecker::performFileSystemCheck));
 
         try {
             // discover the inset size and set the look and feel
@@ -284,7 +287,7 @@ public class Browser {
                 final JFrame jframe = new JFrame();
                 jframe.setPreferredSize(new Dimension(200, 200));
                 jframe.pack();
-                setInsets(jframe.getInsets());
+                WindowConfig.setInsets(jframe.getInsets());
                 jframe.dispose();
             }
 
@@ -299,7 +302,6 @@ public class Browser {
             // simulation to run.
 
             try {
-                final PathsConfig pathsConfig = configuration.getConfigData(PathsConfig.class);
                 if (Files.exists(pathsConfig.getConfigPath())) {
                     CommonUtils.tellUserConsole(
                             "Reading the configuration from the file:   " + pathsConfig.getConfigPath());
@@ -313,7 +315,7 @@ public class Browser {
                 startPlatforms(configuration, appDefinition, appMains);
 
                 // create the browser window, which uses those Statistics objects
-                showBrowserWindow();
+                showBrowserWindow(null);
                 for (final Frame f : Frame.getFrames()) {
                     if (!f.equals(getBrowserWindow())) {
                         f.toFront();
@@ -431,7 +433,7 @@ public class Browser {
         }
 
         settingsUsedBuilder.append(System.lineSeparator());
-        settingsUsedBuilder.append("-------------Configuration Values-------------");
+        settingsUsedBuilder.append("------------- All Configuration -------------");
         settingsUsedBuilder.append(System.lineSeparator());
 
         // Add all config values to the string builder
@@ -632,8 +634,8 @@ public class Browser {
                 // this is a node to start locally.
                 final String platformName = address.getNickname()
                         + " - " + address.getSelfName()
-                        + " - " + infoSwirld.name
-                        + " - " + infoSwirld.app.name;
+                        + " - " + infoSwirld.getName()
+                        + " - " + infoSwirld.getApp().getName();
 
                 final PlatformContext platformContext =
                         new DefaultPlatformContext(nodeId, metricsProvider, configuration);
@@ -655,10 +657,10 @@ public class Browser {
 
                 // We can't send a "real" dispatch, since the dispatcher will not have been started by the
                 // time this class is used.
-                final BasicConfig basicConfig =
-                        platformContext.getConfiguration().getConfigData(BasicConfig.class);
-                final EmergencyRecoveryManager emergencyRecoveryManager =
-                        new EmergencyRecoveryManager(shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
+                final BasicConfig basicConfig = configuration.getConfigData(BasicConfig.class);
+                final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+                final EmergencyRecoveryManager emergencyRecoveryManager = new EmergencyRecoveryManager(
+                        stateConfig, shutdown::shutdown, basicConfig.getEmergencyRecoveryFileLoadDir());
 
                 final ReservedSignedState initialState = getInitialState(
                         platformContext,
@@ -693,9 +695,9 @@ public class Browser {
                                 initialState.get(), addressBookInitializer.getInitialAddressBook());
                     }
 
-                    GuiPlatformAccessor.getInstance().setPlatformName(nodeId, platformName);
-                    GuiPlatformAccessor.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
-                    GuiPlatformAccessor.getInstance().setInstanceNumber(nodeId, instanceNumber);
+                    GuiModel.getInstance().setPlatformName(nodeId, platformName);
+                    GuiModel.getInstance().setSwirldId(nodeId, appDefinition.getSwirldId());
+                    GuiModel.getInstance().setInstanceNumber(nodeId, instanceNumber);
 
                     platform = new SwirldsPlatform(
                             platformContext,
@@ -711,7 +713,7 @@ public class Browser {
 
                 platforms.add(platform);
 
-                new InfoMember(infoSwirld, instanceNumber, platform);
+                new InfoMember(infoSwirld, platform);
 
                 appMain.init(platform, nodeId);
 
@@ -852,8 +854,8 @@ public class Browser {
             @NonNull final AddressBook configAddressBook,
             @NonNull final EmergencyRecoveryManager emergencyRecoveryManager) {
 
-        final String actualMainClassName =
-                configuration.getConfigData(StateConfig.class).getMainClassName(mainClassName);
+        final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
+        final String actualMainClassName = stateConfig.getMainClassName(mainClassName);
 
         final SavedStateInfo[] savedStateFiles = getSavedStateFiles(actualMainClassName, selfId, swirldName);
 
@@ -865,13 +867,14 @@ public class Browser {
                 configAddressBook,
                 savedStateFiles,
                 appVersion,
-                () -> new EmergencySignedStateValidator(emergencyRecoveryManager.getEmergencyRecoveryFile()),
+                () -> new EmergencySignedStateValidator(
+                        stateConfig, emergencyRecoveryManager.getEmergencyRecoveryFile()),
                 emergencyRecoveryManager);
         try {
             return savedStateLoader.getSavedStateToLoad();
         } catch (final Exception e) {
             logger.error(EXCEPTION.getMarker(), "Signed state not loaded from disk:", e);
-            if (configuration.getConfigData(StateConfig.class).requireStateLoad()) {
+            if (stateConfig.requireStateLoad()) {
                 exitSystem(SystemExitCode.SAVED_STATE_NOT_LOADED);
             }
         }

@@ -17,15 +17,20 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.EVM_ADDRESS_LEN;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isOfEvmAddressSize;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -64,7 +69,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      */
     public void put(@NonNull final Account account) {
         Objects.requireNonNull(account);
-        accountState().put(account.accountId(), account);
+        accountState().put(account.accountIdOrThrow(), account);
     }
 
     /**
@@ -76,6 +81,11 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     public void putAlias(@NonNull final Bytes alias, final AccountID accountId) {
         Objects.requireNonNull(alias);
         aliases().put(alias, accountId);
+    }
+
+    public void removeAlias(@NonNull final Bytes alias) {
+        Objects.requireNonNull(alias);
+        aliases().remove(alias);
     }
 
     /**
@@ -162,6 +172,28 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
+     * Returns the list of contract nonces modified in existing state.
+     *
+     * @return the list of contract nonces modified in existing state
+     */
+    public @NonNull List<ContractNonceInfo> updatedContractNonces() {
+        final List<ContractNonceInfo> updates = new ArrayList<>();
+        accountState().modifiedKeys().forEach(accountId -> {
+            final var newAccount = accountState().get(accountId);
+            if (newAccount != null && newAccount.smartContract()) {
+                final var oldAccount = accountState().getOriginalValue(accountId);
+                if (oldAccount == null || oldAccount.ethereumNonce() != newAccount.ethereumNonce()) {
+                    final var contractId = ContractID.newBuilder()
+                            .contractNum(accountId.accountNumOrThrow())
+                            .build();
+                    updates.add(new ContractNonceInfo(contractId, newAccount.ethereumNonce()));
+                }
+            }
+        });
+        return updates;
+    }
+
+    /**
      * Returns the set of aliases modified in existing state.
      *
      * @return the set of aliases modified in existing state
@@ -169,5 +201,40 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     @NonNull
     public Set<Bytes> modifiedAliasesInState() {
         return aliases().modifiedKeys();
+    }
+
+    /**
+     * Gets the original value associated with the given accountId before any modifications were made to
+     * it. The returned value will be {@code null} if the accountId does not exist.
+     *
+     * @param id The accountId. Cannot be null, otherwise an exception is thrown.
+     * @return The original value, or null if there is no such accountId in the state
+     * @throws NullPointerException if the accountId is null.
+     */
+    @Nullable
+    public Account getOriginalValue(@NonNull final AccountID id) {
+        requireNonNull(id);
+        // Get the account number based on the account identifier. It may be null.
+        final var accountOneOf = id.account();
+        final Long accountNum =
+                switch (accountOneOf.kind()) {
+                    case ACCOUNT_NUM -> accountOneOf.as();
+                    case ALIAS -> {
+                        final Bytes alias = accountOneOf.as();
+                        if (isOfEvmAddressSize(alias) && isMirror(alias)) {
+                            yield fromMirror(alias);
+                        } else {
+                            final var entityNum = aliases().getOriginalValue(alias);
+                            yield entityNum == null ? 0L : entityNum.accountNum();
+                        }
+                    }
+                    case UNSET -> 0L;
+                };
+
+        return accountNum == null
+                ? null
+                : accountState()
+                        .getOriginalValue(
+                                AccountID.newBuilder().accountNum(accountNum).build());
     }
 }

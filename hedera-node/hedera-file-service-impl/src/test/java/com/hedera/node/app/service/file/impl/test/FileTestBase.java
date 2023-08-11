@@ -32,6 +32,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitive.ProtoBytes;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
@@ -42,6 +43,7 @@ import com.hedera.node.app.spi.fixtures.state.ListReadableQueueState;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.state.ReadableStates;
@@ -128,11 +130,14 @@ public class FileTestBase {
     @Mock(strictness = LENIENT)
     protected HandleContext handleContext;
 
+    @Mock(strictness = LENIENT)
+    protected SignatureVerification signatureVerification;
+
     protected MapReadableKVState<FileID, File> readableFileState;
     protected MapWritableKVState<FileID, File> writableFileState;
 
-    protected ListReadableQueueState<Bytes> readableUpgradeStates;
-    protected ListWritableQueueState<Bytes> writableUpgradeStates;
+    protected ListReadableQueueState<ProtoBytes> readableUpgradeStates;
+    protected ListWritableQueueState<ProtoBytes> writableUpgradeStates;
 
     protected MapReadableKVState<FileID, File> readableUpgradeFileStates;
     protected MapWritableKVState<FileID, File> writableUpgradeFileStates;
@@ -159,8 +164,8 @@ public class FileTestBase {
         writableUpgradeFileStates = emptyUpgradeFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
-        given(filteredWritableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
+        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
+        given(filteredWritableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
@@ -181,8 +186,8 @@ public class FileTestBase {
         writableUpgradeFileStates = writableUpgradeFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
-        given(filteredReadableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
-        given(filteredWritableStates.<Bytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
+        given(filteredReadableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(readableUpgradeStates);
+        given(filteredWritableStates.<ProtoBytes>getQueue(UPGRADE_DATA_KEY)).willReturn(writableUpgradeStates);
         given(filteredReadableStates.<FileID, File>get(FILES)).willReturn(readableUpgradeFileStates);
         given(filteredWritableStates.<FileID, File>get(FILES)).willReturn(writableUpgradeFileStates);
         readableStore = new ReadableFileStoreImpl(readableStates);
@@ -200,8 +205,8 @@ public class FileTestBase {
     }
 
     @NonNull
-    protected ListWritableQueueState<Bytes> emptyUpgradeDataState() {
-        return ListWritableQueueState.<Bytes>builder(UPGRADE_DATA_KEY).build();
+    protected ListWritableQueueState<ProtoBytes> emptyUpgradeDataState() {
+        return ListWritableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY).build();
     }
 
     @NonNull
@@ -232,16 +237,16 @@ public class FileTestBase {
     }
 
     @NonNull
-    protected ListReadableQueueState<Bytes> readableUpgradeDataState() {
-        return ListReadableQueueState.<Bytes>builder(UPGRADE_DATA_KEY)
-                .value(fileSystem.contents())
+    protected ListReadableQueueState<ProtoBytes> readableUpgradeDataState() {
+        return ListReadableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY)
+                .value(new ProtoBytes(fileSystem.contents()))
                 .build();
     }
 
     @NonNull
-    protected ListWritableQueueState<Bytes> writableUpgradeDataState() {
-        return ListWritableQueueState.<Bytes>builder(UPGRADE_DATA_KEY)
-                .value(fileSystem.contents())
+    protected ListWritableQueueState<ProtoBytes> writableUpgradeDataState() {
+        return ListWritableQueueState.<ProtoBytes>builder(UPGRADE_DATA_KEY)
+                .value(new ProtoBytes(fileSystem.contents()))
                 .build();
     }
 

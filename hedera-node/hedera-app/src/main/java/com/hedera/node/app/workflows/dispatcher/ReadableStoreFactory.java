@@ -21,6 +21,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.ReadableContractStateStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
@@ -95,6 +98,8 @@ public class ReadableStoreFactory {
         newMap.put(
                 ReadableRunningHashLeafStore.class,
                 new StoreEntry(NetworkService.NAME, ReadableRunningHashLeafStoreImpl::new));
+        // Contracts
+        newMap.put(ContractStateStore.class, new StoreEntry(ContractService.NAME, ReadableContractStateStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 
@@ -113,10 +118,10 @@ public class ReadableStoreFactory {
      * Create a new store given the store's interface. This gives read-only access to the store.
      *
      * @param storeInterface The store interface to find and create a store for
-     * @param <C> Interface class for a Store
+     * @param <C>            Interface class for a Store
      * @return An implementation of the provided store interface
      * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     * @throws NullPointerException     if {@code storeInterface} is {@code null}
      */
     @NonNull
     public <C> C getStore(@NonNull final Class<C> storeInterface) throws IllegalArgumentException {

@@ -36,11 +36,11 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
-import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -50,6 +50,7 @@ import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,18 +66,15 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     private final CryptoCreateValidator cryptoCreateValidator;
 
     private StakingValidator stakingValidator;
-    private NetworkInfo networkInfo;
 
     @Inject
     public CryptoCreateHandler(
             @NonNull final CryptoCreateValidator cryptoCreateValidator,
-            @NonNull final StakingValidator stakingValidator,
-            @NonNull final NetworkInfo networkInfo) {
+            @NonNull final StakingValidator stakingValidator) {
         this.cryptoCreateValidator =
                 requireNonNull(cryptoCreateValidator, "The supplied argument 'cryptoCreateValidator' must not be null");
         this.stakingValidator =
                 requireNonNull(stakingValidator, "The supplied argument 'stakingValidator' must not be null");
-        this.networkInfo = requireNonNull(networkInfo, "The supplied argument 'nodeInfo' must not be null");
     }
 
     @Override
@@ -119,14 +117,18 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // validate fields in the transaction body that involves checking with
         // dynamic properties or state
-        final var payer = validateSemantics(handleContext, accountStore, op);
+        validateSemantics(handleContext, accountStore, op);
 
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        // Change payer's balance to reflect the deduction of the initial balance for the new
-        // account
-        final var modifiedPayer =
-                payer.copyBuilder().tinybarBalance(newPayerBalance).build();
-        accountStore.put(modifiedPayer);
+        if (op.initialBalance() > 0) {
+            final var payer = accountStore.getAccountById(
+                    handleContext.body().transactionIDOrThrow().accountIDOrThrow());
+            final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+            // Change payer's balance to reflect the deduction of the initial balance for the new
+            // account
+            final var modifiedPayer =
+                    payer.copyBuilder().tinybarBalance(newPayerBalance).build();
+            accountStore.put(modifiedPayer);
+        }
 
         // Build the new account to be persisted based on the transaction body
         final var accountCreated = buildAccount(op, handleContext);
@@ -170,9 +172,9 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
      * @param op crypto create transaction body
      * @return the payer account if validated successfully
      */
-    private Account validateSemantics(
+    private void validateSemantics(
             @NonNull final HandleContext context,
-            @NonNull final WritableAccountStore accountStore,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final CryptoCreateTransactionBody op) {
         final var cryptoCreateWithAliasConfig =
                 context.configuration().getConfigData(CryptoCreateWithAliasConfig.class);
@@ -180,15 +182,16 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
         final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
 
-        // validate payer account exists and has enough balance
-        final var payer = getIfUsable(
-                context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
-                accountStore,
-                context.expiryValidator(),
-                INVALID_PAYER_ACCOUNT_ID);
-
-        final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
-        validatePayer(payer, newPayerBalance);
+        if (op.initialBalance() > 0) {
+            // validate payer account exists and has enough balance
+            final var payer = getIfUsable(
+                    context.body().transactionIDOrElse(TransactionID.DEFAULT).accountIDOrElse(AccountID.DEFAULT),
+                    accountStore,
+                    context.expiryValidator(),
+                    INVALID_PAYER_ACCOUNT_ID);
+            final long newPayerBalance = payer.tinybarBalance() - op.initialBalance();
+            validatePayer(payer, newPayerBalance);
+        }
 
         context.attributeValidator().validateMemo(op.memo());
         cryptoCreateValidator.validateKeyAliasAndEvmAddressCombinations(
@@ -204,15 +207,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
 
         stakingValidator.validateStakedId(
+                context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.declineReward(),
                 op.stakedId().kind().name(),
                 op.stakedAccountId(),
                 op.stakedNodeId(),
                 accountStore,
-                context,
-                networkInfo);
-
-        return payer;
+                context.networkInfo());
     }
 
     /**

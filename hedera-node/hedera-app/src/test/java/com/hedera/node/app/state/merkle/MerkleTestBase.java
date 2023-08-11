@@ -29,8 +29,6 @@ import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.hedera.node.app.state.merkle.queue.QueueNode;
 import com.hedera.node.app.state.merkle.singleton.SingletonNode;
 import com.hedera.pbj.runtime.Codec;
-import com.hedera.pbj.runtime.io.ReadableSequentialData;
-import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
@@ -48,7 +46,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 /**
@@ -78,10 +75,10 @@ public class MerkleTestBase extends StateTestBase {
     public static final String SECOND_SERVICE = "Second-Service";
     public static final String UNKNOWN_SERVICE = "Bogus-Service";
 
-    /** A {@link Codec} to be used with String data types */
-    public static final Codec<String> STRING_CODEC = new StringCodec();
-    /** A {@link Codec} to be used with Long data types */
-    public static final Codec<Long> LONG_CODEC = new LongCodec();
+    /** A TEST ONLY {@link Codec} to be used with String data types */
+    public static final Codec<String> STRING_CODEC = TestStringCodec.SINGLETON;
+    /** A TEST ONLY {@link Codec} to be used with Long data types */
+    public static final Codec<Long> LONG_CODEC = TestLongCodec.SINGLETON;
 
     /** Used by some tests that need to hash */
     protected static final MerkleCryptography CRYPTO = MerkleCryptoFactory.getInstance();
@@ -299,83 +296,6 @@ public class MerkleTestBase extends StateTestBase {
         final var byteInputStream = new ByteArrayInputStream(state);
         try (final var in = new MerkleDataInputStream(byteInputStream)) {
             return in.readMerkleTree(tempDir, 100);
-        }
-    }
-
-    /** An implementation of {@link Codec} for String types */
-    private static final class StringCodec implements Codec<String> {
-
-        @NonNull
-        @Override
-        public String parse(@NonNull ReadableSequentialData input) {
-            final var len = input.readInt();
-            final var bytes = new byte[len];
-            input.readBytes(bytes);
-            return len == 0 ? "" : new String(bytes, StandardCharsets.UTF_8);
-        }
-
-        @NonNull
-        @Override
-        public String parseStrict(@NonNull ReadableSequentialData input) {
-            return parse(input);
-        }
-
-        @Override
-        public void write(@NonNull String s, @NonNull WritableSequentialData output) {
-            final var bytes = s.getBytes(StandardCharsets.UTF_8);
-            output.writeInt(bytes.length);
-            output.writeBytes(bytes);
-        }
-
-        @Override
-        public int measure(@NonNull ReadableSequentialData input) {
-            return input.readInt();
-        }
-
-        @Override
-        public int measureRecord(String s) {
-            return s.getBytes(StandardCharsets.UTF_8).length;
-        }
-
-        @Override
-        public boolean fastEquals(@NonNull String value, @NonNull ReadableSequentialData input) {
-            return value.equals(parse(input));
-        }
-    }
-
-    /** An implementation of {@link Codec} for Long types */
-    private static final class LongCodec implements Codec<Long> {
-
-        @NonNull
-        @Override
-        public Long parse(@NonNull ReadableSequentialData input) {
-            return input.readLong();
-        }
-
-        @NonNull
-        @Override
-        public Long parseStrict(@NonNull ReadableSequentialData input) {
-            return parse(input);
-        }
-
-        @Override
-        public void write(@NonNull Long value, @NonNull WritableSequentialData output) {
-            output.writeLong(value);
-        }
-
-        @Override
-        public int measure(@NonNull ReadableSequentialData input) {
-            return 8;
-        }
-
-        @Override
-        public int measureRecord(Long aLong) {
-            return 8;
-        }
-
-        @Override
-        public boolean fastEquals(@NonNull Long value, @NonNull ReadableSequentialData input) {
-            return value.equals(parse(input));
         }
     }
 }

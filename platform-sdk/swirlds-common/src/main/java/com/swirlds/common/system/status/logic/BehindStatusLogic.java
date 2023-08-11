@@ -21,6 +21,7 @@ import com.swirlds.common.system.status.PlatformStatus;
 import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.common.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.common.system.status.actions.DoneReplayingEventsAction;
+import com.swirlds.common.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.common.system.status.actions.FallenBehindAction;
 import com.swirlds.common.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.common.system.status.actions.ReconnectCompleteAction;
@@ -78,6 +79,20 @@ public class BehindStatusLogic implements PlatformStatusLogic {
         Objects.requireNonNull(action);
 
         throw new IllegalPlatformStatusException(action, getStatus());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Receiving an {@link EmergencyReconnectStartedAction} while in {@link PlatformStatus#BEHIND} doesn't affect
+     * the state machine, since the emergency reconnect may be attempted multiple times before succeeding
+     */
+    @NonNull
+    @Override
+    public PlatformStatusLogic processEmergencyReconnectStartedAction(
+            @NonNull final EmergencyReconnectStartedAction action) {
+
+        return this;
     }
 
     /**

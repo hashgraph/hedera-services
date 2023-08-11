@@ -19,9 +19,11 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -72,9 +74,10 @@ public class FileAppendHandler implements TransactionHandler {
 
         final var transactionBody = context.body().fileAppendOrThrow();
         final var fileStore = context.createStore(ReadableFileStore.class);
-        final var fileMeta = preValidate(transactionBody.fileID(), fileStore, context, false);
+        preValidate(transactionBody.fileID(), fileStore, context, false);
 
-        validateAndAddRequiredKeys(fileMeta.keys(), context, true);
+        var file = fileStore.getFileLeaf(transactionBody.fileID());
+        validateAndAddRequiredKeys(file.orElse(null), null, context);
     }
 
     @Override
@@ -106,6 +109,11 @@ public class FileAppendHandler implements TransactionHandler {
             throw new HandleException(INVALID_FILE_ID);
         }
         final var file = optionalFile.get();
+
+        // TODO: skip at least the mutability check for privileged "payer" accounts
+
+        // First validate this file is mutable; and the pending mutations are allowed
+        validateFalse(file.keys() == null, UNAUTHORIZED);
 
         if (file.deleted()) {
             throw new HandleException(FILE_DELETED);

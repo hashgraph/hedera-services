@@ -21,8 +21,8 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsProvider;
 import com.swirlds.common.system.NodeId;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
@@ -38,10 +38,12 @@ public final class DefaultPlatformContext implements PlatformContext {
     private final Cryptography cryptography;
 
     public DefaultPlatformContext(
-            final NodeId nodeId, final MetricsProvider metricsProvider, final Configuration configuration) {
-        this.configuration = CommonUtils.throwArgNull(configuration, "configuration");
-        this.metrics =
-                CommonUtils.throwArgNull(metricsProvider, "metricsProvider").createPlatformMetrics(nodeId);
+            final NodeId nodeId,
+            @NonNull final MetricsProvider metricsProvider,
+            @NonNull final Configuration configuration) {
+        this.configuration = Objects.requireNonNull(configuration, "configuration must not be null");
+        this.metrics = Objects.requireNonNull(metricsProvider, "metricsProvider must not be null")
+                .createPlatformMetrics(nodeId);
         this.cryptography = CryptographyHolder.get();
     }
 

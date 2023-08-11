@@ -20,4 +20,8 @@ public record StorageSizeChange(long contractNumber, int numRemovals, int numIns
     public int numAdded() {
         return Math.max(0, numInsertions - numRemovals);
     }
+
+    public int netChange() {
+        return numInsertions - numRemovals;
+    }
 }

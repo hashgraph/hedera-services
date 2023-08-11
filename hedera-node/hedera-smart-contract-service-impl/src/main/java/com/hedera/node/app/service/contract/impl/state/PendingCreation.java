@@ -20,14 +20,20 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.al
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 
-public record PendingCreation(@NonNull Address address, long number, long parentNumber) {
+public record PendingCreation(
+        @NonNull Address address, long number, long parentNumber, @Nullable ContractCreateTransactionBody body) {
     public PendingCreation {
         requireNonNull(address);
+    }
+
+    public boolean isTopLevel() {
+        return body != null;
     }
 
     @Nullable

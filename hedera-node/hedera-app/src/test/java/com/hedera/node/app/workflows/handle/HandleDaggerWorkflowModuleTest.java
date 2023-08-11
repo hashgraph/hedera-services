@@ -292,7 +292,7 @@ class HandleDaggerWorkflowModuleTest {
                 networkAdminHandlers,
                 consensusHandlers,
                 fileHandlers,
-                contractHandlers,
+                () -> contractHandlers,
                 scheduleHandlers,
                 tokenHandlers,
                 utilHandlers);

@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.ExpiryRecordsValidator;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -71,7 +72,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class ContractAutoExpirySpecs extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
     private static final String INIT_CODE = "initcode";
     private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";

@@ -953,7 +953,11 @@ class VirtualMapTests extends VirtualTestBase {
         final MetricKeyRegistry registry = mock(MetricKeyRegistry.class);
         when(registry.register(any(), any(), any())).thenReturn(true);
         final Metrics metrics = new DefaultMetrics(
-                null, registry, mock(ScheduledExecutorService.class), new DefaultMetricsFactory(), metricsConfig);
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new DefaultMetricsFactory(metricsConfig),
+                metricsConfig);
 
         VirtualMap<TestKey, TestValue> map0 = createMap();
         map0.registerMetrics(metrics);

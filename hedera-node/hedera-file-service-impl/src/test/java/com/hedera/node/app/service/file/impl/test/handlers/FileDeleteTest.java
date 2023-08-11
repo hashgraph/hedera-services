@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.file.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.service.file.impl.test.handlers.FileTestUtils.mockFileLookup;
 import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +36,9 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileDeleteTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
@@ -49,13 +49,17 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
+import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -78,6 +82,17 @@ class FileDeleteTest extends FileTestBase {
     @Mock(strictness = LENIENT)
     private PreHandleContext preHandleContext;
 
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected TransactionDispatcher mockDispatcher;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected ReadableStoreFactory mockStoreFactory;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected Account payerAccount;
+
+    protected Configuration testConfig;
+
     @BeforeEach
     void setUp() {
         mockStore = mock(ReadableFileStoreImpl.class);
@@ -86,9 +101,9 @@ class FileDeleteTest extends FileTestBase {
         writableFileState = writableFileStateWithOneKey();
         given(writableStates.<FileID, File>get(FILES)).willReturn(writableFileState);
         writableStore = new WritableFileStore(writableStates);
-        final var configuration = HederaTestConfigBuilder.createConfig();
-        lenient().when(preHandleContext.configuration()).thenReturn(configuration);
-        lenient().when(handleContext.configuration()).thenReturn(configuration);
+        testConfig = HederaTestConfigBuilder.createConfig();
+        lenient().when(preHandleContext.configuration()).thenReturn(testConfig);
+        lenient().when(handleContext.configuration()).thenReturn(testConfig);
     }
 
     @Test
@@ -98,26 +113,52 @@ class FileDeleteTest extends FileTestBase {
         mockPayerLookup();
         given(mockStore.getFileMetadata(notNull())).willReturn(null);
         final var context = new FakePreHandleContext(accountStore, newDeleteTxn());
-        context.registerStore(ReadableFileStoreImpl.class, mockStore);
+        context.registerStore(ReadableFileStore.class, mockStore);
 
         // when:
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_FILE_ID);
     }
 
     @Test
-    @DisplayName("File without keys returns error")
-    @Disabled("Revisit after fix for https://github.com/hashgraph/hedera-services/issues/7646")
-    void noFileKeys() throws PreCheckException {
-        // given:
-        mockPayerLookup();
-        mockFileLookup(null, mockStore);
-        lenient().when(preHandleContext.body()).thenReturn(newDeleteTxn());
-        lenient()
-                .when(preHandleContext.createStore(ReadableFileStoreImpl.class))
-                .thenReturn(mockStore);
+    @DisplayName("Pre handle works as expected immutable")
+    void preHandleWorksAsExpectedImmutable() throws PreCheckException {
+        file = createFileEmptyMemoAndKeys();
+        refreshStoresWithCurrentFileOnlyInReadable();
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
 
-        // when:
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), UNAUTHORIZED);
+        final var txnId = TransactionID.newBuilder().accountID(payerId).build();
+        final var deleteFileBuilder = FileDeleteTransactionBody.newBuilder().fileID(WELL_KNOWN_FILE_ID);
+        TransactionBody transactionBody = TransactionBody.newBuilder()
+                .transactionID(txnId)
+                .fileDelete(deleteFileBuilder.build())
+                .build();
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, transactionBody, testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertEquals(0, realPreContext.requiredNonPayerKeys().size());
+    }
+
+    @Test
+    @DisplayName("Pre handle works as expected")
+    void preHandleWorksAsExpected() throws PreCheckException {
+        refreshStoresWithCurrentFileOnlyInReadable();
+        BDDMockito.given(accountStore.getAccountById(payerId)).willReturn(payerAccount);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableFileStore.class)).willReturn(readableStore);
+        BDDMockito.given(mockStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
+        BDDMockito.given(payerAccount.key()).willReturn(A_COMPLEX_KEY);
+
+        PreHandleContext realPreContext =
+                new PreHandleContextImpl(mockStoreFactory, newDeleteTxn(), testConfig, mockDispatcher);
+
+        subject.preHandle(realPreContext);
+
+        assertTrue(realPreContext.requiredNonPayerKeys().size() > 0);
+        assertEquals(3, realPreContext.requiredNonPayerKeys().size());
     }
 
     @Test
@@ -169,6 +210,7 @@ class FileDeleteTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);
@@ -176,6 +218,25 @@ class FileDeleteTest extends FileTestBase {
         assertTrue(changedFile.isPresent());
         assertTrue(changedFile.get().deleted());
         assertNull(changedFile.get().contents());
+    }
+
+    @Test
+    @DisplayName("File without keys returns error")
+    void noFileKeys() {
+        file = new File(fileId, expirationTime, null, Bytes.wrap(contents), memo, false);
+        refreshStoresWithCurrentFileInBothReadableAndWritable();
+
+        final var txn = newDeleteTxn().fileDeleteOrThrow();
+
+        final var existingFile = writableStore.get(fileId);
+        assertTrue(existingFile.isPresent());
+        assertFalse(existingFile.get().deleted());
+
+        given(handleContext.body())
+                .willReturn(TransactionBody.newBuilder().fileDelete(txn).build());
+        given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
+        // expect:
+        assertFailsWith(ResponseCodeEnum.UNAUTHORIZED, () -> subject.handle(handleContext));
     }
 
     private Key mockPayerLookup() throws PreCheckException {
@@ -189,5 +250,10 @@ class FileDeleteTest extends FileTestBase {
                 .transactionID(txnId)
                 .fileDelete(deleteFileBuilder.build())
                 .build();
+    }
+
+    private static void assertFailsWith(final ResponseCodeEnum status, final Runnable something) {
+        final var ex = assertThrows(HandleException.class, something::run);
+        assertEquals(status, ex.getStatus());
     }
 }

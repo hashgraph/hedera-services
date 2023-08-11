@@ -40,7 +40,9 @@ import javax.inject.Inject;
 public class AllowanceValidator {
 
     @Inject
-    public AllowanceValidator() {}
+    public AllowanceValidator() {
+        // Dagger
+    }
 
     protected void validateTotalAllowancesPerTxn(final int totalAllowances, @NonNull final HederaConfig hederaConfig) {
         validateFalse(

@@ -34,7 +34,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.test.fcqueue.FCInt;
+import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.common.test.fixtures.io.SerializationUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -99,8 +99,7 @@ class MockFCQueueTest {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.fcqueue");
         registry.registerConstructables("com.swirlds.common.merkle");
-        registry.registerConstructables("com.swirlds.common.test.merkle");
-        registry.registerConstructables("com.swirlds.common.test.fcqueue");
+        registry.registerConstructables("com.swirlds.common.test.fixtures.fcqueue");
     }
 
     /**

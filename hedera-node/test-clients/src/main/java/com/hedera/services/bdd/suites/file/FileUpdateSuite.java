@@ -87,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -116,6 +117,7 @@ import org.apache.logging.log4j.Logger;
  * <p>We'll come back to add all missing test scenarios for this and other test suites once we are
  * done with cleaning up old test cases.
  */
+@HapiTestSuite
 public class FileUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";

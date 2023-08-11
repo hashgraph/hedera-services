@@ -21,22 +21,34 @@ import static com.swirlds.platform.health.OSHealthCheckUtils.reportHeader;
 
 import com.swirlds.common.config.OSHealthCheckConfig;
 import com.swirlds.common.config.PathsConfig;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.units.UnitConstants;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class that performs file system checks and writes the report to a {@link StringBuilder}.
+ * Performs file system checks and writes the report to a {@link StringBuilder}.
  */
 public final class OSFileSystemChecker {
+    private final PathsConfig pathsConfig;
 
-    private OSFileSystemChecker() {}
+    /**
+     * Construct a new {@link OSFileSystemChecker} instance.
+     *
+     * @param pathsConfig configuration for paths from the platform
+     */
+    public OSFileSystemChecker(@NonNull PathsConfig pathsConfig) {
+        this.pathsConfig = Objects.requireNonNull(pathsConfig, "pathsConfig must not be null");
+    }
 
-    public static boolean performFileSystemCheck(final StringBuilder sb, final OSHealthCheckConfig osHealthConfig) {
+    public boolean performFileSystemCheck(
+            @NonNull final StringBuilder sb, @NonNull final OSHealthCheckConfig osHealthConfig) {
+        Objects.requireNonNull(sb, "sb must not be null");
+        Objects.requireNonNull(osHealthConfig, "osHealthConfig must not be null");
+
         try {
-            final OSFileSystemCheck.Report fileSystemReport = OSFileSystemCheck.execute(
-                    ConfigurationHolder.getConfigData(PathsConfig.class).getConfigPath(),
-                    osHealthConfig.fileReadTimeoutMillis());
+            final OSFileSystemCheck.Report fileSystemReport =
+                    OSFileSystemCheck.execute(pathsConfig.getConfigPath(), osHealthConfig.fileReadTimeoutMillis());
             return appendReport(sb, fileSystemReport, osHealthConfig.maxFileReadMillis());
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -55,7 +67,7 @@ public final class OSFileSystemChecker {
      * 		the maximum number of millis the file read may take before it is considered failed
      * @return {@code true} if the check passed, {@code false} otherwise
      */
-    private static boolean appendReport(
+    private boolean appendReport(
             final StringBuilder sb, final OSFileSystemCheck.Report fileSystemReport, final long maxFileReadMillis) {
         if (fileSystemReport.code() == OSFileSystemCheck.TestResultCode.SUCCESS) {
             final double readMillis = fileSystemReport.readNanos() * UnitConstants.NANOSECONDS_TO_MILLISECONDS;

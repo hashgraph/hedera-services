@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.file;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class FetchSystemFiles extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FetchSystemFiles.class);
 

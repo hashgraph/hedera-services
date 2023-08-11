@@ -46,14 +46,14 @@ class SavepointStackImplTest extends StateTestBase {
     private static final Configuration BASE_CONFIGURATION = HederaTestConfigBuilder.createConfig();
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
 
-    private static final Map<String, String> BASE_DATA = Map.of(
+    private final Map<String, String> BASE_DATA = new HashMap<>(Map.of(
             A_KEY, APPLE,
             B_KEY, BANANA,
             C_KEY, CHERRY,
             D_KEY, DATE,
             E_KEY, EGGPLANT,
             F_KEY, FIG,
-            G_KEY, GRAPE);
+            G_KEY, GRAPE));
 
     @Mock(strictness = LENIENT)
     private HederaState baseState;

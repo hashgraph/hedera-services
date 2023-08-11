@@ -16,7 +16,7 @@
 
 plugins {
     id("com.swirlds.platform.conventions")
-    id("com.swirlds.platform.library")
+    `java-library`
     id("com.swirlds.platform.maven-publish")
     id("org.gradle.java-test-fixtures")
 }
@@ -26,7 +26,6 @@ dependencies {
     api(project(":swirlds-base"))
     api(project(":swirlds-logging"))
     api(project(":swirlds-config-api"))
-    implementation(project(":swirlds-base"))
     implementation(libs.classgraph)
     implementation(libs.commons.codec)
     implementation(libs.prometheus.httpserver) {

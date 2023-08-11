@@ -127,24 +127,26 @@ public class MigrationRecordsManager {
             return;
         }
 
-        // We always publish creation records for 0.0.800, and 0.0.801 on a network reset
+        // Publish synthetic creation records for system and staking reward accounts ONLY at true network genesis,
+        // when the consensus time of the last handled txn is null...if we publish these unconditionally, then some
+        // genesis reconnect scenarios risk an ISS
         if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
             final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-            final var stakingFundAccounts = List.of(
-                    EntityNum.fromLong(accountNumbers.stakingRewardAccount()),
-                    EntityNum.fromLong(accountNumbers.nodeRewardAccount()));
-            stakingFundAccounts.forEach(num -> publishSyntheticCreationForStakingFund(num, implicitAutoRenewPeriod));
+            // Always publish records for any staking fund accounts created
+            publishStakingFundAccountsCreated(
+                    systemAccountsCreator.getStakingFundAccountsCreated(), implicitAutoRenewPeriod);
+            // Always publish records for any treasury clones that needed to be created
+            publishAccountsCreated(
+                    systemAccountsCreator.getTreasuryClonesCreated(), now, TREASURY_CLONE_MEMO, "treasury clone");
+            // Always publish records for any system accounts created at genesis start up
+            publishAccountsCreated(
+                    systemAccountsCreator.getSystemAccountsCreated(),
+                    now,
+                    SYSTEM_ACCOUNT_CREATION_MEMO,
+                    "system creation");
         } else if (grantingFreeAutoRenewals()) {
             publishContractFreeAutoRenewalRecords();
         }
-
-        // Always publish records for any treasury clones that needed to be created
-        publishAccountsCreated(
-                systemAccountsCreator.getTreasuryClonesCreated(), now, TREASURY_CLONE_MEMO, "treasury clone");
-
-        // Always publish records for any system accounts created at genesis start up
-        publishAccountsCreated(
-                systemAccountsCreator.getSystemAccountsCreated(), now, SYSTEM_ACCOUNT_CREATION_MEMO, "system creation");
 
         if (bootstrapProperties.getBooleanProperty(PropertyNames.ACCOUNTS_BLOCKLIST_ENABLED)) {
             publishAccountsCreated(
@@ -154,6 +156,12 @@ public class MigrationRecordsManager {
         curNetworkCtx.markMigrationRecordsStreamed();
         systemAccountsCreator.forgetCreations();
         blocklistAccountCreator.forgetCreatedBlockedAccounts();
+    }
+
+    private void publishStakingFundAccountsCreated(
+            final List<HederaAccount> stakingFundAccountsCreated, final long implicitAutoRenewPeriod) {
+        stakingFundAccountsCreated.forEach(account ->
+                publishSyntheticCreationForStakingFund(EntityNum.fromLong(account.number()), implicitAutoRenewPeriod));
     }
 
     private void publishAccountsCreated(
