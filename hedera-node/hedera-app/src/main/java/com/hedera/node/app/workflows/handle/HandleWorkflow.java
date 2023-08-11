@@ -66,8 +66,6 @@ import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -208,27 +206,22 @@ public class HandleWorkflow {
             }
 
             // Check all signature verifications. This will also wait, if validation is still ongoing.
-            final var timeout = hederaConfig.workflowVerificationTimeoutMS();
-            final var maxMillis = instantSource.millis() + timeout;
-            final var payerKeyVerification =
-                    preHandleResult.verificationResults().get(preHandleResult.payerKey());
-            if (payerKeyVerification.get(timeout, TimeUnit.MILLISECONDS).failed()) {
+            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
+
+            final var payerKeyVerification = verifier.verificationFor(preHandleResult.payerKey());
+            if (payerKeyVerification.failed()) {
                 throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
             }
+
             for (final var key : preHandleResult.requiredKeys()) {
-                final var remainingMillis = maxMillis - instantSource.millis();
-                if (remainingMillis <= 0) {
-                    throw new TimeoutException("Verification of signatures timed out");
-                }
-                final var verification = preHandleResult.verificationResults().get(key);
-                if (verification.get(remainingMillis, TimeUnit.MILLISECONDS).failed()) {
+                final var verification = verifier.verificationFor(key);
+                if (verification.failed()) {
                     throw new HandleException(ResponseCodeEnum.INVALID_SIGNATURE);
                 }
             }
 
             // Setup context
             final var stack = new SavepointStackImpl(state, configuration);
-            final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
             final var context = new HandleContextImpl(
                     transactionInfo,
                     preHandleResult.payer(),
@@ -268,13 +261,6 @@ public class HandleWorkflow {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
             recordFailedTransaction(e.getStatus(), recordBuilder, recordListBuilder);
-        } catch (final InterruptedException e) {
-            logger.error("Interrupted while waiting for signature verification", e);
-            Thread.currentThread().interrupt();
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
-        } catch (final TimeoutException e) {
-            logger.warn("Timed out while waiting for signature verification, probably going to ISS soon", e);
-            recordBuilder.status(ResponseCodeEnum.UNKNOWN);
         } catch (final Throwable e) {
             logger.error("An unexpected exception was thrown during handle", e);
             recordBuilder.status(ResponseCodeEnum.UNKNOWN);
