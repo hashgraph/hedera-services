@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -26,17 +25,16 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -51,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTestSuite;
@@ -132,7 +131,8 @@ public class ContractCallLocalSuite extends HapiSuite {
                         mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint"),
                         // Create an account with alias
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1L).between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
+                        cryptoTransfer(TokenMovement.movingUnique(NFT_TOKEN, 1L)
+                                .between(TOKEN_TREASURY, SECP_256K1_SOURCE_KEY)),
                         // Send some HBAR to the aliased account, it will need it to pay for the query
                         cryptoTransfer(
                                 TokenMovement.movingHbar(ONE_HUNDRED_HBARS).between(GENESIS, SECP_256K1_SOURCE_KEY)),
@@ -179,8 +179,7 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .then(
                         // Assert that the address of the query sender and the address of the nft owner returned by the
                         // HTS precompiled contract are the same
-                        sourcing(() -> logIt("\nHTS Owner: " + nftOwnerAddress.get().toString() + "\nSender: "
-                                + senderAddress.get().toString())));
+                        assertionsHold((spec, opLog) -> assertEquals(senderAddress.get(), nftOwnerAddress.get())));
     }
 
     private HapiSpec vanillaSuccess() {
