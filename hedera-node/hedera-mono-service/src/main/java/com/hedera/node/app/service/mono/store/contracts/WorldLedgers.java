@@ -165,10 +165,10 @@ public class WorldLedgers {
             TokenNftInfo info = infoForNft.get();
             return Optional.of(new EvmNftInfo(
                     info.getNftID().getSerialNumber(),
-                    EntityIdUtils.asTypedEvmAddress(info.getAccountID()),
+                    canonicalAddress(EntityIdUtils.asTypedEvmAddress(info.getAccountID())),
                     info.getCreationTime().getSeconds(),
                     info.getMetadata().toByteArray(),
-                    EntityIdUtils.asTypedEvmAddress(info.getSpenderId()),
+                    canonicalAddress(EntityIdUtils.asTypedEvmAddress(info.getSpenderId())),
                     ledgerId.toByteArray()));
         }
 
