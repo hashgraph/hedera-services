@@ -59,7 +59,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         // We don't need a real registry, and the unit tests are much
         // faster if we use a mocked one
         registry = Mockito.mock(ConstructableRegistry.class);
-        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE);
+        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, null);
         config = Mockito.mock(Configuration.class);
         final var hederaConfig = Mockito.mock(HederaConfig.class);
         lenient().when(config.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
@@ -72,7 +72,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null ConstructableRegistry throws")
         void nullRegistryThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(null, FIRST_SERVICE))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(null, FIRST_SERVICE, null))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -80,7 +80,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null serviceName throws")
         void nullServiceNameThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, null))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 

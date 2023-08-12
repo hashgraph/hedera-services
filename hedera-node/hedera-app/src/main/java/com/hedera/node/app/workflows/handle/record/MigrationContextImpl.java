@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.hedera.node.app.workflows.handle.record;
 
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -28,7 +29,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @param previousStates The previous states.
  * @param newStates The new states, preloaded with any new state definitions.
  * @param configuration The configuration to use
+ * @param genesisRecordsBuilder The instance responsible for genesis records
  */
 public record MigrationContextImpl(
-        @NonNull ReadableStates previousStates, @NonNull WritableStates newStates, @NonNull Configuration configuration)
+        @NonNull ReadableStates previousStates,
+        @NonNull WritableStates newStates,
+        @NonNull Configuration configuration,
+        @NonNull GenesisRecordsConsensusHook genesisRecordsBuilder)
         implements MigrationContext {}

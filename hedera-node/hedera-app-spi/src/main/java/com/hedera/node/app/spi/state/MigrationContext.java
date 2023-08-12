@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.spi.state;
 
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -52,4 +53,15 @@ public interface MigrationContext {
      */
     @NonNull
     Configuration configuration();
+
+    /**
+     * Provides a class to store any entities created during genesis. The data saved in this class
+     * during genesis will then enable record generation from said data once a consensus timestamp is
+     * available.
+     * <p>
+     * It's possible that this method could be expanded to cover records for any migration (genesis
+     * or otherwise) in the future.
+     */
+    @NonNull
+    GenesisRecordsConsensusHook genesisRecordsBuilder();
 }

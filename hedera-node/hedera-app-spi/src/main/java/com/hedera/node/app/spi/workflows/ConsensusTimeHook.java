@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows;
+package com.hedera.node.app.spi.workflows;
 
-import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 

@@ -1,0 +1,121 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.workflows.handle.record;
+
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * This class is responsible for storing the system accounts created during node startup, and then creating
+ * the corresponding synthetic records when a consensus time becomes available.
+ */
+public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusHook {
+    private static final Logger log = LogManager.getLogger(GenesisRecordsConsensusHookImpl.class);
+    private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String STAKING_MEMO = "Release 0.24.1 migration record";
+    private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
+
+    private Map<Account, CryptoCreateTransactionBody.Builder> systemAccounts = new HashMap<>();
+    private Map<Account, CryptoCreateTransactionBody.Builder> stakingAccounts = new HashMap<>();
+    private Map<Account, CryptoCreateTransactionBody.Builder> multipurposeAccounts = new HashMap<>();
+    private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
+
+    /**
+     * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,
+     * the records created by this class should only be created once.<b> After each data structure's
+     * account records are created, each corresponding data structure is intentionally emptied ⚠️⚠️
+     * <p>
+     * It would be great if we could find a way to not have to invoke this method multiple times...
+     */
+    @Override
+    public void process(@NonNull final Instant consensusTime, @NonNull final HandleContext context) {
+        if (!systemAccounts.isEmpty()) {
+            createAccountRecordBuilders(systemAccounts, context, SYSTEM_ACCOUNT_CREATION_MEMO);
+            systemAccounts = Collections.emptyMap();
+        }
+
+        if (!stakingAccounts.isEmpty()) {
+            createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO);
+            stakingAccounts = Collections.emptyMap();
+        }
+
+        if (!multipurposeAccounts.isEmpty()) {
+            createAccountRecordBuilders(multipurposeAccounts, context, null);
+            multipurposeAccounts = Collections.emptyMap();
+        }
+
+        if (!treasuryClones.isEmpty()) {
+            createAccountRecordBuilders(treasuryClones, context, TREASURY_CLONE_MEMO);
+            treasuryClones = Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        systemAccounts.putAll(requireNonNull(accounts));
+    }
+
+    @Override
+    public void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        stakingAccounts.putAll(requireNonNull(accounts));
+    }
+
+    @Override
+    public void multipurposeAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        multipurposeAccounts.putAll(requireNonNull(accounts));
+    }
+
+    @Override
+    public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        treasuryClones.putAll(requireNonNull(accounts));
+    }
+
+    private void createAccountRecordBuilders(
+            @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
+            @NonNull final HandleContext context,
+            @Nullable final String recordMemo) {
+        for (Map.Entry<Account, CryptoCreateTransactionBody.Builder> entry : map.entrySet()) {
+            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
+
+            final var accountId = entry.getKey().accountId();
+            recordBuilder.accountID(accountId);
+            if (recordMemo != null) recordBuilder.memo(recordMemo);
+
+            var txnBody = entry.getValue().build();
+            var txnBuilder =
+                    Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
+            recordBuilder.transaction(txnBuilder.build());
+
+            log.info("Queued synthetic CryptoCreate for {} account {}", recordMemo, accountId);
+        }
+    }
+}

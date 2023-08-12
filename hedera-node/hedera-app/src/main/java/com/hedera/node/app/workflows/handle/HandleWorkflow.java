@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.StakingPeriodTimeHook;
@@ -88,6 +89,7 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final InstantSource instantSource;
     private final HederaRecordCache recordCache;
+    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     private final StakingPeriodTimeHook stakingPeriodTimeHook;
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
@@ -106,6 +108,7 @@ public class HandleWorkflow {
             @NonNull final ConfigProvider configProvider,
             @NonNull final InstantSource instantSource,
             @NonNull final HederaRecordCache recordCache,
+            @NonNull final GenesisRecordsConsensusHook genesisRecordsTimeHook,
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -121,6 +124,7 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.instantSource = requireNonNull(instantSource, "instantSource must not be null");
         this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
+        this.genesisRecordsTimeHook = requireNonNull(genesisRecordsTimeHook, "genesisRecordsTimeHook must not be null");
         this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
@@ -242,6 +246,7 @@ public class HandleWorkflow {
 
             // Now that we have a created handle context object and a consensus timestamp, run the appropriate {@code
             // ConsensusTimeHook} event handlers
+            genesisRecordsTimeHook.process(consensusNow, context);
             stakingPeriodTimeHook.process(consensusNow, context);
             // @future('7836'): update the exchange rate and call from here
 

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fixtures.state;
 
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.node.app.spi.fixtures.state.ListWritableQueueState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
@@ -26,12 +28,16 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.WritableSingletonStateBase;
 import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
@@ -86,6 +92,12 @@ public class FakeSchemaRegistry implements SchemaRegistry {
                 public Configuration configuration() {
                     return ConfigurationBuilder.create().build();
                 }
+
+                @NonNull
+                @Override
+                public GenesisRecordsConsensusHook genesisRecordsBuilder() {
+                    return new NoOpGenesisRecordsConsensusHook();
+                }
             });
 
             // Now commit them all
@@ -111,5 +123,33 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     public SchemaRegistry register(@NonNull Schema schema) {
         schemas.add(schema);
         return this;
+    }
+
+    private class NoOpGenesisRecordsConsensusHook implements GenesisRecordsConsensusHook {
+
+        @Override
+        public void process(@NonNull final Instant consensusTime, @NonNull final HandleContext context) {
+            // Intentional no-op
+        }
+
+        @Override
+        public void systemAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+            // Intentional no-op
+        }
+
+        @Override
+        public void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+            // Intentional no-op
+        }
+
+        @Override
+        public void multipurposeAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+            // Intentional no-op
+        }
+
+        @Override
+        public void treasuryClones(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+            // Intentional no-op
+        }
     }
 }

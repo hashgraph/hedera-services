@@ -49,12 +49,14 @@ import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.WritableKVState;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHookImpl;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
@@ -143,6 +145,8 @@ public final class Hedera implements SwirldMain {
     private Platform platform;
     /** The configuration for this node */
     private ConfigProviderImpl configProvider;
+    /** The class responsible for remembering objects created in genesis cases */
+    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
     /**
      * Dependencies managed by Dagger. Set during state initialization. The mono-service requires this object, but none
      * of the rest of the system (and particularly the modular implementation) uses it directly. Rather, it is created
@@ -163,6 +167,7 @@ public final class Hedera implements SwirldMain {
      */
     public Hedera(@NonNull final ConstructableRegistry constructableRegistry) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
+        this.genesisRecordsTimeHook = new GenesisRecordsConsensusHookImpl();
 
         // Print welcome message
         logger.info("Welcome to Hedera! Developed with love by the Open Source Community. "
@@ -343,7 +348,7 @@ public final class Hedera implements SwirldMain {
         for (final var service : servicesRegistry.services()) {
             // FUTURE We should have metrics here to keep track of how long it takes to migrate each service
             final var serviceName = service.getServiceName();
-            final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName);
+            final var registry = new MerkleSchemaRegistry(constructableRegistry, serviceName, genesisRecordsTimeHook);
             service.registerSchemas(registry);
             registry.migrate(state, previousVersion, currentVersion, configProvider.getConfiguration());
             logger.info("Migrated Service {}", serviceName);
@@ -934,6 +939,7 @@ public final class Hedera implements SwirldMain {
                     .servicesRegistry(servicesRegistry)
                     .bootstrapProps(new BootstrapProperties(false)) // TBD REMOVE
                     .instantSource(InstantSource.system())
+                    .genesisRecordsBuilder(genesisRecordsTimeHook)
                     .build();
 
             daggerApp.workingStateAccessor().setHederaState(state);

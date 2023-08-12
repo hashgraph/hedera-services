@@ -41,6 +41,7 @@ import com.hedera.node.app.solvency.SolvencyInjectionModule;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.LedgerValidator;
 import com.hedera.node.app.state.WorkingStateAccessor;
@@ -117,6 +118,8 @@ public interface HederaInjectionComponent {
 
     ExchangeRateManager exchangeRateManager();
 
+    GenesisRecordsConsensusHook genesisRecordsKeeper();
+
     @Component.Builder
     interface Builder {
         @BindsInstance
@@ -151,6 +154,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
+
+        @BindsInstance
+        Builder genesisRecordsBuilder(GenesisRecordsConsensusHook genesisRecordsBuilder);
 
         HederaInjectionComponent build();
     }
