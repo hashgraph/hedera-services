@@ -49,6 +49,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.VerificationAssistant;
+import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
@@ -57,7 +58,6 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -86,6 +86,7 @@ public class HandleContextImpl implements HandleContext {
     private final TransactionCategory category;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
+    private final Configuration configuration;
     private final HandleContextVerifier verifier;
     private final RecordListBuilder recordListBuilder;
     private final TransactionChecker checker;
@@ -110,10 +111,11 @@ public class HandleContextImpl implements HandleContext {
      * @param txInfo             The {@link TransactionInfo} of the transaction
      * @param payer              The {@link AccountID} of the payer
      * @param payerKey           The {@link Key} of the payer
-     * @param networkInfo
+     * @param networkInfo        The {@link NetworkInfo} of the network
      * @param category           The {@link TransactionCategory} of the transaction (either user, preceding, or child)
      * @param recordBuilder      The main {@link SingleTransactionRecordBuilderImpl}
      * @param stack              The {@link SavepointStackImpl} used to manage savepoints
+     * @param configuration      The current {@link Configuration}
      * @param verifier           The {@link HandleContextVerifier} used to verify signatures and hollow accounts
      * @param recordListBuilder  The {@link RecordListBuilder} used to build the record stream
      * @param checker            The {@link TransactionChecker} used to check dispatched transaction
@@ -130,6 +132,7 @@ public class HandleContextImpl implements HandleContext {
             @NonNull final TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final SavepointStackImpl stack,
+            @NonNull final Configuration configuration,
             @NonNull final HandleContextVerifier verifier,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final TransactionChecker checker,
@@ -146,6 +149,7 @@ public class HandleContextImpl implements HandleContext {
         this.category = requireNonNull(category, "category must not be null");
         this.recordBuilder = requireNonNull(recordBuilder, "recordBuilder must not be null");
         this.stack = requireNonNull(stack, "stack must not be null");
+        this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.verifier = requireNonNull(verifier, "verifier must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
         this.checker = requireNonNull(checker, "checker must not be null");
@@ -156,12 +160,12 @@ public class HandleContextImpl implements HandleContext {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.userTransactionConsensusTime =
                 requireNonNull(userTransactionConsensusTime, "userTransactionConsensusTime must not be null");
-        this.feeCalculatorCreator = (subType) -> feeManager.createFeeCalculator(
+        this.feeCalculatorCreator = subType -> feeManager.createFeeCalculator(
                 txInfo, payerKey, verifier.numSignaturesVerified(), userTransactionConsensusTime, subType);
 
         final var serviceScope = serviceScopeLookup.getServiceName(txBody);
         this.writableStoreFactory = new WritableStoreFactory(stack, serviceScope);
-        this.serviceApiFactory = new ServiceApiFactory(stack);
+        this.serviceApiFactory = new ServiceApiFactory(stack, configuration);
 
         final var tokenApi = this.serviceApiFactory.getApi(TokenServiceApi.class);
         this.feeAccumulator = new FeeAccumulator() {
@@ -177,7 +181,7 @@ public class HandleContextImpl implements HandleContext {
         };
     }
 
-    private Savepoint current() {
+    private WrappedHederaState current() {
         return stack.peek();
     }
 
@@ -220,7 +224,7 @@ public class HandleContextImpl implements HandleContext {
     @Override
     @NonNull
     public Configuration configuration() {
-        return current().configuration();
+        return configuration;
     }
 
     @Override
@@ -371,7 +375,7 @@ public class HandleContextImpl implements HandleContext {
                     "Cannot dispatch a preceding transaction when a savepoint has been created");
         }
 
-        if (current().state().isModified()) {
+        if (current().isModified()) {
             throw new IllegalStateException("Cannot dispatch a preceding transaction when the state has been modified");
         }
 
@@ -458,7 +462,7 @@ public class HandleContextImpl implements HandleContext {
             return;
         }
 
-        final var childStack = new SavepointStackImpl(current().state(), configuration());
+        final var childStack = new SavepointStackImpl(current());
         HederaFunctionality function;
         try {
             function = functionOf(txBody);
@@ -476,6 +480,7 @@ public class HandleContextImpl implements HandleContext {
                 childCategory,
                 childRecordBuilder,
                 childStack,
+                configuration,
                 childVerifier,
                 recordListBuilder,
                 checker,
@@ -488,8 +493,7 @@ public class HandleContextImpl implements HandleContext {
 
         try {
             dispatcher.dispatchHandle(childContext);
-            stack.configuration(childContext.configuration());
-            childStack.commit();
+            childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
             recordListBuilder.revertChildRecordBuilders(recordBuilder);
