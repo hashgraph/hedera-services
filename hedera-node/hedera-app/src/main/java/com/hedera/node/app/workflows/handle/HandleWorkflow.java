@@ -66,6 +66,7 @@ import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -134,10 +135,17 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+        // Keep track of whether any user transactions were handled. If so, then we will need to close the round
+        // with the block record manager.
+        final var userTransactionsHandled = new AtomicBoolean(false);
         // handle each transaction in the round
-        round.forEachEventTransaction((event, txn) -> {
+        round.forEachEventTransaction((event, platformTxn) -> {
             try {
-                handlePlatformTransaction(state, event, txn);
+                // skip system transactions
+                if (!platformTxn.isSystem()) {
+                    userTransactionsHandled.set(true);
+                    handlePlatformTransaction(state, event, platformTxn);
+                }
             } catch (final Throwable e) {
                 logger.fatal(
                         "A fatal unhandled exception occurred during transaction handling. "
@@ -145,21 +153,19 @@ public class HandleWorkflow {
                         e);
             }
         });
-        // inform BlockRecordManager that the round is complete, so it can update running-hashes in state
+        // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do.
-        blockRecordManager.endRound(state);
+        if (userTransactionsHandled.get()) {
+            blockRecordManager.endRound(state);
+        }
     }
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final ConsensusTransaction platformTxn) {
-        // skip system transactions
-        if (platformTxn.isSystem()) {
-            return;
-        }
 
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
