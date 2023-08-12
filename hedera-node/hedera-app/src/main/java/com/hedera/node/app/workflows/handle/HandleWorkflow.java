@@ -93,6 +93,7 @@ public class HandleWorkflow {
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
+    private final SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Inject
     public HandleWorkflow(
@@ -110,7 +111,8 @@ public class HandleWorkflow {
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final ParentRecordFinalizer transactionFinalizer) {
+            @NonNull final ParentRecordFinalizer transactionFinalizer,
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -126,6 +128,8 @@ public class HandleWorkflow {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
+        this.systemFileUpdateFacility =
+                requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
     }
 
     /**
@@ -268,6 +272,10 @@ public class HandleWorkflow {
 
             // commit state
             stack.commitFullStack();
+
+            // Notify responsible facility if system-file was uploaded
+            systemFileUpdateFacility.handleTxBody(state, txBody);
+
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
