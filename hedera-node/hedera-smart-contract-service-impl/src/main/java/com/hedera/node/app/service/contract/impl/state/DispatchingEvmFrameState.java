@@ -162,7 +162,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
     @Override
     public @NonNull RentFactors getRentFactorsFor(final long number) {
         final var account = validatedAccount(number);
-        return new RentFactors(account.contractKvPairsNumber(), account.expiry());
+        return new RentFactors(account.contractKvPairsNumber(), account.expirationSeconds());
     }
 
     /**

@@ -293,7 +293,7 @@ public class FileTestBase {
     protected File createFile() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSeconds(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
                 .memo(memo)
@@ -304,7 +304,7 @@ public class FileTestBase {
     protected File createUpgradeFile() {
         return new File.Builder()
                 .fileId(fileUpgradeFileId)
-                .expirationTime(expirationTime)
+                .expirationSeconds(expirationTime)
                 .keys(keys)
                 .contents(Bytes.wrap(contents))
                 .memo(memo)
@@ -315,7 +315,7 @@ public class FileTestBase {
     protected File createFileEmptyMemoAndKeys() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSeconds(expirationTime)
                 .contents(Bytes.wrap(contents))
                 .deleted(true)
                 .build();
@@ -324,7 +324,7 @@ public class FileTestBase {
     protected File createFileWithoutContent() {
         return new File.Builder()
                 .fileId(fileId)
-                .expirationTime(expirationTime)
+                .expirationSeconds(expirationTime)
                 .keys(keys)
                 .memo(memo)
                 .deleted(true)

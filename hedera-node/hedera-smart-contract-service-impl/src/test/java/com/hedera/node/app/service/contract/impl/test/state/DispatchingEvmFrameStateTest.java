@@ -709,7 +709,7 @@ class DispatchingEvmFrameStateTest {
     private Account.Builder accountWith(final long num) {
         return Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(num))
-                .expiry(EXPIRY)
+                .expirationSeconds(EXPIRY)
                 .contractKvPairsNumber(NUM_KV_SLOTS);
     }
 }

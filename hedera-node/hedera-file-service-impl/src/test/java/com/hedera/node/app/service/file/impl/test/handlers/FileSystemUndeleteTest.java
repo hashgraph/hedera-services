@@ -195,7 +195,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() + 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSeconds() + 100);
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileId);
@@ -214,7 +214,7 @@ class FileSystemUndeleteTest extends FileTestBase {
         given(handleContext.writableStore(WritableFileStore.class)).willReturn(writableStore);
 
         lenient().when(handleContext.consensusNow()).thenReturn(instant);
-        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationTime() - 100);
+        lenient().when(instant.getEpochSecond()).thenReturn(existingFile.get().expirationSeconds() - 100);
         subject.handle(handleContext);
 
         final var changedFile = writableStore.get(fileSystemFileId);

@@ -92,7 +92,7 @@ public class AccountStateTranslator {
                 .key(PbjConverter.asPbjKey(account.getAccountKey()))
                 .autoRenewSecs(account.getAutoRenewSecs())
                 .deleted(account.isDeleted())
-                .expiry(account.getExpiry())
+                .expirationSeconds(account.getExpiry())
                 .maxAutoAssociations(account.getMaxAutomaticAssociations())
                 .usedAutoAssociations(account.getUsedAutoAssociations())
                 .contractKvPairsNumber(account.getNumContractKvPairs())
@@ -258,7 +258,7 @@ public class AccountStateTranslator {
                 .orElse(null));
         merkleAccount.setAutoRenewSecs(account.autoRenewSecs());
         merkleAccount.setDeleted(account.deleted());
-        merkleAccount.setExpiry(account.expiry());
+        merkleAccount.setExpiry(account.expirationSeconds());
         merkleAccount.setMaxAutomaticAssociations(account.maxAutoAssociations());
         merkleAccount.setUsedAutomaticAssociations(account.usedAutoAssociations());
         merkleAccount.setNumContractKvPairs(account.contractKvPairsNumber());

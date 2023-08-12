@@ -115,7 +115,7 @@ class ScheduleHandlerTestBase {
         BDDMockito.given(accountStore.getAccountById(payer)).willReturn(payerAccount);
 
         final Schedule.Builder builder = Schedule.newBuilder();
-        builder.payerAccount(payer).schedulerAccount(scheduler).adminKey(adminKey);
+        builder.payerAccountId(payer).schedulerAccountId(scheduler).adminKey(adminKey);
         builder.scheduledTransaction(scheduled).originalCreateTransaction(originalCreateTransaction);
         builder.deleted(false).executed(false).memo("test schedule");
         scheduleInState = Mockito.spy(builder.build());

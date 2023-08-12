@@ -175,7 +175,7 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
             info.memo(account.memo());
             info.autoRenewPeriod(Duration.newBuilder().seconds(account.autoRenewSecs()));
             info.balance(account.tinybarBalance());
-            info.expirationTime(Timestamp.newBuilder().seconds(account.expiry()));
+            info.expirationTime(Timestamp.newBuilder().seconds(account.expirationSeconds()));
             info.contractAccountID(getContractAccountId(account, account.alias()));
             info.ownedNfts(account.numberOwnedNfts());
             info.maxAutomaticTokenAssociations(account.maxAutoAssociations());

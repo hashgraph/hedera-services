@@ -84,7 +84,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
         final var fileStore = handleContext.writableStore(WritableFileStore.class);
         final File file = FileServiceUtils.verifyNotSystemFile(ledgerConfig, fileStore, fileId, true);
 
-        final var oldExpiry = file.expirationTime();
+        final var oldExpiry = file.expirationSeconds();
         // If the file is already expired, remove it from the state otherwise update the deleted flag to false
         if (oldExpiry <= handleContext.consensusNow().getEpochSecond()) {
             fileStore.removeFile(fileId);
@@ -92,7 +92,7 @@ public class FileSystemUndeleteHandler implements TransactionHandler {
             /* Copy all the fields from existing special file and change deleted flag */
             final var fileBuilder = new File.Builder()
                     .fileId(file.fileId())
-                    .expirationTime(file.expirationTime())
+                    .expirationSeconds(file.expirationSeconds())
                     .keys(file.keys())
                     .contents(file.contents())
                     .memo(file.memo())

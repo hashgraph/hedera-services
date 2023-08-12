@@ -56,7 +56,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         given(account.accountId()).willReturn(id);
         given(account.memo()).willReturn("");
         given(account.key()).willReturn(accountKey);
-        given(account.expiry()).willReturn(5L);
+        given(account.expirationSeconds()).willReturn(5L);
         given(account.tinybarBalance()).willReturn(7L * HBARS_TO_TINYBARS);
         given(account.memo()).willReturn("Hello World");
         given(account.deleted()).willReturn(true);
@@ -85,7 +85,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         // then
         assertThat(mappedAccount).isNotNull();
         assertThat(mappedAccount.key()).isEqualTo(accountKey);
-        assertThat(mappedAccount.expiry()).isEqualTo(5L);
+        assertThat(mappedAccount.expirationSeconds()).isEqualTo(5L);
         assertThat(mappedAccount.tinybarBalance()).isEqualTo(7L * HBARS_TO_TINYBARS);
         assertThat(mappedAccount.memo()).isEqualTo("Hello World");
         assertThat(mappedAccount.deleted()).isTrue();
@@ -123,7 +123,7 @@ class ReadableAccountStoreImplTest extends CryptoHandlerTestBase {
         // then
         assertThat(mappedAccount).isNotNull();
         assertThat(mappedAccount.key()).isEqualTo(accountKey);
-        assertThat(mappedAccount.expiry()).isZero();
+        assertThat(mappedAccount.expirationSeconds()).isZero();
         assertThat(mappedAccount.tinybarBalance()).isZero();
         assertThat(mappedAccount.tinybarBalance()).isZero();
         assertThat(mappedAccount.memo()).isEmpty();

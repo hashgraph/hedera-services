@@ -188,11 +188,11 @@ class ScheduleServiceStateTranslatorTest {
         Assertions.assertEquals(expected.executed(), schedule.executed());
         Assertions.assertEquals(expected.adminKey(), schedule.adminKey());
         Assertions.assertEquals(expected.waitForExpiry(), schedule.waitForExpiry());
-        Assertions.assertEquals(expected.payerAccount(), schedule.payerAccount());
-        Assertions.assertEquals(expected.schedulerAccount(), schedule.schedulerAccount());
+        Assertions.assertEquals(expected.payerAccountId(), schedule.payerAccountId());
+        Assertions.assertEquals(expected.schedulerAccountId(), schedule.schedulerAccountId());
         Assertions.assertEquals(expected.scheduleValidStart(), schedule.scheduleValidStart());
-        Assertions.assertEquals(expected.expirationTimeProvided(), schedule.expirationTimeProvided());
-        Assertions.assertEquals(expected.calculatedExpirationTime(), schedule.calculatedExpirationTime());
+        Assertions.assertEquals(expected.providedExpirationSeconds(), schedule.providedExpirationSeconds());
+        Assertions.assertEquals(expected.calculatedExpirationSeconds(), schedule.calculatedExpirationSeconds());
         Assertions.assertEquals(expected.resolutionTime(), schedule.resolutionTime());
         Assertions.assertEquals(expected.originalCreateTransaction(), schedule.originalCreateTransaction());
         Assertions.assertNotNull(expected.scheduledTransaction());
@@ -310,13 +310,13 @@ class ScheduleServiceStateTranslatorTest {
                 .executed(false)
                 .waitForExpiry(true)
                 .memo(memo)
-                .id(testScheduleID)
-                .schedulerAccount(scheduler)
-                .payerAccount(payer)
+                .scheduleId(testScheduleID)
+                .schedulerAccountId(scheduler)
+                .payerAccountId(payer)
                 .adminKey(adminKey)
                 .scheduleValidStart(testValidStart)
-                .expirationTimeProvided(expirationTime)
-                .calculatedExpirationTime(calculatedExpirationTime)
+                .providedExpirationSeconds(expirationTime.seconds())
+                .calculatedExpirationSeconds(calculatedExpirationTime.seconds())
                 .scheduledTransaction(scheduled)
                 .originalCreateTransaction(originalCreateTransaction)
                 .signatories(keyList)

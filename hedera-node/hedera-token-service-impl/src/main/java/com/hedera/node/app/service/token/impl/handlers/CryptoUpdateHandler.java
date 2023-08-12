@@ -159,7 +159,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
             builder.key(op.key());
         }
         if (op.hasExpirationTime()) {
-            builder.expiry(op.expirationTime().seconds());
+            builder.expirationSeconds(op.expirationTime().seconds());
         }
         if (op.hasReceiverSigRequiredWrapper()) {
             builder.receiverSigRequired(op.receiverSigRequiredWrapper().booleanValue());
@@ -218,7 +218,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
 
         // validate expiry metadata
         final var currentMetadata = new ExpiryMeta(
-                updateAccount.expiry(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountId());
+                updateAccount.expirationSeconds(), updateAccount.autoRenewSecs(), updateAccount.autoRenewAccountId());
         final var updateMeta = new ExpiryMeta(
                 op.hasExpirationTime() ? op.expirationTime().seconds() : NA,
                 op.hasAutoRenewPeriod() ? op.autoRenewPeriod().seconds() : NA,
@@ -229,7 +229,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
         // It can only be updated to extend expiration time
         if (expiryValidator.isDetached(
                 EntityType.ACCOUNT, updateAccount.expiredAndPendingRemoval(), updateAccount.tinybarBalance())) {
-            validateTrue(builderAccount.expiry() != 0, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+            validateTrue(builderAccount.expirationSeconds() != 0, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         }
 
         // validate auto associations

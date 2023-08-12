@@ -66,7 +66,8 @@ abstract class AbstractScheduleHandler {
             @NonNull final Schedule scheduleInState, @NonNull final PreHandleContext context) throws PreCheckException {
         final TransactionBody scheduledAsOrdinary = ScheduleUtility.asOrdinary(scheduleInState);
         // note, payerAccount should never be null, but we're dealing with Sonar here.
-        final AccountID payerForNested = scheduleInState.payerAccountOrElse(scheduleInState.schedulerAccountOrThrow());
+        final AccountID payerForNested =
+                scheduleInState.payerAccountIdOrElse(scheduleInState.schedulerAccountIdOrThrow());
         final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payerForNested);
         return getKeySetFromTransactionKeys(keyStructure);
     }
@@ -84,7 +85,7 @@ abstract class AbstractScheduleHandler {
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
         try {
             // note, payerAccount should never be null, but we're playing it safe here.
-            final AccountID payer = scheduleInState.payerAccountOrElse(context.payer());
+            final AccountID payer = scheduleInState.payerAccountIdOrElse(context.payer());
             final TransactionBody scheduledAsOrdinary = ScheduleUtility.asOrdinary(scheduleInState);
             final TransactionKeys keyStructure = context.allKeysForTransaction(scheduledAsOrdinary, payer);
             final Set<Key> scheduledRequiredKeys = getKeySetFromTransactionKeys(keyStructure);
@@ -211,9 +212,11 @@ abstract class AbstractScheduleHandler {
             if (scheduleToValidate.hasScheduledTransaction()) {
                 if (!scheduleToValidate.executed()) {
                     if (!scheduleToValidate.deleted()) {
-                        Timestamp expiration = scheduleToValidate.calculatedExpirationTime();
+                        Long expiration = scheduleToValidate.calculatedExpirationSeconds();
                         final Instant calculatedExpiration =
-                                ScheduleUtility.instantFromTimestamp(expiration, Instant.MAX);
+                                (expiration == Schedule.DEFAULT.calculatedExpirationSeconds()
+                                        ? Instant.ofEpochSecond(expiration)
+                                        : Instant.MAX);
                         if (effectiveConsensusTime.isBefore(calculatedExpiration)) {
                             result = ResponseCodeEnum.OK;
                         } else {
@@ -274,7 +277,7 @@ abstract class AbstractScheduleHandler {
             final ScheduleRecordBuilder recordBuilder =
                     context.dispatchChildTransaction(childTransaction, ScheduleRecordBuilder.class, assistant);
             // set the schedule ref for the child transaction
-            recordBuilder.scheduleRef(scheduleToExecute.id());
+            recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // If the child failed, we fail with the same result.
             // @note the interface below should always be implemented by all record builders,
             //       but we still need to cast it.

@@ -806,7 +806,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
                 .tinybarBalance(payerBalance)
                 .alias(alias.alias())
                 .key(key)
-                .expiry(1_234_567L)
+                .expirationSeconds(1_234_567L)
                 .memo("testAccount")
                 .deleted(false)
                 .stakedToMe(1_234L * HBARS_TO_TINYBARS)
@@ -866,7 +866,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     }
 
     protected Nft givenNft(NftID tokenID) {
-        return Nft.newBuilder().ownerId(ownerId).id(tokenID).build();
+        return Nft.newBuilder().ownerId(ownerId).nftId(tokenID).build();
     }
 
     protected CustomFee withFixedFee(final FixedFee fixedFee) {

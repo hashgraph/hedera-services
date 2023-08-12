@@ -240,7 +240,7 @@ public class TokenHandlerTestBase {
                 .maxSupply(100000)
                 .autoRenewSecs(autoRenewSecs)
                 .autoRenewAccountId(autoRenewId)
-                .expiry(expirationTime)
+                .expirationSeconds(expirationTime)
                 .memo(memo)
                 .deleted(false)
                 .paused(true)
