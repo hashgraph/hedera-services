@@ -83,6 +83,7 @@ public class SubmitMessageSuite extends HapiSuite {
                 feeAsExpected());
     }
 
+    @HapiTest
     private HapiSpec topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given(cryptoCreate("nonTopicId"))
@@ -97,6 +98,7 @@ public class SubmitMessageSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
+    @HapiTest
     private HapiSpec messageIsValidated() {
         return defaultHapiSpec("messageIsValidated")
                 .given(createTopic("testTopic"))
@@ -112,6 +114,7 @@ public class SubmitMessageSuite extends HapiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_MESSAGE));
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionSimple() {
         return defaultHapiSpec("messageSubmissionSimple")
                 .given(
@@ -125,6 +128,7 @@ public class SubmitMessageSuite extends HapiSuite {
                         .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionIncreasesSeqNo() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
@@ -136,6 +140,7 @@ public class SubmitMessageSuite extends HapiSuite {
                 .then(getTopicInfo("testTopic").hasSeqNo(1));
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionWithSubmitKey() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
@@ -158,6 +163,7 @@ public class SubmitMessageSuite extends HapiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionMultiple() {
         final int numMessages = 10;
 
@@ -169,6 +175,7 @@ public class SubmitMessageSuite extends HapiSuite {
                 .then(sleepFor(1000), getTopicInfo("testTopic").hasSeqNo(numMessages));
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionOverSize() {
         final byte[] messageBytes = new byte[4096]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
@@ -202,6 +209,7 @@ public class SubmitMessageSuite extends HapiSuite {
                 .then(sleepFor(1000), validateChargedUsd("submitMessage", 0.0001));
     }
 
+    @HapiTest
     private HapiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
