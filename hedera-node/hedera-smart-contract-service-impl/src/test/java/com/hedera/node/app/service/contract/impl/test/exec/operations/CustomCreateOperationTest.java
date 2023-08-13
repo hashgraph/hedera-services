@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.contract.impl.exec.operations.CustomCreateOperation;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.Words;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class CustomCreateOperationTest extends CreateOperationTestBase {
+    private static final Address EXPECTED_CREATE1_ADDRESS = Address.contractAddress(RECIEVER_ADDRESS, NONCE - 1);
 
     private CustomCreateOperation subject;
 
@@ -111,8 +113,8 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
         givenSpawnPrereqs();
         givenBuilderPrereqs();
+        given(receiver.getNonce()).willReturn(NONCE);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
-        given(worldUpdater.setupInternalCreate(RECIEVER_ADDRESS)).willReturn(NEW_CONTRACT_ADDRESS);
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
         final var expected = new Operation.OperationResult(GAS_COST, null);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -121,7 +123,8 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         final var childFrame = frameCaptor.getValue();
         childFrame.setState(MessageFrame.State.COMPLETED_SUCCESS);
         childFrame.notifyCompletion();
-        verify(frame).pushStackItem(Words.fromAddress(NEW_CONTRACT_ADDRESS));
+        verify(worldUpdater).setupInternalAliasedCreate(RECIEVER_ADDRESS, EXPECTED_CREATE1_ADDRESS);
+        verify(frame).pushStackItem(Words.fromAddress(EXPECTED_CREATE1_ADDRESS));
     }
 
     @Test
@@ -130,7 +133,6 @@ class CustomCreateOperationTest extends CreateOperationTestBase {
         givenSpawnPrereqs();
         givenBuilderPrereqs();
         given(frame.readMemory(anyLong(), anyLong())).willReturn(INITCODE);
-        given(worldUpdater.setupInternalCreate(RECIEVER_ADDRESS)).willReturn(NEW_CONTRACT_ADDRESS);
         given(gasCalculator.createOperationGasCost(frame)).willReturn(GAS_COST);
 
         final var expected = new Operation.OperationResult(GAS_COST, null);

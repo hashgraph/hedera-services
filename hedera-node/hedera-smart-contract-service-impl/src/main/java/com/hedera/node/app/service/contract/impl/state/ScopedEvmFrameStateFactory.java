@@ -30,17 +30,18 @@ import javax.inject.Inject;
 @TransactionScope
 public class ScopedEvmFrameStateFactory implements EvmFrameStateFactory {
     private final HederaOperations hederaOperations;
-    private final HederaNativeOperations extFrameScope;
+    private final HederaNativeOperations hederaNativeOperations;
 
     @Inject
     public ScopedEvmFrameStateFactory(
-            @NonNull final HederaOperations hederaOperations, @NonNull final HederaNativeOperations extFrameScope) {
+            @NonNull final HederaOperations hederaOperations,
+            @NonNull final HederaNativeOperations hederaNativeOperations) {
         this.hederaOperations = Objects.requireNonNull(hederaOperations);
-        this.extFrameScope = Objects.requireNonNull(extFrameScope);
+        this.hederaNativeOperations = Objects.requireNonNull(hederaNativeOperations);
     }
 
     @Override
     public EvmFrameState get() {
-        return new DispatchingEvmFrameState(extFrameScope, hederaOperations.getStore());
+        return new DispatchingEvmFrameState(hederaNativeOperations, hederaOperations.getStore());
     }
 }

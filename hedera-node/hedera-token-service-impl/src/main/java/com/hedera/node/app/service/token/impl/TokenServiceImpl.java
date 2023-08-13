@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.primitive.ProtoString;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
@@ -35,7 +36,6 @@ import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.codec.StringCodec;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -83,7 +83,7 @@ public class TokenServiceImpl implements TokenService {
                 return Set.of(
                         StateDefinition.inMemory(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF),
                         StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
-                        StateDefinition.onDisk(ALIASES_KEY, StringCodec.SINGLETON, AccountID.PROTOBUF, MAX_ACCOUNTS),
+                        StateDefinition.onDisk(ALIASES_KEY, ProtoString.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
                         StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
                         StateDefinition.onDisk(
                                 TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),

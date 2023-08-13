@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.gui.internal;
-
-import com.swirlds.gui.InfoEntity;
+package com.swirlds.gui.model;
 
 /**
  * Metadata about a state stored by a member in a swirld running on an app.
