@@ -254,7 +254,6 @@ class HederaTokenStoreTest {
         given(backingTokens.getImmutableRef(tNft.tokenId())).willReturn(nonfungibleToken);
         given(backingTokens.getImmutableRef(tNft.tokenId()).treasury())
                 .willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
-        given(backingTokens.idSet()).willReturn(Set.of(created));
 
         tokenRelsLedger = mock(TransactionalLedger.class);
         given(tokenRelsLedger.exists(sponsorMisc)).willReturn(true);

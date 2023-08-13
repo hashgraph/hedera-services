@@ -29,7 +29,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,13 +57,6 @@ class BackingTokensTest {
         assertTrue(subject.contains(a));
         assertFalse(subject.contains(b));
         // and:
-    }
-
-    @Test
-    void delegatesIdSet() {
-        var expectedIds = Set.of(a);
-        // expect:
-        assertEquals(expectedIds, subject.idSet());
     }
 
     @Test
