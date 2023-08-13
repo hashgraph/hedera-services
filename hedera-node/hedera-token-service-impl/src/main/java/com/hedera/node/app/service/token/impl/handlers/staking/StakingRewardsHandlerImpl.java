@@ -34,6 +34,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.config.data.AccountsConfig;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -134,9 +135,10 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 }
                 if (scenario.awardsToAccount()) {
                     final var newStakedAccountId = modifiedAccount.stakedAccountId();
+                    final var balance = originalAccount == null ? 0 : originalAccount.tinybarBalance();
                     // Always trigger a reward situation for the new stakee when they are
                     // gaining an indirect staker, even if it doesn't change their total stake
-                    final var roundedFinalBalance = roundedToHbar(originalAccount.tinybarBalance());
+                    final var roundedFinalBalance = roundedToHbar(balance);
                     updateStakedToMeFor(newStakedAccountId, roundedFinalBalance, writableStore);
                 }
             }

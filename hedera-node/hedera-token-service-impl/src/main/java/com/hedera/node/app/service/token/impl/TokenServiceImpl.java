@@ -16,11 +16,6 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
@@ -45,8 +40,17 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
+import static java.util.Objects.requireNonNull;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
@@ -138,8 +142,34 @@ public class TokenServiceImpl implements TokenService {
                 addStakingAccounts(asAccount(801), accounts, FUNDING_ACCOUNT_EXPIRY);
 
                 updateNetworkRewards(ctx);
+                updateStakingNodeInfo(ctx);
             }
         };
+    }
+
+    private void updateStakingNodeInfo(final MigrationContext ctx) {
+        // TODO: This need to go through address book and set all the nodes
+        final var config = ctx.configuration();
+        final var ledgerConfig = config.getConfigData(LedgerConfig.class);
+        final var stakingConfig = config.getConfigData(StakingConfig.class);
+        final var numberOfNodes = 1;
+
+        final long maxStakePerNode = ledgerConfig.totalTinyBarFloat() / numberOfNodes;
+        final long minStakePerNode = maxStakePerNode / 2;
+
+        final var numRewardHistoryStoredPeriods = stakingConfig.rewardHistoryNumStoredPeriods();
+        final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
+        final var rewardSumHistory = new Long[numRewardHistoryStoredPeriods];
+        Arrays.fill(rewardSumHistory, 0L);
+
+        final var stakingInfo = StakingNodeInfo.newBuilder()
+                .nodeNumber(0)
+                .maxStake(maxStakePerNode)
+                .minStake(minStakePerNode)
+                .rewardSumHistory(Arrays.asList(rewardSumHistory))
+                .weight(500)
+                .build();
+        stakingInfoState.put(EntityNumber.newBuilder().number(0L).build(), stakingInfo);
     }
 
     private void updateNetworkRewards(final MigrationContext ctx) {
