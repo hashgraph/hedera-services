@@ -16,12 +16,11 @@
 
 package com.swirlds.common.utility;
 
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
-
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
@@ -120,7 +119,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion>, SelfS
      * 		if the {@code version} argument is a {@code null} reference.
      */
     public static SemanticVersion parse(final String version) {
-        throwArgNull(version, "version");
+        Objects.requireNonNull(version, "version must not be null");
         final Matcher matcher = SEMVER_PATTERN.matcher(version);
 
         if (!matcher.matches()) {

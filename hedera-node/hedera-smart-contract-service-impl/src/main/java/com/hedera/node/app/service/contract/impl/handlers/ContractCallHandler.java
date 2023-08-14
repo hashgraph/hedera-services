@@ -59,7 +59,6 @@ public class ContractCallHandler implements TransactionHandler {
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) {
-        requireNonNull(context);
-        // Nothing to do
+        // No non-payer signatures to verify
     }
 }

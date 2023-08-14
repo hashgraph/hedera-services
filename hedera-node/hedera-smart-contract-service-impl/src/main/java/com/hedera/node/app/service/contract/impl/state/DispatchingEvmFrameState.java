@@ -28,8 +28,8 @@ import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExcep
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_HOLDER_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOKEN_TREASURY_SELFDESTRUCT;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.TOO_MANY_CHILD_RECORDS;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.EVM_ADDRESS_LENGTH_AS_LONG;
-import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.maybeMissingNumberOf;
@@ -281,7 +281,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Address getAddress(final long number) {
+    public @Nullable Address getAddress(final long number) {
         final var account = validatedAccount(number);
         if (account.deleted()) {
             return null;
@@ -319,7 +319,7 @@ public class DispatchingEvmFrameState implements EvmFrameState {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
+    public Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull final Address sendingContract,
             @NonNull final Address recipient,
             final long amount,
@@ -327,9 +327,6 @@ public class DispatchingEvmFrameState implements EvmFrameState {
         final var from = (ProxyEvmAccount) getAccount(sendingContract);
         if (from == null) {
             return Optional.of(MISSING_ADDRESS);
-        }
-        if (!from.isContract()) {
-            throw new IllegalArgumentException("EVM should not initiate transfer from EOA 0.0." + from.number);
         }
         final var to = getAccount(recipient);
         if (to == null) {

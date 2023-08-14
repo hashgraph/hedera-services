@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.file.ReadableFileStore;
@@ -256,7 +257,7 @@ class FileAppendTest extends FileTestBase {
         givenValidUpgradeFile(false, true);
         refreshStoresWithCurrentFileInBothReadableAndWritable();
 
-        var bytesNewContentExpected = Bytes.wrap(additionalContent);
+        var bytesNewContentExpected = new ProtoBytes(Bytes.wrap(additionalContent));
         final var txBody = TransactionBody.newBuilder()
                 .fileAppend(OP_BUILDER.fileID(wellKnowUpgradeId()).contents(bytesNewContent))
                 .build();
@@ -265,7 +266,7 @@ class FileAppendTest extends FileTestBase {
 
         subject.handle(handleContext);
         final var iterator = writableUpgradeStates.iterator();
-        Bytes file = null;
+        ProtoBytes file = null;
 
         while (iterator.hasNext()) {
             file = iterator.next();

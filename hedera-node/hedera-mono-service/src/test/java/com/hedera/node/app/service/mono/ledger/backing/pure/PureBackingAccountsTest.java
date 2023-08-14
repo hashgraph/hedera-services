@@ -35,7 +35,6 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,17 +81,6 @@ class PureBackingAccountsTest {
         assertTrue(subject.contains(b));
         // and:
         verify(map, times(2)).containsKey(any());
-    }
-
-    @Test
-    void delegatesIdSet() {
-        var ids = Set.of(aKey, bKey);
-        var expectedIds = Set.of(a, b);
-
-        given(map.keySet()).willReturn(ids);
-
-        // expect:
-        assertEquals(expectedIds, subject.idSet());
     }
 
     @Test

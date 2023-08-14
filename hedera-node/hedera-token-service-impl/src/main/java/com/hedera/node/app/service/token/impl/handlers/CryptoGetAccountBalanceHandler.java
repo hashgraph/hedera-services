@@ -75,6 +75,8 @@ public class CryptoGetAccountBalanceHandler extends FreeQueryHandler {
     }
 
     @Override
+    // contract.deleted() won't throw NPE since we are checking it for null the line before
+    @SuppressWarnings("java:S2259")
     public void validate(@NonNull final QueryContext context) throws PreCheckException {
         requireNonNull(context);
         final var query = context.query();

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.ibm.icu.impl.Assert.fail;
+import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

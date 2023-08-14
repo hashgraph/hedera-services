@@ -127,7 +127,7 @@ class CustomSelfDestructOperationTest {
     void haltsSelfDestructOnFailedInheritanceTransfer() {
         givenRunnableSelfDestruct();
         givenWarmBeneficiaryWithSufficientGas();
-        given(proxyWorldUpdater.tryTransferFromContract(TBD, BENEFICIARY, INHERITANCE.toLong(), true))
+        given(proxyWorldUpdater.tryTransfer(TBD, BENEFICIARY, INHERITANCE.toLong(), true))
                 .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
         final var expected = new Operation.OperationResult(123L, INVALID_RECEIVER_SIGNATURE);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -138,7 +138,7 @@ class CustomSelfDestructOperationTest {
         givenRunnableSelfDestruct();
         givenWarmBeneficiaryWithSufficientGas();
         given(frame.getContractAddress()).willReturn(TBD);
-        given(proxyWorldUpdater.tryTransferFromContract(TBD, BENEFICIARY, INHERITANCE.toLong(), false))
+        given(proxyWorldUpdater.tryTransfer(TBD, BENEFICIARY, INHERITANCE.toLong(), false))
                 .willReturn(Optional.empty());
         final var expected = new Operation.OperationResult(123L, null);
         assertSameResult(expected, subject.execute(frame, evm));

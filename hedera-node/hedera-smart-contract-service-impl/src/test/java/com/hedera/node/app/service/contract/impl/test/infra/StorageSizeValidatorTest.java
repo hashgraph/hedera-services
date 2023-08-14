@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class StorageSizeValidatorTest {
                 .withValue("contracts.maxKvPairs.aggregate", PRETEND_MAX_AGGREGATE)
                 .getOrCreateConfig();
 
-        subject = new StorageSizeValidator(config);
+        subject = new StorageSizeValidator(config.getConfigData(ContractsConfig.class));
 
         assertExhaustsResourceLimit(
                 () -> subject.assertValid(PRETEND_MAX_AGGREGATE + 1, extWorldScope, List.of()),
@@ -66,7 +67,7 @@ class StorageSizeValidatorTest {
         given(extWorldScope.getOriginalSlotsUsed(underLimitNumber)).willReturn(pretendMaxIndividual - 1);
         given(extWorldScope.getOriginalSlotsUsed(overLimitNumber)).willReturn(pretendMaxIndividual);
 
-        subject = new StorageSizeValidator(config);
+        subject = new StorageSizeValidator(config.getConfigData(ContractsConfig.class));
 
         assertExhaustsResourceLimit(
                 () -> subject.assertValid(PRETEND_MAX_AGGREGATE, extWorldScope, sizeChanges),

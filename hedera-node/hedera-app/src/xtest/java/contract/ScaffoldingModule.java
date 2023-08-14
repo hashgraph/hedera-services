@@ -34,6 +34,8 @@ import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculator;
+import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.numbers.FakeHederaNumbers;
@@ -44,7 +46,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleDispatcher;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -130,6 +131,10 @@ public interface ScaffoldingModule {
 
     @Binds
     @Singleton
+    StakeRewardCalculator bindStakeRewardCalculator(StakeRewardCalculatorImpl rewardCalculator);
+
+    @Binds
+    @Singleton
     BlockRecordWriterFactory bindBlockRecordWriterFactory(BlockRecordWriterFactoryImpl factory);
 
     @Provides
@@ -153,7 +158,9 @@ public interface ScaffoldingModule {
     @Provides
     @Singleton
     static Configuration provideConfiguration() {
-        return HederaTestConfigBuilder.create().getOrCreateConfig();
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .getOrCreateConfig();
     }
 
     @Provides
@@ -170,33 +177,25 @@ public interface ScaffoldingModule {
 
     @Provides
     @Singleton
-    static SavepointStackImpl provideSavepointStackImpl(
-            @NonNull final Configuration configuration, @NonNull final HederaState state) {
-        return new SavepointStackImpl(state, configuration);
-    }
-
-    @Provides
-    @Singleton
     static Function<TransactionBody, HandleContext> provideHandleContextCreator(
             @NonNull final Metrics metrics,
-            @NonNull final HederaState state,
+            @NonNull final NetworkInfo networkInfo,
             @NonNull final RecordCache recordCache,
             @NonNull final Configuration configuration,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ServiceScopeLookup scopeLookup,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final WorkingStateAccessor stateAccessor,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final SavepointStackImpl stack) {
-        stateAccessor.setHederaState(state);
+            @NonNull final HederaState state) {
         final var parentRecordBuilder = new SingleTransactionRecordBuilderImpl(Instant.now());
         return body -> new HandleContextImpl(
                 body,
                 body.transactionIDOrThrow().accountIDOrThrow(),
                 Key.DEFAULT,
+                networkInfo,
                 USER,
                 parentRecordBuilder,
-                stack,
+                new SavepointStackImpl(state, configuration),
                 new BaseHandleContextVerifier(configuration.getConfigData(HederaConfig.class), Map.of()),
                 new RecordListBuilder(parentRecordBuilder),
                 new TransactionChecker(6192, AccountID.DEFAULT, configProvider, metrics),

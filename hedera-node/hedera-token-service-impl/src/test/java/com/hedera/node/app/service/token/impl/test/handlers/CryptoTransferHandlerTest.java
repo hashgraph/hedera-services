@@ -47,8 +47,8 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -239,14 +239,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -268,14 +268,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -338,14 +338,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -383,14 +383,14 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 })
                 .will((invocation) -> {
                     final var copy =
                             account.copyBuilder().accountId(tokenReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
-                    return recordBuilder.accountID(asAccount(tokenReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

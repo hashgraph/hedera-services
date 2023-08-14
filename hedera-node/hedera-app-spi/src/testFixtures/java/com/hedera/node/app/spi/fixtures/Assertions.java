@@ -33,10 +33,10 @@ public final class Assertions {
             @NonNull final PreCheckRunnable runnable, @NonNull final ResponseCodeEnum expected) {
         try {
             runnable.run();
-            throw new AssertionError("Expected " + expected + " but no exception was thrown");
+            throw new AssertionError("Expected " + expected + " but no exception was thrown", null);
         } catch (final PreCheckException actual) {
             if (!actual.responseCode().equals(expected)) {
-                throw new AssertionError("Expected " + expected + " but got " + actual);
+                throw new AssertionError("Expected " + expected + " but got " + actual, actual);
             }
         }
     }

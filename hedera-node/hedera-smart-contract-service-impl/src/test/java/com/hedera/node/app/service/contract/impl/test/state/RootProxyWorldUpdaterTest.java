@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
-import com.hedera.node.app.service.contract.impl.infra.LegibleStorageManager;
+import com.hedera.node.app.service.contract.impl.infra.IterableStorageManager;
 import com.hedera.node.app.service.contract.impl.infra.RentCalculator;
 import com.hedera.node.app.service.contract.impl.infra.StorageSizeValidator;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
 import com.hedera.node.app.service.contract.impl.state.StorageAccesses;
 import com.hedera.node.app.service.contract.impl.state.StorageSizeChange;
+import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -62,7 +63,7 @@ class RootProxyWorldUpdaterTest {
     private RentCalculator rentCalculator;
 
     @Mock
-    private LegibleStorageManager storageManager;
+    private IterableStorageManager storageManager;
 
     @Mock
     private StorageSizeValidator storageSizeValidator;
@@ -71,7 +72,7 @@ class RootProxyWorldUpdaterTest {
     private EvmFrameState evmFrameState;
 
     @Mock
-    private HederaOperations extWorldScope;
+    private HederaOperations hederaOperations;
 
     @Mock
     private ContractStateStore store;
@@ -79,7 +80,7 @@ class RootProxyWorldUpdaterTest {
     private RootProxyWorldUpdater subject;
 
     @Test
-    void refusesToReturnCommittedChangesWithoutSucessfulCommit() {
+    void refusesToReturnCommittedChangesWithoutSuccessfulCommit() {
         givenSubjectWith(HederaTestConfigBuilder.create().getOrCreateConfig());
         assertThrows(IllegalStateException.class, subject::getUpdatedContractNonces);
         assertThrows(IllegalStateException.class, subject::getCreatedContractIds);
@@ -91,7 +92,7 @@ class RootProxyWorldUpdaterTest {
                 .withValue("contracts.nonces.externalization.enabled", false)
                 .getOrCreateConfig());
 
-        InOrder inOrder = BDDMockito.inOrder(storageSizeValidator, storageManager, rentCalculator, extWorldScope);
+        InOrder inOrder = BDDMockito.inOrder(storageSizeValidator, storageManager, rentCalculator, hederaOperations);
 
         final var aExpiry = 1_234_567;
         final var aSlotsUsedBeforeCommit = 101;
@@ -107,21 +108,21 @@ class RootProxyWorldUpdaterTest {
         // A contract is allocating 2 slots net
         given(rentCalculator.computeFor(sizeExcludingPendingRemovals, 2, aSlotsUsedBeforeCommit, aExpiry))
                 .willReturn(rentInTinycents);
-        given(extWorldScope.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
+        given(hederaOperations.valueInTinybars(rentInTinycents)).willReturn(rentInTinybars);
 
-        given(extWorldScope.getStore()).willReturn(store);
+        given(hederaOperations.getStore()).willReturn(store);
         final var createdIds = List.of(CALLED_CONTRACT_ID);
         final var updatedNonces = List.of(new ContractNonceInfo(CALLED_CONTRACT_ID, 1L));
-        given(extWorldScope.createdContractIds()).willReturn(createdIds);
-        given(extWorldScope.updatedContractNonces()).willReturn(updatedNonces);
+        given(hederaOperations.createdContractIds()).willReturn(createdIds);
+        given(hederaOperations.updatedContractNonces()).willReturn(updatedNonces);
 
         subject.commit();
 
         inOrder.verify(storageSizeValidator)
-                .assertValid(sizeExcludingPendingRemovals, extWorldScope, expectedSizeChanges());
-        inOrder.verify(extWorldScope).chargeStorageRent(A_NUM, rentInTinybars, true);
-        inOrder.verify(storageManager).rewrite(extWorldScope, pendingChanges(), expectedSizeChanges(), store);
-        inOrder.verify(extWorldScope).commit();
+                .assertValid(sizeExcludingPendingRemovals, hederaOperations, expectedSizeChanges());
+        inOrder.verify(hederaOperations).chargeStorageRent(A_NUM, rentInTinybars, true);
+        inOrder.verify(storageManager).persistChanges(hederaOperations, pendingChanges(), expectedSizeChanges(), store);
+        inOrder.verify(hederaOperations).commit();
 
         assertSame(createdIds, subject.getCreatedContractIds());
         assertSame(updatedNonces, subject.getUpdatedContractNonces());
@@ -129,8 +130,8 @@ class RootProxyWorldUpdaterTest {
 
     private void givenSubjectWith(@NonNull final Configuration configuration) {
         subject = new RootProxyWorldUpdater(
-                extWorldScope,
-                configuration,
+                hederaOperations,
+                configuration.getConfigData(ContractsConfig.class),
                 () -> evmFrameState,
                 rentCalculator,
                 storageManager,

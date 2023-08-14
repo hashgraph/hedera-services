@@ -229,6 +229,7 @@ public class TopicCreateSuite extends HapiSuite {
                         .autoRenewAccountId("autoRenewAccount"));
     }
 
+    @HapiTest
     private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(

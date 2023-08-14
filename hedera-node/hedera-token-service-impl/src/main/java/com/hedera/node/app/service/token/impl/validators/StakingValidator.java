@@ -25,8 +25,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -37,31 +35,33 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class StakingValidator {
+
     @Inject
-    public StakingValidator() {}
+    public StakingValidator() {
+        // Dagger2
+    }
 
     /**
      * Validates staked id if present
      *
+     * @param isStakingEnabled       if staking is enabled
      * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
      * @param stakedIdKind           staked id kind (account or node)
      * @param stakedAccountIdInOp    staked account id
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
-     * @param context
      */
     public void validateStakedId(
-            @NonNull final boolean hasDeclineRewardChange,
+            final boolean isStakingEnabled,
+            final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
             @Nullable final AccountID stakedAccountIdInOp,
             @Nullable final Long stakedNodeIdInOp,
-            @NonNull ReadableAccountStore accountStore,
-            @NonNull final HandleContext context,
+            @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
         final var hasStakingId = stakedAccountIdInOp != null || stakedNodeIdInOp != null;
-        final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         // If staking is not enabled, then can't update staked id
-        validateFalse(!stakingConfig.isEnabled() && (hasStakingId || hasDeclineRewardChange), STAKING_NOT_ENABLED);
+        validateFalse(!isStakingEnabled && (hasStakingId || hasDeclineRewardChange), STAKING_NOT_ENABLED);
 
         // sentinel values on -1 for stakedNodeId and 0.0.0 for stakedAccountId are used to reset
         // staking on an account

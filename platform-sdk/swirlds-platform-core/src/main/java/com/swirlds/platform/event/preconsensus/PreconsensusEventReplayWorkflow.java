@@ -30,8 +30,8 @@ import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.platform.components.EventTaskDispatcher;
 import com.swirlds.platform.components.state.StateManagementComponent;
 import com.swirlds.platform.event.EventIntakeTask;
+import com.swirlds.platform.event.GossipEvent;
 import com.swirlds.platform.eventhandling.ConsensusRoundHandler;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -95,7 +95,7 @@ public final class PreconsensusEventReplayWorkflow {
         try {
             final Instant start = time.now();
 
-            final IOIterator<EventImpl> iterator =
+            final IOIterator<GossipEvent> iterator =
                     preconsensusEventFileManager.getEventIterator(initialMinimumGenerationNonAncient, true);
 
             final PreconsensusEventReplayPipeline eventReplayPipeline = new PreconsensusEventReplayPipeline(

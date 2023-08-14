@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
@@ -43,9 +44,11 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
@@ -69,12 +72,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProxyWorldUpdaterTest {
     private static final long NUMBER = 123L;
-    private static final long NEXT_NUMBER = 124L;
+    static final long NEXT_NUMBER = 124L;
     private static final long NUMBER_OF_DELETED = 125L;
-    private static final long HAPI_PAYER_NUMBER = 777L;
     private static final Address LONG_ZERO_ADDRESS = asLongZeroAddress(NUMBER);
     private static final Address NEXT_LONG_ZERO_ADDRESS = asLongZeroAddress(NEXT_NUMBER);
-    private static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
+    static final Address SOME_EVM_ADDRESS = Address.fromHexString("0x1234123412341234123412341234123412341234");
     private static final Address OTHER_EVM_ADDRESS =
             Address.fromHexString("0x1239123912391239123912391239123912391239");
 
@@ -94,7 +96,7 @@ class ProxyWorldUpdaterTest {
     private MessageFrame frame;
 
     @Mock
-    private HederaOperations extWorldScope;
+    private HederaOperations hederaOperations;
 
     @Mock
     private WorldUpdater parent;
@@ -109,15 +111,15 @@ class ProxyWorldUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ProxyWorldUpdater(extWorldScope, () -> evmFrameState, null);
+        subject = new ProxyWorldUpdater(hederaOperations, () -> evmFrameState, null);
     }
 
     @Test
     void collectingAndRefundingFeesDelegate() {
         subject.collectFee(RELAYER_ID, 1L);
         subject.refundFee(SENDER_ID, 1L);
-        verify(extWorldScope).collectFee(RELAYER_ID, 1L);
-        verify(extWorldScope).refundFee(SENDER_ID, 1L);
+        verify(hederaOperations).collectFee(RELAYER_ID, 1L);
+        verify(hederaOperations).refundFee(SENDER_ID, 1L);
     }
 
     @Test
@@ -226,9 +228,9 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedAddress() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
-        subject.setupCreate(ALTBN128_ADD);
+        subject.setupInternalCreate(ALTBN128_ADD);
 
         assertThrows(IllegalStateException.class, () -> subject.createAccount(LONG_ZERO_ADDRESS, 1, Wei.ZERO));
     }
@@ -240,10 +242,9 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void cannotCreateUnlessPendingCreationHasExpectedNumber() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(extWorldScope.useNextEntityNumber()).willReturn(NEXT_NUMBER + 1);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER).willReturn(NEXT_NUMBER + 1);
 
-        subject.setupCreate(ALTBN128_ADD);
+        subject.setupInternalCreate(ALTBN128_ADD);
 
         assertThrows(IllegalStateException.class, () -> subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO));
     }
@@ -251,35 +252,66 @@ class ProxyWorldUpdaterTest {
     @Test
     void revertDelegatesToScope() {
         subject.revert();
-        verify(extWorldScope).revert();
+        verify(hederaOperations).revert();
     }
 
     @Test
     void commitDelegatesToScope() {
         subject.commit();
-        verify(extWorldScope).commit();
+        verify(hederaOperations).commit();
     }
 
     @Test
     void usesAliasIfCreate2IsSetupRecipient() {
-        givenMatchingEntityNumbers();
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
         given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
         given(evmFrameState.getIdNumber(ALTBN128_ADD))
                 .willReturn(ALTBN128_ADD.toBigInteger().longValueExact());
 
-        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
-        verify(extWorldScope)
-                .createContract(
-                        NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), 1, aliasFrom(SOME_EVM_ADDRESS));
+        verify(hederaOperations)
+                .createContract(NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), aliasFrom(SOME_EVM_ADDRESS));
+    }
+
+    @Test
+    void usesAliasIfBodyCreatedWithAlias() {
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(evmFrameState.getMutableAccount(SOME_EVM_ADDRESS)).willReturn(mutableAccount);
+
+        subject.setupAliasedTopLevelCreate(ContractCreateTransactionBody.DEFAULT, SOME_EVM_ADDRESS);
+        subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
+
+        verify(hederaOperations)
+                .createContract(NEXT_NUMBER, ContractCreateTransactionBody.DEFAULT, aliasFrom(SOME_EVM_ADDRESS));
+    }
+
+    @Test
+    void usesJustAliasForTopLevelLazyCreate() {
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+
+        subject.setupTopLevelLazyCreate(SOME_EVM_ADDRESS);
+
+        final var expectedPending = new PendingCreation(SOME_EVM_ADDRESS, NEXT_NUMBER, MISSING_ENTITY_NUMBER, null);
+        assertEquals(expectedPending, subject.getPendingCreation());
+    }
+
+    @Test
+    void doesNotUseAliasIfBodyCreatedWithoutAlias() {
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+
+        assertEquals(NEXT_LONG_ZERO_ADDRESS, subject.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT));
+        subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);
+
+        verify(hederaOperations).createContract(NEXT_NUMBER, ContractCreateTransactionBody.DEFAULT, null);
     }
 
     @Test
     void canResolvePendingCreationHederaId() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
-        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
 
         final var contractId = subject.getHederaContractId(SOME_EVM_ADDRESS);
         assertEquals(ContractID.newBuilder().contractNum(NEXT_NUMBER).build(), contractId);
@@ -287,9 +319,9 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void throwsIseWithoutCorrespondingAccount() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
 
-        subject.setupAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
+        subject.setupInternalAliasedCreate(ALTBN128_ADD, SOME_EVM_ADDRESS);
 
         assertThrows(IllegalArgumentException.class, () -> subject.getHederaContractId(OTHER_EVM_ADDRESS));
     }
@@ -306,7 +338,7 @@ class ProxyWorldUpdaterTest {
     void dispatchesDeletingLongZeroAddressByNumber() {
         subject.deleteAccount(ALTBN128_ADD);
 
-        verify(extWorldScope)
+        verify(hederaOperations)
                 .deleteUnaliasedContract(ALTBN128_ADD.toBigInteger().longValueExact());
     }
 
@@ -314,7 +346,7 @@ class ProxyWorldUpdaterTest {
     void dispatchesDeletingEvmAddressByAddress() {
         subject.deleteAccount(SOME_EVM_ADDRESS);
 
-        verify(extWorldScope).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
+        verify(hederaOperations).deleteAliasedContract(aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
@@ -324,14 +356,14 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void hasGivenParentIfNonNull() {
-        subject = new ProxyWorldUpdater(extWorldScope, evmFrameStateFactory, parent);
+        subject = new ProxyWorldUpdater(hederaOperations, evmFrameStateFactory, parent);
         assertTrue(subject.parentUpdater().isPresent());
         assertSame(parent, subject.parentUpdater().get());
     }
 
     @Test
     void updaterHasExpectedProperties() {
-        given(extWorldScope.begin()).willReturn(extWorldScope);
+        given(hederaOperations.begin()).willReturn(hederaOperations);
         final var updater = subject.updater();
         assertInstanceOf(ProxyWorldUpdater.class, updater);
         assertTrue(updater.parentUpdater().isPresent());
@@ -339,10 +371,21 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void updaterPreservesPendingCreation() {
+        given(hederaOperations.begin()).willReturn(hederaOperations);
+        subject.setupTopLevelLazyCreate(SOME_EVM_ADDRESS);
+        final var updater = subject.updater();
+        assertInstanceOf(ProxyWorldUpdater.class, updater);
+        assertTrue(updater.parentUpdater().isPresent());
+        assertSame(subject, updater.parentUpdater().get());
+        assertSame(subject.getPendingCreation(), updater.getPendingCreation());
+    }
+
+    @Test
     void delegatesTransfer() {
-        given(evmFrameState.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
+        given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
                 .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
-        final var maybeHaltReason = subject.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
+        final var maybeHaltReason = subject.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
         assertTrue(maybeHaltReason.isPresent());
         assertEquals(INVALID_RECEIVER_SIGNATURE, maybeHaltReason.get());
     }
@@ -350,7 +393,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void abortsLazyCreationIfRemainingGasInsufficient() {
         final var pretendCost = 1_234L;
-        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost - 1);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
         assertTrue(maybeHaltReason.isPresent());
@@ -360,7 +403,7 @@ class ProxyWorldUpdaterTest {
     @Test
     void delegatesLazyCreationAndDecrementsGasCostOnSuccess() {
         final var pretendCost = 1_234L;
-        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(Optional.empty());
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -372,7 +415,7 @@ class ProxyWorldUpdaterTest {
     void doesntBothDecrementingGasOnLazyCreationFailureSinceAboutToHalt() {
         final var pretendCost = 1_234L;
         final var haltReason = Optional.<ExceptionalHaltReason>of(INVALID_VALUE_TRANSFER);
-        given(extWorldScope.lazyCreationCostInGas()).willReturn(pretendCost);
+        given(hederaOperations.lazyCreationCostInGas()).willReturn(pretendCost);
         given(frame.getRemainingGas()).willReturn(pretendCost * 2);
         given(evmFrameState.tryLazyCreation(SOME_EVM_ADDRESS)).willReturn(haltReason);
         final var maybeHaltReason = subject.tryLazyCreation(SOME_EVM_ADDRESS, frame);
@@ -382,7 +425,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void onlyReturnsNonDeletedAccountsAsTouched() {
-        given(extWorldScope.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
+        given(hederaOperations.getModifiedAccountNumbers()).willReturn(List.of(NUMBER, NEXT_NUMBER, NUMBER_OF_DELETED));
         given(evmFrameState.getAddress(NUMBER)).willReturn(asLongZeroAddress(NUMBER));
         given(evmFrameState.getAddress(NEXT_NUMBER)).willReturn(SOME_EVM_ADDRESS);
         given(evmFrameState.getAddress(NUMBER_OF_DELETED)).willReturn(null);
@@ -409,12 +452,7 @@ class ProxyWorldUpdaterTest {
 
     @Test
     void delegatesEntropy() {
-        given(extWorldScope.entropy()).willReturn(OUTPUT_DATA);
+        given(hederaOperations.entropy()).willReturn(OUTPUT_DATA);
         assertEquals(pbjToTuweniBytes(OUTPUT_DATA), subject.entropy());
-    }
-
-    private void givenMatchingEntityNumbers() {
-        given(extWorldScope.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
-        given(extWorldScope.useNextEntityNumber()).willReturn(NEXT_NUMBER);
     }
 }

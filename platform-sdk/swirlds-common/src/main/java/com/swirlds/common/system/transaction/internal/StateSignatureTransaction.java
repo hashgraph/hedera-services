@@ -18,7 +18,6 @@ package com.swirlds.common.system.transaction.internal;
 
 import static com.swirlds.common.io.streams.AugmentedDataOutputStream.getArraySerializedLength;
 import static com.swirlds.common.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
-import static com.swirlds.common.utility.CommonUtils.throwArgNull;
 
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -27,6 +26,7 @@ import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.transaction.SystemTransactionType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -74,9 +74,10 @@ public final class StateSignatureTransaction extends SystemTransaction {
      * @param stateSignature
      * 		The byte array of signature of the signed state
      */
-    public StateSignatureTransaction(final long round, final Signature stateSignature, final Hash stateHash) {
-        this.stateSignature = throwArgNull(stateSignature, "stateSignature");
-        this.stateHash = throwArgNull(stateHash, "stateHash");
+    public StateSignatureTransaction(
+            final long round, @NonNull final Signature stateSignature, @NonNull final Hash stateHash) {
+        this.stateSignature = Objects.requireNonNull(stateSignature, "stateSignature must not be null");
+        this.stateHash = Objects.requireNonNull(stateHash, "stateHash must not be null");
         this.round = round;
     }
 

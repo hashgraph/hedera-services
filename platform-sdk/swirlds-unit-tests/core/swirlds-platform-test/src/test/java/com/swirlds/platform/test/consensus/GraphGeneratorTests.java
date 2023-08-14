@@ -16,12 +16,12 @@
 
 package com.swirlds.platform.test.consensus;
 
-import static com.swirlds.platform.test.event.EventUtils.areEventListsEquivalent;
-import static com.swirlds.platform.test.event.EventUtils.areGenerationNumbersValid;
-import static com.swirlds.platform.test.event.EventUtils.gatherOtherParentAges;
-import static com.swirlds.platform.test.event.EventUtils.integerPowerDistribution;
-import static com.swirlds.platform.test.event.EventUtils.isEventOrderValid;
-import static com.swirlds.platform.test.event.EventUtils.staticDynamicValue;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.areEventListsEquivalent;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.areGenerationNumbersValid;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.gatherOtherParentAges;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.integerPowerDistribution;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.isEventOrderValid;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicValue;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,13 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.test.event.DynamicValue;
-import com.swirlds.platform.test.event.DynamicValueGenerator;
-import com.swirlds.platform.test.event.IndexedEvent;
-import com.swirlds.platform.test.event.generator.GraphGenerator;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
-import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.platform.test.fixtures.event.DynamicValue;
+import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
+import com.swirlds.platform.test.fixtures.event.IndexedEvent;
+import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import com.swirlds.test.framework.TestComponentTags;
 import com.swirlds.test.framework.TestQualifierTags;
 import com.swirlds.test.framework.TestTypeTags;

@@ -113,6 +113,7 @@ public class TopicDeleteSuite extends HapiSuite {
                 .then();
     }
 
+    @HapiTest
     private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(cryptoCreate("payer"), createTopic("testTopic").adminKeyName("payer"))

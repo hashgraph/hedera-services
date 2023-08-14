@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.aliasFrom;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -27,6 +28,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
@@ -100,7 +102,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * operations executing in this {@link ProxyWorldUpdater}'s frame.
      */
     @Nullable
-    private PendingCreation pendingCreation;
+    protected PendingCreation pendingCreation;
 
     public ProxyWorldUpdater(
             @NonNull final HederaOperations hederaOperations,
@@ -151,9 +153,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pbjToTuweniBytes(hederaOperations.entropy());
     }
 
-    @Nullable
     @Override
-    public HederaEvmAccount getHederaAccount(@NonNull ContractID contractId) {
+    public @Nullable HederaEvmAccount getHederaAccount(@NonNull final ContractID contractId) {
+        requireNonNull(contractId);
         final Address address;
         if (contractId.hasEvmAddress()) {
             address = pbjToBesuAddress(contractId.evmAddressOrThrow());
@@ -169,11 +171,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
 
     @Override
     public void collectFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.collectFee(payerId, amount);
     }
 
     @Override
     public void refundFee(@NonNull final AccountID payerId, final long amount) {
+        requireNonNull(payerId);
         hederaOperations.refundFee(payerId, amount);
     }
 
@@ -181,12 +185,9 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Optional<ExceptionalHaltReason> tryTransferFromContract(
-            @NonNull final Address sendingContract,
-            @NonNull final Address recipient,
-            final long amount,
-            final boolean delegateCall) {
-        return evmFrameState.tryTransferFromContract(sendingContract, recipient, amount, delegateCall);
+    public Optional<ExceptionalHaltReason> tryTransfer(
+            @NonNull final Address from, @NonNull final Address to, final long amount, final boolean delegateCall) {
+        return evmFrameState.tryTransfer(from, to, amount, delegateCall);
     }
 
     /**
@@ -219,8 +220,8 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public Address setupCreate(@NonNull final Address origin) {
-        setupPendingCreation(origin, null);
+    public Address setupTopLevelCreate(@NonNull ContractCreateTransactionBody body) {
+        setupPendingCreation(null, requireNonNull(body), null);
         return requireNonNull(pendingCreation).address();
     }
 
@@ -228,8 +229,33 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public void setupAliasedCreate(@NonNull final Address origin, @NonNull final Address alias) {
-        setupPendingCreation(origin, alias);
+    public void setupTopLevelLazyCreate(@NonNull final Address alias) {
+        setupPendingCreation(null, null, requireNonNull(alias));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setupAliasedTopLevelCreate(@NonNull ContractCreateTransactionBody body, @NonNull Address alias) {
+        setupPendingCreation(null, requireNonNull(body), requireNonNull(alias));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Address setupInternalCreate(@NonNull final Address origin) {
+        setupPendingCreation(origin, null, null);
+        return requireNonNull(pendingCreation).address();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setupInternalAliasedCreate(@NonNull final Address origin, @NonNull final Address alias) {
+        setupPendingCreation(origin, null, requireNonNull(alias));
     }
 
     /**
@@ -279,8 +305,13 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
             throw new IllegalStateException(CANNOT_CREATE + address + " without a pending creation");
         }
         final var number = getValidatedCreationNumber(address, balance, pendingCreation);
-        hederaOperations.createContract(
-                number, pendingCreation.parentNumber(), nonce, pendingCreation.aliasIfApplicable());
+        if (pendingCreation.isHapiCreation()) {
+            hederaOperations.createContract(
+                    number, requireNonNull(pendingCreation.body()), pendingCreation.aliasIfApplicable());
+        } else {
+            hederaOperations.createContract(
+                    number, pendingCreation.parentNumber(), pendingCreation.aliasIfApplicable());
+        }
         return evmFrameState.getMutableAccount(pendingCreation.address());
     }
 
@@ -330,8 +361,16 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      * {@inheritDoc}
      */
     @Override
-    public @NonNull WorldUpdater updater() {
-        return new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+    public @NonNull ProxyWorldUpdater updater() {
+        final var child = new ProxyWorldUpdater(hederaOperations.begin(), evmFrameStateFactory, this);
+        // Hand off any pending creation to the child updater; this a bit of a hack, but
+        // lets the TransactionProcessor client code "flow" as naturally as possible,
+        // without need to defer setting up creation until the initial frame is built
+        // (since its updater will be a child of the RootProxyWorldUpdater)
+        if (this.pendingCreation != null) {
+            child.pendingCreation = this.pendingCreation;
+        }
+        return child;
     }
 
     /**
@@ -377,7 +416,7 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         if (!requireNonNull(address).equals(pendingAddress)) {
             throw new IllegalStateException(CANNOT_CREATE + address + " with " + pendingAddress + " pending");
         }
-        final var pendingNumber = hederaOperations.useNextEntityNumber();
+        final var pendingNumber = hederaOperations.peekNextEntityNumber();
         if (pendingNumber != knownPendingCreation.number()) {
             throw new IllegalStateException(CANNOT_CREATE + address + " with number " + pendingNumber + " ("
                     + knownPendingCreation.number() + ") pending");
@@ -385,9 +424,20 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         return pendingNumber;
     }
 
-    private void setupPendingCreation(@NonNull final Address origin, @Nullable final Address alias) {
-        final long parentNumber = evmFrameState.getIdNumber(origin);
+    private void setupPendingCreation(
+            @Nullable final Address origin,
+            @Nullable final ContractCreateTransactionBody body,
+            @Nullable final Address alias) {
         final var number = hederaOperations.peekNextEntityNumber();
-        pendingCreation = new PendingCreation(alias == null ? asLongZeroAddress(number) : alias, number, parentNumber);
+        pendingCreation = new PendingCreation(
+                alias == null ? asLongZeroAddress(number) : alias,
+                number,
+                origin != null ? evmFrameState.getIdNumber(origin) : MISSING_ENTITY_NUMBER,
+                body);
+    }
+
+    // Visible for testing
+    public @Nullable PendingCreation getPendingCreation() {
+        return pendingCreation;
     }
 }

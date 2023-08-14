@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
@@ -49,7 +48,7 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     }
 
     @Override
-    public @Nullable EntityNumber resolveAlias(@NonNull final Bytes evmAddress) {
+    public long resolveAlias(@NonNull final Bytes evmAddress) {
         throw new AssertionError("Not implemented");
     }
 
@@ -85,30 +84,6 @@ public class QueryHederaNativeOperations implements HederaNativeOperations {
     @Override
     public void finalizeHollowAccountAsContract(@NonNull final Bytes evmAddress) {
         throw new UnsupportedOperationException("Cannot finalize hollow account as contract in query context");
-    }
-
-    /**
-     * Refuses to collect fees.
-     *
-     * @param payerNumber the number of the entity to collect fees from
-     * @param amount          the amount of fees to collect
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void collectFee(final long payerNumber, final long amount) {
-        throw new UnsupportedOperationException("Cannot collect fees in query context");
-    }
-
-    /**
-     * Refuses to refund fees.
-     *
-     * @param payerNumber the number of the entity to refund fees to
-     * @param amount          the amount of fees to collect
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public void refundFee(final long payerNumber, final long amount) {
-        throw new UnsupportedOperationException("Cannot refund fees in query context");
     }
 
     /**

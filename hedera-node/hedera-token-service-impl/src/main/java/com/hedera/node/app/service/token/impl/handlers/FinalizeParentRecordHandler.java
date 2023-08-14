@@ -28,9 +28,9 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
-import com.hedera.node.app.service.token.impl.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -53,7 +53,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(
-            @NonNull final HandleContext context, @NonNull final List<TransactionRecord> childRecords) {
+            @NonNull final FinalizeContext context, @NonNull final List<TransactionRecord> childRecords) {
         final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and

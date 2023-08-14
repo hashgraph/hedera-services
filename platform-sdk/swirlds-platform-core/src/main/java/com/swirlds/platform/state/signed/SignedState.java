@@ -110,14 +110,23 @@ public class SignedState implements SignedStateInfo {
     private final Instant creationTimestamp = Instant.now();
 
     /**
-     * If true, then this state should eventually be written to disk.
+     * If not null, then this state should eventually be written to disk. The enum value indicates the reason that the
+     * state should be written to disk
      */
-    private boolean stateToSave;
+    private StateToDiskReason stateToDiskReason;
 
     /**
      * Signed states are deleted on this background thread.
      */
     private SignedStateGarbageCollector signedStateGarbageCollector;
+
+    /**
+     * Indicates whether this signed state has been saved to disk.
+     * <p>
+     * Note: this value only applies to signed states that are saved inside the normal workflow: states that are dumped
+     * out of band do not affect this value.
+     */
+    private boolean hasBeenSavedToDisk;
 
     /**
      * Used to track the lifespan of this signed state.
@@ -152,6 +161,7 @@ public class SignedState implements SignedStateInfo {
             final boolean freezeState) {
         this(platformContext, state, reason);
         this.freezeState = freezeState;
+        this.hasBeenSavedToDisk = false;
     }
 
     /**
@@ -492,16 +502,51 @@ public class SignedState implements SignedStateInfo {
      * @return true if this state eventually needs to be written to disk
      */
     public boolean isStateToSave() {
-        return stateToSave;
+        return stateToDiskReason != null;
     }
 
     /**
-     * Set if this state eventually needs to be written to disk.
+     * Mark this state as one that needs to be eventually written to disk.
      *
-     * @param stateToSave true if this state eventually needs to be written to disk
+     * @param reason the reason why this state needs to be written to disk
      */
-    public void setStateToSave(final boolean stateToSave) {
-        this.stateToSave = stateToSave;
+    public void markAsStateToSave(@NonNull final StateToDiskReason reason) {
+        stateToDiskReason = reason;
+    }
+
+    /**
+     * Get the reason why this state needs to be eventually written to disk, or null if it doesn't need to be
+     *
+     * @return the reason why this state needs to be written to disk, or null if this state does not need to be written
+     */
+    @Nullable
+    public StateToDiskReason getStateToDiskReason() {
+        return stateToDiskReason;
+    }
+
+    /**
+     * Checks whether this state has been saved to disk.
+     * <p>
+     * The return value of this method applies only to states saved in the normal course of operation, NOT
+     * states that have been dumped to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     *
+     * @return true if this state has been saved to disk, false otherwise
+     */
+    public boolean hasStateBeenSavedToDisk() {
+        return hasBeenSavedToDisk;
+    }
+
+    /**
+     * Indicate that this state has been saved to disk.
+     * <p>
+     * This method shouldn't be called when dumping state to disk out of band.
+     * <p>
+     * This method isn't threadsafe, and should only be called from the thread that is writing the state to disk.
+     */
+    public void stateSavedToDisk() {
+        hasBeenSavedToDisk = true;
     }
 
     /**

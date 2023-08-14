@@ -20,6 +20,9 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -300,6 +303,9 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 System.setProperty("grpc.workflowsTlsPort", "0");
                 System.setProperty("hedera.workflows.enabled", "CryptoCreate");
                 System.setProperty("platformStatus.observingStatusDelay", "0");
+                // This setting is needed for a single node network to run correctly.
+                // This is by default set to 0 in platform code, which will not work for single node network.
+                System.setProperty("event.creation.maxCreationRate", "20");
 
                 // This is by default set to 0 in platform code, which will not work for
                 // single node network.
@@ -323,7 +329,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(ChatterConfig.class)
                         .withConfigDataType(AddressBookConfig.class)
                         .withConfigDataType(VirtualMapConfig.class)
-                        .withConfigDataType(ConsensusConfig.class)
                         .withConfigDataType(ThreadConfig.class)
                         .withConfigDataType(DispatchConfiguration.class)
                         .withConfigDataType(MetricsConfig.class)
@@ -333,6 +338,11 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(SyncConfig.class)
                         .withConfigDataType(UptimeConfig.class)
                         .withConfigDataType(PlatformStatusConfig.class)
+                        // Configure all services configs
+                        .withConfigDataType(ConsensusConfig.class)
+                        .withConfigDataType(AccountsConfig.class)
+                        .withConfigDataType(TokensConfig.class)
+                        .withConfigDataType(StakingConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
                         .withSource(SystemPropertiesConfigSource.getInstance())
@@ -401,6 +411,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
                         initialSignedState,
                         new EmergencyRecoveryManager(
+                                platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
                                     System.out.println("Asked to shutdownGrpcServer because of " + s);
                                     System.exit(exitCode.getExitCode());

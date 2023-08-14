@@ -19,7 +19,13 @@ package com.hedera.node.app.service.token.api;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.contract.ContractNonceInfo;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.info.NetworkInfo;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Set;
 
@@ -31,17 +37,43 @@ import java.util.Set;
  */
 public interface TokenServiceApi {
     /**
+     * Validates the given staking election relative to the given account store, network info, and staking config.
+     *
+     * @param isStakingEnabled       if staking is enabled
+     * @param hasDeclineRewardChange if the transaction body has decline reward field to be updated
+     * @param stakedIdKind           staked id kind (account or node)
+     * @param stakedAccountIdInOp    staked account id
+     * @param stakedNodeIdInOp       staked node id
+     * @param accountStore           readable account store
+     * @throws HandleException if the staking election is invalid
+     */
+    void assertValidStakingElection(
+            boolean isStakingEnabled,
+            boolean hasDeclineRewardChange,
+            @NonNull String stakedIdKind,
+            @Nullable AccountID stakedAccountIdInOp,
+            @Nullable Long stakedNodeIdInOp,
+            @NonNull ReadableAccountStore accountStore,
+            @NonNull NetworkInfo networkInfo);
+
+    /**
      * Marks an account as a contract.
      *
      */
-    void markNewlyCreatedAsContract(@NonNull AccountID justCreated);
+    void markAsContract(@NonNull AccountID accountId);
+
+    /**
+     * Finalizes a hollow account as a contract.
+     *
+     */
+    void finalizeHollowAccountAsContract(@NonNull AccountID hollowAccountId, long initialNonce);
 
     /**
      * Deletes the contract with the given id.
      *
-     * @param idToDelete the id of the contract to delete
+     * @param contractId the id of the contract to delete
      */
-    void deleteAndMaybeUnaliasContract(@NonNull AccountID idToDelete);
+    void deleteAndMaybeUnaliasContract(@NonNull ContractID contractId);
 
     /**
      * Increments the nonce of the given contract.
@@ -56,6 +88,14 @@ public interface TokenServiceApi {
      * @param senderId the id of the sender whose nonce should be incremented
      */
     void incrementSenderNonce(@NonNull AccountID senderId);
+
+    /**
+     * Sets the nonce of the given account.
+     *
+     * @param accountId the id of the account whose nonce should set
+     * @param nonce the nonce to set
+     */
+    void setNonce(@NonNull AccountID accountId, long nonce);
 
     /**
      * Transfers the given amount from the given sender to the given recipient.
@@ -79,4 +119,31 @@ public interface TokenServiceApi {
      * @return a list of all the account ids that were modified by this {@link TokenServiceApi}
      */
     List<ContractNonceInfo> updatedContractNonces();
+
+    /**
+     * Updates the storage metadata for the given contract.
+     *
+     * @param accountId the id of the contract
+     * @param firstKey       the first key in the storage linked list, empty if the storage is empty
+     * @param netChangeInSlotsUsed      the net change in the number of storage slots used by the contract
+     */
+    void updateStorageMetadata(@NonNull AccountID accountId, @NonNull Bytes firstKey, int netChangeInSlotsUsed);
+
+    /**
+     * Charges the payer the given fees, and records those fees in the given record builder.
+     *
+     * @param payer         the id of the account that should be charged
+     * @param fees          the fees to charge
+     * @param recordBuilder the record builder to record the fees in
+     */
+    void chargeFees(@NonNull AccountID payer, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
+
+    /**
+     * Refunds the given fees to the given receiver, and records those fees in the given record builder.
+     *
+     * @param receiver      the id of the account that should be refunded
+     * @param fees          the fees to refund
+     * @param recordBuilder the record builder to record the fees in
+     */
+    void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
 }

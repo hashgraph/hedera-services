@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.api;
 
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.validators.StakingValidator;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.swirlds.config.api.Configuration;
@@ -29,6 +30,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceApi> {
     TOKEN_SERVICE_API_PROVIDER;
 
+    private final StakingValidator stakingValidator = new StakingValidator();
+
     @Override
     public String serviceName() {
         return TokenService.NAME;
@@ -37,6 +40,6 @@ public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceAp
     @Override
     public TokenServiceApi newInstance(
             @NonNull final Configuration configuration, @NonNull final WritableStates writableStates) {
-        return new TokenServiceApiImpl(configuration, writableStates);
+        return new TokenServiceApiImpl(configuration, stakingValidator, writableStates);
     }
 }

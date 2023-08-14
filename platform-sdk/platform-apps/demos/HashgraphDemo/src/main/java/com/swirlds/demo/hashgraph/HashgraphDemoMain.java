@@ -37,6 +37,7 @@ import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.PlatformEvent;
+import com.swirlds.gui.model.GuiModel;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
 import com.swirlds.platform.gui.GuiPlatformAccessor;
@@ -44,6 +45,7 @@ import com.swirlds.platform.gui.SwirldsGui;
 import com.swirlds.platform.network.ExternalIpAddress;
 import com.swirlds.platform.network.IpAddressStatus;
 import com.swirlds.platform.network.Network;
+import com.swirlds.platform.state.address.AddressBookNetworkUtils;
 import java.awt.Checkbox;
 import java.awt.Color;
 import java.awt.Component;
@@ -396,7 +398,7 @@ public class HashgraphDemoMain implements SwirldMain {
         this.selfId = id;
         final String[] parameters = ParameterProvider.getInstance().getParameters();
 
-        GuiPlatformAccessor.getInstance()
+        GuiModel.getInstance()
                 .setAbout(
                         platform.getSelfId(),
                         "Hashgraph Demo v. 1.1\n" + "\n"
@@ -411,8 +413,8 @@ public class HashgraphDemoMain implements SwirldMain {
                                 + "Dark circles are part of the consensus, light are not.\n"
                                 + "Fame is true for green, false for blue, unknown for red.\n");
         final Address address = platform.getAddressBook().getAddress(platform.getSelfId());
-        final int winCount = GuiPlatformAccessor.getInstance().getInstanceNumber(platform.getSelfId());
-        final int winNum = GuiPlatformAccessor.getInstance().getInstanceNumber(platform.getSelfId());
+        final int winCount = AddressBookNetworkUtils.getLocalAddressCount(platform.getAddressBook());
+        final int winNum = GuiModel.getInstance().getInstanceNumber(platform.getSelfId());
         window = SwirldsGui.createWindow(
                 platform, address, winCount, winNum, false); // Uses BorderLayout. Size is chosen by the Platform
         window.setLayout(new GridBagLayout()); // use a layout more powerful than BorderLayout

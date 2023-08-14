@@ -153,7 +153,8 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForIncreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config =
+                new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -173,7 +174,8 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForTwiceIncreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config =
+                new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -198,7 +200,8 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForDecreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config =
+                new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -218,7 +221,8 @@ class DefaultRunningAverageMetricTest {
     void testDistributionForTwiceDecreasedValue() {
         // given
         final FakeTime time = new FakeTime();
-        final RunningAverageMetric.Config config = new RunningAverageMetric.Config(CATEGORY, NAME);
+        final RunningAverageMetric.Config config =
+                new RunningAverageMetric.Config(CATEGORY, NAME).withHalfLife(metricsConfig.halfLife());
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config, time);
 
         // when
@@ -275,8 +279,7 @@ class DefaultRunningAverageMetricTest {
         final RunningAverageMetric metric = new DefaultRunningAverageMetric(config);
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> metric.get(null), "Calling get() with null should throw an IAE");
     }
 
     @Test

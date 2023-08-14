@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.hevm;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
@@ -124,7 +125,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param delegateCall    whether this transfer is done via code executed by a delegate call
      * @return an optional with the reason to halt if the transfer failed, empty otherwise
      */
-    Optional<ExceptionalHaltReason> tryTransferFromContract(
+    Optional<ExceptionalHaltReason> tryTransfer(
             @NonNull Address sendingContract, @NonNull Address recipient, long amount, boolean delegateCall);
 
     /**
@@ -148,6 +149,36 @@ public interface HederaWorldUpdater extends WorldUpdater {
     Optional<ExceptionalHaltReason> tryTrackingDeletion(@NonNull Address deleted, @NonNull Address beneficiary);
 
     /**
+     * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
+     * {@link PendingCreation} a {@link ProxyWorldUpdater} can use to complete the creation of the new
+     * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}; returns the "long-zero" address
+     * to be assigned to the new account.
+     *
+     * @param body the HAPI operation initiating the creation
+     * @return the "long-zero" address to be assigned to the new account
+     */
+    Address setupTopLevelCreate(@NonNull ContractCreateTransactionBody body);
+
+    /**
+     * Given the HAPI operation initiating a top-level {@code CONTRACT_CREATION} message, sets up the
+     * {@link PendingCreation} a {@link ProxyWorldUpdater} can use to complete the creation of the new
+     * account in {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * @param body the HAPI operation initiating the creation
+     * @param alias the canonical address for the top-level creation
+     */
+    void setupAliasedTopLevelCreate(@NonNull ContractCreateTransactionBody body, @NonNull Address alias);
+
+    /**
+     * Given the HAPI operation initiating a top-level {@code MESSAGE_CALL} that will lazy-create a new
+     * account if successful, sets up the {@link PendingCreation} a {@link ProxyWorldUpdater} can use
+     * to complete the lazy creation {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}.
+     *
+     * @param alias the canonical address for the top-level lazy creation
+     */
+    void setupTopLevelLazyCreate(@NonNull Address alias);
+
+    /**
      * Given the origin address of a {@code CONTRACT_CREATION} message, sets up the {@link PendingCreation}
      * this {@link ProxyWorldUpdater} will use to complete the creation of the new account in
      * {@link ProxyWorldUpdater#createAccount(Address, long, Wei)}; returns the "long-zero" address to be
@@ -156,7 +187,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
      * @return the "long-zero" address to be assigned to the new account
      */
-    Address setupCreate(@NonNull Address origin);
+    Address setupInternalCreate(@NonNull Address origin);
 
     /**
      * Given the origin address of a {@code CONTRACT_CREATION} message, and either the canonical {@code CREATE1}
@@ -167,9 +198,9 @@ public interface HederaWorldUpdater extends WorldUpdater {
      * <p>Does not return anything, as the {@code CREATE2} address is already known.
      *
      * @param origin the address of the origin of a {@code CONTRACT_CREATION} message, zero if a top-level message
-     * @param alias    the EIP-1014 address computed by an in-progress {@code CREATE2} operation
+     * @param alias  the canonical address computed by an in-progress {@code CREATE} or {@code CREATE2} operation
      */
-    void setupAliasedCreate(@NonNull Address origin, @NonNull Address alias);
+    void setupInternalAliasedCreate(@NonNull Address origin, @NonNull Address alias);
 
     /**
      * Returns whether this address refers to a hollow account (i.e. a lazy-created account that

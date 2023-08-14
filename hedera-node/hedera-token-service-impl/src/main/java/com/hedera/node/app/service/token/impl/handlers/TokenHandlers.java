@@ -26,6 +26,8 @@ import javax.inject.Singleton;
  * not support Java records
  */
 @Singleton
+// Suppressing the warning that this class is too big
+@SuppressWarnings("java:S6539")
 public class TokenHandlers {
 
     private final CryptoCreateHandler cryptoCreateHandler;
