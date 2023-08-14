@@ -22,13 +22,12 @@ import static com.swirlds.platform.testreader.JrsTestReader.saveTestResults;
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.platform.testreader.JrsTestResult;
+import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.Executors;
 import picocli.CommandLine;
 
@@ -88,10 +87,10 @@ public class JrsTestReaderScapeCommand extends AbstractCommand {
         final boolean hasSlash = bucketPrefix.endsWith("/") || testDirectory.startsWith("/");
         final String rootDirectory = bucketPrefix + (hasSlash ? "" : "/") + testDirectory;
 
-        final List<JrsTestResult> results = findTestResults(
+        final JrsReportData reportData = findTestResults(
                 terminal, Executors.newFixedThreadPool(threads), rootDirectory, now, Duration.ofDays(days));
 
-        saveTestResults(results, output);
+        saveTestResults(reportData, output);
         return 0;
     }
 }

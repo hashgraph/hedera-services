@@ -23,15 +23,14 @@ import static com.swirlds.platform.testreader.JrsTestReportGenerator.generateRep
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.testreader.JrsTestIdentifier;
 import com.swirlds.platform.testreader.JrsTestMetadata;
-import com.swirlds.platform.testreader.JrsTestResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import picocli.CommandLine;
 
@@ -85,7 +84,7 @@ public class JrsTestReaderRender extends AbstractCommand {
 
     @Override
     public Integer call() {
-        final List<JrsTestResult> results = loadTestResults(testData);
+        final JrsReportData data = loadTestResults(testData);
 
         final Map<JrsTestIdentifier, JrsTestMetadata> metadata;
         if (metadataFile == null) {
@@ -98,7 +97,7 @@ public class JrsTestReaderRender extends AbstractCommand {
             metadata = parseMetadataFile(metadataFile);
         }
 
-        generateReport(results, metadata, Instant.now(), bucketPrefix, bucketPrefixReplacement, output);
+        generateReport(data, metadata, Instant.now(), bucketPrefix, bucketPrefixReplacement, output);
 
         return 0;
     }

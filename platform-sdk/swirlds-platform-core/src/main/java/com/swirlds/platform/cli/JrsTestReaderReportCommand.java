@@ -23,9 +23,9 @@ import static com.swirlds.platform.testreader.JrsTestReportGenerator.generateRep
 
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
+import com.swirlds.platform.testreader.JrsReportData;
 import com.swirlds.platform.testreader.JrsTestIdentifier;
 import com.swirlds.platform.testreader.JrsTestMetadata;
-import com.swirlds.platform.testreader.JrsTestResult;
 import com.swirlds.platform.util.VirtualTerminal;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Files;
@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import picocli.CommandLine;
@@ -122,10 +121,10 @@ public class JrsTestReaderReportCommand extends AbstractCommand {
             metadata = parseMetadataFile(metadataFile);
         }
 
-        final List<JrsTestResult> results = findTestResults(
+        final JrsReportData data = findTestResults(
                 terminal, Executors.newFixedThreadPool(threads), rootDirectory, now, Duration.ofDays(days));
 
-        generateReport(results, metadata, Instant.now(), bucketPrefix, bucketPrefixReplacement, output);
+        generateReport(data, metadata, Instant.now(), bucketPrefix, bucketPrefixReplacement, output);
 
         return 0;
     }

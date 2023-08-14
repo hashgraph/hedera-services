@@ -254,7 +254,7 @@ public final class JrsTestReader {
      * @return a list of test results
      */
     @NonNull
-    public static List<JrsTestResult> findTestResults(
+    public static JrsReportData findTestResults(
             @NonNull final VirtualTerminal terminal,
             @NonNull final ExecutorService executorService,
             @NonNull final String rootDirectory,
@@ -318,7 +318,7 @@ public final class JrsTestReader {
 
         terminal.getProgressIndicator().writeMessage("Found results for " + testResults.size() + " tests.");
 
-        return new ArrayList<>(testResults);
+        return new JrsReportData(rootDirectory, now, (int) maximumAge.toDays(), new ArrayList<>(testResults));
     }
 
     /**
@@ -374,12 +374,23 @@ public final class JrsTestReader {
     /**
      * Write test results to a .csv file.
      *
-     * @param results     the test results
+     * @param reportData  the report data
      * @param resultsFile the file to write to
      */
-    public static void saveTestResults(@NonNull final List<JrsTestResult> results, @NonNull final Path resultsFile) {
+    public static void saveTestResults(@NonNull final JrsReportData reportData, @NonNull final Path resultsFile) {
         final StringBuilder sb = new StringBuilder();
-        for (final JrsTestResult result : results) {
+
+        sb.append("# report directory, report timestamp, time span in days\n");
+        sb.append(reportData.directory())
+                .append(",")
+                .append(reportData.reportTime())
+                .append(",")
+                .append(reportData.reportSpan())
+                .append("\n");
+
+        sb.append("# panel, test name, status, timestamp, test directory\n");
+
+        for (final JrsTestResult result : reportData.testResults()) {
             sb.append(result.toCsvLine()).append("\n");
         }
 
@@ -397,7 +408,7 @@ public final class JrsTestReader {
      * @param resultsFile the file to read from
      */
     @NonNull
-    public static List<JrsTestResult> loadTestResults(@NonNull final Path resultsFile) {
+    public static JrsReportData loadTestResults(@NonNull final Path resultsFile) {
         final String data;
         try {
             data = Files.readString(resultsFile);
@@ -405,9 +416,46 @@ public final class JrsTestReader {
             throw new UncheckedIOException("unable to read results csv", e);
         }
 
+        boolean firstLine = true;
+        String testDirectory = "?";
+        Instant testTimestamp = null;
+        int testSpan = -1;
+
         final String[] lines = data.split("\n");
         final List<JrsTestResult> results = new ArrayList<>(lines.length);
         for (final String line : lines) {
+
+            if (line.isEmpty()) {
+                continue;
+            }
+
+            if (line.strip().startsWith("#")) {
+                continue;
+            }
+
+            if (firstLine) {
+                firstLine = false;
+
+                // The first line in the file contains the following information:
+                // testDirectory, testTimestamp, testSpan (in days)
+
+                final String[] parts = line.split(",");
+                if (parts.length != 3) {
+                    System.out.println("Invalid first line in data file: " + line);
+                    continue;
+                }
+
+                testDirectory = parts[0].strip();
+                try {
+                    testTimestamp = Instant.parse(parts[1].strip());
+                    testSpan = Integer.parseInt(parts[2].strip());
+                } catch (final DateTimeParseException | NumberFormatException e) {
+                    System.out.println("Invalid first line in data file: " + line);
+                }
+
+                continue;
+            }
+
             final JrsTestResult result = JrsTestResult.parseFromCsvLine(line);
             if (result == null) {
                 System.out.println("Unable to parse line: " + line);
@@ -415,6 +463,9 @@ public final class JrsTestReader {
             }
             results.add(result);
         }
-        return results;
+
+        testTimestamp = testTimestamp == null ? Instant.now() : testTimestamp;
+
+        return new JrsReportData(testDirectory, testTimestamp, testSpan, results);
     }
 }

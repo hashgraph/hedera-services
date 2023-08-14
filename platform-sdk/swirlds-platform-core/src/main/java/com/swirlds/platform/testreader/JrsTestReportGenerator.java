@@ -29,7 +29,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -71,8 +76,7 @@ public final class JrsTestReportGenerator {
             @NonNull final String url,
             @NonNull final String color) {
 
-        sb.append("<a target=\"_blank\" style=\"color: %s\" href=\"%s\">%s</a>"
-                .formatted(color, url, text));
+        sb.append("<a target=\"_blank\" style=\"color: %s\" href=\"%s\">%s</a>".formatted(color, url, text));
     }
 
     private static void generateTitle(@NonNull final StringBuilder sb, @NonNull final Instant now) {
@@ -84,7 +88,8 @@ public final class JrsTestReportGenerator {
         final boolean april2 = currentDate.getMonth().equals(Month.APRIL) && currentDate.getDayOfMonth() == 2;
         final String april2Style; // TODO test with today's date
         if (april2) {
-            april2Style = """
+            april2Style =
+                    """
                     /* you have activated my trap card */
                     html * {
                         font-family: Snell Roundhand, cursive;
@@ -93,20 +98,21 @@ public final class JrsTestReportGenerator {
             april2Style = "";
         }
 
-        sb.append("""
+        sb.append(
+                """
                 <style>
-                    th {
+                    .testDataTable > tbody > tr > th {
                         border: 1px solid black;
                         background-color: #96D4D4;
                         position: sticky;
                         top: 0;
                         padding: 5px;
                     }
-                    td {
+                    .testDataTable > tbody > tr > td {
                         border: 1px solid black;
                         padding: 10px;
                     }
-                    tr:nth-child(even) {
+                    .testDataTable > tbody > tr:nth-child(even) {
                         background-color: lightgray;
                     }
                     .button {
@@ -128,9 +134,19 @@ public final class JrsTestReportGenerator {
                         position: sticky;
                         top: 0;
                     }
+                    .topLevelTable > tbody > tr > td {
+                        border: none;
+                    }
+                    .summaryTable > tbody > tr > td {
+                            border: none;
+                            padding-left: 5px;
+                            padding-right: 5px;
+                            vertical-align: top;
+                        }
                     %s
                 </style>
-                """.formatted(april2Style));
+                """
+                        .formatted(april2Style));
     }
 
     /**
@@ -304,7 +320,7 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                        <table id="%s" style="display: %s">
+                        <table id="%s" style="display: %s" class="testDataTable">
                             <tr>
                                 <th>Panel</th>
                                 <th><button class="button" onclick="sortByName()">Test Name ↓</button></th>
@@ -404,10 +420,13 @@ public final class JrsTestReportGenerator {
 
     private static void generateDataTable(
             @NonNull final StringBuilder sb,
-            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final JrsReportData data,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
             @NonNull final Instant now,
             @NonNull final String bucketPrefix,
             @NonNull final String bucketPrefixReplacement) {
+
+        final List<JrsTestReportRow> rows = JrsTestReportGenerator.buildTableRows(data.testResults(), metadata);
 
         // Only one table will be visible at a time, the others will be hidden.
         // I'm too lazy to write javascript to sort these, so I just sort them in java
@@ -441,32 +460,168 @@ public final class JrsTestReportGenerator {
                 true);
     }
 
-    private static void generateSidePanel(@NonNull final StringBuilder sb) {
-        sb.append("<div id=\"sidePanel\">\n");
-        sb.append("<p> hello world </p>\n");
+    private record TestCount(int uniqueTests, int passingTests, int failingTests, int unknownTests) {}
+
+    @NonNull
+    private static TestCount countTests(@NonNull final List<JrsTestResult> results) {
+
+        // Sort tests by unique type.
+        final Map<JrsTestIdentifier, List<JrsTestResult>> resultsByTestType = new HashMap<>();
+        for (final JrsTestResult result : results) {
+            final JrsTestIdentifier id = result.id();
+            final List<JrsTestResult> resultsForType = resultsByTestType.computeIfAbsent(id, k -> new ArrayList<>());
+            resultsForType.add(result);
+        }
+
+        // Sort each test of the same type by timestamp.
+        for (final List<JrsTestResult> tests : resultsByTestType.values()) {
+            Collections.sort(tests);
+        }
+
+        final int uniqueTests = resultsByTestType.size();
+        int passingTests = 0;
+        int failingTests = 0;
+        int unknownTests = 0;
+        for (final JrsTestIdentifier testIdentifier : resultsByTestType.keySet()) {
+            final List<JrsTestResult> testResults = resultsByTestType.get(testIdentifier);
+            final JrsTestResult mostRecentResult = testResults.get(0);
+            if (mostRecentResult.status() == PASS) {
+                passingTests++;
+            } else if (mostRecentResult.status() == FAIL) {
+                failingTests++;
+            } else {
+                unknownTests++;
+            }
+        }
+
+        return new TestCount(uniqueTests, passingTests, failingTests, unknownTests);
+    }
+
+    @NonNull
+    private static String generateEmotion(final int passPercentage) {
+        if (passPercentage == 100) {
+            return "ᕙ(⇀‸↼‶)ᕗ";
+        } else if (passPercentage >= 95) {
+            return "(⌐■_■)";
+        } else if (passPercentage >= 90) {
+            return "ಠ⌣ಠ";
+        } else if (passPercentage >= 80) {
+            return "ಠ_ಠ";
+        } else if (passPercentage >= 70) {
+            return "(ಥ_ಥ)";
+        } else if (passPercentage >= 60) {
+            return "(ಥ﹏ಥ)";
+        } else if (passPercentage >= 50) {
+            return "ლ(ಠ益ಠლ)";
+        } else if (passPercentage >= 40) {
+            return "(╯°□°）╯︵ ┻━┻";
+        } else if (passPercentage >= 30) {
+            return "(ノಠ益ಠ)ノ彡┻━┻";
+        } else if (passPercentage >= 20) {
+            return "┻━┻ ︵ヽ(`Д´)ﾉ︵ ┻━┻";
+        } else {
+            return "(︺︹︺)";
+        }
+    }
+
+    private static void generateSummary(@NonNull final StringBuilder sb, @NonNull final JrsReportData data) {
+
+        final LocalDate localDate =
+                data.reportTime().atZone(ZoneId.systemDefault()).toLocalDate();
+        final LocalTime localTime =
+                data.reportTime().atZone(ZoneId.systemDefault()).toLocalTime();
+        final ZonedDateTime zonedDateTime = ZonedDateTime.of(localDate, localTime, ZoneId.systemDefault());
+
+        final String date =
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).format(zonedDateTime);
+        final String[] dateParts = date.split(" at ");
+
+        final TestCount testCount = countTests(data.testResults());
+        final int percentPassing = (int) (100.0 * testCount.passingTests() / testCount.uniqueTests());
+
+        sb.append(
+                """
+                <table class="summaryTable">
+                    <tr>
+                        <td><b>Directory</b></td>
+                        <td>%s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Date</b></td>
+                        <td>%s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Time</b></td>
+                        <td>%s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Span</b></td>
+                        <td>%s days</td>
+                    </tr>
+                    <tr>
+                        <td><b>Pass Rate</b></td>
+                        <td>%s%% %s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Total</b></td>
+                        <td>%s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Passing</b></td>
+                        <td>%s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Failing</b></td>
+                        <td>%s</td>
+                    </tr>
+                    <tr>
+                        <td><b>Unknown</b></td>
+                        <td>%s</td>
+                    </tr>
+                </table>
+                """
+                        .formatted(
+                                data.directory(),
+                                dateParts[0],
+                                dateParts[1],
+                                data.reportSpan(),
+                                percentPassing,
+                                generateEmotion(percentPassing),
+                                testCount.uniqueTests(),
+                                testCount.passingTests(),
+                                testCount.failingTests(),
+                                testCount.unknownTests()));
+    }
+
+    private static void generateSidePanel(@NonNull final StringBuilder sb, @NonNull final JrsReportData data) {
+        sb.append("<div class=\"sidePanel\">\n");
+        generateSummary(sb, data);
         sb.append("</div>\n");
     }
 
     private static void generateBody(
             @NonNull final StringBuilder sb,
-            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final JrsReportData data,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
             @NonNull final Instant now,
             @NonNull final String bucketPrefix,
             @NonNull final String bucketPrefixReplacement) {
 
-        sb.append("""
+        sb.append(
+                """
                 <center>
-                <table>
+                <table class="topLevelTable">
                 <tr>
                 <td style="vertical-align: top;">
                 """);
-        generateDataTable(sb, rows, now, bucketPrefix, bucketPrefixReplacement);
+        generateDataTable(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("""
                 </td>
                 <td style="vertical-align: top;">
                 """);
-        generateSidePanel(sb);
-        sb.append("""
+        generateSidePanel(sb, data);
+        sb.append(
+                """
                 </td>
                 </tr>
                 </table>
@@ -476,14 +631,15 @@ public final class JrsTestReportGenerator {
 
     private static void generatePage(
             @NonNull final StringBuilder sb,
-            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final JrsReportData data,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
             @NonNull final Instant now,
             @NonNull final String bucketPrefix,
             @NonNull final String bucketPrefixReplacement) {
         sb.append("<!DOCTYPE html>\n");
         sb.append("<html>\n");
         generateHeader(sb, now);
-        generateBody(sb, rows, now, bucketPrefix, bucketPrefixReplacement);
+        generateBody(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("</body>\n");
         sb.append("</html>\n");
     }
@@ -565,17 +721,15 @@ public final class JrsTestReportGenerator {
     }
 
     public static void generateReport(
-            @NonNull final List<JrsTestResult> results,
+            @NonNull final JrsReportData data,
             @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
             @NonNull final Instant now,
             @NonNull final String bucketPrefix,
             @NonNull final String bucketPrefixReplacement,
             @NonNull final Path outputFile) {
 
-        @NonNull final List<JrsTestReportRow> rows = buildTableRows(results, metadata);
-
-        @NonNull final StringBuilder sb = new StringBuilder();
-        generatePage(sb, rows, now, bucketPrefix, bucketPrefixReplacement);
+        final StringBuilder sb = new StringBuilder();
+        generatePage(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
 
         final String reportString = sb.toString();
         try {
