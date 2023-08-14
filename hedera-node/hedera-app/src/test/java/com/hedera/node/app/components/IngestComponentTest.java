@@ -30,6 +30,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.spi.info.SelfNodeInfo;
+import com.hedera.node.app.spi.workflows.record.GenesisRecordsConsensusHook;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -99,6 +100,7 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(Set::of)
                 .instantSource(InstantSource.system())
+                .genesisRecordsBuilder(mock(GenesisRecordsConsensusHook.class))
                 .build();
     }
 

@@ -476,7 +476,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -547,6 +548,7 @@ class HandleWorkflowTest extends AppTestBase {
                         configProvider,
                         instantSource,
                         recordCache,
+                        genesisRecordsTimeHook,
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
