@@ -462,7 +462,7 @@ public class GenesisSchema extends Schema {
                         .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
                         .fileId(fileId)
                         .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationTime(bootstrapConfig.systemEntityExpiry())
+                        .expirationSeconds(bootstrapConfig.systemEntityExpiry())
                         .build());
     }
 
