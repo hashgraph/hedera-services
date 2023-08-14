@@ -21,14 +21,6 @@ plugins {
 
 description = "Hedera Services Command-Line Clients"
 
-configurations.all {
-    exclude("javax.annotation", "javax.annotation.api")
-    exclude("com.google.code.findbugs", "jsr305")
-    exclude("org.jetbrains", "annotations")
-    exclude("org.checkerframework", "checker-qual")
-    exclude("org.hamcrest", "hamcrest-core")
-}
-
 dependencies {
     javaModuleDependencies {
         implementation(gav("org.apache.logging.log4j"))
