@@ -207,48 +207,42 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ (inputs.version-policy == 'uniform-explicit' || inputs.version-policy == 'early-access-explicit') && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSpecified --scan -PnewVersion=${{ steps.verify-explicit-version.outputs.number }}
+          arguments: -p platform-sdk versionAsSpecified --scan -PnewVersion=${{ steps.verify-explicit-version.outputs.number }}
 
       - name: Update Version Numbers (Commit Locked)
         if: ${{ inputs.version-policy == 'commit-locked' && !cancelled() && !failure() }}
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
+          arguments: -p platform-sdk versionAsPrefixedCommit --scan -PcommitPrefix=${{ inputs.prerelease-prefix }}
 
       - name: Update Version Numbers (Snapshot Locked)
         if: ${{ inputs.version-policy == 'snapshot-locked' && !cancelled() && !failure() }}
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSnapshot --scan
+          arguments: -p platform-sdk versionAsSnapshot --scan
 
       - name: Version Report
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
+          arguments: -p platform-sdk githubVersionSummary --scan
 
       - name: Gradle Assemble
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan --parallel
+          arguments: -p platform-sdk assemble --scan --parallel
 
       - name: Gradle Deploy
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: release-${{ inputs.deployment-profile }} --scan
+          arguments: -p platform-sdk release-${{ inputs.deployment-profile }} --scan
 
       - name: Commit Version Changes
         uses: EndBug/add-and-commit@v9

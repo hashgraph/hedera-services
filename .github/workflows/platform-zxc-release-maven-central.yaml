@@ -186,33 +186,29 @@ jobs:
       - name: Apply Version Number Update (Explicit)
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: versionAsSpecified --scan -PnewVersion=${{ inputs.new-version }}
+          arguments: -p platform-sdk versionAsSpecified --scan -PnewVersion=${{ inputs.new-version }}
 
       - name: Version Report
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: githubVersionSummary --scan
+          arguments: -p platform-sdk githubVersionSummary --scan
 
       - name: Gradle Assemble
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.dry-run-enabled != true && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+          arguments: -p platform-sdk assemble --scan
 
       - name: Gradle JavaDoc
         id: gradle-javadoc
         uses: gradle/gradle-build-action@v2
         if: ${{ steps.gradle-build.conclusion == 'success' && !cancelled() && !failure() }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: javadoc --scan --parallel
+          arguments: -p platform-sdk javadoc --scan --parallel
 
       - name: Gradle Deploy
         uses: gradle/gradle-build-action@v2
@@ -221,9 +217,8 @@ jobs:
           OSSRH_USERNAME: ${{ secrets.ossrh-user-name }}
           OSSRH_PASSWORD: ${{ secrets.ossrh-user-password }}
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: releaseMavenCentral --scan -PpublishSigningEnabled=true
+          arguments: -p platform-sdk releaseMavenCentral --scan -PpublishSigningEnabled=true
 
       - name: Commit Version Changes
         id: commit

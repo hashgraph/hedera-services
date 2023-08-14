@@ -302,26 +302,23 @@ jobs:
         id: platform-gradle-build
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+          arguments: -p platform-sdk assemble --scan
 
       - name: Hedera Node Gradle Assemble
         id: hedera-gradle-build
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.hedera-tests-enabled }}
         with:
-          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan
+          arguments: -p platform-sdk assemble --scan
 
       - name: Regression Gradle Assemble
         id: regression-gradle-build
         uses: gradle/gradle-build-action@v2
         with:
-          build-root-directory: platform-sdk/regression
           gradle-version: ${{ inputs.gradle-version }}
-          arguments: assemble --scan --parallel
+          arguments: -p platform-sdk assemble --scan --parallel
 
       - name: Compute Actual Branch Name
         id: branch

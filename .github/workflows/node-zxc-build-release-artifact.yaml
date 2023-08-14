@@ -185,6 +185,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
+          build-root-directory: hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           gradle-home-cache-includes: |
             caches
@@ -195,24 +196,24 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.version-policy == 'specified' && !cancelled() && !failure() }}
         with:
-          arguments: versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
+          arguments: -p hedera-node versionAsSpecified -PnewVersion=${{ inputs.new-version }} --scan
 
       - name: Gradle Update Version (Branch Commit)
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.version-policy != 'specified' && !cancelled() && !failure() }}
         with:
-          arguments: versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
+          arguments: -p hedera-node versionAsPrefixedCommit -PcommitPrefix=${{ steps.parameters.outputs.commit-prefix }} --scan
 
       - name: Gradle Version Summary
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
-          arguments: githubVersionSummary --scan
+          arguments: -p hedera-node githubVersionSummary --scan
 
       - name: Gradle Assemble
         id: gradle-build
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
-          arguments: assemble --scan
+          arguments: -p hedera-node assemble --scan
 
       - name: Compute Final Effective Version
         id: effective-version
