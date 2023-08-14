@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -33,7 +34,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
 
     /** The underlying data storage class that holds the staking data. */
-    private final WritableKVState<Long, StakingNodeInfo> stakingInfoState;
+    private final WritableKVState<EntityNumber, StakingNodeInfo> stakingInfoState;
 
     /**
      * Create a new {@link WritableStakingInfoStore} instance
@@ -54,7 +55,8 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
      */
     @Nullable
     public StakingNodeInfo getForModify(final long nodeId) {
-        return stakingInfoState.getForModify(nodeId);
+        return stakingInfoState.getForModify(
+                EntityNumber.newBuilder().number(nodeId).build());
     }
 
     /**
@@ -65,6 +67,19 @@ public class WritableStakingInfoStore extends ReadableStakingInfoStoreImpl {
      */
     public void put(final long nodeId, @NonNull final StakingNodeInfo stakingNodeInfo) {
         requireNonNull(stakingNodeInfo);
-        stakingInfoState.put(nodeId, stakingNodeInfo);
+        stakingInfoState.put(EntityNumber.newBuilder().number(nodeId).build(), stakingNodeInfo);
+    }
+
+    /**
+     * Gets the original value associated with the given nodeId before any modifications were made to
+     * it. The returned value will be {@code null} if the nodeId does not exist.
+     *
+     * @param nodeId The nftId.
+     * @return The original value, or null if there is no such nftId in the state
+     */
+    @Nullable
+    public StakingNodeInfo getOriginalValue(final long nodeId) {
+        return stakingInfoState.getOriginalValue(
+                EntityNumber.newBuilder().number(nodeId).build());
     }
 }

@@ -20,9 +20,7 @@ import static com.swirlds.logging.LogMarker.EXCEPTION;
 import static com.swirlds.logging.LogMarker.STARTUP;
 
 import com.swirlds.common.config.reflection.ConfigReflectionUtils;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.ConfigMapping;
-import com.swirlds.common.utility.PlatformVersion;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
@@ -44,6 +42,9 @@ import org.apache.logging.log4j.Logger;
 public class PlatformConfigUtils {
     private static final Logger logger = LogManager.getLogger(PlatformConfigUtils.class);
     public static final String SETTING_USED_FILENAME = "settingsUsed.txt";
+    private static final String ERROR_CONFIGURATION_IS_NULL = "configuration should not be null";
+    private static final String ERROR_DIRECTORY_IS_NULL = "directory should not be null";
+    private static final String ERROR_STRING_BUILDER_IS_NULL = "stringBuilder should not be null";
 
     private PlatformConfigUtils() {
         // Utility class
@@ -55,7 +56,7 @@ public class PlatformConfigUtils {
      * @param configuration the configuration to check
      */
     public static void checkConfiguration(@NonNull final Configuration configuration) {
-        Objects.requireNonNull(configuration, "configuration should not be null");
+        Objects.requireNonNull(configuration, ERROR_CONFIGURATION_IS_NULL);
         final Set<String> configNames = getConfigNames(configuration);
         logNotKnownConfigProperties(configuration, configNames);
     }
@@ -116,20 +117,9 @@ public class PlatformConfigUtils {
      *
      * @param directory the directory to write to
      */
-    public static void writeSettingsUsed(@NonNull final Path directory) {
-        Objects.requireNonNull(directory, "directory should not be null");
-        final Configuration configuration = ConfigurationHolder.getInstance().get();
-        writeSettingsUsed(directory, configuration);
-    }
-
-    /**
-     * Write all the settings to the file settingsUsed.txt, some of which might have been changed by settings.txt.
-     *
-     * @param directory the directory to write to
-     */
     public static void writeSettingsUsed(@NonNull final Path directory, @NonNull final Configuration configuration) {
-        Objects.requireNonNull(directory, "directory should not be null");
-        Objects.requireNonNull(configuration, "configuration should not be null");
+        Objects.requireNonNull(directory, ERROR_DIRECTORY_IS_NULL);
+        Objects.requireNonNull(configuration, ERROR_CONFIGURATION_IS_NULL);
 
         try (final BufferedWriter writer = Files.newBufferedWriter(directory.resolve(SETTING_USED_FILENAME))) {
             final StringBuilder stringBuilder = new StringBuilder();
@@ -150,23 +140,17 @@ public class PlatformConfigUtils {
      */
     public static void generateSettingsUsed(
             @NonNull final StringBuilder stringBuilder, @NonNull final Configuration configuration) {
-        Objects.requireNonNull(stringBuilder, "stringBuilder should not be null");
-        Objects.requireNonNull(configuration, "configuration should not be null");
+        Objects.requireNonNull(stringBuilder, ERROR_STRING_BUILDER_IS_NULL);
+        Objects.requireNonNull(configuration, ERROR_CONFIGURATION_IS_NULL);
 
-        stringBuilder.append(PlatformVersion.locateOrDefault().license());
-        stringBuilder.append(System.lineSeparator());
-        stringBuilder.append(System.lineSeparator());
-
-        stringBuilder.append(
-                "The following are all the settings, as modified by settings.txt, but not reflecting any changes "
-                        + "made by config.txt.");
+        stringBuilder.append("------------- Configuration Overrides -------------");
         stringBuilder.append(System.lineSeparator());
         stringBuilder.append(System.lineSeparator());
 
         final Set<String> propertyNames =
                 configuration.getPropertyNames().collect(Collectors.toCollection(TreeSet::new));
         for (final String propertyName : propertyNames) {
-            stringBuilder.append(String.format("%15s = %s%n", propertyName, configuration.getValue(propertyName)));
+            stringBuilder.append(String.format("%s, %s%n", propertyName, configuration.getValue(propertyName)));
         }
     }
 }

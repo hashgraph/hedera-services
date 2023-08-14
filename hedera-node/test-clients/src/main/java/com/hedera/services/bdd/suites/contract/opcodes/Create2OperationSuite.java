@@ -21,9 +21,11 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -34,9 +36,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -46,11 +50,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoTransferToAddress;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -105,6 +111,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -131,6 +138,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
+@HapiTestSuite
 public class Create2OperationSuite extends HapiSuite {
 
     public static final String GET_BYTECODE = "getBytecode";
@@ -184,7 +192,8 @@ public class Create2OperationSuite extends HapiSuite {
                 canAssociateInConstructor(),
                 /* --- HIP 583 --- */
                 canMergeCreate2ChildWithHollowAccount(),
-                canMergeCreate2MultipleCreatesWithHollowAccount());
+                canMergeCreate2MultipleCreatesWithHollowAccount(),
+                canCallFinalizedContractViaHapi());
     }
 
     @SuppressWarnings("java:S5669")
@@ -712,6 +721,40 @@ public class Create2OperationSuite extends HapiSuite {
                         sourcing(() ->
                                 assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)),
                         cryptoCreate("confirmingNoEntityIdCollision"));
+    }
+
+    private HapiSpec canCallFinalizedContractViaHapi() {
+        final var contract = "FinalizedDestructible";
+        final var salt = BigInteger.valueOf(1_234_567_890L);
+        final AtomicReference<Address> childAddress = new AtomicReference<>();
+        final AtomicReference<ContractID> childId = new AtomicReference<>();
+        final var vacateAddressAbi =
+                "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+        return defaultHapiSpec("CanCallFinalizedContractViaHapi")
+                .given(
+                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        uploadInitCode(contract),
+                        contractCreate(contract).payingWith(GENESIS),
+                        contractCallLocal(contract, "computeChildAddress", salt)
+                                .exposingTypedResultsTo(results -> childAddress.set((Address) results[0])),
+                        sourcing(() -> ethereumCryptoTransferToAddress(childAddress.get(), ONE_HBAR)
+                                .gasLimit(2_000_000)))
+                .when(
+                        sourcing(() -> getAliasedAccountInfo(ByteString.copyFrom(explicitBytesOf(childAddress.get())))
+                                .has(accountWith().balance(ONE_HBAR))),
+                        contractCall(contract, "deployDeterministicChild", salt)
+                                .sending(ONE_HBAR)
+                                .gas(2_000_000),
+                        sourcing(() -> getLiteralAliasContractInfo(asLiteralHexed(childAddress.get()))
+                                .exposingContractId(childId::set)
+                                .has(contractWith().balance(2 * ONE_HBAR))),
+                        sourcing(() ->
+                                contractCallWithFunctionAbi(asLiteralHexed(childAddress.get()), vacateAddressAbi)))
+                .then(sourcing(() -> getContractInfo("0.0." + childId.get().getContractNum())
+                        .has(contractWith().isDeleted())));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1343,5 +1386,9 @@ public class Create2OperationSuite extends HapiSuite {
             partyId.set(registry.getAccountID(PARTY));
             partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
         });
+    }
+
+    private String asLiteralHexed(final Address address) {
+        return address.toString().substring(2);
     }
 }

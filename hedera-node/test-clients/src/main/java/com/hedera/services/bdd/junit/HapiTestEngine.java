@@ -20,6 +20,9 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.StakingConfig;
+import com.hedera.node.config.data.TokensConfig;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -33,21 +36,26 @@ import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.WiringConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.config.sources.LegacyFileConfigSource;
+import com.swirlds.common.config.sources.SystemPropertiesConfigSource;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.io.config.TemporaryFileConfig;
+import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultMetricsProvider;
 import com.swirlds.common.metrics.platform.prometheus.PrometheusConfig;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.system.BasicSoftwareVersion;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.common.system.status.PlatformStatus;
+import com.swirlds.common.system.status.PlatformStatusConfig;
 import com.swirlds.config.api.spi.ConfigurationBuilderFactory;
 import com.swirlds.fchashmap.config.FCHashMapConfig;
 import com.swirlds.jasperdb.config.JasperDbConfig;
@@ -71,23 +79,31 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Disabled;
 import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.commons.support.ReflectionSupport;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.engine.EngineDiscoveryRequest;
 import org.junit.platform.engine.ExecutionRequest;
+import org.junit.platform.engine.Filter;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestEngine;
 import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.discovery.ClassSelector;
+import org.junit.platform.engine.discovery.ClasspathRootSelector;
 import org.junit.platform.engine.discovery.MethodSelector;
+import org.junit.platform.engine.discovery.PackageNameFilter;
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor;
 import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.engine.support.descriptor.EngineDescriptor;
@@ -138,17 +154,44 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
     @Override
     public TestDescriptor discover(EngineDiscoveryRequest discoveryRequest, UniqueId uniqueId) {
         final var engineDescriptor = new EngineDescriptor(uniqueId, "Hapi Test");
+
         discoveryRequest.getSelectorsByType(MethodSelector.class).forEach(selector -> {
             final var javaClass = selector.getJavaClass();
-            if (IS_HAPI_TEST_SUITE.test(javaClass)) {
-                discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
-                final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
-                if (!classDescriptor.skip) {
-                    engineDescriptor.addChild(classDescriptor);
-                }
-            }
+            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
         });
+
+        discoveryRequest.getSelectorsByType(ClassSelector.class).forEach(selector -> {
+            final var javaClass = selector.getJavaClass();
+            addChildToEngineDescriptor(javaClass, discoveryRequest, engineDescriptor);
+        });
+
+        discoveryRequest.getSelectorsByType(ClasspathRootSelector.class).forEach(selector -> {
+            appendTestsInClasspathRoot(selector.getClasspathRoot(), engineDescriptor, discoveryRequest);
+        });
+
         return engineDescriptor;
+    }
+
+    private static void addChildToEngineDescriptor(
+            Class<?> javaClass, EngineDiscoveryRequest discoveryRequest, EngineDescriptor engineDescriptor) {
+        if (IS_HAPI_TEST_SUITE.test(javaClass)) {
+            discoveryRequest.getConfigurationParameters().keySet().forEach(System.out::println);
+            final var classDescriptor = new ClassTestDescriptor(javaClass, engineDescriptor, discoveryRequest);
+            if (!classDescriptor.skip) {
+                engineDescriptor.addChild(classDescriptor);
+            }
+        }
+    }
+
+    private void appendTestsInClasspathRoot(
+            URI uri, TestDescriptor engineDescriptor, EngineDiscoveryRequest discoveryRequest) {
+        ReflectionSupport.findAllClassesInClasspathRoot(uri, IS_HAPI_TEST_SUITE, name -> true).stream()
+                .filter(aClass -> discoveryRequest.getFiltersByType(PackageNameFilter.class).stream()
+                        .map(Filter::toPredicate)
+                        .allMatch(predicate -> predicate.test(aClass.getPackageName())))
+                .map(aClass -> new ClassTestDescriptor(aClass, engineDescriptor, discoveryRequest))
+                .filter(classTestDescriptor -> !classTestDescriptor.skip)
+                .forEach(engineDescriptor::addChild);
     }
 
     /**
@@ -158,7 +201,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
      */
     @Override
     protected HapiTestEngineExecutionContext createExecutionContext(ExecutionRequest request) {
-        return new HapiTestEngineExecutionContext();
+        return new HapiTestEngineExecutionContext(null, null);
     }
 
     /**
@@ -212,13 +255,19 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         }
 
         @Override
-        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) throws Exception {
+        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             return skip ? SkipResult.skip("No test methods") : SkipResult.doNotSkip();
         }
 
         @Override
-        public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) throws Exception {
+        public HapiTestEngineExecutionContext before(HapiTestEngineExecutionContext context) {
             try {
+                // If we have a HapiTestSuite that is without tests we still want to show it as ignored,
+                // but we don't want to waste time setting up a node
+                if (allTestsSkipped()) {
+                    return new HapiTestEngineExecutionContext(null, null);
+                }
+
                 final var tmpDir = Files.createTempDirectory("hapiTest");
 
                 // Setup logging
@@ -242,6 +291,22 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                 registry.registerConstructables("com.swirlds.merkle.tree");
 
                 // 1. Create a configuration instance with any desired overrides.
+                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
+                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
+                System.setProperty(
+                        "hedera.recordStream.logDir",
+                        tmpDir.resolve("recordStream").toString());
+                System.setProperty("accounts.storeOnDisk", "true");
+                System.setProperty("grpc.port", "0");
+                System.setProperty("grpc.tlsPort", "0");
+                System.setProperty("grpc.workflowsPort", "0");
+                System.setProperty("grpc.workflowsTlsPort", "0");
+                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
+                System.setProperty("platformStatus.observingStatusDelay", "0");
+                // This setting is needed for a single node network to run correctly.
+                // This is by default set to 0 in platform code, which will not work for single node network.
+                System.setProperty("event.creation.maxCreationRate", "20");
+
                 final var factory = ServiceLoader.load(ConfigurationBuilderFactory.class);
                 final var configBuilder = factory.findFirst().orElseThrow().create();
                 final var config = configBuilder
@@ -260,7 +325,6 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(ChatterConfig.class)
                         .withConfigDataType(AddressBookConfig.class)
                         .withConfigDataType(VirtualMapConfig.class)
-                        .withConfigDataType(ConsensusConfig.class)
                         .withConfigDataType(ThreadConfig.class)
                         .withConfigDataType(DispatchConfiguration.class)
                         .withConfigDataType(MetricsConfig.class)
@@ -269,26 +333,21 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         .withConfigDataType(WiringConfig.class)
                         .withConfigDataType(SyncConfig.class)
                         .withConfigDataType(UptimeConfig.class)
+                        .withConfigDataType(PlatformStatusConfig.class)
+                        // Configure all services configs
+                        .withConfigDataType(ConsensusConfig.class)
+                        .withConfigDataType(AccountsConfig.class)
+                        .withConfigDataType(TokensConfig.class)
+                        .withConfigDataType(StakingConfig.class)
                         // 2. Configure Settings
                         .withSource(new LegacyFileConfigSource(tmpDir.resolve("settings.txt")))
+                        .withSource(SystemPropertiesConfigSource.getInstance())
                         .build();
 
                 ConfigurationHolder.getInstance().setConfiguration(config);
                 CryptographyHolder.reset();
 
                 final var port = new InetSocketAddress(0).getPort();
-
-                System.setProperty("version.services", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty("version.hapi", "0.40.0"); // TBD Get from actual build args...
-                System.setProperty(
-                        "hedera.recordStream.logDir",
-                        tmpDir.resolve("recordStream").toString());
-                System.setProperty("accounts.storeOnDisk", "true");
-                System.setProperty("grpc.port", "0");
-                System.setProperty("grpc.tlsPort", "0");
-                System.setProperty("grpc.workflowsPort", "0");
-                System.setProperty("grpc.workflowsTlsPort", "0");
-                System.setProperty("hedera.workflows.enabled", "CryptoCreate");
 
                 // 3. Create a new Node ID for our node
                 final var nodeId = new NodeId(0);
@@ -348,6 +407,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                         new BasicSoftwareVersion(Long.MAX_VALUE), // App Version :TODO USE REAL VERSION NUMBER
                         initialSignedState,
                         new EmergencyRecoveryManager(
+                                platformContext.getConfiguration().getConfigData(StateConfig.class),
                                 (s, exitCode) -> {
                                     System.out.println("Asked to shutdownGrpcServer because of " + s);
                                     System.exit(exitCode.getExitCode());
@@ -356,9 +416,18 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
                 // 10. Init and Start
                 hedera.init(platform, nodeId);
+                final var latch = new CountDownLatch(1);
+                platform.getNotificationEngine().register(PlatformStatusChangeListener.class, notification -> {
+                    if (notification.getNewStatus() == PlatformStatus.ACTIVE) {
+                        latch.countDown();
+                    }
+                });
                 platform.start();
 
                 // 11. Initialize the HAPI Spec system
+                latch.await(30, TimeUnit.SECONDS);
+                hedera.run();
+
                 final var defaultProperties = JutilPropertySource.getDefaultInstance();
                 HapiSpec.runInCiMode(
                         String.valueOf(hedera.getGrpcPort()),
@@ -371,7 +440,15 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
                                 "recordStream.path",
                                 tmpDir.resolve("recordStream").toString()));
 
-                return new HapiTestEngineExecutionContext(); // <--- Actually, this is going to have connection info to
+                // Populating the data needed for the context
+                StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
+                Path savedStateDirectory = stateConfig.savedStateDirectory();
+
+                EventConfig eventConfig = platformContext.getConfiguration().getConfigData(EventConfig.class);
+                Path eventsLogDir = Path.of(eventConfig.eventsLogDir());
+
+                return new HapiTestEngineExecutionContext(
+                        savedStateDirectory, eventsLogDir); // <--- Actually, this is going to have connection info to
                 // connect to the node!?
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -380,10 +457,29 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
 
         @Override
         public void after(HapiTestEngineExecutionContext context) throws Exception {
+            if (allTestsSkipped()) {
+                return;
+            }
+
             if (hedera != null) {
                 hedera.shutdown();
                 hedera = null;
             }
+
+            // Deleting the test data. Currently, we are deleting the data/saved and the eventstreams folders.
+            // We need to do that in order to be able to run all tests at the same time. Without that the tests
+            // are interfering with each other.
+            // Also, If we encounter a scenario where tests in the same suite are interfering with each other we
+            // can move this logic inside the after method in the MethodTestDescriptor class.
+            // This way we will clean up the data after each test.
+            FileUtils.deleteDirectory(context.getSavedStateDirectory());
+            FileUtils.deleteDirectory(context.getEventsLogDir());
+        }
+
+        private boolean allTestsSkipped() {
+            return getChildren().stream()
+                    .allMatch(ch ->
+                            ((MethodTestDescriptor) ch).shouldBeSkipped(null).isSkipped());
         }
     }
 
@@ -410,7 +506,7 @@ public class HapiTestEngine extends HierarchicalTestEngine<HapiTestEngineExecuti
         }
 
         @Override
-        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) throws Exception {
+        public SkipResult shouldBeSkipped(HapiTestEngineExecutionContext context) {
             final var annotation = AnnotationSupport.findAnnotation(testMethod, Disabled.class);
             if (!AnnotationSupport.isAnnotated(testMethod, HapiTest.class)) {
                 return SkipResult.skip("No @HapiTest annotation");

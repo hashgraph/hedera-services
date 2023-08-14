@@ -27,22 +27,33 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.exec.TransactionComponent;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.util.Set;
+import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class ContractCreateHandlerParityTest {
     private ReadableAccountStore accountStore;
-    private final ContractCreateHandler subject = new ContractCreateHandler();
+
+    @Mock
+    private Provider<TransactionComponent.Factory> provider;
+
+    private ContractCreateHandler subject;
 
     @BeforeEach
     void setUp() {
         accountStore = AdapterUtils.wellKnownKeyLookupAt();
+        subject = new ContractCreateHandler(provider);
     }
 
     @Test

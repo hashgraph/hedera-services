@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.spi.state.WritableKVState;
 import com.hedera.node.app.spi.state.WritableQueueState;
 import com.hedera.node.app.spi.state.WritableStates;
@@ -36,11 +37,11 @@ import java.util.function.Predicate;
  */
 public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
     /** The underlying data storage class that holds the file data. */
-    private final WritableQueueState<Bytes> writableUpgradeState;
+    private final WritableQueueState<ProtoBytes> writableUpgradeState;
 
     private final WritableKVState<FileID, File> writableUpgradeFileState;
 
-    private static final Predicate<Bytes> TRUE_PREDICATE = new TruePredicate();
+    private static final Predicate<ProtoBytes> TRUE_PREDICATE = new TruePredicate();
 
     /**
      * Create a new {@link WritableUpgradeFileStore} instance.
@@ -49,29 +50,30 @@ public class WritableUpgradeFileStore extends ReadableUpgradeFileStoreImpl {
      */
     public WritableUpgradeFileStore(@NonNull final WritableStates states) {
         super(states);
-        this.writableUpgradeState = requireNonNull(states.getQueue(getStateKey()));
-        this.writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));
+        writableUpgradeState = requireNonNull(states.getQueue(getStateKey()));
+        writableUpgradeFileState = requireNonNull(states.get(BLOBS_KEY));
     }
 
-    public void add(@NonNull File file) {
+    public void add(@NonNull final File file) {
         requireNonNull(file);
-        writableUpgradeState.add(file.contents());
+        writableUpgradeState.add(new ProtoBytes(file.contents()));
         writableUpgradeFileState.put(file.fileIdOrThrow(), file);
     }
 
-    public void append(@NonNull Bytes bytes) {
+    public void append(@NonNull final Bytes bytes) {
         requireNonNull(bytes);
-        writableUpgradeState.add(bytes);
+        writableUpgradeState.add(new ProtoBytes(bytes));
     }
 
+    @SuppressWarnings({"StatementWithEmptyBody"})
     public void resetFileContents() {
         while (writableUpgradeState.removeIf(TRUE_PREDICATE) != null)
             ;
     }
 
-    private static class TruePredicate implements Predicate<Bytes> {
+    private static class TruePredicate implements Predicate<ProtoBytes> {
         @Override
-        public boolean test(Bytes file) {
+        public boolean test(final ProtoBytes file) {
             return true;
         }
     }

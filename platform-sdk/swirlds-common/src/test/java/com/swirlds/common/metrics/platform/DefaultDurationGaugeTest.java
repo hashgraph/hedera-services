@@ -81,15 +81,15 @@ class DefaultDurationGaugeTest {
     @DisplayName("Constructor should throw IAE when passing null")
     void testConstructorWithNullParameter() {
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new DurationGauge.Config(null, NAME, SECONDS),
                 "Calling the constructor without a category should throw an IAE");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new DurationGauge.Config(CATEGORY, null, SECONDS),
                 "Calling the constructor without a name should throw an IAE");
         assertThrows(
-                IllegalArgumentException.class,
+                NullPointerException.class,
                 () -> new DurationGauge.Config(CATEGORY, NAME, null),
                 "Calling the constructor without a time unit should throw an IAE");
     }
@@ -143,8 +143,7 @@ class DefaultDurationGaugeTest {
         final DurationGauge gauge = new DefaultDurationGauge(new DurationGauge.Config(CATEGORY, NAME, SECONDS));
 
         // then
-        assertThrows(
-                IllegalArgumentException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
+        assertThrows(NullPointerException.class, () -> gauge.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> gauge.get(Metric.ValueType.MIN),

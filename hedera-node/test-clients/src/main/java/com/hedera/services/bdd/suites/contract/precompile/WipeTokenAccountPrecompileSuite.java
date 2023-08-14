@@ -16,13 +16,16 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@HapiTestSuite
 public class WipeTokenAccountPrecompileSuite extends HapiSuite {
+
     private static final Logger log = LogManager.getLogger(WipeTokenAccountPrecompileSuite.class);
 
     public static void main(String... args) {

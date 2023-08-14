@@ -51,7 +51,7 @@ public class StakeInfoHelper {
         requireNonNull(nodeId);
         requireNonNull(stakingInfoStore);
 
-        final var currentStakingInfo = stakingInfoStore.get(nodeId);
+        final var currentStakingInfo = stakingInfoStore.getForModify(nodeId);
         final var currentStakeRewardStart = currentStakingInfo.stakeRewardStart();
         final var newUnclaimedStakeRewardStart = currentStakingInfo.unclaimedStakeRewardStart() + amount;
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
 
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.state.ReadableKVState;
@@ -34,7 +35,7 @@ import java.util.Set;
 public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
     /** The underlying data storage class that holds node staking data. */
-    private final ReadableKVState<Long, StakingNodeInfo> stakingInfoState;
+    private final ReadableKVState<EntityNumber, StakingNodeInfo> stakingInfoState;
     /**
      * Create a new {@link ReadableStakingInfoStoreImpl} instance.
      *
@@ -47,7 +48,7 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
     @Nullable
     @Override
     public StakingNodeInfo get(final long nodeId) {
-        return stakingInfoState.get(nodeId);
+        return stakingInfoState.get(EntityNumber.newBuilder().number(nodeId).build());
     }
 
     @NonNull
@@ -60,7 +61,7 @@ public class ReadableStakingInfoStoreImpl implements ReadableStakingInfoStore {
 
         final var nodeIds = new HashSet<Long>();
         while (keysIter.hasNext()) {
-            nodeIds.add(keysIter.next());
+            nodeIds.add(keysIter.next().number());
         }
 
         return nodeIds;

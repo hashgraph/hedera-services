@@ -66,9 +66,16 @@ public class DumpContractBytecodesSubcommand {
     @NonNull
     final Path bytecodePath;
 
+    @NonNull
     final EmitSummary emitSummary;
+
+    @NonNull
     final Uniqify uniqify;
+
+    @NonNull
     final WithIds withIds;
+
+    @NonNull
     final Verbosity verbosity;
 
     DumpContractBytecodesSubcommand(
@@ -129,8 +136,10 @@ public class DumpContractBytecodesSubcommand {
                 .map(Contract::bytecode)
                 .mapToInt(bc -> bc.length)
                 .sum();
-        // Make a swag based on how many contracts there are plus bytecode size
-        int reportSizeEstimate = contracts.registeredContractsCount() * 75 + totalBytecodeSize * 2;
+        // Make a swag based on how many contracts there are plus bytecode size - each line has not just the bytecode
+        // but the list of contract ids, so the estimated size of the file accounts for the bytecodes (as hex) and the
+        // contract ids (as decimal)
+        int reportSizeEstimate = contracts.registeredContractsCount() * 20 + totalBytecodeSize * 2;
         if (verbosity == Verbosity.VERBOSE) System.out.printf("=== Estimating %d byte report%n", reportSizeEstimate);
         return reportSizeEstimate;
     }
@@ -205,7 +214,7 @@ public class DumpContractBytecodesSubcommand {
     /** Format a collection of pairs of a set of contract ids with their associated bytecode */
     void appendFormattedContractLines(@NonNull final StringBuilder sb, @NonNull final Contracts contracts) {
         contracts.contracts().stream()
-                .sorted(Comparator.comparingInt(contract -> contract.ids().first()))
+                .sorted(Comparator.comparingInt(Contract::canonicalId))
                 .forEach(contract -> appendFormattedContractLine(sb, contract));
     }
 
@@ -215,15 +224,11 @@ public class DumpContractBytecodesSubcommand {
     void appendFormattedContractLine(@NonNull final StringBuilder sb, @NonNull final Contract contract) {
         sb.append(hexer.formatHex(contract.bytecode()));
 
-        final var ids = contract.ids();
-        if (withIds == DumpStateCommand.WithIds.YES && !ids.isEmpty()) {
-            // Output canonical id - we choose the minimum id (so it is deterministic)
-            final var sortedIds = ids.stream().sorted().toList();
+        if (withIds == DumpStateCommand.WithIds.YES && !contract.ids().isEmpty()) {
             sb.append('\t');
-            sb.append(sortedIds.get(0));
-            // Now output _all_ ids in sorted order
+            sb.append(contract.canonicalId());
             sb.append('\t');
-            sb.append(sortedIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+            sb.append(contract.ids().stream().map(Object::toString).collect(Collectors.joining(",")));
             sb.append('\n');
         }
     }

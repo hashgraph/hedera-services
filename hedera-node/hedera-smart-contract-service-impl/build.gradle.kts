@@ -21,16 +21,17 @@ description = "Default Hedera Smart Contract Service Implementation"
 dependencies {
     javaModuleDependencies {
         annotationProcessor(gav("dagger.compiler"))
+        testImplementation(project(":app-service-mono"))
         testImplementation(testFixtures(project(":app-spi")))
         testImplementation(testFixtures(project(":config")))
         testImplementation(testFixtures(project(":app-service-mono")))
-
+        testImplementation(gav("com.google.protobuf"))
+        testImplementation(gav("com.swirlds.test.framework"))
         testImplementation(gav("org.assertj.core"))
-        testImplementation(gav("org.hamcrest"))
         testImplementation(gav("org.junit.jupiter.api"))
+        testImplementation(gav("org.junit.jupiter.params"))
         testImplementation(gav("org.mockito"))
         testImplementation(gav("org.mockito.junit.jupiter"))
-        testImplementation(gav("com.swirlds.merkle"))
         testCompileOnly(gav("com.github.spotbugs.annotations"))
         testRuntimeOnly(gav("org.mockito.inline"))
     }

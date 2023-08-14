@@ -19,6 +19,7 @@ package com.swirlds.common.test.threading;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.swirlds.common.test.fixtures.threading.ExceptionSuppressingParallelExecutor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

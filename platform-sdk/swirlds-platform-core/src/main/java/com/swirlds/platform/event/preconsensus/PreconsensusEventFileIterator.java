@@ -20,7 +20,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.extendable.ExtendableInputStream;
 import com.swirlds.common.io.extendable.extensions.CountingStreamExtension;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.GossipEvent;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FileInputStream;
@@ -30,13 +30,14 @@ import java.util.NoSuchElementException;
 /**
  * Iterates over the events in a single preconsensus event file.
  */
-public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
+public class PreconsensusEventFileIterator implements IOIterator<GossipEvent> {
 
     private final long minimumGeneration;
     private final SerializableDataInputStream stream;
     private boolean hasPartialEvent = false;
     private final CountingStreamExtension counter;
-    private EventImpl next;
+    private GossipEvent next;
+    private boolean streamClosed = false;
 
     /**
      * Create a new iterator that walks over events in a preconsensus event file.
@@ -56,18 +57,29 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
                 new BufferedInputStream(
                         new FileInputStream(fileDescriptor.getPath().toFile())),
                 counter));
+
+        try {
+            final int fileVersion = stream.readInt();
+            if (fileVersion != PreconsensusEventMutableFile.FILE_VERSION) {
+                throw new IOException("unsupported file version: " + fileVersion);
+            }
+        } catch (final EOFException e) {
+            // Empty file. Possible if the node crashed right after it created this file.
+            stream.close();
+            streamClosed = true;
+        }
     }
 
     /**
      * Find the next event that should be returned.
      */
     private void findNext() throws IOException {
-        while (next == null) {
+        while (next == null && !streamClosed) {
 
             final long initialCount = counter.getCount();
 
             try {
-                final EventImpl candidate = stream.readSerializable(false, EventImpl::new);
+                final GossipEvent candidate = stream.readSerializable(false, GossipEvent::new);
                 if (candidate.getGeneration() >= minimumGeneration) {
                     next = candidate;
                 }
@@ -77,7 +89,8 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
                     // This is possible (if not likely) when a node is shut down abruptly.
                     hasPartialEvent = true;
                 }
-                break;
+                stream.close();
+                streamClosed = true;
             }
         }
     }
@@ -103,7 +116,7 @@ public class PreconsensusEventFileIterator implements IOIterator<EventImpl> {
      * {@inheritDoc}
      */
     @Override
-    public EventImpl next() throws IOException {
+    public GossipEvent next() throws IOException {
         if (!hasNext()) {
             throw new NoSuchElementException("no files remain in this iterator");
         }

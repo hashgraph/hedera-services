@@ -27,12 +27,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
+import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.config.data.AccountsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -63,8 +63,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
 
     /** {@inheritDoc} */
     @Override
-    public Map<AccountID, Long> applyStakingRewards(final HandleContext context) {
-        final var readableStore = context.readableStore(ReadableAccountStore.class);
+    public Map<AccountID, Long> applyStakingRewards(final FinalizeContext context) {
         final var writableStore = context.writableStore(WritableAccountStore.class);
         final var stakingRewardsStore = context.writableStore(WritableNetworkStakingRewardsStore.class);
         final var stakingInfoStore = context.writableStore(WritableStakingInfoStore.class);
@@ -72,17 +71,20 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var stakingRewardAccountId = asAccount(accountsConfig.stakingRewardAccount());
         final var consensusNow = context.consensusNow();
 
+        // TODO: confirm if the getDeletedAccountBeneficiaries should be in
+        //  SingleTransactionRecordBuilder interface instead
+        final var recordBuilder = context.recordBuilder(CryptoDeleteRecordBuilder.class);
+
         // Apply all changes related to stakedId changes, and adjust stakedToMe
         // for all accounts staking to an account
-        adjustStakedToMeForAccountStakees(writableStore, readableStore);
+        adjustStakedToMeForAccountStakees(writableStore);
         // Get list of possible reward receivers and pay rewards to them
-        final var rewardReceivers = getPossibleRewardReceivers(writableStore, readableStore);
+        final var rewardReceivers = getPossibleRewardReceivers(writableStore);
         // Pay rewards to all possible reward receivers, returns all rewards paid
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
-                rewardReceivers, readableStore, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow);
+                rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
         // Adjust stakes for nodes
-        adjustStakeMetadata(
-                writableStore, readableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
+        adjustStakeMetadata(writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid);
         // Decrease staking reward account balance by rewardPaid amount
         decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
         return rewardsPaid;
@@ -98,14 +100,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * assess if Y is staked to a node, and if so, we will update the node stake metadata.
      *
      * @param writableStore The store to write to for updated values
-     * @param readableStore The store to read from for original values
      */
-    public void adjustStakedToMeForAccountStakees(
-            @NonNull final WritableAccountStore writableStore, @NonNull final ReadableAccountStore readableStore) {
+    public void adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
         final var modifiedAccounts = writableStore.modifiedAccountsInState();
 
         for (final var id : modifiedAccounts) {
-            final var originalAccount = readableStore.getAccountById(id);
+            final var originalAccount = writableStore.getOriginalValue(id);
             final var modifiedAccount = writableStore.get(id);
 
             // check if stakedId has changed
@@ -120,7 +120,7 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 final var roundedInitialBalance = roundedToHbar(originalAccount.tinybarBalance());
                 final var delta = roundedFinalBalance - roundedInitialBalance;
                 // Even if the stakee's total stake hasn't changed, we still want to
-                // trigger a reward situation whenever the staker balance changes;
+                // trigger a reward situation whenever the staker balance changes
                 if (roundedFinalBalance != roundedInitialBalance) {
                     updateStakedToMeFor(modifiedAccount.stakedAccountId(), delta, writableStore);
                 }
@@ -148,7 +148,6 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * nodes. It also updates stakeAtStartOfLastRewardedPeriod and stakePeriodStart for accounts.
      *
      * @param writableStore writable account store
-     * @param readableStore readable account store
      * @param stakingInfoStore writable staking info store
      * @param stakingRewardStore writable staking reward store
      * @param consensusNow consensus time
@@ -156,13 +155,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      */
     private void adjustStakeMetadata(
             final WritableAccountStore writableStore,
-            final ReadableAccountStore readableStore,
             final WritableStakingInfoStore stakingInfoStore,
             final WritableNetworkStakingRewardsStore stakingRewardStore,
             final Instant consensusNow,
             final Map<AccountID, Long> paidRewards) {
         for (final var id : writableStore.modifiedAccountsInState()) {
-            final var originalAccount = readableStore.getAccountById(id);
+            final var originalAccount = writableStore.getOriginalValue(id);
             final var modifiedAccount = writableStore.get(id);
 
             final var scenario = StakeIdChangeType.forCase(originalAccount, modifiedAccount);
@@ -304,8 +302,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             //   4. Alice's stakePeriodStart is the current period.
             // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
             // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
-            // preserve an already-recorded memory of her stake at the beginning of this period;
-            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            // preserve an already-recorded memory of her stake at the beginning of this period.
+            // In scenario 4 there is no point in recording anything---her stake will go unused.)
             if (earnedZeroRewardsBecauseOfZeroStake(account, stakingRewardStore, consensusNow)) {
                 return true;
             }

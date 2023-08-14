@@ -176,9 +176,7 @@ class DefaultIntegerAccumulatorTest {
 
         // then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> accumulator.get(null),
-                "Calling get() with null should throw an IAE");
+                NullPointerException.class, () -> accumulator.get(null), "Calling get() with null should throw an IAE");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> accumulator.get(Metric.ValueType.MIN),
@@ -208,7 +206,7 @@ class DefaultIntegerAccumulatorTest {
     void testGetStatBuffered() {
         // given
         final IntegerAccumulator.Config config = new IntegerAccumulator.Config(CATEGORY, NAME);
-        final IntegerAccumulator accumulator = new DefaultIntegerAccumulator(config);
+        final DefaultIntegerAccumulator accumulator = new DefaultIntegerAccumulator(config);
 
         // when
         final StatsBuffered actual = accumulator.getStatsBuffered();

@@ -24,6 +24,7 @@ import com.swirlds.common.metrics.Metric;
 import com.swirlds.common.metrics.MetricConfig;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.MetricsFactory;
+import com.swirlds.common.metrics.PlatformMetrics;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.system.NodeId;
 import java.util.Collection;
@@ -41,7 +42,7 @@ import java.util.stream.Stream;
 /**
  * Default implementation of the {@link Metrics} interface.
  */
-public class DefaultMetrics implements Metrics {
+public class DefaultMetrics implements PlatformMetrics {
 
     /**
      * Threshold for the number of similar {@link Exception} that are thrown by regular metrics-tasks

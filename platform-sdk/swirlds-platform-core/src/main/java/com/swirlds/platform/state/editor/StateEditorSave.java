@@ -23,17 +23,23 @@ import static com.swirlds.platform.state.signed.SignedStateFileWriter.writeSigne
 
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.LogMarker;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "save", mixinStandardHelpOptions = true, description = "Write the entire state to disk.")
 @SubcommandOf(StateEditorRoot.class)
 public class StateEditorSave extends StateEditorOperation {
+    private static final Logger logger = LogManager.getLogger(StateEditorSave.class);
 
     private Path directory;
 
@@ -49,19 +55,22 @@ public class StateEditorSave extends StateEditorOperation {
     public void run() {
         try (final ReservedSignedState reservedSignedState = getStateEditor().getState("StateEditorSave.run()")) {
 
-            System.out.println("Hashing state");
+            logger.info(LogMarker.CLI.getMarker(), "Hashing state");
             MerkleCryptoFactory.getInstance()
                     .digestTreeAsync(reservedSignedState.get().getState())
                     .get();
 
-            System.out.println("Writing signed state file to " + formatFile(directory));
+            if (logger.isInfoEnabled(LogMarker.CLI.getMarker())) {
+                logger.info(LogMarker.CLI.getMarker(), "Writing signed state file to {}", formatFile(directory));
+            }
 
             if (!Files.exists(directory)) {
                 Files.createDirectories(directory);
             }
 
+            final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
             try (final ReservedSignedState signedState = getStateEditor().getSignedStateCopy()) {
-                writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get());
+                writeSignedStateFilesToDirectory(NO_NODE_ID, directory, signedState.get(), configuration);
             }
 
         } catch (final IOException e) {

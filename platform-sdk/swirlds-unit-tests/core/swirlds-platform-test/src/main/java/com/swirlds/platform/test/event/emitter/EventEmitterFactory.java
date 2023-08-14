@@ -17,11 +17,11 @@
 package com.swirlds.platform.test.event.emitter;
 
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.platform.test.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.event.source.EventSource;
 import com.swirlds.platform.test.event.source.EventSourceFactory;
 import com.swirlds.platform.test.event.source.ForkingEventSource;
-import com.swirlds.platform.test.event.source.StandardEventSource;
+import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
+import com.swirlds.platform.test.fixtures.event.source.EventSource;
+import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;

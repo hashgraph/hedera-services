@@ -32,6 +32,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -48,6 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -59,10 +61,10 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoCreateValidator;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
@@ -137,7 +139,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
-        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator, networkInfo);
+        given(handleContext.networkInfo()).willReturn(networkInfo);
+        subject = new CryptoCreateHandler(cryptoCreateValidator, stakingValidator);
     }
 
     @Test
@@ -247,6 +250,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("handle works when account can be created without any alias")
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleCryptoCreateVanilla() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
@@ -316,6 +321,8 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
     @Test
     @DisplayName("handle works when account can be created without any alias using staked account id")
+    // Suppressing the warning that we have too many assertions
+    @SuppressWarnings("java:S5961")
     void handleCryptoCreateVanillaWithStakedAccountId() {
         txn = new CryptoCreateBuilder().withStakedAccountId(3).build();
         given(handleContext.body()).willReturn(txn);
@@ -560,6 +567,22 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(INVALID_ALIAS_KEY, msg.getStatus());
+    }
+
+    @Test
+    void validateContractKey() {
+        final var newContractId = ContractID.newBuilder().contractNum(1000L).build();
+        txn = new CryptoCreateBuilder()
+                .withStakedAccountId(3)
+                .withKey(Key.newBuilder().contractID(newContractId).build())
+                .build();
+        given(handleContext.body()).willReturn(txn);
+        given(handleContext.consensusNow()).willReturn(consensusInstant);
+        given(handleContext.newEntityNum()).willReturn(1000L);
+        setupConfig();
+        setupExpiryValidator();
+
+        assertDoesNotThrow(() -> subject.handle(handleContext));
     }
 
     @Test

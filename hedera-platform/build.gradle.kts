@@ -30,7 +30,7 @@ val log4jVersion = "2.17.1"
 val mockitoVersion = "4.6.1"
 val nettyVersion = "4.1.87.Final"
 val protobufVersion = "3.21.7"
-val swirldsVersion = "0.41.0-adhoc.x2d52beef"
+val swirldsVersion = "0.42.0-adhoc.xc9cb89a2"
 val systemStubsVersion = "2.0.2"
 val testContainersVersion = "1.17.2"
 val tuweniVersion = "2.2.0"
@@ -80,6 +80,7 @@ dependencies.constraints {
         api(gav("io.netty.transport.classes.epoll", nettyVersion))
         api(gav("io.netty.transport.epoll", nettyVersion))
         api(gav("io.perfmark", "0.25.0"))
+        api(gav("java.annotation", "1.3.2"))
         api(gav("javax.inject", "1"))
         api(gav("net.i2p.crypto.eddsa", "0.3.0"))
         api(gav("org.antlr.antlr4.runtime", "4.11.1"))

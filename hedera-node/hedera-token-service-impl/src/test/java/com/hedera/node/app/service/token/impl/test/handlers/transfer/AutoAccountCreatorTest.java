@@ -28,7 +28,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AutoAccountCreator;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -59,7 +59,8 @@ class AutoAccountCreatorTest extends StepsBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(configuration);
         transferContext = new TransferContextImpl(handleContext);
-        assertThatThrownBy(() -> subject.create(alias.alias(), false))
+        final var aliasBytes = alias.alias();
+        assertThatThrownBy(() -> subject.create(aliasBytes, false))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED));
     }
@@ -73,7 +74,7 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(ecKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -101,7 +102,7 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(edKeyAlias, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
@@ -130,7 +131,7 @@ class AutoAccountCreatorTest extends StepsBase {
                             account.copyBuilder().accountId(hbarReceiverId).build();
                     writableAccountStore.put(copy);
                     writableAliases.put(address, asAccount(hbarReceiver));
-                    return recordBuilder.accountID(asAccount(hbarReceiver));
+                    return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver));
                 });
         given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 

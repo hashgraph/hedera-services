@@ -31,15 +31,14 @@ import com.swirlds.common.merkle.route.MerkleRouteFactory;
 import com.swirlds.common.merkle.route.MerkleRouteUtils;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.state.signed.DeserializedSignedState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import com.swirlds.platform.state.signed.SignedStateReference;
-import com.swirlds.platform.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.ExecutionException;
@@ -60,9 +59,10 @@ public class StateEditor {
      *
      * @param statePath the path where the signed state can be found
      */
+    @SuppressWarnings("java:S106")
     public StateEditor(final Path statePath) throws IOException {
 
-        final Configuration configuration = BootstrapUtils.loadConfiguration(List.of());
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
 
         platformContext = new DefaultPlatformContext(configuration, new NoOpMetrics(), CryptographyHolder.get());
 
@@ -78,6 +78,7 @@ public class StateEditor {
                         .digestTreeAsync(reservedSignedState.get().getState())
                         .get();
             } catch (final InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException("problem encountered while hashing state", e);
             }
             System.out.println("Hash = " + reservedSignedState.get().getState().getHash());
@@ -109,11 +110,12 @@ public class StateEditor {
     /**
      * Start the editor.
      */
+    @SuppressWarnings("java:S106")
     public void start() {
         Scanner reader = new Scanner(System.in);
 
         CommandLine commandLine = buildCommandLine();
-        System.out.println("");
+        System.out.println();
         commandLine.usage(System.out, commandLine.getColorScheme());
 
         while (alive) {

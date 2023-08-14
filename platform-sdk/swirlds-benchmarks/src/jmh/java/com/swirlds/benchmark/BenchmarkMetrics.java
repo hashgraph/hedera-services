@@ -355,7 +355,8 @@ public final class BenchmarkMetrics {
         final MetricKeyRegistry registry = new MetricKeyRegistry();
         metricService = Executors.newSingleThreadScheduledExecutor(
                 getStaticThreadManager().createThreadFactory("benchmark", "MetricsWriter"));
-        metrics = new DefaultMetrics(null, registry, metricService, new DefaultMetricsFactory(), metricsConfig);
+        metrics = new DefaultMetrics(
+                null, registry, metricService, new DefaultMetricsFactory(metricsConfig), metricsConfig);
 
         metrics.getOrCreate(TIMESTAMP_CONFIG);
         metrics.getOrCreate(MEM_TOT_CONFIG);

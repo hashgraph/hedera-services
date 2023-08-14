@@ -19,14 +19,11 @@ package com.hedera.services.cli.signedstate;
 import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.io.utility.FileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -79,28 +76,6 @@ public final class SignedStateCommand extends AbstractCommand {
 
     Verbosity verbosity;
 
-    @Option(
-            names = {"--log-level"},
-            arity = "1",
-            converter = LogLevelConverter.class,
-            defaultValue = "OFF",
-            description = "Log4j level for root logger (can be one of ${COMPLETION-CANDIDATES})")
-    private void setRootLogLevel(final Level loggingLevel) {
-        this.loggingLevel = loggingLevel;
-    }
-
-    Level loggingLevel;
-
-    @SuppressWarnings("java:S4792") // "make sure this logger's configuration is safe"
-    private void setRootLoggingLevel() {
-        // BUG: This doesn't work.  Setting level to `WARN` I still see a message from `INFO STATE_TO_DISK`
-        if (verbosity == Verbosity.VERBOSE) System.out.printf("===Log level set to %s%n", loggingLevel);
-        var logger = LogManager.getRootLogger();
-        Configurator.setAllLevels(logger.getName(), loggingLevel);
-        logger = LogManager.getLogger(FileUtils.class);
-        Configurator.setAllLevels(logger.getName(), loggingLevel);
-    }
-
     static class LogLevelConverter implements CommandLine.ITypeConverter<Level> {
 
         @Override
@@ -121,7 +96,6 @@ public final class SignedStateCommand extends AbstractCommand {
 
     @NonNull
     SignedStateHolder openSignedState() {
-        setRootLoggingLevel();
         if (signedState == null) {
             if (verbosity == Verbosity.VERBOSE) System.out.printf("=== opening signed state file '%s'%n", inputFile);
 
@@ -135,7 +109,6 @@ public final class SignedStateCommand extends AbstractCommand {
     }
 
     void closeSignedState() {
-        setRootLoggingLevel();
         if (signedState != null) {
             if (verbosity == Verbosity.VERBOSE) System.out.printf("=== closing signed state file '%s'%n", inputFile);
 
