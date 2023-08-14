@@ -16,47 +16,17 @@
 
 package com.swirlds.platform.cli;
 
-import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-
-import com.swirlds.cli.commands.DevCommand;
+import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.platform.testreader.JrsTestReader;
-import com.swirlds.platform.util.VirtualTerminal;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.concurrent.Executors;
 import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "jtr",
         mixinStandardHelpOptions = true,
-        description = "Read JRS test results and create a report.")
-@SubcommandOf(DevCommand.class)
+        description = "JRS Test Reader: scrapes data and generates test reports.")
+@SubcommandOf(PlatformCli.class)
 public class JrsTestReaderCommand extends AbstractCommand {
 
     private JrsTestReaderCommand() {}
-
-    @Override
-    public Integer call() {
-
-        final VirtualTerminal terminal =
-                new VirtualTerminal().setProgressIndicatorEnabled(true).setThrowOnError(true);
-
-        // "gs://swirlds-circleci-jrs-results/cody-littley"
-        // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
-        // "gs://swirlds-circleci-jrs-results/swirlds-automation/release/0.41"
-        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
-
-        JrsTestReader.generateTestReport(
-                terminal,
-                Executors.newFixedThreadPool(48),
-                root,
-                Duration.ofDays(7),
-                Path.of("/Users/codylittley/ws/hedera-services/platform-sdk/swirlds-platform-core/"
-                        + "src/main/java/com/swirlds/platform/testreader/testMetadata.csv"),
-                getAbsolutePath(Path.of("~/Desktop/report.html")));
-
-        return 0;
-    }
 }

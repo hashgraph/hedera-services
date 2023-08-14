@@ -46,18 +46,17 @@ public final class JrsTestReportGenerator {
 
     private JrsTestReportGenerator() {}
 
-    // TODO make these configurable
-    private static final String GS_URL_PREFIX = "gs://swirlds-circleci-jrs-results/";
-    private static final String GS_URL_REPLACEMENT = "http://35.247.76.217:8095/";
-
     /**
      * The test url stored in this test result is a gs:// url. This method generates a url that can be visited in a web
      * browser.
      *
      * @return a url that can be visited in a web browser
      */
-    private static String generateWebBrowserUrl(@NonNull final String testDirectory) {
-        return testDirectory.replace(GS_URL_PREFIX, GS_URL_REPLACEMENT);
+    private static String generateWebBrowserUrl(
+            @NonNull final String testDirectory,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement) {
+        return testDirectory.replace(bucketPrefix, bucketPrefixReplacement);
     }
 
     private static void generateHyperlink(
@@ -185,7 +184,10 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generateHistoryCell(
-            @NonNull final StringBuilder sb, @NonNull final List<JrsTestResult> historicalResults) {
+            @NonNull final StringBuilder sb,
+            @NonNull final List<JrsTestResult> historicalResults,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement) {
 
         sb.append("<td>");
 
@@ -194,7 +196,7 @@ public final class JrsTestReportGenerator {
 
             final JrsTestResult result = historicalResults.get(index);
 
-            final String testUrl = generateWebBrowserUrl(result.testDirectory());
+            final String testUrl = generateWebBrowserUrl(result.testDirectory(), bucketPrefix, bucketPrefixReplacement);
             final String resultString;
             final String color;
             if (result.status() == PASS) {
@@ -240,9 +242,14 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generateTableRow(
-            @NonNull final StringBuilder sb, @NonNull final JrsTestReportRow row, @NonNull final Instant now) {
+            @NonNull final StringBuilder sb,
+            @NonNull final JrsTestReportRow row,
+            @NonNull final Instant now,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement) {
 
-        final String testUrl = generateWebBrowserUrl(row.getMostRecentTest().testDirectory());
+        final String testUrl =
+                generateWebBrowserUrl(row.getMostRecentTest().testDirectory(), bucketPrefix, bucketPrefixReplacement);
 
         sb.append("<tr>\n");
         generatePanelCell(sb, row.getMostRecentTest().id().panel());
@@ -250,7 +257,7 @@ public final class JrsTestReportGenerator {
         generateOwnerCell(sb, row.metadata() == null ? "" : row.metadata().owner());
         generateAgeCell(sb, now, row.getMostRecentTest().timestamp());
         generateStatusCell(sb, row.getMostRecentTest().status());
-        generateHistoryCell(sb, row.tests());
+        generateHistoryCell(sb, row.tests(), bucketPrefix, bucketPrefixReplacement);
         generateSummaryCell(sb, testUrl);
         generateMetricsCell(sb, testUrl);
         generateDataCell(sb, testUrl);
@@ -263,6 +270,8 @@ public final class JrsTestReportGenerator {
             @NonNull final String tableId,
             @NonNull final List<JrsTestReportRow> rows,
             @NonNull final Instant now,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement,
             @NonNull final Comparator<JrsTestReportRow> comparator,
             final boolean hidden) {
 
@@ -288,7 +297,7 @@ public final class JrsTestReportGenerator {
                         .formatted(tableId, hidden ? "none" : "block"));
 
         for (final JrsTestReportRow row : rows) {
-            generateTableRow(sb, row, now);
+            generateTableRow(sb, row, now, bucketPrefix, bucketPrefixReplacement);
         }
 
         sb.append("</table>\n</center>\n");
@@ -370,25 +379,51 @@ public final class JrsTestReportGenerator {
     }
 
     private static void generateBody(
-            @NonNull final StringBuilder sb, @NonNull final List<JrsTestReportRow> rows, @NonNull final Instant now) {
+            @NonNull final StringBuilder sb,
+            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final Instant now,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement) {
 
         generateTable(
                 sb,
                 "table_sortedByName",
                 rows,
                 now,
+                bucketPrefix,
+                bucketPrefixReplacement,
                 Comparator.comparing(a -> a.getMostRecentTest().id()),
                 false);
-        generateTable(sb, "table_sortedByAge", rows, now, JrsTestReportGenerator::ageComparator, true);
-        generateTable(sb, "table_sortedByStatus", rows, now, JrsTestReportGenerator::statusComparator, true);
+        generateTable(
+                sb,
+                "table_sortedByAge",
+                rows,
+                now,
+                bucketPrefix,
+                bucketPrefixReplacement,
+                JrsTestReportGenerator::ageComparator,
+                true);
+        generateTable(
+                sb,
+                "table_sortedByStatus",
+                rows,
+                now,
+                bucketPrefix,
+                bucketPrefixReplacement,
+                JrsTestReportGenerator::statusComparator,
+                true);
     }
 
     private static void generatePage(
-            @NonNull final StringBuilder sb, @NonNull final List<JrsTestReportRow> rows, @NonNull final Instant now) {
+            @NonNull final StringBuilder sb,
+            @NonNull final List<JrsTestReportRow> rows,
+            @NonNull final Instant now,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement) {
         sb.append("<!DOCTYPE html>\n");
         sb.append("<html>\n");
         generateHeader(sb, now);
-        generateBody(sb, rows, now);
+        generateBody(sb, rows, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("</body>\n");
         sb.append("</html>\n");
     }
@@ -473,12 +508,14 @@ public final class JrsTestReportGenerator {
             @NonNull final List<JrsTestResult> results,
             @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
             @NonNull final Instant now,
+            @NonNull final String bucketPrefix,
+            @NonNull final String bucketPrefixReplacement,
             @NonNull final Path outputFile) {
 
         @NonNull final List<JrsTestReportRow> rows = buildTableRows(results, metadata);
 
         @NonNull final StringBuilder sb = new StringBuilder();
-        generatePage(sb, rows, now);
+        generatePage(sb, rows, now, bucketPrefix, bucketPrefixReplacement);
 
         final String reportString = sb.toString();
         try {

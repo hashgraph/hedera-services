@@ -18,7 +18,6 @@ package com.swirlds.platform.testreader;
 
 import static com.swirlds.common.formatting.HorizontalAlignment.ALIGNED_RIGHT;
 import static com.swirlds.common.threading.interrupt.Uninterruptable.abortAndThrowIfInterrupted;
-import static com.swirlds.platform.testreader.JrsTestReportGenerator.generateReport;
 import static com.swirlds.platform.testreader.TestStatus.FAIL;
 import static com.swirlds.platform.testreader.TestStatus.PASS;
 import static com.swirlds.platform.testreader.TestStatus.UNKNOWN;
@@ -30,6 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -322,8 +322,7 @@ public final class JrsTestReader {
     }
 
     /**
-     * Parse the metadata file. A notes file is a CSV (commas) with three columns: panel, test name, and a
-     * URL.
+     * Parse the metadata file. A notes file is a CSV (commas) with three columns: panel, test name, and a URL.
      *
      * @param notesFile the path to the notes file
      * @return a map of test identifiers to note URLs
@@ -372,19 +371,50 @@ public final class JrsTestReader {
         return metadata;
     }
 
-    public static void generateTestReport(
-            @NonNull final VirtualTerminal terminal,
-            @NonNull final ExecutorService executor,
-            @NonNull final String rootDirectory,
-            @NonNull final Duration maximumAge,
-            @Nullable final Path notesFile,
-            @NonNull final Path outputFile) {
+    /**
+     * Write test results to a .csv file.
+     *
+     * @param results     the test results
+     * @param resultsFile the file to write to
+     */
+    public static void saveTestResults(@NonNull final List<JrsTestResult> results, @NonNull final Path resultsFile) {
+        final StringBuilder sb = new StringBuilder();
+        for (final JrsTestResult result : results) {
+            sb.append(result.toCsvLine()).append("\n");
+        }
 
-        final Instant now = Instant.now();
+        final String data = sb.toString();
+        try {
+            Files.write(resultsFile, data.getBytes());
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to generate results csv", e);
+        }
+    }
 
-        final Map<JrsTestIdentifier, JrsTestMetadata> metadata = parseMetadataFile(notesFile);
-        final List<JrsTestResult> results = findTestResults(terminal, executor, rootDirectory, now, maximumAge);
+    /**
+     * Read test results from a .csv file.
+     *
+     * @param resultsFile the file to read from
+     */
+    @NonNull
+    public static List<JrsTestResult> loadTestResults(@NonNull final Path resultsFile) {
+        final String data;
+        try {
+            data = Files.readString(resultsFile);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("unable to read results csv", e);
+        }
 
-        generateReport(results, metadata, now, outputFile);
+        final String[] lines = data.split("\n");
+        final List<JrsTestResult> results = new ArrayList<>(lines.length);
+        for (final String line : lines) {
+            final JrsTestResult result = JrsTestResult.parseFromCsvLine(line);
+            if (result == null) {
+                System.out.println("Unable to parse line: " + line);
+                continue;
+            }
+            results.add(result);
+        }
+        return results;
     }
 }
