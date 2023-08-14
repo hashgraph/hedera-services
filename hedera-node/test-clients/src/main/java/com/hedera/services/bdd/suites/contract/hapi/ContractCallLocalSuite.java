@@ -34,7 +34,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -48,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -60,14 +60,16 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+
+import java.math.BigInteger;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 @HapiTestSuite
 public class ContractCallLocalSuite extends HapiSuite {
@@ -115,7 +117,7 @@ public class ContractCallLocalSuite extends HapiSuite {
         final AtomicReference<com.esaulpaugh.headlong.abi.Address> nftOwnerAddress = new AtomicReference<>();
         final AtomicReference<com.esaulpaugh.headlong.abi.Address> senderAddress = new AtomicReference<>();
 
-        return defaultHapiSpec("vanillaSuccess")
+        return defaultHapiSpec("htsOwnershipCheckWorksWithAliasAddress")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(SUPPLY_KEY),
@@ -175,7 +177,9 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .then(
                         // Assert that the address of the query sender and the address of the nft owner returned by the
                         // HTS precompiled contract are the same
-                        assertionsHold((spec, opLog) -> assertEquals(senderAddress.get(), nftOwnerAddress.get())));
+                        withOpContext((spec, opLog) -> {
+                            assertEquals(senderAddress.get(), nftOwnerAddress.get(), "Sender address should match the owner address.");
+                        }));
     }
 
     private HapiSpec vanillaSuccess() {
