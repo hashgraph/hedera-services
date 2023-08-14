@@ -17,13 +17,12 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.state.MigrationContext;
 import com.hedera.node.app.spi.state.Schema;
 import com.hedera.node.app.spi.state.SchemaRegistry;
 import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -51,8 +50,8 @@ public final class FreezeServiceImpl implements FreezeService {
                 // Reset the upgrade file hash to empty
                 // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
                 // Nothing in state can ever be null, so use Bytes.EMPTY to indicate an empty hash
-                final var upgradeFileHashKeyState = ctx.newStates().getSingleton(UPGRADE_FILE_HASH_KEY);
-                upgradeFileHashKeyState.put(Bytes.EMPTY);
+                final var upgradeFileHashKeyState = ctx.newStates().<ProtoBytes>getSingleton(UPGRADE_FILE_HASH_KEY);
+                upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             }
         };
     }

@@ -147,9 +147,6 @@ module com.swirlds.platform {
     /* Apache Commons */
     requires org.apache.commons.lang3;
 
-    /* Networking Libraries */
-    requires portmapper;
-
     /* Logging Libraries */
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;

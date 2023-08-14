@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.portforwarding;
+package com.swirlds.common.merkle.proof.algorithms;
 
-import java.util.List;
+import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.system.NodeId;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface PortForwarder {
+/**
+ * A signature and the node ID of the signer.
+ *
+ * @param nodeId    the node ID of the signer
+ * @param signature the signature
+ */
+public record NodeSignature(@NonNull NodeId nodeId, @NonNull Signature signature) implements Comparable<NodeSignature> {
 
-    public void addListener(PortMappingListener listener);
-
-    public void addPortMapping(String ip, int internalPort, int externalPort, Protocol protocol, String name);
-
-    public void setPortMappings(List<PortMapping> portsToBeMapped);
-
-    public void execute();
-
-    public void refreshMappings();
-
-    public String getExternalIPAddress();
-
-    public boolean isSuccessful();
-
-    public void closeService();
-
-    public enum Protocol {
-        TCP,
-        UDP
+    @Override
+    public int compareTo(@NonNull final NodeSignature o) {
+        return nodeId.compareTo(o.nodeId);
     }
 }

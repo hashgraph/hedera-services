@@ -19,7 +19,7 @@ package com.hedera.node.app.service.networkadmin.impl;
 import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.state.primitive.ProtoBytes;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
 import com.hedera.node.app.spi.state.ReadableSingletonState;
 import com.hedera.node.app.spi.state.ReadableStates;

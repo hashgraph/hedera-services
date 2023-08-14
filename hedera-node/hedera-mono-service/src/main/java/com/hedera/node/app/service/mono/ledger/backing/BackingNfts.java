@@ -19,10 +19,7 @@ package com.hedera.node.app.service.mono.ledger.backing;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.store.models.NftId;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,18 +56,6 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenAdapter> {
     @Override
     public boolean contains(final NftId id) {
         return delegate.get().containsKey(id);
-    }
-
-    @Override
-    public Set<NftId> idSet() {
-        if (delegate.get().isVirtual()) {
-            throw new UnsupportedOperationException();
-        }
-        LOG.warn("idSet() called for BackingNfts. This is a slow operation.");
-        return delegate.get().merkleMap().keySet().stream()
-                .map(EntityNumPair::asTokenNumAndSerialPair)
-                .map(pair -> NftId.withDefaultShardRealm(pair.getLeft(), pair.getRight()))
-                .collect(Collectors.toSet());
     }
 
     @Override

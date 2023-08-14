@@ -67,6 +67,7 @@ import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -94,6 +95,7 @@ public class HandleWorkflow {
     private final FeeManager feeManager;
     private final ExchangeRateManager exchangeRateManager;
     private final ParentRecordFinalizer transactionFinalizer;
+    private final SystemFileUpdateFacility systemFileUpdateFacility;
 
     @Inject
     public HandleWorkflow(
@@ -112,7 +114,8 @@ public class HandleWorkflow {
             @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
             @NonNull final FeeManager feeManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final ParentRecordFinalizer transactionFinalizer) {
+            @NonNull final ParentRecordFinalizer transactionFinalizer,
+            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
         this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
@@ -129,6 +132,8 @@ public class HandleWorkflow {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
         this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
+        this.systemFileUpdateFacility =
+                requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
     }
 
     /**
@@ -138,10 +143,17 @@ public class HandleWorkflow {
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(@NonNull final HederaState state, @NonNull final Round round) {
+        // Keep track of whether any user transactions were handled. If so, then we will need to close the round
+        // with the block record manager.
+        final var userTransactionsHandled = new AtomicBoolean(false);
         // handle each transaction in the round
-        round.forEachEventTransaction((event, txn) -> {
+        round.forEachEventTransaction((event, platformTxn) -> {
             try {
-                handlePlatformTransaction(state, event, txn);
+                // skip system transactions
+                if (!platformTxn.isSystem()) {
+                    userTransactionsHandled.set(true);
+                    handlePlatformTransaction(state, event, platformTxn);
+                }
             } catch (final Throwable e) {
                 logger.fatal(
                         "A fatal unhandled exception occurred during transaction handling. "
@@ -149,21 +161,19 @@ public class HandleWorkflow {
                         e);
             }
         });
-        // inform BlockRecordManager that the round is complete, so it can update running-hashes in state
+        // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do.
-        blockRecordManager.endRound(state);
+        if (userTransactionsHandled.get()) {
+            blockRecordManager.endRound(state);
+        }
     }
 
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final ConsensusTransaction platformTxn) {
-        // skip system transactions
-        if (platformTxn.isSystem()) {
-            return;
-        }
 
         // Get the consensus timestamp
         final Instant consensusNow = platformTxn.getConsensusTimestamp();
@@ -209,6 +219,9 @@ public class HandleWorkflow {
                 default -> throw new PreCheckException(preHandleResult.responseCode());
             }
 
+            // Check the time box of the transaction
+            checker.checkTimeBox(txBody, consensusNow);
+
             // Check all signature verifications. This will also wait, if validation is still ongoing.
             final var verifier = new BaseHandleContextVerifier(hederaConfig, preHandleResult.verificationResults());
 
@@ -225,7 +238,7 @@ public class HandleWorkflow {
             }
 
             // Setup context
-            final var stack = new SavepointStackImpl(state, configuration);
+            final var stack = new SavepointStackImpl(state);
             final var context = new HandleContextImpl(
                     transactionInfo,
                     preHandleResult.payer(),
@@ -234,6 +247,7 @@ public class HandleWorkflow {
                     TransactionCategory.USER,
                     recordBuilder,
                     stack,
+                    configuration,
                     verifier,
                     recordListBuilder,
                     checker,
@@ -254,14 +268,19 @@ public class HandleWorkflow {
             dispatcher.dispatchHandle(context);
 
             // TODO: Finalize transaction with the help of the token service
-            final var finalizationContext = new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, stack);
+            final var finalizationContext =
+                    new FinalizeContextImpl(preHandleResult.payer(), recordBuilder, configuration, stack);
             transactionFinalizer.finalizeParentRecord(
                     finalizationContext, List.of()); // TODO Need actual list of child records?
 
             recordBuilder.status(SUCCESS);
 
             // commit state
-            stack.commit();
+            stack.commitFullStack();
+
+            // Notify responsible facility if system-file was uploaded
+            systemFileUpdateFacility.handleTxBody(state, txBody);
+
         } catch (final PreCheckException e) {
             recordFailedTransaction(e.responseCode(), recordBuilder, recordListBuilder);
         } catch (final HandleException e) {
