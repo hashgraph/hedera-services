@@ -96,7 +96,7 @@ public class MapKey implements SelfSerializable, Comparable<MapKey>, FastCopyabl
 
     @Override
     public String toString() {
-        return "MapKey{" + "shardId=" + shardId + ", realmId=" + realmId + ", accountId=" + accountId + '}';
+        return "MapKey[" + shardId + "," + realmId + "," + accountId + ']';
     }
 
     @Override
