@@ -24,6 +24,7 @@ import com.hedera.node.app.service.contract.impl.exec.operations.CustomChainIdOp
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import java.util.Deque;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -45,6 +46,9 @@ class CustomChainIdOperationTest {
     private EVM evm;
 
     @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
     private MessageFrame messageFrame;
 
     private CustomChainIdOperation subject;
@@ -60,6 +64,8 @@ class CustomChainIdOperationTest {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("hedera.allowances.maxAccountLimit", 2)
                 .getOrCreateConfig();
+        given(messageFrame.getMessageFrameStack()).willReturn(stack);
+        given(stack.isEmpty()).willReturn(true);
         given(messageFrame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(config);
         given(messageFrame.getRemainingGas()).willReturn(Long.MAX_VALUE);
         final var contractsConfig = config.getConfigData(ContractsConfig.class);

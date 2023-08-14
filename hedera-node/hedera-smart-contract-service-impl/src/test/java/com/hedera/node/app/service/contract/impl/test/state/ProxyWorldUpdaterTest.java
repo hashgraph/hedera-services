@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.test.state;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_VALUE_TRANSFER;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.SELFDESTRUCT_TO_SELF;
+import static com.hedera.node.app.service.contract.impl.exec.scope.HederaNativeOperations.MISSING_ENTITY_NUMBER;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OUTPUT_DATA;
@@ -47,6 +48,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HederaOperations;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.EvmFrameStateFactory;
+import com.hedera.node.app.service.contract.impl.state.PendingCreation;
 import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.StorageAccess;
@@ -270,8 +272,7 @@ class ProxyWorldUpdaterTest {
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
         verify(hederaOperations)
-                .createContract(
-                        NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), 1, aliasFrom(SOME_EVM_ADDRESS));
+                .createContract(NEXT_NUMBER, ALTBN128_ADD.toBigInteger().longValueExact(), aliasFrom(SOME_EVM_ADDRESS));
     }
 
     @Test
@@ -283,7 +284,17 @@ class ProxyWorldUpdaterTest {
         subject.createAccount(SOME_EVM_ADDRESS, 1, Wei.ZERO);
 
         verify(hederaOperations)
-                .createContract(NEXT_NUMBER, ContractCreateTransactionBody.DEFAULT, 1, aliasFrom(SOME_EVM_ADDRESS));
+                .createContract(NEXT_NUMBER, ContractCreateTransactionBody.DEFAULT, aliasFrom(SOME_EVM_ADDRESS));
+    }
+
+    @Test
+    void usesJustAliasForTopLevelLazyCreate() {
+        given(hederaOperations.peekNextEntityNumber()).willReturn(NEXT_NUMBER);
+
+        subject.setupTopLevelLazyCreate(SOME_EVM_ADDRESS);
+
+        final var expectedPending = new PendingCreation(SOME_EVM_ADDRESS, NEXT_NUMBER, MISSING_ENTITY_NUMBER, null);
+        assertEquals(expectedPending, subject.getPendingCreation());
     }
 
     @Test
@@ -293,7 +304,7 @@ class ProxyWorldUpdaterTest {
         assertEquals(NEXT_LONG_ZERO_ADDRESS, subject.setupTopLevelCreate(ContractCreateTransactionBody.DEFAULT));
         subject.createAccount(NEXT_LONG_ZERO_ADDRESS, 1, Wei.ZERO);
 
-        verify(hederaOperations).createContract(NEXT_NUMBER, ContractCreateTransactionBody.DEFAULT, 1, null);
+        verify(hederaOperations).createContract(NEXT_NUMBER, ContractCreateTransactionBody.DEFAULT, null);
     }
 
     @Test
@@ -360,10 +371,21 @@ class ProxyWorldUpdaterTest {
     }
 
     @Test
+    void updaterPreservesPendingCreation() {
+        given(hederaOperations.begin()).willReturn(hederaOperations);
+        subject.setupTopLevelLazyCreate(SOME_EVM_ADDRESS);
+        final var updater = subject.updater();
+        assertInstanceOf(ProxyWorldUpdater.class, updater);
+        assertTrue(updater.parentUpdater().isPresent());
+        assertSame(subject, updater.parentUpdater().get());
+        assertSame(subject.getPendingCreation(), updater.getPendingCreation());
+    }
+
+    @Test
     void delegatesTransfer() {
         given(evmFrameState.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true))
                 .willReturn(Optional.of(INVALID_RECEIVER_SIGNATURE));
-        final var maybeHaltReason = subject.tryTransferFromContract(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
+        final var maybeHaltReason = subject.tryTransfer(ALTBN128_ADD, SOME_EVM_ADDRESS, 123L, true);
         assertTrue(maybeHaltReason.isPresent());
         assertEquals(INVALID_RECEIVER_SIGNATURE, maybeHaltReason.get());
     }

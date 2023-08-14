@@ -38,7 +38,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
  * A customization of the Besu {@link ContractCreationProcessor} that replaces the
  * explicit {@code sender.decrementBalance(frame.getValue())} and
  * {@code contract.incrementBalance(frame.getValue())} calls with a single call
- * to the {@link HederaWorldUpdater#tryTransferFromContract(Address, Address, long, boolean)}
+ * to the {@link HederaWorldUpdater#tryTransfer(Address, Address, long, boolean)}
  * dispatch method.
  */
 public class CustomContractCreationProcessor extends ContractCreationProcessor {
@@ -72,7 +72,7 @@ public class CustomContractCreationProcessor extends ContractCreationProcessor {
         } else {
             final var updater = proxyUpdaterFor(frame);
             // A contract creation is never a delegate call, hence the false argument below
-            final var maybeReasonToHalt = updater.tryTransferFromContract(
+            final var maybeReasonToHalt = updater.tryTransfer(
                     frame.getSenderAddress(), addressToCreate, frame.getValue().toLong(), false);
             if (maybeReasonToHalt.isPresent()) {
                 // Besu doesn't trace the creation on a modification exception, so seems

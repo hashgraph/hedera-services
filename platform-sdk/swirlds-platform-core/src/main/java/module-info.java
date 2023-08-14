@@ -147,9 +147,6 @@ module com.swirlds.platform {
     /* Apache Commons */
     requires org.apache.commons.lang3;
 
-    /* Networking Libraries */
-    requires portmapper;
-
     /* Logging Libraries */
     requires org.apache.logging.log4j;
     requires org.apache.logging.log4j.core;
@@ -160,7 +157,7 @@ module com.swirlds.platform {
 
     /* Database Libraries */
     requires com.swirlds.fchashmap;
-    requires com.swirlds.merkledb;
+    requires com.swirlds.jasperdb;
     requires com.swirlds.virtualmap;
     requires com.swirlds.fcqueue;
     requires com.swirlds.config;

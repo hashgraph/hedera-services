@@ -55,6 +55,7 @@ import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
@@ -591,6 +592,7 @@ public final class Hedera implements SwirldMain {
         // Now that we have the state created, we are ready to create the dependency graph with Dagger
         initializeDagger(state, GENESIS);
 
+        initializeFeeManager(state);
         initializeExchangeRateManager(state);
 
         // Store the version in state
@@ -791,6 +793,26 @@ public final class Hedera implements SwirldMain {
         }
     }
 
+    private void initializeFeeManager(@NonNull final HederaState state) {
+        logger.info("Initializing fee schedules");
+        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
+        final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
+        final var fileNum = filesConfig.feeSchedules();
+        final var fileId = FileID.newBuilder()
+                .fileNum(fileNum)
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .build();
+
+        final var fileOpt = readableFileStore.getFileLeaf(fileId);
+        fileOpt.ifPresent(file -> {
+            final var fileData = file.contents();
+            daggerApp.feeManager().update(fileData);
+        });
+        logger.info("Fee schedule initialized");
+    }
+
     private void initializeExchangeRateManager(@NonNull final HederaState state) {
         logger.info("Initializing exchange rates");
         final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
@@ -801,7 +823,7 @@ public final class Hedera implements SwirldMain {
                 .fileNum(fileNum)
                 .shardNum(hederaConfig.shard())
                 .realmNum(hederaConfig.realm())
-                .build(); // default to shard=0, realm=0
+                .build();
 
         final var fileOpt = readableFileStore.getFileLeaf(fileId);
         fileOpt.ifPresent(file -> {
@@ -904,6 +926,7 @@ public final class Hedera implements SwirldMain {
             daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                     .initTrigger(trigger)
                     .configuration(configProvider)
+                    .systemFileUpdateFacility(new SystemFileUpdateFacility(configProvider))
                     .self(SelfNodeInfoImpl.of(nodeAddress, version))
                     .initialHash(initialHash)
                     .platform(platform)

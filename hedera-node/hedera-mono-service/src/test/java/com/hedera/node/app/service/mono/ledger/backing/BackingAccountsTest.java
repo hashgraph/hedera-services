@@ -37,7 +37,6 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.merkle.map.MerkleMap;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,14 +92,6 @@ class BackingAccountsTest {
     }
 
     @Test
-    void idSetIsDedicatedAuxiliary() {
-        final var firstIdSet = subject.idSet();
-        final var secondIdSet = subject.idSet();
-
-        assertSame(firstIdSet, secondIdSet);
-    }
-
-    @Test
     void containsDelegatesToKnownActive() {
         // expect:
         assertTrue(subject.contains(a));
@@ -149,15 +140,6 @@ class BackingAccountsTest {
 
         // then:
         assertEquals(bValue, immutable);
-    }
-
-    @Test
-    void returnsExpectedIds() {
-        // setup:
-        final var s = Set.of(a, b);
-
-        // expect:
-        assertEquals(s, subject.idSet());
     }
 
     @Test

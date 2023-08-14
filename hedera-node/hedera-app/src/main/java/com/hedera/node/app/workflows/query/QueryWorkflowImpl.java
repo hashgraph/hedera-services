@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER_STATE_PROOF;
-import static com.hedera.node.app.spi.HapiUtils.asTimestamp;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -34,7 +33,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.HapiUtils;
 import com.hedera.node.app.spi.UnknownHederaFunctionality;
@@ -57,7 +55,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -82,7 +79,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final IngestChecker ingestChecker;
     private final QueryDispatcher dispatcher;
 
-    private final FeeAccumulator feeAccumulator;
     private final Codec<Query> queryParser;
     private final ConfigProvider configProvider;
     private final RecordCache recordCache;
@@ -107,7 +103,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final QueryChecker queryChecker,
             @NonNull final IngestChecker ingestChecker,
             @NonNull final QueryDispatcher dispatcher,
-            @NonNull final FeeAccumulator feeAccumulator,
             @NonNull final Codec<Query> queryParser,
             @NonNull final ConfigProvider configProvider,
             @NonNull final RecordCache recordCache) {
@@ -117,7 +112,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.ingestChecker = requireNonNull(ingestChecker);
         this.queryChecker = requireNonNull(queryChecker);
         this.dispatcher = requireNonNull(dispatcher);
-        this.feeAccumulator = requireNonNull(feeAccumulator);
         this.queryParser = requireNonNull(queryParser);
         this.configProvider = requireNonNull(configProvider);
         this.recordCache = requireNonNull(recordCache);
@@ -159,6 +153,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             final var state = wrappedState.get();
             final var storeFactory = new ReadableStoreFactory(state);
             final var paymentRequired = handler.requiresNodePayment(responseType);
+            final var context =
+                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
             Transaction allegedPayment = null;
             TransactionBody txBody = null;
             if (paymentRequired) {
@@ -177,9 +173,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 queryChecker.checkPermissions(payer, function);
 
                 // 4.iv Calculate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = feeData.totalFee();
+                fee = handler.computeFees(context).totalFee();
 
                 // 4.v Check account balances
                 queryChecker.validateAccountBalances(payer, transactionInfo, fee);
@@ -194,15 +188,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             }
 
             // 5. Check validity of query
-            final var context =
-                    new QueryContextImpl(storeFactory, query, configProvider.getConfiguration(), recordCache);
             handler.validate(context);
 
             if (handler.needsAnswerOnlyCost(responseType)) {
                 // 6.i Estimate costs
-                final var feeData =
-                        feeAccumulator.computePayment(storeFactory, function, query, asTimestamp(Instant.now()));
-                fee = feeData.totalFee();
+                fee = handler.computeFees(context).totalFee();
 
                 final var header = createResponseHeader(responseType, OK, fee);
                 response = handler.createEmptyResponse(header);
@@ -223,7 +213,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             Response.PROTOBUF.write(response, responseBuffer);
             logger.debug("Finished handling a query request in Query workflow");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warn("Unexpected IO exception while writing protobuf", e);
             throw new StatusRuntimeException(Status.INTERNAL);
         }
     }

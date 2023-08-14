@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.ReadableUpgradeStore;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.ReadableUpgradeStoreImpl;
@@ -55,8 +56,8 @@ class ReadableUpgradeStoreTest {
 
     @Test
     void testUpdateFileHash() {
-        final Bytes hashBytes = Bytes.wrap("test hash");
-        final AtomicReference<Bytes> backingStore = new AtomicReference<>(hashBytes);
+        final ProtoBytes hashBytes = new ProtoBytes(Bytes.wrap("test hash"));
+        final AtomicReference<ProtoBytes> backingStore = new AtomicReference<>(hashBytes);
         when(readableStates.getSingleton(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY))
                 .then(invocation ->
                         new ReadableSingletonStateBase<>(FreezeServiceImpl.UPGRADE_FILE_HASH_KEY, backingStore::get));
