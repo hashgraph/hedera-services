@@ -143,7 +143,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
         }
 
         @Override
-        public void multipurposeAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        public void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
             // Intentional no-op
         }
 

@@ -37,9 +37,9 @@ public interface GenesisRecordsConsensusHook extends ConsensusTimeHook {
     void stakingAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
 
     /**
-     * Tracks the multipurpose accounts created during node startup. These accounts are typically used for testing
+     * Tracks miscellaneous accounts created during node startup. These accounts are typically used for testing
      */
-    void multipurposeAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
+    void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts);
 
     /**
      * Tracks the treasury clones created during node startup

@@ -140,7 +140,7 @@ class SystemAccountsInitializerTest {
                 .containsExactlyInAnyOrder(800L, 801L);
 
         // Verify created multipurpose accounts
-        verify(genesisRecordsBuilder).multipurposeAccounts(multiuseAcctMapCaptor.capture());
+        verify(genesisRecordsBuilder).miscAccounts(multiuseAcctMapCaptor.capture());
         final var multiuseAcctsResult = multiuseAcctMapCaptor.getValue();
         Assertions.assertThat(multiuseAcctsResult).isNotNull().hasSize(101).allSatisfy((account, builder) -> {
             Assertions.assertThat(account).isNotNull();
@@ -205,7 +205,7 @@ class SystemAccountsInitializerTest {
         // Only the staking acct with ID 801 should have been created
         Assertions.assertThat(stakingAcctsResult).hasSize(1);
 
-        verify(genesisRecordsBuilder).multipurposeAccounts(multiuseAcctMapCaptor.capture());
+        verify(genesisRecordsBuilder).miscAccounts(multiuseAcctMapCaptor.capture());
         final var multiuseAcctsResult = multiuseAcctMapCaptor.getValue();
         // Only multi-use accts with IDs 951-1000 should have been created
         Assertions.assertThat(multiuseAcctsResult).hasSize(50);
@@ -237,7 +237,7 @@ class SystemAccountsInitializerTest {
 
         verify(genesisRecordsBuilder).systemAccounts(emptyMap());
         verify(genesisRecordsBuilder).stakingAccounts(emptyMap());
-        verify(genesisRecordsBuilder).multipurposeAccounts(emptyMap());
+        verify(genesisRecordsBuilder).miscAccounts(emptyMap());
         verify(genesisRecordsBuilder).treasuryClones(emptyMap());
     }
 

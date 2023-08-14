@@ -48,7 +48,7 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
 
     private Map<Account, CryptoCreateTransactionBody.Builder> systemAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> stakingAccounts = new HashMap<>();
-    private Map<Account, CryptoCreateTransactionBody.Builder> multipurposeAccounts = new HashMap<>();
+    private Map<Account, CryptoCreateTransactionBody.Builder> miscAccounts = new HashMap<>();
     private Map<Account, CryptoCreateTransactionBody.Builder> treasuryClones = new HashMap<>();
 
     /**
@@ -71,9 +71,9 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
             stakingAccounts = Collections.emptyMap();
         }
 
-        if (!multipurposeAccounts.isEmpty()) {
-            createAccountRecordBuilders(multipurposeAccounts, context, null);
-            multipurposeAccounts = Collections.emptyMap();
+        if (!miscAccounts.isEmpty()) {
+            createAccountRecordBuilders(miscAccounts, context, null);
+            miscAccounts = Collections.emptyMap();
         }
 
         if (!treasuryClones.isEmpty()) {
@@ -93,8 +93,8 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
     }
 
     @Override
-    public void multipurposeAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
-        multipurposeAccounts.putAll(requireNonNull(accounts));
+    public void miscAccounts(@NonNull final Map<Account, CryptoCreateTransactionBody.Builder> accounts) {
+        miscAccounts.putAll(requireNonNull(accounts));
     }
 
     @Override

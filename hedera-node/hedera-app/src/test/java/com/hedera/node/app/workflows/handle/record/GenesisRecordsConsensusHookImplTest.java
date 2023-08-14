@@ -20,6 +20,7 @@ import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
+import static org.mockito.Mockito.atLeastOnce;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
@@ -55,6 +56,10 @@ class GenesisRecordsConsensusHookImplTest {
             CryptoCreateTransactionBody.newBuilder().memo("builder2").build();
     private static final Instant CONSENSUS_NOW = Instant.parse("2023-08-10T00:00:00Z");
 
+    private static final String EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
+    private static final String EXPECTED_STAKING_MEMO = "Release 0.24.1 migration record";
+    private static final String EXPECTED_TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
+
     @Mock(strictness = Mock.Strictness.LENIENT)
     private HandleContext context;
 
@@ -77,8 +82,8 @@ class GenesisRecordsConsensusHookImplTest {
 
         subject.process(CONSENSUS_NOW, context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE);
+        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
     }
 
     @Test
@@ -94,25 +99,26 @@ class GenesisRecordsConsensusHookImplTest {
                         .copyBuilder()
                         .autoRenewPeriod(
                                 Duration.newBuilder().seconds(expectedAutoRenew).build())
-                        .build());
+                        .build(),
+                EXPECTED_STAKING_MEMO);
         verifyBuilderInvoked(
                 ACCOUNT_ID_2,
                 ACCT_2_CREATE
                         .copyBuilder()
                         .autoRenewPeriod(
                                 Duration.newBuilder().seconds(expectedAutoRenew).build())
-                        .build());
+                        .build(),
+                EXPECTED_STAKING_MEMO);
     }
 
     @Test
     void processCreatesMultipurposeAccounts() {
-        subject.multipurposeAccounts(
-                Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
+        subject.miscAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
 
         subject.process(CONSENSUS_NOW, context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE);
+        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, null);
+        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, null);
     }
 
     @Test
@@ -121,8 +127,8 @@ class GenesisRecordsConsensusHookImplTest {
 
         subject.process(CONSENSUS_NOW, context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE);
+        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_TREASURY_CLONE_MEMO);
+        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE, EXPECTED_TREASURY_CLONE_MEMO);
     }
 
     @Test
@@ -135,13 +141,13 @@ class GenesisRecordsConsensusHookImplTest {
         final var acct4Create = ACCT_1_CREATE.copyBuilder().memo("builder4").build();
         subject.systemAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder()));
         subject.stakingAccounts(Map.of(ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
-        subject.multipurposeAccounts(Map.of(acct3, acct3Create.copyBuilder()));
+        subject.miscAccounts(Map.of(acct3, acct3Create.copyBuilder()));
         subject.treasuryClones(Map.of(acct4, acct4Create.copyBuilder()));
 
         // Call the first time to make sure records are generated
         subject.process(CONSENSUS_NOW, context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE);
+        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO);
         verifyBuilderInvoked(
                 ACCOUNT_ID_2,
                 ACCT_2_CREATE
@@ -149,9 +155,10 @@ class GenesisRecordsConsensusHookImplTest {
                         .autoRenewPeriod(Duration.newBuilder()
                                 .seconds(FUNDING_ACCOUNT_EXPIRY - CONSENSUS_NOW.getEpochSecond())
                                 .build())
-                        .build());
-        verifyBuilderInvoked(acctId3, acct3Create);
-        verifyBuilderInvoked(acctId4, acct4Create);
+                        .build(),
+                EXPECTED_STAKING_MEMO);
+        verifyBuilderInvoked(acctId3, acct3Create, null);
+        verifyBuilderInvoked(acctId4, acct4Create, EXPECTED_TREASURY_CLONE_MEMO);
 
         // Call process() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
@@ -180,8 +187,7 @@ class GenesisRecordsConsensusHookImplTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void multipurposeAccountsNullParam() {
-        Assertions.assertThatThrownBy(() -> subject.multipurposeAccounts(null))
-                .isInstanceOf(NullPointerException.class);
+        Assertions.assertThatThrownBy(() -> subject.miscAccounts(null)).isInstanceOf(NullPointerException.class);
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -190,9 +196,14 @@ class GenesisRecordsConsensusHookImplTest {
         Assertions.assertThatThrownBy(() -> subject.treasuryClones(null)).isInstanceOf(NullPointerException.class);
     }
 
-    private void verifyBuilderInvoked(final AccountID acctId, final CryptoCreateTransactionBody acctCreateBody) {
+    private void verifyBuilderInvoked(
+            final AccountID acctId, final CryptoCreateTransactionBody acctCreateBody, final String expectedMemo) {
         verify(genesisAccountRecordBuilder).accountID(acctId);
         verify(genesisAccountRecordBuilder).transaction(asCryptoCreateTxn(acctCreateBody));
+        if (expectedMemo != null)
+            verify(genesisAccountRecordBuilder, atLeastOnce()).memo(expectedMemo);
+        //noinspection DataFlowIssue
+        verify(genesisAccountRecordBuilder, Mockito.never()).memo(null);
     }
 
     private static Transaction asCryptoCreateTxn(CryptoCreateTransactionBody body) {

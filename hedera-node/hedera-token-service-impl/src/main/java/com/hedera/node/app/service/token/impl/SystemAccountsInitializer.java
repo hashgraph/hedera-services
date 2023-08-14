@@ -143,7 +143,7 @@ public class SystemAccountsInitializer {
                 // no need to add to system ledger balance because these accounts are initialized with zero
             }
         }
-        recordsKeeper.multipurposeAccounts(multiAccts);
+        recordsKeeper.miscAccounts(multiAccts);
 
         // ---------- Create treasury clones -------------------------
         // Since version 0.28.6, all of these clone accounts should either all exist (on a restart) or all not exist
