@@ -496,7 +496,7 @@ public class HandleContextImpl implements HandleContext {
             childStack.commitFullStack();
         } catch (HandleException e) {
             childRecordBuilder.status(e.getStatus());
-            recordListBuilder.revertChildRecordBuilders(recordBuilder);
+            recordListBuilder.revertChildRecordBuilders(childRecordBuilder);
         }
     }
 
