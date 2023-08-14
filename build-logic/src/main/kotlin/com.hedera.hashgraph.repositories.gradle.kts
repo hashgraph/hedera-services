@@ -15,10 +15,6 @@
  * DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-plugins {
-    java
-}
-
 repositories {
     mavenCentral()
     maven {
