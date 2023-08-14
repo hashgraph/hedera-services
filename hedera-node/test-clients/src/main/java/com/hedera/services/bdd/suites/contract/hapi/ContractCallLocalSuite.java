@@ -174,12 +174,10 @@ public class ContractCallLocalSuite extends HapiSuite {
                 .then(
                         // Assert that the address of the query sender and the address of the nft owner returned by the
                         // HTS precompiled contract are the same
-                        withOpContext((spec, opLog) -> {
-                            assertEquals(
-                                    senderAddress.get(),
-                                    nftOwnerAddress.get(),
-                                    "Sender address should match the owner address.");
-                        }));
+                        withOpContext((spec, opLog) -> assertEquals(
+                                senderAddress.get(),
+                                nftOwnerAddress.get(),
+                                "Sender address should match the owner address.")));
     }
 
     private HapiSpec vanillaSuccess() {
