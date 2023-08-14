@@ -291,7 +291,7 @@ public class WorldLedgers {
         if (staticEntityAccess == null) {
             throw new IllegalStateException("staticApprovedOf should only be used with StaticEntityAccess");
         } else {
-            return staticEntityAccess.approvedSpenderOf(nftId);
+            return canonicalAddress(staticEntityAccess.approvedSpenderOf(nftId));
         }
     }
 
@@ -315,7 +315,7 @@ public class WorldLedgers {
         if (!areMutable()) {
             return staticEntityAccess.ownerOf(nftId);
         }
-        return explicitOwnerOfExtant(nftId).toEvmAddress();
+        return canonicalAddress(explicitOwnerOfExtant(nftId).toEvmAddress());
     }
 
     @SuppressWarnings("unchecked")
