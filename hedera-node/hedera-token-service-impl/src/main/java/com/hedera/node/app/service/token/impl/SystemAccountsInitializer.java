@@ -50,7 +50,6 @@ public class SystemAccountsInitializer {
     private static final Logger log = LogManager.getLogger(SystemAccountsInitializer.class);
 
     private static final int ZERO_BALANCE = 0;
-
     private static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
     private static final long FIRST_POST_SYSTEM_FILE_ENTITY = 200L;
     private static final long FIRST_RESERVED_SYSTEM_CONTRACT = 350L;

@@ -16,11 +16,13 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -80,13 +82,26 @@ class GenesisRecordsConsensusHookImplTest {
     }
 
     @Test
-    void processCreatesStakingAccounts() {
+    void processCreatesStakingAccountsWithImplicitExpiry() {
         subject.stakingAccounts(Map.of(ACCOUNT_1, ACCT_1_CREATE.copyBuilder(), ACCOUNT_2, ACCT_2_CREATE.copyBuilder()));
 
         subject.process(CONSENSUS_NOW, context);
 
-        verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE);
+        final var expectedAutoRenew = FUNDING_ACCOUNT_EXPIRY - CONSENSUS_NOW.getEpochSecond();
+        verifyBuilderInvoked(
+                ACCOUNT_ID_1,
+                ACCT_1_CREATE
+                        .copyBuilder()
+                        .autoRenewPeriod(
+                                Duration.newBuilder().seconds(expectedAutoRenew).build())
+                        .build());
+        verifyBuilderInvoked(
+                ACCOUNT_ID_2,
+                ACCT_2_CREATE
+                        .copyBuilder()
+                        .autoRenewPeriod(
+                                Duration.newBuilder().seconds(expectedAutoRenew).build())
+                        .build());
     }
 
     @Test
@@ -127,7 +142,14 @@ class GenesisRecordsConsensusHookImplTest {
         subject.process(CONSENSUS_NOW, context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, ACCT_1_CREATE);
-        verifyBuilderInvoked(ACCOUNT_ID_2, ACCT_2_CREATE);
+        verifyBuilderInvoked(
+                ACCOUNT_ID_2,
+                ACCT_2_CREATE
+                        .copyBuilder()
+                        .autoRenewPeriod(Duration.newBuilder()
+                                .seconds(FUNDING_ACCOUNT_EXPIRY - CONSENSUS_NOW.getEpochSecond())
+                                .build())
+                        .build());
         verifyBuilderInvoked(acctId3, acct3Create);
         verifyBuilderInvoked(acctId4, acct4Create);
 

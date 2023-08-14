@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
@@ -64,7 +66,8 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
         }
 
         if (!stakingAccounts.isEmpty()) {
-            createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO);
+            final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - consensusTime.getEpochSecond();
+            createAccountRecordBuilders(stakingAccounts, context, STAKING_MEMO, implicitAutoRenewPeriod);
             stakingAccounts = Collections.emptyMap();
         }
 
@@ -103,6 +106,14 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
             @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
             @NonNull final HandleContext context,
             @Nullable final String recordMemo) {
+        createAccountRecordBuilders(map, context, recordMemo, null);
+    }
+
+    private void createAccountRecordBuilders(
+            @NonNull final Map<Account, CryptoCreateTransactionBody.Builder> map,
+            @NonNull final HandleContext context,
+            @Nullable final String recordMemo,
+            @Nullable final Long overrideAutoRenewPeriod) {
         for (Map.Entry<Account, CryptoCreateTransactionBody.Builder> entry : map.entrySet()) {
             final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
 
@@ -110,7 +121,9 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
             recordBuilder.accountID(accountId);
             if (recordMemo != null) recordBuilder.memo(recordMemo);
 
-            var txnBody = entry.getValue().build();
+            var txnBody = entry.getValue();
+            if (overrideAutoRenewPeriod != null)
+                txnBody.autoRenewPeriod(Duration.newBuilder().seconds(overrideAutoRenewPeriod));
             var txnBuilder =
                     Transaction.newBuilder().body(TransactionBody.newBuilder().cryptoCreateAccount(txnBody));
             recordBuilder.transaction(txnBuilder.build());

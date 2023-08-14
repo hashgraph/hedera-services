@@ -48,7 +48,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SystemsAccountInitializerTest {
+class SystemAccountsInitializerTest {
     private static final long EXPECTED_TREASURY_BALANCE = 5000000000000000000L;
     private static final int NUM_SYSTEM_ACCOUNTS = 312;
     private static final long EXPECTED_ENTITY_EXPIRY = 1812637686L;
