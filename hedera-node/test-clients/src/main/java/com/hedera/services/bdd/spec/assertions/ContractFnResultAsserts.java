@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Assertions;
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
     static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
 
-    private static final Random rand = new Random(); // NOSONAR
+    private static final Random rand = new Random(704833L);
 
     public static ContractFnResultAsserts resultWith() {
         return new ContractFnResultAsserts();

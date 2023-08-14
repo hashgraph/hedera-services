@@ -102,7 +102,7 @@ public class KeyExport extends HapiSuite {
     }
 
     private HapiSpec exportGenesisKey() {
-        final var r = new Random();
+        final var r = new Random(271230L);
         final int passphraseLength = 24;
         final char[] choices = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
         final KeyShape listOfSizeOne = listOf(1);

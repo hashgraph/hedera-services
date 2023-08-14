@@ -163,7 +163,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
         }
 
         Node root = new Node();
-        Random r = new Random();
+        Random r = new Random(870235L);
 
         public ByteTrie(List<byte[]> allA) {
             allA.stream().forEach(a -> insert(a));

@@ -66,7 +66,7 @@ public class SubmitMessageLoadTest extends LoadTest {
     private static String pemFile = null;
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
 
-    private static Random r = new Random();
+    private static Random r = new Random(177708L);
 
     public static void main(String... args) {
         int usedArgs = parseArgs(args);

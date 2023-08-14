@@ -101,7 +101,7 @@ public class MixedOpsLoadTest extends LoadTest {
 
     protected HapiSpec runMixedOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
-        Random r = new Random();
+        Random r = new Random(511523L);
         AtomicInteger tokenId = new AtomicInteger(0);
         AtomicInteger scheduleId = new AtomicInteger(0);
 

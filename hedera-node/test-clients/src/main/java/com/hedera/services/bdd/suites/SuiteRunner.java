@@ -213,7 +213,7 @@ import org.apache.logging.log4j.Logger;
 
 public class SuiteRunner {
     @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
-    private static final Random RANDOM = new Random();
+    private static final Random RANDOM = new Random(544470L);
 
     private static final Logger log = LogManager.getLogger(SuiteRunner.class);
     public static final int SUITE_NAME_WIDTH = 32;

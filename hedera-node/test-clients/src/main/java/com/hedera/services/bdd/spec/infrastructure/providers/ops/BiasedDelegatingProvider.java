@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 public class BiasedDelegatingProvider implements OpProvider {
     private static final Logger log = LogManager.getLogger(BiasedDelegatingProvider.class);
 
-    private final Random r = new Random();
+    private final Random r = new Random(505397L);
     private final List<Integer> cumulativeBias = new ArrayList<>(List.of(0));
     private final List<OpProvider> delegates = new ArrayList<>();
     private final List<HapiSpecOperation> globalInitializers = new ArrayList<>();

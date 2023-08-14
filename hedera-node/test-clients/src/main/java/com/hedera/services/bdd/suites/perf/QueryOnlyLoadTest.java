@@ -58,7 +58,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class QueryOnlyLoadTest extends LoadTest {
     private static final Logger log = LogManager.getLogger(QueryOnlyLoadTest.class);
-    private static final Random r = new Random();
+    private static final Random r = new Random(870333L);
     private static final String ACCOUNT_PATTERN = "0.0.%d";
 
     private static int startingScheduleNum = 0;

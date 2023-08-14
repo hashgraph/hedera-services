@@ -80,7 +80,7 @@ public abstract class HapiSpecOperation {
     protected static final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
     protected static final ConsensusOpsUsage consensusOpsUsage = new ConsensusOpsUsage();
 
-    private final Random r = new Random();
+    private final Random r = new Random(688679L);
 
     /* Note that an op may _be_ a txn; or just a query that submits a txn as payment. */
     protected String txnName = UUID.randomUUID().toString().substring(0, 8);

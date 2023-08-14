@@ -27,7 +27,7 @@ public final class MiscEETUtils {
 
     public static byte[] genRandomBytes(int numBytes) {
         byte[] contents = new byte[numBytes];
-        (new Random()).nextBytes(contents);
+        (new Random(298238L)).nextBytes(contents);
         return contents;
     }
 

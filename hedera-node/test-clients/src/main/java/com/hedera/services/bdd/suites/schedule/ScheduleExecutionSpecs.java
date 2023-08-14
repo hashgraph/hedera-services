@@ -521,7 +521,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     private byte[] genRandomBytes(int numBytes) {
         byte[] contents = new byte[numBytes];
-        (new Random()).nextBytes(contents);
+        (new Random(882654L)).nextBytes(contents);
         return contents;
     }
 

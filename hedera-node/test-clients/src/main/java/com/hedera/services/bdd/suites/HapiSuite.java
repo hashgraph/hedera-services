@@ -54,7 +54,7 @@ public abstract class HapiSuite {
     }
 
     @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
-    private static final Random RANDOM = new Random();
+    private static final Random RANDOM = new Random(16851L);
 
     protected abstract Logger getResultsLogger();
 

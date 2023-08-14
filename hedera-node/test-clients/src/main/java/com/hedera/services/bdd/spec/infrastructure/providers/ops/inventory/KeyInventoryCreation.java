@@ -35,7 +35,7 @@ public class KeyInventoryCreation {
     public static final double DEFAULT_SIMPLE_PROB = 0.5;
     public static final double DEFAULT_THRESHOLD_PROB = 0.3;
 
-    private Random r = new Random();
+    private Random r = new Random(468417L);
 
     private int numKeys = DEFAULT_NUM_KEYS;
     private int maxDepth = DEFAULT_MAX_DEPTH;
