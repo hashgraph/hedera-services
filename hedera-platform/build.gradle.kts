@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.platform")
+    id("com.hedera.hashgraph.versions")
 }
 
 val besuNativeVersion = "0.6.1"

@@ -29,6 +29,7 @@ configurations.getByName("mainRuntimeClasspath") {
 }
 
 testing {
+    @Suppress("UnstableApiUsage")
     suites {
         // Add the EET task for executing end-to-end tests
         register<JvmTestSuite>("eet") {
@@ -47,7 +48,7 @@ testing {
         register<JvmTestSuite>("xtest") {
             testType.set("cross-service-test")
 
-            // "shouldRunAfter" will only make sure if both test and extest are run concurrently,
+            // "shouldRunAfter" will only make sure if both test and xtest are run concurrently,
             // that "test" completes first. If you run "xtest" directly, it doesn't force "test" to run.
             targets.all {
                 testTask {

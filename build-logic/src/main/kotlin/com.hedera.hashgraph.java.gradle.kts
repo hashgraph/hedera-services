@@ -150,10 +150,10 @@ testing {
         register<JvmTestSuite>("itest") {
             testType.set(TestSuiteType.INTEGRATION_TEST)
 
-            // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
-            // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
             targets.all {
                 testTask {
+                    // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
+                    // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
 
                     addTestListener(object : TestListener {

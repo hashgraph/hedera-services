@@ -31,7 +31,7 @@ tasks.jmhJar {
     isPreserveFileTimestamps = false
     fileMode = 664
     dirMode = 775
-    manifest(Action {
+    manifest {
         attributes(mapOf("Multi-Release" to true))
-    })
+    }
 }
