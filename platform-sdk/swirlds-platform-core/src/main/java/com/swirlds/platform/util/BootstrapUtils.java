@@ -497,9 +497,7 @@ public final class BootstrapUtils {
     public static void checkNodesToRun(@NonNull final Collection<NodeId> nodesToRun) {
         // if the local machine did not match any address in the address book then we should log an error and exit
         if (nodesToRun.isEmpty()) {
-            final String externalIpAddress = (Network.getExternalIpAddress() != null)
-                    ? Network.getExternalIpAddress().getIpAddress()
-                    : null;
+            final String externalIpAddress = Network.getExternalIpAddress().getIpAddress();
             logger.error(
                     EXCEPTION.getMarker(),
                     new NodeAddressMismatchPayload(Network.getInternalIPAddress(), externalIpAddress));

@@ -79,14 +79,15 @@ import com.swirlds.platform.util.BootstrapUtils;
 import com.swirlds.platform.util.MetricsDocUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -295,9 +296,9 @@ public class Browser {
 
         CommonUtils.tellUserConsole("This computer has an internal IP address:  " + Network.getInternalIPAddress());
         logger.trace(
-                STARTUP.getMarker(),
-                "All of this computer's addresses: {}",
-                () -> (Arrays.toString(Network.getOwnAddresses2())));
+                STARTUP.getMarker(), "All of this computer's addresses: {}", () -> Network.getOwnAddresses().stream()
+                        .map(InetAddress::getHostAddress)
+                        .collect(Collectors.joining(", ")));
 
         logger.debug(STARTUP.getMarker(), "main() finished");
     }
