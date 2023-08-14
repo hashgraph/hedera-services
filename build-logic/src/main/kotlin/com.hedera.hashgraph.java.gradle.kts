@@ -124,7 +124,6 @@ testing {
 
                 useJUnitPlatform {
                     includeTags("HAMMER")
-                    excludeTags("PROFILING_ONLY", "INFREQUENT_EXEC_ONLY")
                 }
                 maxHeapSize = "8g"
                 jvmArgs("-XX:ActiveProcessorCount=16")
@@ -138,7 +137,6 @@ testing {
 
                 useJUnitPlatform {
                     includeTags("TIME_CONSUMING", "AT_SCALE", "REMOTE_ONLY", "PERFORMANCE")
-                    excludeTags("PROFILING_ONLY", "INFREQUENT_EXEC_ONLY")
                 }
 
                 setForkEvery(1)
