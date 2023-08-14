@@ -159,15 +159,11 @@ tasks.jacocoTestReport {
     val performanceData = tasks.named("performanceTest").map {
         it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
     }
-    val iTestData = tasks.named("itest").map {
-        it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
-    }
 
-    executionData.from(hammerData, performanceData, iTestData)
+    executionData.from(hammerData, performanceData)
 
     mustRunAfter(tasks.named("hammerTest"))
     mustRunAfter(tasks.named("performanceTest"))
-    mustRunAfter(tasks.named("itest"))
 }
 
 tasks.assemble {
