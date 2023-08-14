@@ -49,8 +49,3 @@ tasks.withType<ProtobufExtract>().configureEach {
 }
 
 tasks.withType<Javadoc>().configureEach { enabled = false }
-
-// TODO possibly hitting bug with included build
-// https://github.com/autonomousapps/dependency-analysis-android-gradle-plugin/pull/916
-// Remove after next dependency analysis plugin update
-dependencyAnalysis.issues { all { onUnusedDependencies { exclude("com.swirlds:swirlds-common") } } }

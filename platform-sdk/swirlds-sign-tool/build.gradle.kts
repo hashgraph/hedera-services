@@ -23,7 +23,6 @@ application.mainClass.set("com.swirlds.signingtool.FileSignTool")
 
 dependencies {
     javaModuleDependencies {
-        testImplementation(project(":swirlds-common"))
         testImplementation(project(":swirlds-test-framework"))
         testImplementation(gav("org.apache.commons.lang3"))
         testImplementation(gav("org.junit.jupiter.api"))

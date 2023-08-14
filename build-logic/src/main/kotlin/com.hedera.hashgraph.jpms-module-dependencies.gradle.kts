@@ -34,6 +34,7 @@ javaModuleDependencies {
     moduleNameToGA.put("com.swirlds.config.impl", "com.swirlds:swirlds-config-impl")
     moduleNameToGA.put("com.swirlds.merkle.test", "com.swirlds:swirlds-merkle-test")
     moduleNameToGA.put("com.swirlds.platform.core", "com.swirlds:swirlds-platform-core")
+    moduleNameToGA.put("com.swirlds.platform.gui", "com.swirlds:swirlds-platform-gui")
     moduleNameToGA.put("com.swirlds.test.framework", "com.swirlds:swirlds-test-framework")
 
     moduleNameToGA.put("com.hedera.hashgraph.protobuf.java.api", "com.hedera.hashgraph:hedera-protobuf-java-api")
