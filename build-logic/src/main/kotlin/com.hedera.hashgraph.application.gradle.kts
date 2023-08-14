@@ -44,6 +44,18 @@ tasks.assemble {
     dependsOn(copyApp)
 }
 
+// The 'application' plugin activates the following tasks as part of 'assemble'.
+// As we do not use these results right now, disable them:
+tasks.startScripts {
+    enabled = false
+}
+tasks.distTar {
+    enabled = false
+}
+tasks.distZip {
+    enabled = false
+}
+
 val cleanRun = tasks.register<Delete>("cleanRun") {
     val sdkDir = sdkDir(layout.projectDirectory)
     delete(sdkDir.asFileTree.matching {
@@ -76,7 +88,7 @@ tasks.jar {
             "Class-Path" to
                     configurations.runtimeClasspath.get().elements.map { entry ->
                         entry
-                            .map { copyLib.get().destinationDir.relativeTo(File(copyApp.get().destinationDir, it.asFile.name)) }
+                            .map { File(copyLib.get().destinationDir.relativeTo(copyApp.get().destinationDir), it.asFile.name) }
                             .sorted()
                             .joinToString(separator = " ")
                     }
