@@ -102,6 +102,7 @@ public class KeyExport extends HapiSuite {
     }
 
     private HapiSpec exportGenesisKey() {
+        @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
         final var r = new Random(271230L);
         final int passphraseLength = 24;
         final char[] choices = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();

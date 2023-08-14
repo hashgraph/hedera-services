@@ -66,6 +66,7 @@ public class SubmitMessageLoadTest extends LoadTest {
     private static String pemFile = null;
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
 
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private static Random r = new Random(177708L);
 
     public static void main(String... args) {

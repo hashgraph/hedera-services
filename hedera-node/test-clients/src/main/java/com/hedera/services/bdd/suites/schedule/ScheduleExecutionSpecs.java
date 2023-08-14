@@ -191,6 +191,9 @@ public class ScheduleExecutionSpecs extends HapiSuite {
     private String successTxn = "successTxn";
     private String signTxn = "signTxn";
 
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
+    private final Random r = new Random(882654L);
+
     public static void main(String... args) {
         new ScheduleExecutionSpecs().runSuiteAsync();
     }
@@ -521,7 +524,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
 
     private byte[] genRandomBytes(int numBytes) {
         byte[] contents = new byte[numBytes];
-        (new Random(882654L)).nextBytes(contents);
+        r.nextBytes(contents);
         return contents;
     }
 

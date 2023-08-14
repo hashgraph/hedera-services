@@ -163,6 +163,8 @@ public class TrieSigMapGenerator implements SigMapGenerator {
         }
 
         Node root = new Node();
+
+        @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
         Random r = new Random(870235L);
 
         public ByteTrie(List<byte[]> allA) {

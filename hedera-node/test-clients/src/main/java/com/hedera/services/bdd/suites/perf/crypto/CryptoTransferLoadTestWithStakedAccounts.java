@@ -39,7 +39,10 @@ import org.apache.logging.log4j.Logger;
 
 public class CryptoTransferLoadTestWithStakedAccounts extends LoadTest {
     private static final Logger log = LogManager.getLogger(CryptoTransferLoadTestWithStakedAccounts.class);
+
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private Random RANDOM = new Random(38582L);
+
     private static final long TEST_ACCOUNT_STARTS_FROM = 1001L;
     private static final int STAKED_CREATIONS = 50;
 

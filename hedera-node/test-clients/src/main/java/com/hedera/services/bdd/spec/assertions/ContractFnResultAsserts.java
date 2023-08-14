@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Assertions;
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
     static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
 
+    @SuppressWarnings("java:S2245") // using java.util.Random in tests is fine
     private static final Random rand = new Random(704833L);
 
     public static ContractFnResultAsserts resultWith() {
