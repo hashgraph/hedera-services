@@ -44,7 +44,7 @@ val internal: Configuration = configurations.create("internal") {
 }
 
 dependencies {
-    "internal"(platform("com.hedera.hashgraph:hedera-platform"))
+    "internal"(platform("com.hedera.hashgraph:hedera-dependency-versions"))
 }
 
 sourceSets.all {

@@ -20,7 +20,7 @@ plugins { id("com.gradle.enterprise").version("3.11.4") }
 
 rootProject.name = "swirlds-platform"
 
-includeBuild("../hedera-platform")
+includeBuild("../hedera-dependency-versions")
 
 include(":swirlds")
 
