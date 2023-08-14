@@ -17,22 +17,11 @@
 package com.swirlds.platform.testreader;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 
 /**
- * A row in a JRS Test Report.
+ * Various test metadata that is not parsed from results.
  *
- * @param tests    the results of the tests in the row, ordered from most to least recent
- * @param metadata test metadata that is not parsed from results
+ * @param owner    the team that owns this test, or "" if unknown
+ * @param notesUrl the URL to the notes for this test, or "" if unknown
  */
-public record JrsTestReportRow(@NonNull List<JrsTestResult> tests, @Nullable JrsTestMetadata metadata) {
-
-    /**
-     * Get the most recent test in this row.
-     */
-    @NonNull
-    public JrsTestResult getMostRecentTest() {
-        return tests.get(0);
-    }
-}
+public record JrsTestMetadata(@NonNull String owner, @NonNull String notesUrl) {}

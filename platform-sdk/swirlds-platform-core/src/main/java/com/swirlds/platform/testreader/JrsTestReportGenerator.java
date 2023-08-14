@@ -110,30 +110,30 @@ public final class JrsTestReportGenerator {
     }
 
     /**
-     * Generate javascript functions to sort the table. In reality there exist a bunch of pre-sorted tables,
-     * and these methods just change which table is visible.
+     * Generate javascript functions to sort the table. In reality there exist a bunch of pre-sorted tables, and these
+     * methods just change which table is visible.
      */
     private static void generateSortingFunctions(@NonNull final StringBuilder sb) {
         sb.append(
                 """
-                <script>
-                    function sortByName() {
-                        document.getElementById('table_sortedByName').style.display = "block"
-                        document.getElementById('table_sortedByAge').style.display = "none"
-                        document.getElementById('table_sortedByStatus').style.display = "none"
-                    }
-                    function sortByAge() {
-                        document.getElementById('table_sortedByName').style.display = "none"
-                        document.getElementById('table_sortedByAge').style.display = "block"
-                        document.getElementById('table_sortedByStatus').style.display = "none"
-                    }
-                    function sortByStatus() {
-                        document.getElementById('table_sortedByName').style.display = "none"
-                        document.getElementById('table_sortedByAge').style.display = "none"
-                        document.getElementById('table_sortedByStatus').style.display = "block"
-                    }
-                </script>
-                """);
+                        <script>
+                            function sortByName() {
+                                document.getElementById('table_sortedByName').style.display = "block"
+                                document.getElementById('table_sortedByAge').style.display = "none"
+                                document.getElementById('table_sortedByStatus').style.display = "none"
+                            }
+                            function sortByAge() {
+                                document.getElementById('table_sortedByName').style.display = "none"
+                                document.getElementById('table_sortedByAge').style.display = "block"
+                                document.getElementById('table_sortedByStatus').style.display = "none"
+                            }
+                            function sortByStatus() {
+                                document.getElementById('table_sortedByName').style.display = "none"
+                                document.getElementById('table_sortedByAge').style.display = "none"
+                                document.getElementById('table_sortedByStatus').style.display = "block"
+                            }
+                        </script>
+                        """);
     }
 
     private static void generateHeader(@NonNull final StringBuilder sb, @NonNull final Instant now) {
@@ -150,6 +150,10 @@ public final class JrsTestReportGenerator {
 
     private static void generateNameCell(@NonNull final StringBuilder sb, @NonNull final String testName) {
         sb.append("<td><b>").append(testName).append("</b></td>\n");
+    }
+
+    private static void generateOwnerCell(@NonNull final StringBuilder sb, @NonNull final String owner) {
+        sb.append("<td>").append(owner).append("</td>\n");
     }
 
     private static void generateAgeCell(
@@ -243,13 +247,14 @@ public final class JrsTestReportGenerator {
         sb.append("<tr>\n");
         generatePanelCell(sb, row.getMostRecentTest().id().panel());
         generateNameCell(sb, row.getMostRecentTest().id().name());
+        generateOwnerCell(sb, row.metadata() == null ? "" : row.metadata().owner());
         generateAgeCell(sb, now, row.getMostRecentTest().timestamp());
         generateStatusCell(sb, row.getMostRecentTest().status());
         generateHistoryCell(sb, row.tests());
         generateSummaryCell(sb, testUrl);
         generateMetricsCell(sb, testUrl);
         generateDataCell(sb, testUrl);
-        generateNotesCell(sb, row.notesUrl());
+        generateNotesCell(sb, row.metadata() == null ? "" : row.metadata().notesUrl());
         sb.append("</tr>\n");
     }
 
@@ -265,20 +270,21 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                <center>
-                <table id="%s" style="display: %s">
-                    <tr>
-                        <th>Panel</th>
-                        <th><button class="button" onclick="sortByName()">Test Name ↓</button></th>
-                        <th><button class="button" onclick="sortByAge()">Age ↓</button></th>
-                        <th><button class="button" onclick="sortByStatus()">Status ↓</button></th>
-                        <th>History</th>
-                        <th>Summary</th>
-                        <th>Metrics</th>
-                        <th>Data</th>
-                        <th>Notes</th>
-                    </tr>
-                 """
+                        <center>
+                        <table id="%s" style="display: %s">
+                            <tr>
+                                <th>Panel</th>
+                                <th><button class="button" onclick="sortByName()">Test Name ↓</button></th>
+                                <th>Owner</th>
+                                <th><button class="button" onclick="sortByAge()">Age ↓</button></th>
+                                <th><button class="button" onclick="sortByStatus()">Status ↓</button></th>
+                                <th>History</th>
+                                <th>Summary</th>
+                                <th>Metrics</th>
+                                <th>Data</th>
+                                <th>Notes</th>
+                            </tr>
+                         """
                         .formatted(tableId, hidden ? "none" : "block"));
 
         for (final JrsTestReportRow row : rows) {
@@ -388,29 +394,30 @@ public final class JrsTestReportGenerator {
     }
 
     /**
-     * Print some warnings if we are missing notes or if we have notes for tests that were not discovered.
+     * Print some warnings if we are missing metadata or if we have metadata for tests that were not discovered.
      *
-     * @param tests all tests discovered by this utility
-     * @param notes note URLs for this test
+     * @param tests    all tests discovered by this utility
+     * @param metadata test metadata, by test
      */
-    public static void validateNotes(
-            @NonNull final Set<JrsTestIdentifier> tests, @NonNull final Map<JrsTestIdentifier, String> notes) {
+    public static void validateMetadata(
+            @NonNull final Set<JrsTestIdentifier> tests,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata) {
 
-        final Set<JrsTestIdentifier> unassignedNotes = new HashSet<>(notes.keySet());
-        final List<JrsTestIdentifier> testsWithoutNotes = new ArrayList<>();
+        final Set<JrsTestIdentifier> unassignedMetadata = new HashSet<>(metadata.keySet());
+        final List<JrsTestIdentifier> testsWithoutMetadata = new ArrayList<>();
 
         for (final JrsTestIdentifier test : tests) {
-            final boolean noteFound = unassignedNotes.remove(test);
+            final boolean noteFound = unassignedMetadata.remove(test);
 
             if (!noteFound) {
-                testsWithoutNotes.add(test);
+                testsWithoutMetadata.add(test);
             }
         }
 
-        if (!testsWithoutNotes.isEmpty()) {
+        if (!testsWithoutMetadata.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
-            sb.append("The following test(s) do not have a notes URL:\n");
-            for (final JrsTestIdentifier test : testsWithoutNotes) {
+            sb.append("The following test(s) do not have metadata:\n");
+            for (final JrsTestIdentifier test : testsWithoutMetadata) {
                 sb.append("  - ")
                         .append(test.panel())
                         .append(": ")
@@ -419,11 +426,11 @@ public final class JrsTestReportGenerator {
             }
             System.out.println(sb);
         }
-        if (!unassignedNotes.isEmpty()) {
+        if (!unassignedMetadata.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
-            sb.append("There are note URLs defined for the following test(s), "
+            sb.append("There is metadata defined for the following test(s), "
                     + "but these test(s) were not discovered during scan:\n");
-            for (final JrsTestIdentifier test : unassignedNotes) {
+            for (final JrsTestIdentifier test : unassignedMetadata) {
                 sb.append("  - ")
                         .append(test.panel())
                         .append(": ")
@@ -436,7 +443,8 @@ public final class JrsTestReportGenerator {
 
     @NonNull
     private static List<JrsTestReportRow> buildTableRows(
-            @NonNull final List<JrsTestResult> results, @NonNull final Map<JrsTestIdentifier, String> notes) {
+            @NonNull final List<JrsTestResult> results,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata) {
 
         // Sort tests by unique type.
         final Map<JrsTestIdentifier, List<JrsTestResult>> resultsByTestType = new HashMap<>();
@@ -453,21 +461,21 @@ public final class JrsTestReportGenerator {
 
         final List<JrsTestReportRow> rows = new ArrayList<>();
         for (final JrsTestIdentifier testType : resultsByTestType.keySet()) {
-            rows.add(new JrsTestReportRow(resultsByTestType.get(testType), notes.getOrDefault(testType, "")));
+            rows.add(new JrsTestReportRow(resultsByTestType.get(testType), metadata.getOrDefault(testType, null)));
         }
 
-        validateNotes(resultsByTestType.keySet(), notes);
+        validateMetadata(resultsByTestType.keySet(), metadata);
 
         return rows;
     }
 
     public static void generateReport(
             @NonNull final List<JrsTestResult> results,
-            @NonNull final Map<JrsTestIdentifier, String> notes,
+            @NonNull final Map<JrsTestIdentifier, JrsTestMetadata> metadata,
             @NonNull final Instant now,
             @NonNull final Path outputFile) {
 
-        @NonNull final List<JrsTestReportRow> rows = buildTableRows(results, notes);
+        @NonNull final List<JrsTestReportRow> rows = buildTableRows(results, metadata);
 
         @NonNull final StringBuilder sb = new StringBuilder();
         generatePage(sb, rows, now);

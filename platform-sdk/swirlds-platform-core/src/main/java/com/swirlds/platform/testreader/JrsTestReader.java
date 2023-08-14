@@ -322,17 +322,17 @@ public final class JrsTestReader {
     }
 
     /**
-     * Parse note URLs from the notes file. A notes file is a CSV (commas) with three columns: panel, test name, and a
+     * Parse the metadata file. A notes file is a CSV (commas) with three columns: panel, test name, and a
      * URL.
      *
      * @param notesFile the path to the notes file
      * @return a map of test identifiers to note URLs
      */
     @NonNull
-    public static Map<JrsTestIdentifier, String> parseNoteFile(@Nullable final Path notesFile) {
-        final Map<JrsTestIdentifier, String> notes = new HashMap<>();
+    public static Map<JrsTestIdentifier, JrsTestMetadata> parseMetadataFile(@Nullable final Path notesFile) {
+        final Map<JrsTestIdentifier, JrsTestMetadata> metadata = new HashMap<>();
         if (notesFile == null) {
-            return notes;
+            return metadata;
         }
 
         try (final BufferedReader reader = Files.newBufferedReader(notesFile)) {
@@ -341,18 +341,24 @@ public final class JrsTestReader {
                     continue;
                 }
 
+                if (line.strip().startsWith("#")) {
+                    // Comment
+                    continue;
+                }
+
                 final String[] parts = line.split(",");
-                if (parts.length != 3) {
+                if (parts.length != 4) {
                     System.out.println("Invalid line in notes file: " + line);
                     continue;
                 }
 
                 final String panel = parts[0].strip();
                 final String testName = parts[1].strip();
-                final String url = parts[2];
+                final String testOwner = parts[2].strip();
+                final String url = parts[3];
 
                 final JrsTestIdentifier id = new JrsTestIdentifier(panel, testName);
-                final String previous = notes.put(id, url);
+                final JrsTestMetadata previous = metadata.put(id, new JrsTestMetadata(testOwner, url));
 
                 if (previous != null) {
                     System.out.println("Duplicate note URL found for " + id);
@@ -363,7 +369,7 @@ public final class JrsTestReader {
             e.printStackTrace();
         }
 
-        return notes;
+        return metadata;
     }
 
     public static void generateTestReport(
@@ -376,9 +382,9 @@ public final class JrsTestReader {
 
         final Instant now = Instant.now();
 
-        final Map<JrsTestIdentifier, String> notes = parseNoteFile(notesFile);
+        final Map<JrsTestIdentifier, JrsTestMetadata> metadata = parseMetadataFile(notesFile);
         final List<JrsTestResult> results = findTestResults(terminal, executor, rootDirectory, now, maximumAge);
 
-        generateReport(results, notes, now, outputFile);
+        generateReport(results, metadata, now, outputFile);
     }
 }

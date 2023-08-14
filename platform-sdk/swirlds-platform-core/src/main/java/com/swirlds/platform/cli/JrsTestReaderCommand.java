@@ -46,7 +46,7 @@ public class JrsTestReaderCommand extends AbstractCommand {
         // "gs://swirlds-circleci-jrs-results/cody-littley"
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/develop"
         // "gs://swirlds-circleci-jrs-results/swirlds-automation/release/0.41"
-        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/release/0.41";
+        final String root = "gs://swirlds-circleci-jrs-results/swirlds-automation/develop";
 
         JrsTestReader.generateTestReport(
                 terminal,
@@ -54,7 +54,7 @@ public class JrsTestReaderCommand extends AbstractCommand {
                 root,
                 Duration.ofDays(7),
                 Path.of("/Users/codylittley/ws/hedera-services/platform-sdk/swirlds-platform-core/"
-                        + "src/main/java/com/swirlds/platform/testreader/testNotes.csv"),
+                        + "src/main/java/com/swirlds/platform/testreader/testMetadata.csv"),
                 getAbsolutePath(Path.of("~/Desktop/report.html")));
 
         return 0;
