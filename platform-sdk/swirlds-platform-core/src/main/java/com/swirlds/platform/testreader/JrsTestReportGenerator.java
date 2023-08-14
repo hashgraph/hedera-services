@@ -90,62 +90,47 @@ public final class JrsTestReportGenerator {
         if (april2) {
             april2Style =
                     """
-                    /* you have activated my trap card */
-                    html * {
-                        font-family: Snell Roundhand, cursive;
-                    }""";
+                            /* you have activated my trap card */
+                            html * {
+                                font-family: Snell Roundhand, cursive;
+                            }""";
         } else {
             april2Style = "";
         }
 
         sb.append(
                 """
-                <style>
-                    .testDataTable > tbody > tr > th {
-                        border: 1px solid black;
-                        background-color: #96D4D4;
-                        position: sticky;
-                        top: 0;
-                        padding: 5px;
-                    }
-                    .testDataTable > tbody > tr > td {
-                        border: 1px solid black;
-                        padding: 10px;
-                    }
-                    .testDataTable > tbody > tr:nth-child(even) {
-                        background-color: lightgray;
-                    }
-                    .button {
-                        color: black;
-                        background-color: transparent;
-                        border: 2px solid transparent;
-                    }
-                    .button:hover {
-                        color: black;
-                        background-color: transparent;
-                        border: 2px solid black;
-                    }
-                    .button:active {
-                        color: white;
-                        background-color: black;
-                        border: 2px solid black;
-                    }
-                    .sidePanel {
-                        position: sticky;
-                        top: 0;
-                    }
-                    .topLevelTable > tbody > tr > td {
-                        border: none;
-                    }
-                    .summaryTable > tbody > tr > td {
-                            border: none;
-                            padding-left: 5px;
-                            padding-right: 5px;
-                            vertical-align: top;
-                        }
-                    %s
-                </style>
-                """
+                        <style>
+                            .testDataTable > tbody > tr > th {
+                                border: 1px solid black;
+                                background-color: #96D4D4;
+                                position: sticky;
+                                top: 0;
+                                padding: 5px;
+                            }
+                            .testDataTable > tbody > tr > td {
+                                border: 1px solid black;
+                                padding: 10px;
+                            }
+                            .testDataTable > tbody > tr:nth-child(even) {
+                                background-color: lightgray;
+                            }
+                            .sidePanel {
+                                position: sticky;
+                                top: 0;
+                            }
+                            .topLevelTable > tbody > tr > td {
+                                border: none;
+                            }
+                            .summaryTable > tbody > tr > td {
+                                    border: none;
+                                    padding-left: 5px;
+                                    padding-right: 5px;
+                                    vertical-align: top;
+                                }
+                            %s
+                        </style>
+                        """
                         .formatted(april2Style));
     }
 
@@ -323,10 +308,10 @@ public final class JrsTestReportGenerator {
                         <table id="%s" style="display: %s" class="testDataTable">
                             <tr>
                                 <th>Panel</th>
-                                <th><button class="button" onclick="sortByName()">Test Name ↓</button></th>
+                                <th>Test Name</th>
                                 <th>Owner</th>
-                                <th><button class="button" onclick="sortByAge()">Age ↓</button></th>
-                                <th><button class="button" onclick="sortByStatus()">Status ↓</button></th>
+                                <th>Age</th>
+                                <th>Status</th>
                                 <th>History</th>
                                 <th>Summary</th>
                                 <th>Metrics</th>
@@ -541,45 +526,45 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                <table class="summaryTable">
-                    <tr>
-                        <td><b>Directory</b></td>
-                        <td>%s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Date</b></td>
-                        <td>%s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Time</b></td>
-                        <td>%s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Span</b></td>
-                        <td>%s days</td>
-                    </tr>
-                    <tr>
-                        <td><b>Pass Rate</b></td>
-                        <td>%s%% %s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Total</b></td>
-                        <td>%s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Passing</b></td>
-                        <td>%s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Failing</b></td>
-                        <td>%s</td>
-                    </tr>
-                    <tr>
-                        <td><b>Unknown</b></td>
-                        <td>%s</td>
-                    </tr>
-                </table>
-                """
+                        <table class="summaryTable">
+                            <tr>
+                                <td><b>Directory</b></td>
+                                <td>%s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Date</b></td>
+                                <td>%s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Time</b></td>
+                                <td>%s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Span</b></td>
+                                <td>%s days</td>
+                            </tr>
+                            <tr>
+                                <td><b>Pass Rate</b></td>
+                                <td>%s%% %s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Total</b></td>
+                                <td>%s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Passing</b></td>
+                                <td>%s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Failing</b></td>
+                                <td>%s</td>
+                            </tr>
+                            <tr>
+                                <td><b>Unknown</b></td>
+                                <td>%s</td>
+                            </tr>
+                        </table>
+                        """
                         .formatted(
                                 data.directory(),
                                 dateParts[0],
@@ -593,9 +578,36 @@ public final class JrsTestReportGenerator {
                                 testCount.unknownTests()));
     }
 
+    private static void generateOrderControls(@NonNull final StringBuilder sb) {
+        sb.append(
+                """
+                <center><h1><b>Ordering</b></h1></center><br>
+                <form>
+                    <input type="radio" name="order" onclick="sortByName()" checked> name<br>
+                    <input type="radio" name="order" onclick="sortByAge()"> age<br>
+                    <input type="radio" name="order" onclick="sortByStatus()"> status<br>
+                </form>
+                """);
+    }
+
+    private static void generateOwnerControls(@NonNull final StringBuilder sb) {
+        sb.append("<center><h1><b>Owner</b></h1></center><br>\n");
+        sb.append("<p>Note: this feature is a WIP and is not currently functional.</p>\n");
+        sb.append("<form>\n");
+        sb.append("<input type=\"radio\" name=\"order\" value=\"name\" checked> all (163)<br>\n");
+        sb.append("<input type=\"radio\" name=\"order\" value=\"age\"> unassigned (0)<br>\n");
+        sb.append("<input type=\"radio\" name=\"order\" value=\"status\"> platform (50)<br>\n");
+        sb.append("<input type=\"radio\" name=\"order\" value=\"status\"> services (113)<br> \n");
+        sb.append("</form>\n");
+    }
+
     private static void generateSidePanel(@NonNull final StringBuilder sb, @NonNull final JrsReportData data) {
         sb.append("<div class=\"sidePanel\">\n");
         generateSummary(sb, data);
+        sb.append("<hr>");
+        generateOrderControls(sb);
+        sb.append("<hr>");
+        generateOwnerControls(sb);
         sb.append("</div>\n");
     }
 
@@ -609,11 +621,11 @@ public final class JrsTestReportGenerator {
 
         sb.append(
                 """
-                <center>
-                <table class="topLevelTable">
-                <tr>
-                <td style="vertical-align: top;">
-                """);
+                        <center>
+                        <table class="topLevelTable">
+                        <tr>
+                        <td style="vertical-align: top;">
+                        """);
         generateDataTable(sb, data, metadata, now, bucketPrefix, bucketPrefixReplacement);
         sb.append("""
                 </td>
@@ -622,11 +634,11 @@ public final class JrsTestReportGenerator {
         generateSidePanel(sb, data);
         sb.append(
                 """
-                </td>
-                </tr>
-                </table>
-                </center>
-                """);
+                        </td>
+                        </tr>
+                        </table>
+                        </center>
+                        """);
     }
 
     private static void generatePage(
