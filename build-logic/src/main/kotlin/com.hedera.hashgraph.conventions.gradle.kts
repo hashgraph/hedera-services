@@ -90,13 +90,3 @@ testing {
         }
     }
 }
-
-tasks.jacocoTestReport {
-    val iTestData = tasks.named("itest").map {
-        it.extensions.getByType<JacocoTaskExtension>().destinationFile!!
-    }
-
-    executionData.from(iTestData)
-
-    mustRunAfter(tasks.named("itest"))
-}
