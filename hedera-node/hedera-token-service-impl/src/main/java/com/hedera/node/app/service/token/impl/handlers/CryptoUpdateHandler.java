@@ -272,7 +272,7 @@ public class CryptoUpdateHandler extends BaseCryptoHandler implements Transactio
                     .validateAutoRenewPeriod(op.autoRenewPeriod().seconds());
         }
 
-        stakingValidator.validateStakedId(
+        stakingValidator.validateStakedIdForUpdate(
                 context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.hasDeclineReward(),
                 op.stakedId().kind().name(),

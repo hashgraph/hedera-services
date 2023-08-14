@@ -51,8 +51,8 @@ public final class FreezeServiceImpl implements FreezeService {
                 // Reset the upgrade file hash to empty
                 // It should always be empty at genesis or after an upgrade, to indicate that no upgrade is in progress
                 // Nothing in state can ever be null, so use Bytes.EMPTY to indicate an empty hash
-                final var upgradeFileHashKeyState = ctx.newStates().getSingleton(UPGRADE_FILE_HASH_KEY);
-                upgradeFileHashKeyState.put(Bytes.EMPTY);
+                final var upgradeFileHashKeyState = ctx.newStates().<ProtoBytes>getSingleton(UPGRADE_FILE_HASH_KEY);
+                upgradeFileHashKeyState.put(ProtoBytes.DEFAULT);
             }
         };
     }

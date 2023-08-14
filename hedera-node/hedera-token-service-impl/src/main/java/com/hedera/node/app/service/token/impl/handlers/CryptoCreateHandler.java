@@ -206,7 +206,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
                 op.hasProxyAccountID() && !op.proxyAccountID().equals(AccountID.DEFAULT),
                 PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED);
 
-        stakingValidator.validateStakedId(
+        stakingValidator.validateStakedIdForCreation(
                 context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                 op.declineReward(),
                 op.stakedId().kind().name(),
