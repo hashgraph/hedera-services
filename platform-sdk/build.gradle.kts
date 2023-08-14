@@ -21,31 +21,27 @@ sonarqube.properties {
     property("sonar.projectName", "Platform SDK")
 }
 
+val sdkDir = layout.projectDirectory.dir("sdk")
+
 tasks.register<JavaExec>("run") {
     group = "application"
-    val sdkDir = File(rootProject.projectDir, "sdk")
-    workingDir = sdkDir
-    jvmArgs =
-        listOf(
-            "-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n",
-            "-cp",
-            "swirlds.jar:data/lib/*",
-            "com.swirlds.platform.Browser"
-        )
-    classpath = rootProject.files(File(sdkDir, "data/lib"))
+    workingDir = sdkDir.asFile
+    mainClass.set("com.swirlds.platform.Browser")
+    classpath = sdkDir.asFileTree.matching { include("*.jar") }
+    jvmArgs = listOf("-agentlib:jdwp=transport=dt_socket,address=8888,server=y,suspend=n")
     maxHeapSize = "8g"
-    /*
 
-    FIXME - clarify how this should work
-
-    project(":swirlds-platform-apps:demos").subprojects.forEach {
-        dependsOn(it.tasks.named("copyApp"))
-        dependsOn(it.tasks.named("copyLib"))
-    }
-    project(":swirlds-platform-apps:tests").subprojects.forEach {
-        dependsOn(it.tasks.named("copyApp"))
-        dependsOn(it.tasks.named("copyLib"))
-    }
-    dependsOn(project(":swirlds").tasks.named("copyApp"))
-    */
+    dependsOn(":swirlds:copyLib")
+    dependsOn(":swirlds:copyApp")
+    dependsOn(
+        gradle.parent
+            ?.includedBuilds
+            ?.filter {
+                it.projectDir.parentFile.name == "demos" || it.projectDir.parentFile.name == "tests"
+            }
+            ?.map { build ->
+                build.task(":copyLib")
+                build.task(":copyApp")
+            }
+    )
 }
