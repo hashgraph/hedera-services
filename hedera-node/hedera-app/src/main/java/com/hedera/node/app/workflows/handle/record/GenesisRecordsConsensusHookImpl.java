@@ -117,7 +117,7 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
         for (Map.Entry<Account, CryptoCreateTransactionBody.Builder> entry : map.entrySet()) {
             final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
 
-            final var accountId = entry.getKey().accountId();
+            final var accountId = requireNonNull(entry.getKey().accountId());
             recordBuilder.accountID(accountId);
             if (recordMemo != null) recordBuilder.memo(recordMemo);
 
