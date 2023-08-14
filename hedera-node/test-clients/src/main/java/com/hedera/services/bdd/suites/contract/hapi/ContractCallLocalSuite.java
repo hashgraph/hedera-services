@@ -47,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -60,16 +59,14 @@ import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 @HapiTestSuite
 public class ContractCallLocalSuite extends HapiSuite {
@@ -178,7 +175,10 @@ public class ContractCallLocalSuite extends HapiSuite {
                         // Assert that the address of the query sender and the address of the nft owner returned by the
                         // HTS precompiled contract are the same
                         withOpContext((spec, opLog) -> {
-                            assertEquals(senderAddress.get(), nftOwnerAddress.get(), "Sender address should match the owner address.");
+                            assertEquals(
+                                    senderAddress.get(),
+                                    nftOwnerAddress.get(),
+                                    "Sender address should match the owner address.");
                         }));
     }
 
