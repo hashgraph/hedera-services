@@ -158,7 +158,9 @@ public interface ScaffoldingModule {
     @Provides
     @Singleton
     static Configuration provideConfiguration() {
-        return HederaTestConfigBuilder.create().getOrCreateConfig();
+        return HederaTestConfigBuilder.create()
+                .withValue("contracts.chainId", "298")
+                .getOrCreateConfig();
     }
 
     @Provides

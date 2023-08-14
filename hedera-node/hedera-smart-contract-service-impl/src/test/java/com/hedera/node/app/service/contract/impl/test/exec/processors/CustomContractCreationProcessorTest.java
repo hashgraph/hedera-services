@@ -90,8 +90,7 @@ class CustomContractCreationProcessorTest {
 
         subject.start(frame, tracer);
 
-        verify(worldUpdater)
-                .tryTransferFromContract(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
+        verify(worldUpdater).tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
         verify(mutableContract).setNonce(INITIAL_CONTRACT_NONCE);
         verify(frame).setState(MessageFrame.State.CODE_EXECUTING);
     }
@@ -106,8 +105,7 @@ class CustomContractCreationProcessorTest {
         given(worldUpdater.getOrCreate(EIP_1014_ADDRESS)).willReturn(contract);
         given(frame.getValue()).willReturn(WEI_VALUE);
         final var maybeReasonToHalt = Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
-        given(worldUpdater.tryTransferFromContract(
-                        NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false))
+        given(worldUpdater.tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false))
                 .willReturn(maybeReasonToHalt);
 
         subject.start(frame, tracer);
@@ -128,7 +126,7 @@ class CustomContractCreationProcessorTest {
         subject.start(frame, tracer);
 
         verify(worldUpdater, never())
-                .tryTransferFromContract(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
+                .tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
         verify(mutableContract, never()).setNonce(INITIAL_CONTRACT_NONCE);
         final var maybeReasonToHalt = Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
         verify(frame).setExceptionalHaltReason(maybeReasonToHalt);
@@ -147,7 +145,7 @@ class CustomContractCreationProcessorTest {
         subject.start(frame, tracer);
 
         verify(worldUpdater, never())
-                .tryTransferFromContract(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
+                .tryTransfer(NON_SYSTEM_LONG_ZERO_ADDRESS, EIP_1014_ADDRESS, WEI_VALUE.toLong(), false);
         verify(mutableContract, never()).setNonce(INITIAL_CONTRACT_NONCE);
         final var maybeReasonToHalt = Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS);
         verify(frame).setExceptionalHaltReason(maybeReasonToHalt);

@@ -9,7 +9,6 @@
 maxOutgoingSyncs,          1
 state.saveStatePeriod,     0
 showInternalStats,         1
-doUpnp,                    false
 useLoopbackIp,             false
 csvFileName,               PlatformTesting
 checkSignedStateFromDisk,  1

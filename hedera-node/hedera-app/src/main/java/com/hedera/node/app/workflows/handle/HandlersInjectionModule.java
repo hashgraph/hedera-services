@@ -61,7 +61,7 @@ public interface HandlersInjectionModule {
                 contractHandlers.get().contractDeleteHandler(),
                 contractHandlers.get().contractSystemDeleteHandler(),
                 contractHandlers.get().contractSystemUndeleteHandler(),
-                contractHandlers.get().etherumTransactionHandler(),
+                contractHandlers.get().ethereumTransactionHandler(),
                 tokenHandlers.cryptoCreateHandler(),
                 tokenHandlers.cryptoUpdateHandler(),
                 tokenHandlers.cryptoTransferHandler(),
