@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+pluginManagement { @Suppress("UnstableApiUsage") includeBuild("build-logic") }
+
 includeBuild("platform-sdk")
 includeBuild("hedera-node")
 

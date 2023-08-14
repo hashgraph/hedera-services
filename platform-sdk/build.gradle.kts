@@ -15,25 +15,9 @@
  */
 
 plugins {
+    id("com.hedera.hashgraph.root")
     id("com.swirlds.platform.aggregate-reports")
-    id("com.hedera.hashgraph.spotless-conventions")
-    id("com.hedera.hashgraph.spotless-kotlin-conventions")
-    id("com.hedera.hashgraph.dependency-analysis")
 }
-
-tasks.named("assemble") {
-    dependsOn(subprojects.map { subproject ->
-        ":${subproject.name}:assemble"
-    })
-}
-
-tasks.register("checkAllModuleInfo") {
-    dependsOn(subprojects.map { subproject ->
-        ":${subproject.name}:checkAllModuleInfo"
-    })
-}
-
-repositories { mavenCentral() }
 
 tasks.register<JavaExec>("run") {
     group = "application"

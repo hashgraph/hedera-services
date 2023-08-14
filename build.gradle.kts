@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 
-tasks.register("checkAllModuleInfo") {
-    dependsOn(gradle.includedBuilds.map { build ->
-        build.task(":checkAllModuleInfo")
-    })
-}
-
-tasks.register("assemble") {
-    dependsOn(gradle.includedBuilds.map { build ->
-        build.task(":assemble")
-    })
+plugins {
+    id("com.hedera.hashgraph.umbrella")
 }
