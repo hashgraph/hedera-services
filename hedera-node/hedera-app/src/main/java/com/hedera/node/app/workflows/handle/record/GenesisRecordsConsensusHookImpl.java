@@ -51,7 +51,7 @@ public class GenesisRecordsConsensusHookImpl implements GenesisRecordsConsensusH
 
     /**
      * <b> ⚠️⚠️ Note: though this method will be called each time a new platform event is received,
-     * the records created by this class should only be created once.<b> After each data structure's
+     * the records created by this class should only be created once.</b> After each data structure's
      * account records are created, each corresponding data structure is intentionally emptied ⚠️⚠️
      * <p>
      * It would be great if we could find a way to not have to invoke this method multiple times...
