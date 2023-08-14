@@ -313,7 +313,7 @@ public class WorldLedgers {
 
     public Address ownerOf(final NftId nftId) {
         if (!areMutable()) {
-            return staticEntityAccess.ownerOf(nftId);
+            return canonicalAddress(staticEntityAccess.ownerOf(nftId));
         }
         return canonicalAddress(explicitOwnerOfExtant(nftId).toEvmAddress());
     }
