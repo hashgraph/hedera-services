@@ -311,6 +311,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.hedera-tests-enabled }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 

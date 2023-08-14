@@ -144,6 +144,7 @@ jobs:
         id: gradle-build
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: assemble --scan
 
@@ -151,6 +152,7 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-javadoc && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: javadoc --scan
 
@@ -158,6 +160,7 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: spotlessCheck --scan
 
@@ -165,7 +168,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
         if: ${{ inputs.enable-dependency-check && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
-          build-root-directory: ${{ github.workspace }}/platform-sdk
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: checkAllModuleInfo --scan --continue
 
@@ -174,6 +177,7 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-unit-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: check --continue --scan
 
@@ -196,6 +200,7 @@ jobs:
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: createDockerImage
 
@@ -204,6 +209,7 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-integration-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: itest --scan
 
@@ -229,6 +235,7 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-e2e-tests && steps.gradle-build.conclusion == 'success' && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: eet --scan
 
@@ -253,6 +260,7 @@ jobs:
         uses: gradle/gradle-build-action@3fbe033aaae657f011f88f29be9e65ed26bd29ef # pin@v2
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: jacocoTestReport --scan
 
@@ -308,6 +316,7 @@ jobs:
             !cancelled()
           }}
         with:
+          build-root-directory: ${{ github.workspace }}/hedera-node
           gradle-version: ${{ inputs.gradle-version }}
           arguments: sonarqube --info --scan ${{ steps.sonar-cloud.outputs.options }}
 
