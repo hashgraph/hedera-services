@@ -17,17 +17,21 @@
 package com.hedera.node.app.service.consensus.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BAD_ENCODING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.RUNNING_HASH_BYTE_ARRAY_SIZE;
+import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -59,7 +63,7 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
 
         // The transaction cannot set the admin key unless the transaction was signed by that key
         if (op.hasAdminKey()) {
-            context.requireKeyOrThrow(op.adminKey(), INVALID_ADMIN_KEY);
+            context.requireKeyOrThrow(op.adminKey(), BAD_ENCODING);
         }
 
         // If an account is to be used for auto-renewal, then the account must exist and the transaction
@@ -81,6 +85,18 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
         requireNonNull(handleContext, "The argument 'context' must not be null");
 
         final var op = handleContext.body().consensusCreateTopicOrThrow();
+
+        final var fees = handleContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> {
+            try {
+                final var protoBody = fromPbj(handleContext.body());
+                return ConsensusServiceFeeBuilder.getConsensusCreateTopicFee(protoBody, sigValueObj);
+            } catch (InvalidTxBodyException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        handleContext.feeAccumulator().charge(handleContext.payer(), fees);
+
         final var configuration = handleContext.configuration();
         final var topicConfig = configuration.getConfigData(TopicsConfig.class);
         final var topicStore = handleContext.writableStore(WritableTopicStore.class);
