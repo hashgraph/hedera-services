@@ -26,20 +26,19 @@ repositories {
 }
 
 dependencies {
+    implementation("com.adarshr:gradle-test-logger-plugin:3.2.0")
     implementation("com.autonomousapps:dependency-analysis-gradle-plugin:1.20.0")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.19.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.3")
+    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("gradle.plugin.com.github.johnrengelman:shadow:7.1.2")
+    implementation("gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.2.1")
     implementation("gradle.plugin.lazy.zoo.gradle:git-data-plugin:1.2.2")
     implementation("me.champeau.jmh:jmh-gradle-plugin:0.7.1")
     implementation("net.swiftzer.semver:semver:1.1.2")
     implementation("org.gradlex:extra-java-module-info:1.4.1")
     implementation("org.gradlex:java-ecosystem-capabilities:1.1")
     implementation("org.gradlex:java-module-dependencies:1.4")
+    implementation("org.owasp:dependency-check-gradle:8.3.1")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
-
-    implementation("com.adarshr:gradle-test-logger-plugin:3.2.0")
-    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
-    implementation("gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.1.5")
-    implementation("org.owasp:dependency-check-gradle:8.1.0")
 }
