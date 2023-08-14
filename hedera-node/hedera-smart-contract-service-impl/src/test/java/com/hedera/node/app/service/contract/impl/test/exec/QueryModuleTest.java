@@ -16,12 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.contract.impl.exec.QueryModule;
-import com.hedera.node.app.service.contract.impl.exec.TransactionModule;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import org.junit.jupiter.api.Test;
@@ -39,6 +37,5 @@ class QueryModuleTest {
         final var config = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(context.configuration()).willReturn(config);
         assertSame(config, QueryModule.provideConfiguration(context));
-        assertNotNull(TransactionModule.provideContractsConfig(config));
     }
 }

@@ -166,6 +166,9 @@ class HandleWorkflowTest extends AppTestBase {
     @Mock
     private ParentRecordFinalizer finalizer;
 
+    @Mock
+    private SystemFileUpdateFacility systemFileUpdateFacility;
+
     private HandleWorkflow workflow;
 
     @BeforeEach
@@ -216,7 +219,8 @@ class HandleWorkflowTest extends AppTestBase {
                 stakingPeriodTimeHook,
                 feeManager,
                 exchangeRateManager,
-                finalizer);
+                finalizer,
+                systemFileUpdateFacility);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -238,7 +242,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -255,7 +260,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -272,7 +278,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -289,7 +296,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -306,7 +314,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -323,7 +332,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -340,7 +350,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -357,7 +368,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -374,7 +386,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -391,7 +404,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -408,7 +422,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -425,7 +440,8 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         feeManager,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -442,7 +458,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         null,
                         exchangeRateManager,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -459,7 +476,8 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         null,
-                        finalizer))
+                        finalizer,
+                        systemFileUpdateFacility))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -476,6 +494,25 @@ class HandleWorkflowTest extends AppTestBase {
                         stakingPeriodTimeHook,
                         feeManager,
                         exchangeRateManager,
+                        null,
+                        systemFileUpdateFacility))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new HandleWorkflow(
+                        networkInfo,
+                        preHandleWorkflow,
+                        dispatcher,
+                        blockRecordManager,
+                        signatureExpander,
+                        signatureVerifier,
+                        checker,
+                        serviceLookup,
+                        configProvider,
+                        instantSource,
+                        recordCache,
+                        stakingPeriodTimeHook,
+                        feeManager,
+                        exchangeRateManager,
+                        finalizer,
                         null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -508,6 +545,7 @@ class HandleWorkflowTest extends AppTestBase {
         final var alice = aliasesState.get(Bytes.wrap(ALICE_ALIAS));
         assertThat(alice).isNotNull().isEqualTo(ALICE.account().accountId());
         // TODO: Check that record was created
+        verify(systemFileUpdateFacility).handleTxBody(eq(state), any());
     }
 
     @Nested

@@ -40,9 +40,10 @@ public class FakeHederaState implements HederaState {
     private final Map<String, Map<String, Object>> states = new HashMap<>();
 
     /** Adds to the service with the given name the {@link ReadableKVState} {@code states} */
-    public void addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
+    public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         var serviceStates = this.states.computeIfAbsent(serviceName, k -> new HashMap<>());
         serviceStates.putAll(dataSources);
+        return this;
     }
 
     @NonNull

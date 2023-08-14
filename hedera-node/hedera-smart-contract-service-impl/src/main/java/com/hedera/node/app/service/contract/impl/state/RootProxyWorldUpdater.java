@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * A {@link ProxyWorldUpdater} that enforces several Hedera-specific checks and actions before
@@ -63,22 +62,6 @@ public class RootProxyWorldUpdater extends ProxyWorldUpdater {
         this.storageManager = Objects.requireNonNull(storageManager);
         this.rentCalculator = Objects.requireNonNull(rentCalculator);
         this.storageSizeValidator = Objects.requireNonNull(storageSizeValidator);
-    }
-
-    /**
-     * Customizes the standard behavior by "handing off" any {@link PendingCreation} to the child updater,
-     * since the root updater won't actually be associated to the initial {@link MessageFrame}.
-     *
-     * @return the child updater with any {@link PendingCreation} "handed off"
-     */
-    @Override
-    public @NonNull ProxyWorldUpdater updater() {
-        final var child = super.updater();
-        if (this.pendingCreation != null) {
-            child.pendingCreation = this.pendingCreation;
-            this.pendingCreation = null;
-        }
-        return child;
     }
 
     /**

@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.api.ServiceApiProvider;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
@@ -30,12 +31,14 @@ import java.util.Map;
  */
 public class ServiceApiFactory {
     private final SavepointStackImpl stack;
+    private final Configuration configuration;
 
     private static final Map<Class<?>, ServiceApiProvider<?>> API_PROVIDER =
             Map.of(TokenServiceApi.class, TOKEN_SERVICE_API_PROVIDER);
 
-    public ServiceApiFactory(@NonNull final SavepointStackImpl stack) {
+    public ServiceApiFactory(@NonNull final SavepointStackImpl stack, @NonNull final Configuration configuration) {
         this.stack = requireNonNull(stack);
+        this.configuration = requireNonNull(configuration);
     }
 
     /**
@@ -45,9 +48,8 @@ public class ServiceApiFactory {
         requireNonNull(apiInterface);
         final var provider = API_PROVIDER.get(apiInterface);
         if (provider != null) {
-            final var config = stack.peek().configuration();
             final var writableStates = stack.createWritableStates(provider.serviceName());
-            final var api = provider.newInstance(config, writableStates);
+            final var api = provider.newInstance(configuration, writableStates);
             assert apiInterface.isInstance(api); // This needs to be ensured while apis are registered
             return apiInterface.cast(api);
         }
