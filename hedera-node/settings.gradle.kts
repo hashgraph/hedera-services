@@ -34,6 +34,7 @@ plugins {
 }
 
 includeBuild("../hedera-platform")
+
 includeBuild("../platform-sdk")
 
 include(":app", "hedera-app")

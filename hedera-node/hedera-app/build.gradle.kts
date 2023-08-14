@@ -179,9 +179,7 @@ val cleanRun =
         delete(prjDir.dir("output"))
         delete(prjDir.dir("settingsUsed.txt"))
         delete(prjDir.dir("swirlds.jar"))
-        delete(prjDir.asFileTree.matching {
-            include("MainNetStats*")
-        })
+        delete(prjDir.asFileTree.matching { include("MainNetStats*") })
         val dataDir = prjDir.dir("data")
         delete(dataDir.dir("accountBalances"))
         delete(dataDir.dir("apps"))
