@@ -397,12 +397,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     /** {@inheritDoc} */
     @Override
-    public Set<K> idSet() {
-        return entities.idSet();
-    }
-
-    /** {@inheritDoc} */
-    @Override
     public long size() {
         return entities.size();
     }
