@@ -16,8 +16,7 @@
 
 package com.swirlds.platform.internal;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A consensus round with all its events.
@@ -210,7 +208,7 @@ public class ConsensusRound implements Round {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("round", roundNum)
                 .append("consensus events", EventUtils.toShortStrings(consensusEvents))
                 .toString();

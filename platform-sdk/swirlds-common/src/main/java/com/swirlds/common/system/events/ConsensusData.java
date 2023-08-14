@@ -16,8 +16,7 @@
 
 package com.swirlds.common.system.events;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
-
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A class used to store consensus data about an event.
@@ -94,9 +92,13 @@ public class ConsensusData implements SelfSerializable {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
+        if (this == o) {
+            return true;
+        }
 
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         final ConsensusData that = (ConsensusData) o;
 
@@ -122,7 +124,7 @@ public class ConsensusData implements SelfSerializable {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("generation", generation)
                 .append("roundCreated", roundCreated)
                 .append("stale", stale)

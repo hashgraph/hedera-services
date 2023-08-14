@@ -17,8 +17,8 @@
 package com.swirlds.common.system.events;
 
 import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
+import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.config.TransactionConfig;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
@@ -38,7 +38,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * A class used to store base event data that is used to create the hash of that event.
@@ -297,7 +296,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+        return new ToStringBuilder(this)
                 .append("softwareVersion", softwareVersion)
                 .append("creatorId", creatorId)
                 .append("selfParentGen", selfParentGen)
