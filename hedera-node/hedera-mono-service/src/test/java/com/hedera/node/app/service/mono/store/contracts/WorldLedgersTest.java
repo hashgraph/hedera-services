@@ -241,6 +241,24 @@ class WorldLedgersTest {
     }
 
     @Test
+    void ownerOfReturnsCanonicalAddress() {
+        final var ownerId = EntityNum.fromLong(1001);
+        final var ownerLongZeroAddress = ownerId.toEvmAddress();
+        final var randAlias = "8411b12666f68ef74cace3615c9d5a377729d03f";
+        final var randAliasByteString = ByteString.fromHex(randAlias);
+        final var randAliasAddress = Address.fromHexString(randAlias);
+
+        given(aliases.isMirror(ownerLongZeroAddress)).willReturn(true);
+        given(staticEntityAccess.isExtant(ownerLongZeroAddress)).willReturn(true);
+        given(staticEntityAccess.ownerOf(nftId)).willReturn(ownerLongZeroAddress);
+        given(staticEntityAccess.alias(ownerLongZeroAddress)).willReturn(randAliasByteString);
+
+        worldLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+        assertEquals(randAliasAddress, worldLedgers.ownerOf(nftId));
+    }
+
+    @Test
     void resolvesOwnerDirectlyIfNotTreasury() {
         given(nftsLedger.get(nftId, OWNER)).willReturn(notTreasury);
 
