@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     id("java-library")
     id("com.hedera.hashgraph.java")
@@ -31,14 +34,43 @@ configurations.getByName("mainRuntimeClasspath") {
 testing {
     @Suppress("UnstableApiUsage")
     suites {
+        // Add the integration test suite
+        register<JvmTestSuite>("itest") {
+            testType.set(TestSuiteType.INTEGRATION_TEST)
+
+            targets.all {
+                testTask {
+                    // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
+                    // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
+                    shouldRunAfter(tasks.test)
+
+                    addTestListener(object : TestListener {
+                        override fun beforeSuite(suite: TestDescriptor) {
+                            logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
+                        }
+
+                        override fun beforeTest(testDescriptor: TestDescriptor) {}
+                        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
+                            logger.lifecycle(
+                                SimpleDateFormat.getDateTimeInstance()
+                                    .format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name
+                            )
+                        }
+
+                        override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
+                    })
+                }
+            }
+        }
+
         // Add the EET task for executing end-to-end tests
         register<JvmTestSuite>("eet") {
             testType.set("end-to-end-test")
 
-            // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
-            // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
             targets.all {
                 testTask {
+                    // "shouldRunAfter" will only make sure if both test and eet are run concurrently,
+                    // that "test" completes first. If you run "eet" directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
                 }
             }
@@ -48,10 +80,10 @@ testing {
         register<JvmTestSuite>("xtest") {
             testType.set("cross-service-test")
 
-            // "shouldRunAfter" will only make sure if both test and xtest are run concurrently,
-            // that "test" completes first. If you run "xtest" directly, it doesn't force "test" to run.
             targets.all {
                 testTask {
+                    // "shouldRunAfter" will only make sure if both test and xtest are run concurrently,
+                    // that "test" completes first. If you run "xtest" directly, it doesn't force "test" to run.
                     shouldRunAfter(tasks.test)
                 }
             }

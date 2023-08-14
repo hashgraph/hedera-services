@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import java.text.SimpleDateFormat
-import java.util.Date
-
 plugins {
     id("java")
     id("jacoco")
@@ -145,35 +142,6 @@ testing {
                 jvmArgs("-XX:ActiveProcessorCount=16", "-XX:+UseZGC")
             }
         }
-
-        // Configure the integration test suite
-        register<JvmTestSuite>("itest") {
-            testType.set(TestSuiteType.INTEGRATION_TEST)
-
-            targets.all {
-                testTask {
-                    // "shouldRunAfter" will only make sure if both test and itest are run concurrently,
-                    // that "test" completes first. If you run "itest" directly, it doesn't force "test" to run.
-                    shouldRunAfter(tasks.test)
-
-                    addTestListener(object : TestListener {
-                        override fun beforeSuite(suite: TestDescriptor) {
-                            logger.lifecycle("=====> Starting Suite: " + suite.displayName + " <=====")
-                        }
-
-                        override fun beforeTest(testDescriptor: TestDescriptor) {}
-                        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
-                            logger.lifecycle(
-                                SimpleDateFormat.getDateTimeInstance()
-                                    .format(Date()) + ": " + testDescriptor.displayName + " " + result.resultType.name
-                            )
-                        }
-
-                        override fun afterSuite(suite: TestDescriptor, result: TestResult) {}
-                    })
-                }
-            }
-        }
     }
 }
 
@@ -207,8 +175,4 @@ tasks.assemble {
     if (tasks.names.contains("jmhClasses")) {
         dependsOn(tasks.named("jmhClasses"))
     }
-}
-
-tasks.check {
-    dependsOn(tasks.named("jacocoTestReport"))
 }
