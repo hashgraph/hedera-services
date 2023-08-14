@@ -1,6 +1,3 @@
-import net.swiftzer.semver.SemVer
-import java.io.BufferedOutputStream
-
 /*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
@@ -17,24 +14,23 @@ import java.io.BufferedOutputStream
  * limitations under the License.
  */
 
+import java.io.BufferedOutputStream
+import net.swiftzer.semver.SemVer
+import org.owasp.dependencycheck.reporting.ReportGenerator
+
 plugins {
     id("org.sonarqube")
+    id("org.owasp.dependencycheck")
     id("lazy.zoo.gradle.git-data-plugin")
 }
 
-//  Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
+// Configure the Sonarqube extension for SonarCloud reporting. These properties should not be changed so no need to
 // have them in the gradle.properties defintions.
 sonarqube {
     properties {
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.organization", "hashgraph")
-        property("sonar.projectKey", "com.hedera.hashgraph:hedera-services")
-        property("sonar.projectName", "Hedera Services")
         property("sonar.projectVersion", project.version)
-        property(
-            "sonar.projectDescription",
-            "Hedera Services (crypto, file, contract, consensus) on the Platform"
-        )
         property("sonar.links.homepage", "https://github.com/hashgraph/hedera-services")
         property("sonar.links.ci", "https://github.com/hashgraph/hedera-services/actions")
         property("sonar.links.issue", "https://github.com/hashgraph/hedera-services/issues")
@@ -51,16 +47,22 @@ sonarqube {
     }
 }
 
+dependencyCheck {
+    autoUpdate = true
+    formats = listOf(ReportGenerator.Format.HTML.name, ReportGenerator.Format.XML.name, ReportGenerator.Format.JUNIT.name)
+    junitFailOnCVSS = 7.0f
+    failBuildOnCVSS = 11.0f
+    outputDirectory = layout.buildDirectory.dir("reports/dependency-check").get().asFile.toString()
+}
+
 tasks.register("githubVersionSummary") {
     group = "github"
     doLast {
-        val ghStepSummaryPath: String? = System.getenv("GITHUB_STEP_SUMMARY")
-        if (ghStepSummaryPath == null) {
-            throw IllegalArgumentException("This task may only be run in a Github Actions CI environment! Unable to locate the GITHUB_STEP_SUMMARY environment variable.")
-        }
+        val ghStepSummaryPath: String = providers.environmentVariable("GITHUB_STEP_SUMMARY").orNull ?:
+            throw IllegalArgumentException("This task may only be run in a Github Actions CI environment!" +
+                    "Unable to locate the GITHUB_STEP_SUMMARY environment variable.")
 
-        val ghStepSummaryFile: File = File(ghStepSummaryPath)
-        Utils.generateProjectVersionReport(rootProject, BufferedOutputStream(ghStepSummaryFile.outputStream()))
+        Utils.generateProjectVersionReport(rootProject, BufferedOutputStream(File(ghStepSummaryPath).outputStream()))
     }
 }
 
@@ -75,7 +77,7 @@ tasks.register("versionAsPrefixedCommit") {
     group = "versioning"
     doLast {
         gitData.lastCommitHash?.let {
-            val prefix = findProperty("commitPrefix")?.toString() ?: "adhoc"
+            val prefix = providers.gradleProperty("commitPrefix").getOrElse("adhoc")
             val newPrerel = prefix + ".x" + it.take(8)
             val currVer = SemVer.parse(rootProject.version.toString())
             try {
@@ -101,13 +103,13 @@ tasks.register("versionAsSnapshot") {
 tasks.register("versionAsSpecified") {
     group = "versioning"
     doLast {
-        val verStr = findProperty("newVersion")?.toString()
+        val verStr = providers.gradleProperty("newVersion")
 
-        if (verStr == null) {
+        if (!verStr.isPresent) {
             throw IllegalArgumentException("No newVersion property provided! Please add the parameter -PnewVersion=<version> when running this task.")
         }
 
-        val newVer = SemVer.parse(verStr)
+        val newVer = SemVer.parse(verStr.get())
         Utils.updateVersion(rootProject, newVer)
     }
 }

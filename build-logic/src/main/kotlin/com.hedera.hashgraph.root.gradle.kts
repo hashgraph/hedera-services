@@ -18,6 +18,7 @@ import org.gradle.kotlin.dsl.repositories
  */
 
 plugins {
+    id("com.hedera.hashgraph.aggregate-reports")
     id("com.hedera.hashgraph.dependency-analysis")
     id("com.hedera.hashgraph.spotless-conventions")
     id("com.hedera.hashgraph.spotless-kotlin-conventions")

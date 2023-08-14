@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.hashgraph.root")
-    id("com.swirlds.platform.aggregate-reports")
+plugins { id("com.hedera.hashgraph.root") }
+
+sonarqube.properties {
+    property("sonar.projectKey", "com.swirlds:swirlds-platform")
+    property("sonar.projectName", "Platform SDK")
 }
 
 tasks.register<JavaExec>("run") {

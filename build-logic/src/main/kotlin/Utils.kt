@@ -25,18 +25,17 @@ class Utils {
         @JvmStatic
         fun updateVersion(project: Project, newVersion: SemVer) {
             val gradlePropFile = File(project.projectDir, "gradle.properties")
-            var lines: List<String> = mutableListOf()
 
-            if (gradlePropFile.exists()) {
-                lines = gradlePropFile.readLines(Charsets.UTF_8)
+            val lines = if (gradlePropFile.exists()) {
+                gradlePropFile.readLines(Charsets.UTF_8)
+            } else {
+                emptyList()
             }
 
-            var versionStr = "version=${newVersion.toString()}"
-            val finalLines: List<String>
+            val versionStr = "version=$newVersion"
 
-
-            if (lines.isNotEmpty()) {
-                finalLines = lines.map {
+            val finalLines = if (lines.isNotEmpty()) {
+                lines.map {
                     if (it.trimStart().startsWith("version=")) {
                         versionStr
                     } else {
@@ -44,12 +43,10 @@ class Utils {
                     }
                 }
             } else {
-                finalLines = listOf(versionStr)
+                listOf(versionStr)
             }
 
-
-            gradlePropFile.bufferedWriter(Charsets.UTF_8).use {
-                val writer = it
+            gradlePropFile.bufferedWriter(Charsets.UTF_8).use { writer ->
                 finalLines.forEach {
                     writer.write(it)
                     writer.newLine()
